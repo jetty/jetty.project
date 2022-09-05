@@ -261,7 +261,7 @@ public class PathWatcherTest
             long start = NanoTime.now();
             try (FileOutputStream out = new FileOutputStream(path.toFile()))
             {
-                while (NanoTime.elapsedFrom(start) < timeUnit.toNanos(timeDuration))
+                while (NanoTime.since(start) < timeUnit.toNanos(timeDuration))
                 {
                     out.write(chunkBuf);
                     out.flush();
@@ -958,7 +958,7 @@ public class PathWatcherTest
             }).start();
 
             assertTrue(capture.finishedLatch.await(4 * QUIET_TIME, TimeUnit.MILLISECONDS));
-            assertThat(NanoTime.millisElapsedFrom(start), greaterThan(2 * QUIET_TIME));
+            assertThat(NanoTime.millisSince(start), greaterThan(2 * QUIET_TIME));
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
             expected.put("bar/WEB-INF/web.xml", new PathWatchEventType[]{ADDED});

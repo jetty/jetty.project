@@ -689,7 +689,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     private void waitForIdle(QueuedThreadPool tp, int idle)
     {
         long start = NanoTime.now();
-        while (tp.getIdleThreads() != idle && NanoTime.millisElapsedFrom(start) < 10000)
+        while (tp.getIdleThreads() != idle && NanoTime.millisSince(start) < 10000)
         {
             try
             {
@@ -706,7 +706,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     {
         long start = NanoTime.now();
         ReservedThreadExecutor reservedThreadExecutor = tp.getBean(ReservedThreadExecutor.class);
-        while (reservedThreadExecutor.getAvailable() != reserved && NanoTime.millisElapsedFrom(start) < 10000)
+        while (reservedThreadExecutor.getAvailable() != reserved && NanoTime.millisSince(start) < 10000)
         {
             try
             {
@@ -722,7 +722,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     private void waitForThreads(QueuedThreadPool tp, int threads)
     {
         long start = NanoTime.now();
-        while (tp.getThreads() != threads && NanoTime.millisElapsedFrom(start) < 10000)
+        while (tp.getThreads() != threads && NanoTime.millisSince(start) < 10000)
         {
             try
             {

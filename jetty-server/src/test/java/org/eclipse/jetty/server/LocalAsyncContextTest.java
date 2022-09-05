@@ -502,7 +502,7 @@ public class LocalAsyncContextTest
     {
         T actual = null;
         long start = NanoTime.now();
-        while (NanoTime.elapsedFrom(start) < units.toNanos(waitFor))
+        while (NanoTime.since(start) < units.toNanos(waitFor))
         {
             actual = actualSupplier.get();
             if (actual == null && expected == null ||

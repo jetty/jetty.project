@@ -587,7 +587,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
         private boolean isExpired(long timeoutNanos)
         {
-            return NanoTime.elapsedFrom(creationNanoTime) >= timeoutNanos;
+            return NanoTime.since(creationNanoTime) >= timeoutNanos;
         }
     }
 }

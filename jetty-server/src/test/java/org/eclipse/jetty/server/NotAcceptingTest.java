@@ -447,7 +447,7 @@ public class NotAcceptingTest
             }
             catch (Throwable e)
             {
-                if (NanoTime.elapsedFrom(start) > units.toNanos(wait))
+                if (NanoTime.since(start) > units.toNanos(wait))
                     throw e;
             }
 

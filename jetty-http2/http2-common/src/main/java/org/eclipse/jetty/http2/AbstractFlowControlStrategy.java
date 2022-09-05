@@ -195,7 +195,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 
     protected void onSessionUnstalled(ISession session)
     {
-        long stallTime = NanoTime.elapsedFrom(sessionStall.getAndSet(0));
+        long stallTime = NanoTime.since(sessionStall.getAndSet(0));
         sessionStallTime.addAndGet(stallTime);
         if (LOG.isDebugEnabled())
             LOG.debug("Session unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), session);
@@ -206,7 +206,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         Long time = streamsStalls.remove(stream);
         if (time != null)
         {
-            long stallTime = NanoTime.elapsedFrom(time);
+            long stallTime = NanoTime.since(time);
             streamsStallTime.addAndGet(stallTime);
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), stream);
@@ -219,7 +219,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         long pastStallTime = sessionStallTime.get();
         long currentStallTime = sessionStall.get();
         if (currentStallTime != 0)
-            currentStallTime = NanoTime.elapsedFrom(currentStallTime);
+            currentStallTime = NanoTime.since(currentStallTime);
         return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 

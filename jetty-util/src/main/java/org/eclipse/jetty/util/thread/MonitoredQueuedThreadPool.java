@@ -63,7 +63,7 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
             @Override
             public void run()
             {
-                long queueLatency = NanoTime.elapsedFrom(begin);
+                long queueLatency = NanoTime.since(begin);
                 queueStats.decrement();
                 threadStats.increment();
                 queueLatencyStats.record(queueLatency);
@@ -74,7 +74,7 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
                 }
                 finally
                 {
-                    long taskLatency = NanoTime.elapsedFrom(start);
+                    long taskLatency = NanoTime.since(start);
                     threadStats.decrement();
                     taskLatencyStats.record(taskLatency);
                 }

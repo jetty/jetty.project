@@ -182,7 +182,7 @@ public class GracefulStopTest
             {
                 while (context.isAvailable())
                 {
-                    assertThat(NanoTime.millisElapsedFrom(start), lessThan(5000L));
+                    assertThat(NanoTime.millisSince(start), lessThan(5000L));
                     Thread.sleep(100);
                 }
 
@@ -205,14 +205,14 @@ public class GracefulStopTest
     {
         long start = NanoTime.now();
         server.stop();
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(2000L));
+        assertThat(NanoTime.millisSince(start), lessThan(2000L));
     }
 
     void assertGracefulStop(LifeCycle lifecycle) throws Exception
     {
         long start = NanoTime.now();
         lifecycle.stop();
-        long duration = NanoTime.millisElapsedFrom(start);
+        long duration = NanoTime.millisSince(start);
         assertThat(duration, greaterThan(50L));
         assertThat(duration, lessThan(5000L));
     }
@@ -243,7 +243,7 @@ public class GracefulStopTest
     {
         long start = NanoTime.now();
         assertThat(client.getInputStream().read(), is(-1));
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(2000L));
+        assertThat(NanoTime.millisSince(start), lessThan(2000L));
     }
 
     void assertHandled(TestHandler handler, boolean error)
@@ -263,7 +263,7 @@ public class GracefulStopTest
             try
             {
                 handler.latch.await();
-                Thread.sleep(100 - NanoTime.millisElapsedFrom(start));
+                Thread.sleep(100 - NanoTime.millisSince(start));
                 client.getOutputStream().write(BODY_67890);
             }
             catch (Exception e)

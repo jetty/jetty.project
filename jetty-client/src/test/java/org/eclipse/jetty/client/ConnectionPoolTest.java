@@ -192,7 +192,7 @@ public class ConnectionPoolTest
         {
             test(failures);
         }
-        long elapsed = NanoTime.millisElapsedFrom(begin);
+        long elapsed = NanoTime.millisSince(begin);
         System.err.printf("%d requests in %d ms, %.3f req/s%n", iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D);
         latch.countDown();
     }

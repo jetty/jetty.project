@@ -82,7 +82,7 @@ public class PropertyUserStoreTest
         public void awaitCount(int expectedCount) throws InterruptedException
         {
             long start = NanoTime.now();
-            while (userCount.get() != expectedCount && NanoTime.secondsElapsedFrom(start) < 10)
+            while (userCount.get() != expectedCount && NanoTime.secondsSince(start) < 10)
             {
                 TimeUnit.MILLISECONDS.sleep(100);
             }

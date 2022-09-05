@@ -324,7 +324,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 if (thread == Thread.currentThread())
                     continue;
 
-                long canWait = NanoTime.millisRemainingTo(stopByNanos);
+                long canWait = NanoTime.millisUntil(stopByNanos);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Waiting for {} for {}", thread, canWait);
                 if (canWait <= 0)

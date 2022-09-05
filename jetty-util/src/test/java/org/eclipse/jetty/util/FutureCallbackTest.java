@@ -46,7 +46,7 @@ public class FutureCallbackTest
 
         long start = NanoTime.now();
         assertThrows(TimeoutException.class, () -> fcb.get(500, TimeUnit.MILLISECONDS));
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.greaterThan(50L));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(50L));
     }
 
     @Test
@@ -59,7 +59,7 @@ public class FutureCallbackTest
 
         long start = NanoTime.now();
         assertNull(fcb.get());
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.lessThan(500L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(500L));
     }
 
     @Test
@@ -85,8 +85,8 @@ public class FutureCallbackTest
         latch.await();
         long start = NanoTime.now();
         assertNull(fcb.get(10000, TimeUnit.MILLISECONDS));
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.greaterThan(10L));
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.lessThan(1000L));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(1000L));
 
         assertTrue(fcb.isDone());
         assertFalse(fcb.isCancelled());
@@ -105,7 +105,7 @@ public class FutureCallbackTest
         ExecutionException e = assertThrows(ExecutionException.class, fcb::get);
         assertEquals(ex, e.getCause());
 
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.lessThan(100L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(100L));
     }
 
     @Test
@@ -133,8 +133,8 @@ public class FutureCallbackTest
         long start = NanoTime.now();
         ExecutionException e = assertThrows(ExecutionException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertEquals(ex, e.getCause());
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.greaterThan(10L));
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.lessThan(5000L));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(5000L));
 
         assertTrue(fcb.isDone());
         assertFalse(fcb.isCancelled());
@@ -151,7 +151,7 @@ public class FutureCallbackTest
         long start = NanoTime.now();
         CancellationException e = assertThrows(CancellationException.class, fcb::get);
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.lessThan(100L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(100L));
     }
 
     @Test
@@ -179,8 +179,8 @@ public class FutureCallbackTest
         CancellationException e = assertThrows(CancellationException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
 
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.greaterThan(10L));
-        assertThat(NanoTime.millisElapsedFrom(start), Matchers.lessThan(1000L));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(1000L));
 
         assertTrue(fcb.isDone());
         assertTrue(fcb.isCancelled());

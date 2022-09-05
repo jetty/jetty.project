@@ -560,7 +560,7 @@ public class JettyHomeTester
         public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
         {
             long start = NanoTime.now();
-            while (NanoTime.elapsedFrom(start) < unit.toNanos(time))
+            while (NanoTime.since(start) < unit.toNanos(time))
             {
                 boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                 if (result)
@@ -588,7 +588,7 @@ public class JettyHomeTester
             try
             {
                 long start = NanoTime.now();
-                while (NanoTime.elapsedFrom(start) < unit.toNanos(time))
+                while (NanoTime.since(start) < unit.toNanos(time))
                 {
                     boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                     if (result)

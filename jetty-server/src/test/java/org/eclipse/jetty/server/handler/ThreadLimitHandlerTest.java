@@ -214,7 +214,7 @@ public class ThreadLimitHandlerTest
 
         long wait = 10;
         long start = NanoTime.now();
-        while (count.get() < 4 && NanoTime.secondsElapsedFrom(start) < wait)
+        while (count.get() < 4 && NanoTime.secondsSince(start) < wait)
         {
             Thread.sleep(1);
         }
@@ -226,13 +226,13 @@ public class ThreadLimitHandlerTest
         // let the other requests go
         latch.countDown();
 
-        while (total.get() < 10 && NanoTime.secondsElapsedFrom(start) < wait)
+        while (total.get() < 10 && NanoTime.secondsSince(start) < wait)
         {
             Thread.sleep(10);
         }
         assertThat(total.get(), is(10));
 
-        while (count.get() > 0 && NanoTime.secondsElapsedFrom(start) < wait)
+        while (count.get() > 0 && NanoTime.secondsSince(start) < wait)
         {
             Thread.sleep(10);
         }

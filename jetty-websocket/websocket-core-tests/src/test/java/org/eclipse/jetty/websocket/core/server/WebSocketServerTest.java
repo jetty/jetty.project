@@ -182,7 +182,7 @@ public class WebSocketServerTest extends WebSocketTester
             long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 3)
             {
-                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
+                assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(3));
@@ -196,7 +196,7 @@ public class WebSocketServerTest extends WebSocketTester
             start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 5)
             {
-                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
+                assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(5));
@@ -288,7 +288,7 @@ public class WebSocketServerTest extends WebSocketTester
             long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 3)
             {
-                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
+                assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(3));
@@ -353,7 +353,7 @@ public class WebSocketServerTest extends WebSocketTester
             long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 2)
             {
-                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
+                assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(2));
@@ -420,7 +420,7 @@ public class WebSocketServerTest extends WebSocketTester
             long start = NanoTime.now();
             while (serverHandler.receivedFrames.size() < 2)
             {
-                assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(10L));
+                assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
                 Thread.sleep(10);
             }
             assertThat(serverHandler.receivedFrames.size(), is(2));

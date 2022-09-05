@@ -120,7 +120,7 @@ public class AsyncRestServlet extends AbstractRestServlet
 
             // save timing info and return
             request.setAttribute(START_ATTR, start);
-            request.setAttribute(DURATION_ATTR, NanoTime.elapsedFrom(start));
+            request.setAttribute(DURATION_ATTR, NanoTime.since(start));
 
             return;
         }

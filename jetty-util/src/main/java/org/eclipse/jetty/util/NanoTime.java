@@ -41,23 +41,23 @@ public class NanoTime
     }
 
     /**
-     * <p>Calculates the nanoseconds elapsed between a begin nanoTime and the current nanoTime.</p>
+     * <p>Calculates the nanoseconds elapsed since a begin nanoTime and the current nanoTime.</p>
      *
      * @param beginNanoTime the begin nanoTime
-     * @return the nanoseconds elapsed between the given begin nanoTime and the current nanoTime
+     * @return the nanoseconds elapsed since the given begin nanoTime and the current nanoTime
      */
-    public static long elapsedFrom(long beginNanoTime)
+    public static long since(long beginNanoTime)
     {
         return elapsed(beginNanoTime, now());
     }
 
     /**
-     * <p>Calculates the nanoseconds remaining between the current nanoTime and an end nanoTime.</p>
+     * <p>Calculates the nanoseconds remaining from the current nanoTime until an end nanoTime.</p>
      *
      * @param endNanoTime the end nanoTime
-     * @return the nanoseconds remaining between the current nanoTime and the given end nanoTime
+     * @return the nanoseconds remaining from the current nanoTime until the given end nanoTime
      */
-    public static long remainingTo(long endNanoTime)
+    public static long until(long endNanoTime)
     {
         return elapsed(now(), endNanoTime);
     }
@@ -80,7 +80,7 @@ public class NanoTime
      * @param beginNanoTime the begin nanoTime
      * @return the milliseconds elapsed between the given begin nanoTime and the current nanoTime
      */
-    public static long millisElapsedFrom(long beginNanoTime)
+    public static long millisSince(long beginNanoTime)
     {
         return millisElapsed(beginNanoTime, now());
     }
@@ -91,7 +91,7 @@ public class NanoTime
      * @param endNanoTime the end nanoTime
      * @return the milliseconds remaining between the current nanoTime and the given end nanoTime
      */
-    public static long millisRemainingTo(long endNanoTime)
+    public static long millisUntil(long endNanoTime)
     {
         return millisElapsed(now(), endNanoTime);
     }
@@ -114,7 +114,7 @@ public class NanoTime
      * @param beginNanoTime the begin nanoTime
      * @return the seconds elapsed between the given begin nanoTime and the current nanoTime
      */
-    public static long secondsElapsedFrom(long beginNanoTime)
+    public static long secondsSince(long beginNanoTime)
     {
         return secondsElapsed(beginNanoTime, now());
     }
@@ -125,7 +125,7 @@ public class NanoTime
      * @param endNanoTime the end nanoTime
      * @return the seconds remaining between the current nanoTime and the given end nanoTime
      */
-    public static long secondsRemainingTo(long endNanoTime)
+    public static long secondsUntil(long endNanoTime)
     {
         return secondsElapsed(now(), endNanoTime);
     }
@@ -168,7 +168,7 @@ public class NanoTime
     public static void spinWait(long nanos)
     {
         long start = now();
-        while (elapsedFrom(start) < nanos)
+        while (since(start) < nanos)
         {
             Thread.onSpinWait();
         }

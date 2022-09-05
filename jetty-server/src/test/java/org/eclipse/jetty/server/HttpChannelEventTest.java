@@ -273,7 +273,7 @@ public class HttpChannelEventTest
             public void onComplete(Request request)
             {
                 long beginTime = (Long)request.getAttribute(attribute);
-                elapsed.set(NanoTime.elapsedFrom(beginTime));
+                elapsed.set(NanoTime.since(beginTime));
                 latch.countDown();
             }
         });

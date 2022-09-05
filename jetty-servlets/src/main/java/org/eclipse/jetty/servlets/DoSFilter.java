@@ -1291,7 +1291,7 @@ public class DoSFilter implements Filter
 
             int latestIndex = _next == 0 ? (_timestamps.length - 1) : (_next - 1);
             long last = _timestamps[latestIndex];
-            boolean hasRecentRequest = last != 0 && NanoTime.secondsElapsedFrom(last) < 1L;
+            boolean hasRecentRequest = last != 0 && NanoTime.secondsSince(last) < 1L;
 
             DoSFilter filter = (DoSFilter)_context.getAttribute(_filterName);
 

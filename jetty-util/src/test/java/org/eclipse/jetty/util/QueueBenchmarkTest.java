@@ -122,7 +122,7 @@ public class QueueBenchmarkTest
                 await(barrier);
                 long begin = NanoTime.now();
                 await(barrier);
-                long elapsed = NanoTime.millisElapsedFrom(begin);
+                long elapsed = NanoTime.millisSince(begin);
                 logger.info("{} Readers/Writers: {}/{} => {} ms", queue.getClass().getSimpleName(), readers, writers, elapsed);
             }
         }

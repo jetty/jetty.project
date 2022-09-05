@@ -553,7 +553,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
 
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
-        long elapsedMs = NanoTime.millisElapsedFrom(start);
+        long elapsedMs = NanoTime.millisSince(start);
 
         if (LOG.isDebugEnabled())
         {
@@ -877,7 +877,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }).collect(Collectors.toList());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Service loaders found in {}ms", NanoTime.millisElapsedFrom(start));
+            LOG.debug("Service loaders found in {}ms", NanoTime.millisSince(start));
 
         Map<ServletContainerInitializer, Resource> sciResourceMap = new HashMap<>();
         ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);

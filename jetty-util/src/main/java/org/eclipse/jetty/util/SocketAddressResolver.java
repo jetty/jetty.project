@@ -164,7 +164,7 @@ public interface SocketAddressResolver
                     long start = NanoTime.now();
                     InetAddress[] addresses = InetAddress.getAllByName(host);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Resolved {} in {} ms", host, NanoTime.millisElapsedFrom(start));
+                        LOG.debug("Resolved {} in {} ms", host, NanoTime.millisSince(start));
 
                     List<InetSocketAddress> result = new ArrayList<>(addresses.length);
                     for (InetAddress address : addresses)

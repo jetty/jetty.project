@@ -1872,7 +1872,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     case NOT_CLOSED:
                     {
-                        long elapsed = NanoTime.millisElapsedFrom(idleNanoTime);
+                        long elapsed = NanoTime.millisSince(idleNanoTime);
                         if (elapsed < endPoint.getIdleTimeout())
                             return false;
                         notify = true;

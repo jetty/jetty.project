@@ -127,7 +127,7 @@ public class IdleTimeoutTest
         _timeout.setIdleTimeout(100);
 
         long start = NanoTime.now();
-        while (_expired == null && NanoTime.secondsElapsedFrom(start) < 5)
+        while (_expired == null && NanoTime.secondsSince(start) < 5)
         {
             Thread.sleep(200);
         }

@@ -88,7 +88,7 @@ public class PushSessionCacheFilter implements Filter
                             @SuppressWarnings("unchecked")
                             ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
                             Long last = timestamps.get(refererTarget._path);
-                            if (last != null && NanoTime.millisElapsedFrom(last) < _associateDelay)
+                            if (last != null && NanoTime.millisSince(last) < _associateDelay)
                             {
                                 if (refererTarget._associated.putIfAbsent(target._path, target) == null)
                                 {

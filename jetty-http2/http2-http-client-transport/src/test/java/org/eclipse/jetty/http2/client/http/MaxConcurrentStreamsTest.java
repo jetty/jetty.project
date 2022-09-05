@@ -507,7 +507,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         long start = NanoTime.now();
         while (!clientEndPoint.getWriteFlusher().isPending())
         {
-            assertThat(NanoTime.secondsElapsedFrom(start), Matchers.lessThan(15L));
+            assertThat(NanoTime.secondsSince(start), Matchers.lessThan(15L));
             Thread.sleep(100);
         }
         // Wait for the selector to update the SelectionKey to OP_WRITE.

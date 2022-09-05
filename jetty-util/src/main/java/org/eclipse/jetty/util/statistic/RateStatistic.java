@@ -151,7 +151,7 @@ public class RateStatistic
             Long head = _samples.peekFirst();
             if (head == null)
                 return -1;
-            return units.convert(NanoTime.elapsedFrom(head), TimeUnit.NANOSECONDS);
+            return units.convert(NanoTime.since(head), TimeUnit.NANOSECONDS);
         }
     }
 

@@ -1753,7 +1753,7 @@ public class RequestTest
             assertThat("Response.status", response.getStatus(), is(400));
             assertThat("Response body content", response.getContent(), containsString(BadMessageException.class.getName()));
             assertThat("Response body content", response.getContent(), containsString(IllegalStateException.class.getName()));
-            assertTrue(NanoTime.millisElapsedFrom(start) < 5000);
+            assertTrue(NanoTime.millisSince(start) < 5000);
         }
     }
 
@@ -1791,7 +1791,7 @@ public class RequestTest
             assertThat("Response.status", response.getStatus(), is(400));
             assertThat("Response body content", response.getContent(), containsString(BadMessageException.class.getName()));
             assertThat("Response body content", response.getContent(), containsString(IllegalStateException.class.getName()));
-            assertTrue(NanoTime.millisElapsedFrom(start) < 5000);
+            assertTrue(NanoTime.millisSince(start) < 5000);
         }
     }
 

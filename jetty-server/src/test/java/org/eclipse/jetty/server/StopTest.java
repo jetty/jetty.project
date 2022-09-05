@@ -162,7 +162,7 @@ public class StopTest
                         {
                             try
                             {
-                                Thread.sleep(closeWait - NanoTime.millisElapsedFrom(start));
+                                Thread.sleep(closeWait - NanoTime.millisSince(start));
                             }
                             catch (Throwable e)
                             {
@@ -219,7 +219,7 @@ public class StopTest
         }
 
         // Check stop time was correct
-        assertThat(NanoTime.millisElapsedFrom(start), stopTimeMatcher);
+        assertThat(NanoTime.millisSince(start), stopTimeMatcher);
 
         // Connection closed
         while (true)
@@ -227,7 +227,7 @@ public class StopTest
             int r = client.getInputStream().read();
             if (r == -1)
                 break;
-            assertThat(NanoTime.millisElapsedFrom(start), lessThan(10L));
+            assertThat(NanoTime.millisSince(start), lessThan(10L));
         }
 
         // onClose Thread interrupted or completed
@@ -347,7 +347,7 @@ public class StopTest
         long start = NanoTime.now();
         while (!connector.isShutdown())
         {
-            assertThat(NanoTime.secondsElapsedFrom(start), lessThan(10L));
+            assertThat(NanoTime.secondsSince(start), lessThan(10L));
             Thread.sleep(10);
         }
 

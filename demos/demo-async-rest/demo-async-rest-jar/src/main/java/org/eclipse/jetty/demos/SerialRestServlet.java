@@ -73,7 +73,7 @@ public class SerialRestServlet extends AbstractRestServlet
         out.println(STYLE);
         out.println("</head><body><small>");
 
-        long total = NanoTime.elapsedFrom(start);
+        long total = NanoTime.since(start);
 
         out.print("<b>Blocking: " + sanitize(request.getParameter(ITEMS_PARAM)) + "</b><br/>");
         out.print("Total Time: " + ms(total) + "ms<br/>");

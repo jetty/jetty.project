@@ -57,7 +57,7 @@ public class SharedBlockingCallbackTest
             start = NanoTime.now();
             blocker.block();
         }
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(500L));
+        assertThat(NanoTime.millisSince(start), lessThan(500L));
         assertEquals(0, notComplete.get());
     }
 
@@ -91,8 +91,8 @@ public class SharedBlockingCallbackTest
             start = NanoTime.now();
             blocker.block();
         }
-        assertThat(NanoTime.millisElapsedFrom(start), greaterThan(10L));
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(1000L));
+        assertThat(NanoTime.millisSince(start), greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), lessThan(1000L));
         assertEquals(0, notComplete.get());
     }
 
@@ -115,7 +115,7 @@ public class SharedBlockingCallbackTest
             start = NanoTime.now();
             assertEquals(ex, e.getCause());
         }
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(100L));
+        assertThat(NanoTime.millisSince(start), lessThan(100L));
         assertEquals(0, notComplete.get());
     }
 
@@ -159,8 +159,8 @@ public class SharedBlockingCallbackTest
         {
             assertEquals(ex, e.getCause());
         }
-        assertThat(NanoTime.millisElapsedFrom(start), greaterThan(10L));
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(1000L));
+        assertThat(NanoTime.millisSince(start), greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), lessThan(1000L));
         assertEquals(0, notComplete.get());
     }
 
@@ -195,13 +195,13 @@ public class SharedBlockingCallbackTest
         long start = NanoTime.now();
         try (Blocker blocker = sbcb.acquire())
         {
-            assertThat(NanoTime.millisElapsedFrom(start), greaterThan(10L));
-            assertThat(NanoTime.millisElapsedFrom(start), lessThan(500L));
+            assertThat(NanoTime.millisSince(start), greaterThan(10L));
+            assertThat(NanoTime.millisSince(start), lessThan(500L));
 
             blocker.succeeded();
             blocker.block();
         }
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(600L));
+        assertThat(NanoTime.millisSince(start), lessThan(600L));
         assertEquals(0, notComplete.get());
     }
 

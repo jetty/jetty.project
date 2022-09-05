@@ -162,7 +162,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
         {
             return String.format("%s[validationLeft=%dms]",
                 connection,
-                timeout - NanoTime.millisElapsedFrom(creationNanoTime)
+                timeout - NanoTime.millisSince(creationNanoTime)
             );
         }
     }

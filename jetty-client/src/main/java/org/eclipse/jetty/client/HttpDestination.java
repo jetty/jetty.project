@@ -136,7 +136,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 this.activeNanoTime = NanoTime.now();
             }
-            else if (NanoTime.millisElapsedFrom(activeNanoTime) >= getHttpClient().getDestinationIdleTimeout())
+            else if (NanoTime.millisSince(activeNanoTime) >= getHttpClient().getDestinationIdleTimeout())
             {
                 this.stale = true;
                 remove = true;
@@ -548,7 +548,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             return -1;
         try (AutoLock l = staleLock.lock())
         {
-            return NanoTime.millisElapsedFrom(activeNanoTime);
+            return NanoTime.millisSince(activeNanoTime);
         }
     }
 

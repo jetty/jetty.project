@@ -1105,7 +1105,7 @@ public class StreamResetTest extends AbstractTest
         long start = NanoTime.now();
         while (!flusher.isPending())
         {
-            if (NanoTime.secondsElapsedFrom(start) > 15)
+            if (NanoTime.secondsSince(start) > 15)
                 throw new TimeoutException();
             Thread.sleep(100);
         }

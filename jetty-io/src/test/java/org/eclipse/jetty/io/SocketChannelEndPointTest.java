@@ -155,7 +155,7 @@ public class SocketChannelEndPointTest
                 client.setSoTimeout(500);
                 long start = NanoTime.now();
                 assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
-                assertThat(NanoTime.millisElapsedFrom(start), greaterThanOrEqualTo(400L));
+                assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(400L));
 
                 // write then shutdown
                 client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
@@ -209,7 +209,7 @@ public class SocketChannelEndPointTest
                 // wait for read timeout
                 long start = NanoTime.now();
                 assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
-                assertThat(NanoTime.millisElapsedFrom(start), greaterThanOrEqualTo(400L));
+                assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(400L));
 
                 // write then shutdown
                 client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
@@ -257,7 +257,7 @@ public class SocketChannelEndPointTest
 
             long start = NanoTime.now();
             assertThrows(SocketTimeoutException.class, clientInputStream::read);
-            assertThat(NanoTime.millisElapsedFrom(start), greaterThanOrEqualTo(3L * specifiedTimeout / 4));
+            assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(3L * specifiedTimeout / 4));
 
             // write remaining characters
             clientOutputStream.write("90ABCDEF".getBytes(StandardCharsets.UTF_8));

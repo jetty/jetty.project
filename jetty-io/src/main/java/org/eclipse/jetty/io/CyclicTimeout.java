@@ -193,7 +193,7 @@ public abstract class CyclicTimeout implements Destroyable
             return String.format("%s@%x:%dms,%s",
                 getClass().getSimpleName(),
                 hashCode(),
-                NanoTime.millisRemainingTo(_at),
+                NanoTime.millisUntil(_at),
                 _wakeup);
         }
     }
@@ -300,7 +300,7 @@ public abstract class CyclicTimeout implements Destroyable
             return String.format("%s@%x:%dms->%s",
                 getClass().getSimpleName(),
                 hashCode(),
-                _at == MAX_VALUE ? _at : NanoTime.millisRemainingTo(_at),
+                _at == MAX_VALUE ? _at : NanoTime.millisUntil(_at),
                 _next);
         }
     }

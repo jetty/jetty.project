@@ -116,7 +116,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             assertTrue(latch.await(iterations, TimeUnit.SECONDS));
             assertThat(successes, Matchers.greaterThan(0L));
             task.cancel();
-            long elapsed = NanoTime.millisElapsedFrom(begin);
+            long elapsed = NanoTime.millisSince(begin);
             logger.info("{} requests in {} ms, {}/{} success/failure, {} req/s",
                 iterations, elapsed,
                 successes, iterations - successes,

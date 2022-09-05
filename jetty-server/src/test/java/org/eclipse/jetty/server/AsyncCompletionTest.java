@@ -230,7 +230,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                 long start = NanoTime.now();
                 while (delay != null && _threadPool.getBusyThreads() > base)
                 {
-                    if (NanoTime.secondsElapsedFrom(start) > WAIT)
+                    if (NanoTime.secondsSince(start) > WAIT)
                         throw new TimeoutException();
                     Thread.sleep(POLL);
                 }
@@ -250,7 +250,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             long start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (NanoTime.secondsElapsedFrom(start) > WAIT)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion
@@ -491,7 +491,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             long start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (NanoTime.secondsElapsedFrom(start) > WAIT)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion
@@ -652,7 +652,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             long start = NanoTime.now();
             while (_threadPool.getBusyThreads() != base)
             {
-                if (NanoTime.secondsElapsedFrom(start) > WAIT)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
                 Thread.sleep(POLL);
             }
@@ -661,7 +661,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (NanoTime.secondsElapsedFrom(start) > WAIT)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion

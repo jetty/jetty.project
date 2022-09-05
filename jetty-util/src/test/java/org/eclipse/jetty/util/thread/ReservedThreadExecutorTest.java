@@ -236,7 +236,7 @@ public class ReservedThreadExecutorTest
         long started = NanoTime.now();
         while (_reservedExecutor.getAvailable() < size)
         {
-            if (NanoTime.secondsElapsedFrom(started) > 10)
+            if (NanoTime.secondsSince(started) > 10)
                 fail("Took too long");
             Thread.sleep(10);
         }

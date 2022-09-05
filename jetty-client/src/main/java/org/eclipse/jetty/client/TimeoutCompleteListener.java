@@ -68,7 +68,7 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
     {
         if (requestTimeout.compareAndSet(null, request))
         {
-            long delay = Math.max(0, NanoTime.remainingTo(timeoutAt));
+            long delay = Math.max(0, NanoTime.until(timeoutAt));
             if (LOG.isDebugEnabled())
                 LOG.debug("Scheduling timeout in {} ms for {} on {}", TimeUnit.NANOSECONDS.toMillis(delay), request, this);
             schedule(delay, TimeUnit.NANOSECONDS);

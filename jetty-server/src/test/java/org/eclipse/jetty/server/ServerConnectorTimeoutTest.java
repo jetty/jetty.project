@@ -141,7 +141,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             InputStream inputStream = socket.getInputStream();
             long start = NanoTime.now();
             String response = IO.toString(inputStream);
-            assertThat(NanoTime.millisElapsedFrom(start), greaterThanOrEqualTo(MAX_IDLE_TIME - 100L));
+            assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(MAX_IDLE_TIME - 100L));
             return response;
         }
     }

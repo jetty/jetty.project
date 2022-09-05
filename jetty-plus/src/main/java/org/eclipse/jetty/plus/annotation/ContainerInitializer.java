@@ -132,7 +132,7 @@ public class ContainerInitializer
                 {
                     long start = NanoTime.now();
                     _target.onStartup(classes, context.getServletContext());
-                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), NanoTime.millisElapsedFrom(start));
+                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), NanoTime.millisSince(start));
                 }
                 else
                     _target.onStartup(classes, context.getServletContext());

@@ -495,7 +495,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
             QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
             if (qtp != null)
-                qtp.setStopTimeout(Math.max(1000L, NanoTime.millisRemainingTo(end)));
+                qtp.setStopTimeout(Math.max(1000L, NanoTime.millisUntil(end)));
         }
 
         // Now stop the connectors (this will close existing connections)

@@ -56,7 +56,7 @@ public abstract class IdleTimeout
      */
     public long getIdleFor()
     {
-        return NanoTime.millisElapsedFrom(_idleNanoTime);
+        return NanoTime.millisSince(_idleNanoTime);
     }
 
     /**
@@ -149,7 +149,7 @@ public abstract class IdleTimeout
         if (isOpen())
         {
             long idleNanoTime = _idleNanoTime;
-            long idleElapsed = NanoTime.millisElapsedFrom(idleNanoTime);
+            long idleElapsed = NanoTime.millisSince(idleNanoTime);
             long idleTimeout = getIdleTimeout();
             long idleLeft = idleTimeout - idleElapsed;
 

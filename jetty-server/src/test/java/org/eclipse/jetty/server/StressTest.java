@@ -417,12 +417,12 @@ public class StressTest
                 Socket socket = new Socket("localhost", _connector.getLocalPort());
                 socket.setSoTimeout(10000);
 
-                _latencies[0].add(NanoTime.millisElapsedFrom(start));
+                _latencies[0].add(NanoTime.millisSince(start));
 
                 socket.getOutputStream().write(request.getBytes());
                 socket.getOutputStream().flush();
 
-                _latencies[1].add(NanoTime.millisElapsedFrom(start));
+                _latencies[1].add(NanoTime.millisSince(start));
 
                 String response = IO.toString(socket.getInputStream());
                 socket.close();
@@ -470,7 +470,7 @@ public class StressTest
             response.getOutputStream().print("DATA " + request.getPathInfo() + "\n\n");
             baseRequest.setHandled(true);
 
-            _latencies[4].add(NanoTime.millisElapsedFrom(start));
+            _latencies[4].add(NanoTime.millisSince(start));
         }
     }
 }

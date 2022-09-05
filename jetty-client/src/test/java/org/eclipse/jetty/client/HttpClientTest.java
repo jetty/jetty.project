@@ -130,7 +130,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         long start = NanoTime.now();
         HttpConnectionOverHTTP connection = null;
-        while (connection == null && NanoTime.secondsElapsedFrom(start) < 5)
+        while (connection == null && NanoTime.secondsSince(start) < 5)
         {
             connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
             TimeUnit.MILLISECONDS.sleep(10);

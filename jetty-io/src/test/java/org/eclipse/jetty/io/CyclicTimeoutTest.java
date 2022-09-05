@@ -137,7 +137,7 @@ public class CyclicTimeoutTest
     {
         assertTrue(_timeout.schedule(500, TimeUnit.MILLISECONDS));
         long start = NanoTime.now();
-        while (NanoTime.secondsElapsedFrom(start) < 2)
+        while (NanoTime.secondsSince(start) < 2)
             _timeout.schedule(500, TimeUnit.MILLISECONDS);
         _timeout.cancel();
         assertFalse(_expired);

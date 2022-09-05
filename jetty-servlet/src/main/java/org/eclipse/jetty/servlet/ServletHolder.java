@@ -1238,7 +1238,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             {
                 long start = _unavailableStart.get();
 
-                if (start == 0 || NanoTime.secondsElapsedFrom(start) < _unavailableException.getUnavailableSeconds())
+                if (start == 0 || NanoTime.secondsSince(start) < _unavailableException.getUnavailableSeconds())
                 {
                     ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 }

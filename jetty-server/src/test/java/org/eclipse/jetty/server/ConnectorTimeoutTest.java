@@ -114,7 +114,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             assertEquals(-1, is.read());
         });
 
-        long elapsedMs = NanoTime.millisElapsedFrom(start);
+        long elapsedMs = NanoTime.millisSince(start);
         assertTrue(elapsedMs > minimumTestRuntime);
         assertTrue(elapsedMs < maximumTestRuntime);
     }
@@ -152,7 +152,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             assertEquals(-1, is.read());
         });
 
-        long elapsedMs = NanoTime.millisElapsedFrom(start);
+        long elapsedMs = NanoTime.millisSince(start);
         assertTrue(elapsedMs > minimumTestRuntime);
         assertTrue(elapsedMs < maximumTestRuntime);
     }
@@ -328,7 +328,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             e.printStackTrace();
         }
-        long duration = NanoTime.millisElapsedFrom(start);
+        long duration = NanoTime.millisSince(start);
         assertThat(duration, greaterThan(500L));
 
         assertTimeoutPreemptively(ofSeconds(10), () ->
@@ -386,7 +386,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             os.flush();
         }
 
-        long duration = NanoTime.millisElapsedFrom(start);
+        long duration = NanoTime.millisSince(start);
         assertThat(duration, greaterThan(500L));
 
         // read the response
@@ -482,7 +482,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                     break;
             }
         }
-        assertThat(NanoTime.millisElapsedFrom(start), lessThan(20L * 128L));
+        assertThat(NanoTime.millisSince(start), lessThan(20L * 128L));
     }
 
     @Test
@@ -513,7 +513,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 LOG.warn(e.getMessage());
             }
         });
-        assertTrue(NanoTime.millisElapsedFrom(start) < maximumTestRuntime);
+        assertTrue(NanoTime.millisSince(start) < maximumTestRuntime);
     }
 
     @Test
@@ -544,7 +544,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 LOG.warn("Unable to read stream", e);
             }
         });
-        assertTrue(NanoTime.millisElapsedFrom(start) < maximumTestRuntime);
+        assertTrue(NanoTime.millisSince(start) < maximumTestRuntime);
     }
 
     @Test
@@ -581,7 +581,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 e.printStackTrace();
             }
         });
-        long duration = NanoTime.millisElapsedFrom(start);
+        long duration = NanoTime.millisSince(start);
         assertThat(duration, greaterThanOrEqualTo(MAX_IDLE_TIME));
         assertThat(duration, lessThan(maximumTestRuntime));
     }
@@ -621,7 +621,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 e.printStackTrace();
             }
         });
-        long duration = NanoTime.millisElapsedFrom(start);
+        long duration = NanoTime.millisSince(start);
         assertThat(duration + 100, greaterThanOrEqualTo(MAX_IDLE_TIME));
         assertThat(duration - 100, lessThan(maximumTestRuntime));
     }

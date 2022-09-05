@@ -296,7 +296,7 @@ public class ByteArrayEndPointTest
         {
             assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
-        assertThat(NanoTime.millisElapsedFrom(start), greaterThan(halfIdleTimeout));
+        assertThat(NanoTime.millisSince(start), greaterThan(halfIdleTimeout));
         assertThat("Endpoint open", endp.isOpen(), is(true));
     }
 }

@@ -1001,7 +1001,7 @@ public class HttpConnectionTest
 
         long start = NanoTime.now();
         String response = connector.getResponse(requests, 2000, TimeUnit.MILLISECONDS);
-        assertThat(NanoTime.millisElapsedFrom(start), lessThanOrEqualTo(2000L));
+        assertThat(NanoTime.millisSince(start), lessThanOrEqualTo(2000L));
 
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "pathInfo=/R1");

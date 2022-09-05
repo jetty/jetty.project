@@ -352,7 +352,7 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
     private Connection await(Supplier<Connection> supplier, long time, TimeUnit unit) throws InterruptedException
     {
         long start = NanoTime.now();
-        while (NanoTime.elapsedFrom(start) < unit.toNanos(time))
+        while (NanoTime.since(start) < unit.toNanos(time))
         {
             Connection connection = supplier.get();
             if (connection != null)

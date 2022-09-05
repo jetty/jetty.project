@@ -120,7 +120,7 @@ public class SessionFailureTest extends AbstractTest
         long start = NanoTime.now();
         while (((HTTP2Session)session).getEndPoint().isOpen())
         {
-            assertThat(NanoTime.secondsElapsedFrom(start), lessThanOrEqualTo(5L));
+            assertThat(NanoTime.secondsSince(start), lessThanOrEqualTo(5L));
 
             Thread.sleep(10);
         }

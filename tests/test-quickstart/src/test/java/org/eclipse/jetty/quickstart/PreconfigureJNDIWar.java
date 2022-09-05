@@ -35,7 +35,7 @@ public class PreconfigureJNDIWar
 
         PreconfigureQuickStartWar.main("target/test-jndi.war", target, "src/test/resources/test-jndi.xml");
 
-        LOG.info("Preconfigured in {}ms", NanoTime.millisElapsedFrom(__start));
+        LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 
         // IO.copy(new FileInputStream("target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
     }

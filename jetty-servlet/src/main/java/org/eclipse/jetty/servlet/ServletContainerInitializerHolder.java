@@ -142,7 +142,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             {
                 long start = NanoTime.now();
                 initializer.onStartup(classes, ctx);
-                LOG.debug("ServletContainerInitializer {} called in {}ms", getClassName(), NanoTime.millisElapsedFrom(start));
+                LOG.debug("ServletContainerInitializer {} called in {}ms", getClassName(), NanoTime.millisSince(start));
             }
             else
                 initializer.onStartup(classes, ctx);

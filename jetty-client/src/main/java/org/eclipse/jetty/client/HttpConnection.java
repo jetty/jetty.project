@@ -267,7 +267,7 @@ public abstract class HttpConnection implements IConnection, Attachable
         {
             if (idleTimeoutGuard == 0)
             {
-                long elapsed = NanoTime.millisElapsedFrom(idleTimeoutNanoTime);
+                long elapsed = NanoTime.millisSince(idleTimeoutNanoTime);
                 boolean idle = elapsed > idleTimeout / 2;
                 if (idle)
                     idleTimeoutGuard = -1;

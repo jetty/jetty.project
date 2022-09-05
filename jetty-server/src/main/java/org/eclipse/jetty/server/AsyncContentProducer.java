@@ -146,7 +146,7 @@ class AsyncContentProducer implements ContentProducer
             LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteNanoTime, this);
         if (minRequestDataRate > 0 && _firstByteNanoTime != Long.MIN_VALUE)
         {
-            long period = NanoTime.elapsedFrom(_firstByteNanoTime);
+            long period = NanoTime.since(_firstByteNanoTime);
             if (period > 0)
             {
                 long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);

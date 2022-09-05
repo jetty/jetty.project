@@ -107,7 +107,7 @@ public class DataRateLimitedServletTest
 
         long start = NanoTime.now();
         String response = connector.getResponse("GET /context/stream/content.txt HTTP/1.0\r\n\r\n");
-        long duration = NanoTime.millisElapsedFrom(start);
+        long duration = NanoTime.millisSince(start);
 
         assertThat("Response", response, containsString("200 OK"));
         assertThat("Response Length", response.length(), greaterThan(1024 * 1024));

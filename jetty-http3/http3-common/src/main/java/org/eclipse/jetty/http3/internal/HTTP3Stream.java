@@ -309,7 +309,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             hashCode(),
             getId(),
             hasDemand(),
-            NanoTime.millisElapsedFrom(expireNanoTime),
+            NanoTime.millisSince(expireNanoTime),
             getSession()
         );
     }

@@ -33,7 +33,7 @@ public class RateCounter
 
     public long getRate()
     {
-        long elapsed = NanoTime.millisElapsedFrom(_nanoTime.get());
+        long elapsed = NanoTime.millisSince(_nanoTime.get());
         return elapsed == 0 ? 0 : _total.sum() * 1000 / elapsed;
     }
 

@@ -50,7 +50,7 @@ public class PreconfigureSpecWar
             target.toString(),
             MavenTestingUtils.getTestResourceFile("test-spec.xml").toString());
 
-        LOG.info("Preconfigured in {}ms", NanoTime.millisElapsedFrom(__start));
+        LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 
         Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
         try (InputStream in = Files.newInputStream(quickStartXml))

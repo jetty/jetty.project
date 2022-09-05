@@ -932,7 +932,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
             localReset,
             remoteReset,
             closeState,
-            NanoTime.millisElapsedFrom(creationNanoTime),
+            NanoTime.millisSince(creationNanoTime),
             attachment);
     }
 

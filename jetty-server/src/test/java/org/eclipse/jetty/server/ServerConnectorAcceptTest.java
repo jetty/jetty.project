@@ -110,7 +110,7 @@ public class ServerConnectorAcceptTest
                         acceptors,
                         threads,
                         iterations,
-                        NanoTime.millisElapsedFrom(start));
+                        NanoTime.millisSince(start));
                 }
                 finally
                 {

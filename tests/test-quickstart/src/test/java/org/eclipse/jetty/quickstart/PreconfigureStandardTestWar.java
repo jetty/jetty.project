@@ -47,7 +47,7 @@ public class PreconfigureStandardTestWar
 
         PreconfigureQuickStartWar.main("target/test-standard.war", target, "src/test/resources/test.xml");
 
-        LOG.info("Preconfigured in {}ms", NanoTime.millisElapsedFrom(__start));
+        LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 
         // IO.copy(new FileInputStream("target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
     }

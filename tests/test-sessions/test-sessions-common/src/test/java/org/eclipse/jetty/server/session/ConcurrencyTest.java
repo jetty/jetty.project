@@ -91,7 +91,7 @@ public class ConcurrencyTest
 
                 // Wait for all workers to be done
                 barrier.await();
-                System.err.println("Elapsed ms:" + NanoTime.millisElapsedFrom(start));
+                System.err.println("Elapsed ms:" + NanoTime.millisSince(start));
                 executor.shutdownNow();
 
                 // Perform one request to get the result - the session

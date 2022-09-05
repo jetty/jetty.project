@@ -1378,7 +1378,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             return;
         long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
         _flushed += bytes;
-        long elapsed = NanoTime.elapsedFrom(_firstByteNanoTime);
+        long elapsed = NanoTime.since(_firstByteNanoTime);
         long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);
         if (LOG.isDebugEnabled())
             LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);

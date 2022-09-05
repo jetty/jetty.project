@@ -254,10 +254,10 @@ public class BufferUtilTest
 //                LOG.info("run elapsed={}ms", NanoTime.elapsedFrom(startRun) / 1000);
                 assertThat("Bytes in out equal bytes in buffer", Arrays.equals(bytes, out.toByteArray()), is(true));
             }
-            long elapsed = NanoTime.elapsedFrom(start);
+            long elapsed = NanoTime.since(start);
             LOG.warn("elapsed={}ms average={}ms", elapsed / 1000, elapsed / iterations / 1000);
         }
-        LOG.warn("overall average: {}ms", NanoTime.elapsedFrom(startTest) / testRuns / iterations / 1000);
+        LOG.warn("overall average: {}ms", NanoTime.since(startTest) / testRuns / iterations / 1000);
     }
 
     @Test
