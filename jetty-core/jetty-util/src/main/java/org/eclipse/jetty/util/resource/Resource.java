@@ -253,16 +253,6 @@ public abstract class Resource
     }
 
     /**
-     * Checks if the resource supports being loaded as a memory-mapped ByteBuffer.
-     *
-     * @return true if the resource supports memory-mapped ByteBuffer, false otherwise.
-     */
-    public boolean isMemoryMappable()
-    {
-        return false;
-    }
-
-    /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
      * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned

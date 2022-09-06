@@ -1071,14 +1071,16 @@ public class BufferUtil
 
     public static ByteBuffer toMappedBuffer(Resource resource) throws IOException
     {
-        if (!resource.isMemoryMappable())
+        Path path = resource.getPath();
+        if (path == null)
             return null;
         return toMappedBuffer(resource.getPath());
     }
 
     public static ByteBuffer toMappedBuffer(Resource resource, long pos, long len) throws IOException
     {
-        if (!resource.isMemoryMappable())
+        Path path = resource.getPath();
+        if (path == null)
             return null;
         return toMappedBuffer(resource.getPath(), pos, len);
     }
