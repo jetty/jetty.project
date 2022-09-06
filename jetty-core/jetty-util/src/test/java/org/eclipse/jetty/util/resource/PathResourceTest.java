@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
@@ -147,14 +146,10 @@ public class PathResourceTest
     public void testIterable()
     {
         Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-        PathResource resource = (PathResource)ResourceFactory.root().newResource(rpath);
-        Iterator<Resource> iter = resource.iterator();
+        Resource resource = ResourceFactory.root().newResource(rpath);
         int count = 0;
-        while (iter.hasNext())
-        {
-            iter.next();
+        for (Resource r: resource)
             count++;
-        }
         assertEquals(1, count);
     }
 }
