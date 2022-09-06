@@ -67,7 +67,7 @@ public class DateGenerator
      */
     public static String formatDate(Instant instant)
     {
-        return __dateGenerator.get().doFormatDate(instant.toEpochMilli());
+        return formatDate(instant.toEpochMilli());
     }
 
     /**
