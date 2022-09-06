@@ -14,9 +14,9 @@
 package org.eclipse.jetty.server;
 
 import java.text.DateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 import org.eclipse.jetty.util.Fields;
@@ -223,9 +223,8 @@ public class ResourceListing
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
-            long lastModified = item.lastModified();
-            if (lastModified > 0)
-                buf.append(dfmt.format(new Date(item.lastModified())));
+            Instant lastModified = item.lastModified();
+            buf.append(dfmt.format(lastModified));
             buf.append("&nbsp;</td>");
 
             // Size

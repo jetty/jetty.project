@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.IO;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.util.IO;
 public class MemoryResource extends Resource
 {
     private final URI _uri;
-    private final long _created = System.currentTimeMillis();
+    private final Instant _created = Instant.now();
     private final byte[] _bytes;
 
     MemoryResource(URL url)
@@ -76,7 +77,7 @@ public class MemoryResource extends Resource
     }
 
     @Override
-    public long lastModified()
+    public Instant lastModified()
     {
         return _created;
     }

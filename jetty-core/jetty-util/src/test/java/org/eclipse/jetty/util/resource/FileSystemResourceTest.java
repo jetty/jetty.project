@@ -30,6 +30,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,7 +56,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -352,21 +352,21 @@ public class FileSystemResourceTest
         Path file = workDir.getPathFile("foo");
         Files.createFile(file);
 
-        long expected = Files.getLastModifiedTime(file).toMillis();
+        Instant expected = Files.getLastModifiedTime(file).toInstant();
 
         Resource base = ResourceFactory.root().newResource(dir);
         Resource res = base.resolve("foo");
-        assertThat("foo.lastModified", res.lastModified() / 1000 * 1000, lessThanOrEqualTo(expected));
+        assertThat("foo.lastModified", res.lastModified(), is(expected));
     }
 
     @Test
-    public void testLastModifiedNotExists() throws Exception
+    public void testLastModifiedNotExists()
     {
         Path dir = workDir.getEmptyPathDir();
 
         Resource base = ResourceFactory.root().newResource(dir);
         Resource res = base.resolve("foo");
-        assertThat("foo.lastModified", res.lastModified(), is(0L));
+        assertThat("foo.lastModified", res.lastModified(), nullValue());
     }
 
     @Test

@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -227,7 +228,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.newResource(compressedPathInContext);
-                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                        if (compressedResource.exists() && compressedResource.lastModified().isAfter(resource.lastModified()) &&
                             compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
@@ -268,12 +269,12 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
-                if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified() >= resource.lastModified())
+                if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified().isAfter(resource.lastModified()))
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
                 Resource compressedResource = _factory.newResource(compressedPathInContext);
-                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                if (compressedResource.exists() && compressedResource.lastModified().isAfter(resource.lastModified()) &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
@@ -381,7 +382,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         private final MimeTypes.Type _mimeType;
         private final HttpField _contentLength;
         private final HttpField _lastModified;
-        private final long _lastModifiedValue;
+        private final Instant _lastModifiedValue;
         private final HttpField _etag;
         private final Map<CompressedContentFormat, CachedPrecompressedHttpContent> _precompressed;
         private final AtomicReference<ByteBuffer> _buffer = new AtomicReference<>();
@@ -398,8 +399,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _mimeType = _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
 
             boolean exists = resource.exists();
-            _lastModifiedValue = exists ? resource.lastModified() : -1L;
-            _lastModified = _lastModifiedValue == -1 ? null
+            _lastModifiedValue = exists ? resource.lastModified() : null;
+            _lastModified = _lastModifiedValue == null ? null
                 : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
 
             _contentLengthValue = exists ? resource.length() : 0;
@@ -615,7 +616,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
         public boolean isValid()
         {
-            return _precompressedContent.isValid() && _content.isValid() && _content.getResource().lastModified() <= _precompressedContent.getResource().lastModified();
+            return _precompressedContent.isValid() && _content.isValid() && _content.getResource().lastModified().isBefore(_precompressedContent.getResource().lastModified());
         }
 
         @Override

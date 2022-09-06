@@ -379,7 +379,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     {
                         // Only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
                         // Use the original War Resource to obtain lastModified to avoid filesystem locks on MS Windows.
-                        if (originalWarResource.lastModified() > Files.getLastModifiedTime(extractedWebAppDir).toMillis() || extractionLock.exists())
+                        if (originalWarResource.lastModified().isAfter(Files.getLastModifiedTime(extractedWebAppDir).toInstant()) || extractionLock.exists())
                         {
                             extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);

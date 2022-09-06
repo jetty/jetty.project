@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -238,17 +239,18 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public long lastModified()
+    public Instant lastModified()
     {
+        Instant instant = null;
         for (Resource r : _resources)
         {
-            long lm = r.lastModified();
-            if (lm != -1)
+            Instant lm = r.lastModified();
+            if (instant == null || lm.isAfter(instant))
             {
-                return lm;
+                instant = lm;
             }
         }
-        return -1;
+        return instant;
     }
 
     @Override

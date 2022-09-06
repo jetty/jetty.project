@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,9 +104,9 @@ public class OrderingTest
         }
 
         @Override
-        public long lastModified()
+        public Instant lastModified()
         {
-            return 0;
+            return null;
         }
 
         @Override

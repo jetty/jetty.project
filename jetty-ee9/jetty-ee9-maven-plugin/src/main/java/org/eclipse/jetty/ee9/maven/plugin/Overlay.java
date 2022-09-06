@@ -15,6 +15,8 @@ package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.time.Instant;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -78,12 +80,13 @@ public class Overlay
      * @param dir the directory into which to unpack the overlay
      * @throws IOException 
      */
-    public void unpackTo(File dir) throws IOException
+    public void unpackTo(File dir) throws IOException // TODO: change to Path
     {
         if (dir == null)
             throw new IllegalStateException("No overly unpack directory");
         //only unpack if the overlay is newer
-        if (!dir.exists() || (getResource().lastModified() > dir.lastModified()))
+        Instant dirLastModified = Files.getLastModifiedTime(dir.toPath()).toInstant();
+        if (!dir.exists() || (getResource().lastModified().isAfter(dirLastModified)))
             getResource().copyTo(dir.toPath());
     }
 }
