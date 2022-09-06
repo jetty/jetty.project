@@ -48,6 +48,7 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -65,7 +66,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
-    private final long timeStamp = System.nanoTime();
+    private final long creationNanoTime = NanoTime.now();
     private final HTTP2Session session;
     private final int streamId;
     private final MetaData.Request request;
@@ -268,7 +269,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     {
         long idleTimeout = getIdleTimeout();
         if (idleTimeout > 0)
-            expireNanoTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
     }
 
     @Override
@@ -852,7 +853,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             localReset,
             remoteReset,
             closeState,
-            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStamp),
+            NanoTime.millisSince(creationNanoTime),
             attachment);
     }
 

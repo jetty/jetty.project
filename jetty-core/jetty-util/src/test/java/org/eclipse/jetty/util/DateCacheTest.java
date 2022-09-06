@@ -25,12 +25,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * Util meta Tests.
- */
 public class DateCacheTest
 {
-
     @Test
     @SuppressWarnings("ReferenceEquality")
     public void testDateCache() throws Exception
@@ -41,18 +37,17 @@ public class DateCacheTest
 
         Thread.sleep(2000);
 
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        long end = now + 3000;
-        String f = dc.formatNow(now);
-        String last = f;
+        Instant now = Instant.now();
+        Instant end = now.plusSeconds(3);
+        String f = dc.formatNow(now.toEpochMilli());
 
         int hits = 0;
         int misses = 0;
 
-        while (now < end)
+        while (now.isBefore(end))
         {
-            last = f;
-            f = dc.formatNow(now);
+            String last = f;
+            f = dc.formatNow(now.toEpochMilli());
             // System.err.printf("%s %s%n",f,last==f);
             if (last == f)
                 hits++;
@@ -60,7 +55,7 @@ public class DateCacheTest
                 misses++;
 
             TimeUnit.MILLISECONDS.sleep(100);
-            now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            now = Instant.now();
         }
         assertThat(hits, Matchers.greaterThan(misses));
     }

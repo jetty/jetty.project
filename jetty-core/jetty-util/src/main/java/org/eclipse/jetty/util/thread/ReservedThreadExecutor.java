@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.AtomicBiInteger;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -74,7 +75,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private final Set<ReservedThread> _threads = ConcurrentHashMap.newKeySet();
     private final SynchronousQueue<Runnable> _queue = new SynchronousQueue<>(false);
     private final AtomicBiInteger _count = new AtomicBiInteger(); // hi=pending; lo=size;
-    private final AtomicLong _lastEmptyTime = new AtomicLong(System.nanoTime());
+    private final AtomicLong _lastEmptyNanoTime = new AtomicLong(NanoTime.now());
     private ThreadPoolBudget.Lease _lease;
     private long _idleTimeNanos = DEFAULT_IDLE_TIMEOUT;
 
@@ -247,7 +248,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             if (size < 0 || pending + size >= _capacity)
                 return;
             if (size == 0)
-                _lastEmptyTime.set(System.nanoTime());
+                _lastEmptyNanoTime.set(NanoTime.now());
             if (!_count.compareAndSet(count, pending + 1, size))
                 continue;
 
@@ -371,9 +372,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     }
                     else
                     {
-                        long now = System.nanoTime();
-                        long lastEmpty = _lastEmptyTime.get();
-                        if (size > 0 && _idleTimeNanos < (now - lastEmpty) && _lastEmptyTime.compareAndSet(lastEmpty, now))
+                        long now = NanoTime.now();
+                        long lastEmpty = _lastEmptyNanoTime.get();
+                        if (size > 0 && _idleTimeNanos < NanoTime.elapsed(lastEmpty, now) && _lastEmptyNanoTime.compareAndSet(lastEmpty, now))
                         {
                             // it has been too long since we hit zero reserved threads, so are "busy" idle
                             next = State.IDLE;

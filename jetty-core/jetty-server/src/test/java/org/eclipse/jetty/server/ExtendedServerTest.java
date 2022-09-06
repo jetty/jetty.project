@@ -18,7 +18,6 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +77,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         @Override
         public Runnable onSelected()
         {
-            _lastSelected = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            _lastSelected = NanoTime.now();
             return super.onSelected();
         }
 
@@ -119,7 +119,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         {
             OutputStream os = client.getOutputStream();
 
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long start = NanoTime.now();
             os.write("GET / HTTP/1.0\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
             Thread.sleep(200);
@@ -127,7 +127,7 @@ public class ExtendedServerTest extends HttpServerTestBase
 
             // Read the response.
             String response = readResponse(client);
-            long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long end = NanoTime.now();
 
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("DispatchedAt="));
@@ -136,8 +136,8 @@ public class ExtendedServerTest extends HttpServerTestBase
             s = s.substring(0, s.indexOf('\n'));
             long dispatched = Long.parseLong(s);
 
-            assertThat(dispatched, Matchers.greaterThanOrEqualTo(start));
-            assertThat(dispatched, Matchers.lessThanOrEqualTo(end));
+            assertThat(NanoTime.elapsed(start, dispatched), Matchers.greaterThanOrEqualTo(0L));
+            assertThat(NanoTime.elapsed(dispatched, end), Matchers.greaterThanOrEqualTo(0L));
         }
     }
 

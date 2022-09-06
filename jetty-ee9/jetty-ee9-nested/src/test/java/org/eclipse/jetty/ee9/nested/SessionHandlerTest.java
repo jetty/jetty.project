@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import jakarta.servlet.SessionCookieConfig;
@@ -169,7 +168,7 @@ public class SessionHandlerTest
         mgr.setSessionCache(cache);
         mgr.setSessionIdManager(idMgr);
 
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long now = System.currentTimeMillis();
 
         Session session = new Session(mgr.getSessionManager(), new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
         session.setExtendedId("123.node1");

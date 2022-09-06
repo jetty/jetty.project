@@ -68,6 +68,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -1156,7 +1157,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
-        private final long _nanoTimestamp = System.nanoTime();
+        private final long _nanoTime = NanoTime.now();
         private final long _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
@@ -1385,7 +1386,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public long getNanoTimeStamp()
         {
-            return _nanoTimestamp;
+            return _nanoTime;
         }
 
         @Override

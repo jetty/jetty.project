@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
@@ -495,7 +496,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
         if (getStopTimeout() > 0)
         {
-            long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
+            long end = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
             try
             {
                 Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
@@ -506,7 +507,7 @@ public class Server extends Handler.Wrapper implements Attributes
             }
             QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
             if (qtp != null)
-                qtp.setStopTimeout(Math.max(1000L, TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime())));
+                qtp.setStopTimeout(Math.max(1000L, NanoTime.millisUntil(end)));
         }
 
         // Now stop the connectors (this will close existing connections)
@@ -747,7 +748,7 @@ public class Server extends Handler.Wrapper implements Attributes
         {
             runnable.run();
         }
-        
+
         @Override
         public void run(Runnable runnable, Request request)
         {

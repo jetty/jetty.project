@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -208,10 +209,10 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             Bucket bucket = buckets[i];
             if (bucket.isEmpty())
                 continue;
-            long lastUpdate = bucket.getLastUpdate();
-            if (lastUpdate < oldest)
+            long lastUpdateNanoTime = bucket.getLastUpdate();
+            if (oldest == Long.MAX_VALUE || NanoTime.isBefore(lastUpdateNanoTime, oldest))
             {
-                oldest = lastUpdate;
+                oldest = lastUpdateNanoTime;
                 index = i;
             }
         }

@@ -120,14 +120,14 @@ public class HTTPServerDocs
             @Override
             public void onRequestBegin(Request request)
             {
-                times.put(request, System.nanoTime());
+                times.put(request, NanoTime.now());
             }
 
             @Override
             public void onComplete(Request request)
             {
                 long begin = times.remove(request);
-                long elapsed = System.nanoTime() - begin;
+                long elapsed = NanoTime.since(begin);
                 System.getLogger("timing").log(INFO, "Request {0} took {1} ns", request, elapsed);
             }
         }

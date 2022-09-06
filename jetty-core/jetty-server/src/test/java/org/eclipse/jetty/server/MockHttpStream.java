@@ -29,12 +29,13 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 
 public class MockHttpStream implements HttpStream
 {
     private static final Throwable SUCCEEDED = new Throwable();
     private static final Content.Chunk DEMAND = Content.Chunk.from(BufferUtil.EMPTY_BUFFER, false);
-    private final long nano = System.nanoTime();
+    private final long _nanoTime = NanoTime.now();
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);
@@ -128,7 +129,7 @@ public class MockHttpStream implements HttpStream
     @Override
     public long getNanoTimeStamp()
     {
-        return nano;
+        return _nanoTime;
     }
 
     @Override

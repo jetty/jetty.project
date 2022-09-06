@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -100,7 +101,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             }, iterations * factor, TimeUnit.MILLISECONDS);
 
             long successes = 0;
-            long begin = System.nanoTime();
+            long begin = NanoTime.now();
             for (int i = 0; i < iterations; ++i)
             {
                 boolean success = test(session, latch);
@@ -109,10 +110,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             }
 
             assertTrue(latch.await(iterations, TimeUnit.SECONDS));
-            long end = System.nanoTime();
             assertThat(successes, Matchers.greaterThan(0L));
             task.cancel();
-            long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
+            long elapsed = NanoTime.millisSince(begin);
             logger.info("{} requests in {} ms, {}/{} success/failure, {} req/s",
                 iterations, elapsed,
                 successes, iterations - successes,

@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public class HttpStreamOverFCGI implements HttpStream
         _generator = generator;
         _httpChannel = httpChannel;
         _id = id;
-        _nanoTime = System.nanoTime();
+        _nanoTime = NanoTime.now();
     }
 
     public HttpChannel getHttpChannel()

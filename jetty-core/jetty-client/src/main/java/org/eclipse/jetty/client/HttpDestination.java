@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -66,7 +66,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     private final AutoLock staleLock = new AutoLock();
     private ConnectionPool connectionPool;
     private boolean stale;
-    private long activeNanos;
+    private long activeNanoTime;
 
     public HttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
     {
@@ -116,7 +116,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         {
             boolean stale = this.stale;
             if (!stale)
-                this.activeNanos = System.nanoTime();
+                this.activeNanoTime = NanoTime.now();
             if (LOG.isDebugEnabled())
                 LOG.debug("Stale check done with result {} on {}", stale, this);
             return stale;
@@ -134,9 +134,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             boolean stale = exchanges.isEmpty() && connectionPool.isEmpty();
             if (!stale)
             {
-                this.activeNanos = System.nanoTime();
+                this.activeNanoTime = NanoTime.now();
             }
-            else if (isStaleDelayExpired())
+            else if (NanoTime.millisSince(activeNanoTime) >= getHttpClient().getDestinationIdleTimeout())
             {
                 this.stale = true;
                 remove = true;
@@ -150,13 +150,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         if (LOG.isDebugEnabled())
             LOG.debug("Sweep check done with result {} on {}", remove, this);
         return remove;
-    }
-
-    private boolean isStaleDelayExpired()
-    {
-        assert staleLock.isHeldByCurrentThread();
-        long destinationIdleTimeout = TimeUnit.MILLISECONDS.toNanos(getHttpClient().getDestinationIdleTimeout());
-        return System.nanoTime() - activeNanos >= destinationIdleTimeout;
     }
 
     @Override
@@ -555,7 +548,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             return -1;
         try (AutoLock l = staleLock.lock())
         {
-            return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - activeNanos);
+            return NanoTime.millisSince(activeNanoTime);
         }
     }
 

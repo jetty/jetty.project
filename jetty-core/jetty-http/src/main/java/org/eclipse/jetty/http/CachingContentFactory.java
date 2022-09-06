@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,11 +128,13 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             // Scan the entire cache and generate an ordered list by last accessed time.
             SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
             {
-                if (c1._lastAccessed != c2._lastAccessed)
-                    return Long.compare(c1._lastAccessed, c2._lastAccessed);
+                long delta = NanoTime.elapsed(c2._lastAccessed, c1._lastAccessed);
+                if (delta != 0)
+                    return delta < 0 ? -1 : 1;
 
-                if (c1._contentLengthValue < c2._contentLengthValue)
-                    return -1;
+                delta = c1._contentLengthValue - c2._contentLengthValue;
+                if (delta != 0)
+                    return delta < 0 ? -1 : 1;
 
                 return c1._cacheKey.compareTo(c2._cacheKey);
             });
@@ -254,7 +257,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _cacheKey = key;
             _buffer = byteBuffer;
             _lastModifiedValue = Files.getLastModifiedTime(httpContent.getResource().getPath());
-            _lastAccessed = System.nanoTime();
+            _lastAccessed = NanoTime.now();
         }
 
         long calculateSize()
@@ -287,7 +290,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getResource().getPath());
                 if (lastModifiedTime.equals(_lastModifiedValue))
                 {
-                    _lastAccessed = System.nanoTime();
+                    _lastAccessed = NanoTime.now();
                     return true;
                 }
             }

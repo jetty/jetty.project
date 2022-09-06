@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -115,7 +116,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
 
     private class Holder implements Runnable
     {
-        private final long timestamp = System.nanoTime();
+        private final long creationNanoTime = NanoTime.now();
         private final AtomicBoolean done = new AtomicBoolean();
         private final Connection connection;
         public Scheduler.Task task;
@@ -156,7 +157,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
         {
             return String.format("%s[validationLeft=%dms]",
                 connection,
-                timeout - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timestamp)
+                timeout - NanoTime.millisSince(creationNanoTime)
             );
         }
     }

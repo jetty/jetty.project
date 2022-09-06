@@ -476,10 +476,9 @@ public class LocalAsyncContextTest
 
     static <T> void spinAssertEquals(T expected, Supplier<T> actualSupplier, long waitFor, TimeUnit units)
     {
-        long now = System.nanoTime();
-        long end = now + units.toNanos(waitFor);
         T actual = null;
-        while (now < end)
+        long start = NanoTime.now();
+        while (NanoTime.since(start) < units.toNanos(waitFor))
         {
             actual = actualSupplier.get();
             if (actual == null && expected == null ||
@@ -493,7 +492,6 @@ public class LocalAsyncContextTest
             {
                 // Ignored
             }
-            now = System.nanoTime();
         }
 
         assertEquals(expected, actual);

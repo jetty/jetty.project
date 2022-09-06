@@ -263,23 +263,22 @@ public class BufferUtilTest
         ThreadLocalRandom.current().nextBytes(bytes);
         ByteBuffer buffer = BufferUtil.allocate(capacity);
         BufferUtil.append(buffer, bytes, 0, capacity);
-        long startTest = System.nanoTime();
+        long startTest = NanoTime.now();
         for (int i = 0; i < testRuns; i++)
         {
-            long start = System.nanoTime();
+            long start = NanoTime.now();
             for (int j = 0; j < iterations; j++)
             {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                long startRun = System.nanoTime();
+                long startRun = NanoTime.now();
                 BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);
-                long elapsedRun = System.nanoTime() - startRun;
-//                LOG.warn("run elapsed={}ms", elapsedRun / 1000);
+//                LOG.info("run elapsed={}ms", NanoTime.elapsedFrom(startRun) / 1000);
                 assertThat("Bytes in out equal bytes in buffer", Arrays.equals(bytes, out.toByteArray()), is(true));
             }
-            long elapsed = System.nanoTime() - start;
+            long elapsed = NanoTime.since(start);
             LOG.warn("elapsed={}ms average={}ms", elapsed / 1000, elapsed / iterations / 1000);
         }
-        LOG.warn("overall average: {}ms", (System.nanoTime() - startTest) / testRuns / iterations / 1000);
+        LOG.warn("overall average: {}ms", NanoTime.since(startTest) / testRuns / iterations / 1000);
     }
 
     @Test

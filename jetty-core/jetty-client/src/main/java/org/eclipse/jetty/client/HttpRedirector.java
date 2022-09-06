@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -309,10 +310,10 @@ public class HttpRedirector
 
             // Adjust the timeout of the new request, taking into account the
             // timeout of the previous request and the time already elapsed.
-            long timeoutAt = httpRequest.getTimeoutAt();
-            if (timeoutAt < Long.MAX_VALUE)
+            long timeoutNanoTime = httpRequest.getTimeoutNanoTime();
+            if (timeoutNanoTime < Long.MAX_VALUE)
             {
-                long newTimeout = timeoutAt - System.nanoTime();
+                long newTimeout = NanoTime.until(timeoutNanoTime);
                 if (newTimeout > 0)
                 {
                     redirect.timeout(newTimeout, TimeUnit.NANOSECONDS);
