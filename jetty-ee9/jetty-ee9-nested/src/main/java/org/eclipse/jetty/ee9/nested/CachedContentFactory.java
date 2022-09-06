@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -292,19 +293,10 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         while (_cache.size() > 0 && (_cachedFiles.get() > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
         {
             // Scan the entire cache and generate an ordered list by last accessed time.
-            SortedSet<CachedHttpContent> sorted = new TreeSet<>((c1, c2) ->
-            {
-                if (c1._lastAccessed.isBefore(c2._lastAccessed))
-                    return -1;
-
-                if (c1._lastAccessed.isAfter(c2._lastAccessed))
-                    return 1;
-
-                if (c1._contentLengthValue < c2._contentLengthValue)
-                    return -1;
-
-                return c1._key.compareTo(c2._key);
-            });
+            SortedSet<CachedHttpContent> sorted = new TreeSet<>(
+                Comparator.comparing((CachedHttpContent c) -> c._lastAccessed)
+                    .thenComparingLong(c -> c._contentLengthValue)
+                    .thenComparing(c -> c._key));
             sorted.addAll(_cache.values());
 
             // Invalidate least recently used first
