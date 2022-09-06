@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.URIUtil;
@@ -284,6 +285,23 @@ public class ResourceCollection extends Resource
         {
             _resources.get(r).copyTo(destination);
         }
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        ResourceCollection other = (ResourceCollection)o;
+        return Objects.equals(_resources, other._resources);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(_resources);
     }
 
     /**

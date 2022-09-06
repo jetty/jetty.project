@@ -140,19 +140,6 @@ public abstract class Resource
     public abstract boolean isContainedIn(Resource r);
 
     /**
-     * Return true if the passed Resource represents the same resource as the Resource.
-     * For many resource types, this is equivalent to {@link #equals(Object)}, however
-     * for resources types that support aliasing, this maybe some other check (e.g. {@link java.nio.file.Files#isSameFile(Path, Path)}).
-     *
-     * @param resource The resource to check
-     * @return true if the passed resource represents the same resource.
-     */
-    public boolean isSame(Resource resource)
-    {
-        return equals(resource);
-    }
-
-    /**
      * Equivalent to {@link Files#exists(Path, LinkOption...)} with the following parameters:
      * {@link #getPath()} and {@link LinkOption#NOFOLLOW_LINKS}.
      *
