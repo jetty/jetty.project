@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.http.client;
+package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -52,7 +52,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.jetty.ee10.http.client.Transport.FCGI;
+import static org.eclipse.jetty.ee10.test.client.transport.Transport.FCGI;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

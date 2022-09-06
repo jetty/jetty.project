@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.http.client;
+package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.IOException;
 import java.io.InputStream;
