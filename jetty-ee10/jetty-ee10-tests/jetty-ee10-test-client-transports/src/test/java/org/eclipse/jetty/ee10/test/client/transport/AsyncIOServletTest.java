@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.http.client;
+package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -81,12 +81,12 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.jetty.ee10.http.client.Transport.FCGI;
-import static org.eclipse.jetty.ee10.http.client.Transport.H2;
-import static org.eclipse.jetty.ee10.http.client.Transport.H2C;
-import static org.eclipse.jetty.ee10.http.client.Transport.H3;
-import static org.eclipse.jetty.ee10.http.client.Transport.HTTP;
-import static org.eclipse.jetty.ee10.http.client.Transport.UNIX_DOMAIN;
+import static org.eclipse.jetty.ee10.test.client.transport.Transport.FCGI;
+import static org.eclipse.jetty.ee10.test.client.transport.Transport.H2;
+import static org.eclipse.jetty.ee10.test.client.transport.Transport.H2C;
+import static org.eclipse.jetty.ee10.test.client.transport.Transport.H3;
+import static org.eclipse.jetty.ee10.test.client.transport.Transport.HTTP;
+import static org.eclipse.jetty.ee10.test.client.transport.Transport.UNIX_DOMAIN;
 import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;

@@ -11,24 +11,28 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.http.client;
+package org.eclipse.jetty.ee10.test.client.transport;
 
-public enum Transport
+import java.io.IOException;
+
+import org.junit.jupiter.api.AfterEach;
+
+public abstract class AbstractTest<T extends TransportScenario>
 {
-    HTTP, HTTPS, H2C, H2, H3, FCGI, UNIX_DOMAIN;
+    protected T scenario;
 
-    public boolean isHttp1Based()
+    public abstract void init(Transport transport) throws IOException;
+
+    public void setScenario(T scenario)
     {
-        return this == HTTP || this == HTTPS;
+        this.scenario = scenario;
     }
 
-    public boolean isMultiplexed()
+    @AfterEach
+    public void stopScenario()
     {
-        return this == H2C || this == H2 || this == H3;
-    }
-
-    public boolean isTlsBased()
-    {
-        return this == HTTPS || this == H2 || this == H3;
+        if (scenario != null)
+            scenario.stop();
+        scenario = null;
     }
 }

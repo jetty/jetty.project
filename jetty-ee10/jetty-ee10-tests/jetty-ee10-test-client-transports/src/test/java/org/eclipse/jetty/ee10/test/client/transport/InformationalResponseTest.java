@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.client;
+package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,9 +30,6 @@ import org.eclipse.jetty.client.ProtocolHandler;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.ee10.http.client.AbstractTest;
-import org.eclipse.jetty.ee10.http.client.TransportProvider;
-import org.eclipse.jetty.ee10.http.client.TransportScenario;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
