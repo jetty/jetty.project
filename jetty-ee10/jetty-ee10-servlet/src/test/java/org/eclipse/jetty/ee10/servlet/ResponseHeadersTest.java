@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 
 import jakarta.servlet.ServletException;
@@ -26,10 +25,9 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -183,7 +181,6 @@ public class ResponseHeadersTest
         assertThat("Response Header Connection", response.get("Connection"), is("Upgrade"));
     }
 
-    @Disabled
     @Test
     public void testMultilineResponseHeaderValue() throws Exception
     {
@@ -204,9 +201,7 @@ public class ResponseHeadersTest
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=UTF-8"));
 
-        String expected = StringUtil.replace(actualPathInfo, "%0A", " "); // replace OBS fold with space
-        expected = URLDecoder.decode(expected, "utf-8"); // decode the rest
-        expected = expected.trim(); // trim whitespace at start/end
+        String expected = URIUtil.canonicalPath(actualPathInfo);
         assertThat("Response Header X-example", response.get("X-Example"), is(expected));
     }
 
