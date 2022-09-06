@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -577,7 +578,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     private static class EntryHolder
     {
         private final Pool<Connection>.Entry entry;
-        private final long creationTimestamp = System.nanoTime();
+        private final long creationNanoTime = NanoTime.now();
 
         private EntryHolder(Pool<Connection>.Entry entry)
         {
@@ -586,7 +587,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
         private boolean isExpired(long timeoutNanos)
         {
-            return System.nanoTime() - creationTimestamp >= timeoutNanos;
+            return NanoTime.since(creationNanoTime) >= timeoutNanos;
         }
     }
 }

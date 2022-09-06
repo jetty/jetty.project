@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -958,10 +959,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     {
         server.getThreadPool().execute(() ->
         {
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            long start = NanoTime.now();
             try
             {
-                while (System.nanoTime() < end)
+                while (NanoTime.secondsSince(start) < 10)
                 {
                     switch (request.getHttpChannelState().getState())
                     {

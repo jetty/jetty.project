@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -212,8 +212,9 @@ public class ThreadLimitHandlerTest
             client[i].getOutputStream().flush();
         }
 
-        long wait = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-        while (count.get() < 4 && System.nanoTime() < wait)
+        long wait = 10;
+        long start = NanoTime.now();
+        while (count.get() < 4 && NanoTime.secondsSince(start) < wait)
         {
             Thread.sleep(1);
         }
@@ -225,13 +226,13 @@ public class ThreadLimitHandlerTest
         // let the other requests go
         latch.countDown();
 
-        while (total.get() < 10 && System.nanoTime() < wait)
+        while (total.get() < 10 && NanoTime.secondsSince(start) < wait)
         {
             Thread.sleep(10);
         }
         assertThat(total.get(), is(10));
 
-        while (count.get() > 0 && System.nanoTime() < wait)
+        while (count.get() > 0 && NanoTime.secondsSince(start) < wait)
         {
             Thread.sleep(10);
         }

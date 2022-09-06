@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -435,7 +436,7 @@ public class NotAcceptingTest
 
     public static <T> void waitFor(Supplier<T> value, Matcher<T> matcher, long wait, TimeUnit units)
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
 
         while (true)
         {
@@ -446,7 +447,7 @@ public class NotAcceptingTest
             }
             catch (Throwable e)
             {
-                if ((System.nanoTime() - start) > units.toNanos(wait))
+                if (NanoTime.since(start) > units.toNanos(wait))
                     throw e;
             }
 

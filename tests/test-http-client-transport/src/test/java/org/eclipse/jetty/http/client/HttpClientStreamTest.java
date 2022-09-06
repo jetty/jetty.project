@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -124,13 +125,13 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .scheme(scenario.getScheme())
             .file(upload)
-            .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
+            .onRequestSuccess(request -> requestTime.set(NanoTime.now()))
             .timeout(2, TimeUnit.MINUTES)
             .send();
-        long responseTime = System.nanoTime();
+        long responseTime = NanoTime.now();
 
         assertEquals(200, response.getStatus());
-        assertTrue(requestTime.get() <= responseTime);
+        assertTrue(NanoTime.isBeforeOrSame(requestTime.get(), responseTime));
 
         // Give some time to the server to consume the request content
         // This is just to avoid exception traces in the test output

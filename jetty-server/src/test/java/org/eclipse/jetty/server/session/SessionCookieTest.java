@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
@@ -125,7 +124,7 @@ public class SessionCookieTest
         mgr.setSessionCache(cache);
         mgr.setSessionIdManager(idMgr);
 
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long now = System.currentTimeMillis();
 
         Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
 
