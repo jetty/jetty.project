@@ -148,7 +148,7 @@ public class PathResourceTest
         Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
         Resource resource = ResourceFactory.root().newResource(rpath);
         int count = 0;
-        for (Resource r: resource)
+        for (Resource r : resource)
             count++;
         assertEquals(1, count);
     }
