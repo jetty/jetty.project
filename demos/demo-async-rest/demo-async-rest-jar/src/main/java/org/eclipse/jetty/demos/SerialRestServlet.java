@@ -26,6 +26,7 @@ import java.util.Queue;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
@@ -36,7 +37,7 @@ public class SerialRestServlet extends AbstractRestServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        final long start = System.nanoTime();
+        long start = NanoTime.now();
 
         String[] keywords = sanitize(request.getParameter(ITEMS_PARAM)).split(",");
         Queue<Map<String, Object>> results = new LinkedList<>();
@@ -72,8 +73,7 @@ public class SerialRestServlet extends AbstractRestServlet
         out.println(STYLE);
         out.println("</head><body><small>");
 
-        long now = System.nanoTime();
-        long total = now - start;
+        long total = NanoTime.since(start);
 
         out.print("<b>Blocking: " + sanitize(request.getParameter(ITEMS_PARAM)) + "</b><br/>");
         out.print("Total Time: " + ms(total) + "ms<br/>");

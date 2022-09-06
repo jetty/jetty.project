@@ -120,10 +120,9 @@ public class QueueBenchmarkTest
                 }
 
                 await(barrier);
-                long begin = System.nanoTime();
+                long begin = NanoTime.now();
                 await(barrier);
-                long end = System.nanoTime();
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
+                long elapsed = NanoTime.millisSince(begin);
                 logger.info("{} Readers/Writers: {}/{} => {} ms", queue.getClass().getSimpleName(), readers, writers, elapsed);
             }
         }

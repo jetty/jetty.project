@@ -14,16 +14,16 @@
 package org.eclipse.jetty.quickstart;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PreconfigureJNDIWar
 {
-    private static final long __start = System.nanoTime();
+    private static final long __start = NanoTime.now();
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     public static void main(String[] args) throws Exception
@@ -35,7 +35,7 @@ public class PreconfigureJNDIWar
 
         PreconfigureQuickStartWar.main("target/test-jndi.war", target, "src/test/resources/test-jndi.xml");
 
-        LOG.info("Preconfigured in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - __start));
+        LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 
         // IO.copy(new FileInputStream("target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
     }

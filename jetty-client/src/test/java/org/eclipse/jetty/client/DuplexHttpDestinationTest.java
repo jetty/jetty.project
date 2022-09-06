@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -350,8 +351,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
 
     private Connection await(Supplier<Connection> supplier, long time, TimeUnit unit) throws InterruptedException
     {
-        long start = System.nanoTime();
-        while (unit.toNanos(time) > System.nanoTime() - start)
+        long start = NanoTime.now();
+        while (NanoTime.since(start) < unit.toNanos(time))
         {
             Connection connection = supplier.get();
             if (connection != null)

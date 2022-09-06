@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +26,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,9 +140,9 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             ctx.setExtendedListenerTypes(true);
             if (LOG.isDebugEnabled())
             {
-                long start = System.nanoTime();
+                long start = NanoTime.now();
                 initializer.onStartup(classes, ctx);
-                LOG.debug("ServletContainerInitializer {} called in {}ms", getClassName(), TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+                LOG.debug("ServletContainerInitializer {} called in {}ms", getClassName(), NanoTime.millisSince(start));
             }
             else
                 initializer.onStartup(classes, ctx);

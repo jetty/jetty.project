@@ -14,8 +14,8 @@
 package org.eclipse.jetty.util.ajax;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +40,7 @@ public class JSONPojoConvertorFactoryTest
         jsonIn.addConvertor(Enum.class, new JSONEnumConvertor());
 
         Foo foo = new Foo();
-        foo.setName("Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+        foo.setName("Foo @ " + NanoTime.now());
         foo.setInt1(1);
         foo.setInt2(2);
         foo.setLong1(1000001L);
@@ -83,7 +83,7 @@ public class JSONPojoConvertorFactoryTest
         jsonIn.addConvertor(Enum.class, new JSONEnumConvertor());
 
         Foo foo = new Foo();
-        foo.setName("Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+        foo.setName("Foo @ " + NanoTime.now());
         foo.setInt1(1);
         foo.setInt2(2);
         foo.setLong1(1000001L);

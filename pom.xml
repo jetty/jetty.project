@@ -1390,6 +1390,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-embedded</artifactId>
+        <classifier>config</classifier>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1400,6 +1401,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-remote</artifactId>
+        <classifier>config</classifier>
         <version>${project.version}</version>
       </dependency>
       <dependency>

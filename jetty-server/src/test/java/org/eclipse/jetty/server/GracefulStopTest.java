@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
@@ -46,6 +47,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GracefulStopTest
@@ -148,6 +150,7 @@ public class GracefulStopTest
         assertTrue(handler.latch.await(5, TimeUnit.SECONDS));
 
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+        assertNotNull(response);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("read [10/10]"));
         assertThat(response.get(HttpHeader.CONNECTION), nullValue());
@@ -163,6 +166,7 @@ public class GracefulStopTest
         assertTrue(handler.latch.await(5, TimeUnit.SECONDS));
 
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+        assertNotNull(response);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("read [10/10]"));
         assertThat(response.get(HttpHeader.CONNECTION), nullValue());
@@ -171,21 +175,21 @@ public class GracefulStopTest
     Future<Integer> backgroundUnavailable(Socket client, byte[] post, ContextHandler context, TestHandler handler) throws Exception
     {
         FuturePromise<Integer> future = new FuturePromise<>();
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         new Thread(() ->
         {
             try
             {
                 while (context.isAvailable())
                 {
-                    assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), lessThan(5000L));
+                    assertThat(NanoTime.millisSince(start), lessThan(5000L));
                     Thread.sleep(100);
                 }
 
                 client.getOutputStream().write(concat(post, BODY_67890));
                 client.getOutputStream().flush();
                 HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
-
+                assertNotNull(response);
                 future.succeeded(response.getStatus());
             }
             catch (Exception e)
@@ -199,19 +203,16 @@ public class GracefulStopTest
 
     void assertQuickStop() throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         server.stop();
-        long stop = System.nanoTime();
-        long duration = TimeUnit.NANOSECONDS.toMillis(stop - start);
-        assertThat(duration, lessThan(2000L));
+        assertThat(NanoTime.millisSince(start), lessThan(2000L));
     }
 
     void assertGracefulStop(LifeCycle lifecycle) throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         lifecycle.stop();
-        long stop = System.nanoTime();
-        long duration = TimeUnit.NANOSECONDS.toMillis(stop - start);
+        long duration = NanoTime.millisSince(start);
         assertThat(duration, greaterThan(50L));
         assertThat(duration, lessThan(5000L));
     }
@@ -219,6 +220,7 @@ public class GracefulStopTest
     void assertResponse(Socket client, boolean close) throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+        assertNotNull(response);
         assertThat(response.getStatus(), is(200));
         if (close)
             assertThat(response.get(HttpHeader.CONNECTION), is("close"));
@@ -239,11 +241,9 @@ public class GracefulStopTest
 
     void assertQuickClose(Socket client) throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         assertThat(client.getInputStream().read(), is(-1));
-        long stop = System.nanoTime();
-        long duration = TimeUnit.NANOSECONDS.toMillis(stop - start);
-        assertThat(duration, lessThan(2000L));
+        assertThat(NanoTime.millisSince(start), lessThan(2000L));
     }
 
     void assertHandled(TestHandler handler, boolean error)
@@ -257,14 +257,13 @@ public class GracefulStopTest
 
     void backgroundComplete(Socket client, TestHandler handler) throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         new Thread(() ->
         {
             try
             {
                 handler.latch.await();
-                long now = System.nanoTime();
-                Thread.sleep(100 - TimeUnit.NANOSECONDS.toMillis(now - start));
+                Thread.sleep(100 - NanoTime.millisSince(start));
                 client.getOutputStream().write(BODY_67890);
             }
             catch (Exception e)

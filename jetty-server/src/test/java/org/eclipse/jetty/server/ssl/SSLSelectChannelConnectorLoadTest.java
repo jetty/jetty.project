@@ -115,7 +115,6 @@ public class SSLSelectChannelConnectorLoadTest
             tasks[i] = threadPool.submit(workers[i]);
         }
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         while (true)
         {
             Thread.sleep(1000);
@@ -124,13 +123,9 @@ public class SSLSelectChannelConnectorLoadTest
             {
                 done &= task.isDone();
             }
-            //System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
-        long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        //System.err.println();
-        //System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         for (Worker worker : workers)
         {
@@ -167,7 +162,6 @@ public class SSLSelectChannelConnectorLoadTest
             tasks[i] = threadPool.submit(workers[i]);
         }
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         while (true)
         {
             Thread.sleep(1000);
@@ -176,13 +170,9 @@ public class SSLSelectChannelConnectorLoadTest
             {
                 done &= task.isDone();
             }
-            // System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
-        long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        // System.err.println();
-        // System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         threadPool.shutdown();
 

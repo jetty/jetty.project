@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -305,8 +306,8 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         request.setHeader("Host", "tester");
         request.setHeader("Connection", "close");
         request.setHeader("Accept-Encoding", "gzip");
-        long fourSecondsAgo = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - 4000;
-        request.setHeader("If-Modified-Since", DateGenerator.formatDate(fourSecondsAgo));
+        Instant fourSecondsAgo = Instant.now().minusSeconds(4);
+        request.setHeader("If-Modified-Since", DateGenerator.formatDate(fourSecondsAgo.toEpochMilli()));
         request.setURI("/context/file.txt");
 
         // Issue request

@@ -31,6 +31,7 @@ import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -120,6 +121,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     {
         long idleTimeout = getIdleTimeout();
         if (idleTimeout > 0)
-            expireNanoTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
     }
 }

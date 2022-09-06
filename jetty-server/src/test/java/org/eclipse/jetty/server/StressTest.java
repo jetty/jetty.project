@@ -18,7 +18,6 @@ import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.servlet.ServletException;
@@ -26,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -345,11 +345,11 @@ public class StressTest
     {
         if (persistent)
         {
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long start = NanoTime.now();
             Socket socket = new Socket("localhost", _connector.getLocalPort());
             socket.setSoTimeout(30000);
 
-            long connected = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long connected = NanoTime.now();
 
             for (int i = 0; i < __tests.length; i++)
             {
@@ -367,21 +367,21 @@ public class StressTest
                 Thread.yield();
             }
 
-            long written = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long written = NanoTime.now();
 
             String response = IO.toString(socket.getInputStream());
             socket.close();
 
-            long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long end = NanoTime.now();
 
             int bodies = count(response, "HTTP/1.1 200 OK");
             if (__tests.length != bodies)
                 System.err.println("responses=\n" + response + "\n---");
             assertEquals(__tests.length, bodies, name);
 
-            long bind = connected - start;
-            long flush = (written - connected) / __tests.length;
-            long read = (end - written) / __tests.length;
+            long bind = NanoTime.millisElapsed(start, connected);
+            long flush = NanoTime.millisElapsed(connected, written) / __tests.length;
+            long read = NanoTime.millisElapsed(written, end) / __tests.length;
 
             int offset = 0;
             for (int i = 0; i < __tests.length; i++)
@@ -406,7 +406,7 @@ public class StressTest
             {
                 String uri = __tests[i] + "/" + name + "/" + i;
 
-                long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                long start = NanoTime.now();
                 String close = "Connection: close\r\n";
                 String request =
                     "GET " + uri + " HTTP/1.1\r\n" +
@@ -417,23 +417,23 @@ public class StressTest
                 Socket socket = new Socket("localhost", _connector.getLocalPort());
                 socket.setSoTimeout(10000);
 
-                _latencies[0].add((TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start));
+                _latencies[0].add(NanoTime.millisSince(start));
 
                 socket.getOutputStream().write(request.getBytes());
                 socket.getOutputStream().flush();
 
-                _latencies[1].add((TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start));
+                _latencies[1].add(NanoTime.millisSince(start));
 
                 String response = IO.toString(socket.getInputStream());
                 socket.close();
-                long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                long end = NanoTime.now();
 
                 String endOfResponse = "\r\n\r\n";
                 assertThat(response, containsString(endOfResponse));
                 response = response.substring(response.indexOf(endOfResponse) + endOfResponse.length());
 
                 assertThat(uri, response, startsWith("DATA " + __tests[i]));
-                long latency = end - start;
+                long latency = NanoTime.millisElapsed(start, end);
 
                 _latencies[5].add(latency);
             }
@@ -458,24 +458,19 @@ public class StressTest
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
-            long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long now = NanoTime.now();
             long start = Long.parseLong(baseRequest.getHeader("start"));
-            long received = baseRequest.getTimeStamp();
 
             _handled.incrementAndGet();
-            long delay = received - start;
-            if (delay < 0)
-                delay = 0;
+            long delay = NanoTime.millisElapsed(start, now);
             _latencies[2].add(delay);
-            _latencies[3].add((now - start));
+            _latencies[3].add(delay);
 
             response.setStatus(200);
             response.getOutputStream().print("DATA " + request.getPathInfo() + "\n\n");
             baseRequest.setHandled(true);
 
-            _latencies[4].add((TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start));
-
-            return;
+            _latencies[4].add(NanoTime.millisSince(start));
         }
     }
 }
