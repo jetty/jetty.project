@@ -294,10 +294,10 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             // Scan the entire cache and generate an ordered list by last accessed time.
             SortedSet<CachedHttpContent> sorted = new TreeSet<>((c1, c2) ->
             {
-                if (c1._lastAccessed < c2._lastAccessed)
+                if (c1._lastAccessed.isBefore(c2._lastAccessed))
                     return -1;
 
-                if (c1._lastAccessed > c2._lastAccessed)
+                if (c1._lastAccessed.isAfter(c2._lastAccessed))
                     return 1;
 
                 if (c1._contentLengthValue < c2._contentLengthValue)
@@ -388,7 +388,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         private final AtomicReference<ByteBuffer> _indirectBuffer = new AtomicReference<>();
         private final AtomicReference<ByteBuffer> _directBuffer = new AtomicReference<>();
         private final AtomicReference<ByteBuffer> _mappedBuffer = new AtomicReference<>();
-        private volatile long _lastAccessed;
+        private volatile Instant _lastAccessed;
 
         CachedHttpContent(String pathInContext, Resource resource, Map<CompressedContentFormat, CachedHttpContent> precompressedResources)
         {
@@ -411,7 +411,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             if (_cachedFiles.incrementAndGet() > _maxCachedFiles)
                 shrinkCache();
 
-            _lastAccessed = System.currentTimeMillis();
+            _lastAccessed = Instant.now();
 
             _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, resource.getWeakETag()) : null;
 
@@ -461,7 +461,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         {
             if (_lastModifiedValue == _resource.lastModified() && _contentLengthValue == _resource.length())
             {
-                _lastAccessed = System.currentTimeMillis();
+                _lastAccessed = Instant.now();
                 return true;
             }
 
