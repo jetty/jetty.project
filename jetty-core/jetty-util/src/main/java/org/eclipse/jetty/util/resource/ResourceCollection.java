@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -256,6 +257,12 @@ public class ResourceCollection extends Resource
     public long length()
     {
         return -1;
+    }
+
+    @Override
+    public Iterator<Resource> iterator()
+    {
+        return _resources.iterator();
     }
 
     /**

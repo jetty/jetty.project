@@ -32,6 +32,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * Supports real filesystems, and also <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html">ZipFS</a>.
  * </p>
  */
-public abstract class Resource
+public abstract class Resource implements Iterable<Resource>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
@@ -138,6 +139,21 @@ public abstract class Resource
      * @return true if this Resource is contained, false otherwise
      */
     public abstract boolean isContainedIn(Resource r);
+
+    /**
+     * Return an Iterator of all Resource's referenced in this Resource.
+     *
+     * <p>
+     *     This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator.
+     * </p>
+     *
+     * @return the iterator of Resources.
+     */
+    @Override
+    public Iterator<Resource> iterator()
+    {
+        return List.of(this).iterator();
+    }
 
     /**
      * Equivalent to {@link Files#exists(Path, LinkOption...)} with the following parameters:

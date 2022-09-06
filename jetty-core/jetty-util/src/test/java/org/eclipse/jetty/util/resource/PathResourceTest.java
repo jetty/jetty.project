@@ -29,6 +29,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PathResourceTest
 {
@@ -109,5 +110,16 @@ public class PathResourceTest
 
         Path path = resource.getPath();
         assertThat("File for default FileSystem", path, is(exampleJar));
+    }
+
+    @Test
+    public void testIterable()
+    {
+        Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+        Resource resource = ResourceFactory.root().newResource(rpath);
+        int count = 0;
+        for (Resource r : resource)
+            count++;
+        assertEquals(1, count);
     }
 }
