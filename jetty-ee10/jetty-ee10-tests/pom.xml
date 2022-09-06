@@ -21,7 +21,7 @@
     <module>jetty-ee10-test-bad-websocket-webapp</module>
     <module>jetty-ee10-test-cdi</module>
 <!-- TODO   <module>jetty-ee10-test-http2-webapp</module>-->
-<!-- TODO   <module>jetty-ee10-test-http-client-transport</module>-->
+    <module>jetty-ee10-test-client-transports</module>
 <!-- TODO   <module>jetty-ee10-test-integration</module>-->
     <module>jetty-ee10-test-jmx</module>
     <module>jetty-ee10-test-jndi</module>
