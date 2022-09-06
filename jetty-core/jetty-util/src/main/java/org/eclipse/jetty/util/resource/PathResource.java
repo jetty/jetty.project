@@ -251,12 +251,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isMemoryMappable()
-    {
-        return "file".equalsIgnoreCase(uri.getScheme());
-    }
-
-    @Override
     public URI getURI()
     {
         return this.uri;
