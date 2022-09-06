@@ -174,6 +174,49 @@ public class ResourceCollectionTest
     }
 
     @Test
+    public void testIterable()
+    {
+        Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+        Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+        Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+        Path dirFoo = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
+
+        Resource compositeA = Resource.combine(
+            List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three)
+            )
+        );
+
+        Resource compositeB = Resource.combine(
+            List.of(
+                // the original composite Resource
+                compositeA,
+                // a duplicate entry
+                resourceFactory.newResource(two),
+                // a new entry
+                resourceFactory.newResource(dirFoo)
+            )
+        );
+
+        List<URI> actual = new ArrayList<>();
+        for (Resource resource: compositeB)
+        {
+            actual.add(resource.getURI());
+        }
+
+        URI[] expected = new URI[] {
+            one.toUri(),
+            two.toUri(),
+            three.toUri(),
+            dirFoo.toUri()
+        };
+
+        assertThat(actual, contains(expected));
+    }
+
+    @Test
     public void testUserSpaceConfigurationNoGlob() throws Exception
     {
         Path base = workDir.getEmptyPathDir();

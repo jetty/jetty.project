@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
@@ -31,6 +32,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PathResourceTest
 {
@@ -139,5 +141,20 @@ public class PathResourceTest
             assertThat(ePathResource.isSame(ePathResource2), Matchers.is(true));
             assertThat(ePathResource.equals(ePathResource2), Matchers.is(false));
         }
+    }
+
+    @Test
+    public void testIterable()
+    {
+        Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+        PathResource resource = (PathResource)ResourceFactory.root().newResource(rpath);
+        Iterator<Resource> iter = resource.iterator();
+        int count = 0;
+        while (iter.hasNext())
+        {
+            iter.next();
+            count++;
+        }
+        assertEquals(1, count);
     }
 }
