@@ -39,6 +39,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class FormTest
 {
     private static final int MAX_FORM_CONTENT_SIZE = 128;
