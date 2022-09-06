@@ -34,7 +34,6 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -166,30 +165,7 @@ public abstract class Resource implements Iterable<Resource>
     @Override
     public Iterator<Resource> iterator()
     {
-        return new Iterator<>()
-        {
-            private boolean next = true;
-
-            @Override
-            public boolean hasNext()
-            {
-                return next;
-            }
-
-            @Override
-            public Resource next()
-            {
-                if (next)
-                {
-                    next = false;
-                    return Resource.this;
-                }
-                else
-                {
-                    throw new NoSuchElementException("No more Resource entries to iterate");
-                }
-            }
-        };
+        return List.of(this).iterator();
     }
 
     /**
