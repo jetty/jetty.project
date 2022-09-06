@@ -366,7 +366,7 @@ public class FileSystemResourceTest
 
         Resource base = ResourceFactory.root().newResource(dir);
         Resource res = base.resolve("foo");
-        assertThat("foo.lastModified", res.lastModified(), nullValue());
+        assertThat("foo.lastModified", res.lastModified(), is(Instant.EPOCH));
     }
 
     @Test
