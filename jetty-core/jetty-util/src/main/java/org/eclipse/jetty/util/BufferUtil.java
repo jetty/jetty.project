@@ -1072,7 +1072,7 @@ public class BufferUtil
     public static ByteBuffer toMappedBuffer(Resource resource) throws IOException
     {
         Path path = resource.getPath();
-        if (path == null)
+        if (path == null || !path.toUri().getScheme().endsWith("file"))
             return null;
         return toMappedBuffer(path);
     }
@@ -1080,7 +1080,7 @@ public class BufferUtil
     public static ByteBuffer toMappedBuffer(Resource resource, long pos, long len) throws IOException
     {
         Path path = resource.getPath();
-        if (path == null)
+        if (path == null || !path.toUri().getScheme().endsWith("file"))
             return null;
         return toMappedBuffer(path, pos, len);
     }
