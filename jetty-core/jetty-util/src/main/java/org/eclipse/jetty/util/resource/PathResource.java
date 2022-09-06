@@ -217,25 +217,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isSame(Resource resource)
-    {
-        try
-        {
-            if (resource instanceof PathResource)
-            {
-                Path path = resource.getPath();
-                return Files.isSameFile(getPath(), path);
-            }
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("ignored", e);
-        }
-        return false;
-    }
-
-    @Override
     public boolean equals(Object obj)
     {
         if (this == obj)
