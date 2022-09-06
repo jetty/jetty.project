@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
@@ -217,25 +218,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isSame(Resource resource)
-    {
-        try
-        {
-            if (resource instanceof PathResource)
-            {
-                Path path = resource.getPath();
-                return Files.isSameFile(getPath(), path);
-            }
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("ignored", e);
-        }
-        return false;
-    }
-
-    @Override
     public boolean equals(Object obj)
     {
         if (this == obj)
@@ -251,18 +233,7 @@ public class PathResource extends Resource
             return false;
         }
         PathResource other = (PathResource)obj;
-        if (path == null)
-        {
-            if (other.path != null)
-            {
-                return false;
-            }
-        }
-        else if (!path.equals(other.path))
-        {
-            return false;
-        }
-        return true;
+        return Objects.equals(path, other.path);
     }
 
     /**
@@ -280,12 +251,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isMemoryMappable()
-    {
-        return "file".equalsIgnoreCase(uri.getScheme());
-    }
-
-    @Override
     public URI getURI()
     {
         return this.uri;
@@ -294,10 +259,7 @@ public class PathResource extends Resource
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = (prime * result) + ((path == null) ? 0 : path.hashCode());
-        return result;
+        return Objects.hashCode(path);
     }
 
     @Override

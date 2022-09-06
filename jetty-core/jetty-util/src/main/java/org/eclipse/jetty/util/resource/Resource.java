@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * Supports real filesystems, and also <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html">ZipFS</a>.
  * </p>
  */
-public abstract class Resource
+public abstract class Resource implements Iterable<Resource>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
@@ -141,16 +142,18 @@ public abstract class Resource
     public abstract boolean isContainedIn(Resource r);
 
     /**
-     * Return true if the passed Resource represents the same resource as the Resource.
-     * For many resource types, this is equivalent to {@link #equals(Object)}, however
-     * for resources types that support aliasing, this maybe some other check (e.g. {@link java.nio.file.Files#isSameFile(Path, Path)}).
+     * Return an Iterator of all Resource's referenced in this Resource.
      *
-     * @param resource The resource to check
-     * @return true if the passed resource represents the same resource.
+     * <p>
+     *     This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator.
+     * </p>
+     *
+     * @return the iterator of Resources.
      */
-    public boolean isSame(Resource resource)
+    @Override
+    public Iterator<Resource> iterator()
     {
-        return equals(resource);
+        return List.of(this).iterator();
     }
 
     /**
@@ -258,16 +261,6 @@ public abstract class Resource
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         return Files.newByteChannel(getPath(), StandardOpenOption.READ);
-    }
-
-    /**
-     * Checks if the resource supports being loaded as a memory-mapped ByteBuffer.
-     *
-     * @return true if the resource supports memory-mapped ByteBuffer, false otherwise.
-     */
-    public boolean isMemoryMappable()
-    {
-        return false;
     }
 
     /**
