@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,12 +100,6 @@ public class OrderingTest
         public boolean isDirectory()
         {
             return false;
-        }
-
-        @Override
-        public Instant lastModified()
-        {
-            return null;
         }
 
         @Override

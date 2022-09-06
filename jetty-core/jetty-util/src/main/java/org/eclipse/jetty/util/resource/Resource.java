@@ -181,16 +181,16 @@ public abstract class Resource
      * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
      * {@link #getPath()} then returning {@link FileTime#toInstant()}.
      *
-     * @return the last modified time instant, or null if resource doesn't exist or doesn't have a last modified time.
+     * @return the last modified time instant, or {@link Instant#EPOCH} if unable to obtain last modified.
      */
     public Instant lastModified()
     {
         Path path = getPath();
         if (path == null)
-            return null;
+            return Instant.EPOCH;
 
         if (!Files.exists(path))
-            return null;
+            return Instant.EPOCH;
 
         try
         {
@@ -200,7 +200,7 @@ public abstract class Resource
         catch (IOException e)
         {
             LOG.trace("IGNORED", e);
-            return null;
+            return Instant.EPOCH;
         }
     }
 
