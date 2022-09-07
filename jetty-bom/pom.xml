@@ -209,12 +209,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote</artifactId>
-        <classifier>config</classifier>
-        <version>10.0.12-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-remote-query</artifactId>
         <version>10.0.12-SNAPSHOT</version>
       </dependency>
