@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -202,9 +203,12 @@ public class ResourceListing
 
         for (Resource item : listing)
         {
-            // TODO this feels fragile, as collections probably should not return a Path here
-            //      and even if they do, it might not be named correctly
-            String name = item.getPath().toFile().getName();
+            // Listings always return non-composite Resource entries
+            Path filePath = item.getPath();
+            if (filePath == null)
+                continue; // skip, can't represent this in a listing anyway.
+
+            String name = filePath.getFileName().toString();
             if (StringUtil.isBlank(name))
                 continue;
 

@@ -319,7 +319,6 @@ public class DefaultServletTest
      * This test ensures that this behavior will not arise again.
      */
     @Test
-    @Disabled("Somehow this trips up the Alias Checks")
     public void testListingFilenamesOnlyUrlResource() throws Exception
     {
         URL extraResource = context.getClassLoader().getResource("rez/one");
