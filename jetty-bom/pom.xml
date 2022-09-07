@@ -214,12 +214,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded</artifactId>
-        <classifier>config</classifier>
-        <version>10.0.12-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-embedded-query</artifactId>
         <version>10.0.12-SNAPSHOT</version>
       </dependency>
