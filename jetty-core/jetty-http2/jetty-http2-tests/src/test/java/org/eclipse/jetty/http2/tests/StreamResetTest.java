@@ -78,6 +78,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
@@ -1080,11 +1081,10 @@ public class StreamResetTest extends AbstractTest
 
     private void waitUntilTCPCongested(WriteFlusher flusher) throws TimeoutException, InterruptedException
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         while (!flusher.isPending())
         {
-            long elapsed = System.nanoTime() - start;
-            if (TimeUnit.NANOSECONDS.toSeconds(elapsed) > 15)
+            if (NanoTime.secondsSince(start) > 15)
                 throw new TimeoutException();
             Thread.sleep(100);
         }

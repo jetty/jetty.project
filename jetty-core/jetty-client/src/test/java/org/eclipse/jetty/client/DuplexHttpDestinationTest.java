@@ -19,12 +19,14 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -291,6 +293,9 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
     public void testDestinationIsRemoved(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.start();
 
         String host = "localhost";
         int port = connector.getLocalPort();
@@ -305,7 +310,7 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
         Destination destinationAfter = client.resolveDestination(request);
         assertSame(destinationBefore, destinationAfter);
 
-        client.setRemoveIdleDestinations(true);
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
 
         request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
@@ -323,21 +328,19 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
     public void testDestinationIsRemovedAfterConnectionError(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.start();
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        client.setRemoveIdleDestinations(true);
         assertTrue(client.getDestinations().isEmpty(), "Destinations of a fresh client must be empty");
 
         server.stop();
         Request request = client.newRequest(host, port).scheme(scenario.getScheme());
         assertThrows(Exception.class, request::send);
 
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
-        while (!client.getDestinations().isEmpty() && System.nanoTime() < deadline)
-        {
-            Thread.sleep(10);
-        }
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
         assertTrue(client.getDestinations().isEmpty(), "Destination must be removed after connection error");
     }
 
@@ -348,8 +351,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
 
     private Connection await(Supplier<Connection> supplier, long time, TimeUnit unit) throws InterruptedException
     {
-        long start = System.nanoTime();
-        while (unit.toNanos(time) > System.nanoTime() - start)
+        long start = NanoTime.now();
+        while (NanoTime.since(start) < unit.toNanos(time))
         {
             Connection connection = supplier.get();
             if (connection != null)

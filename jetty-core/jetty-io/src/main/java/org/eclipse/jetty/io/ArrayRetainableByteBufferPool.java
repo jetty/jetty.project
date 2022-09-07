@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -353,7 +354,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
     {
         if (LOG.isDebugEnabled())
             LOG.debug("evicting {} bytes from {} pools", excess, (direct ? "direct" : "heap"));
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         long totalClearedCapacity = 0L;
 
         RetainedBucket[] buckets = direct ? _direct : _indirect;
@@ -413,8 +414,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         {
             if (oldestEntry != null)
             {
-                long entryAge = now - entry.getPooled().getLastUpdate();
-                if (entryAge > now - oldestEntry.getPooled().getLastUpdate())
+                long entryAge = NanoTime.elapsed(entry.getPooled().getLastUpdate(), now);
+                if (entryAge > NanoTime.elapsed(oldestEntry.getPooled().getLastUpdate(), now))
                     oldestEntry = entry;
             }
             else

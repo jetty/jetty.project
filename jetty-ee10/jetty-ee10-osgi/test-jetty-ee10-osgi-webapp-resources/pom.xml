@@ -11,6 +11,7 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.resources</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
   <build>
     <pluginManagement>
@@ -68,14 +69,6 @@
           <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- must not deploy -->
-          <skip>false</skip>
         </configuration>
       </plugin>
     </plugins>

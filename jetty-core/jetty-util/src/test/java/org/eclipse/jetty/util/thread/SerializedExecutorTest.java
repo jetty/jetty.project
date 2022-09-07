@@ -20,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -91,10 +92,7 @@ public class SerializedExecutorTest
         assertThat(_threadPool.getIdleThreads(), is(0));
 
         waiting1.countDown();
-        long start = System.nanoTime();
-        while (TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10)
-            if (_threadPool.getIdleThreads() == 1)
-                break;
+        await().atMost(10, TimeUnit.SECONDS).until(() -> _threadPool.getIdleThreads() == 1);
 
         assertThat(_threadPool.getThreads(), is(1));
         assertThat(_threadPool.getIdleThreads(), is(1));

@@ -12,7 +12,6 @@
   <properties>
     <ee9.module>jetty-ee9-demos/jetty-ee9-demo-jaas-webapp</ee9.module>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
-    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
   <build>
     <pluginManagement>

@@ -200,7 +200,7 @@
             <configuration>
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee8-glassfish-jstl</outputDirectory>
@@ -215,7 +215,7 @@
             <configuration>
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee8-glassfish-jstl</outputDirectory>
             </configuration>
@@ -315,18 +315,6 @@
       </plugin>
     </plugins>
   </build>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <dependency>

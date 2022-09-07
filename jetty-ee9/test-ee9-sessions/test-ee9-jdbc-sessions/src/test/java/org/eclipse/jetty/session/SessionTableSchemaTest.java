@@ -20,6 +20,7 @@ import java.sql.ResultSet;
 
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,8 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * SessionTableSchemaTest
- *
  * Test the SessionTableSchema behaviour when the database treats "" as a NULL,
  * like Oracle does.
  */
@@ -112,7 +111,7 @@ public class SessionTableSchemaTest
         _da.initialize();
         _tableSchema.prepareTables();
 
-        String id = Long.toString(System.nanoTime());
+        String id = Long.toString(NanoTime.now());
 
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
@@ -140,7 +139,7 @@ public class SessionTableSchemaTest
         _da.initialize();
         _tableSchema.prepareTables();
 
-        String id = Long.toString(System.nanoTime());
+        String id = Long.toString(NanoTime.now());
 
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
@@ -167,7 +166,7 @@ public class SessionTableSchemaTest
         _da.initialize();
         _tableSchema.prepareTables();
 
-        String id = Long.toString(System.nanoTime());
+        String id = Long.toString(NanoTime.now());
 
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
@@ -194,7 +193,7 @@ public class SessionTableSchemaTest
         _da.initialize();
         _tableSchema.prepareTables();
 
-        String id = Long.toString(System.nanoTime());
+        String id = Long.toString(NanoTime.now());
 
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
@@ -223,7 +222,7 @@ public class SessionTableSchemaTest
         _da.initialize();
         _tableSchema.prepareTables();
 
-        String id = Long.toString(System.nanoTime());
+        String id = Long.toString(NanoTime.now());
 
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
@@ -253,7 +252,7 @@ public class SessionTableSchemaTest
         _da.initialize();
         _tableSchema.prepareTables();
 
-        String id = Long.toString(System.nanoTime());
+        String id = Long.toString(NanoTime.now());
 
         //insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");

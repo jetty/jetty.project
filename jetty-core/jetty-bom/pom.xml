@@ -184,27 +184,27 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-common</artifactId>
+        <artifactId>jetty-infinispan-common</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote</artifactId>
-        <version>10.0.8-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote-query</artifactId>
+        <artifactId>jetty-infinispan-remote</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded</artifactId>
-        <version>10.0.8-SNAPSHOT</version>
+        <artifactId>jetty-infinispan-remote-query</artifactId>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded-query</artifactId>
+        <artifactId>jetty-infinispan-embedded</artifactId>
+        <version>12.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-infinispan-embedded-query</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -230,7 +230,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-keystore</artifactId>
-        <version>10.0.8-SNAPSHOT</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.memcached</groupId>
@@ -296,7 +296,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-slf4j-impl</artifactId>
-        <version>10.0.8-SNAPSHOT</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>

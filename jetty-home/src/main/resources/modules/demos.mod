@@ -16,6 +16,6 @@ http2
 test-keystore
 work
 core-demos
-#ee8-demos
+ee8-demos
 ee9-demos
 ee10-demos

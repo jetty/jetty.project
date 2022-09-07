@@ -161,11 +161,10 @@ public interface SocketAddressResolver
 
                 try
                 {
-                    long start = System.nanoTime();
+                    long start = NanoTime.now();
                     InetAddress[] addresses = InetAddress.getAllByName(host);
-                    long elapsed = System.nanoTime() - start;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
+                        LOG.debug("Resolved {} in {} ms", host, NanoTime.millisSince(start));
 
                     List<InetSocketAddress> result = new ArrayList<>(addresses.length);
                     for (InetAddress address : addresses)

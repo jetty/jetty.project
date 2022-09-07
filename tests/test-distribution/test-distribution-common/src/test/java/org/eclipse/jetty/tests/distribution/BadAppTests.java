@@ -52,7 +52,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
             
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
@@ -65,7 +65,7 @@ public class BadAppTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitFor(5, TimeUnit.SECONDS), "Should have exited");
+                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), "Should have exited");
                 assertThat("Should have gotten a non-zero exit code", run2.getExitValue(), not(is(0)));
             }
         }
@@ -92,7 +92,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
             
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
@@ -135,7 +135,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
-            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
             
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);

@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PathResourceTest
 {
@@ -129,40 +130,6 @@ public class PathResourceTest
 
         Path path = resource.getPath();
         assertThat("File for default FileSystem", path, is(exampleJar));
-    }
-
-    @Test
-    public void testSameViaSymlink()
-    {
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-            Path epath = MavenTestingUtils.getTestResourcePathFile("example.jar");
-
-            PathResource rPathResource = (PathResource)resourceFactory.newResource(rpath);
-            PathResource ePathResource = (PathResource)resourceFactory.newResource(epath);
-
-            assertThat(rPathResource.isSame(rPathResource), is(true));
-            assertThat(rPathResource.isSame(ePathResource), is(false));
-
-            PathResource ePathResource2 = null;
-            boolean symlinkSupported;
-            try
-            {
-                Path sameSymlink = MavenTestingUtils.getTargetPath().resolve("testSame-symlink");
-                Path epath2 = Files.createSymbolicLink(sameSymlink, epath.getParent()).resolve("example.jar");
-                ePathResource2 = (PathResource)resourceFactory.newResource(epath2);
-                symlinkSupported = true;
-            }
-            catch (Throwable th)
-            {
-                symlinkSupported = false;
-            }
-
-            assumeTrue(symlinkSupported, "Symlink not supported");
-            assertThat(ePathResource.isSame(ePathResource2), is(true));
-            assertThat(ePathResource.equals(ePathResource2), is(false));
-        }
     }
 
     @Test
@@ -473,5 +440,16 @@ public class PathResourceTest
             Resource fileRes = dirRes.resolve("swedish-å.txt");
             assertTrue(fileRes.exists());
         }
+    }
+
+    @Test
+    public void testIterable()
+    {
+        Path rpath = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+        Resource resource = ResourceFactory.root().newResource(rpath);
+        int count = 0;
+        for (Resource r : resource)
+            count++;
+        assertEquals(1, count);
     }
 }

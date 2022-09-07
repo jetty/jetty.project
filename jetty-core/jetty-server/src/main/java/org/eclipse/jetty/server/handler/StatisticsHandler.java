@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -53,7 +54,7 @@ public class StatisticsHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        long beginTimeStamp = System.nanoTime();
+        long beginNanoTime = NanoTime.now();
         _handleStats.increment();
         StatisticsRequest statisticsRequest = new StatisticsRequest(request);
 
@@ -69,7 +70,7 @@ public class StatisticsHandler extends Handler.Wrapper
         finally
         {
             _handleStats.decrement();
-            _handleTimeStats.record(System.nanoTime() - beginTimeStamp);
+            _handleTimeStats.record(NanoTime.since(beginNanoTime));
         }
     }
 
@@ -252,7 +253,7 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         private final LongAdder _bytesRead = new LongAdder();
         private final LongAdder _bytesWritten = new LongAdder();
-        private long _processStartTimeStamp;
+        private long _processStartNanoTime;
 
         private StatisticsRequest(Request request)
         {
@@ -283,13 +284,13 @@ public class StatisticsHandler extends Handler.Wrapper
 
         private long spentTimeNs()
         {
-            return System.nanoTime() - _processStartTimeStamp;
+            return NanoTime.since(_processStartNanoTime);
         }
 
         @Override
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
-            _processStartTimeStamp = System.nanoTime();
+            _processStartNanoTime = NanoTime.now();
             _processStats.increment();
             _requestStats.increment();
 
@@ -342,7 +343,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 public void succeeded()
                 {
                     _requestStats.decrement();
-                    _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
                     super.succeeded();
                 }
 
@@ -350,7 +351,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 public void failed(Throwable x)
                 {
                     _requestStats.decrement();
-                    _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
                     super.failed(x);
                 }
             });
@@ -367,7 +368,7 @@ public class StatisticsHandler extends Handler.Wrapper
             finally
             {
                 _processStats.decrement();
-                _processTimeStats.record(System.nanoTime() - _processStartTimeStamp);
+                _processTimeStats.record(NanoTime.since(_processStartNanoTime));
             }
         }
     }

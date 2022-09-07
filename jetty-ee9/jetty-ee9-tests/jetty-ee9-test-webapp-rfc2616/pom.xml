@@ -11,17 +11,10 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.rfc2616</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-maven-plugin</artifactId>

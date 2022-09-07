@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -182,15 +183,15 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             testThread.interrupt();
         }, maxTime, TimeUnit.MILLISECONDS);
 
-        long begin = System.nanoTime();
+        long begin = NanoTime.now();
         for (int i = 0; i < iterations; ++i)
         {
             test(latch, failures);
 //            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
-        long end = System.nanoTime();
+        long end = NanoTime.now();
         task.cancel();
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
+        long elapsed = NanoTime.millisElapsed(begin, end);
         logger.info("{} {} requests in {} ms, {} req/s", iterations, transport, elapsed, elapsed > 0 ? iterations * 1000L / elapsed : -1);
 
         for (String failure : failures)

@@ -78,7 +78,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             arguments.add(Arguments.of(env, "logging-log4j1",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-log4j12-.*\\.jar"
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-reload4j-.*\\.jar"
                 ),
                 Arrays.asList(
                     "logging/slf4j",
@@ -147,12 +147,12 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
         };
         try (JettyHomeTester.Run installRun = distribution.start(args1))
         {
-            assertTrue(installRun.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(installRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, installRun.getExitValue());
 
             try (JettyHomeTester.Run listConfigRun = distribution.start("--list-config"))
             {
-                assertTrue(listConfigRun.awaitFor(10, TimeUnit.SECONDS));
+                assertTrue(listConfigRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, listConfigRun.getExitValue());
 
                 List<String> rawConfigLogs = new ArrayList<>();

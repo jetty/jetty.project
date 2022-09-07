@@ -12,6 +12,9 @@
   <description>Jetty EE10 maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
+    <jetty.stopKey>FREEBEER</jetty.stopKey>
+    <jetty.jvmArgs></jetty.jvmArgs>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
   <build>
     <plugins>
@@ -32,12 +35,28 @@
               </portNames>
             </configuration>
           </execution>
+          <execution>
+            <id>reserve-ports</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <configuration>
+              <portNames>
+                <portName>jetty.stopPort</portName>
+              </portNames>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-            <argLine>-Dstop.port=@{test.stopPort} -Djetty.port=@{test.jettyPort}</argLine>
+          <argLine>-Dstop.port=@{test.stopPort} -Djetty.port=@{test.jettyPort}</argLine>
+          <excludes>
+            <exclude>**/IntegrationTest*.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
       <plugin>
@@ -54,10 +73,55 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>install</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
-          <skip>true</skip>
+          <junitPackageName>org.eclipse.jetty.maven.its.ee10</junitPackageName>
+          <streamLogsOnFailures>true</streamLogsOnFailures>
+          <addTestClassPath>true</addTestClassPath>
+          <ignoreFailures>true</ignoreFailures>
+          <setupIncludes>
+            <setupInclude>it-parent-pom/pom.xml</setupInclude>
+          </setupIncludes>
+          <pomExcludes>
+            <!-- enable again when springboot is migrated to jakarta -->
+            <pomExclude>javax-annotation-api/pom.xml</pomExclude>
+            <!-- enable again when gwt is migrated to jakarta -->
+            <pomExclude>jetty-start-gwt-it/pom.xml</pomExclude>
+            <!-- bean-validation-webapp-2.25.1.war is not jakarta namespace ready -->
+            <pomExclude>jetty-start-war-mojo-it/pom.xml</pomExclude>
+          </pomExcludes>
+          <scriptVariables>
+            <jettyStopKey>${jetty.stopKey}</jettyStopKey>
+            <jettyStopPort>${jetty.stopPort}</jettyStopPort>
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
+          </scriptVariables>
+          <settingsFile>src/it/settings.xml</settingsFile>
+          <goals>
+            <goal>clean</goal>
+          </goals>
         </configuration>
       </plugin>
     </plugins>
@@ -97,8 +161,18 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-home</artifactId>
+      <type>zip</type>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
@@ -139,11 +213,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlet</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -201,51 +270,15 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <reportSets>
-          <reportSet>
-            <reports>
-              <report>team</report>
-              <report>mailing-lists</report>
-              <report>ci-management</report>
-              <report>issue-management</report>
-              <report>licenses</report>
-              <report>scm</report>
-            </reports>
-          </reportSet>
-        </reportSets>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-plugin-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </reporting>
-  <profiles>
-    <profile>
-      <id>eclipse-release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-site-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>site-jar</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

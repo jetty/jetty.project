@@ -15,9 +15,9 @@ package org.eclipse.jetty.ee9.proxy;
 
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.server.ConnectHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ConnectHandler;
 
 public class ProxyServer
 {

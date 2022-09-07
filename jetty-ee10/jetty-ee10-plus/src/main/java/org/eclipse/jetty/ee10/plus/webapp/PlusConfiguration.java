@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.jndi.NamingContext;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +106,7 @@ public class PlusConfiguration extends AbstractConfiguration
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         try
         {
-            _key = (int)(this.hashCode() ^ System.nanoTime());
+            _key = (int)(this.hashCode() ^ NanoTime.now());
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
