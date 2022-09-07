@@ -288,26 +288,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isAlias()
-    {
-        return this.alias != null;
-    }
-
-    /**
-     * The Alias as a Path.
-     * <p>
-     * Note: this cannot return the alias as a DIFFERENT path in 100% of situations,
-     * due to Java's internal Path/File normalization.
-     * </p>
-     *
-     * @return the alias as a path.
-     */
-    public Path getAliasPath()
-    {
-        return this.alias;
-    }
-
-    @Override
     public URI getAlias()
     {
         return this.alias == null ? null : this.alias.toUri();

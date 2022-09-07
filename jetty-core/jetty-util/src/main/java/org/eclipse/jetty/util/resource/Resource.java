@@ -344,6 +344,8 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
+     * The canonical Alias for the Resource as a URI.
+     *
      * @return The canonical Alias of this resource or null if none.
      */
     public URI getAlias()
