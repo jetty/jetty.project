@@ -597,7 +597,7 @@ public class ResourceService
                 }
 
                 long ifmsl = request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                if (ifmsl != -1 && content.getResource().lastModified() / 1000 <= ifmsl / 1000)
+                if (ifmsl != -1 && content.getResource().lastModified().toEpochMilli() <= ifmsl)
                 {
                     sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
                     return false;
@@ -605,7 +605,7 @@ public class ResourceService
             }
 
             // Parse the if[un]modified dates and compare to resource
-            if (ifums != -1 && content.getResource().lastModified() / 1000 > ifums / 1000)
+            if (ifums != -1 && content.getResource().lastModified().toEpochMilli() > ifums)
             {
                 response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
                 return false;

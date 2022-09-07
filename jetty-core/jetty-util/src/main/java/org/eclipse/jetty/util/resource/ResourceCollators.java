@@ -37,7 +37,7 @@ public class ResourceCollators
         Collections.reverseOrder(BY_NAME_ASCENDING);
 
     private static Comparator<? super Resource> BY_LAST_MODIFIED_ASCENDING =
-        Comparator.comparingLong(Resource::lastModified);
+        Comparator.comparing(Resource::lastModified);
 
     private static Comparator<? super Resource> BY_LAST_MODIFIED_DESCENDING =
         Collections.reverseOrder(BY_LAST_MODIFIED_ASCENDING);
