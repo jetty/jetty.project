@@ -111,6 +111,9 @@ public abstract class Resource implements Iterable<Resource>
                 else
                     // otherwise resolve against the current directory
                     uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
+
+                // Correct any `file:/path` to `file:///path` mistakes
+                uri = URIUtil.correctFileURI(uri);
             }
 
             // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
@@ -306,7 +309,11 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * {@inheritDoc}
+     * Resolve a new Resource from an encoded subUriPath.
+     *
+     * @param subUriPath the encoded subUriPath
+     * @return a Resource representing the subUriPath
+     * @throws IllegalArgumentException if subUriPath is invalid
      */
     public Resource resolve(String subUriPath)
     {
@@ -326,38 +333,13 @@ public abstract class Resource implements Iterable<Resource>
         // that like an absolute path.
         while (subUriPath.startsWith(URIUtil.SLASH))
         {
-            // TODO XXX this appears entirely unneccessary and inefficient.  We already have utilities
+            // TODO XXX this appears entirely unnecessary and inefficient.  We already have utilities
             //      to handle appending path strings with/without slashes.
             subUriPath = subUriPath.substring(1);
         }
 
         URI uri = getURI();
-        URI resolvedUri;
-        if (uri.isOpaque())
-        {
-            // TODO create a subclass with an optimized implementation of this.
-            // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
-            // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
-            // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
-            String scheme = uri.getScheme();
-            URI subUri = URI.create(uri.getSchemeSpecificPart());
-            if (subUri.isOpaque())
-                throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
-
-            // TODO see XXX above
-            if (!subUri.getPath().endsWith(URIUtil.SLASH))
-                subUri = URI.create(subUri + URIUtil.SLASH);
-
-            URI subUriResolved = subUri.resolve(subUriPath);
-            resolvedUri = URI.create(scheme + ":" + subUriResolved);
-        }
-        else
-        {
-            // TODO see XXX above
-            if (!uri.getPath().endsWith(URIUtil.SLASH))
-                uri = URI.create(uri + URIUtil.SLASH);
-            resolvedUri = uri.resolve(subUriPath);
-        }
+        URI resolvedUri = URIUtil.addPath(uri, subUriPath);
         return create(resolvedUri);
     }
 
@@ -370,6 +352,8 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
+     * The canonical Alias for the Resource as a URI.
+     *
      * @return The canonical Alias of this resource or null if none.
      */
     public URI getAlias()

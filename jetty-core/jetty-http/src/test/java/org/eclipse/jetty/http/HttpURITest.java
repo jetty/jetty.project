@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.stream.Stream;
@@ -25,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -384,9 +386,16 @@ public class HttpURITest
 
                 // encoded paths
                 {"/f%6f%6F/bar", "/foo/bar", "/foo/bar", EnumSet.noneOf(Violation.class)},
+                {"/context/dir%3B/", "/context/dir%3B/", "/context/dir;/", EnumSet.noneOf(Violation.class)},
                 {"/f%u006f%u006F/bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
                 {"/f%u0001%u0001/bar", "/f%01%01/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
                 {"/foo/%u20AC/bar", "/foo/\u20AC/bar", "/foo/\u20AC/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+
+                // nfc encoded unicode path
+                {"/dir/swedish-%C3%A5.txt", "/dir/swedish-å.txt", "/dir/swedish-å.txt", EnumSet.noneOf(Violation.class)},
+
+                // nfd encoded unicode path
+                {"/dir/swedish-a%CC%8A.txt", URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8), URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8), EnumSet.noneOf(Violation.class)},
 
                 // illegal paths
                 {"//host/../path/info", null, null, EnumSet.noneOf(Violation.class)},
@@ -487,7 +496,8 @@ public class HttpURITest
         try
         {
             HttpURI uri = HttpURI.from(input);
-            assertThat(uri.getDecodedPath(), is(decodedPath));
+            assertThat("Canonical Path", uri.getCanonicalPath(), is(canonicalPath));
+            assertThat("Decoded Path", uri.getDecodedPath(), is(decodedPath));
 
             EnumSet<Violation> ambiguous = EnumSet.copyOf(expected);
             ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS)));

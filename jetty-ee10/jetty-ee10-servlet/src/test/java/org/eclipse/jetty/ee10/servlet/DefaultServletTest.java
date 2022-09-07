@@ -319,7 +319,6 @@ public class DefaultServletTest
      * This test ensures that this behavior will not arise again.
      */
     @Test
-    @Disabled("Somehow this trips up the Alias Checks")
     public void testListingFilenamesOnlyUrlResource() throws Exception
     {
         URL extraResource = context.getClassLoader().getResource("rez/one");
@@ -560,7 +559,7 @@ public class DefaultServletTest
             );
 
             // A Raw Question mark in the prefix can be interpreted as a query section
-            if (prefix.contains("?"))
+            if (prefix.contains("?") || prefix.contains(";"))
             {
                 scenarios.addScenario("""
                         GET @PREFIX@/../index.html HTTP/1.1\r
