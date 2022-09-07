@@ -29,6 +29,7 @@ import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -178,24 +179,31 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Time resource was last modified.
-     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
-     * {@link #getPath()} then returning {@link FileTime#toMillis()}.
+     * The time the resource was last modified.
      *
-     * @return the last modified time as milliseconds since unix epoch or
-     * 0 if {@link Files#getLastModifiedTime(Path, LinkOption...)} throws {@link IOException}.
+     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
+     * {@link #getPath()} then returning {@link FileTime#toInstant()}.
+     *
+     * @return the last modified time instant, or {@link Instant#EPOCH} if unable to obtain last modified.
      */
-    public long lastModified()
+    public Instant lastModified()
     {
+        Path path = getPath();
+        if (path == null)
+            return Instant.EPOCH;
+
+        if (!Files.exists(path))
+            return Instant.EPOCH;
+
         try
         {
-            FileTime ft = Files.getLastModifiedTime(getPath(), FOLLOW_LINKS);
-            return ft.toMillis();
+            FileTime ft = Files.getLastModifiedTime(path, FOLLOW_LINKS);
+            return ft.toInstant();
         }
         catch (IOException e)
         {
             LOG.trace("IGNORED", e);
-            return 0;
+            return Instant.EPOCH;
         }
     }
 
@@ -426,7 +434,7 @@ public abstract class Resource implements Iterable<Resource>
         }
 
         Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
-        b.append(encoder.encodeToString(longToBytes(lastModified() ^ lhash)));
+        b.append(encoder.encodeToString(longToBytes(lastModified().toEpochMilli() ^ lhash)));
         b.append(encoder.encodeToString(longToBytes(length() ^ lhash)));
         b.append(suffix);
         b.append('"');

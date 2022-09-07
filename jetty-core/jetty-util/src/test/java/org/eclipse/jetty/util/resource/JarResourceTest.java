@@ -213,7 +213,7 @@ public class JarResourceTest
             long last = zf.getEntry("subdir/numbers").getTime();
 
             Resource r = resourceFactory.newResource(uri);
-            assertEquals(last, r.lastModified());
+            assertEquals(last, r.lastModified().toEpochMilli());
         }
     }
 

@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.server;
 
-import java.text.DateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 import org.eclipse.jetty.util.Fields;
@@ -198,7 +200,9 @@ public class ResourceListing
             buf.append("</tr>\n");
         }
 
-        DateFormat dfmt = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
+        // TODO: Use Locale and/or ZoneId from Request?
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.MEDIUM)
+            .withZone(ZoneId.systemDefault());
 
         for (Resource item : listing)
         {
@@ -223,9 +227,8 @@ public class ResourceListing
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
-            long lastModified = item.lastModified();
-            if (lastModified > 0)
-                buf.append(dfmt.format(new Date(item.lastModified())));
+            Instant lastModified = item.lastModified();
+            buf.append(formatter.format(lastModified));
             buf.append("&nbsp;</td>");
 
             // Size

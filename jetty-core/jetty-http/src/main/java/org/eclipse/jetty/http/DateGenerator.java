@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
@@ -56,6 +57,17 @@ public class DateGenerator
     public static String formatDate(long date)
     {
         return __dateGenerator.get().doFormatDate(date);
+    }
+
+    /**
+     * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+     *
+     * @param instant the date/time instant
+     * @return the formatted date
+     */
+    public static String formatDate(Instant instant)
+    {
+        return formatDate(instant.toEpochMilli());
     }
 
     /**
