@@ -1560,8 +1560,6 @@ public class DefaultServletTest
     {
         Scenarios scenarios = new Scenarios();
 
-        // TODO: sendError not working (yet)
-        /*
         scenarios.addScenario(
             "GET /context/ - (/index.jsp servlet match, but JSP not supported)",
             """
@@ -1573,7 +1571,6 @@ public class DefaultServletTest
             HttpStatus.INTERNAL_SERVER_ERROR_500,
             (response) -> assertThat(response.getContent(), containsString("JSP support not configured")) // test of SendError response
         );
-         */
 
         addBasicWelcomeScenarios(scenarios);
 

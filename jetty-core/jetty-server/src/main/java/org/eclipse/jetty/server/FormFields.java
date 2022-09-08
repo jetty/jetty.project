@@ -77,6 +77,22 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         return futureFormFields;
     }
 
+    public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
+    {
+        Object attr = request.getAttribute(FormFields.class.getName());
+        if (attr instanceof FormFields futureFormFields)
+            return futureFormFields;
+
+        Charset charset = getFormEncodedCharset(request);
+        if (charset == null)
+            return EMPTY;
+
+        FormFields futureFormFields = new FormFields(request, charset, maxFields, maxLength);
+        futureFormFields.run();
+        request.setAttribute(FormFields.class.getName(), futureFormFields);
+        return futureFormFields;
+    }
+
     private static int getRequestAttribute(Request request, String attribute)
     {
         Object value = request.getAttribute(attribute);
@@ -141,7 +157,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     Fields.Field field = parse(chunk);
                     if (field == null)
                         break;
-                    if (_maxFields > 0 && _fields.getSize() > _maxFields)
+                    if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
                     {
                         chunk.release();
                         completeExceptionally(new IllegalStateException("form with too many fields"));
@@ -245,7 +261,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
     private void checkLength(Content.Chunk chunk, String nameOrValue)
     {
-        if (_maxLength > 0)
+        if (_maxLength >= 0)
         {
             _length += nameOrValue.length();
             if (_length > _maxLength)
