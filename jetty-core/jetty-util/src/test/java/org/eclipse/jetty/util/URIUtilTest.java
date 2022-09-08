@@ -522,6 +522,26 @@ public class URIUtilTest
         assertThat(actual.toASCIIString(), is(expectedUri));
     }
 
+    /**
+     * Test to show how URIUtil.addPath(URI, String) retains the input String and does
+     * not normalize away details that might be relevant.
+     */
+    @Test
+    public void testAddPathNav()
+    {
+        URI uri = URI.create("file:////c:/");
+        URI actual = URIUtil.addPath(uri, "foo/../bar");
+        assertThat(actual.toASCIIString(), is("file:////c:/foo/../bar"));
+
+        actual = URIUtil.addPath(uri, "foo/..%2fbar");
+        // pct-u encoded will be capitalized
+        assertThat(actual.toASCIIString(), is("file:////c:/foo/..%2Fbar"));
+
+        // java.net.URI will encode `\\` to `%5C` per URI rules
+        actual = URIUtil.addPath(uri, "foo/..\\bar");
+        assertThat(actual.toASCIIString(), is("file:////c:/foo/..%5Cbar"));
+    }
+
     public static Stream<Arguments> ensureSafeEncodingSource()
     {
         return Stream.of(
