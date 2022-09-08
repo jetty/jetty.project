@@ -43,8 +43,8 @@ public class StatisticsHandler extends Handler.Wrapper
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
     private final SampleStatistic _processTimeStats = new SampleStatistic();
-    private final LongAdder _processThrows = new LongAdder();
-    private final LongAdder _handleThrows = new LongAdder();
+    private final LongAdder _processingErrors = new LongAdder();
+    private final LongAdder _handlingErrors = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -64,7 +64,7 @@ public class StatisticsHandler extends Handler.Wrapper
         }
         catch (Throwable t)
         {
-            _handleThrows.increment();
+            _handlingErrors.increment();
             throw t;
         }
         finally
@@ -84,8 +84,8 @@ public class StatisticsHandler extends Handler.Wrapper
         _requestTimeStats.reset();
         _handleTimeStats.reset();
         _processTimeStats.reset();
-        _processThrows.reset();
-        _handleThrows.reset();
+        _processingErrors.reset();
+        _handlingErrors.reset();
         _responses1xx.reset();
         _responses2xx.reset();
         _responses3xx.reset();
@@ -142,15 +142,15 @@ public class StatisticsHandler extends Handler.Wrapper
     }
 
     @ManagedAttribute("number of requests that threw an exception during handling")
-    public int getHandleThrows()
+    public int getHandlingErrors()
     {
-        return _handleThrows.intValue();
+        return _handlingErrors.intValue();
     }
 
     @ManagedAttribute("number of requests that threw an exception during processing")
-    public int getProcessThrows()
+    public int getProcessingErrors()
     {
-        return _processThrows.intValue();
+        return _processingErrors.intValue();
     }
 
     @ManagedAttribute("")
@@ -362,7 +362,7 @@ public class StatisticsHandler extends Handler.Wrapper
             }
             catch (Throwable t)
             {
-                _processThrows.increment();
+                _processingErrors.increment();
                 throw t;
             }
             finally
