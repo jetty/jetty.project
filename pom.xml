@@ -49,7 +49,7 @@
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.15.0</hawtio.version>
+    <hawtio.version>2.15.1</hawtio.version>
     <hazelcast.version>4.2.5</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
@@ -160,7 +160,7 @@
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.7.1.1</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.7.2.0</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.11.0</versions.maven.plugin.version>
 
     <!-- testing -->
