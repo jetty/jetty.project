@@ -124,6 +124,7 @@ public class URIUtilTest
         arguments.add(Arguments.of("/foo bar\n", "/foo%20bar%0A", "/foo bar\n"));
         arguments.add(Arguments.of("/foo\u0000bar", "/foo%00bar", "/foo\u0000bar"));
         arguments.add(Arguments.of("/foo/bär", "/foo/bär", "/foo/bär"));
+        arguments.add(Arguments.of("/foo/€/bar", "/foo/€/bar", "/foo/€/bar"));
         arguments.add(Arguments.of("/fo %2fo/b%61r", "/fo%20%2Fo/bar", "/fo /o/bar"));
 
         // Test for null character (real world ugly test case)
@@ -403,6 +404,154 @@ public class URIUtilTest
         assertEquals(expected, actual, String.format("%s+%s", path1, path2));
     }
 
+    public static Stream<Arguments> uriAddPathEncodedSource()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        URI baseUri;
+
+        baseUri = URI.create("file:///path/");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path/"));
+        cases.add(Arguments.of(baseUri, "", "file:///path/"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///path/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///path/b%C3%A3m"));
+
+        baseUri = URI.create("file:///tmp/aaa");
+
+        cases.add(Arguments.of(baseUri, null, "file:///tmp/aaa"));
+        cases.add(Arguments.of(baseUri, "", "file:///tmp/aaa"));
+        cases.add(Arguments.of(baseUri, "/", "file:///tmp/aaa/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///tmp/aaa/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///tmp/aaa/b%C3%A3m"));
+
+        baseUri = URI.create("/");
+
+        cases.add(Arguments.of(baseUri, null, "/"));
+        cases.add(Arguments.of(baseUri, "", "/"));
+        cases.add(Arguments.of(baseUri, "/", "/"));
+        cases.add(Arguments.of(baseUri, "bãm", "/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "/b%C3%A3m"));
+
+        baseUri = URI.create("");
+
+        cases.add(Arguments.of(baseUri, null, ""));
+        cases.add(Arguments.of(baseUri, "", ""));
+        cases.add(Arguments.of(baseUri, "/", "/"));
+        cases.add(Arguments.of(baseUri, "bãm", "b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "/b%C3%A3m"));
+
+        baseUri = URI.create("aaa/");
+
+        cases.add(Arguments.of(baseUri, null, "aaa/"));
+        cases.add(Arguments.of(baseUri, "", "aaa/"));
+        cases.add(Arguments.of(baseUri, "/", "aaa/"));
+        cases.add(Arguments.of(baseUri, "bãm/zzz", "aaa/b%C3%A3m/zzz"));
+        cases.add(Arguments.of(baseUri, "bãm", "aaa/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "aaa/b%C3%A3m"));
+
+        baseUri = URI.create(";JS");
+
+        cases.add(Arguments.of(baseUri, null, ";JS"));
+        cases.add(Arguments.of(baseUri, "", ";JS"));
+        cases.add(Arguments.of(baseUri, "/", ";JS/"));
+        cases.add(Arguments.of(baseUri, "bãm", ";JS/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", ";JS/b%C3%A3m"));
+
+        baseUri = URI.create("file:///path;JS");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path;JS"));
+        cases.add(Arguments.of(baseUri, "", "file:///path;JS"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path;JS/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///path;JS/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///path;JS/b%C3%A3m"));
+
+        baseUri = URI.create("?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "?A=1"));
+        cases.add(Arguments.of(baseUri, "", "?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "?A=1/b%C3%A3m"));
+
+        baseUri = URI.create("aaa?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "aaa?A=1"));
+        cases.add(Arguments.of(baseUri, "", "aaa?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "aaa?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "aaa?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "aaa?A=1/b%C3%A3m"));
+
+        baseUri = URI.create("aaa/?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "aaa/?A=1"));
+        cases.add(Arguments.of(baseUri, "", "aaa/?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "aaa/?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "aaa/?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm", "aaa/?A=1/b%C3%A3m"));
+
+        baseUri = URI.create("file:///path?A=1");
+
+        cases.add(Arguments.of(baseUri, null, "file:///path?A=1"));
+        cases.add(Arguments.of(baseUri, "", "file:///path?A=1"));
+        cases.add(Arguments.of(baseUri, "/", "file:///path?A=1/"));
+        cases.add(Arguments.of(baseUri, "bãm", "file:///path?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "bãm/", "file:///path?A=1/b%C3%A3m/"));
+        cases.add(Arguments.of(baseUri, "/bãm", "file:///path?A=1/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/bãm/", "file:///path?A=1/b%C3%A3m/"));
+
+        baseUri = URI.create("jar:file:///path/foo.jar!/");
+
+        cases.add(Arguments.of(baseUri, null, "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "", "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "/", "jar:file:///path/foo.jar!/"));
+        cases.add(Arguments.of(baseUri, "b%C3%A3m", "jar:file:///path/foo.jar!/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "b%C3%A3m/", "jar:file:///path/foo.jar!/b%C3%A3m/"));
+        cases.add(Arguments.of(baseUri, "/b%C3%A3m", "jar:file:///path/foo.jar!/b%C3%A3m"));
+        cases.add(Arguments.of(baseUri, "/b%C3%A3m/", "jar:file:///path/foo.jar!/b%C3%A3m/"));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest(name = "[{index}] {0} + {1}")
+    @MethodSource("uriAddPathEncodedSource")
+    public void testUriAddPathEncoded(URI baseUri, String path, String expectedUri)
+    {
+        URI actual = URIUtil.addPath(baseUri, path);
+        assertThat(actual.toASCIIString(), is(expectedUri));
+    }
+
+    public static Stream<Arguments> ensureSafeEncodingSource()
+    {
+        return Stream.of(
+            Arguments.of("/foo", "/foo"),
+            Arguments.of("/barry's", "/barry's"),
+            Arguments.of("/barry%27s", "/barry's"),
+            Arguments.of("/section[42]", "/section%5B42%5D"),
+            Arguments.of("/dir?", "/dir%3F"),
+            Arguments.of("/dir#", "/dir%23"),
+            // encode utf-8 unicode
+            Arguments.of("/bãm/", "/b%C3%A3m/"),
+            Arguments.of("/bä€ãm/", "/b%C3%A4%E2%82%AC%C3%A3m/"),
+            // encode naked % to %25
+            Arguments.of("/abc%x", "/abc%25x"),
+            // encoded characters to leave as-is
+            Arguments.of("/foo/%2F", "/foo/%2F"), // the path "/" symbol
+            Arguments.of("/foo%5B1%5D", "/foo%5B1%5D"), // the "[" and "]" symbols
+            Arguments.of("/bar%23", "/bar%23"), // hash "#" symbol
+            // normalize hex codes
+            Arguments.of("/b%c3%a4%e2%82%ac%c3%a3m/", "/b%C3%A4%E2%82%AC%C3%A3m/")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("ensureSafeEncodingSource")
+    public void testEnsureSafeEncoding(String input, String expected)
+    {
+        assertThat(URIUtil.ensureSafeEncoding(input), is(expected));
+    }
+
     public static Stream<Arguments> compactPathSource()
     {
         return Stream.of(
@@ -449,12 +598,13 @@ public class URIUtilTest
     {
         return Stream.of(
             Arguments.of("http://example.com/foo/bar", "http://example.com/foo/bar"),
+            Arguments.of("/barry%27s", "/barry%27s"),
+            Arguments.of("/b rry%27s", "/b%20rry%27s"),
             Arguments.of("/barry's", "/barry%27s"),
             Arguments.of("/barry%27s", "/barry's"),
-            Arguments.of("/barry%27s", "/barry%27s"),
             Arguments.of("/b rry's", "/b%20rry%27s"),
             Arguments.of("/b rry%27s", "/b%20rry's"),
-            Arguments.of("/b rry%27s", "/b%20rry%27s"),
+            Arguments.of("/re bar", "/re%20bar"),
 
             Arguments.of("/foo%2fbar", "/foo%2fbar"),
             Arguments.of("/foo%2fbar", "/foo%2Fbar"),
@@ -463,7 +613,10 @@ public class URIUtilTest
             Arguments.of("/abc%25xyz", "/abc%xyz"),
             Arguments.of("/abc%25xy", "/abc%xy"),
             Arguments.of("/abc%25x", "/abc%x"),
-            Arguments.of("/zzz%25", "/zzz%")
+            Arguments.of("/zzz%25", "/zzz%"),
+
+            // unicode encoded vs not-encoded
+            Arguments.of("/path/to/bä€ãm/", "/path/to/b%C3%A4%E2%82%AC%C3%A3m/")
         );
     }
 
@@ -486,9 +639,17 @@ public class URIUtilTest
             Arguments.of("/foo/bar", "/foo%2fbar"),
             // not actually encoded
             Arguments.of("/foo2fbar", "/foo/bar"),
+            // path params
+            Arguments.of("/path;a=b/to;x=y/foo/", "/path/to/foo"),
             // encoded vs not-encode ("%" symbol is encoded as "%25")
             Arguments.of("/yyy%25zzz", "/aaa%xxx"),
-            Arguments.of("/zzz%25", "/aaa%")
+            Arguments.of("/zzz%25", "/aaa%"),
+            // %2F then multi-byte unicode
+            Arguments.of("/path/to/bãm/", "/path%2Fto/b%C3%A3m/"),
+            // multi-byte unicode then %2F
+            Arguments.of("/path/bãm/or/bust", "/path/b%C3%A3m/or%2Fbust"),
+            // mix of %2F and multiple consecutive multi-byte unicode
+            Arguments.of("/path/to/bä€ãm/", "/path%2Fto/b%C3%A4%E2%82%AC%C3%A3m/")
         );
     }
 
@@ -513,8 +674,25 @@ public class URIUtilTest
             Arguments.of(
                 URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/"),
                 URI.create("jar:file:/path/to/main.jar!/META-INF/versions/")
+            ),
+            // unicode in opaque jar:file: URI
+            Arguments.of(
+                URI.create("jar:file:///path/to/test.jar!/bãm/"),
+                URI.create("jar:file:///path/to/test.jar!/b%C3%A3m/")
+            ),
+            // multiple consecutive unicode
+            Arguments.of(
+                URI.create("file:///path/to/bä€ãm/"),
+                URI.create("file:///path/to/b%C3%A4%E2%82%AC%C3%A3m/")
             )
         );
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalsIgnoreEncodingURITrueSource")
+    public void testEqualsIgnoreEncodingURITrue(URI uriA, URI uriB)
+    {
+        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
     }
 
     public static Stream<Arguments> equalsIgnoreEncodingURIFalseSource()
@@ -523,6 +701,21 @@ public class URIUtilTest
             Arguments.of(
                 URI.create("/foo%2Fbar"),
                 URI.create("/foo/bar")
+            ),
+            // %2F then unicode
+            Arguments.of(
+                URI.create("file:///path/to/bãm/"),
+                URI.create("file:///path%2Fto/b%C3%A3m/")
+            ),
+            // unicode then %2F
+            Arguments.of(
+                URI.create("file:///path/bãm/or/bust"),
+                URI.create("file:///path/b%C3%A3m/or%2Fbust")
+            ),
+            // mix of %2F and multiple consecutive unicode
+            Arguments.of(
+                URI.create("file:///path/to/bä€ãm/"),
+                URI.create("file:///path%2Fto/b%C3%A4%E2%82%AC%C3%A3m/")
             )
         );
     }

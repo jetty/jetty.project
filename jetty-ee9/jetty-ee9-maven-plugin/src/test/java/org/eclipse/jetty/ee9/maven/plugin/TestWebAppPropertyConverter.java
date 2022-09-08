@@ -58,7 +58,7 @@ public class TestWebAppPropertyConverter
     {
         testDir = MavenTestingUtils.getTargetTestingDir("TestWebApPropertyConverter");
         testDir.mkdirs();
-        contextXml = MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath();
+        contextXml = MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath();
         tmpDir = new File(testDir, "testToProperties");
         tmpDir.mkdirs();
         classesDir = new File(testDir, "imaginaryClasses");
@@ -95,7 +95,7 @@ public class TestWebAppPropertyConverter
 
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/foo");
-        webApp.setBaseResource(ResourceFactory.of(webApp).newResource(MavenTestingUtils.getTestResourcePathDir("root")));
+        webApp.setBaseResource(ResourceFactory.of(webApp).newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
         webApp.setTempDirectory(tmpDir);
         webApp.setPersistTempDirectory(false);
         webApp.setClasses(classesDir);

@@ -13,6 +13,7 @@
 
   <properties>
     <sonar.skip>true</sonar.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <modules>
@@ -40,14 +41,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

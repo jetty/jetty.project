@@ -40,10 +40,10 @@ public class BlockingTest
         try (Blocker.Runnable runnable = Blocker.runnable())
         {
             runnable.run();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             runnable.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
+        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
@@ -69,23 +69,24 @@ public class BlockingTest
             }).start();
 
             latch.await();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             runnable.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(1000L));
+        long elapsed = NanoTime.millisSince(start);
+        assertThat(elapsed, greaterThan(10L));
+        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
-    public void testNoRun() throws Exception
+    public void testNoRun()
     {
         long start;
         try (Blocker.Runnable ignored = Blocker.runnable())
         {
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Runnable incomplete");
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
+        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
@@ -95,10 +96,10 @@ public class BlockingTest
         try (Blocker.Callback callback = Blocker.callback())
         {
             callback.succeeded();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             callback.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
+        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
@@ -124,11 +125,12 @@ public class BlockingTest
             }).start();
 
             latch.await();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             callback.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(1000L));
+        long elapsed = NanoTime.millisSince(start);
+        assertThat(elapsed, greaterThan(10L));
+        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
@@ -147,10 +149,10 @@ public class BlockingTest
         }
         catch (IOException e)
         {
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             assertEquals(ex, e.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(100L));
+        assertThat(NanoTime.millisSince(start), lessThan(100L));
     }
 
     @Test
@@ -180,7 +182,7 @@ public class BlockingTest
                 }).start();
 
                 latch.await();
-                start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                start = NanoTime.now();
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -189,8 +191,9 @@ public class BlockingTest
         {
             assertEquals(ex, e.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(1000L));
+        long elapsed = NanoTime.millisSince(start);
+        assertThat(elapsed, greaterThan(10L));
+        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
@@ -200,10 +203,10 @@ public class BlockingTest
         try (Blocker.Runnable runnable = _shared.runnable())
         {
             runnable.run();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             runnable.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
+        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
@@ -229,11 +232,12 @@ public class BlockingTest
             }).start();
 
             latch.await();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             runnable.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(1000L));
+        long elapsed = NanoTime.millisSince(start);
+        assertThat(elapsed, greaterThan(10L));
+        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
@@ -242,10 +246,10 @@ public class BlockingTest
         long start;
         try (Blocker.Runnable ignored = _shared.runnable())
         {
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Shared incomplete");
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
+        assertThat(NanoTime.millisSince(start), lessThan(500L));
 
         // check it is still operating.
         try (Blocker.Runnable runnable = _shared.runnable())
@@ -262,10 +266,10 @@ public class BlockingTest
         try (Blocker.Callback callback = _shared.callback())
         {
             callback.succeeded();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             callback.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(500L));
+        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
@@ -291,15 +295,16 @@ public class BlockingTest
             }).start();
 
             latch.await();
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             callback.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(1000L));
+        long elapsed = NanoTime.millisSince(start);
+        assertThat(elapsed, greaterThan(10L));
+        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
-    public void testSharedFailedBlock() throws Exception
+    public void testSharedFailedBlock()
     {
         final Exception ex = new Exception("FAILED");
         long start = Long.MIN_VALUE;
@@ -314,10 +319,10 @@ public class BlockingTest
         }
         catch (IOException e)
         {
-            start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            start = NanoTime.now();
             assertEquals(ex, e.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(100L));
+        assertThat(NanoTime.millisSince(start), lessThan(100L));
     }
 
     @Test
@@ -347,7 +352,7 @@ public class BlockingTest
                 }).start();
 
                 latch.await();
-                start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                start = NanoTime.now();
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -356,8 +361,9 @@ public class BlockingTest
         {
             assertEquals(ex, e.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(1000L));
+        long elapsed = NanoTime.millisSince(start);
+        assertThat(elapsed, greaterThan(10L));
+        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test

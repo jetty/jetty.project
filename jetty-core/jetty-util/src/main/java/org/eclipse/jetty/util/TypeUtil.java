@@ -498,6 +498,26 @@ public class TypeUtil
         return d;
     }
 
+    public static boolean isHex(String str, int offset, int len)
+    {
+        if (str == null)
+            return false;
+
+        if (offset + len > str.length())
+            return false;
+
+        for (int i = offset; i < offset + len; i++)
+        {
+            char c = str.charAt(i);
+            if (!(c >= '0' && c <= '9') &&
+                !(c >= 'a' && c <= 'f') &&
+                !(c >= 'A' && c <= 'F'))
+                return false;
+        }
+
+        return true;
+    }
+
     public static void toHex(byte b, Appendable buf)
     {
         try
@@ -531,8 +551,6 @@ public class TypeUtil
         buf.append((char)((d > 9 ? ('A' - 10) : '0') + d));
         d = 0xf & value;
         buf.append((char)((d > 9 ? ('A' - 10) : '0') + d));
-
-        Integer.toString(0, 36);
     }
 
     public static void toHex(long value, Appendable buf) throws IOException

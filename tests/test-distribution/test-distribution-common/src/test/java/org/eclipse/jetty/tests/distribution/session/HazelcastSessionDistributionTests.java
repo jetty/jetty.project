@@ -164,7 +164,7 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
             };
             try (JettyHomeTester.Run run1 = distribution.start(args1))
             {
-                assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+                assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
 
                 File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);

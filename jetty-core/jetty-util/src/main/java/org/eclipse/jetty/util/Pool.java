@@ -129,7 +129,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     public Pool(StrategyType strategyType, int maxEntries, boolean cache, ToIntFunction<T> maxMultiplex)
     {
         this.maxEntries = maxEntries;
-        this.strategyType = strategyType;
+        this.strategyType = Objects.requireNonNull(strategyType);
         this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
@@ -205,14 +205,25 @@ public class Pool<T> implements AutoCloseable, Dumpable
         try (AutoLock ignored = lock.lock())
         {
             if (closed)
+            {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("{} is closed, returning null reserved entry", this);
                 return null;
+            }
 
             // If we have no space
-            if (maxEntries > 0 && entries.size() >= maxEntries)
+            int entriesSize = entries.size();
+            if (maxEntries > 0 && entriesSize >= maxEntries)
+            {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("{} has no space: {} >= {}, returning null reserved entry", this, entriesSize, maxEntries);
                 return null;
+            }
 
             Entry entry = new Entry();
             entries.add(entry);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("{} returning new reserved entry {}", this, entry);
             return entry;
         }
     }
@@ -368,6 +379,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public void close()
     {
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Closing {}", this);
+
         List<Entry> copy;
         try (AutoLock ignored = lock.lock())
         {

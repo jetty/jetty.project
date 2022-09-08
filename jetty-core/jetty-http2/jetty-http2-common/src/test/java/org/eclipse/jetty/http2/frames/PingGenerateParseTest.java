@@ -24,6 +24,7 @@ import org.eclipse.jetty.http2.internal.generator.PingGenerator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -133,7 +134,7 @@ public class PingGenerateParseTest
         parser.init(UnaryOperator.identity());
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        PingFrame ping = new PingFrame(System.nanoTime(), true);
+        PingFrame ping = new PingFrame(NanoTime.now(), true);
         generator.generate(lease, ping);
 
         for (ByteBuffer buffer : lease.getByteBuffers())

@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,15 +99,15 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public HttpField getLastModified()
     {
-        long lm = _resource.lastModified();
-        return lm >= 0 ? new HttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(lm)) : null;
+        Instant lm = _resource.lastModified();
+        return new HttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(lm));
     }
 
     @Override
     public String getLastModifiedValue()
     {
-        long lm = _resource.lastModified();
-        return lm >= 0 ? DateGenerator.formatDate(lm) : null;
+        Instant lm = _resource.lastModified();
+        return DateGenerator.formatDate(lm);
     }
 
     @Override

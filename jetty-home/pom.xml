@@ -436,33 +436,7 @@
       </plugin>
     </plugins>
   </build>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
+  
   <dependencies>
     <!--    <dependency>-->
     <!--      <groupId>jakarta.mail</groupId>-->
@@ -633,47 +607,12 @@
       <optional>true</optional>
     </dependency>
 
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty</groupId>-->
-<!--      <artifactId>jetty-hazelcast</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.gcloud</groupId>-->
-<!--      <artifactId>jetty-gcloud-session-manager</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty.memcached</groupId>-->
-<!--      <artifactId>jetty-memcached-sessions</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
-<!--    <dependency>-->
-<!--      <groupId>org.eclipse.jetty</groupId>-->
-<!--      <artifactId>jetty-nosql</artifactId>-->
-<!--      <optional>true</optional>-->
-<!--    </dependency>-->
-
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty</groupId>-->
-    <!--      <artifactId>jetty-hazelcast</artifactId>-->
-    <!--      <optional>true</optional>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.gcloud</groupId>-->
-    <!--      <artifactId>jetty-gcloud-session-manager</artifactId>-->
-    <!--      <optional>true</optional>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.memcached</groupId>-->
-    <!--      <artifactId>jetty-memcached-sessions</artifactId>-->
-    <!--      <optional>true</optional>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty</groupId>-->
-    <!--      <artifactId>jetty-nosql</artifactId>-->
-    <!--      <optional>true</optional>-->
-    <!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-demo-handler</artifactId>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

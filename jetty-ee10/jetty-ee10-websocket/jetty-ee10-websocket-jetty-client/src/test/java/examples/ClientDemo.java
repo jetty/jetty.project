@@ -19,8 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,8 +61,6 @@ public class ClientDemo
 
         public void send(byte op, byte[] data, int maxFragmentLength)
         {
-            _starts.add(System.nanoTime());
-
             int off = 0;
             int len = data.length;
             if ((maxFragmentLength > 0) && (len > maxFragmentLength))
@@ -267,8 +263,6 @@ public class ClientDemo
         System.err.println("  -d|--delay n    (default 1000ms) ");
         System.exit(1);
     }
-
-    private BlockingQueue<Long> _starts = new LinkedBlockingQueue<>();
 
     private WebSocketClient client;
     private TestSocket socket;

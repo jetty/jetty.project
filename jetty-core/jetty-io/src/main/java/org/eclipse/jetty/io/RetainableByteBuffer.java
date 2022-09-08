@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 
 /**
  * <p>A pooled ByteBuffer which maintains a reference count that is
@@ -35,7 +36,7 @@ public class RetainableByteBuffer extends Retainable.ReferenceCounter
 {
     private final ByteBuffer buffer;
     private final Consumer<RetainableByteBuffer> releaser;
-    private final AtomicLong lastUpdate = new AtomicLong(System.nanoTime());
+    private final AtomicLong lastUpdate = new AtomicLong(NanoTime.now());
 
     RetainableByteBuffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
     {
@@ -75,7 +76,7 @@ public class RetainableByteBuffer extends Retainable.ReferenceCounter
         boolean released = super.release();
         if (released)
         {
-            lastUpdate.setOpaque(System.nanoTime());
+            lastUpdate.setOpaque(NanoTime.now());
             releaser.accept(this);
         }
         return released;

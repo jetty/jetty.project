@@ -1005,7 +1005,9 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                 {
                     try
                     {
-                        _contentParameters =  FormFields.from(getRequest()).get();
+                        int maxKeys = getServletRequestState().getContextHandler().getMaxFormKeys();
+                        int maxContentSize = getServletRequestState().getContextHandler().getMaxFormContentSize();
+                        _contentParameters =  FormFields.from(getRequest(), maxKeys, maxContentSize).get();
                         if (_contentParameters == null || _contentParameters.isEmpty())
                             _contentParameters = NO_PARAMS;
                     }

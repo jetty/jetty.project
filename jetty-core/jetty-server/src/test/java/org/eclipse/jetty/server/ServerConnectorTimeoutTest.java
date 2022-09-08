@@ -116,13 +116,12 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     {
         try (Socket socket = new Socket((String)null, _connector.getLocalPort()))
         {
-            socket.setSoTimeout(10 * MAX_IDLE_TIME);
+            socket.setSoTimeout((int)(10 * MAX_IDLE_TIME));
             socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             InputStream inputStream = socket.getInputStream();
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long start = NanoTime.now();
             String response = IO.toString(inputStream);
-            long timeElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-            assertThat(timeElapsed, greaterThanOrEqualTo(MAX_IDLE_TIME - 100L));
+            assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(MAX_IDLE_TIME - 100L));
             return response;
         }
     }

@@ -27,6 +27,7 @@ import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.SecureRequestCustomizer.SslSessionData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
@@ -63,14 +64,14 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
 
         //TODO this seems fragile, to rely on this name
         //X509Certificate[] certs = (X509Certificate[])req.getAttribute("jakarta.servlet.request.X509Certificate");
-        SslSessionData sslSessionData = (SslSessionData)req.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");
+        SslSessionData sslSessionData = (SslSessionData)req.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
         if (sslSessionData == null)
         {
             Response.writeError(req, res, callback, HttpServletResponse.SC_FORBIDDEN);
             return Authentication.SEND_FAILURE;
         }
         
-        X509Certificate[] certs = sslSessionData.getX509Certificates();
+        X509Certificate[] certs = sslSessionData.peerCertificates();
         
         try
         {

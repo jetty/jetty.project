@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
@@ -50,19 +51,31 @@ public class PathResource extends Resource
     {
         Path abs = path;
 
+        // TODO: is this a valid shortcut?
+        // If the path doesn't exist, then there's no alias to reference
+        if (!Files.exists(path))
+            return null;
+
         /* Catch situation where the Path class has already normalized
          * the URI eg. input path "aa./foo.txt"
-         * from an #addPath(String) is normalized away during
+         * from an #resolve(String) is normalized away during
          * the creation of a Path object reference.
-         * If the URI is different then the Path.toUri() then
+         * If the URI is different from the Path.toUri() then
          * we will just use the original URI to construct the
          * alias reference Path.
+         *
+         * We use the method `toUri(Path)` here, instead of
+         * Path.toUri() to ensure that the path contains
+         * a trailing slash if it's a directory, (something
+         * not all FileSystems seem to support)
          */
-        if (!URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
+        if (!URIUtil.equalsIgnoreEncodings(uri, toUri(path)))
         {
             try
             {
-                return Paths.get(uri).toRealPath();
+                // Use normalized path to get past navigational references like "/bar/../foo/test.txt"
+                Path ref = Paths.get(uri.normalize());
+                return ref.toRealPath();
             }
             catch (IOException ioe)
             {
@@ -187,7 +200,6 @@ public class PathResource extends Resource
      * Must be an absolute URI using the <code>file</code> scheme.
      *
      * @param uri the URI to build this PathResource from.
-     * @throws IOException if unable to construct the PathResource from the URI.
      */
     PathResource(URI uri)
     {
@@ -203,10 +215,12 @@ public class PathResource extends Resource
 
         try
         {
-            this.path = Paths.get(uri);
+            // normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
+            // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`
+            this.path = Paths.get(uri.normalize());
             String uriString = uri.toString();
             if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
-                uri = URI.create(uriString + URIUtil.SLASH);
+                uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
             this.uri = uri;
             this.alias = checkAliasPath();
         }
@@ -217,22 +231,9 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isSame(Resource resource)
+    public boolean exists()
     {
-        try
-        {
-            if (resource instanceof PathResource)
-            {
-                Path path = resource.getPath();
-                return Files.isSameFile(getPath(), path);
-            }
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("ignored", e);
-        }
-        return false;
+        return Files.exists(alias != null ? alias : path);
     }
 
     @Override
@@ -251,18 +252,7 @@ public class PathResource extends Resource
             return false;
         }
         PathResource other = (PathResource)obj;
-        if (path == null)
-        {
-            if (other.path != null)
-            {
-                return false;
-            }
-        }
-        else if (!path.equals(other.path))
-        {
-            return false;
-        }
-        return true;
+        return Objects.equals(path, other.path);
     }
 
     /**
@@ -280,12 +270,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isMemoryMappable()
-    {
-        return "file".equalsIgnoreCase(uri.getScheme());
-    }
-
-    @Override
     public URI getURI()
     {
         return this.uri;
@@ -294,36 +278,13 @@ public class PathResource extends Resource
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = (prime * result) + ((path == null) ? 0 : path.hashCode());
-        return result;
+        return Objects.hashCode(path);
     }
 
     @Override
     public boolean isContainedIn(Resource r)
     {
         return r.getClass() == PathResource.class && path.startsWith(r.getPath());
-    }
-
-    @Override
-    public boolean isAlias()
-    {
-        return this.alias != null;
-    }
-
-    /**
-     * The Alias as a Path.
-     * <p>
-     * Note: this cannot return the alias as a DIFFERENT path in 100% of situations,
-     * due to Java's internal Path/File normalization.
-     * </p>
-     *
-     * @return the alias as a path.
-     */
-    public Path getAliasPath()
-    {
-        return this.alias;
     }
 
     @Override
@@ -340,6 +301,30 @@ public class PathResource extends Resource
             Files.walkFileTree(this.path, new TreeCopyFileVisitor(this.path, destination));
         else
             Files.copy(this.path, destination);
+    }
+
+    /**
+     * Ensure Path to URI is sane when it returns a directory reference.
+     *
+     * <p>
+     *     This is different than {@link Path#toUri()} in that not
+     *     all FileSystems seem to put the trailing slash on a directory
+     *     reference in the URI.
+     * </p>
+     *
+     * @param path the path to convert to URI
+     * @return the appropriate URI for the path
+     */
+    private static URI toUri(Path path)
+    {
+        URI pathUri = path.toUri();
+        String rawUri = path.toUri().toASCIIString();
+
+        if (Files.isDirectory(path) && !rawUri.endsWith("/"))
+        {
+            return URI.create(rawUri + '/');
+        }
+        return pathUri;
     }
 
     @Override

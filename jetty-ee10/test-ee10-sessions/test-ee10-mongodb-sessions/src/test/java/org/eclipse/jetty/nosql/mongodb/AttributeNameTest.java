@@ -15,7 +15,6 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,8 +27,8 @@ import org.eclipse.jetty.ee10.session.SessionTestSupport;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -138,7 +137,7 @@ public class AttributeNameTest
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                session.setAttribute("a.b.c", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+                session.setAttribute("a.b.c", NanoTime.now());
                 sendResult(session, httpServletResponse.getWriter());
             }
             else

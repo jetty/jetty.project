@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.AsyncContext;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.RunAsToken;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -1196,9 +1196,9 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
                 _unavailableStart = null;
             else
             {
-                long start = System.nanoTime();
+                long start = NanoTime.now();
                 while (start == 0)
-                    start = System.nanoTime();
+                    start = NanoTime.now();
                 _unavailableStart = new AtomicLong(start);
             }
         }
@@ -1216,7 +1216,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
             {
                 long start = _unavailableStart.get();
 
-                if (start == 0 || System.nanoTime() - start < TimeUnit.SECONDS.toNanos(_unavailableException.getUnavailableSeconds()))
+                if (start == 0 || NanoTime.secondsSince(start) < _unavailableException.getUnavailableSeconds())
                 {
                     ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 }

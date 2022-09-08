@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -91,7 +92,7 @@ public abstract class CyclicTimeout implements Destroyable
      */
     public boolean schedule(long delay, TimeUnit units)
     {
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         long newTimeoutAt = now + units.toNanos(delay);
 
         Wakeup newWakeup = null;
@@ -103,7 +104,7 @@ public abstract class CyclicTimeout implements Destroyable
 
             // Is the current wakeup good to use? ie before our timeout time?
             Wakeup wakeup = timeout._wakeup;
-            if (wakeup == null || wakeup._at > newTimeoutAt)
+            if (wakeup == null || NanoTime.isBefore(newTimeoutAt, wakeup._at))
                 // No, we need an earlier wakeup.
                 wakeup = newWakeup = new Wakeup(newTimeoutAt, wakeup);
 
@@ -114,7 +115,7 @@ public abstract class CyclicTimeout implements Destroyable
                     LOG.debug("Installed timeout in {} ms, {} wake up in {} ms",
                         units.toMillis(delay),
                         newWakeup != null ? "new" : "existing",
-                        TimeUnit.NANOSECONDS.toMillis(wakeup._at - now));
+                        NanoTime.millisElapsed(now, wakeup._at));
                 }
                 break;
             }
@@ -192,7 +193,7 @@ public abstract class CyclicTimeout implements Destroyable
             return String.format("%s@%x:%dms,%s",
                 getClass().getSimpleName(),
                 hashCode(),
-                TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
+                NanoTime.millisUntil(_at),
                 _wakeup);
         }
     }
@@ -214,7 +215,7 @@ public abstract class CyclicTimeout implements Destroyable
 
         private void schedule(long now)
         {
-            _task.compareAndSet(null, _scheduler.schedule(this, _at - now, TimeUnit.NANOSECONDS));
+            _task.compareAndSet(null, _scheduler.schedule(this, NanoTime.elapsed(now, _at), TimeUnit.NANOSECONDS));
         }
 
         private void destroy()
@@ -227,7 +228,7 @@ public abstract class CyclicTimeout implements Destroyable
         @Override
         public void run()
         {
-            long now = System.nanoTime();
+            long now = NanoTime.now();
             Wakeup newWakeup = null;
             boolean hasExpired = false;
             while (true)
@@ -258,7 +259,7 @@ public abstract class CyclicTimeout implements Destroyable
                 wakeup = wakeup._next;
 
                 Timeout newTimeout;
-                if (timeout._at <= now)
+                if (NanoTime.isBeforeOrSame(timeout._at, now))
                 {
                     // We have timed out!
                     hasExpired = true;
@@ -268,7 +269,7 @@ public abstract class CyclicTimeout implements Destroyable
                 {
                     // We have not timed out, but we are set to!
                     // Is the current wakeup good to use? ie before our timeout time?
-                    if (wakeup == null || wakeup._at >= timeout._at)
+                    if (wakeup == null || NanoTime.isBefore(timeout._at, wakeup._at))
                         // No, we need an earlier wakeup.
                         wakeup = newWakeup = new Wakeup(timeout._at, wakeup);
                     newTimeout = new Timeout(timeout._at, wakeup);
@@ -299,7 +300,7 @@ public abstract class CyclicTimeout implements Destroyable
             return String.format("%s@%x:%dms->%s",
                 getClass().getSimpleName(),
                 hashCode(),
-                _at == MAX_VALUE ? _at : TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
+                _at == MAX_VALUE ? _at : NanoTime.millisUntil(_at),
                 _next);
         }
     }

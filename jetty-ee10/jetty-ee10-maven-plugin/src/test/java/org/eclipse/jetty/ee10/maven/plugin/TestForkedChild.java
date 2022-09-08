@@ -22,11 +22,13 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -66,7 +68,7 @@ public class TestForkedChild
         {
             try
             {
-                List<String> cmd = new ArrayList<String>();
+                List<String> cmd = new ArrayList<>();
                 cmd.add("--stop-port");
                 cmd.add(String.valueOf(stopPort));
                 cmd.add("--stop-key");
@@ -81,7 +83,7 @@ public class TestForkedChild
                 webapp.setTempDirectory(tmpDir);
                 webapp.setBaseResource(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
-                child = new JettyForkedChild(cmd.toArray(new String[cmd.size()]));
+                child = new JettyForkedChild(cmd.toArray(new String[0]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing
                 child.start();
             }
@@ -103,10 +105,10 @@ public class TestForkedChild
 
         String stopPortString = System.getProperty("stop.port");
         assertNotNull(stopPortString, "stop.port System property");
-        stopPort = Integer.valueOf(stopPortString);
+        stopPort = Integer.parseInt(stopPortString);
         jettyPortString = System.getProperty("jetty.port");
         assertNotNull(jettyPortString, "jetty.port System property");
-        jettyPort = Integer.valueOf(jettyPortString);
+        jettyPort = Integer.parseInt(jettyPortString);
 
         Random random = new Random();
         token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
@@ -118,7 +120,7 @@ public class TestForkedChild
     {
         String command = "forcestop";
 
-        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort);)
+        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort))
         {
             OutputStream out = s.getOutputStream();
             out.write((stopKey + "\r\n" + command + "\r\n").getBytes());
@@ -148,13 +150,7 @@ public class TestForkedChild
         starter.start();
 
         //wait for the token file to be created
-        int attempts = 20;
-        while (!tokenFile.exists() && attempts > 0)
-        {
-            Thread.currentThread().sleep(500);
-            --attempts;
-        }
-        assertThat(attempts, Matchers.greaterThan(0));
+        Awaitility.waitAtMost(Duration.ofSeconds(10)).until(tokenFile::exists);
 
         URL url = new URL("http://localhost:" + jettyPortString + "/foo/");
         HttpURLConnection connection = null;

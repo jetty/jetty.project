@@ -14,7 +14,6 @@
 package org.eclipse.jetty.hazelcast.session;
 
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
@@ -29,6 +28,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.util.NanoTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,9 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class HazelcastTestHelper
 {
-    static final String _hazelcastInstanceName = "SESSION_TEST_" + Long.toString(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+    static final String _name = Long.toString(NanoTime.now());
 
-    static final String _name = Long.toString(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+    static final String _hazelcastInstanceName = "SESSION_TEST_" + _name;
 
     static SerializerConfig _serializerConfig;
 

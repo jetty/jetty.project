@@ -22,6 +22,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -112,7 +113,7 @@ public class HttpCookie
 
         this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, Collections.singletonMap("SameSite", sameSite == null ? null : sameSite.getAttributeValue()));
     }
-    
+
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, Map<String, String> attributes)
     {
         _name = name;
@@ -124,24 +125,24 @@ public class HttpCookie
         _secure = secure;
         _comment = comment;
         _version = version;
-        _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
+        _expiration = maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(maxAge);
         _attributes = (attributes == null ? Collections.emptyMap() : attributes);
     }
-    
+
     public HttpCookie(String name, String value, int version, Map<String, String> attributes)
     {
         _name = name;
-        _value = value; 
+        _value = value;
         _version = version;
         _attributes = (attributes == null ? Collections.emptyMap() : new TreeMap<>(attributes));
-        
+
         //remove all of the well-known attributes, leaving only those pass-through ones
         _domain = _attributes.remove("Domain");
         _path = _attributes.remove("Path");
 
         String tmp = _attributes.remove("Max-Age");
         _maxAge = StringUtil.isBlank(tmp) ? -1L : Long.valueOf(tmp);
-        _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
+        _expiration = _maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(_maxAge);
         _httpOnly = Boolean.parseBoolean(_attributes.remove("HttpOnly"));
         _secure = Boolean.parseBoolean(_attributes.remove("Secure"));
         _comment = _attributes.remove("Comment");
@@ -236,7 +237,7 @@ public class HttpCookie
      */
     public boolean isExpired(long timeNanos)
     {
-        return _expiration >= 0 && timeNanos >= _expiration;
+        return _expiration != -1 && NanoTime.isBefore(_expiration, timeNanos);
     }
 
     /**
@@ -431,7 +432,7 @@ public class HttpCookie
             buf.append("; Secure");
         if (_httpOnly)
             buf.append("; HttpOnly");
-        
+
         String sameSite = _attributes.get("SameSite");
         if (sameSite != null)
         {
@@ -440,7 +441,7 @@ public class HttpCookie
         }
 
         //Add all other attributes
-        _attributes.entrySet().stream().filter(e -> !"SameSite".equals(e.getKey())).forEach(e -> 
+        _attributes.entrySet().stream().filter(e -> !"SameSite".equals(e.getKey())).forEach(e ->
         {
             buf.append("; " + e.getKey() + "=");
             buf.append(e.getValue());
@@ -510,21 +511,21 @@ public class HttpCookie
             throw new IllegalStateException(e);
         }
     }
-    
+
     /**
      * Extract the bare minimum of info from a Set-Cookie header string.
-     * 
+     *
      * Ideally this method should not be necessary, however as java.net.HttpCookie
      * does not yet support generic attributes, we have to use it in a minimal
      * fashion. When it supports attributes, we could look at reverting to a
      * constructor on o.e.j.h.HttpCookie to take the set-cookie header string.
-     * 
+     *
      * @param setCookieHeader the header as a string
      * @return a map containing the name, value, domain, path. max-age of the set cookie header
      */
     public static Map<String, String> extractBasics(String setCookieHeader)
     {
-        //Parse the bare minimum 
+        //Parse the bare minimum
         List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
         if (cookies.size() != 1)
             return Collections.emptyMap();
@@ -537,10 +538,10 @@ public class HttpCookie
         fields.put("max-age", Long.toString(cookie.getMaxAge()));
         return fields;
     }
-    
+
     /**
      * Check if the Set-Cookie header represented as a string is for the name, domain and path given.
-     * 
+     *
      * @param setCookieHeader a Set-Cookie header
      * @param name the cookie name to check
      * @param domain the cookie domain to check
@@ -549,18 +550,18 @@ public class HttpCookie
      */
     public static boolean match(String setCookieHeader, String name, String domain, String path)
     {
-        //Parse the bare minimum 
+        //Parse the bare minimum
         List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
         if (cookies.size() != 1)
             return false;
-        
+
         java.net.HttpCookie cookie = cookies.get(0);
         return match(cookie.getName(), cookie.getDomain(), cookie.getPath(), name, domain, path);
     }
-    
+
     /**
      * Check if the HttpCookie is for the given name, domain and path.
-     * 
+     *
      * @param cookie the jetty HttpCookie to check
      * @param name the cookie name to check
      * @param domain the cookie domain to check
@@ -573,10 +574,10 @@ public class HttpCookie
             return false;
         return match(cookie.getName(), cookie.getDomain(), cookie.getPath(), name, domain, path);
     }
-    
+
     /**
      * Check if all old parameters match the new parameters.
-     * 
+     *
      * @param oldName
      * @param oldDomain
      * @param oldPath
@@ -594,7 +595,7 @@ public class HttpCookie
         }
         else if (!oldName.equals(newName))
             return false;
-        
+
         if (oldDomain == null)
         {
             if (newDomain != null)
@@ -610,7 +611,7 @@ public class HttpCookie
         }
         else if (!oldPath.equals(newPath))
             return false;
-        
+
         return true;
     }
 
@@ -685,7 +686,7 @@ public class HttpCookie
             return _cookie;
         }
     }
-    
+
     /**
      * Check that samesite is set on the cookie. If not, use a
      * context default value, if one has been set.

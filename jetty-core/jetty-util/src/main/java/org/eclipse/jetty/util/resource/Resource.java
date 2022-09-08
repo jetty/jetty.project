@@ -29,9 +29,11 @@ import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
@@ -47,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * Supports real filesystems, and also <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html">ZipFS</a>.
  * </p>
  */
-public abstract class Resource
+public abstract class Resource implements Iterable<Resource>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
@@ -109,6 +111,9 @@ public abstract class Resource
                 else
                     // otherwise resolve against the current directory
                     uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
+
+                // Correct any `file:/path` to `file:///path` mistakes
+                uri = URIUtil.correctFileURI(uri);
             }
 
             // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
@@ -140,16 +145,18 @@ public abstract class Resource
     public abstract boolean isContainedIn(Resource r);
 
     /**
-     * Return true if the passed Resource represents the same resource as the Resource.
-     * For many resource types, this is equivalent to {@link #equals(Object)}, however
-     * for resources types that support aliasing, this maybe some other check (e.g. {@link java.nio.file.Files#isSameFile(Path, Path)}).
+     * Return an Iterator of all Resource's referenced in this Resource.
      *
-     * @param resource The resource to check
-     * @return true if the passed resource represents the same resource.
+     * <p>
+     *     This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator.
+     * </p>
+     *
+     * @return the iterator of Resources.
      */
-    public boolean isSame(Resource resource)
+    @Override
+    public Iterator<Resource> iterator()
     {
-        return equals(resource);
+        return List.of(this).iterator();
     }
 
     /**
@@ -175,24 +182,31 @@ public abstract class Resource
     }
 
     /**
-     * Time resource was last modified.
-     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
-     * {@link #getPath()} then returning {@link FileTime#toMillis()}.
+     * The time the resource was last modified.
      *
-     * @return the last modified time as milliseconds since unix epoch or
-     * 0 if {@link Files#getLastModifiedTime(Path, LinkOption...)} throws {@link IOException}.
+     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
+     * {@link #getPath()} then returning {@link FileTime#toInstant()}.
+     *
+     * @return the last modified time instant, or {@link Instant#EPOCH} if unable to obtain last modified.
      */
-    public long lastModified()
+    public Instant lastModified()
     {
+        Path path = getPath();
+        if (path == null)
+            return Instant.EPOCH;
+
+        if (!Files.exists(path))
+            return Instant.EPOCH;
+
         try
         {
-            FileTime ft = Files.getLastModifiedTime(getPath(), FOLLOW_LINKS);
-            return ft.toMillis();
+            FileTime ft = Files.getLastModifiedTime(path, FOLLOW_LINKS);
+            return ft.toInstant();
         }
         catch (IOException e)
         {
             LOG.trace("IGNORED", e);
-            return 0;
+            return Instant.EPOCH;
         }
     }
 
@@ -253,16 +267,6 @@ public abstract class Resource
     }
 
     /**
-     * Checks if the resource supports being loaded as a memory-mapped ByteBuffer.
-     *
-     * @return true if the resource supports memory-mapped ByteBuffer, false otherwise.
-     */
-    public boolean isMemoryMappable()
-    {
-        return false;
-    }
-
-    /**
      * list of resource names contained in the given resource.
      * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
      * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
@@ -305,7 +309,11 @@ public abstract class Resource
     }
 
     /**
-     * {@inheritDoc}
+     * Resolve a new Resource from an encoded subUriPath.
+     *
+     * @param subUriPath the encoded subUriPath
+     * @return a Resource representing the subUriPath
+     * @throws IllegalArgumentException if subUriPath is invalid
      */
     public Resource resolve(String subUriPath)
     {
@@ -325,38 +333,13 @@ public abstract class Resource
         // that like an absolute path.
         while (subUriPath.startsWith(URIUtil.SLASH))
         {
-            // TODO XXX this appears entirely unneccessary and inefficient.  We already have utilities
+            // TODO XXX this appears entirely unnecessary and inefficient.  We already have utilities
             //      to handle appending path strings with/without slashes.
             subUriPath = subUriPath.substring(1);
         }
 
         URI uri = getURI();
-        URI resolvedUri;
-        if (uri.isOpaque())
-        {
-            // TODO create a subclass with an optimized implementation of this.
-            // The 'jar:file:/some/path/my.jar!/foo/bar' URI is opaque b/c the jar: scheme is not followed by //
-            // so we take the scheme-specific part (i.e.: file:/some/path/my.jar!/foo/bar) and interpret it as a URI,
-            // use it to resolve the subPath then re-prepend the jar: scheme before re-creating the URI.
-            String scheme = uri.getScheme();
-            URI subUri = URI.create(uri.getSchemeSpecificPart());
-            if (subUri.isOpaque())
-                throw new IllegalArgumentException("Unsupported doubly opaque URI: " + uri);
-
-            // TODO see XXX above
-            if (!subUri.getPath().endsWith(URIUtil.SLASH))
-                subUri = URI.create(subUri + URIUtil.SLASH);
-
-            URI subUriResolved = subUri.resolve(subUriPath);
-            resolvedUri = URI.create(scheme + ":" + subUriResolved);
-        }
-        else
-        {
-            // TODO see XXX above
-            if (!uri.getPath().endsWith(URIUtil.SLASH))
-                uri = URI.create(uri + URIUtil.SLASH);
-            resolvedUri = uri.resolve(subUriPath);
-        }
+        URI resolvedUri = URIUtil.addPath(uri, subUriPath);
         return create(resolvedUri);
     }
 
@@ -369,6 +352,8 @@ public abstract class Resource
     }
 
     /**
+     * The canonical Alias for the Resource as a URI.
+     *
      * @return The canonical Alias of this resource or null if none.
      */
     public URI getAlias()
@@ -433,7 +418,7 @@ public abstract class Resource
         }
 
         Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
-        b.append(encoder.encodeToString(longToBytes(lastModified() ^ lhash)));
+        b.append(encoder.encodeToString(longToBytes(lastModified().toEpochMilli() ^ lhash)));
         b.append(encoder.encodeToString(longToBytes(length() ^ lhash)));
         b.append(suffix);
         b.append('"');
