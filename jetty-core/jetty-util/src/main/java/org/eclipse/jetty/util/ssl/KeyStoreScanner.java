@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,10 +54,12 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (Files.isDirectory(monitoredFile))
             throw new IllegalArgumentException("expected keystore file not directory");
 
-        if (keystoreResource.getAlias() != null)
+        // Use real location of keystore (if different), so that change monitoring can work properly
+        URI realUri = keystoreResource.getAlias();
+        if (realUri != null)
         {
             // this resource has an alias, use the alias, as that's what's returned in the Scanner
-            monitoredFile = Paths.get(keystoreResource.getAlias());
+            monitoredFile = Paths.get(realUri);
         }
 
         keystoreFile = monitoredFile;

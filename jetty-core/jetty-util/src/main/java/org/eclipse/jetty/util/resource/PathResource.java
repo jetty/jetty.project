@@ -44,8 +44,9 @@ public class PathResource extends Resource
         .build();
 
     private final Path path;
-    private final Path alias;
     private final URI uri;
+    private boolean aliasChecked = false;
+    private Path alias;
 
     private Path checkAliasPath()
     {
@@ -222,7 +223,6 @@ public class PathResource extends Resource
             if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
                 uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
             this.uri = uri;
-            this.alias = checkAliasPath();
         }
         catch (FileSystemNotFoundException e)
         {
@@ -290,7 +290,14 @@ public class PathResource extends Resource
     @Override
     public URI getAlias()
     {
-        return this.alias == null ? null : this.alias.toUri();
+        if (!aliasChecked)
+        {
+            alias = checkAliasPath();
+            aliasChecked = true;
+        }
+        if (alias == null)
+            return null;
+        return alias.toUri();
     }
 
     @Override

@@ -352,9 +352,10 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * The canonical Alias for the Resource as a URI.
+     * If this Resource is an alias pointing to a different location,
+     * the resulting location as URI is returned pointing to the real location.
      *
-     * @return The canonical Alias of this resource or null if none.
+     * @return The real URI location of this resource or null if not different.
      */
     public URI getAlias()
     {
