@@ -54,7 +54,7 @@
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
     <jackson.annotations.version>2.13.4</jackson.annotations.version>
-    <jackson.core.version>2.13.3</jackson.core.version>
+    <jackson.core.version>2.13.4</jackson.core.version>
     <jackson.databind.version>2.13.3</jackson.databind.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
@@ -161,7 +161,7 @@
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
     <spotbugs.maven.plugin.version>4.7.2.0</spotbugs.maven.plugin.version>
-    <versions.maven.plugin.version>2.11.0</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.12.0</versions.maven.plugin.version>
 
     <!-- testing -->
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
