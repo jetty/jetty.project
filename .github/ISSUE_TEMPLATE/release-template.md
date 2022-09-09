@@ -27,12 +27,14 @@ This release process will produce releases:
 - [ ] Verify target [project(s)](https://github.com/eclipse/jetty.project/projects) are complete.
 - [ ] Verify that branch `jetty-10.0.x` is merged to branch `jetty-11.0.x`.
 - [ ] Assign issue to "build manager", who will stage the releases.
+  + [ ] create a branch release/target_jetty_version then work from the branch
   + [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
   + [ ] Stage 9.4 release with Java 11.
   + [ ] Stage 10 release with Java 17.
   + [ ] Stage 11 release with Java 17.
   + [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/eclipse/jetty.project/releases). Content is generated with the "changelog tool".
   + [ ] Push tag to the fork https://github.com/jetty-project/jetty.project
+  + [ ] Push the branch release/target_jetty_version to the fork https://github.com/jetty-project/jetty.project
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
   + [ ] Test [CometD](https://github.com/cometd/cometd).
   + [ ] Test [Reactive HttpClient](https://github.com/jetty-project/jetty-reactive-httpclient).
