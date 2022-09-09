@@ -32,6 +32,7 @@ This release process will produce releases:
   + [ ] Stage 10 release with Java 17.
   + [ ] Stage 11 release with Java 17.
   + [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/eclipse/jetty.project/releases). Content is generated with the "changelog tool".
+  + [ ] Push tag to the fork https://github.com/jetty-project/jetty.project
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
   + [ ] Test [CometD](https://github.com/cometd/cometd).
   + [ ] Test [Reactive HttpClient](https://github.com/jetty-project/jetty-reactive-httpclient).
