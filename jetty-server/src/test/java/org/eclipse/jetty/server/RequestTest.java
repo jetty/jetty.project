@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -854,6 +855,29 @@ public class RequestTest
 
         assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ", results.get(i));
+    }
+
+    @Test
+    public void testConnectRequestURL() throws Exception
+    {
+        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
+        _handler._checker = (request, response) ->
+        {
+            resultRequestURL.set("" + request.getRequestURL());
+            resultRequestURI.set("" + request.getRequestURI());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            "CONNECT myhost:9999 HTTP/1.1\n" +
+                "Host: myhost:9999\n" +
+                "Connection: close\n" +
+                "\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(resultRequestURL.get(), is("http://myhost:9999"));
+        assertThat(resultRequestURI.get(), is("myhost:9999"));
     }
 
     @Test
