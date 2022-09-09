@@ -1341,7 +1341,17 @@ public class Request implements HttpServletRequest
     public String getRequestURI()
     {
         MetaData.Request metadata = _metaData;
-        return (metadata == null) ? null : metadata.getURI().getPath();
+        if (metadata == null)
+            return null;
+        HttpURI uri = metadata.getURI();
+        if (uri == null)
+            return null;
+        // maintain backward compat for CONNECT method
+        if (HttpMethod.CONNECT.is(getMethod()))
+            return uri.getAuthority();
+        else
+            // spec compliant path
+            return uri.getPath();
     }
 
     /*
@@ -1352,7 +1362,9 @@ public class Request implements HttpServletRequest
     {
         final StringBuffer url = new StringBuffer(128);
         URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
-        url.append(getRequestURI());
+        // only add RequestURI if not a CONNECT method
+        if (!HttpMethod.CONNECT.is(getMethod()))
+            url.append(getRequestURI());
         return url;
     }
 

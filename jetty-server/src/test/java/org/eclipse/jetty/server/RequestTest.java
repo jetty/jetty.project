@@ -55,6 +55,7 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpComplianceSection;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
@@ -870,6 +871,26 @@ public class RequestTest
 
         assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ", results.get(i++));
+    }
+
+    @Test
+    public void testConnectRequestURL() throws Exception
+    {
+        final AtomicReference<String> result = new AtomicReference<>();
+        _handler._checker = (request, response) ->
+        {
+            result.set("" + request.getRequestURL());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            "CONNECT myhost:9999 HTTP/1.1\n" +
+                "Host: myhost:9999\n" +
+                "Connection: close\n" +
+                "\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(result.get(), is("http://myhost:9999"));
     }
 
     @Test
