@@ -876,10 +876,12 @@ public class RequestTest
     @Test
     public void testConnectRequestURL() throws Exception
     {
-        final AtomicReference<String> result = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
         _handler._checker = (request, response) ->
         {
-            result.set("" + request.getRequestURL());
+            resultRequestURL.set("" + request.getRequestURL());
+            resultRequestURI.set("" + request.getRequestURI());
             return true;
         };
 
@@ -890,7 +892,8 @@ public class RequestTest
                 "\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(result.get(), is("http://myhost:9999"));
+        assertThat(resultRequestURL.get(), is("http://myhost:9999"));
+        assertThat(resultRequestURI.get(), is("myhost:9999"));
     }
 
     @Test
