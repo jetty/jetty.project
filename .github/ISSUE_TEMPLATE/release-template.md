@@ -27,7 +27,7 @@ This release process will produce releases:
 - [ ] Verify target [project(s)](https://github.com/eclipse/jetty.project/projects) are complete.
 - [ ] Verify that branch `jetty-10.0.x` is merged to branch `jetty-11.0.x`.
 - [ ] Assign issue to "build manager", who will stage the releases.
-  + [ ] create a branch release/target_jetty_version then work from the branch
+  + [ ] Create and use branches `release/<ver>` to perform version specific release work from.
   + [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
   + [ ] Stage 9.4 release with Java 11.
   + [ ] Stage 10 release with Java 17.
