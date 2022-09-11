@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.jakarta.server.internal;
 import java.net.URI;
 import java.security.Principal;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequest;
 
@@ -44,5 +45,13 @@ public class JakartaServerUpgradeRequest implements UpgradeRequest
     public String getPathInContext()
     {
         return servletRequest.getPathInContext();
+    }
+
+    /**
+     * @return Immutable version of {@link HttpServletRequest}
+     */
+    public HttpServletRequest getHttpServletRequest()
+    {
+        return servletRequest.getHttpServletRequest();
     }
 }
