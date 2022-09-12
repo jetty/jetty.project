@@ -84,6 +84,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -874,14 +875,14 @@ public class RequestTest
     }
 
     @Test
-    public void testConnectRequestURL() throws Exception
+    public void testConnectRequestURLSameAsHost() throws Exception
     {
         final AtomicReference<String> resultRequestURL = new AtomicReference<>();
         final AtomicReference<String> resultRequestURI = new AtomicReference<>();
         _handler._checker = (request, response) ->
         {
-            resultRequestURL.set("" + request.getRequestURL());
-            resultRequestURI.set("" + request.getRequestURI());
+            resultRequestURL.set(request.getRequestURL().toString());
+            resultRequestURI.set(request.getRequestURI());
             return true;
         };
 
@@ -892,8 +893,31 @@ public class RequestTest
                 "\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(resultRequestURL.get(), is("http://myhost:9999"));
-        assertThat(resultRequestURI.get(), is("myhost:9999"));
+        assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999"));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is(nullValue()));
+    }
+
+    @Test
+    public void testConnectRequestURLDifferentThanHost() throws Exception
+    {
+        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
+        _handler._checker = (request, response) ->
+        {
+            resultRequestURL.set(request.getRequestURL().toString());
+            resultRequestURI.set(request.getRequestURI());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            "CONNECT myhost:9999 HTTP/1.1\n" +
+                "Host: otherhost:8888\n" + // per spec, this is ignored if request-target is authority-form
+                "Connection: close\n" +
+                "\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999"));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is(nullValue()));
     }
 
     @Test
