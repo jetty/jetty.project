@@ -1278,12 +1278,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
-        if (_uri == null)
-            return null;
-        if (HttpMethod.CONNECT.is(getMethod()))
-            return _uri.getAuthority();
-        else
-            return _uri.getPath();
+        return _uri == null ? null : _uri.getPath();
     }
 
     @Override
@@ -1291,13 +1286,9 @@ public class Request implements HttpServletRequest
     {
         final StringBuffer url = new StringBuffer(128);
         URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
-        // only add RequestURI if not a CONNECT method
-        if (!HttpMethod.CONNECT.is(getMethod()))
-        {
-            String requestURI = getRequestURI();
-            if (requestURI != null)
-                url.append(requestURI);
-        }
+        String path = getRequestURI();
+        if (path != null)
+            url.append(path);
         return url;
     }
 
