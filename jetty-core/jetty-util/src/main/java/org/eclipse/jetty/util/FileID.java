@@ -151,10 +151,10 @@ public class FileID
     }
 
     /**
-     * Test if Path is any supported Java Archive type (ends in {@code .jar}, {@code .war}, or {@code .zip}).
+     * Test if Path is any supported Java Archive type (ends in {@code .jar}, or {@code .zip}).
      *
      * @param path the path to test
-     * @return true if path is a file, and an extension of {@code .jar}, {@code .war}, or {@code .zip}
+     * @return true if path is a file, and an extension of {@code .jar}, or {@code .zip}
      * @see #getExtension(Path)
      */
     public static boolean isArchive(Path path)
@@ -162,14 +162,14 @@ public class FileID
         String ext = getExtension(path);
         if (ext == null)
             return false;
-        return (ext.equals(".jar") || ext.equals(".war") || ext.equals(".zip"));
+        return (ext.equals(".jar") || ext.equals(".zip"));
     }
 
     /**
-     * Test if filename is any supported Java Archive type (ends in {@code .jar}, {@code .war}, or {@code .zip}).
+     * Test if filename is any supported Java Archive type (ends in {@code .jar}, or {@code .zip}).
      *
      * @param filename the filename to test
-     * @return true if path is a file and name ends with {@code .jar}, {@code .war}, or {@code .zip}
+     * @return true if path is a file and name ends with {@code .jar}, or {@code .zip}
      * @see #getExtension(String)
      */
     public static boolean isArchive(String filename)
@@ -177,14 +177,14 @@ public class FileID
         String ext = getExtension(filename);
         if (ext == null)
             return false;
-        return (ext.equals(".jar") || ext.equals(".war") || ext.equals(".zip"));
+        return (ext.equals(".jar") || ext.equals(".zip"));
     }
 
     /**
      * Test if URI is any supported Java Archive type.
      *
      * @param uri the URI to test
-     * @return true if the URI has a path that seems to point to a ({@code .jar}, {@code .war}, or {@code .zip}).
+     * @return true if the URI has a path that seems to point to a ({@code .jar}, or {@code .zip}).
      * @see #isArchive(String)
      */
     public static boolean isArchive(URI uri)
@@ -192,7 +192,7 @@ public class FileID
         String ext = getExtension(uri);
         if (ext == null)
             return false;
-        return (ext.equals(".jar") || ext.equals(".war") || ext.equals(".zip"));
+        return (ext.equals(".jar") || ext.equals(".zip"));
     }
 
     /**
@@ -365,7 +365,7 @@ public class FileID
      * Is the path a TLD File
      *
      * @param path the path to test.
-     * @return True if a .war file.
+     * @return True if a .tld file.
      */
     public static boolean isTld(Path path)
     {
@@ -385,6 +385,17 @@ public class FileID
     public static boolean isWebArchive(Path path)
     {
         return ".war".equals(getExtension(path));
+    }
+
+    /**
+     * Is the path a Web Archive File (not directory)
+     *
+     * @param uri the uri to test.
+     * @return True if a .war file.
+     */
+    public static boolean isWebArchive(URI uri)
+    {
+        return ".war".equals(getExtension(uri));
     }
 
     /**
@@ -418,5 +429,27 @@ public class FileID
     public static boolean isXml(String filename)
     {
         return ".xml".equals(getExtension(filename));
+    }
+
+    /**
+     * Is the Path a file that ends in ZIP?
+     *
+     * @param path the path to test
+     * @return true if a .zip, false otherwise
+     */
+    public static boolean isZip(Path path)
+    {
+        return ".zip".equals(getExtension(path));
+    }
+
+    /**
+     * Is the Path a file that ends in ZIP?
+     *
+     * @param filename the filename to test
+     * @return true if a .zip, false otherwise
+     */
+    public static boolean isZip(String filename)
+    {
+        return ".zip".equals(getExtension(filename));
     }
 }

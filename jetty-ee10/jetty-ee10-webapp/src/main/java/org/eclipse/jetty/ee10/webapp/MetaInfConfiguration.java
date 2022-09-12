@@ -25,12 +25,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,6 +42,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UriPatternPredicate;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.ResourceUriPatternPredicate;
 import org.slf4j.Logger;
@@ -693,37 +692,26 @@ public class MetaInfConfiguration extends AbstractConfiguration
         throws Exception
     {
         Resource webInf = context.getWebInf();
-        if (webInf == null || !webInf.exists())
+        if (webInf == null)
             return null;
 
-        List<Resource> jarResources = new ArrayList<Resource>();
+        List<Resource> jarResources = new ArrayList<>();
         Resource webInfLib = webInf.resolve("/lib");
-        if (webInfLib.exists() && webInfLib.isDirectory())
+        for (Resource lib: webInfLib) // walk all "lib" hits
         {
-            List<String> files = webInfLib.list();
-            if (files != null)
+            if (!lib.exists())
+                continue; // doesn't exist, skip entry
+
+            for (Resource entry: lib.list()) // get contents of "lib" entry
             {
-                files.sort(Comparator.naturalOrder());
-            }
-            for (int f = 0; files != null && f < files.size(); f++)
-            {
-                try
+                if (FileID.isArchive(entry.getFileName()))
                 {
-                    Resource file = webInfLib.resolve(files.get(f));
-                    String fnlc = file.getName().toLowerCase(Locale.ENGLISH);
-                    int dot = fnlc.lastIndexOf('.');
-                    String extension = (dot < 0 ? null : fnlc.substring(dot));
-                    if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
-                    {
-                        jarResources.add(file);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LOG.warn("Unable to load WEB-INF file {}", files.get(f), ex);
+                    jarResources.add(entry);
                 }
             }
         }
+
+        jarResources.sort(ResourceCollators.byName(true));
         return jarResources;
     }
 

@@ -15,14 +15,19 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.Index;
@@ -206,6 +211,13 @@ public class PathResource extends Resource
         this(uri, false);
     }
 
+    PathResource(Path path)
+    {
+        this.path = path;
+        this.uri = path.toUri();
+        this.alias = checkAliasPath();
+    }
+
     PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
         if (!uri.isAbsolute())
@@ -263,10 +275,67 @@ public class PathResource extends Resource
         return path;
     }
 
+    /**
+     * List of Resources contained in the given resource.
+     *
+     * <p>
+     * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
+     * </p>
+     *
+     * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
+     * {@link DirectoryStream}, taking the {@link Path#getFileName()} of each iterated entry and appending a {@code /} to
+     * the file name if testing it with {@link Files#isDirectory(Path, LinkOption...)} returns true.
+     *
+     * @return a list of resource contained in the tracked resources, or empty list if an exception was thrown while building the list.
+     */
+    public List<Resource> list()
+    {
+        if (!isDirectory())
+            return List.of(); // empty
+
+        try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
+        {
+            List<Resource> entries = new ArrayList<>();
+            for (Path entry : dir)
+            {
+                Path fn = entry.getFileName();
+                if (fn == null) // we have a no-segment path (eg: "/")
+                    entries.add(this);
+                else
+                    entries.add(new PathResource(entry));
+            }
+            return entries;
+        }
+        catch (DirectoryIteratorException e)
+        {
+            LOG.debug("Directory list failure", e);
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Directory list access failure", e);
+        }
+        return List.of(); // empty
+    }
+
     @Override
     public String getName()
     {
-        return path.toAbsolutePath().toString();
+        Path abs = path;
+        // If a "jar:file:" based path, we should normalize here, as the toAbsolutePath() does not resolve "/../" style segments in all cases
+        if ("jar".equalsIgnoreCase(path.toUri().getScheme()))
+            abs = path.normalize();
+        // Get the absolute path
+        abs = abs.toAbsolutePath();
+        return abs.toString();
+    }
+
+    @Override
+    public String getFileName()
+    {
+        Path fn = path.getFileName();
+        if (fn == null) // if path has no segments (eg "/")
+            return "";
+        return fn.toString();
     }
 
     @Override

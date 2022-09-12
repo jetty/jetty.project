@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -111,26 +112,13 @@ public class Runner
             if (lib == null || !lib.exists())
                 throw new IllegalStateException("No such lib: " + lib);
 
-            List<String> list = lib.list();
-            if (list == null)
-                return;
-
-            for (String path : list)
+            for (Resource item: lib.list())
             {
-                if (".".equals(path) || "..".equals(path))
-                    continue;
-
-                Resource item = lib.resolve(path);
                 if (item.isDirectory())
                     addJars(item);
-                else
+                else if (FileID.isArchive(item.getFileName()))
                 {
-                    String lowerCasePath = path.toLowerCase(Locale.ENGLISH);
-                    if (lowerCasePath.endsWith(".jar") ||
-                        lowerCasePath.endsWith(".zip"))
-                    {
-                        _classpath.add(item.getURI());
-                    }
+                    _classpath.add(item.getURI());
                 }
             }
         }

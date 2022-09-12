@@ -18,9 +18,7 @@ import java.nio.file.ClosedFileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -72,8 +70,8 @@ public class JarResourceTest
         {
             Resource r = resourceFactory.newResource(uri);
 
-            Set<String> entries = new HashSet<>(r.list());
-            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            List<String> entries = r.list().stream().map(Resource::getFileName).toList();
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir"));
 
             Path extract = workDir.getPathFile("extract");
             FS.ensureEmpty(extract);
@@ -82,13 +80,13 @@ public class JarResourceTest
 
             Resource e = resourceFactory.newResource(extract.toString());
 
-            entries = new HashSet<>(e.list());
-            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            entries = r.list().stream().map(Resource::getFileName).toList();
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir"));
 
             s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
             r = resourceFactory.newResource(s);
 
-            entries = new HashSet<>(r.list());
+            entries = r.list().stream().map(Resource::getFileName).toList();
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
             Path extract2 = workDir.getPathFile("extract2");
@@ -98,7 +96,7 @@ public class JarResourceTest
 
             e = resourceFactory.newResource(extract2.toString());
 
-            entries = new HashSet<>(e.list());
+            entries = r.list().stream().map(Resource::getFileName).toList();
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
         }
     }
@@ -242,15 +240,15 @@ public class JarResourceTest
 
             assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
 
-            List<String> actual = rez.list();
+            List<String> actual = rez.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
                 "one",
                 "aaa",
                 "bbb",
-                "oddities/",
-                "another dir/",
+                "oddities",
+                "another dir",
                 "ccc",
-                "deep/",
+                "deep",
                 };
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
         }
@@ -272,7 +270,7 @@ public class JarResourceTest
 
             assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
 
-            List<String> actual = rez.list();
+            List<String> actual = rez.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
                 ";",
                 "#hashcode",
@@ -298,7 +296,7 @@ public class JarResourceTest
 
             assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
-            List<String> actual = anotherDir.list();
+            List<String> actual = anotherDir.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
                 "a file.txt",
                 "another file.txt",

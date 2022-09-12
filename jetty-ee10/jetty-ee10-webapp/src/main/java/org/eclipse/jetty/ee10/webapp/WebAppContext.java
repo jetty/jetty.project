@@ -52,6 +52,7 @@ import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -1449,13 +1450,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 return null;
 
             // Should we go to the original war?
-            if (resource.isDirectory() && resource instanceof ResourceCollection && !WebAppContext.this.isExtractWAR())
+            if (resource.isDirectory() && !WebAppContext.this.isExtractWAR())
             {
-                List<Resource> resources = ((ResourceCollection)resource).getResources();
-                for (int i = resources.size(); i-- > 0; )
+                for (Resource r: resource)
                 {
-                    Resource r = resources.get(i);
-                    if (r.getName().startsWith("jar:file"))
+                    if (FileID.isWebArchive(r.getFileName()))
                         return r.getURI().toURL();
                 }
             }

@@ -230,8 +230,9 @@ public class FileIDTest
         "jar:file:/home/user/project/with.jar/in/path/name",
         "file:/home/user/project/directory/",
         "file:/home/user/hello.ear",
-        "/home/user/hello.jar",
-        "/home/user/app.war"
+        "file:/opt/websites/webapps/company.war", // war files are not archives in the strictest sense (the classes are not in the right place)
+        "/home/user/app.war",  // not a absolute URI
+        "/home/user/hello.jar"
     })
     public void testIsArchiveUriFalse(String rawUri)
     {
@@ -244,7 +245,6 @@ public class FileIDTest
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
         "file:/home/user/install/jetty-home-12.0.0.zip",
-        "file:/opt/websites/webapps/company.war",
         "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"
     })
     public void testIsArchiveUriTrue(String rawUri)

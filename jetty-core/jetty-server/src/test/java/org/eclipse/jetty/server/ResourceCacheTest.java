@@ -179,7 +179,7 @@ public class ResourceCacheTest
             @Override
             public boolean isCacheable(Resource resource)
             {
-                return super.isCacheable(resource) && resource.getName().indexOf("2.txt") < 0;
+                return super.isCacheable(resource) && !resource.getFileName().equals("2.txt");
             }
         };
 

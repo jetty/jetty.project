@@ -19,8 +19,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.DirectoryIteratorException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -238,11 +236,22 @@ public abstract class Resource implements Iterable<Resource>
     public abstract URI getURI();
 
     /**
-     * The name of the resource.
+     * The full name of the resource.
      *
-     * @return the name of the resource
+     * @return the full name of the resource, or null if not backed by a Path
      */
     public abstract String getName();
+
+    /**
+     * The file name of the resource.
+     *
+     * <p>
+     *     This is the last segment of the path.
+     * </p>
+     *
+     * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if not backed by a Path
+     */
+    public abstract String getFileName();
 
     /**
      * Creates a new input stream to the resource.
@@ -267,45 +276,17 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * list of resource names contained in the given resource.
-     * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
-     * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
-     * {@link DirectoryStream}, taking the {@link Path#getFileName()} of each iterated entry and appending a {@code /} to
-     * the file name if testing it with {@link Files#isDirectory(Path, LinkOption...)} returns true.
+     * List of Resources contained in the given resource.
      *
-     * @return a list of resource names contained in the given resource, or null if {@link DirectoryIteratorException} or
-     * {@link IOException} was thrown while building the filename list.
-     * Note: The resource names are not URL encoded.
+     * <p>
+     * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
+     * </p>
+     *
+     * @return a list of resource contained in the tracked resources, or empty list if an exception was thrown while building the list.
      */
-    public List<String> list() // TODO: should return Path's
+    public List<Resource> list()
     {
-        if (!isDirectory())
-            return null;
-        try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
-        {
-            List<String> entries = new ArrayList<>();
-            for (Path entry : dir)
-            {
-                String name = entry.getFileName().toString();
-
-                if (Files.isDirectory(entry))
-                {
-                    name += "/";
-                }
-
-                entries.add(name);
-            }
-            return entries;
-        }
-        catch (DirectoryIteratorException e)
-        {
-            LOG.debug("Directory list failure", e);
-        }
-        catch (IOException e)
-        {
-            LOG.debug("Directory list access failure", e);
-        }
-        return null;
+        return List.of(); // empty
     }
 
     /**
@@ -441,19 +422,12 @@ public abstract class Resource implements Iterable<Resource>
         try
         {
             ArrayList<Resource> deep = new ArrayList<>();
+            for (Resource r: list())
             {
-                List<String> list = list();
-                if (list != null)
-                {
-                    for (String i : list)
-                    {
-                        Resource r = resolve(i);
-                        if (r.isDirectory())
-                            deep.addAll(r.getAllResources());
-                        else
-                            deep.add(r);
-                    }
-                }
+                if (r.isDirectory())
+                    deep.addAll(r.getAllResources());
+                else
+                    deep.add(r);
             }
             return deep;
         }

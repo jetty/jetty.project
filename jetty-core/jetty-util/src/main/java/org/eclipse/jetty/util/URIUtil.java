@@ -1963,7 +1963,7 @@ public final class URIUtil
         Objects.requireNonNull(uri, "URI");
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
 
-        if (!FileID.isArchive(uri))
+        if (!FileID.isArchive(uri) && !FileID.isWebArchive(uri))
             return uri;
 
         boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;

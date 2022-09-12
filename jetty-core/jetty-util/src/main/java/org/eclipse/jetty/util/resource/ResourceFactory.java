@@ -185,7 +185,7 @@ public interface ResourceFactory
 
     default Resource newJarFileResource(URI uri)
     {
-        if (!FileID.isArchive(uri))
+        if (!FileID.isArchive(uri) && !FileID.isWebArchive(uri))
             throw new IllegalArgumentException("Path is not a Java Archive: " + uri);
         if (!uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + uri);
