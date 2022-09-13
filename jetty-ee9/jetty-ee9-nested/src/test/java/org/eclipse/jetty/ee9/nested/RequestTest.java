@@ -58,6 +58,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
@@ -779,6 +780,57 @@ public class RequestTest
 
         assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ", results.get(i));
+    }
+
+    @Test
+    public void testConnectRequestURLSameAsHost() throws Exception
+    {
+        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
+        _handler._checker = (request, response) ->
+        {
+            resultRequestURL.set(request.getRequestURL().toString());
+            resultRequestURI.set(request.getRequestURI());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            """
+                CONNECT myhost:9999 HTTP/1.1\r
+                Host: myhost:9999\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999/"));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is("/"));
+    }
+
+    @Test
+    public void testConnectRequestURLDifferentThanHost() throws Exception
+    {
+        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
+        _handler._checker = (request, response) ->
+        {
+            resultRequestURL.set(request.getRequestURL().toString());
+            resultRequestURI.set(request.getRequestURI());
+            return true;
+        };
+
+        // per spec, "Host" is ignored if request-target is authority-form
+        String rawResponse = _connector.getResponse(
+            """
+                CONNECT myhost:9999 HTTP/1.1\r
+                Host: otherhost:8888\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999/"));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is("/"));
     }
 
     @Test

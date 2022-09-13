@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -86,6 +88,42 @@ public class RequestTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(), containsString("httpURI.path=/fo%6f%2fbar"));
         assertThat(response.getContent(), containsString("pathInContext=/foo%2Fbar"));
+    }
+
+    @Test
+    public void testConnectRequestURLSameAsHost() throws Exception
+    {
+        String request = """
+                CONNECT myhost:9999 HTTP/1.1\r
+                Host: myhost:9999\r
+                Connection: close\r
+                \r
+                """;
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("httpURI=http://myhost:9999"));
+        assertThat(responseBody, containsString("httpURI.path=null"));
+        assertThat(responseBody, containsString("servername=myhost"));
+    }
+
+    @Test
+    public void testConnectRequestURLDifferentThanHost() throws Exception
+    {
+        // per spec, "Host" is ignored if request-target is authority-form
+        String request = """
+                CONNECT myhost:9999 HTTP/1.1\r
+                Host: otherhost:8888\r
+                Connection: close\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("httpURI=http://myhost:9999"));
+        assertThat(responseBody, containsString("httpURI.path=null"));
+        assertThat(responseBody, containsString("servername=myhost"));
     }
 
     /**
