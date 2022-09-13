@@ -1352,7 +1352,9 @@ public class Request implements HttpServletRequest
     {
         final StringBuffer url = new StringBuffer(128);
         URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
-        url.append(getRequestURI());
+        String path = getRequestURI();
+        if (path != null)
+            url.append(path);
         return url;
     }
 

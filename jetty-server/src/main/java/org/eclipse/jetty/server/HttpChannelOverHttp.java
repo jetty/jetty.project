@@ -102,10 +102,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public boolean startRequest(String method, String uri, HttpVersion version)
+    public boolean startRequest(String method, String requestTarget, HttpVersion version)
     {
         _metadata.setMethod(method);
-        _metadata.getURI().parseRequestTarget(method, uri);
+        _metadata.getURI().parseRequestTarget(method, requestTarget);
         _metadata.setHttpVersion(version);
         _unknownExpectation = false;
         _expect100Continue = false;
@@ -127,7 +127,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     break;
 
                 case HOST:
-                    if (!_metadata.getURI().isAbsolute() && field instanceof HostPortHttpField)
+                    if (!HttpMethod.CONNECT.is(_metadata.getMethod()) && !_metadata.getURI().isAbsolute() && field instanceof HostPortHttpField)
                     {
                         HostPortHttpField hp = (HostPortHttpField)field;
                         _metadata.getURI().setAuthority(hp.getHost(), hp.getPort());
