@@ -27,6 +27,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -158,7 +159,7 @@ public class FileSystemResourceTest
     @Test
     public void testNotFileURI()
     {
-        assertThrows(IllegalStateException.class,
+        assertThrows(FileSystemNotFoundException.class,
             () -> ResourceFactory.root().newResource(new URI("https://www.eclipse.org/jetty/")));
     }
 

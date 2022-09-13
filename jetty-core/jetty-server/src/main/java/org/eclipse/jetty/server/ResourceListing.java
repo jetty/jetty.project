@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,9 @@ public class ResourceListing
         if (base == null || !resource.isDirectory())
             return null;
 
-        List<Resource> listing = resource.list().stream().filter(distinctBy(Resource::getFileName)).collect(Collectors.toList());
+        List<Resource> listing = resource.list().stream()
+            .filter(distinctBy(Resource::getFileName))
+            .collect(Collectors.toCollection(ArrayList::new));
 
         boolean sortOrderAscending = true;
         String sortColumn = "N"; // name (or "M" for Last Modified, or "S" for Size)
@@ -252,6 +255,7 @@ public class ResourceListing
         return buf.toString();
     }
 
+    /* TODO: see if we can use {@link Collectors#groupingBy} */
     private static <T> Predicate<T> distinctBy(Function<? super T, Object> keyExtractor)
     {
         Map<Object, Boolean> map = new ConcurrentHashMap<>();

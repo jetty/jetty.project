@@ -16,11 +16,8 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.DirectoryIteratorException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -29,6 +26,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
@@ -211,35 +210,32 @@ public class PathResource extends Resource
         this(uri, false);
     }
 
-    PathResource(Path path)
+    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
-        this.path = path;
-        this.uri = path.toUri();
-        this.alias = checkAliasPath();
+        // normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
+        // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`
+        this(Paths.get(uri.normalize()), uri, bypassAllowedSchemeCheck);
     }
 
-    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
+    PathResource(Path path)
+    {
+        this(path, path.toUri(), true);
+    }
+
+    PathResource(Path path, URI uri, boolean bypassAllowedSchemeCheck)
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
         if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
-        try
-        {
-            // normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
-            // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`
-            this.path = Paths.get(uri.normalize());
-            String uriString = uri.toString();
-            if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
-                uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
-            this.uri = uri;
-            this.alias = checkAliasPath();
-        }
-        catch (FileSystemNotFoundException e)
-        {
-            throw new IllegalStateException("No FileSystem mounted for : " + uri, e);
-        }
+        String uriString = uri.toASCIIString();
+        if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
+            uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
+
+        this.path = path;
+        this.uri = uri;
+        this.alias = checkAliasPath();
     }
 
     @Override
@@ -275,36 +271,14 @@ public class PathResource extends Resource
         return path;
     }
 
-    /**
-     * List of Resources contained in the given resource.
-     *
-     * <p>
-     * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
-     * </p>
-     *
-     * Equivalent to {@link Files#newDirectoryStream(Path)} with parameter: {@link #getPath()} then iterating over the returned
-     * {@link DirectoryStream}, taking the {@link Path#getFileName()} of each iterated entry and appending a {@code /} to
-     * the file name if testing it with {@link Files#isDirectory(Path, LinkOption...)} returns true.
-     *
-     * @return a list of resource contained in the tracked resources, or empty list if an exception was thrown while building the list.
-     */
     public List<Resource> list()
     {
         if (!isDirectory())
             return List.of(); // empty
 
-        try (DirectoryStream<Path> dir = Files.newDirectoryStream(getPath()))
+        try (Stream<Path> dirStream = Files.list(getPath()))
         {
-            List<Resource> entries = new ArrayList<>();
-            for (Path entry : dir)
-            {
-                Path fn = entry.getFileName();
-                if (fn == null) // we have a no-segment path (eg: "/")
-                    entries.add(this);
-                else
-                    entries.add(new PathResource(entry));
-            }
-            return entries;
+            return dirStream.map(PathResource::new).collect(Collectors.toCollection(ArrayList::new));
         }
         catch (DirectoryIteratorException e)
         {

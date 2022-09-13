@@ -276,13 +276,12 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * List of Resources contained in the given resource.
+     * <p>List of Resources contained in the given resource.</p>
      *
-     * <p>
-     * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
-     * </p>
+     * <p>Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.</p>
      *
-     * @return a list of resource contained in the tracked resources, or empty list if an exception was thrown while building the list.
+     * @return a mutable list of resources contained in the tracked resource,
+     * or an empty immutable list if unable to build the list.
      */
     public List<Resource> list()
     {

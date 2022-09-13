@@ -279,9 +279,6 @@ public class ResourceCollection extends Resource
         return _resources.iterator();
     }
 
-    /**
-     * @return The list of resource names(merged) contained in the collection of resources.
-     */
     @Override
     public List<Resource> list()
     {
