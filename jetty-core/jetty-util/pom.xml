@@ -34,19 +34,12 @@
               <doUpdate>false</doUpdate>
               <revisionOnScmFailure>${nonCanonicalRevision}</revisionOnScmFailure>
               <providerImplementations>
-                <git>jgit</git>
+                <git>git</git>
               </providerImplementations>
               <scmDirectory>../../</scmDirectory>
             </configuration>
           </execution>
         </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-provider-jgit</artifactId>
-            <version>1.13.0</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
