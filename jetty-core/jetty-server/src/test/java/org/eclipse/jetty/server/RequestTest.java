@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
@@ -32,7 +31,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -103,8 +101,8 @@ public class RequestTest
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String responseBody = response.getContent();
-        assertThat(responseBody, containsString("httpURI=http://myhost:9999"));
-        assertThat(responseBody, containsString("httpURI.path=null"));
+        assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
+        assertThat(responseBody, containsString("httpURI.path=/"));
         assertThat(responseBody, containsString("servername=myhost"));
     }
 
@@ -121,8 +119,8 @@ public class RequestTest
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String responseBody = response.getContent();
-        assertThat(responseBody, containsString("httpURI=http://myhost:9999"));
-        assertThat(responseBody, containsString("httpURI.path=null"));
+        assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
+        assertThat(responseBody, containsString("httpURI.path=/"));
         assertThat(responseBody, containsString("servername=myhost"));
     }
 
