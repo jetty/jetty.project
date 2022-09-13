@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.resource;
 
 import java.net.URI;
 import java.nio.file.ClosedFileSystemException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -29,7 +30,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -117,10 +117,10 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileDeleted(@TempDir Path tempDir) throws Exception
+    public void testJarFileDeleted(WorkDir workDir) throws Exception
     {
         Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
+        Path testZip = Files.copy(originalTestZip, workDir.getEmptyPathDir().resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
         Resource resource;
@@ -129,16 +129,16 @@ public class JarResourceTest
             resource = resourceFactory.newResource(uri);
             assertTrue(resource.exists());
             Files.delete(testZip);
-            assertThrows(IllegalStateException.class, () -> resource.resolve("alphabet"));
+            assertThrows(FileSystemNotFoundException.class, () -> resource.resolve("alphabet"));
         }
         assertThrows(ClosedFileSystemException.class, resource::exists);
     }
 
     @Test
-    public void testDumpAndSweep(@TempDir Path tempDir) throws Exception
+    public void testDumpAndSweep(WorkDir workDir) throws Exception
     {
         Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
+        Path testZip = Files.copy(originalTestZip, workDir.getEmptyPathDir().resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())

@@ -1922,7 +1922,7 @@ public final class URIUtil
                         {
                             listStream
                                 .filter(Files::isRegularFile)
-                                .filter(FileID::isArchive)
+                                .filter(FileID::isLibArchive)
                                 .sorted(Comparator.naturalOrder())
                                 .forEach(path -> uris.add(toJarFileUri(path.toUri())));
                         }
@@ -1963,7 +1963,7 @@ public final class URIUtil
         Objects.requireNonNull(uri, "URI");
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
 
-        if (!FileID.isArchive(uri) && !FileID.isWebArchive(uri))
+        if (!FileID.isArchive(uri))
             return uri;
 
         boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;

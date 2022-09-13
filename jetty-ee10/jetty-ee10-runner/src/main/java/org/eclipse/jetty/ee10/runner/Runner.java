@@ -116,7 +116,7 @@ public class Runner
             {
                 if (item.isDirectory())
                     addJars(item);
-                else if (FileID.isArchive(item.getFileName()))
+                else if (FileID.isLibArchive(item.getFileName()))
                 {
                     _classpath.add(item.getURI());
                 }

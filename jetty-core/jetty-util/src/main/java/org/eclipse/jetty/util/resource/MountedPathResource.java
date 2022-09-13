@@ -30,7 +30,7 @@ public class MountedPathResource extends PathResource
 
     MountedPathResource(URI uri) throws IOException
     {
-        super(uri, false);
+        super(uri, true);
         containerUri = URIUtil.unwrapContainer(getURI());
     }
 

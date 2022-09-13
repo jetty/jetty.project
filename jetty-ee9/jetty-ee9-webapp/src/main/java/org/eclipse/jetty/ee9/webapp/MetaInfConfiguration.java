@@ -704,7 +704,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
             for (Resource entry: lib.list()) // get contents of "lib" entry
             {
-                if (FileID.isArchive(entry.getFileName()))
+                if (FileID.isLibArchive(entry.getFileName()))
                 {
                     jarResources.add(entry);
                 }
@@ -782,6 +782,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private boolean isFileSupported(Resource resource)
     {
-        return FileID.isArchive(resource.getURI());
+        return FileID.isLibArchive(resource.getURI());
     }
 }

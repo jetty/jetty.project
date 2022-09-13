@@ -80,7 +80,6 @@ public class FileIDTest
     @MethodSource("basenameCases")
     public void testGetBasename(String input, String expected) throws IOException
     {
-
         Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
@@ -230,13 +229,13 @@ public class FileIDTest
         "jar:file:/home/user/project/with.jar/in/path/name",
         "file:/home/user/project/directory/",
         "file:/home/user/hello.ear",
-        "file:/opt/websites/webapps/company.war", // war files are not archives in the strictest sense (the classes are not in the right place)
+        "file:/opt/websites/webapps/company.war", // war files are not lib archives (the classes are not in the right place)
         "/home/user/app.war",  // not a absolute URI
         "/home/user/hello.jar"
     })
-    public void testIsArchiveUriFalse(String rawUri)
+    public void testIsLibArchiveUriFalse(String rawUri)
     {
-        assertFalse(FileID.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
+        assertFalse(FileID.isLibArchive(URI.create(rawUri)), "Should not be detected as a Lib Archive: " + rawUri);
     }
 
     @ParameterizedTest
@@ -247,9 +246,67 @@ public class FileIDTest
         "file:/home/user/install/jetty-home-12.0.0.zip",
         "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"
     })
+    public void testIsLibArchiveUriTrue(String rawUri)
+    {
+        assertTrue(FileID.isLibArchive(URI.create(rawUri)), "Should be detected as a Lib Archive: " + rawUri);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "jar:file:/home/user/project/with.jar/in/path/name",
+        "/home/user/project/with.jar/in/path/name",
+        "/home/user/project/directory/",
+        "/home/user/hello.ear",
+        "/opt/websites/webapps/company.war",
+        "/home/user/app.war",
+        "/home/user/hello.tar.gz",
+        "webapp.war",
+        "name"
+    })
+    public void testIsLibArchiveStringFalse(String str)
+    {
+        assertFalse(FileID.isLibArchive(str), "Should not be detected as a Lib Archive: " + str);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "company-1.0.jar",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "file:/home/user/install/jetty-home-12.0.0.zip",
+        "/home/user/install/jetty-home-12.0.0.zip",
+        "jetty-util-12.jar"
+    })
+    public void testIsLibArchiveStringTrue(String str)
+    {
+        assertTrue(FileID.isLibArchive(str), "Should be detected as a Lib Archive: " + str);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "jar:file:/home/user/project/with.jar/in/path/name",
+        "file:/home/user/project/directory/",
+        "file:/home/user/hello.ear",
+        "/home/user/app.war",  // not a absolute URI
+        "/home/user/hello.jar"
+    })
+    public void testIsArchiveUriFalse(String rawUri)
+    {
+        assertFalse(FileID.isArchive(URI.create(rawUri)), "Should not be detected as an Archive: " + rawUri);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "file:/home/user/install/jetty-home-12.0.0.zip",
+        "file:/opt/websites/webapps/company.war",
+        "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"
+    })
     public void testIsArchiveUriTrue(String rawUri)
     {
-        assertTrue(FileID.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
+        assertTrue(FileID.isArchive(URI.create(rawUri)), "Should be detected as an Archive: " + rawUri);
     }
 
     @ParameterizedTest
