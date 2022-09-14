@@ -2944,7 +2944,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                     return r.getURI().toURL();
             }
 
-            // Resource was returned, but none-existed
+            // A Resource was returned, but did not exist
             return null;
         }
 

@@ -1447,7 +1447,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                     return r.getURI().toURL();
             }
 
-            // Resource was returned, but none-existed
+            // A Resource was returned, but did not exist
             return null;
         }
 
