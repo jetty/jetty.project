@@ -44,4 +44,16 @@ public class MountedPathResource extends PathResource
     {
         return containerUri == null ? null : Path.of(containerUri);
     }
+
+    @Override
+    public String getName()
+    {
+        Path abs = getPath();
+        // If a "jar:file:" based path, we should normalize here, as the toAbsolutePath() does not resolve "/../" style segments in all cases
+        if ("jar".equalsIgnoreCase(abs.toUri().getScheme()))
+            abs = abs.normalize();
+        // Get the absolute path
+        abs = abs.toAbsolutePath();
+        return abs.toString();
+    }
 }

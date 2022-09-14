@@ -119,6 +119,9 @@ public class PathResourceTest
             Resource resource = resourceFactory.newResource(manifestPath);
             Path path = resource.getPath();
             assertThat("Path should not be null even for non-default FileSystem", path, notNullValue());
+
+            assertThat("Resource.getName", resource.getName(), is(path.toAbsolutePath().toString()));
+            assertThat("Resource.getFileName", resource.getFileName(), is("MANIFEST.MF"));
         }
     }
 
@@ -130,6 +133,9 @@ public class PathResourceTest
 
         Path path = resource.getPath();
         assertThat("File for default FileSystem", path, is(exampleJar));
+
+        assertThat("Resource.getName", resource.getName(), is(exampleJar.toAbsolutePath().toString()));
+        assertThat("Resource.getFileName", resource.getFileName(), is("example.jar"));
     }
 
     @Test
@@ -158,16 +164,22 @@ public class PathResourceTest
             // Resolve to name, but different case
             testText = archiveResource.resolve("/TEST.TXT");
             assertFalse(testText.exists());
+            assertThat("Resource.getName", testText.getName(), is("/TEST.TXT"));
+            assertThat("Resource.getFileName", testText.getFileName(), is("TEST.TXT"));
 
             // Resolve using path navigation
             testText = archiveResource.resolve("/foo/../test.txt");
             assertTrue(testText.exists());
             assertTrue(testText.isAlias());
+            assertThat("Resource.getName", testText.getName(), is("/test.txt"));
+            assertThat("Resource.getFileName", testText.getFileName(), is("test.txt"));
 
             // Resolve using encoded characters
             testText = archiveResource.resolve("/test%2Etxt");
             assertTrue(testText.exists());
             assertFalse(testText.isAlias());
+            assertThat("Resource.getName", testText.getName(), is("/test.txt"));
+            assertThat("Resource.getFileName", testText.getFileName(), is("test.txt"));
         }
     }
 

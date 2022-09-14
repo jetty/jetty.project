@@ -27,11 +27,11 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -51,6 +51,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
@@ -59,7 +60,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -159,7 +159,7 @@ public class FileSystemResourceTest
     @Test
     public void testNotFileURI()
     {
-        assertThrows(IllegalStateException.class,
+        assertThrows(FileSystemNotFoundException.class,
             () -> ResourceFactory.root().newResource(new URI("https://www.eclipse.org/jetty/")));
     }
 
@@ -450,6 +450,18 @@ public class FileSystemResourceTest
     }
 
     @Test
+    public void testFileName() throws Exception
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Files.createDirectories(dir);
+
+        String expected = dir.getFileName().toString();
+
+        Resource base = ResourceFactory.root().newResource(dir);
+        assertThat("base.filename", base.getFileName(), is(expected));
+    }
+
+    @Test
     public void testInputStream() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -524,20 +536,18 @@ public class FileSystemResourceTest
         Files.createDirectories(dir.resolve("tick"));
         Files.createDirectories(dir.resolve("tock"));
 
-        List<String> expected = new ArrayList<>();
-        expected.add("foo");
-        expected.add("bar");
-        expected.add("tick/");
-        expected.add("tock/");
+        String[] expectedFileNames = {
+            "foo",
+            "bar",
+            "tick",
+            "tock"
+        };
 
         Resource base = ResourceFactory.root().newResource(dir);
-        List<String> actual = base.list();
+        List<Resource> listing = base.list();
+        List<String> actualFileNames = listing.stream().map(Resource::getFileName).toList();
 
-        assertEquals(expected.size(), actual.size());
-        for (String s : expected)
-        {
-            assertTrue(actual.contains(s));
-        }
+        assertThat(actualFileNames, containsInAnyOrder(expectedFileNames));
     }
 
     @Test
