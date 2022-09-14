@@ -1,3 +1,5 @@
+jetty-9.4.50-SNAPSHOT
+
 jetty-9.4.49.v20220914 - 14 September 2022
  + 8414 BlockingArrayQueue drops all contents on drain
  + 8493 Review HTTP client feature `setRemoveIdleDestinations`
