@@ -300,6 +300,8 @@ public class FileIDTest
         "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "jar:file:///home/user/plugins/PLUGIN.JAR",
+        "jar:file:///home/user/plugins/Fragment.Jar",
         "file:/home/user/install/jetty-home-12.0.0.zip",
         "file:/opt/websites/webapps/company.war",
         "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"

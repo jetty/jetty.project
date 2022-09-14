@@ -285,7 +285,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             ArrayList<File> urls = new ArrayList<>();
             for (File f : jasperLocation.listFiles())
             {
-                if (f.getName().endsWith(".jar") && f.isFile())
+                if (FileID.isJavaArchive(f.getName()) && f.isFile())
                 {
                     urls.add(f);
                 }
@@ -293,7 +293,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 {
                     for (File f2 : jasperLocation.listFiles())
                     {
-                        if (f2.getName().endsWith(".jar") && f2.isFile())
+                        if (FileID.isJavaArchive(f2.getName()) && f2.isFile())
                         {
                             urls.add(f2);
                         }

@@ -26,6 +26,8 @@ import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.eclipse.jetty.util.FileID;
+
 public class FS
 {
     public static String separator()
@@ -180,9 +182,7 @@ public class FS
 
     public static void extract(Path archive, Path destination) throws IOException
     {
-        String filename = archive.getFileName().toString().toLowerCase(Locale.US);
-
-        if (filename.endsWith(".jar") || filename.endsWith(".zip"))
+        if (FileID.isLibArchive(archive))
         {
             extractZip(archive, destination);
         }
