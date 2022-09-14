@@ -23,6 +23,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.IO;
@@ -73,7 +75,22 @@ public class MemoryResource extends Resource
     @Override
     public String getName()
     {
-        return getPath().toAbsolutePath().toString();
+        Path p = getPath();
+        if (p == null)
+            return null;
+        return p.toAbsolutePath().toString();
+    }
+
+    @Override
+    public String getFileName()
+    {
+        Path p = getPath();
+        if (p == null)
+            return null;
+        Path fn = p.getFileName();
+        if (fn == null)
+            return ""; // no segments, so no filename
+        return fn.toString();
     }
 
     @Override
@@ -104,6 +121,18 @@ public class MemoryResource extends Resource
     public boolean exists()
     {
         return true;
+    }
+
+    @Override
+    public List<Resource> list()
+    {
+        return List.of(); // empty
+    }
+
+    @Override
+    public Collection<Resource> getAllResources()
+    {
+        return List.of(); // empty
     }
 
     @Override

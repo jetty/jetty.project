@@ -1433,23 +1433,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (path == null)
                 return null;
 
+            // Assumption is that the resource base has been properly setup.
+            // Spec requirement is that the WAR file is interrogated first.
+            // If a WAR file is mounted, or is extracted to a temp directory,
+            // then the first entry of the resource base must be the WAR file.
             Resource resource = WebAppContext.this.getResource(path);
-            if (resource == null || !resource.exists())
+            if (resource == null)
                 return null;
 
-            // Should we go to the original war?
-            if (resource.isDirectory() && resource instanceof ResourceCollection && !WebAppContext.this.isExtractWAR())
+            for (Resource r: resource)
             {
-                List<Resource> resources = ((ResourceCollection)resource).getResources();
-                for (int i = resources.size(); i-- > 0; )
-                {
-                    Resource r = resources.get(i);
-                    if (r.getName().startsWith("jar:file"))
-                        return r.getURI().toURL();
-                }
+                if (r.exists())
+                    return r.getURI().toURL();
             }
 
-            return resource.getURI().toURL();
+            // A Resource was returned, but did not exist
+            return null;
         }
 
         @Override

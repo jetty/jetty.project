@@ -166,6 +166,68 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testGetPercent2F() throws Exception
+    {
+        Path file = docRoot.resolve("file.txt");
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        // Access normally, in root of context
+
+        rawResponse = connector.getResponse("""
+            GET /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+
+        // Attempt access using "%2F" instead of "/", should be a 404 (mainly because context isn't found)
+
+        rawResponse = connector.getResponse("""
+            GET /context%2Ffile.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        Path dir = docRoot.resolve("dirFoo");
+        Files.createDirectory(dir);
+        Path other = dir.resolve("other.txt");
+        Files.writeString(other, "In a while", UTF_8);
+
+        // Access normally, in sub-dir of context
+
+        rawResponse = connector.getResponse("""
+            GET /context/dirFoo/other.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("In a while"));
+
+        // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 404
+        rawResponse = connector.getResponse("""
+            GET /context/dirFoo%2Fother.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+    }
+
+    @Test
     public void testListingWithSession() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -1560,8 +1622,6 @@ public class DefaultServletTest
     {
         Scenarios scenarios = new Scenarios();
 
-        // TODO: sendError not working (yet)
-        /*
         scenarios.addScenario(
             "GET /context/ - (/index.jsp servlet match, but JSP not supported)",
             """
@@ -1573,7 +1633,6 @@ public class DefaultServletTest
             HttpStatus.INTERNAL_SERVER_ERROR_500,
             (response) -> assertThat(response.getContent(), containsString("JSP support not configured")) // test of SendError response
         );
-         */
 
         addBasicWelcomeScenarios(scenarios);
 

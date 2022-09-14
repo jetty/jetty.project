@@ -693,8 +693,8 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(0, _statsHandler.getResponses5xx());
-        assertEquals(1, _statsHandler.getHandleThrows());
-        assertEquals(0, _statsHandler.getProcessThrows());
+        assertEquals(1, _statsHandler.getHandlingErrors());
+        assertEquals(0, _statsHandler.getProcessingErrors());
     }
 
     @Test
@@ -733,8 +733,8 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(1, _statsHandler.getResponses5xx());
-        assertEquals(0, _statsHandler.getHandleThrows());
-        assertEquals(1, _statsHandler.getProcessThrows());
+        assertEquals(0, _statsHandler.getHandlingErrors());
+        assertEquals(1, _statsHandler.getProcessingErrors());
     }
 
 //

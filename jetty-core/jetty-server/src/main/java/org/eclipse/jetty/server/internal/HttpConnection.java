@@ -1291,6 +1291,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.authority(hostPort.getHost(), port);
             }
 
+            // Set path (if not already set)
+            if (_uri.getPath() == null)
+            {
+                _uri.path("/");
+            }
+
             _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
 
             Runnable handle = _httpChannel.onRequest(_request);

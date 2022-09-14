@@ -74,7 +74,7 @@ public class StatisticsServlet extends HttpServlet
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
-        ContextHandler.Context scontext = (ContextHandler.Context)context;
+        ContextHandler.Context scontext = ServletContextHandler.getServletContextHandler(context).getContext();
         Server server = scontext.getContextHandler().getServer();
 
         _statsHandler = server.getDescendant(StatisticsHandler.class);
@@ -121,7 +121,7 @@ public class StatisticsServlet extends HttpServlet
         if (Boolean.parseBoolean(request.getParameter("statsReset")))
         {
             response.setStatus(HttpServletResponse.SC_OK);
-            // TODO: _statsHandler.statsReset();
+            _statsHandler.reset();
             return;
         }
 
@@ -256,11 +256,8 @@ public class StatisticsServlet extends HttpServlet
     {
         Map<String, Object> top = new HashMap<>();
 
-        /*
-        TODO: update to use new StatisticsHandler.
         // requests
         Map<String, Number> requests = new HashMap<>();
-        requests.put("statsOnMs", _statsHandler.getStatsOnMs());
 
         requests.put("requests", _statsHandler.getRequests());
 
@@ -271,21 +268,21 @@ public class StatisticsServlet extends HttpServlet
         requests.put("requestsTimeMax", _statsHandler.getRequestTimeMax());
         requests.put("requestsTimeStdDev", _statsHandler.getRequestTimeStdDev());
 
-        requests.put("dispatched", _statsHandler.getDispatched());
-        requests.put("dispatchedActive", _statsHandler.getDispatchedActive());
-        requests.put("dispatchedActiveMax", _statsHandler.getDispatchedActiveMax());
-        requests.put("dispatchedTimeTotal", _statsHandler.getDispatchedTimeTotal());
-        requests.put("dispatchedTimeMean", _statsHandler.getDispatchedTimeMean());
-        requests.put("dispatchedTimeMax", _statsHandler.getDispatchedTimeMax());
-        requests.put("dispatchedTimeStdDev", _statsHandler.getDispatchedTimeStdDev());
+        requests.put("handlings", _statsHandler.getHandlings());
+        requests.put("handlingThrows", _statsHandler.getHandlingErrors());
+        requests.put("handlingTimeTotal", _statsHandler.getHandlingTimeTotal());
+        requests.put("handlingTimeMax", _statsHandler.getHandlingTimeMax());
+        requests.put("handlingTimeMean", _statsHandler.getHandlingTimeMean());
+        requests.put("handlingTimeStdDev", _statsHandler.getHandlingTimeStdDev());
 
-        requests.put("asyncRequests", _statsHandler.getAsyncRequests());
-        requests.put("requestsSuspended", _statsHandler.getAsyncDispatches());
-        requests.put("requestsSuspendedMax", _statsHandler.getAsyncRequestsWaiting());
-        requests.put("requestsResumed", _statsHandler.getAsyncRequestsWaitingMax());
-        requests.put("requestsExpired", _statsHandler.getExpires());
-
-        requests.put("errors", _statsHandler.getErrors());
+        requests.put("processings", _statsHandler.getProcessings());
+        requests.put("processingsActive", _statsHandler.getProcessingsActive());
+        requests.put("processingsMax", _statsHandler.getProcessingsMax());
+        requests.put("processingErrors", _statsHandler.getProcessingErrors());
+        requests.put("processingTimeTotal", _statsHandler.getProcessingTimeTotal());
+        requests.put("processingTimeMax", _statsHandler.getProcessingTimeMax());
+        requests.put("processingTimeMean", _statsHandler.getProcessingTimeMean());
+        requests.put("processingTimeStdDev", _statsHandler.getProcessingTimeStdDev());
 
         top.put("requests", requests);
 
@@ -296,9 +293,7 @@ public class StatisticsServlet extends HttpServlet
         responses.put("responses3xx", _statsHandler.getResponses3xx());
         responses.put("responses4xx", _statsHandler.getResponses4xx());
         responses.put("responses5xx", _statsHandler.getResponses5xx());
-        responses.put("responsesBytesTotal", _statsHandler.getResponsesBytesTotal());
         top.put("responses", responses);
-         */
 
         // connections
         List<Object> connections = new ArrayList<>();

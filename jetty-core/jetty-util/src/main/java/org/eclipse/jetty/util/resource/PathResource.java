@@ -15,7 +15,7 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.DirectoryIteratorException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +23,11 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
@@ -209,25 +213,29 @@ public class PathResource extends Resource
 
     PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
+        // normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
+        // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`
+        this(Paths.get(uri.normalize()), uri, bypassAllowedSchemeCheck);
+    }
+
+    PathResource(Path path)
+    {
+        this(path, path.toUri(), true);
+    }
+
+    PathResource(Path path, URI uri, boolean bypassAllowedSchemeCheck)
+    {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
         if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
-        try
-        {
-            // normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
-            // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`
-            this.path = Paths.get(uri.normalize());
-            String uriString = uri.toString();
-            if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
-                uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
-            this.uri = uri;
-        }
-        catch (FileSystemNotFoundException e)
-        {
-            throw new IllegalStateException("No FileSystem mounted for : " + uri, e);
-        }
+        String uriString = uri.toASCIIString();
+        if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
+            uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
+
+        this.path = path;
+        this.uri = uri;
     }
 
     @Override
@@ -263,10 +271,39 @@ public class PathResource extends Resource
         return path;
     }
 
+    public List<Resource> list()
+    {
+        if (!isDirectory())
+            return List.of(); // empty
+
+        try (Stream<Path> dirStream = Files.list(getPath()))
+        {
+            return dirStream.map(PathResource::new).collect(Collectors.toCollection(ArrayList::new));
+        }
+        catch (DirectoryIteratorException e)
+        {
+            LOG.debug("Directory list failure", e);
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Directory list access failure", e);
+        }
+        return List.of(); // empty
+    }
+
     @Override
     public String getName()
     {
         return path.toAbsolutePath().toString();
+    }
+
+    @Override
+    public String getFileName()
+    {
+        Path fn = path.getFileName();
+        if (fn == null) // if path has no segments (eg "/")
+            return "";
+        return fn.toString();
     }
 
     @Override
