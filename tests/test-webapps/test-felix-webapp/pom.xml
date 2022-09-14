@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>10.0.12-SNAPSHOT</version>
+    <version>10.0.12</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
