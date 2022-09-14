@@ -404,7 +404,7 @@ public class FileIDTest
         "cee.jar",
         "cee.zip"
     })
-    public void testIsWebArchiveFalse(String input) throws IOException
+    public void testIsWebArchiveStringFalse(String input) throws IOException
     {
         assertFalse(FileID.isWebArchive(input), "isWebArchive((String) \"%s\")".formatted(input));
         Path path = touchTestPath(input);
@@ -420,7 +420,7 @@ public class FileIDTest
         "ZED.WAR",
         "Zed.War"
     })
-    public void testIsWebArchiveTrue(String input) throws IOException
+    public void testIsWebArchiveStringTrue(String input) throws IOException
     {
         assertTrue(FileID.isWebArchive(input), "isWebArchive((String) \"%s\")".formatted(input));
         Path path = touchTestPath(input);

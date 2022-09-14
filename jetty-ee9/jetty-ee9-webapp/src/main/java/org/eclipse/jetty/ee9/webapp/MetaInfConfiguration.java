@@ -695,24 +695,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists())
             return null;
 
-        List<Resource> jarResources = new ArrayList<>();
         Resource webInfLib = webInf.resolve("/lib");
-        for (Resource lib: webInfLib) // walk all "lib" hits
-        {
-            if (!lib.exists())
-                continue; // doesn't exist, skip entry
 
-            for (Resource entry: lib.list()) // get contents of "lib" entry
-            {
-                if (FileID.isLibArchive(entry.getFileName()))
-                {
-                    jarResources.add(entry);
-                }
-            }
-        }
-
-        jarResources.sort(ResourceCollators.byName(true));
-        return jarResources;
+        return webInfLib.list().stream()
+            .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
+            .sorted(ResourceCollators.byName(true))
+            .collect(Collectors.toList());
     }
 
     /**

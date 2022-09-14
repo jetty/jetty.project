@@ -55,7 +55,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -1434,21 +1433,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (path == null)
                 return null;
 
+            // Assumption is that the resource base has been properly setup.
+            // Spec requirement is that the WAR file is interrogated first.
+            // If a WAR file is mounted, or is extracted to a temp directory,
+            // then the first entry of the resource base must be the WAR file.
             Resource resource = WebAppContext.this.getResource(path);
-            if (resource == null || !resource.exists())
+            if (resource == null)
                 return null;
 
-            // Should we go to the original war?
-            if (resource.isDirectory() && !WebAppContext.this.isExtractWAR())
+            for (Resource r: resource)
             {
-                for (Resource r: resource)
-                {
-                    if (FileID.isWebArchive(r.getFileName()))
-                        return r.getURI().toURL();
-                }
+                if (r.exists())
+                    return r.getURI().toURL();
             }
 
-            return resource.getURI().toURL();
+            // Resource was returned, but none-existed
+            return null;
         }
 
         @Override

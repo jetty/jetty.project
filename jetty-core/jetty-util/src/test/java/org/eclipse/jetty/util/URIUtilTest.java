@@ -541,11 +541,9 @@ public class URIUtilTest
         actual = URIUtil.addPath(uri, "foo/..\\bar");
         assertThat(actual.toASCIIString(), is("file:////c:/foo/..%5Cbar"));
 
-        // java.net.URI will encode `\\` to `%5C` per URI rules
-        uri = URI.create("file:///opt/foo.txt");
-        actual = URIUtil.addPath(uri, "bar.dat");
+        // Adding a "file" to a URI that ends in a "file", what should it do?
+        actual = URIUtil.addPath(URI.create("file:///opt/foo.txt"), "bar.dat");
         assertThat(actual.toASCIIString(), is("file:///opt/foo.txt/bar.dat"));
-
     }
 
     public static Stream<Arguments> ensureSafeEncodingSource()

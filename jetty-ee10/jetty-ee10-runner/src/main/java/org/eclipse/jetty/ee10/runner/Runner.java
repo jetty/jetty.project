@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.runner;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -107,7 +106,7 @@ public class Runner
     {
         private List<URI> _classpath = new ArrayList<>();
 
-        public void addJars(Resource lib) throws IOException
+        public void addJars(Resource lib)
         {
             if (lib == null || !lib.exists())
                 throw new IllegalStateException("No such lib: " + lib);
@@ -117,9 +116,7 @@ public class Runner
                 if (item.isDirectory())
                     addJars(item);
                 else if (FileID.isLibArchive(item.getFileName()))
-                {
                     _classpath.add(item.getURI());
-                }
             }
         }
 

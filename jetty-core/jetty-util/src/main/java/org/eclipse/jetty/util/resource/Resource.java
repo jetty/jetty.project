@@ -243,11 +243,9 @@ public abstract class Resource implements Iterable<Resource>
     public abstract String getName();
 
     /**
-     * The file name of the resource.
+     * <p>The file name of the resource.</p>
      *
-     * <p>
-     *     This is the last segment of the path.
-     * </p>
+     * <p>This is the last segment of the path.</p>
      *
      * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if not backed by a Path
      */
@@ -276,7 +274,7 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * <p>List of Resources contained in the given resource.</p>
+     * <p>List of existing Resources contained in the given resource.</p>
      *
      * <p>Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.</p>
      *

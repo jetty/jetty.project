@@ -834,13 +834,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 path = path + URIUtil.SLASH;
 
             HashSet<String> set = new HashSet<>();
-
-            for (Resource r: resource)
+            for (Resource item: resource.list())
             {
-                for (Resource item: r.list())
-                {
-                    set.add(path + item.getFileName());
-                }
+                set.add(path + item.getFileName());
             }
             return set;
         }
@@ -2933,9 +2929,22 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
+
+            // Assumption is that the resource base has been properly setup.
+            // Spec requirement is that the WAR file is interrogated first.
+            // If a WAR file is mounted, or is extracted to a temp directory,
+            // then the first entry of the resource base must be the WAR file.
             Resource resource = ServletContextHandler.this.getResource(path);
-            if (resource != null && resource.exists())
-                return resource.getURI().toURL();
+            if (resource == null)
+                return null;
+
+            for (Resource r: resource)
+            {
+                if (r.exists())
+                    return r.getURI().toURL();
+            }
+
+            // Resource was returned, but none-existed
             return null;
         }
 

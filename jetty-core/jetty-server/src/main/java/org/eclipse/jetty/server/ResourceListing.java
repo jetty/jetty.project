@@ -19,9 +19,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -258,8 +257,8 @@ public class ResourceListing
     /* TODO: see if we can use {@link Collectors#groupingBy} */
     private static <T> Predicate<T> distinctBy(Function<? super T, Object> keyExtractor)
     {
-        Map<Object, Boolean> map = new ConcurrentHashMap<>();
-        return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+        HashSet<Object> map = new HashSet<>();
+        return t -> map.add(keyExtractor.apply(t));
     }
 
     /**

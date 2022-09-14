@@ -294,13 +294,7 @@ public class PathResource extends Resource
     @Override
     public String getName()
     {
-        Path abs = path;
-        // If a "jar:file:" based path, we should normalize here, as the toAbsolutePath() does not resolve "/../" style segments in all cases
-        if ("jar".equalsIgnoreCase(path.toUri().getScheme()))
-            abs = path.normalize();
-        // Get the absolute path
-        abs = abs.toAbsolutePath();
-        return abs.toString();
+        return path.toAbsolutePath().toString();
     }
 
     @Override
