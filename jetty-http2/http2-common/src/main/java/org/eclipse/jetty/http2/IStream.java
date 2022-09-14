@@ -143,6 +143,11 @@ public interface IStream extends Stream, Attachable, Closeable
     boolean isCommitted();
 
     /**
+     * @return the size of the DATA frame queue
+     */
+    int dataSize();
+
+    /**
      * <p>An ordered list of frames belonging to the same stream.</p>
      */
     public static class FrameList
