@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>11.0.12</version>
+    <version>11.0.13-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
