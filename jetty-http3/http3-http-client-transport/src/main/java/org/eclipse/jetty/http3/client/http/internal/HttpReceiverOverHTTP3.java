@@ -192,4 +192,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     {
         responseFailure(failure);
     }
+
+    @Override
+    protected void reset()
+    {
+        super.reset();
+        notifySuccess = false;
+    }
 }
