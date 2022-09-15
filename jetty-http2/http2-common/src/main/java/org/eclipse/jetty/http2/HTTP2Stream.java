@@ -285,6 +285,15 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
         return committed;
     }
 
+    @Override
+    public int dataSize()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            return dataQueue == null ? 0 : dataQueue.size();
+        }
+    }
+
     public boolean isOpen()
     {
         return !isClosed();
@@ -921,13 +930,14 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             session.hashCode(),
             sendWindow,
             recvWindow,
+            dataSize(),
             demand(),
             localReset,
             remoteReset,

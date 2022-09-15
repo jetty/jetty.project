@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,6 +41,8 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -608,6 +611,43 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testInputStreamResponseListener() throws Exception
+    {
+        var bytes = 100_000;
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                int streamId = stream.getId();
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
+                Callback.Completable callback = new Callback.Completable();
+                stream.headers(responseFrame, callback);
+                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(new byte[bytes]), true), Callback.NOOP));
+                return null;
+            }
+        });
+
+        var requestCount = 10_000;
+        IntStream.range(0, requestCount).forEach(i ->
+        {
+            try
+            {
+                InputStreamResponseListener listener = new InputStreamResponseListener();
+                client.newRequest("localhost", connector.getLocalPort()).headers(httpFields -> httpFields.put("X-Request-Id", Integer.toString(i))).send(listener);
+                Response response = listener.get(15, TimeUnit.SECONDS);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(bytes, listener.getInputStream().readAllBytes().length);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Disabled

@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
-    private boolean notifySuccess;
+    private volatile boolean notifySuccess;
 
     protected HttpReceiverOverHTTP3(HttpChannelOverHTTP3 channel)
     {
@@ -86,6 +86,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
             // TODO: add support for HttpMethod.CONNECT.
 
+            notifySuccess = frame.isLast();
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
@@ -98,7 +99,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("stalling response processing, no demand after headers on {}", this);
-                notifySuccess = frame.isLast();
             }
         }
     }
@@ -118,12 +118,16 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
                 ByteBuffer byteBuffer = data.getByteBuffer();
                 if (byteBuffer.hasRemaining())
                 {
+                    if (data.isLast())
+                        notifySuccess = true;
+
                     Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::complete, x ->
                     {
                         data.complete();
                         if (responseFailure(x))
                             stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
                     });
+
                     boolean proceed = responseContent(exchange, byteBuffer, callback);
                     if (proceed)
                     {
@@ -136,7 +140,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("stalling response processing, no demand after {} on {}", data, this);
-                        notifySuccess = data.isLast();
                     }
                 }
                 else
