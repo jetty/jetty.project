@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -275,6 +274,12 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 }
             }
             return totalSize;
+        }
+
+        @Override
+        public long getContentLengthValue()
+        {
+            return _contentLengthValue;
         }
 
         @Override

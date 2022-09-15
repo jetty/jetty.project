@@ -125,7 +125,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public HttpField getContentLength()
     {
-        long l = _resource.length();
+        long l = getContentLengthValue();
         return l == -1 ? null : new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, l);
     }
 

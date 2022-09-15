@@ -17,12 +17,29 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.Objects;
+
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Utility classes for Etag behaviors
  */
 public class EtagUtil
 {
+    /**
+     * <p>The separator within an etag used to indicate a compressed variant.</p>
+     *
+     * <p>Default separator is {@code --}</p>
+     *
+     * <p>Adding a suffix of {@code gzip} to an etag of {@code W/"28c772d6"} will result in {@code W/"28c772d6--gzip"}</p>
+     *
+     * <p>The separator may be changed by the
+     * {@code org.eclipse.jetty.http.EtagUtil.ETAG_SEPARATOR} System property. If changed, it should be changed to a string
+     * that will not be found in a normal etag or at least is very unlikely to be a substring of a normal etag.</p>
+     */
+    public static final String ETAG_SEPARATOR = System.getProperty(EtagUtil.class.getName() + ".ETAG_SEPARATOR", "--");
+
     /**
      * Calculate the weak etag for the provided {@link Path} reference.
      *
@@ -120,6 +137,48 @@ public class EtagUtil
         ret.append(newSuffix);
         ret.append('"');
         return ret.toString();
+    }
+
+    /**
+     * Test a match of an etag against an etagWithOptionalSuffix
+     *
+     * @param etag An etag without a compression suffix
+     * @param etagWithOptionalSuffix An etag optionally with a compression suffix.
+     * @return True if the tags are equal.
+     */
+    public static boolean match(String etag, String etagWithOptionalSuffix)
+    {
+        // Handle simple equality
+        if (etag.equals(etagWithOptionalSuffix))
+            return true;
+
+        // If no separator defined, then simple equality is only possible positive
+        if (StringUtil.isEmpty(ETAG_SEPARATOR))
+            return false;
+
+        // Are both tags quoted?
+        boolean etagQuoted = etag.endsWith("\"");
+        boolean etagSuffixQuoted = etagWithOptionalSuffix.endsWith("\"");
+
+        // Look for a separator
+        int separator = etagWithOptionalSuffix.lastIndexOf(ETAG_SEPARATOR);
+
+        // If both tags are quoted the same (the norm) then any difference must be the suffix
+        if (etagQuoted == etagSuffixQuoted)
+            return separator > 0 && etag.regionMatches(0, etagWithOptionalSuffix, 0, separator);
+
+        // If either tag is weak then we can't match because weak tags must be quoted
+        if (etagWithOptionalSuffix.startsWith("W/") || etag.startsWith("W/"))
+            return false;
+
+        // compare unquoted strong etags
+        etag = etagQuoted ? QuotedStringTokenizer.unquote(etag) : etag;
+        etagWithOptionalSuffix = etagSuffixQuoted ? QuotedStringTokenizer.unquote(etagWithOptionalSuffix) : etagWithOptionalSuffix;
+        separator = etagWithOptionalSuffix.lastIndexOf(ETAG_SEPARATOR);
+        if (separator > 0)
+            return etag.regionMatches(0, etagWithOptionalSuffix, 0, separator);
+
+        return Objects.equals(etag, etagWithOptionalSuffix);
     }
 
     private static byte[] longToBytes(long value)

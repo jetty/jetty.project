@@ -32,6 +32,8 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class EtagUtilTest
@@ -84,13 +86,13 @@ public class EtagUtilTest
             // Simple, quoted, no suffix in original
             Arguments.of("\"ABCDEF\"", "-br", "\"ABCDEF-br\""),
             // Weak, quoted, no suffix in original
-            Arguments.of("W/\"ABCDEF\"", "-br", "W/\"ABCDEF-br\""),
+            Arguments.of("W/\"ABCDEF\"", "--gzip", "W/\"ABCDEF--gzip\""),
             // Simple, quoted, gzip suffix in original
             Arguments.of("\"ABCDEF-gzip\"", "-br", "\"ABCDEF-br\""),
             // Simple, not quoted, gzip suffix in original
             Arguments.of("ABCDEF-gzip", "-br", "\"ABCDEF-br\""),
-            // Weak, quoted, gzip suffix in original
-            Arguments.of("W/\"ABCDEF-gzip\"", "-br", "W/\"ABCDEF-br\"")
+            // Weak, quoted, gzip suffix in original, different ETAG_SEPARATOR size
+            Arguments.of("W/\"ABCDEF-gzip\"", "--br", "W/\"ABCDEF--br\"")
         );
     }
 
@@ -100,5 +102,45 @@ public class EtagUtilTest
     {
         String actual = EtagUtil.rewriteWithSuffix(input, newSuffix);
         assertThat(actual, is(expected));
+    }
+
+    public static Stream<Arguments> matchTrueCases()
+    {
+        return Stream.of(
+            Arguments.of("tag", "tag"),
+            Arguments.of("\"tag\"", "\"tag\""),
+            Arguments.of("\"tag\"", "\"tag--gz\""),
+            Arguments.of("\"tag\"", "\"tag--br\""),
+            Arguments.of("W/\"1234567\"", "W/\"1234567\""),
+            Arguments.of("W/\"1234567\"", "W/\"1234567--br\""),
+            Arguments.of("12345", "\"12345\""),
+            Arguments.of("\"12345\"", "12345"),
+            Arguments.of("12345", "\"12345--gzip\""),
+            Arguments.of("\"12345\"", "12345--gzip")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("matchTrueCases")
+    public void testMatchTrue(String etag, String etagWithOptionalSuffix)
+    {
+        assertTrue(EtagUtil.match(etag, etagWithOptionalSuffix));
+    }
+
+    public static Stream<Arguments> matchFalseCases()
+    {
+        return Stream.of(
+            Arguments.of("Zag", "Xag--gzip"),
+            Arguments.of("xtag", "tag"),
+            Arguments.of("W/\"1234567\"", "W/\"1234111\""),
+            Arguments.of("W/\"1234567\"", "W/\"1234111--gzip\"")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("matchFalseCases")
+    public void testMatchFalse(String etag, String etagWithOptionalSuffix)
+    {
+        assertFalse(EtagUtil.match(etag, etagWithOptionalSuffix));
     }
 }

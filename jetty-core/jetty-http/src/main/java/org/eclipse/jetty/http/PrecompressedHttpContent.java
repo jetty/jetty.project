@@ -39,7 +39,7 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public Resource getResource()
     {
-        return _content.getResource();
+        return _precompressedContent.getResource();
     }
 
     @Override
@@ -57,13 +57,13 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public HttpField getLastModified()
     {
-        return _content.getLastModified();
+        return _precompressedContent.getLastModified();
     }
 
     @Override
     public String getLastModifiedValue()
     {
-        return _content.getLastModifiedValue();
+        return _precompressedContent.getLastModifiedValue();
     }
 
     @Override

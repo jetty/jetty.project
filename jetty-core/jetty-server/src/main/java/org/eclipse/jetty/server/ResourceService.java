@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
+import org.eclipse.jetty.http.EtagUtil;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -203,7 +203,7 @@ public class ResourceService
                 }
             }
 
-            // TODO this should be done by HttpContent#getContentEncoding
+            // TODO this should be done by HttpContent#getContentEncoding?
             if (isGzippedContent(pathInContext))
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
 
@@ -223,6 +223,21 @@ public class ResourceService
             if (!response.isCommitted())
                 writeHttpError(request, response, callback, e);
         }
+    }
+
+    private void writeHttpError(Request request, Response response, Callback callback, int status)
+    {
+        Response.writeError(request, response, callback, status);
+    }
+
+    private void writeHttpError(Request request, Response response, Callback callback, Throwable cause)
+    {
+        Response.writeError(request, response, callback, cause);
+    }
+
+    private void writeHttpError(Request request, Response response, Callback callback, int status, String msg, Throwable cause)
+    {
+        Response.writeError(request, response, callback, status, msg, cause);
     }
 
     protected void sendRedirect(Request request, Response response, Callback callback, String target)
@@ -335,21 +350,8 @@ public class ResourceService
                 String etag = content.getETagValue();
                 if (ifm != null)
                 {
-                    boolean match = false;
-                    if (etag != null && !etag.startsWith("W/"))
-                    {
-                        QuotedCSV quoted = new QuotedCSV(true, ifm);
-                        for (String etagWithSuffix : quoted)
-                        {
-                            if (CompressedContentFormat.tagEquals(etag, etagWithSuffix))
-                            {
-                                match = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!match)
+                    String matched = matchEtag(etag, ifm);
+                    if (matched == null)
                     {
                         writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                         return true;
@@ -358,22 +360,12 @@ public class ResourceService
 
                 if (ifnm != null && etag != null)
                 {
-                    // Handle special case of exact match OR gzip exact match
-                    if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
+                    String matched = matchEtag(etag, ifnm);
+                    if (matched != null)
                     {
+                        response.getHeaders().put(HttpHeader.ETAG, matched);
                         writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                         return true;
-                    }
-
-                    // Handle list of tags
-                    QuotedCSV quoted = new QuotedCSV(true, ifnm);
-                    for (String tag : quoted)
-                    {
-                        if (CompressedContentFormat.tagEquals(etag, tag))
-                        {
-                            writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                            return true;
-                        }
                     }
 
                     // If etag requires content to be served, then do not check if-modified-since
@@ -415,6 +407,41 @@ public class ResourceService
         }
 
         return false;
+    }
+
+    /**
+     * Find a match between a Content ETag and a Request Field ETag reference.
+     * @param contentETag the content etag to match against (can be null)
+     * @param requestEtag the request etag (can be null, a single entry, or even a CSV list)
+     * @return the matched etag, or null if no match.
+     */
+    private String matchEtag(String contentETag, String requestEtag)
+    {
+        if (contentETag == null || requestEtag == null)
+        {
+            return null;
+        }
+
+        if (requestEtag.contains(","))
+        {
+            // this is a CSV list of tags
+            QuotedCSV quoted = new QuotedCSV(true, requestEtag);
+            for (String tag : quoted)
+            {
+                if (EtagUtil.match(contentETag, tag))
+                {
+                    return tag;
+                }
+            }
+        }
+        // A single tag
+        else if (EtagUtil.match(contentETag, requestEtag))
+        {
+            return requestEtag;
+        }
+
+        // no match
+        return null;
     }
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
@@ -524,7 +551,7 @@ public class ResourceService
         return new WelcomeAction(WelcomeActionType.SERVE, welcomeTarget);
     }
 
-    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
+    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
     {
         if (!_dirAllowed)
         {
@@ -761,6 +788,7 @@ public class ResourceService
     {
         _precompressedFormats.clear();
         _precompressedFormats.addAll(precompressedFormats);
+        // TODO: this preferred encoding order should be a separate configurable
         _preferredEncodingOrder.clear();
         _preferredEncodingOrder.addAll(_precompressedFormats.stream().map(CompressedContentFormat::getEncoding).toList());
     }
