@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
@@ -35,7 +34,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
 
-    private final AtomicBoolean notifySuccess = new AtomicBoolean();
+    private volatile boolean notifySuccess;
 
     protected HttpReceiverOverHTTP3(HttpChannelOverHTTP3 channel)
     {
@@ -59,7 +58,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         if (exchange == null)
             return;
 
-        if (notifySuccess.get())
+        if (notifySuccess)
             responseSuccess(exchange);
         else
             getHttpChannel().getStream().demand();
@@ -87,7 +86,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
             // TODO: add support for HttpMethod.CONNECT.
 
-            notifySuccess.set(frame.isLast());
+            notifySuccess = frame.isLast();
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
@@ -117,13 +116,16 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             ByteBuffer byteBuffer = data.getByteBuffer();
             if (byteBuffer.hasRemaining())
             {
-                notifySuccess.set(data.isLast());
+                if (data.isLast())
+                    notifySuccess = true;
+
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
                     if (responseFailure(x))
                         stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
                 });
+
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
                 if (proceed)
                 {
@@ -179,5 +181,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     public void onFailure(Stream.Client stream, long error, Throwable failure)
     {
         responseFailure(failure);
+    }
+
+    @Override
+    protected void reset()
+    {
+        super.reset();
+        notifySuccess = false;
     }
 }

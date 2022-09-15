@@ -260,6 +260,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         return committed;
     }
 
+    private int dataSize()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return dataQueue == null ? 0 : dataQueue.size();
+        }
+    }
+
     public boolean isOpen()
     {
         return !isClosed();
@@ -842,13 +850,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             session.hashCode(),
             sendWindow,
             recvWindow,
+            dataSize(),
             hasDemand(),
             localReset,
             remoteReset,
