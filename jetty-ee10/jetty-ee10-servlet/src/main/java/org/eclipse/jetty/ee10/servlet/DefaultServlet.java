@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.RequestDispatcher;
@@ -446,6 +447,12 @@ public class DefaultServlet extends HttpServlet
         public HttpFields getHeaders()
         {
             return _httpFields;
+        }
+
+        @Override
+        public HttpFields getTrailers()
+        {
+            return _coreRequest.getTrailers();
         }
 
         @Override
@@ -893,9 +900,14 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public HttpFields.Mutable getOrCreateTrailers()
+        public Supplier<HttpFields> getTrailersSupplier()
         {
             return null;
+        }
+
+        @Override
+        public void setTrailersSupplier(Supplier<HttpFields> trailers)
+        {
         }
 
         @Override

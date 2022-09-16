@@ -1033,16 +1033,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public boolean messageComplete()
         {
-            // TODO: Not sure what this logic was doing.
-//            HttpStreamOverHTTP1 stream = _stream.get();
-//            stream._chunk = ContentOLD.last(stream._chunk);
-//            if (_trailers != null && (stream._chunk == null || stream._chunk == Content.Chunk.EOF))
-//                stream._chunk = new Trailers(_trailers.asImmutable());
-//            else
-//                stream._chunk = ContentOLD.last(stream._chunk);
-//            return false;
-
-            // TODO: verify this new, simpler, logic.
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream._chunk != null)
                 throw new IllegalStateException();

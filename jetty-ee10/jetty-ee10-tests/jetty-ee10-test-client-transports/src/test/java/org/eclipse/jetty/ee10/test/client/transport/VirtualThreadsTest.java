@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.test.client.transport;
+package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;

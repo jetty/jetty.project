@@ -262,7 +262,8 @@ public class TrailersTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                HttpFields.Mutable trailers = response.getOrCreateTrailers();
+                HttpFields.Mutable trailers = HttpFields.build();
+                response.setTrailersSupplier(() -> trailers);
                 Content.Sink.write(response, false, UTF_8.encode("hello_trailers"));
                 // Force the content to be sent above, and then only send the trailers below.
                 trailers.put(trailerName, trailerValue);
@@ -408,6 +409,8 @@ public class TrailersTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
+                HttpFields.Mutable trailers = HttpFields.build();
+                response.setTrailersSupplier(() -> trailers);
                 Content.copy(request, response, response::writeTrailers, callback);
             }
         });

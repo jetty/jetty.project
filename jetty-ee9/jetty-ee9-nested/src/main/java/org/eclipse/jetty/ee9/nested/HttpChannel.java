@@ -43,7 +43,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -1031,27 +1030,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (response != null)
         {
+            // TODO: why can't we just do _coreResponse.setMetaData(response), without copying?
             _coreResponse.setStatus(response.getStatus());
+            // TODO: at least avoid copying the headers?
             _coreResponse.getHeaders().add(response.getFields());
-            _responseTrailers = response.getTrailerSupplier();
-            if (_responseTrailers != null)
-                _coreResponse.getOrCreateTrailers();
+            _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
-        if (_responseTrailers == null || !complete)
-        {
-            _coreResponse.write(complete, content, callback);
-        }
-        else
-        {
-            _coreResponse.write(false, content, new Callback.Nested(callback)
-            {
-                @Override
-                public void succeeded()
-                {
-                    _coreResponse.writeTrailers(new Trailers(_responseTrailers.get()), getCallback());
-                }
-            });
-        }
+        _coreResponse.write(complete, content, callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException

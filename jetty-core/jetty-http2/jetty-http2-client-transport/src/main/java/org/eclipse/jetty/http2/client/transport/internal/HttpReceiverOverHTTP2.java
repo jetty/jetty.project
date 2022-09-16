@@ -266,11 +266,4 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         responseFailure(failure);
         callback.succeeded();
     }
-
-    @Override
-    protected void reset()
-    {
-        super.reset();
-        notifySuccess = false;
-    }
 }

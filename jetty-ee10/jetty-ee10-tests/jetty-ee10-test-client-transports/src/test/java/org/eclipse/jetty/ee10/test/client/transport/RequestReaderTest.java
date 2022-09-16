@@ -17,36 +17,29 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class RequestReaderTest extends AbstractTest<TransportScenario>
+public class RequestReaderTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transports")
     public void testRecyclingWhenUsingReader(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new AbstractHandler()
+        start(transport, new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 // Must be a Reader and not an InputStream.
                 BufferedReader br = request.getReader();
@@ -58,11 +51,10 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
                 }
                 // Paranoid check.
                 assertThat(br.read(), is(-1));
-                baseRequest.setHandled(true);
             }
-        }, client -> {});
+        });
 
-        ContentResponse response1 = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response1 = client.newRequest(newURI(transport))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))
@@ -70,7 +62,7 @@ public class RequestReaderTest extends AbstractTest<TransportScenario>
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
 
         // Send a 2nd request to make sure recycling works.
-        ContentResponse response2 = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response2 = client.newRequest(newURI(transport))
             .method("POST")
             .timeout(5, TimeUnit.SECONDS)
             .body(new BytesRequestContent(new byte[512]))

@@ -12,7 +12,7 @@
   <name>EE9 :: Jetty Test :: HTTP Client Transports</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.client.http</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.test.client.transport</bundle-symbolic-name>
     <h3.test.enabled>false</h3.test.enabled>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>

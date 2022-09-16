@@ -323,7 +323,7 @@ public class HttpGenerator
 
         if (isChunking())
         {
-            Supplier<HttpFields> trailersSupplier = _info.getTrailerSupplier();
+            Supplier<HttpFields> trailersSupplier = _info.getTrailersSupplier();
             if (trailersSupplier != null)
             {
                 // Do we need a chunk buffer?
@@ -601,7 +601,7 @@ public class HttpGenerator
         HttpField transferEncoding = null;
         boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
-        boolean chunkedHint = _info.getTrailerSupplier() != null;
+        boolean chunkedHint = _info.getTrailersSupplier() != null;
         boolean contentType = false;
         long contentLength = _info.getContentLength();
         boolean contentLengthField = false;
@@ -686,7 +686,7 @@ public class HttpGenerator
         }
 
         // Can we work out the content length?
-        if (last && contentLength < 0 && _info.getTrailerSupplier() == null)
+        if (last && contentLength < 0 && _info.getTrailersSupplier() == null)
             contentLength = _contentPrepared + BufferUtil.length(content);
 
         // Calculate how to end _content and connection, _content length and transfer encoding

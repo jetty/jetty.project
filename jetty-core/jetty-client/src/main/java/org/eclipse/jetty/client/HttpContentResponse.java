@@ -76,6 +76,12 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
+    public HttpFields getTrailers()
+    {
+        return response.getTrailers();
+    }
+
+    @Override
     public boolean abort(Throwable cause)
     {
         return response.abort(cause);
