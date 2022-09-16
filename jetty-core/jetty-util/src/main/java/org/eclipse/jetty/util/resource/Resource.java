@@ -317,7 +317,10 @@ public abstract class Resource implements Iterable<Resource>
 
         URI uri = getURI();
         URI resolvedUri = URIUtil.addPath(uri, subUriPath);
-        return create(resolvedUri);
+        Resource r = create(resolvedUri);
+        if (r.exists())
+            return r;
+        return null;
     }
 
     /**
