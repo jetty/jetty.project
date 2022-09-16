@@ -1,4 +1,40 @@
-jetty-10.0.12-SNAPSHOT
+jetty-10.0.13-SNAPSHOT
+
+jetty-10.0.12 - 14 September 2022
+ + 7970 Maven Plugin - the option to set extraClasspath in the plugin
+   configuration isn't working
+ + 8007 Support Loom
+ + 8151 `JakartaWebSocketSession.close()` blocks long time when called from
+   `SendHandlerCallback`
+ + 8152 jetty.sh does not read JAVA_OPTIONS anymore
+ + 8170 WebSockets closed abruptly when using HTTP/2
+ + 8196 Remove unused jetty-plus.xml file
+ + 8206 Stopping server from within AbstractConnector#accept fails and results
+   in a partially stopped QueuedThreadPool
+ + 8216 OpenID logout / more extensibible OpenIdConfiguration
+ + 8222 Jetty start.jar fails with NullPointerException when referencing a non
+   existent module and using JVM args
+ + 8259 Symlinks cause 404 with DefaultServlet when its "resourceBase" is
+   different from ContextHandler's
+ + 8294 java.lang.ClassCastException: class org.eclipse.jetty.http.HttpField
+   cannot be cast to class org.eclipse.jetty.http.HttpCookie$SetCookieHttpField
+ + 8296 SymlinkAllowedResourceAliasChecker is initialized after checkAlias is
+   called resulting that access to resource is denied
+ + 8319 Allow configuring initial queue size per destination
+ + 8353 Automatic pongs should not be sent when connection is closed
+ + 8414 BlockingArrayQueue drops all contents on drain
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8532 Review System.nanoTime() usages
+ + 8540 Maven pom is not correct for `org.eclipse.jetty/infinispan-embedded`
+   and `org.eclipse.jetty/infinispan-remote`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target
+
+jetty-9.4.49.v20220914 - 14 September 2022
+ + 8414 BlockingArrayQueue drops all contents on drain
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target
 
 jetty-10.0.11 - 21 June 2022
  + 8184 All suffix globs except first fail to match if path has `.` character
