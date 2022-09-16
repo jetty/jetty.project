@@ -225,17 +225,17 @@ public class ResourceService
         }
     }
 
-    private void writeHttpError(Request request, Response response, Callback callback, int status)
+    protected void writeHttpError(Request request, Response response, Callback callback, int status)
     {
         Response.writeError(request, response, callback, status);
     }
 
-    private void writeHttpError(Request request, Response response, Callback callback, Throwable cause)
+    protected void writeHttpError(Request request, Response response, Callback callback, Throwable cause)
     {
         Response.writeError(request, response, callback, cause);
     }
 
-    private void writeHttpError(Request request, Response response, Callback callback, int status, String msg, Throwable cause)
+    protected void writeHttpError(Request request, Response response, Callback callback, int status, String msg, Throwable cause)
     {
         Response.writeError(request, response, callback, status, msg, cause);
     }
