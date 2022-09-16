@@ -68,6 +68,7 @@
                     <include>org/eclipse/jetty/util/JavaVersion*</include>
                     <include>org/eclipse/jetty/util/ManifestUtils*</include>
                     <include>org/eclipse/jetty/util/TopologicalSort*</include>
+                    <include>org/eclipse/jetty/util/FileID*</include>
                   </includes>
                 </filter>
               </filters>
