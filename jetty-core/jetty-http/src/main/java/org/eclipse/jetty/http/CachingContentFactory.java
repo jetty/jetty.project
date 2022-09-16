@@ -170,6 +170,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     public HttpContent getContent(String path) throws IOException
     {
         // TODO load precompressed otherwise it is never served from cache
+        // TODO: Consider _cache.computeIfAbsent()?
         CachingHttpContent cachingHttpContent = _cache.get(path);
         if (cachingHttpContent != null)
         {
@@ -294,18 +295,24 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
         public boolean isValid()
         {
-            try
+            if (_delegate.getResource() != null)
             {
-                FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getResource().getPath());
-                if (lastModifiedTime.equals(_lastModifiedValue))
+                if (!_delegate.getResource().exists())
+                    return false;
+
+                try
                 {
-                    _lastAccessed = NanoTime.now();
-                    return true;
+                    FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getResource().getPath());
+                    if (lastModifiedTime.equals(_lastModifiedValue))
+                    {
+                        _lastAccessed = NanoTime.now();
+                        return true;
+                    }
                 }
-            }
-            catch (IOException e)
-            {
-                LOG.debug("unable to get delegate path' LastModifiedTime", e);
+                catch (IOException e)
+                {
+                    LOG.debug("unable to get delegate path LastModifiedTime", e);
+                }
             }
             release();
             return false;
