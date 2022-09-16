@@ -1,5 +1,11 @@
 jetty-10.0.13-SNAPSHOT
 
+jetty-9.4.49.v20220914 - 14 September 2022
+ + 8414 BlockingArrayQueue drops all contents on drain
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target
+
 jetty-10.0.12 - 14 September 2022
  + 7970 Maven Plugin - the option to set extraClasspath in the plugin
    configuration isn't working
