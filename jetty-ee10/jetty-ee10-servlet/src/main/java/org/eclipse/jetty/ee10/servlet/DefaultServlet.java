@@ -1052,6 +1052,10 @@ public class DefaultServlet extends HttpServlet
                 // TODO: Need a better exception?
                 throw new RuntimeException(e);
             }
+            finally
+            {
+                callback.succeeded();
+            }
         }
 
         @Override
