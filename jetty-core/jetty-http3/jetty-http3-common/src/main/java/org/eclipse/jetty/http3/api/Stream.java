@@ -404,7 +404,7 @@ public interface Stream
 
         private static class EOFData extends Data
         {
-            public EOFData()
+            private EOFData()
             {
                 super(new DataFrame(BufferUtil.EMPTY_BUFFER, true));
             }

@@ -2306,6 +2306,12 @@ public class RequestTest
         }
 
         @Override
+        public HttpFields getTrailers()
+        {
+            return null;
+        }
+
+        @Override
         public long getTimeStamp()
         {
             return 0;

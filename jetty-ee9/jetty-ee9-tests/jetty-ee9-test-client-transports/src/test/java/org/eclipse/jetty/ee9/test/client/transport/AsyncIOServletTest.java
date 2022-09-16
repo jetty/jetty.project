@@ -1078,7 +1078,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         requestContent.close();
 
-        assertTrue(clientLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest

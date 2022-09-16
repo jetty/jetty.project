@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
@@ -29,9 +30,9 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -90,9 +91,8 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         HttpFields trailers = HttpFields.build().put(trailerName, trailerValue).asImmutable();
-
-        HttpRequest request = (HttpRequest)client.newRequest(newURI(transport));
-        request = request.trailers(() -> trailers);
+        Request request = client.newRequest(newURI(transport))
+            .trailersSupplier(() -> trailers);
         if (content != null)
             request.method(HttpMethod.POST).body(new BytesRequestContent(content));
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
@@ -127,9 +127,10 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         HttpFields trailers = HttpFields.EMPTY;
-        HttpRequest request = (HttpRequest)client.newRequest(newURI(transport));
-        request = request.trailers(() -> trailers);
-        ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
+        ContentResponse response = client.newRequest(newURI(transport))
+            .trailersSupplier(() -> trailers)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
@@ -253,16 +254,19 @@ public class HttpTrailersTest extends AbstractTest
     {
         byte[] content = new byte[1024 * 1024];
         new Random().nextBytes(content);
-        String trailerName = "Trailer";
-        String trailerValue = "value";
+        String trailerName = "Digest";
+        String trailerValue = "0xCAFEBABE";
         start(transport, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.setTrailerFields(() -> Map.of(trailerName, trailerValue));
+                Map<String, String> trailers = new HashMap<>();
+                response.setTrailerFields(() -> trailers);
                 // Write a large content
                 response.getOutputStream().write(content);
+                // Add the trailer after the content is written.
+                trailers.put(trailerName, trailerValue);
             }
         });
 

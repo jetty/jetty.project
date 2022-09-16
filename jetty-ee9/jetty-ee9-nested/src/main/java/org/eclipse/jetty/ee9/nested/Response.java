@@ -1283,9 +1283,10 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        if (getHttpChannel().getRequest().getHttpVersion().ordinal() <= HttpVersion.HTTP_1_0.ordinal())
-            throw new IllegalStateException("Trailers not supported");
-        this._trailers = new HttpFieldsSupplier(trailers);
+        HttpVersion version = getHttpChannel().getRequest().getHttpVersion();
+        if (version == null || version.compareTo(HttpVersion.HTTP_1_1) < 0)
+            throw new IllegalStateException("Trailers not supported in " + version);
+        setTrailers(new HttpFieldsSupplier(trailers));
     }
 
     protected MetaData.Response newResponseMetaData()

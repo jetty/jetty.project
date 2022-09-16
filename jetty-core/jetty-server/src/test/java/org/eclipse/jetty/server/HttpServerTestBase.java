@@ -37,7 +37,6 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -1763,8 +1762,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
 
-        ByteBufferPool bbp = _connector.getBean(ByteBufferPool.class);
-        RetainableByteBufferPool rbbp = bbp.asRetainableByteBufferPool();
+        RetainableByteBufferPool rbbp = _connector.getBean(RetainableByteBufferPool.class);
         if (rbbp instanceof ArrayRetainableByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();

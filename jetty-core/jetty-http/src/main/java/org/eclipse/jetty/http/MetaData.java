@@ -37,7 +37,7 @@ public class MetaData implements Iterable<HttpField>
     private final HttpVersion _httpVersion;
     private final HttpFields _fields;
     private final long _contentLength;
-    private final Supplier<HttpFields> _trailerSupplier;
+    private final Supplier<HttpFields> _trailers;
 
     public MetaData(HttpVersion version, HttpFields fields)
     {
@@ -53,10 +53,8 @@ public class MetaData implements Iterable<HttpField>
     {
         _httpVersion = version;
         _fields = fields == null ? null : fields.asImmutable();
-
         _contentLength = contentLength > UNKNOWN_CONTENT_LENGTH ? contentLength : _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
-
-        _trailerSupplier = trailerSupplier;
+        _trailers = trailerSupplier;
     }
 
     public boolean isRequest()
@@ -85,9 +83,9 @@ public class MetaData implements Iterable<HttpField>
         return _fields;
     }
 
-    public Supplier<HttpFields> getTrailerSupplier()
+    public Supplier<HttpFields> getTrailersSupplier()
     {
-        return _trailerSupplier;
+        return _trailers;
     }
 
     public long getContentLength()

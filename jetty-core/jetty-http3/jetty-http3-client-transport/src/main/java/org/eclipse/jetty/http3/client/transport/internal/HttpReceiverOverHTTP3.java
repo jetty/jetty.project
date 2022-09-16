@@ -159,6 +159,8 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
+
+        responseSuccess(exchange);
     }
 
     @Override

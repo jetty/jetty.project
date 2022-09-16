@@ -15,7 +15,6 @@
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.proxy.*</spotbugs.onlyAnalyze>
   </properties>
 
-
   <build>
     <plugins>
       <plugin>

@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletOutputStream;
@@ -34,7 +36,6 @@ import org.eclipse.jetty.ee10.servlet.writer.EncodingHttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.Iso88591HttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.ee10.servlet.writer.Utf8HttpWriter;
-import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -46,7 +47,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -56,14 +56,12 @@ import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 public class ServletContextResponse extends ContextResponse
 {
     private static final int __MIN_BUFFER_SIZE = 1;
-    private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.DEFAULT, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
 
     public enum OutputType
@@ -83,8 +81,8 @@ public class ServletContextResponse extends ContextResponse
     private EncodingFrom _encodingFrom = EncodingFrom.NOT_SET;
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
-
     private long _contentLength = -1;
+    private Supplier<Map<String, String>> _trailers;
 
     public static ServletContextResponse getBaseResponse(ServletResponse response)
     {
@@ -109,7 +107,7 @@ public class ServletContextResponse extends ContextResponse
         _response = response;
         _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
-        _httpServletResponse = new ServletApiResponse(response);
+        _httpServletResponse = new ServletApiResponse(this);
     }
 
     public HttpOutput getHttpOutput()
@@ -231,6 +229,7 @@ public class ServletContextResponse extends ContextResponse
         _mimeType = null;
         _characterEncoding = null;
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
 
         // Clear all response headers
         HttpFields.Mutable headers = getHeaders();
@@ -464,7 +463,7 @@ public class ServletContextResponse extends ContextResponse
         SET_LOCALE,
 
         /**
-         * The character encoding has been explicitly set using the Content-Type charset parameter with {@link #setContentType(String)}.
+         * The character encoding has been explicitly set using the Content-Type charset parameter with {@link HttpServletResponse#setContentType(String)}.
          */
         SET_CONTENT_TYPE,
 
@@ -476,17 +475,16 @@ public class ServletContextResponse extends ContextResponse
 
     public class ServletApiResponse implements HttpServletResponse
     {
-        private final SharedBlockingCallback _blocker = new SharedBlockingCallback();
-        private final Response _response;
+        private final ServletContextResponse _response;
 
-        ServletApiResponse(Response response)
+        ServletApiResponse(ServletContextResponse response)
         {
             _response = response;
         }
         
         public ServletContextResponse getResponse()
         {
-            return ServletContextResponse.this;
+            return _response;
         }
 
         @Override
@@ -529,7 +527,7 @@ public class ServletContextResponse extends ContextResponse
 
         public void addCookie(HttpCookie cookie)
         {
-            Response.addCookie(ServletContextResponse.this, cookie);
+            Response.addCookie(_response, cookie);
         }
 
         @Override
@@ -715,7 +713,7 @@ public class ServletContextResponse extends ContextResponse
         {
             resetBuffer();
             FutureCallback callback = new FutureCallback();
-            Response.sendRedirect(_request, ServletContextResponse.this, callback, code, location, false);
+            Response.sendRedirect(_request, _response, callback, code, location, false);
             callback.block();
         }
 
@@ -790,7 +788,7 @@ public class ServletContextResponse extends ContextResponse
         @Override
         public String getCharacterEncoding()
         {
-            return ServletContextResponse.this.getCharacterEncoding(false);
+            return _response.getCharacterEncoding(false);
         }
 
         @Override
@@ -816,7 +814,7 @@ public class ServletContextResponse extends ContextResponse
 
             if (_outputType == OutputType.NONE)
             {
-                String encoding = ServletContextResponse.this.getCharacterEncoding(true);
+                String encoding = _response.getCharacterEncoding(true);
                 Locale locale = getLocale();
                 if (_writer != null && _writer.isFor(locale, encoding))
                     _writer.reopen();
@@ -839,7 +837,7 @@ public class ServletContextResponse extends ContextResponse
         @Override
         public void setCharacterEncoding(String encoding)
         {
-            ServletContextResponse.this.setCharacterEncoding(encoding, EncodingFrom.SET_CHARACTER_ENCODING);
+            _response.setCharacterEncoding(encoding, EncodingFrom.SET_CHARACTER_ENCODING);
         }
 
         @Override
@@ -1017,14 +1015,15 @@ public class ServletContextResponse extends ContextResponse
         @Override
         public void reset()
         {
-            //TODO
-            if (!_response.isCommitted())
-                _response.reset();
+            if (isCommitted())
+                throw new IllegalStateException("Committed");
 
-            Session session = _servletChannel.getRequest().getServletApiRequest().getCoreSession();
+            _response.reset();
+
+            ServletApiRequest servletApiRequest = _request.getServletApiRequest();
+            Session session = servletApiRequest.getCoreSession();
             if (session != null && session.isNew())
             {
-                ServletApiRequest servletApiRequest = _servletChannel.getRequest().getServletApiRequest();
                 SessionManager sessionManager = servletApiRequest.getSessionManager();
                 if (sessionManager != null)
                 {
@@ -1046,7 +1045,7 @@ public class ServletContextResponse extends ContextResponse
                 _locale = null;
                 _response.getHeaders().remove(HttpHeader.CONTENT_LANGUAGE);
                 if (_encodingFrom == EncodingFrom.SET_LOCALE)
-                    ServletContextResponse.this.setCharacterEncoding(null, EncodingFrom.NOT_SET);
+                    _response.setCharacterEncoding(null, EncodingFrom.NOT_SET);
             }
             else
             {
@@ -1062,7 +1061,7 @@ public class ServletContextResponse extends ContextResponse
 
                 String charset = context.getServletContextHandler().getLocaleEncoding(locale);
                 if (!StringUtil.isEmpty(charset) && __localeOverride.contains(_encodingFrom))
-                    ServletContextResponse.this.setCharacterEncoding(charset, EncodingFrom.SET_LOCALE);
+                    _response.setCharacterEncoding(charset, EncodingFrom.SET_LOCALE);
             }
         }
 
@@ -1072,6 +1071,37 @@ public class ServletContextResponse extends ContextResponse
             if (_locale == null)
                 return Locale.getDefault();
             return _locale;
+        }
+
+        @Override
+        public Supplier<Map<String, String>> getTrailerFields()
+        {
+            return _trailers;
+        }
+
+        @Override
+        public void setTrailerFields(Supplier<Map<String, String>> trailers)
+        {
+            if (isCommitted())
+                throw new IllegalStateException("Committed");
+            HttpVersion version = HttpVersion.fromString(_request.getConnectionMetaData().getProtocol());
+            if (version == null || version.compareTo(HttpVersion.HTTP_1_1) < 0)
+                throw new IllegalStateException("Trailers not supported in " + version);
+
+            _trailers = trailers;
+
+            _response.setTrailersSupplier(() ->
+            {
+                Map<String, String> map = trailers.get();
+                if (map == null)
+                    return null;
+                HttpFields.Mutable fields = HttpFields.build(map.size());
+                for (Map.Entry<String, String> e : map.entrySet())
+                {
+                    fields.add(e.getKey(), e.getValue());
+                }
+                return fields;
+            });
         }
     }
 }

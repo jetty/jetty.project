@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.is;
 
 /**
@@ -86,6 +86,6 @@ public class ProxyWebAppTest
         // this proxy configuration, not redirected to the actual website.
         assertThat("response status", response.getStatus(), is(HttpStatus.OK_200));
         // Expecting a Javadoc / APIDoc response - look for something unique for APIdoc.
-        assertThat("response", response.getContentAsString(), containsString("All&nbsp;Classes"));
+        assertThat("response", response.getContentAsString(), containsStringIgnoringCase("javadoc"));
     }
 }

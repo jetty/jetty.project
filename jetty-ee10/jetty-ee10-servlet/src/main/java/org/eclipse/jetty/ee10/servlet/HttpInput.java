@@ -290,18 +290,13 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IOException(error);
             }
 
-            if (chunk == Content.Chunk.EOF)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read at EOF, setting consumed EOF to true {}", this);
-                _consumedEof = true;
-                // If EOF do we need to wake for allDataRead callback?
-                if (onContentProducible())
-                    scheduleReadListenerNotification();
-                return -1;
-            }
-
-            throw new AssertionError("no data, no error and not EOF");
+            if (LOG.isDebugEnabled())
+                LOG.debug("read at EOF, setting consumed EOF to true {}", this);
+            _consumedEof = true;
+            // If EOF do we need to wake for allDataRead callback?
+            if (onContentProducible())
+                scheduleReadListenerNotification();
+            return -1;
         }
     }
 

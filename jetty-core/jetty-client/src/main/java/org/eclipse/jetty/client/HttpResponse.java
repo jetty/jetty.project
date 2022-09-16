@@ -116,6 +116,7 @@ public class HttpResponse implements Response
         return result;
     }
 
+    @Override
     public HttpFields getTrailers()
     {
         return trailers == null ? null : trailers.asImmutable();

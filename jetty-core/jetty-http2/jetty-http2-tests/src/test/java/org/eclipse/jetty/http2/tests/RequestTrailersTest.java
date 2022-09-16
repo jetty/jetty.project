@@ -74,7 +74,7 @@ public class RequestTrailersTest extends AbstractTest
 
         HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
-        request.trailers(() -> trailers);
+        request.trailersSupplier(() -> trailers);
         if (content != null)
             request.body(new StringRequestContent(content));
 
@@ -120,7 +120,7 @@ public class RequestTrailersTest extends AbstractTest
 
         HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
-        request.trailers(() -> trailers);
+        request.trailersSupplier(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);
 
@@ -171,7 +171,7 @@ public class RequestTrailersTest extends AbstractTest
 
         HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
-        request.trailers(() -> trailers);
+        request.trailersSupplier(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);
 

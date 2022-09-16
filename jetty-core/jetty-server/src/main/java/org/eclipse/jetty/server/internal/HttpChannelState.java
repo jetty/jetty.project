@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -163,7 +164,6 @@ public class HttpChannelState implements HttpChannel, Components
     private ChannelRequest _request;
     private HttpStream _stream;
     private long _committedContentLength = -1;
-    private ResponseHttpFields _responseTrailers;
     private Runnable _onContentAvailable;
     private Callback _writeCallback;
     private Content.Chunk.Error _error;
@@ -244,8 +244,6 @@ public class HttpChannelState implements HttpChannel, Components
             _completed = false;
             _failure = null;
             _committedContentLength = -1;
-            if (_responseTrailers != null)
-                _responseTrailers.reset();
             _onContentAvailable = null;
             _writeCallback = null;
             _error = null;
@@ -537,13 +535,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             if (_responseHeaders.isCommitted())
                 throw new IllegalStateException("response committed");
-
-            _request._response._status = 0;
-
             _responseHeaders.clear();
-
-            if (_responseTrailers != null)
-                _responseTrailers.clear();
         }
     }
 
@@ -781,6 +773,7 @@ public class HttpChannelState implements HttpChannel, Components
         private final LongAdder _contentBytesRead = new LongAdder();
         private HttpChannelState _httpChannel;
         private Request _loggedRequest;
+        private HttpFields _trailers;
 
         ChannelRequest(HttpChannelState httpChannel, MetaData.Request metaData)
         {
@@ -922,6 +915,12 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public HttpFields getTrailers()
+        {
+            return _trailers;
+        }
+
+        @Override
         public long getTimeStamp()
         {
             return _timeStamp;
@@ -958,11 +957,15 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             Content.Chunk chunk = stream.read();
-            if (chunk != null && chunk.hasRemaining())
-                _contentBytesRead.add(chunk.getByteBuffer().remaining());
 
             if (LOG.isDebugEnabled())
                 LOG.debug("read {}", chunk);
+
+            if (chunk != null && chunk.hasRemaining())
+                _contentBytesRead.add(chunk.getByteBuffer().remaining());
+
+            if (chunk instanceof Trailers trailers)
+                _trailers = trailers.getTrailers();
 
             return chunk;
         }
@@ -1066,6 +1069,7 @@ public class HttpChannelState implements HttpChannel, Components
         private final ChannelRequest _request;
         private int _status;
         private long _contentBytesWritten;
+        private Supplier<HttpFields> _trailers;
 
         private ChannelResponse(ChannelRequest request)
         {
@@ -1103,26 +1107,21 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public HttpFields.Mutable getOrCreateTrailers()
+        public Supplier<HttpFields> getTrailersSupplier()
         {
             try (AutoLock ignored = _request._lock.lock())
             {
-                HttpChannelState httpChannel = _request.lockedGetHttpChannel();
-
-                // TODO check if trailers allowed in version and transport?
-                HttpFields.Mutable trailers = httpChannel._responseTrailers;
-                if (trailers == null)
-                    trailers = httpChannel._responseTrailers = new ResponseHttpFields();
-                return trailers;
+                return _trailers;
             }
         }
 
-        private HttpFields takeTrailers()
+        @Override
+        public void setTrailersSupplier(Supplier<HttpFields> trailers)
         {
-            ResponseHttpFields trailers = _request.getHttpChannel()._responseTrailers;
-            if (trailers != null)
-                trailers.commit();
-            return trailers;
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                _trailers = trailers;
+            }
         }
 
         @Override
@@ -1259,6 +1258,8 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void reset()
         {
+            _status = 0;
+            _trailers = null;
             _request.getHttpChannel().resetResponse();
         }
 
@@ -1282,16 +1283,13 @@ public class HttpChannelState implements HttpChannel, Components
 
             httpChannel._stream.prepareResponse(mutableHeaders);
 
-            // Provide trailers if they exist
-            Supplier<HttpFields> trailers = httpChannel._responseTrailers == null ? null : this::takeTrailers;
-
             return new MetaData.Response(
                 httpChannel.getConnectionMetaData().getHttpVersion(),
                 _status,
                 null,
                 httpChannel._responseHeaders,
                 httpChannel._committedContentLength,
-                trailers
+                getTrailersSupplier()
             );
         }
     }

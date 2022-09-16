@@ -294,6 +294,12 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
+    public InvocationType getInvocationType()
+    {
+        return InvocationType.BLOCKING;
+    }
+
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         // TODO almost certainly this is wrong

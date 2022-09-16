@@ -108,6 +108,12 @@ public class TestableRequest implements Request
         return null;
     }
 
+    @Override
+    public HttpFields getTrailers()
+    {
+        return null;
+    }
+
     public List<HttpCookie> getCookies()
     {
         return null;

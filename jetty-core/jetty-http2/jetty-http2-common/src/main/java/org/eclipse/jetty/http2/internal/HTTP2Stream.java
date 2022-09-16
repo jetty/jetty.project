@@ -259,14 +259,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         return committed;
     }
 
-    private int dataSize()
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            return dataQueue == null ? 0 : dataQueue.size();
-        }
-    }
-
     public boolean isOpen()
     {
         return !isClosed();
@@ -376,6 +368,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
 
+        // Requests are notified to a Session.Listener,
+        // here only handle responses and trailers.
         if (metaData.isResponse() || !metaData.isRequest())
         {
             if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))

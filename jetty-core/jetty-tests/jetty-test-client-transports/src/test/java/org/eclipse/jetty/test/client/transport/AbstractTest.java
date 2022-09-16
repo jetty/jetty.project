@@ -72,6 +72,11 @@ public class AbstractTest
         return List.of(Transport.values());
     }
 
+    public static List<Transport> transportsNoFCGI()
+    {
+        return List.copyOf(EnumSet.complementOf(EnumSet.of(Transport.FCGI)));
+    }
+
     public static List<Transport> transportsNoUnixDomain()
     {
         return List.copyOf(EnumSet.complementOf(EnumSet.of(Transport.UNIX_DOMAIN)));

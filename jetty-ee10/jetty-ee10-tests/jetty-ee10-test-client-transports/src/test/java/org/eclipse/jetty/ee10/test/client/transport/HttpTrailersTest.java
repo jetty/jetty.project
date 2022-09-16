@@ -17,74 +17,63 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.eclipse.jetty.ee10.test.client.transport.Transport.FCGI;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HttpTrailersTest extends AbstractTest<TransportScenario>
+public class HttpTrailersTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
-    {
-        Assumptions.assumeTrue(transport != FCGI);
-        setScenario(new TransportScenario(transport));
-    }
-
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testRequestTrailersNoContent(Transport transport) throws Exception
     {
-        init(transport);
-        testRequestTrailers(null);
+        testRequestTrailers(transport, null);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testRequestTrailersWithContent(Transport transport) throws Exception
     {
-        init(transport);
-        testRequestTrailers("abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
+        testRequestTrailers(transport, "abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
     }
 
-    private void testRequestTrailers(byte[] content) throws Exception
+    private void testRequestTrailers(Transport transport, byte[] content) throws Exception
     {
         String trailerName = "Trailer";
         String trailerValue = "value";
-        scenario.start(new EmptyServerHandler()
+        start(transport, new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Read the content first.
-                ServletInputStream input = jettyRequest.getInputStream();
+                ServletInputStream input = request.getInputStream();
                 while (true)
                 {
                     int read = input.read();
@@ -92,17 +81,19 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                         break;
                 }
 
+                assertTrue(request.isTrailerFieldsReady());
+
                 // Now the trailers can be accessed.
-                HttpFields trailers = jettyRequest.getTrailerHttpFields();
+                Map<String, String> trailers = request.getTrailerFields();
                 assertNotNull(trailers);
-                assertEquals(trailerValue, trailers.get(trailerName));
+                assertEquals(trailerValue, trailers.get(trailerName.toLowerCase(Locale.ENGLISH)));
             }
         });
 
         HttpFields trailers = HttpFields.build().put(trailerName, trailerValue).asImmutable();
 
-        HttpRequest request = (HttpRequest)scenario.client.newRequest(scenario.newURI());
-        request = request.trailers(() -> trailers);
+        Request request = client.newRequest(newURI(transport))
+            .trailersSupplier(() -> trailers);
         if (content != null)
             request.method(HttpMethod.POST).body(new BytesRequestContent(content));
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
@@ -110,17 +101,16 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testEmptyRequestTrailers(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Read the content first.
-                ServletInputStream input = jettyRequest.getInputStream();
+                ServletInputStream input = request.getInputStream();
                 while (true)
                 {
                     int read = input.read();
@@ -128,60 +118,61 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                         break;
                 }
 
+                assertTrue(request.isTrailerFieldsReady());
+
                 // Now the trailers can be accessed.
-                HttpFields trailers = jettyRequest.getTrailerHttpFields();
-                assertNull(trailers);
+                Map<String, String> trailers = request.getTrailerFields();
+                assertNotNull(trailers);
+                assertTrue(trailers.isEmpty());
             }
         });
 
         HttpFields trailers = HttpFields.EMPTY;
-        HttpRequest request = (HttpRequest)scenario.client.newRequest(scenario.newURI());
-        request = request.trailers(() -> trailers);
-        ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
+        ContentResponse response = client.newRequest(newURI(transport))
+            .trailersSupplier(() -> trailers)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testResponseTrailersNoContent(Transport transport) throws Exception
     {
-        init(transport);
-        testResponseTrailers(null);
+        testResponseTrailers(transport, null);
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testResponseTrailersWithContent(Transport transport) throws Exception
     {
-        init(transport);
-        testResponseTrailers("abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
+        testResponseTrailers(transport, "abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
     }
 
-    private void testResponseTrailers(byte[] content) throws Exception
+    private void testResponseTrailers(Transport transport, byte[] content) throws Exception
     {
-        AtomicBoolean once = new AtomicBoolean();
+        AtomicBoolean firstRequest = new AtomicBoolean();
         String trailerName = "Trailer";
         String trailerValue = "value";
-        scenario.start(new EmptyServerHandler()
+        start(transport, new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                Response jettyResponse = jettyRequest.getResponse();
-
-                if (once.compareAndSet(false, true))
+                if (firstRequest.compareAndSet(false, true))
                 {
-                    HttpFields trailers = HttpFields.build().put(trailerName, trailerValue);
-                    jettyResponse.setTrailers(() -> trailers);
+                    // Servlet spec requires applications to add the Trailer header.
+                    response.setHeader("Trailer", trailerName);
+                    Map<String, String> trailers = Map.of(trailerName, trailerValue);
+                    response.setTrailerFields(() -> trailers);
                 }
-
                 if (content != null)
                     response.getOutputStream().write(content);
             }
         });
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .onResponseSuccess(r ->
             {
                 try
@@ -203,7 +194,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         assertNull(failure.get());
 
         // Subsequent requests should not have trailers.
-        response = scenario.client.newRequest(scenario.newURI())
+        response = client.newRequest(newURI(transport))
             .onResponseSuccess(r ->
             {
                 try
@@ -224,23 +215,20 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testEmptyResponseTrailers(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
-                HttpFields trailers = HttpFields.build();
-                response.setTrailerFields(() ->
-                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                response.setTrailerFields(Map::of);
             }
         });
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
-        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+        ContentResponse response = client.newRequest(newURI(transport))
             .onResponseSuccess(r ->
             {
                 try
@@ -262,30 +250,29 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testResponseTrailersWithLargeContent(Transport transport) throws Exception
     {
         byte[] content = new byte[1024 * 1024];
         new Random().nextBytes(content);
-        String trailerName = "Trailer";
-        String trailerValue = "value";
-        init(transport);
-        scenario.start(new EmptyServerHandler()
+        String trailerName = "Digest";
+        String trailerValue = "0xCAFEBABE";
+        start(transport, new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                HttpFields trailers = HttpFields.build().put(trailerName, trailerValue);
-                response.setTrailerFields(() ->
-                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
-
+                Map<String, String> trailers = new HashMap<>();
+                response.setTrailerFields(() -> trailers);
                 // Write a large content
                 response.getOutputStream().write(content);
+                // Add the trailer after the content is written.
+                trailers.put(trailerName, trailerValue);
             }
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .timeout(15, TimeUnit.SECONDS)
             .send(listener);
         org.eclipse.jetty.client.api.Response response = listener.get(5, TimeUnit.SECONDS);
@@ -293,6 +280,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
         InputStream input = listener.getInputStream();
         ByteArrayOutputStream output = new ByteArrayOutputStream();
+
         // Read slowly.
         while (true)
         {
@@ -314,18 +302,15 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     }
 
     @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
+    @MethodSource("transportsNoFCGI")
     public void testResponseResetAlsoResetsTrailers(Transport transport) throws Exception
     {
-        init(transport);
-        scenario.start(new EmptyServerHandler()
+        start(transport, new HttpServlet()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                Response jettyResponse = jettyRequest.getResponse();
-                HttpFields trailers = HttpFields.build().put("name", "value");
-                jettyResponse.setTrailers(() -> trailers);
+                response.setTrailerFields(() -> Map.of("name", "value"));
                 // Fill some other response field.
                 response.setHeader("name", "value");
                 response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
@@ -333,6 +318,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
                 // Reset the response.
                 response.reset();
+
                 // Must not throw because we have called
                 // getWriter() above, since we have reset().
                 response.getOutputStream();
@@ -340,7 +326,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        client.newRequest(newURI(transport))
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {

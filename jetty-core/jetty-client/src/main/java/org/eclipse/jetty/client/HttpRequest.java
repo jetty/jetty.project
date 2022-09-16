@@ -303,28 +303,6 @@ public class HttpRequest implements Request
     }
 
     @Override
-    @Deprecated
-    public Request header(String name, String value)
-    {
-        if (value == null)
-            headers.remove(name);
-        else
-            headers.add(name, value);
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public Request header(HttpHeader header, String value)
-    {
-        if (value == null)
-            headers.remove(header);
-        else
-            headers.add(header, value);
-        return this;
-    }
-
-    @Override
     public List<HttpCookie> getCookies()
     {
         return cookies != null ? cookies : Collections.emptyList();
@@ -661,7 +639,8 @@ public class HttpRequest implements Request
         return this;
     }
 
-    public HttpRequest trailers(Supplier<HttpFields> trailers)
+    @Override
+    public Request trailersSupplier(Supplier<HttpFields> trailers)
     {
         this.trailers = trailers;
         return this;
@@ -822,7 +801,8 @@ public class HttpRequest implements Request
         return pushListener;
     }
 
-    public Supplier<HttpFields> getTrailers()
+    @Override
+    public Supplier<HttpFields> getTrailersSupplier()
     {
         return trailers;
     }

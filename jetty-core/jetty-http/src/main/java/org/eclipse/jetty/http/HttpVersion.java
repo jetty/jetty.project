@@ -165,6 +165,8 @@ public enum HttpVersion
                 return HttpVersion.HTTP_1_1;
             case 20:
                 return HttpVersion.HTTP_2;
+            case 30:
+                return HttpVersion.HTTP_3;
             default:
                 throw new IllegalArgumentException();
         }

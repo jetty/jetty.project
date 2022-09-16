@@ -302,7 +302,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         }
     }
 
-    public void onData(DataFrame frame)
+    public void onData(DataFrame ignored)
     {
         if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA))
             notIdle();

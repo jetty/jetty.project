@@ -64,7 +64,7 @@ public class ResponseTrailerTest extends AbstractTest
             public void process(Request request, Response response, Callback callback)
             {
                 // Send empty response trailers.
-                response.getOrCreateTrailers();
+                response.setTrailersSupplier(() -> HttpFields.EMPTY);
                 if (data != null)
                     response.write(true, ByteBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)), callback);
                 else

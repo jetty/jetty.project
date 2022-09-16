@@ -75,7 +75,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 .port(request.getPort())
                 .path(path)
                 .query(request.getQuery());
-            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders(), -1, request.getTrailers());
+            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders(), -1, request.getTrailersSupplier());
         }
 
         HeadersFrame headersFrame;
@@ -129,7 +129,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
 
     private HttpFields retrieveTrailers(HttpRequest request)
     {
-        Supplier<HttpFields> trailerSupplier = request.getTrailers();
+        Supplier<HttpFields> trailerSupplier = request.getTrailersSupplier();
         HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
         return trailers == null || trailers.size() == 0 ? null : trailers;
     }

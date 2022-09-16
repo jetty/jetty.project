@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1293,7 +1294,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        HttpFields trailers = response.getOrCreateTrailers();
+        HttpFields trailers = request.getTrailers();
         if (trailers != null)
             append(b, trailers.get(arg));
         else
@@ -1303,8 +1304,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logResponseTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-        HttpFields trailers = response.getOrCreateTrailers();
+        Supplier<HttpFields> supplier = response.getTrailersSupplier();
+        HttpFields trailers = supplier == null ? null : supplier.get();
         if (trailers != null)
             append(b, trailers.get(arg));
         else
