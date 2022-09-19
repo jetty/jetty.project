@@ -136,15 +136,7 @@ public class FileID
      */
     public static boolean isExtension(Path path, String... extensions)
     {
-        String ext = getExtension(path);
-        if (ext == null)
-            return false;
-        for (String extension : extensions)
-        {
-            if (ext.equals(extension))
-                return true;
-        }
-        return false;
+        return matchesExtension(getExtension(path), extensions);
     }
 
     /**
@@ -156,15 +148,7 @@ public class FileID
      */
     public static boolean isExtension(URI uri, String... extensions)
     {
-        String ext = getExtension(uri);
-        if (ext == null)
-            return false;
-        for (String extension : extensions)
-        {
-            if (ext.equals(extension))
-                return true;
-        }
-        return false;
+        return matchesExtension(getExtension(uri), extensions);
     }
 
     /**
@@ -176,7 +160,11 @@ public class FileID
      */
     public static boolean isExtension(String filename, String... extensions)
     {
-        String ext = getExtension(filename);
+        return matchesExtension(getExtension(filename), extensions);
+    }
+
+    private static boolean matchesExtension(String ext, String... extensions)
+    {
         if (ext == null)
             return false;
         for (String extension : extensions)
