@@ -316,7 +316,7 @@ public class DefaultJettyAtJettyHomeHelper
             URI ruri = res.toURI();
 
             // check if it is an unarchived bundle
-            if (FileID.isJavaArchive(ruri) && ruri.getScheme().equalsIgnoreCase("file"))
+            if ("file".equalsIgnoreCase(ruri.getScheme()) && FileID.isJavaArchive(ruri))
                 res = JarResource.newJarResource(res);
 
             //if looking for a directory 
