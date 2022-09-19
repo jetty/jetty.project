@@ -224,7 +224,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
         {
             for (File f : jasperLocation.listFiles())
             {
-                if (FileID.isJavaArchvie(f.getName()) && f.isFile())
+                if (FileID.isJavaArchive(f.getName()) && f.isFile())
                 {
                     urls.add(f.toURI().toURL());
                 }
@@ -232,7 +232,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
                 {
                     for (File f2 : jasperLocation.listFiles())
                     {
-                        if (FileID.isJavaArchvie(f2.getName()) && f2.isFile())
+                        if (FileID.isJavaArchive(f2.getName()) && f2.isFile())
                         {
                             urls.add(f2.toURI().toURL());
                         }
