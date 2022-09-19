@@ -126,8 +126,8 @@ public class ResourceCollection extends Resource
         for (Resource res : _resources)
         {
             addedResource = res.resolve(subUriPath);
-            if (!addedResource.exists())
-                continue;
+            if (addedResource == null)
+                continue; // skip, doesn't exist
             if (!addedResource.isDirectory())
                 return addedResource; // Return simple (non-directory) Resource
             if (resources == null)

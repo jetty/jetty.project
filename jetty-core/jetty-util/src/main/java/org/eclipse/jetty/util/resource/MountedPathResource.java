@@ -34,6 +34,18 @@ public class MountedPathResource extends PathResource
         containerUri = URIUtil.unwrapContainer(getURI());
     }
 
+    MountedPathResource(Path path, URI uri)
+    {
+        super(path, uri, true);
+        containerUri = URIUtil.unwrapContainer(getURI());
+    }
+
+    @Override
+    protected Resource newResource(Path path, URI uri)
+    {
+        return new MountedPathResource(path, uri);
+    }
+
     @Override
     public boolean isContainedIn(Resource r)
     {

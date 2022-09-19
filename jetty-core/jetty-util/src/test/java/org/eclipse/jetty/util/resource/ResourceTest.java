@@ -23,6 +23,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -49,6 +49,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -70,7 +71,7 @@ public class ResourceTest
 
     static class Scenario
     {
-        Resource resource;
+        private Supplier<Resource> resourceSupplier;
         String test;
         boolean exists;
         boolean dir;
@@ -78,16 +79,16 @@ public class ResourceTest
 
         Scenario(Scenario data, String path, boolean exists, boolean dir)
         {
-            this.test = data.resource + "+" + path;
-            resource = data.resource.resolve(path);
+            this.test = data.getResource() + "+" + path;
+            this.resourceSupplier = () -> data.getResource().resolve(path);
             this.exists = exists;
             this.dir = dir;
         }
 
         Scenario(Scenario data, String path, boolean exists, boolean dir, String content)
         {
-            this.test = data.resource + "+" + path;
-            resource = data.resource.resolve(path);
+            this.test = data.getResource() + "+" + path;
+            this.resourceSupplier = () -> data.getResource().resolve(path);
             this.exists = exists;
             this.dir = dir;
             this.content = content;
@@ -98,7 +99,7 @@ public class ResourceTest
             this.test = url.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(url);
+            this.resourceSupplier = () -> resourceFactory.newResource(url);
         }
 
         Scenario(String url, boolean exists, boolean dir)
@@ -106,7 +107,7 @@ public class ResourceTest
             this.test = url;
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(url);
+            this.resourceSupplier = () -> resourceFactory.newResource(url);
         }
 
         Scenario(URI uri, boolean exists, boolean dir)
@@ -114,7 +115,7 @@ public class ResourceTest
             this.test = uri.toASCIIString();
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(uri);
+            this.resourceSupplier = () -> resourceFactory.newResource(uri);
         }
 
         Scenario(File file, boolean exists, boolean dir)
@@ -122,7 +123,12 @@ public class ResourceTest
             this.test = file.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(file.toPath());
+            this.resourceSupplier = () -> resourceFactory.newResource(file.toPath());
+        }
+
+        public Resource getResource()
+        {
+            return resourceSupplier.get();
         }
 
         @Override
@@ -256,26 +262,20 @@ public class ResourceTest
     @MethodSource("scenarios")
     public void testResourceExists(Scenario data)
     {
-        assertThat("Exists: " + data.resource.getName(), data.resource.exists(), equalTo(data.exists));
+        Resource res = data.getResource();
+        if (data.exists)
+            assertThat("Exists: " + res.getName(), res.exists(), equalTo(data.exists));
+        else
+            assertNull(res);
     }
 
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResourceDir(Scenario data)
     {
-        assertThat("Is Directory: " + data.test, data.resource.isDirectory(), equalTo(data.dir));
-    }
-
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testEncodeAddPath(Scenario data)
-    {
-        if (data.dir)
-        {
-            Resource r = data.resource.resolve("foo%25/b%20r");
-            assertThat(r.getPath().toString(), Matchers.anyOf(Matchers.endsWith("foo%/b r"), Matchers.endsWith("foo%\\b r")));
-            assertThat(r.getURI().toString(), Matchers.endsWith("/foo%25/b%20r"));
-        }
+        Resource res = data.getResource();
+        assumeTrue(res != null);
+        assertThat("Is Directory: " + data.test, res.isDirectory(), equalTo(data.dir));
     }
 
     @ParameterizedTest
@@ -285,7 +285,7 @@ public class ResourceTest
     {
         Assumptions.assumeTrue(data.content != null);
 
-        InputStream in = data.resource.newInputStream();
+        InputStream in = data.getResource().newInputStream();
         String c = IO.toString(in);
         assertThat("Content: " + data.test, c, startsWith(data.content));
     }
@@ -396,9 +396,7 @@ public class ResourceTest
         // at this point we have a directory reference that does not exist
         Resource resource = resourceFactory.newResource(dir);
         Resource dot = resource.resolve(".");
-        assertNotNull(dot);
-        assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as directory doesn't exist");
+        assertNull(dot);
     }
 
     @Test
@@ -426,9 +424,7 @@ public class ResourceTest
         assertFalse(Files.exists(file));
         Resource resource = resourceFactory.newResource(file);
         Resource dot = resource.resolve(".");
-        assertNotNull(dot);
-        assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as file doesn't exist");
+        assertNull(dot);
     }
 
     @Test

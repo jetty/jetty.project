@@ -319,6 +319,48 @@ public class PathResource extends Resource
     }
 
     @Override
+    public Resource resolve(String subUriPath)
+    {
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        // TODO do a URI safe encoding?
+        if (URIUtil.isNotNormalWithinSelf(subUriPath))
+            throw new IllegalArgumentException(subUriPath);
+
+        if (URIUtil.SLASH.equals(subUriPath))
+            return this;
+
+        // Sub-paths are always resolved under the given URI,
+        // we compensate for input sub-paths like "/subdir"
+        // where default resolve behavior would be to treat
+        // that like an absolute path.
+        while (subUriPath.startsWith(URIUtil.SLASH))
+        {
+            // TODO XXX this appears entirely unnecessary and inefficient.  We already have utilities
+            //      to handle appending path strings with/without slashes.
+            subUriPath = subUriPath.substring(1);
+        }
+
+        URI uri = getURI();
+        URI resolvedUri = URIUtil.addPath(uri, subUriPath);
+        Path path = Paths.get(resolvedUri.normalize());
+        if (Files.exists(path))
+            return newResource(path, resolvedUri);
+
+        return null;
+    }
+
+    /**
+     * Internal override for creating a new PathResource.
+     * Used by MountedPathResource (eg)
+     */
+    protected Resource newResource(Path path, URI uri)
+    {
+        return new PathResource(path, uri, true);
+    }
+
+    @Override
     public boolean isContainedIn(Resource r)
     {
         return r.getClass() == PathResource.class && path.startsWith(r.getPath());
