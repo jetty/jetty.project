@@ -50,6 +50,11 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
         mappings.addMapping(pathSpec, negotiator);
     }
 
+    public Configuration getConfiguration()
+    {
+        return customizer;
+    }
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
