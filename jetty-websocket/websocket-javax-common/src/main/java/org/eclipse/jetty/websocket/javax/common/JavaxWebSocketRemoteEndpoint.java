@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
@@ -64,7 +63,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     {
         FutureCallback b = new FutureCallback();
         coreSession.flush(b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -226,7 +225,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -237,7 +236,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     protected void assertMessageNotNull(Object data)
@@ -254,11 +253,5 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         {
             throw new IllegalArgumentException("SendHandler cannot be null");
         }
-    }
-
-    private long getBlockingTimeout()
-    {
-        long idleTimeout = getIdleTimeout();
-        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }
