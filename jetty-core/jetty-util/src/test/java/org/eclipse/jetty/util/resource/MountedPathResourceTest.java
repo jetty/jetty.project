@@ -15,12 +15,11 @@ package org.eclipse.jetty.util.resource;
 
 import java.net.URI;
 import java.nio.file.ClosedFileSystemException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -45,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class JarResourceTest
+public class MountedPathResourceTest
 {
     public WorkDir workDir;
 
@@ -72,8 +70,8 @@ public class JarResourceTest
         {
             Resource r = resourceFactory.newResource(uri);
 
-            Set<String> entries = new HashSet<>(r.list());
-            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            List<String> entries = r.list().stream().map(Resource::getFileName).toList();
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir"));
 
             Path extract = workDir.getPathFile("extract");
             FS.ensureEmpty(extract);
@@ -82,13 +80,13 @@ public class JarResourceTest
 
             Resource e = resourceFactory.newResource(extract.toString());
 
-            entries = new HashSet<>(e.list());
-            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+            entries = r.list().stream().map(Resource::getFileName).toList();
+            assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir"));
 
             s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
             r = resourceFactory.newResource(s);
 
-            entries = new HashSet<>(r.list());
+            entries = r.list().stream().map(Resource::getFileName).toList();
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
             Path extract2 = workDir.getPathFile("extract2");
@@ -98,7 +96,7 @@ public class JarResourceTest
 
             e = resourceFactory.newResource(extract2.toString());
 
-            entries = new HashSet<>(e.list());
+            entries = r.list().stream().map(Resource::getFileName).toList();
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
         }
     }
@@ -119,10 +117,10 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileDeleted(@TempDir Path tempDir) throws Exception
+    public void testJarFileDeleted(WorkDir workDir) throws Exception
     {
         Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
+        Path testZip = Files.copy(originalTestZip, workDir.getEmptyPathDir().resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
         Resource resource;
@@ -131,16 +129,16 @@ public class JarResourceTest
             resource = resourceFactory.newResource(uri);
             assertTrue(resource.exists());
             Files.delete(testZip);
-            assertThrows(IllegalStateException.class, () -> resource.resolve("alphabet"));
+            assertThrows(FileSystemNotFoundException.class, () -> resource.resolve("alphabet"));
         }
         assertThrows(ClosedFileSystemException.class, resource::exists);
     }
 
     @Test
-    public void testDumpAndSweep(@TempDir Path tempDir) throws Exception
+    public void testDumpAndSweep(WorkDir workDir) throws Exception
     {
         Path originalTestZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        Path testZip = Files.copy(originalTestZip, tempDir.resolve("test.zip"));
+        Path testZip = Files.copy(originalTestZip, workDir.getEmptyPathDir().resolve("test.zip"));
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         URI uri = URI.create(s);
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
@@ -242,15 +240,15 @@ public class JarResourceTest
 
             assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
 
-            List<String> actual = rez.list();
+            List<String> actual = rez.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
                 "one",
                 "aaa",
                 "bbb",
-                "oddities/",
-                "another dir/",
+                "oddities",
+                "another dir",
                 "ccc",
-                "deep/",
+                "deep",
                 };
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
         }
@@ -272,7 +270,7 @@ public class JarResourceTest
 
             assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
 
-            List<String> actual = rez.list();
+            List<String> actual = rez.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
                 ";",
                 "#hashcode",
@@ -298,7 +296,7 @@ public class JarResourceTest
 
             assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
-            List<String> actual = anotherDir.list();
+            List<String> actual = anotherDir.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
                 "a file.txt",
                 "another file.txt",

@@ -22,8 +22,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -221,6 +219,20 @@ public class ResourceCollection extends Resource
     }
 
     @Override
+    public String getFileName()
+    {
+        for (Resource r : _resources)
+        {
+            String filename = r.getFileName();
+            if (filename != null)
+            {
+                return filename;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public URI getURI()
     {
         for (Resource r : _resources)
@@ -267,22 +279,14 @@ public class ResourceCollection extends Resource
         return _resources.iterator();
     }
 
-    /**
-     * @return The list of resource names(merged) contained in the collection of resources.
-     */
     @Override
-    public List<String> list()
+    public List<Resource> list()
     {
-        HashSet<String> set = new HashSet<>();
+        List<Resource> result = new ArrayList<>();
         for (Resource r : _resources)
         {
-            List<String> list = r.list();
-            if (list != null)
-                set.addAll(list);
+            result.addAll(r.list());
         }
-
-        ArrayList<String> result = new ArrayList<>(set);
-        result.sort(Comparator.naturalOrder());
         return result;
     }
 

@@ -13,14 +13,17 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
@@ -56,7 +59,9 @@ public class ResourceListing
         if (base == null || !resource.isDirectory())
             return null;
 
-        List<Resource> listing = new ArrayList<>(resource.list().stream().map(URIUtil::encodePath).map(resource::resolve).toList());
+        List<Resource> listing = resource.list().stream()
+            .filter(distinctBy(Resource::getFileName))
+            .collect(Collectors.toCollection(ArrayList::new));
 
         boolean sortOrderAscending = true;
         String sortColumn = "N"; // name (or "M" for Last Modified, or "S" for Size)
@@ -208,14 +213,11 @@ public class ResourceListing
         for (Resource item : listing)
         {
             // Listings always return non-composite Resource entries
-            Path filePath = item.getPath();
-            if (filePath == null)
-                continue; // skip, can't represent this in a listing anyway.
-
-            String name = filePath.getFileName().toString();
+            String name = item.getFileName();
             if (StringUtil.isBlank(name))
-                continue;
+                continue; // a resource either not backed by a filename (eg: MemoryResource), or has no filename (eg: a segment-less root "/")
 
+            // Ensure name has a slash if it's a directory
             if (item.isDirectory() && !name.endsWith("/"))
                 name += URIUtil.SLASH;
 
@@ -250,6 +252,13 @@ public class ResourceListing
         buf.append("</body></html>\n");
 
         return buf.toString();
+    }
+
+    /* TODO: see if we can use {@link Collectors#groupingBy} */
+    private static <T> Predicate<T> distinctBy(Function<? super T, Object> keyExtractor)
+    {
+        HashSet<Object> map = new HashSet<>();
+        return t -> map.add(keyExtractor.apply(t));
     }
 
     /**

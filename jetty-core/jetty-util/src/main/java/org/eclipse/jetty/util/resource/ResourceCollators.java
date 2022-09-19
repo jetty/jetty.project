@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
 
-// TODO remove
 public class ResourceCollators
 {
     private static Comparator<? super Resource> BY_NAME_ASCENDING =
@@ -33,8 +32,23 @@ public class ResourceCollators
             }
         };
 
+    private static Comparator<? super Resource> BY_FILENAME_ASCENDING =
+        new Comparator<>()
+        {
+            private final Collator collator = Collator.getInstance(Locale.ENGLISH);
+
+            @Override
+            public int compare(Resource o1, Resource o2)
+            {
+                return collator.compare(o1.getFileName(), o2.getFileName());
+            }
+        };
+
     private static Comparator<? super Resource> BY_NAME_DESCENDING =
         Collections.reverseOrder(BY_NAME_ASCENDING);
+
+    private static Comparator<? super Resource> BY_FILENAME_DESCENDING =
+        Collections.reverseOrder(BY_FILENAME_ASCENDING);
 
     private static Comparator<? super Resource> BY_LAST_MODIFIED_ASCENDING =
         Comparator.comparing(Resource::lastModified);
@@ -69,6 +83,18 @@ public class ResourceCollators
         else
         {
             return BY_NAME_DESCENDING;
+        }
+    }
+
+    public static Comparator<? super Resource> byFileName(boolean sortOrderAscending)
+    {
+        if (sortOrderAscending)
+        {
+            return BY_FILENAME_ASCENDING;
+        }
+        else
+        {
+            return BY_FILENAME_DESCENDING;
         }
     }
 

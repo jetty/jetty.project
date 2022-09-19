@@ -1922,7 +1922,7 @@ public final class URIUtil
                         {
                             listStream
                                 .filter(Files::isRegularFile)
-                                .filter(FileID::isArchive)
+                                .filter(FileID::isLibArchive)
                                 .sorted(Comparator.naturalOrder())
                                 .forEach(path -> uris.add(toJarFileUri(path.toUri())));
                         }
