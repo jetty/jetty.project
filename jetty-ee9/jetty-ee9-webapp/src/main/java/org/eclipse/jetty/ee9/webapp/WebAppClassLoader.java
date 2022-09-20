@@ -31,13 +31,13 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -78,7 +78,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
     private final Context _context;
     private final ClassLoader _parent;
-    private final Set<String> _extensions = new HashSet<String>();
+    private final Set<String> _extensions = new HashSet<>();
     private String _name = String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
     private final ResourceFactory.Closeable _resourceFactory = ResourceFactory.closeable();
@@ -282,16 +282,13 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
     /**
      * @param file Checks if this file type can be added to the classpath.
-     * TODO: move to FileID in later PR
      */
-
     private boolean isFileSupported(String file)
     {
-        int dot = file.lastIndexOf('.');
-        return dot != -1 && _extensions.contains(file.substring(dot).toLowerCase(Locale.ENGLISH));
+        String ext = FileID.getExtension(file);
+        return ext != null && _extensions.contains(ext);
     }
 
-    // TODO: move to FileID in later PR
     private boolean isFileSupported(Path path)
     {
         return isFileSupported(path.getFileName().toString());

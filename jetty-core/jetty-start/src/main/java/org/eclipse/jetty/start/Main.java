@@ -30,13 +30,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSource;
+import org.eclipse.jetty.util.FileID;
 
 import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
 import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
@@ -170,13 +170,9 @@ public class Main
             return "(dir)";
         }
 
-        if (Files.isRegularFile(element))
+        if (Files.isRegularFile(element) && FileID.isJavaArchive(element))
         {
-            String name = element.toString().toLowerCase(Locale.ENGLISH);
-            if (name.endsWith(".jar"))
-            {
-                return JarVersion.getVersion(element);
-            }
+            return JarVersion.getVersion(element);
         }
 
         return "";

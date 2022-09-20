@@ -36,6 +36,7 @@ import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -297,7 +298,7 @@ public class MavenWebAppContext extends WebAppContext
         {
             // Return all jar files from class path
             String fileName = file.getName();
-            if (fileName.endsWith(".jar"))
+            if (FileID.isJavaArchive(fileName))
                 _webInfJarMap.put(fileName, file);
         }
 

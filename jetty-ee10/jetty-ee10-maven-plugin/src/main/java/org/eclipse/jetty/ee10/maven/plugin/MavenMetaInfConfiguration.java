@@ -16,11 +16,11 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -63,7 +63,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
         {
             files.forEach(file ->
             {
-                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar") || file.isDirectory())
+                if (FileID.isJavaArchive(file.getName()) || file.isDirectory())
                 {
                     try
                     {

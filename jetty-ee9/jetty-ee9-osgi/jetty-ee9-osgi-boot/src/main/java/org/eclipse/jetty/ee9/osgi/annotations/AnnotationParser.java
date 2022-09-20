@@ -151,7 +151,7 @@ public class AnnotationParser extends org.eclipse.jetty.ee9.annotations.Annotati
             {
                 hasDotPath = true;
             }
-            else if (!token.endsWith(".jar") && !token.endsWith("/"))
+            else if (!FileID.isJavaArchive(token) && !token.endsWith("/"))
             {
                 paths.add(token + "/");
             }

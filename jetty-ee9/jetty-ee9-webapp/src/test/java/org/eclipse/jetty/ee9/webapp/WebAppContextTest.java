@@ -45,6 +45,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
@@ -539,7 +540,7 @@ public class WebAppContextTest
         {
             expectedUris = s
                 .filter(Files::isRegularFile)
-                .filter((path) -> path.getFileName().toString().endsWith(".jar"))
+                .filter(FileID::isLibArchive)
                 .sorted(Comparator.naturalOrder())
                 .map(Path::toUri)
                 .map(URIUtil::toJarFileUri)

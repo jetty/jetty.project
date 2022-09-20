@@ -443,7 +443,7 @@ public class ContextProvider extends ScanningAppProvider
         {
             try (Stream<Path> paths = Files.list(libDir))
             {
-                paths.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".jar"))
+                paths.filter(FileID::isJavaArchive)
                     .map(Path::toUri)
                     .forEach(uri ->
                     {
