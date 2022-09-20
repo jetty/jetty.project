@@ -546,6 +546,25 @@ public class URIUtilTest
         assertThat(actual.toASCIIString(), is("file:///opt/foo.txt/bar.dat"));
     }
 
+    public static Stream<Arguments> addPathQuerySource()
+    {
+        return Stream.of(
+            Arguments.of("/path", null, "/path"),
+            Arguments.of("/path", "", "/path"),
+            Arguments.of("/path", "    ", "/path"),
+            Arguments.of("/path", "a=b", "/path?a=b"),
+            Arguments.of("/path?a=b", "x=y", "/path?a=b&x=y")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("addPathQuerySource")
+    public void testAddPathQuery(String path, String query, String expected)
+    {
+        String actual = URIUtil.addPathQuery(path, query);
+        assertThat(actual, is(expected));
+    }
+
     public static Stream<Arguments> ensureSafeEncodingSource()
     {
         return Stream.of(
