@@ -773,7 +773,7 @@ public class ResourceHandlerTest
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
         String body = response.getContent();
-        assertThat(body, containsString("fake br"));
+        assertThat(body, containsString("fake brotli"));
     }
 
     @Test
