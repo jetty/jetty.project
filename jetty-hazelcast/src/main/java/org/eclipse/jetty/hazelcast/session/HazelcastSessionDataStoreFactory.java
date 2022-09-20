@@ -113,7 +113,8 @@ public class HazelcastSessionDataStoreFactory
                         {
                             config = new XmlClientConfigBuilder(configurationLocation).build();
                         }
-                        else {
+                        else
+                        {
                             LOG.warn("Both configurationLocation and clientConfig are set, using clientConfig");
                             config = clientConfig;
                         }
@@ -132,9 +133,12 @@ public class HazelcastSessionDataStoreFactory
                         SerializerConfig sc = new SerializerConfig()
                             .setImplementation(new SessionDataSerializer())
                             .setTypeClass(SessionData.class);
-                        if (serverConfig == null) {
+                        if (serverConfig == null)
+                        {
                             config = new Config();
-                        } else {
+                        }
+                        else
+                        {
                             config = serverConfig;
                         }
                         config.getSerializationConfig().addSerializerConfig(sc);
@@ -262,7 +266,6 @@ public class HazelcastSessionDataStoreFactory
     {
         this.addresses = addresses;
     }
-
 
     public ClientConfig getClientConfig()
     {
