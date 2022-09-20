@@ -60,7 +60,7 @@ public class FileID
             return "";
         int idx = path.lastIndexOf('/');
         if (idx >= 0)
-            return path.substring(idx+1);
+            return path.substring(idx + 1);
         return path;
     }
 
