@@ -37,7 +37,7 @@ import java.util.zip.ZipOutputStream;
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.EtagUtil;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -808,7 +808,7 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagBr = EtagUtil.rewriteWithSuffix(etag, "--br");
+        String etagBr = EtagUtils.rewriteWithSuffix(etag, "--br");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -945,7 +945,7 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagBr = EtagUtil.rewriteWithSuffix(etag, "--br");
+        String etagBr = EtagUtils.rewriteWithSuffix(etag, "--br");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -1066,7 +1066,7 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagGzip = EtagUtil.rewriteWithSuffix(etag, "--gzip");
+        String etagGzip = EtagUtils.rewriteWithSuffix(etag, "--gzip");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -2139,7 +2139,7 @@ public class ResourceHandlerTest
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
         String etag = response.get(HttpHeader.ETAG);
-        String etagGzip = EtagUtil.rewriteWithSuffix(etag, "--gzip");
+        String etagGzip = EtagUtils.rewriteWithSuffix(etag, "--gzip");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -2195,7 +2195,7 @@ public class ResourceHandlerTest
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        String badEtagGzip = EtagUtil.rewriteWithSuffix(etag, "-gzip");
+        String badEtagGzip = EtagUtils.rewriteWithSuffix(etag, "-gzip");
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r

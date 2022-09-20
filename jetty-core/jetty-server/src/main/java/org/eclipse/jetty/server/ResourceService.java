@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
-import org.eclipse.jetty.http.EtagUtil;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -433,7 +433,7 @@ public class ResourceService
         QuotedCSV quoted = new QuotedCSV(true, requestEtag);
         for (String tag : quoted)
         {
-            if (EtagUtil.match(contentETag, tag))
+            if (EtagUtils.match(contentETag, tag))
             {
                 return tag;
             }

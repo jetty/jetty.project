@@ -26,8 +26,13 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * Utility classes for Etag behaviors
  */
-public class EtagUtil
+public final class EtagUtils
 {
+    private EtagUtils()
+    {
+        // prevent instantiation
+    }
+
     /**
      * <p>The separator within an etag used to indicate a compressed variant.</p>
      *
@@ -39,7 +44,7 @@ public class EtagUtil
      * {@code org.eclipse.jetty.http.EtagUtil.ETAG_SEPARATOR} System property. If changed, it should be changed to a string
      * that will not be found in a normal etag or at least is very unlikely to be a substring of a normal etag.</p>
      */
-    public static final String ETAG_SEPARATOR = System.getProperty(EtagUtil.class.getName() + ".ETAG_SEPARATOR", "--");
+    public static final String ETAG_SEPARATOR = System.getProperty(EtagUtils.class.getName() + ".ETAG_SEPARATOR", "--");
 
     /**
      * Create a new {@link HttpField} {@link HttpHeader#ETAG} field suitable to represent the provided Resource.
@@ -65,7 +70,7 @@ public class EtagUtil
         if (path == null)
             return null;
 
-        String etagValue = EtagUtil.calcWeakEtag(path, etagSuffix);
+        String etagValue = EtagUtils.calcWeakEtag(path, etagSuffix);
         if (etagValue != null)
             return new PreEncodedHttpField(HttpHeader.ETAG, etagValue);
         return null;

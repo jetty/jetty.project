@@ -248,7 +248,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 for (Map.Entry<CompressedContentFormat, ? extends HttpContent> entry : precompressedContents.entrySet())
                 {
                     CompressedContentFormat format = entry.getKey();
-                    String precompressedEtag = EtagUtil.rewriteWithSuffix(httpContent.getETagValue(), format.getEtagSuffix());
+                    String precompressedEtag = EtagUtils.rewriteWithSuffix(httpContent.getETagValue(), format.getEtagSuffix());
                     // The etag of the precompressed content must be the one of the non-compressed content, with the etag suffix appended.
                     _precompressedContents.put(format, new CachingHttpContent(key, precompressedEtag, entry.getValue()));
                 }

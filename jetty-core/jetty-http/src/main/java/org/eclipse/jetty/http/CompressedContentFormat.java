@@ -33,7 +33,7 @@ public class CompressedContentFormat
     {
         _encoding = StringUtil.asciiToLowerCase(encoding);
         _extension = StringUtil.asciiToLowerCase(extension);
-        _etagSuffix = StringUtil.isEmpty(EtagUtil.ETAG_SEPARATOR) ? "" : (EtagUtil.ETAG_SEPARATOR + _encoding);
+        _etagSuffix = StringUtil.isEmpty(EtagUtils.ETAG_SEPARATOR) ? "" : (EtagUtils.ETAG_SEPARATOR + _encoding);
         _etagSuffixQuote = _etagSuffix + "\"";
         _contentEncoding = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, _encoding);
     }
@@ -72,7 +72,7 @@ public class CompressedContentFormat
      */
     public String etag(String etag)
     {
-        if (StringUtil.isEmpty(EtagUtil.ETAG_SEPARATOR))
+        if (StringUtil.isEmpty(EtagUtils.ETAG_SEPARATOR))
             return etag;
         int end = etag.length() - 1;
         if (etag.charAt(end) == '"')
@@ -88,7 +88,7 @@ public class CompressedContentFormat
 
     public String stripSuffixes(String etagsList)
     {
-        if (StringUtil.isEmpty(EtagUtil.ETAG_SEPARATOR))
+        if (StringUtil.isEmpty(EtagUtils.ETAG_SEPARATOR))
             return etagsList;
 
         // This is a poor implementation that ignores list and tag structure

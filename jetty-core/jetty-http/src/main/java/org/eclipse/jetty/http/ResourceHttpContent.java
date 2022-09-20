@@ -46,7 +46,7 @@ public class ResourceHttpContent implements HttpContent
         _resource = resource;
         _path = resource.getPath();
         _contentType = contentType;
-        _etag = EtagUtil.createWeakEtagField(resource);
+        _etag = EtagUtils.createWeakEtagField(resource);
         if (precompressedContents == null)
         {
             _precompressedContents = null;

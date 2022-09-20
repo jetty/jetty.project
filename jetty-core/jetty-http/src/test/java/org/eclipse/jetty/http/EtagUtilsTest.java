@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class EtagUtilTest
+public class EtagUtilsTest
 {
     public WorkDir workDir;
 
@@ -47,7 +47,7 @@ public class EtagUtilTest
         Path testFile = root.resolve("test.dat");
         Files.writeString(testFile, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
-        String weakEtag = EtagUtil.calcWeakEtag(testFile);
+        String weakEtag = EtagUtils.calcWeakEtag(testFile);
         assertThat(weakEtag, startsWith("W/\""));
         assertThat(weakEtag, endsWith("\""));
     }
@@ -64,11 +64,11 @@ public class EtagUtilTest
         Path altFile = altDir.resolve("test.dat");
         Files.copy(testFile, altFile);
 
-        String weakEtagOriginal = EtagUtil.calcWeakEtag(testFile);
+        String weakEtagOriginal = EtagUtils.calcWeakEtag(testFile);
         assertThat(weakEtagOriginal, startsWith("W/\""));
         assertThat(weakEtagOriginal, endsWith("\""));
 
-        String weakEtagAlt = EtagUtil.calcWeakEtag(altFile);
+        String weakEtagAlt = EtagUtils.calcWeakEtag(altFile);
         assertThat(weakEtagAlt, startsWith("W/\""));
         assertThat(weakEtagAlt, endsWith("\""));
 
@@ -100,7 +100,7 @@ public class EtagUtilTest
     @MethodSource("rewriteWithSuffixCases")
     public void testRewriteWithSuffix(String input, String newSuffix, String expected)
     {
-        String actual = EtagUtil.rewriteWithSuffix(input, newSuffix);
+        String actual = EtagUtils.rewriteWithSuffix(input, newSuffix);
         assertThat(actual, is(expected));
     }
 
@@ -124,7 +124,7 @@ public class EtagUtilTest
     @MethodSource("matchTrueCases")
     public void testMatchTrue(String etag, String etagWithOptionalSuffix)
     {
-        assertTrue(EtagUtil.match(etag, etagWithOptionalSuffix));
+        assertTrue(EtagUtils.match(etag, etagWithOptionalSuffix));
     }
 
     public static Stream<Arguments> matchFalseCases()
@@ -141,6 +141,6 @@ public class EtagUtilTest
     @MethodSource("matchFalseCases")
     public void testMatchFalse(String etag, String etagWithOptionalSuffix)
     {
-        assertFalse(EtagUtil.match(etag, etagWithOptionalSuffix));
+        assertFalse(EtagUtils.match(etag, etagWithOptionalSuffix));
     }
 }
