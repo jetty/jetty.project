@@ -73,7 +73,6 @@ public class ResourceContentFactory implements ContentFactory
     }
 
     private HttpContent load(String pathInContext, Resource resource)
-        throws IOException
     {
         if (resource == null || !resource.exists())
             return null;
@@ -92,12 +91,12 @@ public class ResourceContentFactory implements ContentFactory
                 String compressedPathInContext = pathInContext + format.getExtension();
                 Resource compressedResource = this._factory.newResource(compressedPathInContext);
                 if (compressedResource == null || !compressedResource.exists())
-                    continue; // skip, doesn't exist
+                    continue;
                 if (compressedResource.lastModified().isBefore(resource.lastModified()))
-                    continue; // skip, compressed resource modified before actual resource
+                    continue;
                 if (compressedResource.length() >= resource.length())
-                    continue; // skip, not smaller than actual resource
-                // add found precompressed format
+                    continue;
+
                 compressedContents.put(format, new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
             }
             if (!compressedContents.isEmpty())

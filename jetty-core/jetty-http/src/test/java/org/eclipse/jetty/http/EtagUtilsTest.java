@@ -47,7 +47,7 @@ public class EtagUtilsTest
         Path testFile = root.resolve("test.dat");
         Files.writeString(testFile, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
-        String weakEtag = EtagUtils.calcWeakEtag(testFile);
+        String weakEtag = EtagUtils.computeWeakEtag(testFile);
         assertThat(weakEtag, startsWith("W/\""));
         assertThat(weakEtag, endsWith("\""));
     }
@@ -64,11 +64,11 @@ public class EtagUtilsTest
         Path altFile = altDir.resolve("test.dat");
         Files.copy(testFile, altFile);
 
-        String weakEtagOriginal = EtagUtils.calcWeakEtag(testFile);
+        String weakEtagOriginal = EtagUtils.computeWeakEtag(testFile);
         assertThat(weakEtagOriginal, startsWith("W/\""));
         assertThat(weakEtagOriginal, endsWith("\""));
 
-        String weakEtagAlt = EtagUtils.calcWeakEtag(altFile);
+        String weakEtagAlt = EtagUtils.computeWeakEtag(altFile);
         assertThat(weakEtagAlt, startsWith("W/\""));
         assertThat(weakEtagAlt, endsWith("\""));
 
@@ -124,7 +124,7 @@ public class EtagUtilsTest
     @MethodSource("matchTrueCases")
     public void testMatchTrue(String etag, String etagWithOptionalSuffix)
     {
-        assertTrue(EtagUtils.match(etag, etagWithOptionalSuffix));
+        assertTrue(EtagUtils.matches(etag, etagWithOptionalSuffix));
     }
 
     public static Stream<Arguments> matchFalseCases()
@@ -141,6 +141,6 @@ public class EtagUtilsTest
     @MethodSource("matchFalseCases")
     public void testMatchFalse(String etag, String etagWithOptionalSuffix)
     {
-        assertFalse(EtagUtils.match(etag, etagWithOptionalSuffix));
+        assertFalse(EtagUtils.matches(etag, etagWithOptionalSuffix));
     }
 }

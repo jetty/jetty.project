@@ -352,7 +352,7 @@ public class ResourceService
                 {
                     if (ifm != null)
                     {
-                        String matched = matchEtag(etag, ifm);
+                        String matched = matchesEtag(etag, ifm);
                         if (matched == null)
                         {
                             writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
@@ -362,7 +362,7 @@ public class ResourceService
 
                     if (ifnm != null)
                     {
-                        String matched = matchEtag(etag, ifnm);
+                        String matched = matchesEtag(etag, ifnm);
                         if (matched != null)
                         {
                             response.getHeaders().put(HttpHeader.ETAG, matched);
@@ -413,12 +413,12 @@ public class ResourceService
     }
 
     /**
-     * Find a match between a Content ETag and a Request Field ETag reference.
+     * Find a matches between a Content ETag and a Request Field ETag reference.
      * @param contentETag the content etag to match against (can be null)
      * @param requestEtag the request etag (can be null, a single entry, or even a CSV list)
-     * @return the matched etag, or null if no match.
+     * @return the matched etag, or null if no matches.
      */
-    private String matchEtag(String contentETag, String requestEtag)
+    private String matchesEtag(String contentETag, String requestEtag)
     {
         if (contentETag == null || requestEtag == null)
         {
@@ -433,13 +433,13 @@ public class ResourceService
         QuotedCSV quoted = new QuotedCSV(true, requestEtag);
         for (String tag : quoted)
         {
-            if (EtagUtils.match(contentETag, tag))
+            if (EtagUtils.matches(contentETag, tag))
             {
                 return tag;
             }
         }
 
-        // no match
+        // no matches
         return null;
     }
 

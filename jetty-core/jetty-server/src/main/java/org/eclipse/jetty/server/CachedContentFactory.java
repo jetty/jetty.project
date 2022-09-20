@@ -406,7 +406,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
             _lastAccessed = Instant.now();
 
-            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtils.calcWeakEtag(resource.getPath())) : null;
+            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtils.computeWeakEtag(resource.getPath())) : null;
 
             if (precompressedResources != null)
             {

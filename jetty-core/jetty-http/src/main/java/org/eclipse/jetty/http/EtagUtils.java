@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Objects;
 
@@ -24,7 +25,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Utility classes for Etag behaviors
+ * Utility classes for Entity Tag behaviors as outlined in <a href="https://www.rfc-editor.org/rfc/rfc9110#name-etag">RFC9110 : Section 8.8.3 - Entity Tag</a>
  */
 public final class EtagUtils
 {
@@ -70,14 +71,66 @@ public final class EtagUtils
         if (path == null)
             return null;
 
-        String etagValue = EtagUtils.calcWeakEtag(path, etagSuffix);
+        String etagValue = EtagUtils.computeWeakEtag(path, etagSuffix);
         if (etagValue != null)
             return new PreEncodedHttpField(HttpHeader.ETAG, etagValue);
         return null;
     }
 
     /**
-     * Calculate the weak etag for the provided {@link Path} reference.
+     * Compute the weak etag for the provided {@link Resource} reference.
+     *
+     * <p>
+     * Will use the {@link Resource#getPath()} if the resource provides it, otherwise it will
+     * use the {@link Resource} provided details from {@link Resource#getName()}, {@link Resource#lastModified()},
+     * and {@link Resource#length()} to build the ETag.
+     * </p>
+     *
+     * @param resource the resource to calculate etag from
+     * @return the weak etag
+     */
+    public static String computeWeakEtag(Resource resource)
+    {
+        return computeWeakEtag(resource, null);
+    }
+
+    /**
+     * Compute the weak etag for the provided {@link Resource} reference.
+     *
+     * <p>
+     * Will use the {@link Resource#getPath()} if the resource provides it, otherwise it will
+     * use the {@link Resource} provided details from {@link Resource#getName()}, {@link Resource#lastModified()},
+     * and {@link Resource#length()} to build the ETag.
+     * </p>
+     *
+     * @param resource the resource to calculate etag from
+     * @param etagSuffix the suffix for the etag
+     * @return the weak etag
+     */
+    public static String computeWeakEtag(Resource resource, String etagSuffix)
+    {
+        Path path = resource.getPath();
+        if (path != null)
+        {
+            // This is the most reliable technique.
+            // ResourceCollection can return a different resource for each call name/lastModified/length
+            // Using Path here ensures that if a Path is available, we can use it to get the name/lastModified/length
+            // for same referenced Path object (something that ResourceCollection does not guarantee)
+            return computeWeakEtag(path, etagSuffix);
+        }
+        else
+        {
+            // Use the URI / lastModified / size in case the Resource does not support Path
+            // These fields must be returned by the implementation of Resource for the Resource to be valid
+            String name = resource.getName();
+            Instant lastModified = resource.lastModified();
+            long size = resource.length();
+            return computeWeakEtag(name, lastModified, size, etagSuffix);
+        }
+    }
+
+    /**
+     * Compute the weak etag for the provided {@link Path} reference.
      *
      * <p>
      * This supports relative path references as well.
@@ -87,27 +140,57 @@ public final class EtagUtils
      * @param path the path to calculate from
      * @return the weak etag
      */
-    public static String calcWeakEtag(Path path)
+    public static String computeWeakEtag(Path path)
     {
-        return calcWeakEtag(path, null);
+        return computeWeakEtag(path, null);
     }
 
     /**
-     * Calculate the weak etag for the provided {@link Path} reference.
+     * Compute the weak etag for the provided {@link Path} reference.
      *
      * @param path the path to calculate from
-     * @param suffix the suffix for the ETag
+     * @param suffix the optional suffix for the ETag
      * @return the weak etag
      */
-    public static String calcWeakEtag(Path path, String suffix)
+    public static String computeWeakEtag(Path path, String suffix)
     {
         if (path == null)
             return null;
 
+        String name = path.toAbsolutePath().toString();
+        Instant lastModified = Instant.EPOCH;
+        try
+        {
+            lastModified = Files.getLastModifiedTime(path).toInstant();
+        }
+        catch (IOException ignored)
+        {
+        }
+        long size = -1;
+        try
+        {
+            size = Files.size(path);
+        }
+        catch (IOException ignored)
+        {
+        }
+        return computeWeakEtag(name, lastModified, size, suffix);
+    }
+
+    /**
+     * Main algorithm of how Jetty builds a unique Etag.
+     *
+     * @param name the name of the resource
+     * @param lastModified the last modified time of the resource
+     * @param size the size of the resource
+     * @param etagSuffix the optional etag suffix
+     * @return the calculated etag for the resource
+     */
+    private static String computeWeakEtag(String name, Instant lastModified, long size, String etagSuffix)
+    {
         StringBuilder b = new StringBuilder(32);
         b.append("W/\"");
 
-        String name = path.toString();
         int length = name.length();
         long lhash = 0;
         for (int i = 0; i < length; i++)
@@ -116,21 +199,11 @@ public final class EtagUtils
         }
 
         Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
-        long lastModifiedMillis = -1;
-        long size = -1;
-        try
-        {
-            lastModifiedMillis = Files.getLastModifiedTime(path).toMillis();
-            size = Files.size(path);
-        }
-        catch (IOException ignored)
-        {
-            // TODO: should we ignore the inability to read last modified or size?
-        }
+        long lastModifiedMillis = lastModified.toEpochMilli();
         b.append(encoder.encodeToString(longToBytes(lastModifiedMillis ^ lhash)));
         b.append(encoder.encodeToString(longToBytes(size ^ lhash)));
-        if (suffix != null)
-            b.append(suffix);
+        if (etagSuffix != null)
+            b.append(etagSuffix);
         b.append('"');
         return b.toString();
     }
@@ -201,14 +274,14 @@ public final class EtagUtils
     }
 
     /**
-     * Test a match of an etag against an etagWithOptionalSuffix.
+     * <p>Test if etag matches against an etagWithOptionalSuffix.</p>
      *
      * @param etag An etag without a compression suffix
      * @param etagWithOptionalSuffix An etag optionally with a compression suffix.
      * @return True if the tags are equal.
      * @see <a href="https://www.rfc-editor.org/rfc/rfc9110#section-8.8.3.2">RFC9110: Section 8.8.3.2 - Etag Comparison</a>.
      */
-    public static boolean match(String etag, String etagWithOptionalSuffix)
+    public static boolean matches(String etag, String etagWithOptionalSuffix)
     {
         // Handle simple equality
         if (etag.equals(etagWithOptionalSuffix))
@@ -229,7 +302,7 @@ public final class EtagUtils
         if (etagQuoted == etagSuffixQuoted)
             return separator > 0 && etag.regionMatches(0, etagWithOptionalSuffix, 0, separator);
 
-        // If either tag is weak then we can't match because weak tags must be quoted
+        // If either tag is weak then we can't matches because weak tags must be quoted
         if (etagWithOptionalSuffix.startsWith("W/") || etag.startsWith("W/"))
             return false;
 
