@@ -33,8 +33,8 @@ public class ResourceHttpContent implements HttpContent
     final Resource _resource;
     final Path _path;
     final String _contentType;
+    final HttpField _etag;
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
-    String _etag;
 
     public ResourceHttpContent(final Resource resource, final String contentType)
     {
@@ -46,6 +46,7 @@ public class ResourceHttpContent implements HttpContent
         _resource = resource;
         _path = resource.getPath();
         _contentType = contentType;
+        _etag = EtagUtil.createWeakEtagField(resource);
         if (precompressedContents == null)
         {
             _precompressedContents = null;
@@ -113,13 +114,15 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public HttpField getETag()
     {
-        return new HttpField(HttpHeader.ETAG, getETagValue());
+        return _etag;
     }
 
     @Override
     public String getETagValue()
     {
-        return EtagUtil.calcWeakEtag(_resource.getPath());
+        if (_etag == null)
+            return null;
+        return _etag.getValue();
     }
 
     @Override

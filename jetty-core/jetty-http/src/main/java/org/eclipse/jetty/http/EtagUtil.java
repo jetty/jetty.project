@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Utility classes for Etag behaviors
@@ -41,6 +42,36 @@ public class EtagUtil
     public static final String ETAG_SEPARATOR = System.getProperty(EtagUtil.class.getName() + ".ETAG_SEPARATOR", "--");
 
     /**
+     * Create a new {@link HttpField} {@link HttpHeader#ETAG} field suitable to represent the provided Resource.
+     *
+     * @param resource the resource to represent with an Etag.
+     * @return the field if possible to create etag, or null if not possible.
+     */
+    public static HttpField createWeakEtagField(Resource resource)
+    {
+        return createWeakEtagField(resource, null);
+    }
+
+    /**
+     * Create a new {@link HttpField} {@link HttpHeader#ETAG} field suitable to represent the provided Resource.
+     *
+     * @param resource the resource to represent with an Etag.
+     * @param etagSuffix the suffix for the etag
+     * @return the field if possible to create etag, or null if not possible.
+     */
+    public static HttpField createWeakEtagField(Resource resource, String etagSuffix)
+    {
+        Path path = resource.getPath();
+        if (path == null)
+            return null;
+
+        String etagValue = EtagUtil.calcWeakEtag(path, etagSuffix);
+        if (etagValue != null)
+            return new PreEncodedHttpField(HttpHeader.ETAG, etagValue);
+        return null;
+    }
+
+    /**
      * Calculate the weak etag for the provided {@link Path} reference.
      *
      * <p>
@@ -53,7 +84,7 @@ public class EtagUtil
      */
     public static String calcWeakEtag(Path path)
     {
-        return calcWeakEtag(path, "");
+        return calcWeakEtag(path, null);
     }
 
     /**
@@ -65,6 +96,9 @@ public class EtagUtil
      */
     public static String calcWeakEtag(Path path, String suffix)
     {
+        if (path == null)
+            return null;
+
         StringBuilder b = new StringBuilder(32);
         b.append("W/\"");
 
@@ -140,11 +174,34 @@ public class EtagUtil
     }
 
     /**
-     * Test a match of an etag against an etagWithOptionalSuffix
+     * Test if the given Etag is considered weak.
+     *
+     * @param etag the etag to test
+     * @return true if weak.
+     */
+    public static boolean isWeak(String etag)
+    {
+        return etag.startsWith("W/");
+    }
+
+    /**
+     * Test if the given Etag is considered strong (not weak).
+     *
+     * @param etag the etag to test
+     * @return true if strong (not weak).
+     */
+    public static boolean isStrong(String etag)
+    {
+        return !isWeak(etag);
+    }
+
+    /**
+     * Test a match of an etag against an etagWithOptionalSuffix.
      *
      * @param etag An etag without a compression suffix
      * @param etagWithOptionalSuffix An etag optionally with a compression suffix.
      * @return True if the tags are equal.
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc9110#section-8.8.3.2">RFC9110: Section 8.8.3.2 - Etag Comparison</a>.
      */
     public static boolean match(String etag, String etagWithOptionalSuffix)
     {

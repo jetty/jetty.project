@@ -404,7 +404,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
             _lastAccessed = Instant.now();
 
-            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtil.calcWeakEtag(resource.getPath())) : null;
+            _etag = CachedContentFactory.this._etags ? EtagUtil.createWeakEtagField(resource) : null;
 
             if (precompressedResources != null)
             {
@@ -445,6 +445,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public String getETagValue()
         {
+            if (_etag == null)
+                return null;
             return _etag.getValue();
         }
 
@@ -604,7 +606,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _content = content;
             _precompressedContent = precompressedContent;
 
-            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtil.calcWeakEtag(_content.getResource().getPath(), format.getEtagSuffix())) : null;
+            _etag = (CachedContentFactory.this._etags) ? EtagUtil.createWeakEtagField(_content.getResource(), format.getEtagSuffix()) : null;
         }
 
         public boolean isValid()

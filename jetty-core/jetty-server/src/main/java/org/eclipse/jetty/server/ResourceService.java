@@ -348,28 +348,31 @@ public class ResourceService
             if (_etags)
             {
                 String etag = content.getETagValue();
-                if (ifm != null)
+                if (etag != null)
                 {
-                    String matched = matchEtag(etag, ifm);
-                    if (matched == null)
+                    if (ifm != null)
                     {
-                        writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
-                        return true;
-                    }
-                }
-
-                if (ifnm != null && etag != null)
-                {
-                    String matched = matchEtag(etag, ifnm);
-                    if (matched != null)
-                    {
-                        response.getHeaders().put(HttpHeader.ETAG, matched);
-                        writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                        return true;
+                        String matched = matchEtag(etag, ifm);
+                        if (matched == null)
+                        {
+                            writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                            return true;
+                        }
                     }
 
-                    // If etag requires content to be served, then do not check if-modified-since
-                    return false;
+                    if (ifnm != null)
+                    {
+                        String matched = matchEtag(etag, ifnm);
+                        if (matched != null)
+                        {
+                            response.getHeaders().put(HttpHeader.ETAG, matched);
+                            writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                            return true;
+                        }
+
+                        // If etag requires content to be served, then do not check if-modified-since
+                        return false;
+                    }
                 }
             }
 
@@ -422,22 +425,18 @@ public class ResourceService
             return null;
         }
 
-        if (requestEtag.contains(","))
+        // Per https://www.rfc-editor.org/rfc/rfc9110#section-8.8.3
+        // An Etag header field value can contain a "," (comma) within itself.
+        //   If-Match: W/"abc,xyz", "123456"
+        // This means we have to parse with QuotedCSV all the time, as we cannot just
+        // test for the existence of a "," (comma) in the value to know if it's delimited or not
+        QuotedCSV quoted = new QuotedCSV(true, requestEtag);
+        for (String tag : quoted)
         {
-            // this is a CSV list of tags
-            QuotedCSV quoted = new QuotedCSV(true, requestEtag);
-            for (String tag : quoted)
+            if (EtagUtil.match(contentETag, tag))
             {
-                if (EtagUtil.match(contentETag, tag))
-                {
-                    return tag;
-                }
+                return tag;
             }
-        }
-        // A single tag
-        else if (EtagUtil.match(contentETag, requestEtag))
-        {
-            return requestEtag;
         }
 
         // no match
