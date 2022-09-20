@@ -95,6 +95,29 @@ public class FileIDTest
         }
     }
 
+    public static Stream<Arguments> fileNameSource()
+    {
+        return Stream.of(
+            Arguments.of(null, ""),
+            Arguments.of(URI.create("file:/"), ""),
+            Arguments.of(URI.create("file:///"), ""),
+            Arguments.of(URI.create("file:zed/"), ""),
+            Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
+            Arguments.of(URI.create("file:///path/to/dir/"), ""),
+            Arguments.of(URI.create("http://eclipse.org/jetty/"), ""),
+            Arguments.of(URI.create("http://eclipse.org/jetty/index.html"), "index.html"),
+            Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fileNameSource")
+    public void testGetFileName(URI uri, String expected)
+    {
+        String actual = FileID.getFileName(uri);
+        assertThat(actual, is(expected));
+    }
+
     public static Stream<Arguments> hasNamedPathSegmentTrueCases()
     {
         return Stream.of(
