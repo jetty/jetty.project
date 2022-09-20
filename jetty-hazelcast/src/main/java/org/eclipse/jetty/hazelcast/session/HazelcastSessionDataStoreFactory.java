@@ -208,7 +208,7 @@ public class HazelcastSessionDataStoreFactory
 
     /**
      * @param configurationLocation the location of the XML Hazelcast configuration file to load.
-     *                              Depending on whether {@link #setOnlyClient(boolean)} is set to <code>true</code>
+     *                              Depending on whether {@link #setOnlyClient(boolean)} is set to {@code true}
      *                              or not, this will be used to configure either a Hazelcast client or a Hazelcast server.
      *                              This parameter is mutually exclusive with {@link #setClientConfig(ClientConfig)} and {@link #setServerConfig(Config)}.
      */
@@ -274,7 +274,7 @@ public class HazelcastSessionDataStoreFactory
 
     /**
      * @param clientConfig the client configuration to use to connect to Hazelcast.
-     *                     Only used if {@link #setOnlyClient(boolean)} is set to <code>true</code>
+     *                     Only used if {@link #setOnlyClient(boolean)} is set to {@code true}.
      *                     Overrides any configuration set via {@link #setConfigurationLocation(String)}
      */
     public void setClientConfig(ClientConfig clientConfig)
@@ -289,7 +289,7 @@ public class HazelcastSessionDataStoreFactory
 
     /**
      * @param serverConfig the server configuration to use to configure the embedded Hazelcast cluster.
-     *                     Only used if {@link #setOnlyClient(boolean)} is set to <code>false</code>
+     *                     Only used if {@link #setOnlyClient(boolean)} is set to {@code false}.
      *                     Overrides any configuration set via {@link #setConfigurationLocation(String)}
      */
     public void setServerConfig(Config serverConfig)
