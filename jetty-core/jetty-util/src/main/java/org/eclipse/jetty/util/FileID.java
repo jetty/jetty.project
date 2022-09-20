@@ -128,6 +128,54 @@ public class FileID
     }
 
     /**
+     * Test if Path matches any of the indicated extensions.
+     *
+     * @param path the Path to test
+     * @param extensions the list of extensions (all lowercase, with preceding {@code .} dot)
+     * @return true if Path is a file, and has an extension, and it matches any of the indicated extensions
+     */
+    public static boolean isExtension(Path path, String... extensions)
+    {
+        return matchesExtension(getExtension(path), extensions);
+    }
+
+    /**
+     * Test if URI matches any of the indicated extensions.
+     *
+     * @param uri the URI to test
+     * @param extensions the list of extensions (all lowercase, with preceding {@code .} dot)
+     * @return true if URI has an extension, and it matches any of the indicated extensions
+     */
+    public static boolean isExtension(URI uri, String... extensions)
+    {
+        return matchesExtension(getExtension(uri), extensions);
+    }
+
+    /**
+     * Test if filename matches any of the indicated extensions.
+     *
+     * @param filename the filename to test
+     * @param extensions the list of extensions (all lowercase, with preceding {@code .} dot)
+     * @return true if filename has an extension, and it matches any of the indicated extensions
+     */
+    public static boolean isExtension(String filename, String... extensions)
+    {
+        return matchesExtension(getExtension(filename), extensions);
+    }
+
+    private static boolean matchesExtension(String ext, String... extensions)
+    {
+        if (ext == null)
+            return false;
+        for (String extension : extensions)
+        {
+            if (ext.equals(extension))
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * Does the provided path have a directory segment with the given name.
      *
      * @param path the path to search
@@ -159,10 +207,7 @@ public class FileID
      */
     public static boolean isArchive(Path path)
     {
-        String ext = getExtension(path);
-        if (ext == null)
-            return false;
-        return (ext.equals(".jar") || ext.equals(".war") || ext.equals(".zip"));
+        return isExtension(path, ".jar", ".war", ".zip");
     }
 
     /**
@@ -174,10 +219,7 @@ public class FileID
      */
     public static boolean isArchive(String filename)
     {
-        String ext = getExtension(filename);
-        if (ext == null)
-            return false;
-        return (ext.equals(".jar") || ext.equals(".war") || ext.equals(".zip"));
+        return isExtension(filename, ".jar", ".war", ".zip");
     }
 
     /**
@@ -189,10 +231,7 @@ public class FileID
      */
     public static boolean isArchive(URI uri)
     {
-        String ext = getExtension(uri);
-        if (ext == null)
-            return false;
-        return (ext.equals(".jar") || ext.equals(".war") || ext.equals(".zip"));
+        return isExtension(uri, ".jar", ".war", ".zip");
     }
 
     /**
@@ -204,10 +243,7 @@ public class FileID
      */
     public static boolean isLibArchive(Path path)
     {
-        String ext = getExtension(path);
-        if (ext == null)
-            return false;
-        return (ext.equals(".jar") || ext.equals(".zip"));
+        return isExtension(path, ".jar", ".zip");
     }
 
     /**
@@ -219,10 +255,7 @@ public class FileID
      */
     public static boolean isLibArchive(String filename)
     {
-        String ext = getExtension(filename);
-        if (ext == null)
-            return false;
-        return (ext.equals(".jar") || ext.equals(".zip"));
+        return isExtension(filename, ".jar", ".zip");
     }
 
     /**
@@ -234,10 +267,7 @@ public class FileID
      */
     public static boolean isLibArchive(URI uri)
     {
-        String ext = getExtension(uri);
-        if (ext == null)
-            return false;
-        return (ext.equals(".jar") || ext.equals(".zip"));
+        return isExtension(uri, ".jar", ".zip");
     }
 
     /**
@@ -323,7 +353,7 @@ public class FileID
      */
     public static boolean isJavaArchive(URI uri)
     {
-        return ".jar".equals(getExtension(uri));
+        return isExtension(uri, ".jar");
     }
 
     /**
@@ -334,7 +364,7 @@ public class FileID
      */
     public static boolean isJavaArchive(Path path)
     {
-        return ".jar".equals(getExtension(path));
+        return isExtension(path, ".jar");
     }
 
     /**
@@ -345,7 +375,7 @@ public class FileID
      */
     public static boolean isJavaArchive(String filename)
     {
-        return ".jar".equals(getExtension(filename));
+        return isExtension(filename, ".jar");
     }
 
     /**
@@ -418,7 +448,7 @@ public class FileID
             return false;
         if (!hasNamedPathSegment(path, "META-INF"))
             return false;
-        return ".tld".equals(getExtension(path));
+        return isExtension(path, ".tld");
     }
 
     /**
@@ -429,7 +459,7 @@ public class FileID
      */
     public static boolean isWebArchive(Path path)
     {
-        return ".war".equals(getExtension(path));
+        return isExtension(path, ".war");
     }
 
     /**
@@ -440,7 +470,7 @@ public class FileID
      */
     public static boolean isWebArchive(URI uri)
     {
-        return ".war".equals(getExtension(uri));
+        return isExtension(uri, ".war");
     }
 
     /**
@@ -451,7 +481,7 @@ public class FileID
      */
     public static boolean isWebArchive(String filename)
     {
-        return ".war".equals(getExtension(filename));
+        return isExtension(filename, ".war");
     }
 
     /**
@@ -462,7 +492,7 @@ public class FileID
      */
     public static boolean isXml(Path path)
     {
-        return ".xml".equals(getExtension(path));
+        return isExtension(path, ".xml");
     }
 
     /**
@@ -473,28 +503,6 @@ public class FileID
      */
     public static boolean isXml(String filename)
     {
-        return ".xml".equals(getExtension(filename));
-    }
-
-    /**
-     * Is the Path a file that ends in ZIP?
-     *
-     * @param path the path to test
-     * @return true if a .zip, false otherwise
-     */
-    public static boolean isZip(Path path)
-    {
-        return ".zip".equals(getExtension(path));
-    }
-
-    /**
-     * Is the Path a file that ends in ZIP?
-     *
-     * @param filename the filename to test
-     * @return true if a .zip, false otherwise
-     */
-    public static boolean isZip(String filename)
-    {
-        return ".zip".equals(getExtension(filename));
+        return isExtension(filename, ".xml");
     }
 }

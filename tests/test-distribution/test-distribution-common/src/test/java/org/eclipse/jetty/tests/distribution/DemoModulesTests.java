@@ -70,12 +70,12 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-            assertEquals(0, runConfig.getExitValue());
+            assertEquals(0, runConfig.getExitValue(), "Exit value");
 
             try (JettyHomeTester.Run runListConfig = distribution.start("--list-config"))
             {
                 assertTrue(runListConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
-                assertEquals(0, runListConfig.getExitValue());
+                assertEquals(0, runListConfig.getExitValue(), "Exit value");
                 // Example of what we expect
                 // jetty.webapp.addServerClasses = org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
                 String addServerKey = " jetty.webapp.addServerClasses = ";

@@ -44,7 +44,6 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -246,7 +245,6 @@ public class FileSystemResourceTest
     }
 
     @Test
-    @Disabled("Will be fixed in PR #8436")
     public void testAccessUniCodeFile() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -263,30 +261,34 @@ public class FileSystemResourceTest
 
         Resource base = ResourceFactory.root().newResource(subdir);
 
-        // Cannot use decoded Unicode
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("swedish-å.txt"));
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("swedish-ä.txt"));
-        assertThrows(IllegalArgumentException.class, () -> base.resolve("swedish-ö.txt"));
+        // Use decoded Unicode
+        Resource refD1 = base.resolve("swedish-å.txt");
+        Resource refD2 = base.resolve("swedish-ä.txt");
+        Resource refD3 = base.resolve("swedish-ö.txt");
+
+        assertTrue(refD1.exists(), "Ref D1 exists");
+        assertTrue(refD2.exists(), "Ref D2 exists");
+        assertTrue(refD3.exists(), "Ref D3 exists");
 
         // Use encoded Unicode
-        Resource refA1 = base.resolve("swedish-%C3%A5.txt"); // swedish-å.txt
-        Resource refA2 = base.resolve("swedish-%C3%A4.txt"); // swedish-ä.txt
-        Resource refO1 = base.resolve("swedish-%C3%B6.txt"); // swedish-ö.txt
+        Resource refE1 = base.resolve("swedish-%C3%A5.txt"); // swedish-å.txt
+        Resource refE2 = base.resolve("swedish-%C3%A4.txt"); // swedish-ä.txt
+        Resource refE3 = base.resolve("swedish-%C3%B6.txt"); // swedish-ö.txt
 
-        assertThat("Ref A1 exists", refA1.exists(), is(true));
-        assertThat("Ref A2 exists", refA2.exists(), is(true));
-        assertThat("Ref O1 exists", refO1.exists(), is(true));
+        assertTrue(refE1.exists(), "Ref E1 exists");
+        assertTrue(refE2.exists(), "Ref E2 exists");
+        assertTrue(refE3.exists(), "Ref E3 exists");
 
         if (LINUX.isCurrentOs())
         {
-            assertThat("Ref A1 alias", refA1.isAlias(), is(false));
-            assertThat("Ref A2 alias", refA2.isAlias(), is(false));
-            assertThat("Ref O1 alias", refO1.isAlias(), is(false));
+            assertThat("Ref A1 alias", refE1.isAlias(), is(false));
+            assertThat("Ref A2 alias", refE2.isAlias(), is(false));
+            assertThat("Ref O1 alias", refE3.isAlias(), is(false));
         }
 
-        assertThat("Ref A1 contents", toString(refA1), is("hi a-with-circle"));
-        assertThat("Ref A2 contents", toString(refA2), is("hi a-with-two-dots"));
-        assertThat("Ref O1 contents", toString(refO1), is("hi o-with-two-dots"));
+        assertThat("Ref A1 contents", toString(refE1), is("hi a-with-circle"));
+        assertThat("Ref A2 contents", toString(refE2), is("hi a-with-two-dots"));
+        assertThat("Ref O1 contents", toString(refE3), is("hi o-with-two-dots"));
     }
 
     /**

@@ -281,7 +281,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         {
             for (File f : file.listFiles())
             {
-                if (f.getName().endsWith(".jar") && f.isFile())
+                if (FileID.isJavaArchive(f.getName()) && f.isFile())
                 {
                     resources.add(Resource.newResource(f));
                 }
@@ -289,7 +289,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                 {
                     for (File f2 : file.listFiles())
                     {
-                        if (f2.getName().endsWith(".jar") && f2.isFile())
+                        if (FileID.isJavaArchive(f2.getName()) && f2.isFile())
                         {
                             resources.add(Resource.newResource(f));
                         }

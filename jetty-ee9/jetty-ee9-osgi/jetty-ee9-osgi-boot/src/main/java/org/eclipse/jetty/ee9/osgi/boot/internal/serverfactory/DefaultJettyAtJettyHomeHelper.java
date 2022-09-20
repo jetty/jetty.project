@@ -313,10 +313,10 @@ public class DefaultJettyAtJettyHomeHelper
             URL u = f.toURI().toURL();
             u = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(u);
             Resource res = Resource.newResource(u);
-            String s = res.toString();
+            URI ruri = res.getURI();
 
             //check if it is an unarchived bundle
-            if (s.endsWith(".jar") && s.startsWith("file:"))
+            if ("file".equalsIgnoreCase(ruri.getScheme()) && FileID.isJavaArchive(ruri))
                 res = JarResource.newJarResource(res);
 
             //if looking for a directory 

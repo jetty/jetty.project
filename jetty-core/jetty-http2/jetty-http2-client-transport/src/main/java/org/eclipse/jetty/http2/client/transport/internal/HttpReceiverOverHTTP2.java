@@ -16,7 +16,6 @@ package org.eclipse.jetty.http2.client.transport.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpChannel;
@@ -49,7 +48,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
 
-    private final AtomicBoolean notifySuccess = new AtomicBoolean();
+    private volatile boolean notifySuccess;
 
     public HttpReceiverOverHTTP2(HttpChannel channel)
     {
@@ -73,7 +72,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (exchange == null)
             return;
 
-        if (notifySuccess.get())
+        if (notifySuccess)
             responseSuccess(exchange);
         else
             getHttpChannel().getStream().demand();
@@ -124,7 +123,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     upgrade(upgrader, httpResponse, endPoint);
             }
 
-            notifySuccess.set(frame.isEndStream());
+            notifySuccess = frame.isEndStream();
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
@@ -149,6 +148,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
+
+        // TODO: this event may be notified before all DATA frames have been consumed.
         responseSuccess(exchange);
     }
 
@@ -213,13 +214,16 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             ByteBuffer byteBuffer = data.frame().getData();
             if (byteBuffer.hasRemaining())
             {
-                notifySuccess.set(data.frame().isEndStream());
+                if (data.frame().isEndStream())
+                    notifySuccess = true;
+
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
                     if (responseFailure(x))
                         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
                 });
+
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
                 if (proceed)
                 {
@@ -272,5 +276,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     {
         responseFailure(failure);
         callback.succeeded();
+    }
+
+    @Override
+    protected void reset()
+    {
+        super.reset();
+        notifySuccess = false;
     }
 }

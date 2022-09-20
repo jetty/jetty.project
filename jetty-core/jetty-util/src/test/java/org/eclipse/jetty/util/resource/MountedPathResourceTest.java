@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class JarResourceTest
+public class MountedPathResourceTest
 {
     public WorkDir workDir;
 
