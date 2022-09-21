@@ -109,6 +109,9 @@ public final class EtagUtils
      */
     public static String computeWeakEtag(Resource resource, String etagSuffix)
     {
+        if (resource == null || !resource.exists() || resource.isDirectory())
+            return null;
+
         Path path = resource.getPath();
         if (path != null)
         {
