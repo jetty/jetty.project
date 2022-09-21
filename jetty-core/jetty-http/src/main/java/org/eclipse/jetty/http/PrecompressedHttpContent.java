@@ -24,16 +24,21 @@ public class PrecompressedHttpContent implements HttpContent
     private final HttpContent _content;
     private final HttpContent _precompressedContent;
     private final CompressedContentFormat _format;
+    private final HttpField _etag;
 
     public PrecompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
     {
+        if (content == null)
+            throw new IllegalArgumentException("Null HttpContent");
+        if (precompressedContent == null)
+            throw new IllegalArgumentException("Null Precompressed HttpContent");
+        if (format == null)
+            throw new IllegalArgumentException("Null Compressed Content Format");
+
         _content = content;
         _precompressedContent = precompressedContent;
         _format = format;
-        if (_precompressedContent == null || _format == null)
-        {
-            throw new NullPointerException("Missing compressed content and/or format");
-        }
+        _etag = EtagUtils.createWeakEtagField(_content.getResource(), _format.getEtagSuffix());
     }
 
     @Override
@@ -45,13 +50,13 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public HttpField getETag()
     {
-        return new HttpField(HttpHeader.ETAG, getETagValue());
+        return _etag;
     }
 
     @Override
     public String getETagValue()
     {
-        return EtagUtils.computeWeakEtag(_content.getResource().getPath(), _format.getEtagSuffix());
+        return getETag().getValue();
     }
 
     @Override
