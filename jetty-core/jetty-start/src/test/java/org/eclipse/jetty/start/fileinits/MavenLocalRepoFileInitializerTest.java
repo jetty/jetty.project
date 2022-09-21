@@ -200,6 +200,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
+    @Tag("external")
     public void testDownloadSnapshotRepo()
         throws Exception
     {
@@ -228,6 +229,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
+    @Tag("external")
     public void testDownloadSnapshotRepoWithExtractDeep()
         throws Exception
     {
@@ -245,6 +247,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
+    @Tag("external")
     public void testDownloadSnapshotRepoWithExtractDefault()
         throws Exception
     {
