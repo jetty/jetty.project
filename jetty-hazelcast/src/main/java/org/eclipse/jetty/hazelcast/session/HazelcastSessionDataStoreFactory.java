@@ -59,6 +59,10 @@ public class HazelcastSessionDataStoreFactory
 
     private String addresses;
 
+    private ClientConfig clientConfig;
+
+    private Config serverConfig;
+
     public boolean isUseQueries()
     {
         return useQueries;
@@ -84,7 +88,14 @@ public class HazelcastSessionDataStoreFactory
                     ClientConfig config;
                     if (StringUtil.isEmpty(configurationLocation))
                     {
-                        config = new ClientConfig();
+                        if (clientConfig == null)
+                        {
+                            config = new ClientConfig();
+                        }
+                        else
+                        {
+                            config = clientConfig;
+                        }
 
                         if (addresses != null && !addresses.isEmpty())
                         {
@@ -98,7 +109,15 @@ public class HazelcastSessionDataStoreFactory
                     }
                     else
                     {
-                        config = new XmlClientConfigBuilder(configurationLocation).build();
+                        if (clientConfig == null)
+                        {
+                            config = new XmlClientConfigBuilder(configurationLocation).build();
+                        }
+                        else
+                        {
+                            LOG.warn("Both configurationLocation and clientConfig are set, using clientConfig");
+                            config = clientConfig;
+                        }
                         if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
                             SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
                             LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
@@ -114,7 +133,14 @@ public class HazelcastSessionDataStoreFactory
                         SerializerConfig sc = new SerializerConfig()
                             .setImplementation(new SessionDataSerializer())
                             .setTypeClass(SessionData.class);
-                        config = new Config();
+                        if (serverConfig == null)
+                        {
+                            config = new Config();
+                        }
+                        else
+                        {
+                            config = serverConfig;
+                        }
                         config.getSerializationConfig().addSerializerConfig(sc);
                         // configure a default Map if null
                         if (mapConfig == null)
@@ -131,7 +157,15 @@ public class HazelcastSessionDataStoreFactory
                     }
                     else
                     {
-                        config = new XmlConfigBuilder(configurationLocation).build();
+                        if (serverConfig == null)
+                        {
+                            config = new XmlConfigBuilder(configurationLocation).build();
+                        }
+                        else
+                        {
+                            LOG.warn("Both configurationLocation and serverConfig are set, using serverConfig");
+                            config = serverConfig;
+                        }
                         if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
                             SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
                             LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
@@ -160,7 +194,7 @@ public class HazelcastSessionDataStoreFactory
 
     /**
      * @param onlyClient if <code>true</code> the session manager will only connect to an external Hazelcast instance
-     * and not use this JVM to start an Hazelcast instance
+     * and not use this JVM to start a Hazelcast instance
      */
     public void setOnlyClient(boolean onlyClient)
     {
@@ -172,6 +206,12 @@ public class HazelcastSessionDataStoreFactory
         return configurationLocation;
     }
 
+    /**
+     * @param configurationLocation the location of the XML Hazelcast configuration file to load.
+     *                              Depending on whether {@link #setOnlyClient(boolean)} is set to {@code true}
+     *                              or not, this will be used to configure either a Hazelcast client or a Hazelcast server.
+     *                              This parameter is mutually exclusive with {@link #setClientConfig(ClientConfig)} and {@link #setServerConfig(Config)}.
+     */
     public void setConfigurationLocation(String configurationLocation)
     {
         this.configurationLocation = configurationLocation;
@@ -225,5 +265,35 @@ public class HazelcastSessionDataStoreFactory
     public void setAddresses(String addresses)
     {
         this.addresses = addresses;
+    }
+
+    public ClientConfig getClientConfig()
+    {
+        return clientConfig;
+    }
+
+    /**
+     * @param clientConfig the client configuration to use to connect to Hazelcast.
+     *                     Only used if {@link #setOnlyClient(boolean)} is set to {@code true}.
+     *                     Overrides any configuration set via {@link #setConfigurationLocation(String)}
+     */
+    public void setClientConfig(ClientConfig clientConfig)
+    {
+        this.clientConfig = clientConfig;
+    }
+
+    public Config getServerConfig()
+    {
+        return serverConfig;
+    }
+
+    /**
+     * @param serverConfig the server configuration to use to configure the embedded Hazelcast cluster.
+     *                     Only used if {@link #setOnlyClient(boolean)} is set to {@code false}.
+     *                     Overrides any configuration set via {@link #setConfigurationLocation(String)}
+     */
+    public void setServerConfig(Config serverConfig)
+    {
+        this.serverConfig = serverConfig;
     }
 }
