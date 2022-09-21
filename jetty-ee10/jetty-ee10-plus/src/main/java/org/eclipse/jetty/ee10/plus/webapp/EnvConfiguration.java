@@ -101,7 +101,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/jetty-env.xml
                 // TODO: should also never return from a META-INF/versions/#/WEB-INF/jetty-env.xml location
                 org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.resolve("jetty-env.xml");
-                if (jettyEnv.exists())
+                if (jettyEnv != null && !jettyEnv.isDirectory())
                 {
                     jettyEnvXmlResource = jettyEnv;
                 }

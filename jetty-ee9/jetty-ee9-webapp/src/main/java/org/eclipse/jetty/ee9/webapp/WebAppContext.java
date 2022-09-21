@@ -817,7 +817,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Can return from WEB-INF/lib/foo.jar!/WEB-INF
         // Can also never return from a META-INF/versions/#/WEB-INF location
         Resource webInf = super.getBaseResource().resolve("WEB-INF/");
-        if (!webInf.exists() || !webInf.isDirectory())
+        if (webInf == null || !webInf.isDirectory())
             return null;
 
         return webInf;

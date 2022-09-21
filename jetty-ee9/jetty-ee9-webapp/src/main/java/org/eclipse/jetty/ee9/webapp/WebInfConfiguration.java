@@ -66,12 +66,12 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             // Look for classes directory
             Resource classes = webInf.resolve("classes/");
-            if (classes.exists())
+            if (classes != null && classes.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
             Resource lib = webInf.resolve("lib/");
-            if (lib.exists() || lib.isDirectory())
+            if (lib != null && lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
     }

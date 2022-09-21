@@ -23,13 +23,9 @@ import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlParser;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,16 +33,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(WorkDirExtension.class)
 public class TestAnnotationDecorator
 {
     public WorkDir workDir;
 
     public class TestWebDescriptor extends WebDescriptor
     {
-        public TestWebDescriptor(Resource resource, MetaData.Complete metadata)
+        public TestWebDescriptor(Path xml, MetaData.Complete metadata)
         {
-            super(resource);
+            super(xml);
             _metaDataComplete = metadata;
         }
 
@@ -86,9 +81,9 @@ public class TestAnnotationDecorator
     @Test
     public void testAnnotationDecorator() throws Exception
     {
-        Path dummyXml = workDir.getEmptyPathDir().resolve("dummy.xml");
-        Files.createFile(dummyXml);
-        Resource dummyXmlResource = ResourceFactory.root().newResource(dummyXml);
+        Path docroot = workDir.getEmptyPathDir();
+        Path dummyDescriptor = docroot.resolve("dummy.xml");
+        Files.createFile(dummyDescriptor);
 
         assertThrows(NullPointerException.class, () ->
         {
@@ -108,7 +103,7 @@ public class TestAnnotationDecorator
         context.removeAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
 
         //test with BaseHolder metadata, should not introspect with metdata-complete==true
-        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyXmlResource, MetaData.Complete.True));
+        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyDescriptor, MetaData.Complete.True));
         assertTrue(context.getMetaData().isMetaDataComplete());
         ServletHolder holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, ""));
         holder.setHeldClass(ServletE.class);
@@ -124,7 +119,7 @@ public class TestAnnotationDecorator
         context.removeAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
 
         //test with BaseHolder metadata, should introspect with metadata-complete==false
-        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyXmlResource, MetaData.Complete.False));
+        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyDescriptor, MetaData.Complete.False));
         DecoratedObjectFactory.associateInfo(holder);
         decorator = new AnnotationDecorator(context);
         decorator.decorate(servlet);

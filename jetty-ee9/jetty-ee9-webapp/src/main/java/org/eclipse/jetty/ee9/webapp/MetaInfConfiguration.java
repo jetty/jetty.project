@@ -374,11 +374,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @param target the target resource to scan for
      * @param cache the resource cache
-     * @throws Exception if unable to scan for resources
      */
     public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
-        throws Exception
     {
+        // Resource target does not exist
+        if (target == null)
+            return;
+
         Resource resourcesDir = null;
         if (cache != null && cache.containsKey(target))
         {
@@ -409,7 +411,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
 
-            if (cache != null)
+            if ((resourcesDir != null) && (cache != null))
             {
                 Resource old = cache.putIfAbsent(target, resourcesDir);
                 if (old != null)
@@ -439,7 +441,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyResource(Resource resourcesDir)
     {
-        return !resourcesDir.exists() || !resourcesDir.isDirectory();
+        return resourcesDir == null || !resourcesDir.isDirectory();
     }
 
     /**
@@ -695,7 +697,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists())
             return null;
 
-        Resource webInfLib = webInf.resolve("/lib");
+        Resource webInfLib = webInf.resolve("lib");
+
+        if (webInfLib == null || !webInfLib.isDirectory())
+            return List.of();
 
         return webInfLib.list().stream()
             .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
@@ -742,9 +747,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = webInf.resolve("classes/");
-            if (classes.exists())
-                return classes;
+            return webInf.resolve("classes/");
         }
         return null;
     }

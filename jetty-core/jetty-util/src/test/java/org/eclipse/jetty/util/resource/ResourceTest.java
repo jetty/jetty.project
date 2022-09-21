@@ -339,21 +339,17 @@ public class ResourceTest
     }
 
     @Test
-    public void testResourceExtraSlashStripping()
+    public void testResourceExtraSlashStripping(WorkDir workDir) throws IOException
     {
-        Resource ra = resourceFactory.newResource("file:/a/b/c");
+        Path docRoot = workDir.getEmptyPathDir();
+        Files.createDirectories(docRoot.resolve("d/e/f"));
+
+        Resource ra = resourceFactory.newResource(docRoot);
         Resource rb = ra.resolve("///");
         Resource rc = ra.resolve("///d/e///f");
 
         assertEquals(ra, rb);
-        assertEquals(rc.getURI().getPath(), "/a/b/c/d/e/f");
-
-        Resource rd = resourceFactory.newResource("file:///a/b/c");
-        Resource re = rd.resolve("///");
-        Resource rf = rd.resolve("///d/e///f");
-
-        assertEquals(rd, re);
-        assertEquals(rf.getURI().getPath(), "/a/b/c/d/e/f");
+        assertEquals(rc.getURI().getPath(), docRoot.toUri().getPath() + "d/e/f/");
     }
 
     @Test

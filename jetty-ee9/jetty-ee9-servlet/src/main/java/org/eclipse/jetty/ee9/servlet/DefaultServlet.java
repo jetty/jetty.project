@@ -457,7 +457,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if (_baseResource != null)
             {
                 r = _baseResource.resolve(subUriPath);
-                if (!_contextHandler.checkAlias(subUriPath, r))
+                if (r != null && !_contextHandler.checkAlias(subUriPath, r))
                     r = null;
             }
             else if (_servletContext instanceof ContextHandler.APIContext)

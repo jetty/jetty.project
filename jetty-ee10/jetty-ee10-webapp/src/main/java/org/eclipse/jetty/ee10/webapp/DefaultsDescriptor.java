@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import java.nio.file.Path;
+
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -20,7 +22,16 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class DefaultsDescriptor extends WebDescriptor
 {
+    /**
+     * @deprecated use {@link DefaultsDescriptor(Path)} instead
+     */
+    @Deprecated
     public DefaultsDescriptor(Resource xml)
+    {
+        super(xml);
+    }
+
+    public DefaultsDescriptor(Path xml)
     {
         super(xml);
     }

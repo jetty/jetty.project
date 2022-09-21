@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -31,9 +30,9 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class QuickStartGenerator
 {
-    private File quickstartXml;
-    private MavenWebAppContext webApp;
-    private File webAppPropsFile;
+    private final Path quickstartXml;
+    private final MavenWebAppContext webApp;
+    private Path webAppPropsFile;
     private String contextXml;
     private boolean prepared = false;
     private Server server;
@@ -43,10 +42,10 @@ public class QuickStartGenerator
      * @param quickstartXml the file to generate quickstart into
      * @param webApp the webapp for which to generate quickstart
      */
-    public QuickStartGenerator(File quickstartXml, MavenWebAppContext webApp)
+    public QuickStartGenerator(Path quickstartXml, MavenWebAppContext webApp) throws Exception
     {
         this.quickstartXml = quickstartXml;
-        this.webApp = webApp;
+        this.webApp = webApp == null ? new MavenWebAppContext() : webApp;
     }
 
     /**
@@ -60,7 +59,7 @@ public class QuickStartGenerator
     /**
      * @return the quickstartXml
      */
-    public File getQuickstartXml()
+    public Path getQuickstartXml()
     {
         return quickstartXml;
     }
@@ -81,7 +80,7 @@ public class QuickStartGenerator
         this.server = server;
     }
 
-    public File getWebAppPropsFile()
+    public Path getWebAppPropsFile()
     {
         return webAppPropsFile;
     }
@@ -89,7 +88,7 @@ public class QuickStartGenerator
     /**
      * @param webAppPropsFile properties file describing the webapp
      */
-    public void setWebAppPropsFile(File webAppPropsFile)
+    public void setWebAppPropsFile(Path webAppPropsFile)
     {
         this.webAppPropsFile = webAppPropsFile;
     }
@@ -115,13 +114,10 @@ public class QuickStartGenerator
     private void prepareWebApp()
         throws Exception
     {
-        if (webApp == null)
-            webApp = new MavenWebAppContext();
-
         //set the webapp up to do very little other than generate the quickstart-web.xml
         webApp.addConfiguration(new MavenQuickStartConfiguration());
         webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
-        webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, ResourceFactory.of(webApp).newResource(quickstartXml.toPath()));
+        webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, quickstartXml);
         webApp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "o");
         webApp.setCopyWebDir(false);
         webApp.setCopyWebInf(false);
@@ -175,7 +171,7 @@ public class QuickStartGenerator
 
             //save config of the webapp BEFORE we stop
             if (webAppPropsFile != null)
-                WebAppPropertyConverter.toProperties(webApp, webAppPropsFile, contextXml);
+                WebAppPropertyConverter.toProperties(webApp, webAppPropsFile.toFile(), contextXml);
         }
         finally
         {

@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -103,7 +104,16 @@ public class WebDescriptor extends Descriptor
         }
     }
 
+    /**
+     * @deprecated use {@link WebDescriptor(Path)} instead
+     */
+    @Deprecated
     public WebDescriptor(Resource xml)
+    {
+        super(xml);
+    }
+
+    public WebDescriptor(Path xml)
     {
         super(xml);
     }

@@ -87,7 +87,10 @@ class ResourceFactoryInternals
         {
             FileSystemPool.Mount mount = mountIfNeeded(uri);
             if (mount != null)
+            {
+                // we got a mount, remember it.
                 _mounts.add(mount);
+            }
             return Resource.create(uri);
         }
 

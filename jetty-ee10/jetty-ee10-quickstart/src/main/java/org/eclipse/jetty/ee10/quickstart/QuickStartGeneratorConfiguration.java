@@ -16,7 +16,9 @@ package org.eclipse.jetty.ee10.quickstart;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,7 +58,6 @@ import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlAppendable;
 import org.slf4j.Logger;
@@ -81,7 +82,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     protected final boolean _abort;
     protected String _originAttribute;
     protected int _count;
-    protected Resource _quickStartWebXml;
+    protected Path _quickStartWebXml;
    
     public QuickStartGeneratorConfiguration()
     {
@@ -114,12 +115,12 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         return _originAttribute;
     }
 
-    public Resource getQuickStartWebXml()
+    public Path getQuickStartWebXml()
     {
         return _quickStartWebXml;
     }
 
-    public void setQuickStartWebXml(Resource quickStartWebXml)
+    public void setQuickStartWebXml(Path quickStartWebXml)
     {
         _quickStartWebXml = quickStartWebXml;
     }
@@ -158,7 +159,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         webappAttr.put("metadata-complete", Boolean.toString(context.getMetaData().isMetaDataComplete()));
         webappAttr.put("version", major + "." + minor);
 
-        XmlAppendable out = new XmlAppendable(stream, "UTF-8");
+        XmlAppendable out = new XmlAppendable(stream, StandardCharsets.UTF_8);
         out.openTag("web-app", webappAttr);
         if (context.getDisplayName() != null)
             out.tag("display-name", context.getDisplayName());
@@ -812,7 +813,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
-        try (OutputStream os = Files.newOutputStream(_quickStartWebXml.getPath()))
+        try (OutputStream os = Files.newOutputStream(_quickStartWebXml))
         {
             generateQuickStartWebXml(context, os);
             LOG.info("Generated {}", _quickStartWebXml);

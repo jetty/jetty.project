@@ -19,7 +19,6 @@ import java.net.URI;
 import java.net.URL;
 
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -31,8 +30,6 @@ import org.slf4j.LoggerFactory;
 public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
-
-    private ResourceFactory.Closeable _resourceFactory;
 
     public WebXmlConfiguration()
     {
@@ -49,7 +46,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
-            Resource dftResource = ResourceFactory.of(context).newSystemResource(defaultsDescriptor);
+            Resource dftResource = context.getResourceFactory().newSystemResource(defaultsDescriptor);
             if (dftResource == null)
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
@@ -59,8 +56,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     if (url != null)
                     {
                         URI uri = url.toURI();
-                        _resourceFactory = ResourceFactory.closeable();
-                        dftResource = _resourceFactory.newResource(uri);
+                        dftResource = context.getResourceFactory().newResource(uri);
                     }
                 }
                 if (dftResource == null)
@@ -106,7 +102,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (descriptor != null)
         {
             Resource web = context.newResource(descriptor);
-            if (web.exists() && !web.isDirectory())
+            if (web != null && !web.isDirectory())
                 return web;
         }
 
@@ -115,7 +111,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             // do web.xml file
             Resource web = webInf.resolve("web.xml");
-            if (web.exists())
+            if (web != null)
                 return web;
             if (LOG.isDebugEnabled())
                 LOG.debug("No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());
@@ -131,9 +127,6 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler)
                 context.getErrorHandler()).setErrorPages(null);
-
-        IO.close(_resourceFactory);
-        _resourceFactory = null;
 
         // TODO remove classpaths from classloader
     }
