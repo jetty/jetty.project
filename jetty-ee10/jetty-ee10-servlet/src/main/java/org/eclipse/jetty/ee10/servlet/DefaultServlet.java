@@ -40,6 +40,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
@@ -1011,6 +1013,48 @@ public class DefaultServlet extends HttpServlet
                         }
                     }
                 }
+            }
+        }
+
+        @Override
+        protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode)
+        {
+            writeHttpError(coreRequest, coreResponse, callback, statusCode, null, null);
+        }
+
+        @Override
+        protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, Throwable cause)
+        {
+            int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
+            String reason = null;
+            if (cause instanceof BadMessageException badMessageException)
+            {
+                statusCode = badMessageException.getCode();
+                reason = badMessageException.getReason();
+            }
+            writeHttpError(coreRequest, coreResponse, callback, statusCode, reason, cause);
+        }
+
+        @Override
+        protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String reason, Throwable cause)
+        {
+            HttpServletRequest request = getServletRequest(coreRequest);
+            HttpServletResponse response = getServletResponse(coreResponse);
+            try
+            {
+                // TODO: not sure if this is allowed here.
+                if (cause != null)
+                    request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, cause);
+                response.sendError(statusCode, reason);
+            }
+            catch (IOException e)
+            {
+                // TODO: Need a better exception?
+                throw new RuntimeException(e);
+            }
+            finally
+            {
+                callback.succeeded();
             }
         }
 

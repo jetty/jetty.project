@@ -39,6 +39,7 @@ import org.eclipse.jetty.ee9.nested.resource.RangeWriter;
 import org.eclipse.jetty.ee9.nested.resource.SeekableByteChannelRangeWriter;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -545,7 +546,7 @@ public class ResourceService
                         QuotedCSV quoted = new QuotedCSV(true, ifm);
                         for (String etagWithSuffix : quoted)
                         {
-                            if (CompressedContentFormat.tagEquals(etag, etagWithSuffix))
+                            if (EtagUtils.matches(etag, etagWithSuffix))
                             {
                                 match = true;
                                 break;
@@ -563,7 +564,7 @@ public class ResourceService
                 if (ifnm != null && etag != null)
                 {
                     // Handle special case of exact match OR gzip exact match
-                    if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
+                    if (EtagUtils.matches(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
                         sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, ifnm::toString);
                         return false;
@@ -573,7 +574,7 @@ public class ResourceService
                     QuotedCSV quoted = new QuotedCSV(true, ifnm);
                     for (String tag : quoted)
                     {
-                        if (CompressedContentFormat.tagEquals(etag, tag))
+                        if (EtagUtils.matches(etag, tag))
                         {
                             sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, tag::toString);
                             return false;

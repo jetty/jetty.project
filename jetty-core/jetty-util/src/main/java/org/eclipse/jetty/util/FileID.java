@@ -46,6 +46,25 @@ public class FileID
     }
 
     /**
+     * Get the last segment of the URI returning it as the filename
+     *
+     * @param uri the URI to look for the filename
+     * @return The last segment of the uri
+     */
+    public static String getFileName(URI uri)
+    {
+        if (uri == null)
+            return "";
+        String path = uri.getPath();
+        if (path == null || "/".equals(path))
+            return "";
+        int idx = path.lastIndexOf('/');
+        if (idx >= 0)
+            return path.substring(idx + 1);
+        return path;
+    }
+
+    /**
      * Retrieve the extension of a URI path.
      * This is the name of the last segment of the URI path with a substring
      * for the extension (if any), including the dot, lower-cased.

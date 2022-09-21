@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -405,7 +406,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
             _lastAccessed = Instant.now();
 
-            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, resource.getWeakETag()) : null;
+            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtils.computeWeakEtag(resource.getPath())) : null;
 
             if (precompressedResources != null)
             {
