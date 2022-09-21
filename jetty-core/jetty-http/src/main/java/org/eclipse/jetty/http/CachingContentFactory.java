@@ -304,17 +304,11 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
         public boolean isValid()
         {
-            if (_delegate.getResource() != null)
+            Instant lastModifiedTime = _delegate.getResource().lastModified();
+            if (lastModifiedTime.equals(_lastModifiedValue))
             {
-                if (!_delegate.getResource().exists())
-                    return false;
-
-                Instant lastModifiedTime = _delegate.getResource().lastModified();
-                if (lastModifiedTime.equals(_lastModifiedValue))
-                {
-                    _lastAccessed = NanoTime.now();
-                    return true;
-                }
+                _lastAccessed = NanoTime.now();
+                return true;
             }
             release();
             return false;
