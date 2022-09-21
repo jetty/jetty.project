@@ -27,8 +27,10 @@ public class XmlParserTest
     @Test
     public void testXmlParser() throws Exception
     {
-        XmlParser parser = new XmlParser(true);
-        URL url = XmlParserTest.class.getResource("configureWithAttr.xml");
+        // we want to parse a simple XML, no dtds, no xsds.
+        // just do it, without validation
+        XmlParser parser = new XmlParser(false);
+        URL url = XmlParserTest.class.getResource("configureSimple.xml");
         assertNotNull(url);
         XmlParser.Node testDoc = parser.parse(url.toString());
         String testDocStr = testDoc.toString().trim();
