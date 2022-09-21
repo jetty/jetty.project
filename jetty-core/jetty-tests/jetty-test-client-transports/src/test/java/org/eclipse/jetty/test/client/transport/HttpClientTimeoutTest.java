@@ -268,20 +268,18 @@ public class HttpClientTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsNoUnixDomain")
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
-        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         testConnectTimeoutFailsRequest(transport, true);
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsNoUnixDomain")
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
-        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         testConnectTimeoutFailsRequest(transport, false);
     }
 

@@ -122,7 +122,7 @@ public interface Stream
      * <p>Once the returned {@link Stream.Data} object indicates that the end
      * of the read side of the stream has been reached, further calls to this
      * method will return a {@link Stream.Data} object with the same indication,
-     * although the instance may be different).</p>
+     * although the instance may be different.</p>
      *
      * @return a {@link Stream.Data} object containing the DATA frame,
      * or null if no DATA frame is available
