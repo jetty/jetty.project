@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
-import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -28,8 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * HttpContent.ContentFactory implementation that wraps any other HttpContent.ContentFactory instance
@@ -44,8 +43,6 @@ import org.slf4j.LoggerFactory;
  */
 public class CachingContentFactory implements HttpContent.ContentFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CachingContentFactory.class);
-
     private final HttpContent.ContentFactory _authority;
     private final boolean _useFileMappedBuffer;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
@@ -184,7 +181,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         // Do not cache directories or files that are too big
         if (httpContent != null && !httpContent.getResource().isDirectory() && httpContent.getContentLengthValue() <= _maxCachedFileSize)
         {
-            httpContent = cachingHttpContent = new CachingHttpContent(path, null, httpContent);
+            httpContent = cachingHttpContent = new CachingHttpContent(path, httpContent);
             _cache.put(path, cachingHttpContent);
             _cachedSize.addAndGet(cachingHttpContent.calculateSize());
             shrinkCache();
@@ -195,42 +192,54 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     private class CachingHttpContent extends HttpContentWrapper
     {
         private final ByteBuffer _buffer;
-        private final FileTime _lastModifiedValue;
+        private final Instant _lastModifiedValue;
         private final String _cacheKey;
-        private final String _etag;
+        private final HttpField _etagField;
         private final long _contentLengthValue;
         private final Map<CompressedContentFormat, CachingHttpContent> _precompressedContents;
         private volatile long _lastAccessed;
 
-        private CachingHttpContent(String key, String precalculatedEtag, HttpContent httpContent) throws IOException
+        private CachingHttpContent(String key, HttpContent httpContent) throws IOException
+        {
+            this(key, httpContent, httpContent.getETagValue());
+        }
+
+        private CachingHttpContent(String key, HttpContent httpContent, String etagValue) throws IOException
         {
             super(httpContent);
 
-            if (httpContent.getResource() == null)
+            if (_delegate.getResource() == null)
                 throw new IllegalArgumentException("Null Resource");
-            if (!httpContent.getResource().exists())
-                throw new IllegalArgumentException("Resource doesn't exist: " + httpContent.getResource());
-            if (httpContent.getResource().isDirectory())
-                throw new IllegalArgumentException("Directory Resources not supported: " + httpContent.getResource());
+            if (!_delegate.getResource().exists())
+                throw new IllegalArgumentException("Resource doesn't exist: " + _delegate.getResource());
+            if (_delegate.getResource().isDirectory())
+                throw new IllegalArgumentException("Directory Resources not supported: " + _delegate.getResource());
+            if (_delegate.getResource().getPath() == null) // only required because we need the Path to access the mapped ByteBuffer or SeekableByteChannel.
+                throw new IllegalArgumentException("Resource not backed by Path not supported: " + _delegate.getResource());
 
             // Resources with negative length cannot be cached.
             // But allow resources with zero length.
-            long resourceSize = httpContent.getResource().length();
+            long resourceSize = _delegate.getResource().length();
             if (resourceSize < 0)
-                throw new IllegalArgumentException("Resource with negative size: " + httpContent.getResource());
+                throw new IllegalArgumentException("Resource with negative size: " + _delegate.getResource());
 
-            _etag = precalculatedEtag;
+            HttpField etagField = _delegate.getETag();
+            if (StringUtil.isNotBlank(etagValue))
+            {
+                etagField = new PreEncodedHttpField(HttpHeader.ETAG, etagValue);
+            }
+            _etagField = etagField;
             _contentLengthValue = resourceSize;
 
             // map the content into memory if possible
-            ByteBuffer byteBuffer = _useFileMappedBuffer ? BufferUtil.toMappedBuffer(httpContent.getResource(), 0, _contentLengthValue) : null;
+            ByteBuffer byteBuffer = _useFileMappedBuffer ? BufferUtil.toMappedBuffer(_delegate.getResource(), 0, _contentLengthValue) : null;
 
             if (byteBuffer == null)
             {
                 // TODO use pool?
                 // load the content into memory
                 byteBuffer = ByteBuffer.allocateDirect((int)_contentLengthValue);
-                try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getResource().getPath()))
+                try (SeekableByteChannel channel = Files.newByteChannel(_delegate.getResource().getPath()))
                 {
                     // fill buffer
                     int read = 0;
@@ -241,16 +250,16 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             }
 
             // Load precompressed contents into memory.
-            Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = httpContent.getPrecompressedContents();
+            Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = _delegate.getPrecompressedContents();
             if (precompressedContents != null)
             {
                 _precompressedContents = new HashMap<>();
                 for (Map.Entry<CompressedContentFormat, ? extends HttpContent> entry : precompressedContents.entrySet())
                 {
                     CompressedContentFormat format = entry.getKey();
-                    String precompressedEtag = EtagUtils.rewriteWithSuffix(httpContent.getETagValue(), format.getEtagSuffix());
+                    String precompressedEtag = EtagUtils.rewriteWithSuffix(_delegate.getETagValue(), format.getEtagSuffix());
                     // The etag of the precompressed content must be the one of the non-compressed content, with the etag suffix appended.
-                    _precompressedContents.put(format, new CachingHttpContent(key, precompressedEtag, entry.getValue()));
+                    _precompressedContents.put(format, new CachingHttpContent(key, entry.getValue(), precompressedEtag));
                 }
             }
             else
@@ -260,7 +269,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
             _cacheKey = key;
             _buffer = byteBuffer;
-            _lastModifiedValue = Files.getLastModifiedTime(httpContent.getResource().getPath());
+            _lastModifiedValue = _delegate.getResource().lastModified();
             _lastAccessed = NanoTime.now();
         }
 
@@ -300,18 +309,11 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 if (!_delegate.getResource().exists())
                     return false;
 
-                try
+                Instant lastModifiedTime = _delegate.getResource().lastModified();
+                if (lastModifiedTime.equals(_lastModifiedValue))
                 {
-                    FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getResource().getPath());
-                    if (lastModifiedTime.equals(_lastModifiedValue))
-                    {
-                        _lastAccessed = NanoTime.now();
-                        return true;
-                    }
-                }
-                catch (IOException e)
-                {
-                    LOG.debug("unable to get delegate path LastModifiedTime", e);
+                    _lastAccessed = NanoTime.now();
+                    return true;
                 }
             }
             release();
@@ -327,17 +329,16 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         @Override
         public HttpField getETag()
         {
-            String eTag = getETagValue();
-            return eTag == null ? null : new HttpField(HttpHeader.ETAG, eTag);
+            return _etagField;
         }
 
         @Override
         public String getETagValue()
         {
-            if (_etag != null)
-                return _etag;
-            else
-                return _delegate.getETagValue();
+            HttpField etag = getETag();
+            if (etag == null)
+                return null;
+            return etag.getValue();
         }
 
         @Override
