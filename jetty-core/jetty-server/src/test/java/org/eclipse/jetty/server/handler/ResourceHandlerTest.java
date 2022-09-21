@@ -97,7 +97,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * Resource Handler test
  */
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class ResourceHandlerTest
 {

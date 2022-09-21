@@ -161,7 +161,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
                 LOG.debug("reading data on {}", this);
 
             Data data;
-            if (dataLast)
+            if (isLast())
             {
                 data = Stream.Data.EOF;
             }
@@ -193,16 +193,15 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private Data read()
     {
         Data data = dataRef.getAndSet(null);
+        try (AutoLock ignored = lock.lock())
+        {
+            if (data != null)
+                dataLast = data.isLast();
+            else
+                dataAvailable = false;
+        }
         if (data != null)
-        {
-            boolean last = data.isLast();
-            dataLast = last;
-            updateClose(last, false);
-        }
-        else
-        {
-            dataAvailable = false;
-        }
+            updateClose(data.isLast(), false);
         if (LOG.isDebugEnabled())
             LOG.debug("reading available data {} on {}", data, this);
         return data;
@@ -280,6 +279,22 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         try (AutoLock ignored = lock.lock())
         {
             return dataDemand;
+        }
+    }
+
+    private boolean isStalled()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return dataStalled;
+        }
+    }
+
+    private boolean isLast()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return dataLast;
         }
     }
 
@@ -436,11 +451,13 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d[demand=%b,idle=%d,session=%s]",
+        return String.format("%s@%x#%d[demand=%b,stalled=%b,last=%b,idle=%d,session=%s]",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             hasDemand(),
+            isStalled(),
+            isLast(),
             NanoTime.millisSince(expireNanoTime),
             getSession()
         );

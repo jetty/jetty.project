@@ -16,7 +16,6 @@ package org.eclipse.jetty.test.client.transport;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -126,9 +125,9 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
             socket.connect(new InetSocketAddress(host, port), connectTimeout);
             return false;
         }
-        catch (SocketTimeoutException x)
+        catch (Throwable x)
         {
-            // Expected timeout during connect, continue the test.
+            // Expected timeout during connect, or no route to host, continue the test.
             return true;
         }
     }

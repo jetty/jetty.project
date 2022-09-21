@@ -257,8 +257,8 @@ public abstract class FlowControlStrategyTest
                             Map<Integer, Integer> settings = new HashMap<>();
                             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, size);
                             stream.getSession().settings(new SettingsFrame(settings, false), Callback.NOOP);
-                            // Do not release the data here.
                             stream.demand();
+                            // Do not release the data here.
                         }
                         else if (dataFrameCount > 1)
                         {

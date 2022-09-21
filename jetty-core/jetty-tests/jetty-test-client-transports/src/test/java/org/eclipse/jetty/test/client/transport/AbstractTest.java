@@ -67,19 +67,32 @@ public class AbstractTest
     protected HttpClient client;
     protected Path unixDomainPath;
 
+    private static EnumSet<Transport> allTransports()
+    {
+        EnumSet<Transport> transports = EnumSet.allOf(Transport.class);
+        // Disable H3 tests unless explicitly enabled with a system property.
+        if (!Boolean.getBoolean("org.eclipse.jetty.test.client.transport.H3.enable"))
+            transports.remove(Transport.H3);
+        return transports;
+    }
+
     public static List<Transport> transports()
     {
-        return List.of(Transport.values());
+        return List.copyOf(allTransports());
     }
 
     public static List<Transport> transportsNoFCGI()
     {
-        return List.copyOf(EnumSet.complementOf(EnumSet.of(Transport.FCGI)));
+        EnumSet<Transport> transports = allTransports();
+        transports.remove(Transport.FCGI);
+        return List.copyOf(transports);
     }
 
     public static List<Transport> transportsNoUnixDomain()
     {
-        return List.copyOf(EnumSet.complementOf(EnumSet.of(Transport.UNIX_DOMAIN)));
+        EnumSet<Transport> transports = allTransports();
+        transports.remove(Transport.UNIX_DOMAIN);
+        return List.copyOf(transports);
     }
 
     @AfterEach

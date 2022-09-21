@@ -25,7 +25,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <systemPropertyVariables>
-              <org.eclipse.jetty.http.client.TransportProvider.H3.enable>${h3.test.enabled}</org.eclipse.jetty.http.client.TransportProvider.H3.enable>
+              <org.eclipse.jetty.test.client.transport.H3.enable>${h3.test.enabled}</org.eclipse.jetty.test.client.transport.H3.enable>
             </systemPropertyVariables>
           </configuration>
         </plugin>

@@ -337,7 +337,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     @Override
     public String toConnectionString()
     {
-        return String.format("%s[dataMode=%b]", super.toConnectionString(), parser.isDataMode());
+        return String.format("%s[dataMode=%b,stream=%s]", super.toConnectionString(), parser.isDataMode(), stream);
     }
 
     private static class StreamData extends Stream.Data
