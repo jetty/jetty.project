@@ -124,7 +124,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
         b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
-    // FIXME: Remove the throws IOException from API for this method in the next major release.
     @Override
     public void sendPartialString(String fragment, boolean isLast, WriteCallback callback)
     {
