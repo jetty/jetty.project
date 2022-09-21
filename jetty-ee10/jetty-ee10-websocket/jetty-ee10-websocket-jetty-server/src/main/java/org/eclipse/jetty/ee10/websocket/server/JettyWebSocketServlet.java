@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
@@ -182,20 +184,32 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         ServletContextRequest request = ServletContextRequest.getBaseRequest(req);
         if (request == null)
             throw new IllegalStateException("Base Request not available");
+        ServletContextResponse response = request.getResponse();
 
-        // provide a null default customizer the customizer will be on the negotiator in the mapping
-        FutureCallback callback = new FutureCallback();
-        if (mapping.upgrade(request, request.getResponse(), callback, null))
+        // Do preliminary check before proceeding to attempt an upgrade.
+        if (mapping.getHandshaker().isWebSocketUpgradeRequest(request))
         {
-            callback.block();
-            return;
-        }
+            // provide a null default customizer the customizer will be on the negotiator in the mapping
+            FutureCallback callback = new FutureCallback();
+            try
+            {
+                // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
+                // are accessible when websocket-core calls back the Jetty WebSocket creator.
+                request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, req);
+                request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, resp);
 
-        // If we reach this point, it means we had an incoming request to upgrade
-        // but it was either not a proper websocket upgrade, or it was possibly rejected
-        // due to incoming request constraints (controlled by WebSocketCreator)
-        if (resp.isCommitted())
-            return;
+                if (mapping.upgrade(request, response, callback, null))
+                {
+                    callback.block();
+                    return;
+                }
+            }
+            finally
+            {
+                request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                request.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            }
+        }
 
         // Handle normally
         super.service(req, resp);
@@ -281,11 +295,11 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp, Callback callback)
+        public Object createWebSocket(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
         {
             try
             {
-                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(request), new DelegatedServerUpgradeResponse(response));
                 callback.succeeded();
                 return webSocket;
             }

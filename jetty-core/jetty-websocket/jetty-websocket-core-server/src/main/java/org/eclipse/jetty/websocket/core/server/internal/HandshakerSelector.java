@@ -34,6 +34,12 @@ public class HandshakerSelector implements Handshaker
     private final RFC8441Handshaker rfc8441 = new RFC8441Handshaker();
 
     @Override
+    public boolean isWebSocketUpgradeRequest(Request request)
+    {
+        return rfc6455.isWebSocketUpgradeRequest(request) || rfc8441.isWebSocketUpgradeRequest(request);
+    }
+
+    @Override
     public boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
     {
         // Try HTTP/1.1 WS upgrade, if this fails try an HTTP/2 WS upgrade if no response was committed.

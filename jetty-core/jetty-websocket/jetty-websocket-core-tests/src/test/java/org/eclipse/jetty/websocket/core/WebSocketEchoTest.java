@@ -22,7 +22,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,7 +63,7 @@ public class WebSocketEchoTest
     @Test
     public void test() throws Exception
     {
-        _upgradeHandler.addMapping("/", WebSocketNegotiator.from(n -> new EchoFrameHandler()));
+        _upgradeHandler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler());
         TestMessageHandler clientHandler = new TestMessageHandler();
         URI uri = URI.create("ws://localhost:" + _serverConnector.getLocalPort());
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, uri, clientHandler);

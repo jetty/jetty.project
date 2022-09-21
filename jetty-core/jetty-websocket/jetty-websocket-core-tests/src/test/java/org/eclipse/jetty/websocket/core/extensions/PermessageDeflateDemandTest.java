@@ -33,7 +33,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +76,7 @@ public class PermessageDeflateDemandTest
     public void test() throws Exception
     {
         ServerHandler serverHandler = new ServerHandler();
-        _upgradeHandler.addMapping("/", WebSocketNegotiator.from(n -> serverHandler));
+        _upgradeHandler.addMapping("/", (req, resp, cb) -> serverHandler);
 
         TestFrameHandler clientHandler = new TestFrameHandler();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());

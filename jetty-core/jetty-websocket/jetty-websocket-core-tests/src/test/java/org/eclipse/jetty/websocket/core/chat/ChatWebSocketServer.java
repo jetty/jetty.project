@@ -33,8 +33,8 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public class ChatWebSocketServer
 
     private final Set<MessageHandler> members = new HashSet<>();
 
-    private FrameHandler negotiate(WebSocketNegotiation negotiation)
+    private FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
     {
         // Finalize negotiations in API layer involves:
         //  + MAY mutate the policy
@@ -56,10 +56,10 @@ public class ChatWebSocketServer
         //  + MAY reject with sendError semantics
         //  + MAY change/add/remove offered extensions
         //  + MUST pick subprotocol
-        List<String> subprotocols = negotiation.getOfferedSubprotocols();
+        List<String> subprotocols = request.getSubProtocols();
         if (!subprotocols.contains("chat"))
             return null;
-        negotiation.setSubprotocol("chat");
+        response.setAcceptedSubProtocol("chat");
 
         //  + MUST return the FrameHandler or null or exception?
         return new MessageHandler()
@@ -115,7 +115,7 @@ public class ChatWebSocketServer
         ChatWebSocketServer chat = new ChatWebSocketServer();
         WebSocketComponents components = new WebSocketComponents();
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(components);
-        upgradeHandler.addMapping(new ServletPathSpec("/*"), WebSocketNegotiator.from(chat::negotiate));
+        upgradeHandler.addMapping(new ServletPathSpec("/*"), chat::negotiate);
         context.setHandler(upgradeHandler);
 
         upgradeHandler.setHandler(new Handler.Processor()

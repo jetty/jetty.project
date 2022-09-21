@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +40,8 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -348,28 +348,26 @@ public class MessageReceivingTest
         }
 
         @Override
-        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
+        public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
         {
-            List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
+            List<String> offeredSubProtocols = request.getSubProtocols();
 
             if (offeredSubProtocols.contains("partial-text"))
             {
-                negotiation.setSubprotocol("partial-text");
+                response.setAcceptedSubProtocol("partial-text");
                 return new SendPartialTextFrameHandler();
             }
 
             if (offeredSubProtocols.contains("partial-binary"))
             {
-                negotiation.setSubprotocol("partial-binary");
-                SendPartialBinaryFrameHandler frameHandler = new SendPartialBinaryFrameHandler();
-                return frameHandler;
+                response.setAcceptedSubProtocol("partial-binary");
+                return new SendPartialBinaryFrameHandler();
             }
 
             if (offeredSubProtocols.contains("echo"))
             {
-                negotiation.setSubprotocol("echo");
-                EchoWholeMessageFrameHandler frameHandler = new EchoWholeMessageFrameHandler();
-                return frameHandler;
+                response.setAcceptedSubProtocol("echo");
+                return new EchoWholeMessageFrameHandler();
             }
 
             return null;

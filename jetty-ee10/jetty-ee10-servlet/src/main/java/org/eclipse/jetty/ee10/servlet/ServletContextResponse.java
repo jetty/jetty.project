@@ -85,7 +85,7 @@ public class ServletContextResponse extends ContextResponse
     private ResponseWriter _writer;
 
     private long _contentLength = -1;
-    
+
     public static ServletContextResponse getBaseResponse(ServletResponse response)
     {
         if (response instanceof ServletApiResponse)

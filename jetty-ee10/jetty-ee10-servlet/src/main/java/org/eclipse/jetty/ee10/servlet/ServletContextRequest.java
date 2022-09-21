@@ -86,7 +86,6 @@ import org.slf4j.LoggerFactory;
 public class ServletContextRequest extends ContextRequest implements Runnable
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;

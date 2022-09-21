@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +28,8 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public abstract class WebSocketNegotiation
 {
@@ -62,6 +64,11 @@ public abstract class WebSocketNegotiation
     public Callback getCallback()
     {
         return callback;
+    }
+
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
     }
 
     public void negotiate() throws BadMessageException
