@@ -33,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -258,6 +259,7 @@ public class ResourceTest
 
     public WorkDir workDir;
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResourceExists(Scenario data)
