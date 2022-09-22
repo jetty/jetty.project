@@ -128,7 +128,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     {
         context.setWelcomeFiles(null);
 
-        //TODO: ErrorPageErorrHandler is not an ErrorProcessor
+        //TODO: ErrorPageErrorHandler is not an ErrorProcessor
         if (context.getErrorProcessor() instanceof ErrorPageErrorHandler errorPageErrorHandler) 
             errorPageErrorHandler.setErrorPages(null);
 

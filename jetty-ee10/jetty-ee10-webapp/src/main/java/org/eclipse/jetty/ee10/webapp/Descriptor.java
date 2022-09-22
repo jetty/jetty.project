@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.webapp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
@@ -29,16 +30,25 @@ public abstract class Descriptor
 {
     private static final Logger LOG = LoggerFactory.getLogger(Descriptor.class);
 
-    protected Resource _xml;
+    protected Path _xml;
     protected XmlParser.Node _root;
     protected String _dtd;
 
-    public Descriptor(Resource xml)
+    /**
+     * @deprecated use {@link Descriptor(Path)} instead
+     */
+    @Deprecated
+    public Descriptor(Resource resource)
     {
-        _xml = Objects.requireNonNull(xml);
-        if (!_xml.exists())
+        this(Objects.requireNonNull(resource, "Resource must exist").getPath());
+    }
+
+    public Descriptor(Path xml)
+    {
+        _xml = Objects.requireNonNull(xml, "Path must exist");
+        if (!Files.exists(_xml))
             throw new IllegalArgumentException("Descriptor does not exist: " + xml);
-        if (_xml.isDirectory())
+        if (!Files.isRegularFile(_xml))
             throw new IllegalArgumentException("Descriptor is not a file: " + xml);
     }
 
@@ -48,7 +58,7 @@ public abstract class Descriptor
         if (_root == null)
         {
             Objects.requireNonNull(parser);
-            try (InputStream is = Files.newInputStream(_xml.getPath(), StandardOpenOption.READ))
+            try (InputStream is = Files.newInputStream(_xml, StandardOpenOption.READ))
             {
                 _root = parser.parse(is);
                 _dtd = parser.getDTD();
@@ -66,7 +76,7 @@ public abstract class Descriptor
         return _root != null;
     }
 
-    public Resource getResource()
+    public Path getPath()
     {
         return _xml;
     }
@@ -79,6 +89,6 @@ public abstract class Descriptor
     @Override
     public String toString()
     {
-        return this.getClass().getSimpleName() + "(" + _xml + ")";
+        return this.getClass().getSimpleName() + "(" + _xml.toUri() + ")";
     }
 }

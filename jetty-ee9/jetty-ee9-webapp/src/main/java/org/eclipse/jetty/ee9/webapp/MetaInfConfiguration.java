@@ -374,10 +374,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @param target the target resource to scan for
      * @param cache the resource cache
-     * @throws Exception if unable to scan for resources
      */
     public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
-        throws Exception
     {
         Resource resourcesDir = null;
         if (cache != null && cache.containsKey(target))

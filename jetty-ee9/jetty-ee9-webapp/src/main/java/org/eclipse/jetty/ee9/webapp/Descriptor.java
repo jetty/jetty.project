@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
@@ -29,23 +30,35 @@ public abstract class Descriptor
 {
     private static final Logger LOG = LoggerFactory.getLogger(Descriptor.class);
 
-    protected Resource _xml;
+    protected Path _xml;
     protected XmlParser.Node _root;
     protected String _dtd;
 
-    public Descriptor(Resource xml)
+    /**
+     * @deprecated use {@link Descriptor(Path)} instead
+     */
+    @Deprecated
+    public Descriptor(Resource resource)
     {
-        _xml = Objects.requireNonNull(xml);
+        this(Objects.requireNonNull(resource, "Resource must exist").getPath());
+    }
+
+    public Descriptor(Path xml)
+    {
+        _xml = Objects.requireNonNull(xml, "Path must exist");
+        if (!Files.exists(_xml))
+            throw new IllegalArgumentException("Descriptor does not exist: " + xml);
+        if (!Files.isRegularFile(_xml))
+            throw new IllegalArgumentException("Descriptor is not a file: " + xml);
     }
 
     public void parse(XmlParser parser)
         throws Exception
     {
-
         if (_root == null)
         {
             Objects.requireNonNull(parser);
-            try (InputStream is = Files.newInputStream(_xml.getPath(), StandardOpenOption.READ))
+            try (InputStream is = Files.newInputStream(_xml, StandardOpenOption.READ))
             {
                 _root = parser.parse(is);
                 _dtd = parser.getDTD();
@@ -63,9 +76,14 @@ public abstract class Descriptor
         return _root != null;
     }
 
-    public Resource getResource()
+    public Path getPath()
     {
         return _xml;
+    }
+
+    public Resource getResource()
+    {
+        throw new UnsupportedOperationException("getResource() not supported");
     }
 
     public XmlParser.Node getRoot()
