@@ -58,13 +58,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private String method;
     private int status;
     private Content.Chunk contentGenerated;
-    private ContentSource contentSource;
 
     @Override
     protected ReceiverContentSource newContentSource()
     {
-        contentSource = new ContentSource();
-        return contentSource;
+        return new ContentSource();
     }
 
     public class ContentSource implements ReceiverContentSource
@@ -73,7 +71,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         private volatile Content.Chunk currentChunk;
         private volatile Callback currentChunkCallback;
         private volatile Runnable demandCallback;
-        private volatile boolean closed;
 
         @Override
         public Content.Chunk read()
@@ -100,20 +97,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 invoker.run(this::invokeDemandCallback);
         }
 
-        public void close()
-        {
-            if (currentChunk != null)
-                currentChunkCallback.failed(new IOException("closed; failing currently enqueued: " + currentChunk));
-            currentChunk = Content.Chunk.EOF;
-            currentChunkCallback = Callback.NOOP;
-            closed = true;
-        }
-
         private Content.Chunk consumeCurrentChunk()
         {
-            if (closed)
-                return Content.Chunk.EOF;
-
             if (currentChunk != null)
             {
                 Content.Chunk rc = currentChunk;
@@ -143,8 +128,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             while (true)
             {
-                if (closed)
-                    currentChunk = Content.Chunk.EOF;
                 if (currentChunk != null)
                 {
                     invoker.run(this::invokeDemandCallback);
@@ -584,7 +567,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             complete = true;
         }
 
-        contentSource.close();
+        contentGenerated = Content.Chunk.EOF;
         boolean stopParsing = !responseSuccess(exchange);
         if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
             stopParsing = true;
