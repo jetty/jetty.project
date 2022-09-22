@@ -101,7 +101,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         //look for quickstart-web.xml in WEB-INF of webapp
         Path quickStartWebXml = getQuickStartWebXml(context);
-        LOG.debug("quickStartWebXml={}", quickStartWebXml);
+        if (LOG.isDebugEnabled())
+            LOG.debug("quickStartWebXml={}", quickStartWebXml);
 
         //Get the mode
         Object o = context.getAttribute(MODE);
@@ -183,7 +184,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
 
-            LOG.debug("configured {}", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("configured {}", this);
         }
     }
 
@@ -214,7 +216,10 @@ public class QuickStartConfiguration extends AbstractConfiguration
         context.setConfigurations(context.getConfigurations().stream()
             .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass())).toList().toArray(new Configuration[]{}));
         Path quickStartWebXml = getQuickStartWebXml(context);
-        context.getMetaData().setWebDescriptor(new WebDescriptor(quickStartWebXml));
+        if (!Files.exists(quickStartWebXml))
+            throw new IllegalStateException("Quickstart doesn't exist: " + quickStartWebXml);
+        Resource quickStartWebResource = context.getResourceFactory().newResource(quickStartWebXml);
+        context.getMetaData().setWebDescriptor(new WebDescriptor(quickStartWebResource));
         context.getContext().getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
         context.getContext().getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
     }
@@ -255,17 +260,13 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 if (attrPath != null)
                 {
                     if (LOG.isDebugEnabled())
-                    {
                         LOG.debug("Using quickstart attribute {} value of {}", attr, attrValue);
-                    }
                     qstartFile = attrPath;
                 }
             }
         }
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Using quickstart location: {}", qstartFile);
-        }
         context.setAttribute(QUICKSTART_WEB_XML, qstartFile);
         return qstartFile;
     }
