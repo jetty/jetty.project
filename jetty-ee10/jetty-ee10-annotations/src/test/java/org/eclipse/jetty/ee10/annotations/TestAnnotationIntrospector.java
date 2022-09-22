@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.Source;
@@ -23,7 +23,6 @@ import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,31 +62,29 @@ public class TestAnnotationIntrospector
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet can be introspected if web.xml metdata-complete==false
-            File file = MavenTestingUtils.getTestResourceFile("web31false.xml");
-            Resource resource = ResourceFactory.root().newResource(file.toPath());
-            wac.getMetaData().setWebDescriptor(new WebDescriptor(resource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
+            Path xml = MavenTestingUtils.getTestResourcePathFile("web31false.xml");
+            wac.getMetaData().setWebDescriptor(new WebDescriptor(xml));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet can be introspected if web-fragment.xml medata-complete==false && web.xml metadata-complete==false
-            file = MavenTestingUtils.getTestResourceFile("web-fragment4false.xml");
-            resource = ResourceFactory.root().newResource(file.toPath());
-            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
+            xml = MavenTestingUtils.getTestResourcePathFile("web-fragment4false.xml");
+            Resource parent = wac.getResourceFactory().newResource(xml.getParent());
+            wac.getMetaData().addFragmentDescriptor(parent, new FragmentDescriptor(xml));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet cannot be introspected if web-fragment.xml medata-complete==true (&& web.xml metadata-complete==false)
-            file = MavenTestingUtils.getTestResourceFile("web-fragment4true.xml");
-            resource = ResourceFactory.root().newResource(file.toPath());
-            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
+            xml = MavenTestingUtils.getTestResourcePathFile("web-fragment4true.xml");
+            parent = wac.getResourceFactory().newResource(xml.getParent());
+            wac.getMetaData().addFragmentDescriptor(parent, new FragmentDescriptor(xml));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet cannot be introspected if web.xml medata-complete==true
-            file = MavenTestingUtils.getTestResourceFile("web31true.xml");
-            resource = ResourceFactory.root().newResource(file.toPath());
-            wac.getMetaData().setWebDescriptor(new WebDescriptor(resource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
+            xml = MavenTestingUtils.getTestResourcePathFile("web31true.xml");
+            wac.getMetaData().setWebDescriptor(new WebDescriptor(xml));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));
         }
     }
