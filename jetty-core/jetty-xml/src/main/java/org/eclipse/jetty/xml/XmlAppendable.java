@@ -17,6 +17,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
 
@@ -30,9 +33,9 @@ public class XmlAppendable
     private final Stack<String> _tags = new Stack<>();
     private String _space = "";
 
-    public XmlAppendable(OutputStream out, String encoding) throws IOException
+    public XmlAppendable(OutputStream out, Charset charset) throws IOException
     {
-        this(new OutputStreamWriter(out, encoding), encoding);
+        this(new OutputStreamWriter(out, charset), charset);
     }
 
     public XmlAppendable(Appendable out) throws IOException
@@ -40,21 +43,21 @@ public class XmlAppendable
         this(out, 2);
     }
 
-    public XmlAppendable(Appendable out, String encoding) throws IOException
+    public XmlAppendable(Appendable out, Charset charset) throws IOException
     {
-        this(out, 2, encoding);
+        this(out, 2, charset);
     }
 
     public XmlAppendable(Appendable out, int indent) throws IOException
     {
-        this(out, indent, "utf-8");
+        this(out, indent, StandardCharsets.UTF_8);
     }
 
-    public XmlAppendable(Appendable out, int indent, String encoding) throws IOException
+    public XmlAppendable(Appendable out, int indent, Charset charset) throws IOException
     {
         _out = out;
         _indent = indent;
-        _out.append("<?xml version=\"1.0\" encoding=\"").append(encoding).append("\"?>\n");
+        _out.append("<?xml version=\"1.0\" encoding=\"").append(charset.name().toLowerCase(Locale.ENGLISH)).append("\"?>\n");
     }
 
     public XmlAppendable openTag(String tag, Map<String, String> attributes) throws IOException
