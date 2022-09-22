@@ -78,7 +78,6 @@ public abstract class HttpReceiver
     }
 
     protected abstract ReceiverContentSource newContentSource();
-    protected abstract void closeContentSource();
 
     // TODO get rid of this interface so that DecodingContentSource can be client/server agnostic
     protected interface ReceiverContentSource extends Content.Source
@@ -426,7 +425,6 @@ public abstract class HttpReceiver
         responseState.set(ResponseState.IDLE);
         if (LOG.isDebugEnabled())
             LOG.debug("responseSuccess closing contentSource");
-        closeContentSource();
 
         // Reset to be ready for another response.
         if (firstContent)
