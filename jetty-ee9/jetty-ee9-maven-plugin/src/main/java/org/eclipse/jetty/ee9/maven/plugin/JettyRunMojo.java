@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -220,7 +219,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     {
         if (webApp.getDescriptor() != null)
         {
-            Resource r = ResourceFactory.of(webApp).newResource(webApp.getDescriptor());
+            Resource r = webapp.getResourceFactory().newResource(webApp.getDescriptor());
             scanner.addFile(r.getPath());
         }
 

@@ -37,7 +37,7 @@ public class Quickstart
         WebAppContext webapp = new WebAppContext();
         Resource contextXml = null;
         if (args.length > 1)
-            contextXml = ResourceFactory.of(webapp).newResource(args[1]);
+            contextXml = webapp.getResourceFactory().newResource(args[1]);
 
         Server server = new Server(8080);
 
