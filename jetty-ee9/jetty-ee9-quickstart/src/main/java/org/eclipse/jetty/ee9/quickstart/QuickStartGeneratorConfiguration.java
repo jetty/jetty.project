@@ -159,7 +159,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         webappAttr.put("metadata-complete", Boolean.toString(context.getMetaData().isMetaDataComplete()));
         webappAttr.put("version", major + "." + minor);
 
-        XmlAppendable out = new XmlAppendable(stream, StandardCharsets.UTF_8);
+        XmlAppendable out = new XmlAppendable(stream);
         out.openTag("web-app", webappAttr);
         if (context.getDisplayName() != null)
             out.tag("display-name", context.getDisplayName());
