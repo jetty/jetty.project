@@ -250,6 +250,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
             loader = loader.getParent();
         }
+
         return uris;
     }
 
@@ -325,6 +326,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param scanTypes the type of things to look for in the jars
      * @throws Exception if unable to scan the jars
      */
+    @SuppressWarnings("unchecked")
     public void scanJars(final WebAppContext context, Collection<Resource> jars, boolean useCaches, List<String> scanTypes)
         throws Exception
     {
@@ -374,10 +376,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @param target the target resource to scan for
      * @param cache the resource cache
-     * @throws Exception if unable to scan for resources
      */
     public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
-        throws Exception
     {
         Resource resourcesDir = null;
         if (cache != null && cache.containsKey(target))
@@ -404,7 +404,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             }
             else
             {
-                //Resource represents a packed jar
+                // Resource represents a packed jar
                 URI uri = target.getURI();
                 resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
@@ -448,10 +448,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @param jar the jar resource to scan for fragements in
      * @param cache the resource cache
-     * @throws Exception if unable to scan for fragments
      */
     public void scanForFragment(WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Resource> cache)
-        throws Exception
     {
         Resource webFrag = null;
         if (cache != null && cache.containsKey(jar))
@@ -543,7 +541,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         else
         {
             //not using caches or not in the cache so find all tlds
-            tlds = new HashSet<URL>();
+            tlds = new HashSet<>();
             if (jar.isDirectory())
             {
                 tlds.addAll(getTlds(jar.getPath()));
@@ -613,7 +611,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 tlds.add(entry.toUri().toURL());
             }
         }
-
         return tlds;
     }
 
@@ -654,9 +651,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Resource webInfClasses = findWebInfClassesDir(context);
         if (webInfClasses != null)
             classDirs.add(webInfClasses);
-        List<Resource> extraClassDirs = findExtraClasspathDirs(context);
-        if (extraClassDirs != null)
-            classDirs.addAll(extraClassDirs);
+        classDirs.addAll(findExtraClasspathDirs(context));
 
         return classDirs;
     }
@@ -692,7 +687,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         throws Exception
     {
         Resource webInf = context.getWebInf();
-        if (webInf == null || !webInf.exists())
+        if (webInf == null || !webInf.exists() || webInf.isDirectory())
             return null;
 
         Resource webInfLib = webInf.resolve("/lib");
@@ -754,15 +749,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to look for extra classpaths in
      * @return the list of Resources to the extra classpath
-     * @throws Exception if unable to resolve the extra classpath resources
      */
     protected List<Resource> findExtraClasspathDirs(WebAppContext context)
-        throws Exception
     {
         if (context == null || context.getExtraClasspath() == null)
-            return null;
+            return List.of();
 
-        return context.getExtraClasspath().getResources()
+        return context.getExtraClasspath()
+            .getResources()
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());

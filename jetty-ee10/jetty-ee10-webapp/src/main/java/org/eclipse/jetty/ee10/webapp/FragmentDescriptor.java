@@ -36,7 +36,6 @@ public class FragmentDescriptor extends WebDescriptor
         None, Before, After
     }
 
-    ;
     protected OtherType _otherType = OtherType.None;
 
     protected List<String> _befores = new ArrayList<String>();
@@ -44,7 +43,6 @@ public class FragmentDescriptor extends WebDescriptor
     protected String _name;
 
     public FragmentDescriptor(Resource xml)
-        throws Exception
     {
         super(xml);
     }
@@ -109,7 +107,7 @@ public class FragmentDescriptor extends WebDescriptor
             if (node.getTag().equalsIgnoreCase("others"))
             {
                 if (_otherType != OtherType.None)
-                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml.getURI());
+                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml);
 
                 _otherType = OtherType.Before;
             }
@@ -136,7 +134,7 @@ public class FragmentDescriptor extends WebDescriptor
             if (node.getTag().equalsIgnoreCase("others"))
             {
                 if (_otherType != OtherType.None)
-                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml.getURI());
+                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml);
 
                 _otherType = OtherType.After;
             }
