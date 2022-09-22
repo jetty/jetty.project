@@ -82,7 +82,7 @@ public abstract class HttpReceiver
     // TODO get rid of this interface so that DecodingContentSource can be client/server agnostic
     protected interface ReceiverContentSource extends Content.Source
     {
-        void onDataAvailable(Callback callback);
+        void onDataAvailable();
     }
 
     private static class DecodingContentSource extends ContentSourceTransformer implements ReceiverContentSource
@@ -101,9 +101,9 @@ public abstract class HttpReceiver
         }
 
         @Override
-        public void onDataAvailable(Callback callback)
+        public void onDataAvailable()
         {
-            _rawSource.onDataAvailable(callback);
+            _rawSource.onDataAvailable();
         }
 
         @Override
@@ -352,23 +352,19 @@ public abstract class HttpReceiver
     }
 
     // TODO change signature to boolean responseContent(HttpExchange exchange, Content.Source source)
-    protected Runnable firstResponseContent(HttpExchange exchange, Callback callback)
+    protected Runnable firstResponseContent(HttpExchange exchange)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("firstResponseContent");
-        contentSource.onDataAvailable(callback);
         firstContent = false;
         return () ->
         {
             contentListeners.notifyContent(exchange.getResponse());
+            // Reset here upon the ContentSourceListener.onContentSource() loop returning if it was started;
+            // otherwise reset upon responseSuccess().
             if (responseState.get() == ResponseState.IDLE)
                 reset();
         };
-    }
-
-    protected void notifyDataAvailable()
-    {
-        contentSource.onDataAvailable(Callback.NOOP);
     }
 
     /**
@@ -392,7 +388,7 @@ public abstract class HttpReceiver
             return false;
         }
 
-        contentSource.onDataAvailable(callback); // make sure state is TRANSIENT while the app code is running
+        contentSource.onDataAvailable(); // make sure state is TRANSIENT while the app code is running
 
         if (updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
         {
@@ -426,7 +422,8 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("responseSuccess closing contentSource");
 
-        // Reset to be ready for another response.
+        // Reset here to be ready for another response if the ContentSourceListener.onContentSource() loop was not started;
+        // otherwise reset upon the ContentSourceListener.onContentSource() loop returning.
         if (firstContent)
             reset();
 

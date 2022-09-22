@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,7 +68,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         private final SerializedInvoker invoker = new SerializedInvoker();
         private volatile Content.Chunk currentChunk;
-        private volatile Callback currentChunkCallback;
         private volatile Runnable demandCallback;
 
         @Override
@@ -83,16 +81,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
 
         @Override
-        public void onDataAvailable(Callback callback)
+        public void onDataAvailable()
         {
-            if (callback == null)
-                throw new IllegalArgumentException();
-            if (currentChunk != null)
-            {
-                callback.failed(new IOException("cannot enqueue chunk currently enqueued: " + currentChunk));
-                return;
-            }
-            currentChunkCallback = callback;
             if (demandCallback != null)
                 invoker.run(this::invokeDemandCallback);
         }
@@ -103,10 +93,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             {
                 Content.Chunk rc = currentChunk;
                 if (!(rc instanceof Content.Chunk.Error))
-                {
                     currentChunk = currentChunk.isLast() ? Content.Chunk.EOF : null;
-                    currentChunkCallback = Callback.NOOP;
-                }
                 return rc;
             }
             return null;
@@ -169,10 +156,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             if (currentChunk != null)
             {
                 currentChunk.release();
-                currentChunkCallback.failed(failure);
+                failAndClose(failure);
             }
             currentChunk = Content.Chunk.from(failure);
-            currentChunkCallback = Callback.NOOP;
         }
     }
 
@@ -231,7 +217,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
         else
         {
-            notifyDataAvailable();
+            contentSource.onDataAvailable();
         }
     }
 
@@ -522,7 +508,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         contentGenerated = Content.Chunk.from(buffer, false, networkBuffer);
         if (firstContent.compareAndSet(true, false))
         {
-            Runnable r = firstResponseContent(exchange, Callback.from(() -> {}, this::failAndClose));
+            Runnable r = firstResponseContent(exchange);
             contentActionRef.set(r);
             return true; // stop parsing
         }
