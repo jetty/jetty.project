@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +58,149 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private String method;
     private int status;
     private Content.Chunk contentGenerated;
+
+    @Override
+    protected ReceiverContentSource newContentSource()
+    {
+        return new ContentSource();
+    }
+
+    private class ContentSource implements ReceiverContentSource
+    {
+        private final SerializedInvoker invoker = new SerializedInvoker();
+        private volatile Content.Chunk currentChunk;
+        private volatile Callback currentChunkCallback;
+        private volatile Runnable demandCallback;
+        private volatile boolean closed;
+
+        @Override
+        public Content.Chunk read()
+        {
+            Content.Chunk chunk = consumeCurrentChunk();
+            if (chunk != null)
+                return chunk;
+            currentChunk = HttpReceiverOverHTTP.this.read(false);
+            return consumeCurrentChunk();
+        }
+
+        @Override
+        public void onDataAvailable(Callback callback)
+        {
+            if (callback == null)
+                throw new IllegalArgumentException();
+            if (currentChunk != null)
+            {
+                callback.failed(new IOException("cannot enqueue chunk currently enqueued: " + currentChunk));
+                return;
+            }
+            currentChunkCallback = callback;
+            if (demandCallback != null)
+                invoker.run(this::invokeDemandCallback);
+        }
+
+        public void close()
+        {
+            if (currentChunk != null)
+            {
+                currentChunkCallback.failed(new IOException("cannot close; currently enqueued: " + currentChunk));
+                return;
+            }
+            currentChunk = Content.Chunk.EOF;
+            currentChunkCallback = Callback.NOOP;
+            closed = true;
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return closed;
+        }
+
+        private Content.Chunk consumeCurrentChunk()
+        {
+            if (closed)
+                return Content.Chunk.EOF;
+
+            if (currentChunk != null)
+            {
+                Content.Chunk rc = currentChunk;
+                if (!(rc instanceof Content.Chunk.Error))
+                {
+                    currentChunk = currentChunk.isLast() ? Content.Chunk.EOF : null;
+                    currentChunkCallback = Callback.NOOP;
+                }
+                return rc;
+            }
+            return null;
+        }
+
+        @Override
+        public void demand(Runnable demandCallback)
+        {
+            if (demandCallback == null)
+                throw new IllegalArgumentException();
+            if (this.demandCallback != null)
+                throw new IllegalStateException();
+            this.demandCallback = demandCallback;
+
+            invoker.run(this::meetDemand);
+        }
+
+        private void meetDemand()
+        {
+            while (true)
+            {
+                if (closed)
+                    currentChunk = Content.Chunk.EOF;
+                if (currentChunk != null)
+                {
+                    invoker.run(this::invokeDemandCallback);
+                    break;
+                }
+                else
+                {
+                    currentChunk = HttpReceiverOverHTTP.this.read(false);
+                    if (currentChunk == null)
+                    {
+                        currentChunk = HttpReceiverOverHTTP.this.read(true);
+                        if (currentChunk == null)
+                            return;
+                    }
+                }
+            }
+        }
+
+        private void invokeDemandCallback()
+        {
+            Runnable demandCallback = this.demandCallback;
+            this.demandCallback = null;
+            if (demandCallback != null)
+            {
+                try
+                {
+                    demandCallback.run();
+                }
+                catch (Throwable x)
+                {
+                    fail(x);
+                }
+            }
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            if (currentChunk != null)
+            {
+                currentChunk.release();
+                currentChunkCallback.failed(failure);
+            }
+            currentChunk = Content.Chunk.from(failure);
+            currentChunkCallback = Callback.NOOP;
+            closed = true;
+        }
+    }
+
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -115,7 +260,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
     }
 
-    public Content.Chunk read(boolean fillInterestIfNeeded)
+    private Content.Chunk read(boolean fillInterestIfNeeded)
     {
         Content.Chunk chunk = consumeContentGenerated();
         if (chunk != null)

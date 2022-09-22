@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpReceiverOverHTTP;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,14 +77,10 @@ public abstract class HttpReceiver
         this.contentSource = newContentSource();
     }
 
-    // TODO make abstract&protected & implement in HttpReceiverOver*
-    private ReceiverContentSource newContentSource()
-    {
-        return new ContentSource();
-    }
+    protected abstract ReceiverContentSource newContentSource();
 
     // TODO get rid of this interface so that DecodingContentSource can be client/server agnostic
-    private interface ReceiverContentSource extends Content.Source
+    protected interface ReceiverContentSource extends Content.Source
     {
         void onDataAvailable(Callback callback);
 
@@ -99,11 +93,11 @@ public abstract class HttpReceiver
     {
         private static final Logger LOG = LoggerFactory.getLogger(DecodingContentSource.class);
 
-        private final ContentSource _rawSource;
+        private final ReceiverContentSource _rawSource;
         private final ContentDecoder _decoder;
         private volatile Content.Chunk _chunk;
 
-        public DecodingContentSource(ContentSource rawSource, ContentDecoder decoder)
+        public DecodingContentSource(ReceiverContentSource rawSource, ContentDecoder decoder)
         {
             super(rawSource);
             _rawSource = rawSource;
@@ -191,143 +185,6 @@ public abstract class HttpReceiver
                     }
                 }
             }
-        }
-    }
-
-    // TODO move this impl down to the HttpReceiverOver* subclasses
-    private class ContentSource implements ReceiverContentSource
-    {
-        private final SerializedInvoker invoker = new SerializedInvoker();
-        private volatile Content.Chunk currentChunk;
-        private volatile Callback currentChunkCallback;
-        private volatile Runnable demandCallback;
-        private volatile boolean closed;
-
-        @Override
-        public Content.Chunk read()
-        {
-            Content.Chunk chunk = consumeCurrentChunk();
-            if (chunk != null)
-                return chunk;
-            currentChunk = ((HttpReceiverOverHTTP)HttpReceiver.this).read(false);
-            return consumeCurrentChunk();
-        }
-
-        @Override
-        public void onDataAvailable(Callback callback)
-        {
-            if (callback == null)
-                throw new IllegalArgumentException();
-            if (currentChunk != null)
-            {
-                callback.failed(new IOException("cannot enqueue chunk currently enqueued: " + currentChunk));
-                return;
-            }
-            currentChunkCallback = callback;
-            if (demandCallback != null)
-                invoker.run(this::invokeDemandCallback);
-        }
-
-        public void close()
-        {
-            if (currentChunk != null)
-            {
-                currentChunkCallback.failed(new IOException("cannot close; currently enqueued: " + currentChunk));
-                return;
-            }
-            currentChunk = Content.Chunk.EOF;
-            currentChunkCallback = Callback.NOOP;
-            closed = true;
-        }
-
-        @Override
-        public boolean isClosed()
-        {
-            return closed;
-        }
-
-        private Content.Chunk consumeCurrentChunk()
-        {
-            if (closed)
-                return Content.Chunk.EOF;
-
-            if (currentChunk != null)
-            {
-                Content.Chunk rc = currentChunk;
-                if (!(rc instanceof Content.Chunk.Error))
-                {
-                    currentChunk = currentChunk.isLast() ? Content.Chunk.EOF : null;
-                    currentChunkCallback = Callback.NOOP;
-                }
-                return rc;
-            }
-            return null;
-        }
-
-        @Override
-        public void demand(Runnable demandCallback)
-        {
-            if (demandCallback == null)
-                throw new IllegalArgumentException();
-            if (this.demandCallback != null)
-                throw new IllegalStateException();
-            this.demandCallback = demandCallback;
-
-            invoker.run(this::meetDemand);
-        }
-
-        private void meetDemand()
-        {
-            while (true)
-            {
-                if (closed)
-                    currentChunk = Content.Chunk.EOF;
-                if (currentChunk != null)
-                {
-                    invoker.run(this::invokeDemandCallback);
-                    break;
-                }
-                else
-                {
-                    currentChunk = ((HttpReceiverOverHTTP)HttpReceiver.this).read(false);
-                    if (currentChunk == null)
-                    {
-                        currentChunk = ((HttpReceiverOverHTTP)HttpReceiver.this).read(true);
-                        if (currentChunk == null)
-                            return;
-                    }
-                }
-            }
-        }
-
-        private void invokeDemandCallback()
-        {
-            Runnable demandCallback = this.demandCallback;
-            this.demandCallback = null;
-            if (demandCallback != null)
-            {
-                try
-                {
-                    demandCallback.run();
-                }
-                catch (Throwable x)
-                {
-                    fail(x);
-                }
-            }
-        }
-
-        @Override
-        public void fail(Throwable failure)
-        {
-            if (currentChunk != null)
-            {
-                currentChunk.release();
-                currentChunkCallback.failed(failure);
-            }
-            currentChunk = Content.Chunk.from(failure);
-            currentChunkCallback = Callback.NOOP;
-            closed = true;
         }
     }
 
@@ -496,7 +353,7 @@ public abstract class HttpReceiver
                     {
                         if (factory.getEncoding().equalsIgnoreCase(encoding))
                         {
-                            contentSource = new DecodingContentSource((ContentSource)contentSource, factory.newContentDecoder());
+                            contentSource = new DecodingContentSource(contentSource, factory.newContentDecoder());
                             break;
                         }
                     }
