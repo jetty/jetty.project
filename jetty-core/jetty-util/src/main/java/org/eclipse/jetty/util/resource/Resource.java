@@ -292,11 +292,7 @@ public abstract class Resource implements Iterable<Resource>
      * @return a Resource representing the subUriPath
      * @throws IllegalArgumentException if subUriPath is invalid
      */
-    public Resource resolve(String subUriPath)
-    {
-        // abstract returns null always.
-        return null;
-    }
+    public abstract Resource resolve(String subUriPath);
 
     /**
      * @return true if this Resource is an alias to another real Resource

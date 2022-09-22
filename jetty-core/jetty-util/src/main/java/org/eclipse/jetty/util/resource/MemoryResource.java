@@ -107,6 +107,12 @@ public class MemoryResource extends Resource
     }
 
     @Override
+    public Resource resolve(String subUriPath)
+    {
+        return null;
+    }
+
+    @Override
     public InputStream newInputStream() throws IOException
     {
         return new ByteArrayInputStream(_bytes);
