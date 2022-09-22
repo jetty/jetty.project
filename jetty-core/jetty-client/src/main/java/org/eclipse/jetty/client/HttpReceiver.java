@@ -66,7 +66,7 @@ public abstract class HttpReceiver
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final ContentListeners contentListeners = new ContentListeners();
-    private ReceiverContentSource contentSource;
+    protected ReceiverContentSource contentSource;
     private final HttpChannel channel;
     private volatile boolean firstContent = true;
     private Throwable failure;
@@ -78,15 +78,12 @@ public abstract class HttpReceiver
     }
 
     protected abstract ReceiverContentSource newContentSource();
+    protected abstract void closeContentSource();
 
     // TODO get rid of this interface so that DecodingContentSource can be client/server agnostic
     protected interface ReceiverContentSource extends Content.Source
     {
         void onDataAvailable(Callback callback);
-
-        void close();
-
-        boolean isClosed();
     }
 
     private static class DecodingContentSource extends ContentSourceTransformer implements ReceiverContentSource
@@ -108,23 +105,6 @@ public abstract class HttpReceiver
         public void onDataAvailable(Callback callback)
         {
             _rawSource.onDataAvailable(callback);
-        }
-
-        @Override
-        public void close()
-        {
-            _rawSource.close();
-            if (_chunk != null)
-            {
-                _chunk.release();
-                _chunk = null;
-            }
-        }
-
-        @Override
-        public boolean isClosed()
-        {
-            return _rawSource.isClosed();
         }
 
         @Override
@@ -382,7 +362,7 @@ public abstract class HttpReceiver
         return () ->
         {
             contentListeners.notifyContent(exchange.getResponse());
-            if (contentSource.isClosed())
+            if (responseState.get() == ResponseState.IDLE)
                 reset();
         };
     }
@@ -446,7 +426,7 @@ public abstract class HttpReceiver
         responseState.set(ResponseState.IDLE);
         if (LOG.isDebugEnabled())
             LOG.debug("responseSuccess closing contentSource");
-        contentSource.close();
+        closeContentSource();
 
         // Reset to be ready for another response.
         if (firstContent)

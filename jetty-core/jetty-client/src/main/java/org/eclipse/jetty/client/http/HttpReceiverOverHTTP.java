@@ -58,14 +58,22 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private String method;
     private int status;
     private Content.Chunk contentGenerated;
+    private ContentSource contentSource;
 
     @Override
     protected ReceiverContentSource newContentSource()
     {
-        return new ContentSource();
+        contentSource = new ContentSource();
+        return contentSource;
     }
 
-    private class ContentSource implements ReceiverContentSource
+    @Override
+    protected void closeContentSource()
+    {
+        contentSource.close();
+    }
+
+    public class ContentSource implements ReceiverContentSource
     {
         private final SerializedInvoker invoker = new SerializedInvoker();
         private volatile Content.Chunk currentChunk;
@@ -110,7 +118,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             closed = true;
         }
 
-        @Override
         public boolean isClosed()
         {
             return closed;
@@ -592,6 +599,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             complete = true;
         }
 
+       // ((ContentSource)contentSource).close();
         boolean stopParsing = !responseSuccess(exchange);
         if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
             stopParsing = true;
