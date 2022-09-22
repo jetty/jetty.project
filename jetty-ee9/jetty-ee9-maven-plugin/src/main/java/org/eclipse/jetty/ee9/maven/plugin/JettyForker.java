@@ -112,9 +112,9 @@ public class JettyForker extends AbstractForker
         throws Exception
     {
         //Run the webapp to create the quickstart file and properties file
-        generator = new QuickStartGenerator(forkWebXml, webApp);
+        generator = new QuickStartGenerator(forkWebXml.toPath(), webApp);
         generator.setContextXml(contextXml);
-        generator.setWebAppPropsFile(webAppPropsFile);
+        generator.setWebAppPropsFile(webAppPropsFile.toPath());
         generator.setServer(server);
         generator.generate();
 

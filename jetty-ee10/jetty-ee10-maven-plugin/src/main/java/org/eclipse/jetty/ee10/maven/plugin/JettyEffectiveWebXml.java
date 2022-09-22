@@ -76,7 +76,7 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
     {
         try
         {
-            QuickStartGenerator generator = new QuickStartGenerator(effectiveWebXml, webApp);
+            QuickStartGenerator generator = new QuickStartGenerator(effectiveWebXml.toPath(), webApp);
             generator.generate();
         }
         catch (Exception e)
