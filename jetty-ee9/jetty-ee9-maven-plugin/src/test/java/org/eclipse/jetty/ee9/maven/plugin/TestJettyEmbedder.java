@@ -44,7 +44,7 @@ public class TestJettyEmbedder
     {
         Path baseResource = workDir.getEmptyPathDir();
         MavenWebAppContext webApp = new MavenWebAppContext();
-        webApp.setBaseResource(webapp.getResourceFactory().newResource(baseResource));
+        webApp.setBaseResource(webApp.getResourceFactory().newResource(baseResource));
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
 
@@ -82,14 +82,14 @@ public class TestJettyEmbedder
     {
         MavenWebAppContext webApp = new MavenWebAppContext();
         Path baseResource = workDir.getEmptyPathDir();
-        webApp.setBaseResource(webapp.getResourceFactory().newResource(baseResource));
+        webApp.setBaseResource(webApp.getResourceFactory().newResource(baseResource));
         Server server = new Server();
         Map<String, String> jettyProperties = new HashMap<>();
         jettyProperties.put("jetty.server.dumpAfterStart", "false");
 
         ContextHandler otherHandler = new ContextHandler();
         otherHandler.setContextPath("/other");
-        otherHandler.setBaseResource(webapp.getResourceFactory().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
+        otherHandler.setBaseResource(webApp.getResourceFactory().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
 
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);

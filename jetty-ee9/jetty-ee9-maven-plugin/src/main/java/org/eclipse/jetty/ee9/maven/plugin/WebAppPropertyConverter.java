@@ -173,7 +173,7 @@ public class WebAppPropertyConverter
         if (resource == null)
             throw new IllegalStateException("No resource");
 
-        fromProperties(webApp, webapp.getResourceFactory().newResource(resource).getPath(), server, jettyProperties);
+        fromProperties(webApp, webApp.getResourceFactory().newResource(resource).getPath(), server, jettyProperties);
     }
 
     /**
@@ -208,7 +208,7 @@ public class WebAppPropertyConverter
         str = webAppProperties.getProperty(QUICKSTART_WEB_XML);
         if (!StringUtil.isBlank(str))
         {
-            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, webapp.getResourceFactory().newResource(str));
+            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, webApp.getResourceFactory().newResource(str));
         }
 
         // - the tmp directory
@@ -227,7 +227,7 @@ public class WebAppPropertyConverter
             // This is a use provided list of overlays, which could have mountable entries.
             List<URI> uris = URIUtil.split(str);
             webApp.setWar(null);
-            webApp.setBaseResource(webapp.getResourceFactory().newResource(uris));
+            webApp.setBaseResource(webApp.getResourceFactory().newResource(uris));
         }
 
         str = webAppProperties.getProperty(WAR_FILE);
@@ -289,7 +289,7 @@ public class WebAppPropertyConverter
         str = (String)webAppProperties.getProperty(CONTEXT_XML);
         if (!StringUtil.isBlank(str))
         {
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(webapp.getResourceFactory().newResource(str));
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(webApp.getResourceFactory().newResource(str));
             xmlConfiguration.getIdMap().put("Server", server);
             //add in any properties
             if (jettyProperties != null)
