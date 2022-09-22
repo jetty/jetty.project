@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.quickstart;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -99,8 +100,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
             throw new IllegalStateException("Bad Quickstart location");
 
         //look for quickstart-web.xml in WEB-INF of webapp
-        Resource quickStartWebXml = getQuickStartWebXml(context);
-        LOG.debug("quickStartWebXml={} exists={}", quickStartWebXml, quickStartWebXml.exists());
+        Path quickStartWebXml = getQuickStartWebXml(context);
+        if (LOG.isDebugEnabled())
+            LOG.debug("quickStartWebXml={}", quickStartWebXml);
 
         //Get the mode
         Object o = context.getAttribute(MODE);
@@ -114,7 +116,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         {
             case GENERATE:
             {
-                if (quickStartWebXml.exists())
+                if (Files.exists(quickStartWebXml))
                     LOG.info("Regenerating {}", quickStartWebXml);
                 else
                     LOG.info("Generating {}", quickStartWebXml);
@@ -128,7 +130,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
             }
             case AUTO:
             {
-                if (quickStartWebXml.exists())
+                if (Files.exists(quickStartWebXml))
                 {
                     quickStart(context);
                 }
@@ -141,7 +143,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 break;
             }
             case QUICKSTART:
-                if (quickStartWebXml.exists())
+                if (Files.exists(quickStartWebXml))
                     quickStart(context);
                 else
                     throw new IllegalStateException("No " + quickStartWebXml);
@@ -159,7 +161,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
         if (attr != null)
             generator.setOriginAttribute(attr.toString());
 
-        generator.setQuickStartWebXml((Resource)context.getAttribute(QUICKSTART_WEB_XML));
+        Path quickStartWebXml = getQuickStartWebXml(context);
+        generator.setQuickStartWebXml(quickStartWebXml);
     }
 
     @Override
@@ -181,7 +184,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
 
-            LOG.debug("configured {}", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("configured {}", this);
         }
     }
 
@@ -210,54 +214,81 @@ public class QuickStartConfiguration extends AbstractConfiguration
         LOG.info("Quickstarting {}", context);
         _quickStart = true;
         context.setConfigurations(context.getConfigurations().stream()
-            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass())).toList().toArray(new Configuration[]{}));
-        context.getMetaData().setWebDescriptor(new WebDescriptor((Resource)context.getAttribute(QUICKSTART_WEB_XML)));
+            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
+            .toList()
+            .toArray(new Configuration[]{}));
+        Path quickStartWebXml = getQuickStartWebXml(context);
+        if (!Files.exists(quickStartWebXml))
+            throw new IllegalStateException("Quickstart doesn't exist: " + quickStartWebXml);
+        Resource quickStartWebResource = context.getResourceFactory().newResource(quickStartWebXml);
+        context.getMetaData().setWebDescriptor(new WebDescriptor(quickStartWebResource));
         context.getContext().getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
         context.getContext().getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
     }
 
     /**
-     * Get the quickstart-web.xml file as a Resource.
+     * Get the quickstart-web.xml Path from the webapp (from attributes if present, or built from the context's {@link WebAppContext#getWebInf()}).
      *
      * @param context the web app context
-     * @return the Resource for the quickstart-web.xml
-     * @throws Exception if unable to find the quickstart xml
+     * @return the Path for the quickstart-web.xml
+     * @throws IOException if unable to build the quickstart xml
      */
-    public Resource getQuickStartWebXml(WebAppContext context) throws Exception
+    public static Path getQuickStartWebXml(WebAppContext context) throws IOException
     {
         Object attr = context.getAttribute(QUICKSTART_WEB_XML);
-        if (attr instanceof Resource)
-            return (Resource)attr;
+        if (attr instanceof Path)
+            return (Path)attr;
 
-        Resource webInf = context.getWebInf();
-        if (webInf == null || !webInf.exists())
-        {
-            Files.createDirectories(context.getBaseResource().getPath().resolve("WEB-INF"));
-            webInf = context.getWebInf();
-        }
+        Path webInfDir = getWebInfPath(context);
+        Path qstartFile = webInfDir.resolve("quickstart-web.xml");
 
-        Resource qstart;
-        if (attr == null || StringUtil.isBlank(attr.toString()))
+        if (attr != null && StringUtil.isNotBlank(attr.toString()))
         {
-            // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/quickstart-web.xml
-            // TODO: should also never return from a META-INF/versions/#/WEB-INF/quickstart-web.xml location
-            qstart = webInf.resolve("quickstart-web.xml");
-        }
-        else
-        {
+            Resource resource;
+            String attrValue = attr.toString();
             try
             {
                 // Try a relative resolution
-                qstart = _resourceFactory.newResource(webInf.getPath().resolve(attr.toString()));
+                resource = context.getResourceFactory().newResource(webInfDir.resolve(attrValue));
             }
             catch (Throwable th)
             {
                 // try as a resource
-                qstart = _resourceFactory.newResource(attr.toString());
+                resource = context.getResourceFactory().newResource(attrValue);
             }
-            context.setAttribute(QUICKSTART_WEB_XML, qstart);
+            if (resource != null)
+            {
+                Path attrPath = resource.getPath();
+                if (attrPath != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Using quickstart attribute {} value of {}", attr, attrValue);
+                    qstartFile = attrPath;
+                }
+            }
         }
-        context.setAttribute(QUICKSTART_WEB_XML, qstart);
-        return  qstart;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Using quickstart location: {}", qstartFile);
+        context.setAttribute(QUICKSTART_WEB_XML, qstartFile);
+        return qstartFile;
+    }
+
+    private static Path getWebInfPath(WebAppContext context) throws IOException
+    {
+        Path webInfDir = null;
+        Resource webInf = context.getWebInf();
+        if (webInf != null)
+        {
+            webInfDir = webInf.getPath();
+        }
+
+        if (webInfDir == null)
+        {
+            Path baseResourcePath = context.getBaseResource().getPath();
+            webInfDir = baseResourcePath.resolve("WEB-INF");
+            if (!Files.exists(webInfDir))
+                Files.createDirectories(webInfDir);
+        }
+        return webInfDir;
     }
 }
