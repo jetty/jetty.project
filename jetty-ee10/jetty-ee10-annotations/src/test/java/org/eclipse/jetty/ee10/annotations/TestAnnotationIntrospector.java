@@ -57,7 +57,7 @@ public class TestAnnotationIntrospector
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //an ANNOTATION sourced servlet can be introspected
-            holder = new ServletHolder(new Source(Source.Origin.ANNOTATION, ServletE.class.getName()));
+            holder = new ServletHolder(new Source(Source.Origin.ANNOTATION, ServletE.class));
             holder.setHeldClass(ServletE.class);
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
@@ -65,7 +65,7 @@ public class TestAnnotationIntrospector
             Path xml = MavenTestingUtils.getTestResourcePathFile("web31false.xml");
             Resource xmlResource = wac.getResourceFactory().newResource(xml);
             wac.getMetaData().setWebDescriptor(new WebDescriptor(xmlResource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xmlResource));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet can be introspected if web-fragment.xml medata-complete==false && web.xml metadata-complete==false
@@ -73,7 +73,7 @@ public class TestAnnotationIntrospector
             xmlResource = wac.getResourceFactory().newResource(xml);
             Resource parent = wac.getResourceFactory().newResource(xml.getParent());
             wac.getMetaData().addFragmentDescriptor(parent, new FragmentDescriptor(xmlResource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xmlResource));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet cannot be introspected if web-fragment.xml medata-complete==true (&& web.xml metadata-complete==false)
@@ -81,14 +81,14 @@ public class TestAnnotationIntrospector
             xmlResource = wac.getResourceFactory().newResource(xml);
             parent = wac.getResourceFactory().newResource(xml.getParent());
             wac.getMetaData().addFragmentDescriptor(parent, new FragmentDescriptor(xmlResource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xmlResource));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet cannot be introspected if web.xml medata-complete==true
             xml = MavenTestingUtils.getTestResourcePathFile("web31true.xml");
             xmlResource = wac.getResourceFactory().newResource(xml);
             wac.getMetaData().setWebDescriptor(new WebDescriptor(xmlResource));
-            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xml.toUri().toASCIIString()));
+            holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xmlResource));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));
         }
     }

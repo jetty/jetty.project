@@ -108,7 +108,7 @@ public class TestAnnotationDecorator
         //test with BaseHolder metadata, should not introspect with metdata-complete==true
         context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyResource, MetaData.Complete.True));
         assertTrue(context.getMetaData().isMetaDataComplete());
-        ServletHolder holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, ""));
+        ServletHolder holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR));
         holder.setHeldClass(ServletE.class);
         context.getServletHandler().addServlet(holder);
         DecoratedObjectFactory.associateInfo(holder);

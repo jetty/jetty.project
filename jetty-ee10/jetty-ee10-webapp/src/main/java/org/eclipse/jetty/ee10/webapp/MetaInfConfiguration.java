@@ -666,10 +666,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<Resource> findJars(WebAppContext context)
         throws Exception
     {
-        List<Resource> jarResources = new ArrayList<Resource>();
-        List<Resource> webInfLibJars = findWebInfLibJars(context);
-        if (webInfLibJars != null)
-            jarResources.addAll(webInfLibJars);
+        List<Resource> jarResources = new ArrayList<>();
+        jarResources.addAll(findWebInfLibJars(context));
         List<Resource> extraClasspathJars = findExtraClasspathJars(context);
         if (extraClasspathJars != null)
             jarResources.addAll(extraClasspathJars);
@@ -686,9 +684,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected List<Resource> findWebInfLibJars(WebAppContext context)
         throws Exception
     {
+        if (context == null)
+            return List.of();
+
         Resource webInf = context.getWebInf();
-        if (webInf == null || !webInf.exists() || webInf.isDirectory())
-            return null;
+        if (webInf == null || !webInf.exists() || !webInf.isDirectory())
+            return List.of();
 
         Resource webInfLib = webInf.resolve("/lib");
 

@@ -597,7 +597,7 @@ public class MetaData
      */
     public FragmentDescriptor getFragmentDescriptor(Resource descriptorResource)
     {
-        return _webFragmentRoots.stream().filter(d -> d.getRoot().equals(descriptorResource)).findFirst().orElse(null);
+        return _webFragmentRoots.stream().filter(d -> d.getResource().equals(descriptorResource)).findFirst().orElse(null);
     }
 
     /**
