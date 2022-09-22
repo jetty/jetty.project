@@ -103,7 +103,7 @@ public class HttpTester
         return new Input(data.slice())
         {
             @Override
-            public int fillBuffer() throws IOException
+            public int fillBuffer()
             {
                 _eof = true;
                 return -1;
@@ -162,10 +162,7 @@ public class HttpTester
 
     public static Request parseRequest(String request)
     {
-        Request r = new Request();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(BufferUtil.toBuffer(request));
-        return r;
+        return parseRequest(BufferUtil.toBuffer(request));
     }
 
     public static Request parseRequest(ByteBuffer request)
@@ -174,6 +171,35 @@ public class HttpTester
         HttpParser parser = new HttpParser(r);
         parser.parseNext(request);
         return r;
+    }
+
+    public static Request parseRequest(InputStream requestStream) throws IOException
+    {
+        Request r = new Request();
+        HttpParser parser = new HttpParser(r);
+        return parseMessage(requestStream, parser) ? r : null;
+    }
+
+    private static boolean parseMessage(InputStream stream, HttpParser parser) throws IOException
+    {
+        // Read and parse a character at a time so we never can read more than we should.
+        byte[] array = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(array);
+
+        while (true)
+        {
+            buffer.position(1);
+            int read = stream.read(array);
+            if (read < 0)
+                parser.atEOF();
+            else
+                buffer.position(0);
+
+            if (parser.parseNext(buffer))
+                return true;
+            else if (read < 0)
+                return false;
+        }
     }
 
     public static Response parseResponse(String response)
@@ -196,26 +222,7 @@ public class HttpTester
     {
         Response r = new Response();
         HttpParser parser = new HttpParser(r);
-
-        // Read and parse a character at a time so we never can read more than we should.
-        byte[] array = new byte[1];
-        ByteBuffer buffer = ByteBuffer.wrap(array);
-        buffer.limit(1);
-
-        while (true)
-        {
-            buffer.position(1);
-            int l = responseStream.read(array);
-            if (l < 0)
-                parser.atEOF();
-            else
-                buffer.position(0);
-
-            if (parser.parseNext(buffer))
-                return r;
-            else if (l < 0)
-                return null;
-        }
+        return parseMessage(responseStream, parser) ? r : null;
     }
 
     public static Response parseResponse(Input in) throws IOException
@@ -406,12 +413,12 @@ public class HttpTester
             try
             {
                 _content.write(BufferUtil.toArray(ref));
+                return false;
             }
             catch (IOException e)
             {
                 throw new RuntimeException(e);
             }
-            return false;
         }
 
         @Override

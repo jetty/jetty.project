@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -1261,6 +1262,24 @@ public class HttpChannelState implements HttpChannel, Components
             _status = 0;
             _trailers = null;
             _request.getHttpChannel().resetResponse();
+        }
+
+        @Override
+        public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
+        {
+            Completable completable = new Completable();
+            if (HttpStatus.isInterim(status))
+            {
+                HttpChannelState channel = _request.getHttpChannel();
+                HttpVersion version = channel.getConnectionMetaData().getHttpVersion();
+                MetaData.Response response = new MetaData.Response(version, status, headers);
+                channel._stream.send(_request._metaData, response, false, null, completable);
+            }
+            else
+            {
+                completable.failed(new IllegalArgumentException("Invalid interim status code: " + status));
+            }
+            return completable;
         }
 
         private MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)

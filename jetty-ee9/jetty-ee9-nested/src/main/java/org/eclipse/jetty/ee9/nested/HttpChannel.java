@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,6 +55,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -100,7 +100,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private org.eclipse.jetty.server.Request _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
-    private Supplier<HttpFields> _responseTrailers;
+    private boolean _expects100Continue;
 
     public HttpChannel(ContextHandler contextHandler, ConnectionMetaData connectionMetaData)
     {
@@ -411,9 +411,49 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * @param available estimate of the number of bytes that are available
      * @throws IOException if the InputStream cannot be created
      */
-    public void continue100(int available) throws IOException
+    public void send100Continue(int available) throws IOException
     {
-        throw new UnsupportedOperationException();
+        if (isExpecting100Continue())
+        {
+            _expects100Continue = false;
+            if (available == 0)
+            {
+                if (isCommitted())
+                    throw new IOException("Committed before 100 Continue");
+                try
+                {
+                    _coreResponse.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get();
+                }
+                catch (Throwable x)
+                {
+                    throw IO.rethrow(x);
+                }
+            }
+        }
+    }
+
+    public void send102Processing(HttpFields headers) throws IOException
+    {
+        try
+        {
+            _coreResponse.writeInterim(HttpStatus.PROCESSING_102, headers).get();
+        }
+        catch (Throwable x)
+        {
+            throw IO.rethrow(x);
+        }
+    }
+
+    public void send103EarlyHints(HttpFields headers) throws IOException
+    {
+        try
+        {
+            _coreResponse.writeInterim(HttpStatus.EARLY_HINT_103, headers).get();
+        }
+        catch (Throwable x)
+        {
+            throw IO.rethrow(x);
+        }
     }
 
     public void recycle()
@@ -808,12 +848,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean isExpecting100Continue()
     {
-        return _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-    }
-
-    public boolean isExpecting102Processing()
-    {
-        return _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.PROCESSING.asString());
+        return _expects100Continue;
     }
 
     @Override
@@ -836,8 +871,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _coreRequest = coreRequest;
         _requests.incrementAndGet();
-        _request.setTimeStamp(_coreRequest.getTimeStamp());
         _request.onRequest(coreRequest);
+        _expects100Continue = coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
         _combinedListener.onRequestBegin(_request);
         if (LOG.isDebugEnabled())
         {

@@ -221,6 +221,8 @@ public class HttpClient extends ContainerLifeCycle
             setSocketAddressResolver(new SocketAddressResolver.Async(getExecutor(), getScheduler(), getAddressResolutionTimeout()));
 
         handlers.put(new ContinueProtocolHandler());
+        handlers.put(new ProcessingProtocolHandler());
+        handlers.put(new EarlyHintsProtocolHandler());
         handlers.put(new RedirectProtocolHandler(this));
         handlers.put(new WWWAuthenticationProtocolHandler(this));
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
