@@ -214,9 +214,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
         LOG.info("Quickstarting {}", context);
         _quickStart = true;
         context.setConfigurations(context.getConfigurations().stream()
-            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
-            .toList()
-            .toArray(new Configuration[]{}));
+            .filter(c -> !__replacedConfigurations.contains(c.replaces()))
+            .filter(c -> !__replacedConfigurations.contains(c.getClass()))
+            .toArray(Configuration[]::new));
         Path quickStartWebXml = getQuickStartWebXml(context);
         if (!Files.exists(quickStartWebXml))
             throw new IllegalStateException("Quickstart doesn't exist: " + quickStartWebXml);
