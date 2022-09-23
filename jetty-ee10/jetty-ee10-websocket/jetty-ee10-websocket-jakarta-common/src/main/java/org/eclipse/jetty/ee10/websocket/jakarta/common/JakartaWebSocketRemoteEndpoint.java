@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.SendHandler;
@@ -28,10 +32,6 @@ import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
 
 public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteEndpoint, OutgoingFrames
 {

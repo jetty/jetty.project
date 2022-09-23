@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.nio.ByteBuffer;
+
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.RemoteEndpoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -23,11 +28,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.nio.ByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
