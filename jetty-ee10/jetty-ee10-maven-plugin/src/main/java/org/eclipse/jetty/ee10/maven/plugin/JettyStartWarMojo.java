@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.File;
 import java.nio.file.Path;
 
+import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -59,7 +60,7 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
     protected JettyHomeForker homeForker;
 
     @Override
-    public void configureWebApp() throws Exception
+    public void configureWebApp() throws AbstractMojoExecutionException
     {
         super.configureWebApp();
         //if a war has not been explicitly configured, use the one from the project

@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -28,24 +32,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class TestQuickStartGenerator
 {
+    public WorkDir workDir;
+
     @Test
     public void testGenerator() throws Exception
     {
+        Path tmpDir = workDir.getEmptyPathDir();
+
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/shouldbeoverridden");
-        webApp.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
-        File quickstartFile = new File(MavenTestingUtils.getTargetTestingDir(), "quickstart-web.xml");
+        Path rootDir = MavenTestingUtils.getTargetPath().resolve("test-classes/root");
+        assertTrue(Files.exists(rootDir));
+        assertTrue(Files.isDirectory(rootDir));
+        webApp.setBaseResource(ResourceFactory.root().newResource(rootDir));
+
+        Path quickstartFile = tmpDir.resolve("quickstart-web.xml");
         QuickStartGenerator generator = new QuickStartGenerator(quickstartFile, webApp);
         generator.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath());
         generator.setServer(new Server());
-        MavenTestingUtils.getTargetTestingDir().mkdirs();
-        File propsFile = new File(MavenTestingUtils.getTargetTestingDir(), "webapp.props");
-        propsFile.createNewFile();
+
+        Path propsFile = tmpDir.resolve("webapp.props");
+        Files.createFile(propsFile);
         generator.setWebAppPropsFile(propsFile);
         generator.generate();
-        assertTrue(propsFile.exists());
-        assertTrue(propsFile.length() > 0);
-        assertTrue(quickstartFile.exists());
-        assertTrue(quickstartFile.length() > 0);
+        assertTrue(Files.exists(propsFile));
+        assertThat(Files.size(propsFile), greaterThan(0L));
+        assertTrue(Files.exists(quickstartFile));
+        assertThat(Files.size(quickstartFile), greaterThan(0L));
     }
 }

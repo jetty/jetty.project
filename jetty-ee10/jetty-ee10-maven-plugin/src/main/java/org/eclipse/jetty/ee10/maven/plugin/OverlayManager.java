@@ -39,8 +39,7 @@ public class OverlayManager
         this.warPlugin = warPlugin;
     }
 
-    public void applyOverlays(MavenWebAppContext webApp)
-        throws Exception
+    public void applyOverlays(MavenWebAppContext webApp) throws IOException
     {
         List<Resource> resourceBases = new ArrayList<Resource>();
 
@@ -71,8 +70,7 @@ public class OverlayManager
      * Generate an ordered list of overlays
      */
     protected List<Overlay> getOverlays()
-        throws Exception
-    {        
+    {
         Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
         List<Overlay> overlays = new ArrayList<Overlay>();
         
@@ -127,7 +125,7 @@ public class OverlayManager
      */
     protected  Resource unpackOverlay(Overlay overlay)
         throws IOException
-    {        
+    {
         if (overlay.getResource() == null)
             return null; //nothing to unpack
 

@@ -184,7 +184,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         this.stopKey = stopKey;
     }
     
-    public void setWebApp(MavenWebAppContext app) throws Exception
+    public void setWebApp(MavenWebAppContext app)
     {
         webApp = app;
     }
@@ -279,7 +279,7 @@ public class JettyEmbedder extends AbstractLifeCycle
             Path qs = webApp.getTempDirectory().toPath().resolve("quickstart-web.xml");
             if (Files.exists(qs) && Files.isRegularFile(qs))
             {
-                webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, webApp.getResourceFactory().newResource(qs));
+                webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, qs);
                 webApp.addConfiguration(new MavenQuickStartConfiguration());
                 webApp.setAttribute(QuickStartConfiguration.MODE, Mode.QUICKSTART);
             }
