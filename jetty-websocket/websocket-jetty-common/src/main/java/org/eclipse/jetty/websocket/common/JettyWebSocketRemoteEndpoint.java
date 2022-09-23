@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -79,7 +78,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         FutureCallback b = new FutureCallback();
         sendPartialBytes(fragment, isLast, b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -121,7 +120,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         FutureCallback b = new FutureCallback();
         sendPartialText(fragment, isLast, b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     // FIXME: Remove the throws IOException from API for this method in the next major release.
@@ -189,7 +188,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         FutureCallback b = new FutureCallback();
         coreSession.sendFrame(frame, b, false);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -232,12 +231,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         FutureCallback b = new FutureCallback();
         coreSession.flush(b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
-    }
-
-    private long getBlockingTimeout()
-    {
-        long idleTimeout = coreSession.getIdleTimeout().toMillis();
-        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
+        b.block();
     }
 }
