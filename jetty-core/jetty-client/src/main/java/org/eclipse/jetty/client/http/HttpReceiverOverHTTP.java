@@ -36,7 +36,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,14 +56,16 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private String method;
     private int status;
     private Content.Chunk contentGenerated;
+    private ContentSource contentSource;
 
     @Override
-    protected ReceiverContentSource newContentSource()
+    protected Content.Source newContentSource()
     {
-        return new ContentSource();
+        contentSource = new ContentSource();
+        return contentSource;
     }
 
-    public class ContentSource implements ReceiverContentSource
+    public class ContentSource implements Content.Source
     {
         private final SerializedInvoker invoker = new SerializedInvoker();
         private volatile Content.Chunk currentChunk;
@@ -80,7 +81,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             return consumeCurrentChunk();
         }
 
-        @Override
         public void onDataAvailable()
         {
             if (demandCallback != null)
@@ -502,7 +502,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         networkBuffer.retain();
 
         if (contentGenerated != null)
-            throw new AssertionError();
+            throw new IllegalStateException("Content generated with unconsumed content left");
 
         contentGenerated = Content.Chunk.from(buffer, false, networkBuffer);
         if (firstContent.compareAndSet(true, false))
@@ -513,7 +513,15 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
         else
         {
-            return !responseContent(exchange, Callback.from(() -> {}, this::failAndClose));
+            try
+            {
+                withinContentState(exchange, () -> contentSource.onDataAvailable());
+            }
+            catch (IllegalStateException e)
+            {
+                failAndClose(e);
+            }
+            return true;
         }
     }
 

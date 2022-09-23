@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * is available</li>
  * <li>{@link #responseHeader(HttpExchange, HttpField)}, when an HTTP field is available</li>
  * <li>{@link #responseHeaders(HttpExchange)}, when all HTTP headers are available</li>
- * <li>{@link #responseContent(HttpExchange, Callback)}, when HTTP content is available</li>
+ * <li>{@link #withinContentState(HttpExchange, Runnable)}, when HTTP content is available</li>
  * <li>{@link #responseSuccess(HttpExchange)}, when the response is successful</li>
  * </ol>
  * At any time, subclasses may invoke {@link #responseFailure(Throwable)} to indicate that the response has failed
@@ -66,9 +65,9 @@ public abstract class HttpReceiver
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final ContentListeners contentListeners = new ContentListeners();
-    protected ReceiverContentSource contentSource;
     private final HttpChannel channel;
     private volatile boolean firstContent = true;
+    private Content.Source contentSource;
     private Throwable failure;
 
     protected HttpReceiver(HttpChannel channel)
@@ -77,33 +76,19 @@ public abstract class HttpReceiver
         this.contentSource = newContentSource();
     }
 
-    protected abstract ReceiverContentSource newContentSource();
+    protected abstract Content.Source newContentSource();
 
-    // TODO get rid of this interface so that DecodingContentSource can be client/server agnostic
-    protected interface ReceiverContentSource extends Content.Source
-    {
-        void onDataAvailable();
-    }
-
-    private static class DecodingContentSource extends ContentSourceTransformer implements ReceiverContentSource
+    private static class DecodingContentSource extends ContentSourceTransformer
     {
         private static final Logger LOG = LoggerFactory.getLogger(DecodingContentSource.class);
 
-        private final ReceiverContentSource _rawSource;
         private final ContentDecoder _decoder;
         private volatile Content.Chunk _chunk;
 
-        public DecodingContentSource(ReceiverContentSource rawSource, ContentDecoder decoder)
+        public DecodingContentSource(Content.Source rawSource, ContentDecoder decoder)
         {
             super(rawSource);
-            _rawSource = rawSource;
             _decoder = decoder;
-        }
-
-        @Override
-        public void onDataAvailable()
-        {
-            _rawSource.onDataAvailable();
         }
 
         @Override
@@ -373,33 +358,25 @@ public abstract class HttpReceiver
      * This method takes case of decoding the content, if necessary, and notifying {@link org.eclipse.jetty.client.api.Response.ContentListener}s.
      *
      * @param exchange the HTTP exchange
-     * @param callback the callback
+     * @param runnable the action to execute while in CONTENT state
      * @return whether the processing should continue
      */
     // TODO this method should go away, make sure state changes aren't needed anymore (they should not be, they're about checking there was no concurrent failure triggered by the app)
-    protected boolean responseContent(HttpExchange exchange, Callback callback)
+    protected void withinContentState(HttpExchange exchange, Runnable runnable) throws IllegalStateException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Response content {}", exchange.getResponse());
 
         if (!updateResponseState(ResponseState.HEADERS, ResponseState.CONTENT, ResponseState.TRANSIENT))
-        {
-            callback.failed(new IllegalStateException("Invalid response state " + responseState));
-            return false;
-        }
+            throw new IllegalStateException("Invalid response state " + responseState);
 
-        contentSource.onDataAvailable(); // make sure state is TRANSIENT while the app code is running
+        runnable.run();
 
         if (updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
-        {
-            // Stop the parser immediately otherwise the parser may parse EOF and emit
-            // responseSuccess before the previously enqueued content gets read.
-            return false;
-        }
+            return;
 
         dispose();
         terminateResponse(exchange);
-        return false;
     }
 
     /**
