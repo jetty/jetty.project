@@ -79,7 +79,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             if (overrideDescriptor != null && overrideDescriptor.length() > 0)
             {
-                Resource orideResource = ResourceFactory.of(context).newSystemResource(overrideDescriptor);
+                Resource orideResource = context.getResourceFactory().newSystemResource(overrideDescriptor);
                 if (orideResource == null)
                     orideResource = context.newResource(overrideDescriptor);
                 context.getMetaData().addOverrideDescriptor(new OverrideDescriptor(orideResource));

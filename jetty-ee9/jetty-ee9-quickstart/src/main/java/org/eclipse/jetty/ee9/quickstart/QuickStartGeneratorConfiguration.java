@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.quickstart;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -159,7 +158,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         webappAttr.put("metadata-complete", Boolean.toString(context.getMetaData().isMetaDataComplete()));
         webappAttr.put("version", major + "." + minor);
 
-        XmlAppendable out = new XmlAppendable(stream, StandardCharsets.UTF_8);
+        XmlAppendable out = new XmlAppendable(stream);
         out.openTag("web-app", webappAttr);
         if (context.getDisplayName() != null)
             out.tag("display-name", context.getDisplayName());

@@ -33,31 +33,12 @@ public class XmlAppendable
     private final Stack<String> _tags = new Stack<>();
     private String _space = "";
 
-    public XmlAppendable(OutputStream out, Charset charset) throws IOException
+    public XmlAppendable(OutputStream out) throws IOException
     {
-        this(new OutputStreamWriter(out, charset), charset);
-    }
-
-    public XmlAppendable(Appendable out) throws IOException
-    {
-        this(out, 2);
-    }
-
-    public XmlAppendable(Appendable out, Charset charset) throws IOException
-    {
-        this(out, 2, charset);
-    }
-
-    public XmlAppendable(Appendable out, int indent) throws IOException
-    {
-        this(out, indent, StandardCharsets.UTF_8);
-    }
-
-    public XmlAppendable(Appendable out, int indent, Charset charset) throws IOException
-    {
-        _out = out;
-        _indent = indent;
-        _out.append("<?xml version=\"1.0\" encoding=\"").append(charset.name().toLowerCase(Locale.ENGLISH)).append("\"?>\n");
+        Charset utf8 = StandardCharsets.UTF_8;
+        _out = new OutputStreamWriter(out, utf8);
+        _indent = 2;
+        _out.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     }
 
     public XmlAppendable openTag(String tag, Map<String, String> attributes) throws IOException

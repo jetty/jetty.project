@@ -39,6 +39,7 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -781,7 +782,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @throws Exception
      */
     protected void configureWebApp()
-        throws Exception
+        throws AbstractMojoExecutionException
     {
         if (webApp == null)
             webApp = new MavenWebAppContext();

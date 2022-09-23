@@ -101,7 +101,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         //look for quickstart-web.xml in WEB-INF of webapp
         Path quickStartWebXml = getQuickStartWebXml(context);
-        LOG.debug("quickStartWebXml={}", quickStartWebXml);
+        if (LOG.isDebugEnabled())
+            LOG.debug("quickStartWebXml={} exists={}", quickStartWebXml, Files.exists(quickStartWebXml));
 
         //Get the mode
         Object o = context.getAttribute(MODE);
@@ -183,7 +184,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
 
-            LOG.debug("configured {}", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("configured {}", this);
         }
     }
 
@@ -209,22 +211,28 @@ public class QuickStartConfiguration extends AbstractConfiguration
     protected void quickStart(WebAppContext context)
         throws Exception
     {
-        LOG.info("Quickstarting {}", context);
+        if (LOG.isDebugEnabled())
+            LOG.info("Quickstarting {}", context);
         _quickStart = true;
         context.setConfigurations(context.getConfigurations().stream()
-            .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass())).toList().toArray(new Configuration[]{}));
+            .filter(c -> !__replacedConfigurations.contains(c.replaces()))
+            .filter(c -> !__replacedConfigurations.contains(c.getClass()))
+            .toArray(Configuration[]::new));
         Path quickStartWebXml = getQuickStartWebXml(context);
-        context.getMetaData().setWebDescriptor(new WebDescriptor(quickStartWebXml));
+        if (!Files.exists(quickStartWebXml))
+            throw new IllegalStateException("Quickstart doesn't exist: " + quickStartWebXml);
+        Resource quickStartWebResource = context.getResourceFactory().newResource(quickStartWebXml);
+        context.getMetaData().setWebDescriptor(new WebDescriptor(quickStartWebResource));
         context.getContext().getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
         context.getContext().getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
     }
 
     /**
-     * Get the quickstart-web.xml file as a Resource.
+     * Get the quickstart-web.xml Path from the webapp (from attributes if present, or built from the context's {@link WebAppContext#getWebInf()}).
      *
      * @param context the web app context
-     * @return the Resource for the quickstart-web.xml
-     * @throws Exception if unable to find the quickstart xml
+     * @return the Path for the quickstart-web.xml
+     * @throws IOException if unable to build the quickstart xml
      */
     public static Path getQuickStartWebXml(WebAppContext context) throws IOException
     {
@@ -233,7 +241,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
             return (Path)attr;
 
         Path webInfDir = getWebInfPath(context);
-        Path qstartFile = webInfDir.resolve("quickstart-web.xml");
+        Path qstartPath = webInfDir.resolve("quickstart-web.xml");
 
         if (attr != null && StringUtil.isNotBlank(attr.toString()))
         {
@@ -255,19 +263,15 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 if (attrPath != null)
                 {
                     if (LOG.isDebugEnabled())
-                    {
                         LOG.debug("Using quickstart attribute {} value of {}", attr, attrValue);
-                    }
-                    qstartFile = attrPath;
+                    qstartPath = attrPath;
                 }
             }
         }
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Using quickstart location: {}", qstartFile);
-        }
-        context.setAttribute(QUICKSTART_WEB_XML, qstartFile);
-        return qstartFile;
+            LOG.debug("Using quickstart location: {}", qstartPath);
+        context.setAttribute(QUICKSTART_WEB_XML, qstartPath);
+        return qstartPath;
     }
 
     private static Path getWebInfPath(WebAppContext context) throws IOException
@@ -281,11 +285,23 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         if (webInfDir == null)
         {
-            Path baseResourcePath = context.getBaseResource().getPath();
+            Path baseResourcePath = findFirstWritablePath(context);
             webInfDir = baseResourcePath.resolve("WEB-INF");
             if (!Files.exists(webInfDir))
                 Files.createDirectories(webInfDir);
         }
         return webInfDir;
+    }
+
+    private static Path findFirstWritablePath(WebAppContext context) throws IOException
+    {
+        for (Resource resource: context.getBaseResource())
+        {
+            Path path = resource.getPath();
+            if (path == null || !Files.isDirectory(path) || !Files.isWritable(path))
+                continue; // skip
+            return path;
+        }
+        throw new IOException("Unable to find writable path in Base Resources");
     }
 }

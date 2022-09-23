@@ -519,7 +519,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
-        context.setBaseResource(ResourceFactory.of(context).newResource(warPath));
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
         context.setExtraClasspath(extraClasspathGlobReference);
 
         server.setHandler(context);
@@ -593,7 +593,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
-        context.setBaseResource(ResourceFactory.of(context).newResource(warPath));
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
 
         context.setExtraClasspath(extraClassPathReference);
 

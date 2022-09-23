@@ -41,7 +41,7 @@ public class TestQuickStartGenerator
 
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/shouldbeoverridden");
-        Path rootDir = MavenTestingUtils.getTargetPath("test-classes/root");
+        Path rootDir = MavenTestingUtils.getTargetPath().resolve("test-classes/root");
         assertTrue(Files.exists(rootDir));
         assertTrue(Files.isDirectory(rootDir));
         webApp.setBaseResource(ResourceFactory.root().newResource(rootDir));
