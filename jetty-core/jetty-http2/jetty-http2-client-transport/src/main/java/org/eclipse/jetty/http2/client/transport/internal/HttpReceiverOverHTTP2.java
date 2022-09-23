@@ -54,6 +54,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
+    protected ReceiverContentSource newContentSource()
+    {
+        return null;
+    }
+
+    @Override
     protected HttpChannelOverHTTP2 getHttpChannel()
     {
         return (HttpChannelOverHTTP2)super.getHttpChannel();

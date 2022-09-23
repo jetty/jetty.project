@@ -40,6 +40,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     }
 
     @Override
+    protected ReceiverContentSource newContentSource()
+    {
+        return null;
+    }
+
+    @Override
     protected HttpChannelOverHTTP3 getHttpChannel()
     {
         return (HttpChannelOverHTTP3)super.getHttpChannel();

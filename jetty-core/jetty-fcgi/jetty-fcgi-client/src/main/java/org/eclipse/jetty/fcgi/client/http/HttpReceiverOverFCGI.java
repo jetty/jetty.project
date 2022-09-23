@@ -27,6 +27,12 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
+    protected ReceiverContentSource newContentSource()
+    {
+        return null;
+    }
+
+    @Override
     protected HttpChannelOverFCGI getHttpChannel()
     {
         return (HttpChannelOverFCGI)super.getHttpChannel();

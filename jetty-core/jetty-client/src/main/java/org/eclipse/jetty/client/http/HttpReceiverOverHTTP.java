@@ -162,7 +162,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
     }
 
-
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
