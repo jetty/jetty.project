@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -104,18 +106,25 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
     }
     
     @Override
-    protected void configureWebApp() throws Exception
+    protected void configureWebApp() throws AbstractMojoExecutionException
     {
         super.configureWebApp();
-        configureUnassembledWebApp();
+        try
+        {
+            configureUnassembledWebApp();
+        }
+        catch (IOException e)
+        {
+            throw new MojoFailureException("Unable to configure unassembled webapp", e);
+        }
     }
     
     /**
      * Configure a webapp that has not been assembled into a war. 
      * 
-     * @throws Exception
+     * @throws IOException
      */
-    protected void configureUnassembledWebApp() throws Exception
+    protected void configureUnassembledWebApp() throws IOException
     {   
         //Set up the location of the webapp.
         //There are 2 parts to this: setWar() and setBaseResource(). On standalone jetty,

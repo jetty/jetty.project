@@ -184,7 +184,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         this.stopKey = stopKey;
     }
     
-    public void setWebApp(MavenWebAppContext app) throws Exception
+    public void setWebApp(MavenWebAppContext app)
     {
         webApp = app;
     }

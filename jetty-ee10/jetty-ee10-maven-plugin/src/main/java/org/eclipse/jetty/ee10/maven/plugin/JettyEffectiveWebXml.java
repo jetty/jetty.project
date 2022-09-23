@@ -14,8 +14,11 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
+import java.io.IOException;
 
+import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -36,21 +39,30 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
     protected File effectiveWebXml;
     
     @Override
-    public void configureWebApp() throws Exception
+    public void configureWebApp() throws AbstractMojoExecutionException
     {
         //Use a nominated war file for which to generate the effective web.xml, or
         //if that is not set, try to use the details of the current project's 
         //unassembled webapp
         super.configureWebApp();
-        if (StringUtil.isBlank(webApp.getWar()))
+        try
+        {
+            if (StringUtil.isBlank(webApp.getWar()))
+            {
             super.configureUnassembledWebApp();
+            }
+        }
+        catch (IOException e)
+        {
+            throw new MojoFailureException("Unable to configure unassembled webapp", e);
+        }
     }
     
     /**
      * Override so we can call the parent's method in a different order.
      */
     @Override
-    protected void configureUnassembledWebApp() throws Exception
+    protected void configureUnassembledWebApp()
     {
     }
 

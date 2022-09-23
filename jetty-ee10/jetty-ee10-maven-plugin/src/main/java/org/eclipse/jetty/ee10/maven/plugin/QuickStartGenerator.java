@@ -42,7 +42,7 @@ public class QuickStartGenerator
      * @param quickstartXml the file to generate quickstart into
      * @param webApp the webapp for which to generate quickstart
      */
-    public QuickStartGenerator(Path quickstartXml, MavenWebAppContext webApp) throws Exception
+    public QuickStartGenerator(Path quickstartXml, MavenWebAppContext webApp)
     {
         this.quickstartXml = quickstartXml;
         this.webApp = webApp == null ? new MavenWebAppContext() : webApp;
@@ -108,11 +108,8 @@ public class QuickStartGenerator
     
     /**
      * Configure the webapp in preparation for quickstart generation.
-     * 
-     * @throws Exception
      */
     private void prepareWebApp()
-        throws Exception
     {
         //set the webapp up to do very little other than generate the quickstart-web.xml
         webApp.addConfiguration(new MavenQuickStartConfiguration());
@@ -129,8 +126,7 @@ public class QuickStartGenerator
      * 
      * @throws Exception
      */
-    public void generate()
-        throws Exception
+    public void generate() throws Exception
     {
         if (quickstartXml == null)
             throw new IllegalStateException("No quickstart xml output file");

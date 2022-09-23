@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
@@ -64,10 +65,10 @@ public class WebAppPropertyConverter
      * @param webApp the webapp to convert
      * @param propsFile the file to put the properties into
      * @param contextXml the optional context xml file related to the webApp
-     * @throws Exception if any I/O exception occurs
+     * @throws IOException if any I/O exception occurs
      */
     public static void toProperties(MavenWebAppContext webApp, File propsFile, String contextXml)
-        throws Exception
+        throws IOException
     {
         if (webApp == null)
             throw new IllegalArgumentException("No webapp");

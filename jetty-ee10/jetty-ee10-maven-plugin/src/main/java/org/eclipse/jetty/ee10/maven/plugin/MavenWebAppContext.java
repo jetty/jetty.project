@@ -100,7 +100,7 @@ public class MavenWebAppContext extends WebAppContext
      */
     private boolean _baseAppFirst = true;
 
-    public MavenWebAppContext() throws Exception
+    public MavenWebAppContext()
     {
         super();
         // Turn off copyWebInf option as it is not applicable for plugin.
