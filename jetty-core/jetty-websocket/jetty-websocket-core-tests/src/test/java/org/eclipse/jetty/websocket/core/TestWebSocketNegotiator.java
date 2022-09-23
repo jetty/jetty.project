@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 public class TestWebSocketNegotiator extends WebSocketNegotiator.AbstractNegotiator
@@ -35,12 +36,11 @@ public class TestWebSocketNegotiator extends WebSocketNegotiator.AbstractNegotia
     }
 
     @Override
-    public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
+    public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
     {
-        List<String> offeredSubprotocols = negotiation.getOfferedSubprotocols();
+        List<String> offeredSubprotocols = request.getSubProtocols();
         if (!offeredSubprotocols.isEmpty())
-            negotiation.setSubprotocol(offeredSubprotocols.get(0));
-
+            response.setAcceptedSubProtocol(offeredSubprotocols.get(0));
         return frameHandler;
     }
 }

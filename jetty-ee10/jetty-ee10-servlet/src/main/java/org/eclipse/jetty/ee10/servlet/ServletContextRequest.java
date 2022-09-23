@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -86,7 +87,6 @@ import org.slf4j.LoggerFactory;
 public class ServletContextRequest extends ContextRequest implements Runnable
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;
@@ -116,15 +116,15 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         return null;
     }
 
-    ServletChannel _servletChannel;
-    final ServletApiRequest _httpServletRequest;
+    private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
+    private final ServletApiRequest _httpServletRequest;
     final ServletHandler.MappedServlet _mappedServlet;
-    ServletContextResponse _response;
-    final HttpInput _httpInput;
-    final String _pathInContext;
-    Charset _queryEncoding;
-
-    final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
+    private final HttpInput _httpInput;
+    private final String _pathInContext;
+    private final ServletChannel _servletChannel;
+    private ServletContextResponse _response;
+    private Charset _queryEncoding;
+    private HttpFields _trailers;
 
     protected ServletContextRequest(
         ServletContextHandler.ServletContextApi servletContextApi,
@@ -146,6 +146,17 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     {
         _servletChannel.setCallback(callback);
         super.process(request, response, callback);
+    }
+
+    @Override
+    public HttpFields getTrailers()
+    {
+        return _trailers;
+    }
+
+    void setTrailers(HttpFields trailers)
+    {
+        _trailers = trailers;
     }
 
     @Override
@@ -1334,6 +1345,22 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         public DispatcherType getDispatcherType()
         {
             return DispatcherType.REQUEST;
+        }
+
+        @Override
+        public Map<String, String> getTrailerFields()
+        {
+            HttpFields trailers = getTrailers();
+            if (trailers == null)
+                return Map.of();
+            Map<String, String> trailersMap = new HashMap<>();
+            for (HttpField field : trailers)
+            {
+                String key = field.getLowerCaseName();
+                // Servlet spec requires field names to be lower case.
+                trailersMap.merge(key, field.getValue(), (existing, value) -> existing + "," + value);
+            }
+            return trailersMap;
         }
     }
 }

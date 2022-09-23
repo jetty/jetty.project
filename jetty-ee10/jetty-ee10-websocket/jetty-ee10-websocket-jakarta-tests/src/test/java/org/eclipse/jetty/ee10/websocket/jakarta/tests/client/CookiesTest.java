@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.ContainerProvider;
@@ -33,8 +32,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.WholeMessage
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,9 +47,9 @@ public class CookiesTest
 {
     private CoreServer server;
 
-    protected void startServer(Function<WebSocketNegotiation, FrameHandler> negotiationFunction) throws Exception
+    protected void startServer(WebSocketNegotiator negotiator) throws Exception
     {
-        server = new CoreServer(negotiationFunction);
+        server = new CoreServer(negotiator);
         server.start();
     }
 
@@ -68,10 +66,9 @@ public class CookiesTest
         final String cookieValue = "value";
         final String cookieString = cookieName + "=" + cookieValue;
 
-        startServer(negotiation ->
+        startServer((req, resp, cb) ->
         {
-            Request request = negotiation.getRequest();
-            List<org.eclipse.jetty.http.HttpCookie> cookies = Request.getCookies(request);
+            List<org.eclipse.jetty.http.HttpCookie> cookies = Request.getCookies(req);
             assertThat("Cookies", cookies, notNullValue());
             assertThat("Cookies", cookies.size(), is(1));
             org.eclipse.jetty.http.HttpCookie cookie = cookies.get(0);
@@ -79,8 +76,8 @@ public class CookiesTest
             assertEquals(cookieValue, cookie.getValue());
 
             StringBuilder requestHeaders = new StringBuilder();
-            request.getHeaders().getFieldNamesCollection()
-                .forEach(name -> requestHeaders.append(name).append(": ").append(request.getHeaders().get(name)).append("\n"));
+            req.getHeaders().getFieldNamesCollection()
+                .forEach(name -> requestHeaders.append(name).append(": ").append(req.getHeaders().get(name)).append("\n"));
 
             return new StaticText(requestHeaders.toString());
         });
@@ -112,10 +109,10 @@ public class CookiesTest
         final String cookieValue = "value";
         final String cookieDomain = "domain";
         final String cookiePath = "/path";
-        startServer(negotiation ->
+        startServer((req, resp, cb) ->
         {
             org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue, cookieDomain, cookiePath);
-            Response.addCookie(negotiation.getResponse(), cookie);
+            Response.addCookie(resp, cookie);
             return new WholeMessageEcho();
         });
 

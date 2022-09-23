@@ -219,6 +219,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private Content.Chunk createChunk(Stream.Data data)
     {
+        if (data == Stream.Data.EOF)
+            return Content.Chunk.EOF;
+
         // As we are passing the ByteBuffer to the Chunk we need to retain.
         data.retain();
         return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data);
@@ -275,7 +278,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                         response.getReason(),
                         response.getFields(),
                         realContentLength,
-                        response.getTrailerSupplier()
+                        response.getTrailersSupplier()
                     );
                 }
                 else if (hasContent && contentLength != realContentLength)
@@ -395,7 +398,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = metaData.getTrailerSupplier();
+        Supplier<HttpFields> supplier = metaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();

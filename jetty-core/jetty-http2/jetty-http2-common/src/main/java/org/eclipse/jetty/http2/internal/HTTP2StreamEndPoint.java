@@ -221,10 +221,12 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
         if (!source.hasRemaining())
         {
-            eof.set(data.frame().isEndStream());
+            boolean endStream = data.frame().isEndStream();
+            eof.set(endStream);
             data.release();
             data = null;
-            stream.demand();
+            if (!endStream)
+                stream.demand();
         }
 
         return length;

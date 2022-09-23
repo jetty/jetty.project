@@ -60,7 +60,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private Deque<Data> dataQueue;
+    private final Deque<Data> dataQueue = new ArrayDeque<>(1);
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
@@ -77,7 +77,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private boolean remoteReset;
     private Listener listener;
     private long dataLength;
-    private boolean dataEOF;
     private boolean dataDemand;
     private boolean dataStalled;
     private boolean committed;
@@ -292,7 +291,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         session.scheduleTimeout(this);
     }
 
-    protected void onIdleExpired(TimeoutException timeout)
+    protected void onIdleTimeout(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout {}ms expired on {}", getIdleTimeout(), this);
@@ -323,30 +322,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     public Listener getListener()
     {
         return listener;
-    }
-
-    @Override
-    public Data readData()
-    {
-        Data data;
-        try (AutoLock ignored = lock.lock())
-        {
-            if (dataQueue == null || dataQueue.isEmpty())
-            {
-                if (dataEOF)
-                    return Data.eof(getId());
-                else
-                    return null;
-            }
-            else
-            {
-                data = dataQueue.poll();
-                dataEOF = data.frame().isEndStream();
-            }
-        }
-        if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
-        return data;
     }
 
     public void setListener(Listener listener)
@@ -392,11 +367,23 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
-        // Set EOF for either the request, the response or the trailers.
-        try (AutoLock ignored = lock.lock())
+
+        // Requests are notified to a Session.Listener,
+        // here only handle responses and trailers.
+        if (metaData.isResponse() || !metaData.isRequest())
         {
-            dataEOF = frame.isEndStream();
+            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+                getSession().removeStream(this);
+            notifyHeaders(this, frame);
         }
+
+        if (frame.isEndStream())
+        {
+            // Offer EOF for either the request, the response or the trailers
+            // in case the application calls readData() or demand().
+            offerAndProcess(Data.eof(getId()));
+        }
+
         callback.succeeded();
     }
 
@@ -435,11 +422,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             }
         }
 
+        offerAndProcess(data);
+    }
+
+    private void offerAndProcess(Data data)
+    {
         boolean process;
         try (AutoLock ignored = lock.lock())
         {
-            if (dataQueue == null)
-                dataQueue = new ArrayDeque<>();
             process = dataQueue.isEmpty() && dataDemand;
             dataQueue.offer(data);
         }
@@ -450,13 +440,35 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     }
 
     @Override
+    public Data readData()
+    {
+        Data data;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (dataQueue.isEmpty())
+                return null;
+            data = dataQueue.poll();
+            if (data.frame().isEndStream())
+                dataQueue.offer(Data.eof(getId()));
+        }
+
+        if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
+            session.removeStream(this);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Reading {} for {}", data, this);
+
+        return data;
+    }
+
+    @Override
     public void demand()
     {
         boolean process = false;
         try (AutoLock ignored = lock.lock())
         {
             dataDemand = true;
-            if (dataStalled && dataQueue != null && !dataQueue.isEmpty())
+            if (dataStalled && !dataQueue.isEmpty())
             {
                 dataStalled = false;
                 process = true;
@@ -474,7 +486,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             try (AutoLock ignored = lock.lock())
             {
-                if (dataQueue == null || dataQueue.isEmpty() || !dataDemand)
+                if (dataQueue.isEmpty() || !dataDemand)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Stalling data processing for {}", this);
@@ -493,6 +505,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         try (AutoLock ignored = lock.lock())
         {
             return dataDemand;
+        }
+    }
+
+    private int dataSize()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return dataQueue.size();
         }
     }
 
@@ -731,6 +751,21 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
+    protected void notifyHeaders(Stream stream, HeadersFrame frame)
+    {
+        Stream.Listener listener = stream.getListener();
+        if (listener == null)
+            return;
+        try
+        {
+            listener.onHeaders(stream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener {}", listener, x);
+        }
+    }
+
     private void notifyDataAvailable(Stream stream)
     {
         Listener listener = this.listener;
@@ -749,7 +784,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             Data data = readData();
             if (data != null)
+            {
                 data.release();
+                if (data.frame().isEndStream())
+                    return;
+            }
             stream.demand();
         }
     }
@@ -842,13 +881,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             session.hashCode(),
             sendWindow,
             recvWindow,
+            dataSize(),
             hasDemand(),
             localReset,
             remoteReset,

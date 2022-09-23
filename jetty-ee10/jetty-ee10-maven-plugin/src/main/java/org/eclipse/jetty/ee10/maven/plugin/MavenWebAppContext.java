@@ -36,11 +36,11 @@ import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,7 +231,7 @@ public class MavenWebAppContext extends WebAppContext
                 .map(URI::create)
                 .toList();
 
-            setBaseResource(ResourceFactory.of(this).newResource(uris));
+            setBaseResource(this.getResourceFactory().newResource(uris));
         }
         catch (Throwable t)
         {
@@ -297,7 +297,7 @@ public class MavenWebAppContext extends WebAppContext
         {
             // Return all jar files from class path
             String fileName = file.getName();
-            if (fileName.endsWith(".jar"))
+            if (FileID.isJavaArchive(fileName))
                 _webInfJarMap.put(fileName, file);
         }
 
@@ -318,7 +318,7 @@ public class MavenWebAppContext extends WebAppContext
             for (Configuration c : configurations)
             {
                 if (c instanceof EnvConfiguration)
-                    ((EnvConfiguration)c).setJettyEnvResource(ResourceFactory.of(this).newResource(getJettyEnvXml()));
+                    ((EnvConfiguration)c).setJettyEnvResource(this.getResourceFactory().newResource(getJettyEnvXml()));
             }
         }
 
@@ -382,9 +382,9 @@ public class MavenWebAppContext extends WebAppContext
                     // return the resource matching the web-inf classes
                     // rather than the test classes
                     if (_classes != null)
-                        return ResourceFactory.of(this).newResource(_classes.toPath());
+                        return this.getResourceFactory().newResource(_classes.toPath());
                     else if (_testClasses != null)
-                        return ResourceFactory.of(this).newResource(_testClasses.toPath());
+                        return this.getResourceFactory().newResource(_testClasses.toPath());
                 }
                 else
                 {
@@ -394,7 +394,7 @@ public class MavenWebAppContext extends WebAppContext
                     while (res == null && (i < _webInfClasses.size()))
                     {
                         String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
-                        res = ResourceFactory.of(this).newResource(newPath);
+                        res = this.getResourceFactory().newResource(newPath);
                         if (!res.exists())
                         {
                             res = null;
@@ -415,7 +415,7 @@ public class MavenWebAppContext extends WebAppContext
                     return null;
                 File jarFile = _webInfJarMap.get(jarName);
                 if (jarFile != null)
-                    return ResourceFactory.of(this).newResource(jarFile.getPath());
+                    return this.getResourceFactory().newResource(jarFile.getPath());
 
                 return null;
             }

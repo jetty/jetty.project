@@ -266,7 +266,7 @@ public class WarBundleManifestGenerator
         while (en.hasMoreElements())
         {
             JarEntry e = en.nextElement();
-            if (e.getName().startsWith("WEB-INF/lib/") && e.getName().endsWith(".jar"))
+            if (e.getName().startsWith("WEB-INF/lib/") && FileID.isJavaArchive(e.getName()))
             {
                 res.add(e.getName());
             }

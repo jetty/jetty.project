@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,18 +40,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     // An empty DATA frame is the sequence of bytes [0x0, 0x0].
     private static final ByteBuffer EMPTY_DATA_FRAME = ByteBuffer.allocate(2);
 
-    private final AutoLock lock = new AutoLock();
+    private final AtomicReference<Runnable> action = new AtomicReference<>();
     private final RetainableByteBufferPool buffers;
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
-    private RetainableByteBuffer buffer;
+    private HTTP3Stream stream;
+    private RetainableByteBuffer networkBuffer;
     private boolean applicationMode;
-    private boolean parserDataMode;
-    private boolean dataDemand;
-    private boolean dataStalled;
-    private DataFrame dataFrame;
-    private boolean dataLast;
-    private boolean noData;
     private boolean remotelyClosed;
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
@@ -78,6 +73,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
+    void setStream(HTTP3Stream stream)
+    {
+        this.stream = stream;
+    }
+
     public void setApplicationMode(boolean mode)
     {
         this.applicationMode = mode;
@@ -101,74 +101,40 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing parserDataMode={} on {}", parserDataMode, this);
-        if (parserDataMode)
-            processDataFrames();
-        else
-            processNonDataFrames();
-    }
-
-    private void processDataFrames()
-    {
-        processDataDemand();
-        if (!parserDataMode)
+            LOG.debug("onFillable dataMode={} on {}", parser.isDataMode(), this);
+        if (parser.isDataMode())
         {
-            if (buffer != null && buffer.hasRemaining())
-                processNonDataFrames();
-            else
-                fillInterested();
+            // If there are not enough bytes to parse a DATA frame and call
+            // the application (so that it can drive), set fill interest.
+            processDataFrames(true);
+        }
+        else
+        {
+            processNonDataFrames();
         }
     }
 
-    private void processNonDataFrames()
+    private void processDataFrames(boolean setFillInterest)
     {
         try
         {
             tryAcquireBuffer();
 
-            while (true)
+            MessageParser.Result result = parseAndFill(setFillInterest);
+            switch (result)
             {
-                if (parseAndFill(true) == MessageParser.Result.NO_FRAME)
+                case NO_FRAME -> tryReleaseBuffer(false);
+                case MODE_SWITCH ->
                 {
-                    tryReleaseBuffer(false);
-                    return;
+                    parser.setDataMode(false);
+                    processNonDataFrames();
                 }
-
-                // TODO: we should also exit if the connection was closed due to errors.
-                //  There is not yet a isClosed() primitive though.
-                if (remotelyClosed)
+                case FRAME ->
                 {
-                    // We have detected the end of the stream,
-                    // do not loop around to fill & parse again.
-                    // However, the last frame may have
-                    // caused a write that we need to flush.
-                    getEndPoint().getQuicSession().flush();
+                    action.getAndSet(null).run();
+                    // Release the network buffer here (if empty), since the application may
+                    // not be reading more bytes, to avoid to keep around a consumed buffer.
                     tryReleaseBuffer(false);
-                    return;
-                }
-
-                if (parserDataMode)
-                {
-                    if (buffer.hasRemaining())
-                    {
-                        processDataFrames();
-                    }
-                    else
-                    {
-                        if (applicationMode)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("skipping fill interest on {}", this);
-                        }
-                        else
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("setting fill interest on {}", this);
-                            fillInterested();
-                        }
-                    }
-                    tryReleaseBuffer(false);
-                    return;
                 }
             }
         }
@@ -182,183 +148,115 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    protected abstract void onDataAvailable(long streamId);
-
-    public Stream.Data readData()
+    private void processNonDataFrames()
     {
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("reading data on {}", this);
-
             tryAcquireBuffer();
 
-            switch (parseAndFill(false))
+            while (true)
             {
-                case FRAME:
+                MessageParser.Result result = parseAndFill(true);
+                switch (result)
                 {
-                    if (parserDataMode)
+                    case NO_FRAME ->
                     {
-                        DataFrame frame = dataFrame;
-                        dataFrame = null;
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("read data {} on {}", frame, this);
-                        buffer.retain();
-                        // Store in a local variable so that the lambda captures the right buffer.
-                        RetainableByteBuffer current = buffer;
-                        // Release the network buffer here (if empty), since the application may
-                        // not be reading more bytes, to avoid to keep around a consumed buffer.
                         tryReleaseBuffer(false);
-                        return new StreamData(frame, current);
+                        return;
                     }
-                    else
+                    case MODE_SWITCH ->
                     {
-                        // Not anymore in data mode, so it's a trailer frame.
-                        tryReleaseBuffer(false);
-                        return null;
+                        // MODE_SWITCH is only reported when parsing DATA frames.
+                        throw new IllegalStateException();
                     }
-                }
-                case MODE_SWITCH:
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("switching to parserDataMode=false on {}", this);
-                    dataLast = true;
-                    parserDataMode = false;
-                    parser.setDataMode(false);
-                    tryReleaseBuffer(false);
-                    return null;
-                }
-                case NO_FRAME:
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("read no data on {}", this);
-                    tryReleaseBuffer(false);
-                    return null;
-                }
-                default:
-                {
-                    throw new IllegalStateException();
+                    case FRAME ->
+                    {
+                        action.getAndSet(null).run();
+
+                        // TODO: we should also exit if the connection was closed due to errors.
+                        //  There is not yet a isClosed() primitive though.
+                        if (remotelyClosed)
+                        {
+                            // We have detected the end of the stream,
+                            // do not loop around to parse & fill again.
+                            // However, the last frame may have
+                            // caused a write that we need to flush.
+                            getEndPoint().getQuicSession().flush();
+                            tryReleaseBuffer(false);
+                            return;
+                        }
+
+                        if (parser.isDataMode())
+                        {
+                            // TODO: handle applicationMode here?
+
+                            if (stream.hasDemandOrStall())
+                            {
+                                if (networkBuffer != null && networkBuffer.hasRemaining())
+                                {
+                                    // There are bytes left in the buffer; if there are not
+                                    // enough bytes to parse a DATA frame and call the
+                                    // application (so that it can drive), set fill interest.
+                                    processDataFrames(true);
+                                }
+                                else
+                                {
+                                    // No bytes left in the buffer, but there is demand.
+                                    // Set fill interest to call the application when bytes arrive.
+                                    fillInterested();
+                                }
+                            }
+
+                            // From now on it's the application that drives
+                            // demand, reads, parse+fill and fill interest.
+                            return;
+                        }
+
+                        // There might be a trailer, loop around.
+                    }
+                    default -> throw new IllegalStateException("unknown message parser result: " + result);
                 }
             }
         }
         catch (Throwable x)
         {
-            cancelDemand();
             tryReleaseBuffer(true);
-            getEndPoint().close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-            // Rethrow so the application has a chance to handle it.
-            throw x;
+            long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
+            getEndPoint().close(error, x);
+            // Notify the application that a failure happened.
+            parser.getListener().onStreamFailure(getEndPoint().getStreamId(), error, x);
         }
     }
 
-    public void demand()
+    public void receive()
     {
-        boolean hasData;
-        boolean process = false;
-        try (AutoLock l = lock.lock())
-        {
-            hasData = !noData;
-            dataDemand = true;
-            if (dataStalled && hasData)
-            {
-                dataStalled = false;
-                process = true;
-            }
-        }
         if (LOG.isDebugEnabled())
-            LOG.debug("demand, wasStalled={} hasData={} on {}", process, hasData, this);
-        if (process)
-            processDataFrames();
-        else if (!hasData)
-            fillInterested();
-    }
-
-    public boolean hasDemand()
-    {
-        try (AutoLock l = lock.lock())
-        {
-            return dataDemand;
-        }
-    }
-
-    private void cancelDemand()
-    {
-        try (AutoLock l = lock.lock())
-        {
-            dataDemand = false;
-        }
-    }
-
-    private boolean isStalled()
-    {
-        try (AutoLock l = lock.lock())
-        {
-            return dataStalled;
-        }
-    }
-
-    private void setNoData(boolean noData)
-    {
-        try (AutoLock l = lock.lock())
-        {
-            this.noData = noData;
-        }
-    }
-
-    private void processDataDemand()
-    {
-        while (true)
-        {
-            boolean process = true;
-            try (AutoLock l = lock.lock())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("processing demand={}, last={} fillInterested={} on {}", dataDemand, dataLast, isFillInterested(), this);
-                if (dataDemand)
-                {
-                    // Do not process if the last frame was already
-                    // notified, or if there is demand but no data.
-                    if (dataLast || isFillInterested())
-                        process = false;
-                    else
-                        dataDemand = false;
-                }
-                else
-                {
-                    dataStalled = true;
-                    process = false;
-                }
-            }
-
-            if (!process)
-                return;
-
-            onDataAvailable(getEndPoint().getStreamId());
-        }
+            LOG.debug("receiving on {}", this);
+        processDataFrames(false);
     }
 
     private void tryAcquireBuffer()
     {
-        if (buffer == null)
+        if (networkBuffer == null)
         {
-            buffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            networkBuffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
-                LOG.debug("acquired {}", buffer);
+                LOG.debug("acquired {}", networkBuffer);
         }
     }
 
     private void tryReleaseBuffer(boolean force)
     {
-        if (buffer != null)
+        if (networkBuffer != null)
         {
-            if (buffer.hasRemaining() && force)
-                buffer.clear();
-            if (!buffer.hasRemaining())
+            if (networkBuffer.hasRemaining() && force)
+                networkBuffer.clear();
+            if (!networkBuffer.hasRemaining())
             {
-                buffer.release();
+                networkBuffer.release();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("released {}", buffer);
-                buffer = null;
+                    LOG.debug("released {}", networkBuffer);
+                networkBuffer = null;
             }
         }
     }
@@ -368,32 +266,30 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill setFillInterest={} on {} with buffer {}", setFillInterest, this, buffer);
-
-            setNoData(false);
+                LOG.debug("parse+fill setFillInterest={} on {} with buffer {}", setFillInterest, this, networkBuffer);
 
             while (true)
             {
-                ByteBuffer byteBuffer = buffer.getBuffer();
+                ByteBuffer byteBuffer = networkBuffer.getBuffer();
                 MessageParser.Result result = parser.parse(byteBuffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("parsed {} on {} with buffer {}", result, this, buffer);
+                    LOG.debug("parsed {} on {} with buffer {}", result, this, networkBuffer);
                 if (result == MessageParser.Result.FRAME || result == MessageParser.Result.MODE_SWITCH)
                     return result;
 
-                if (buffer.isRetained())
+                if (networkBuffer.isRetained())
                 {
-                    buffer.release();
+                    networkBuffer.release();
                     RetainableByteBuffer newBuffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
                     if (LOG.isDebugEnabled())
-                        LOG.debug("reacquired {} for retained {}", newBuffer, buffer);
-                    buffer = newBuffer;
-                    byteBuffer = buffer.getBuffer();
+                        LOG.debug("reacquired {} for retained {}", newBuffer, networkBuffer);
+                    networkBuffer = newBuffer;
+                    byteBuffer = networkBuffer.getBuffer();
                 }
 
                 int filled = fill(byteBuffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} on {} with buffer {}", filled, this, buffer);
+                    LOG.debug("filled {} on {} with buffer {}", filled, this, networkBuffer);
 
                 if (filled > 0)
                     continue;
@@ -411,7 +307,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         return MessageParser.Result.FRAME;
                     }
 
-                    setNoData(true);
                     if (setFillInterest)
                         fillInterested();
                 }
@@ -442,7 +337,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     @Override
     public String toConnectionString()
     {
-        return String.format("%s[demand=%b,stalled=%b,parserDataMode=%b]", super.toConnectionString(), hasDemand(), isStalled(), parserDataMode);
+        return String.format("%s[dataMode=%b,stream=%s]", super.toConnectionString(), parser.isDataMode(), stream);
     }
 
     private static class StreamData extends Stream.Data
@@ -478,14 +373,16 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         @Override
         public void onHeaders(long streamId, HeadersFrame frame)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onHeaders #{} {} on {}", streamId, frame, this);
+
             MetaData metaData = frame.getMetaData();
             if (metaData.isRequest())
             {
                 // Expect DATA frames now.
-                parserDataMode = true;
                 parser.setDataMode(true);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("switching to parserDataMode=true for request {} on {}", metaData, this);
+                    LOG.debug("switching to dataMode=true for request {} on {}", metaData, this);
             }
             else if (metaData.isResponse())
             {
@@ -493,15 +390,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (HttpStatus.isInformational(response.getStatus()))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("staying in parserDataMode=false for response {} on {}", metaData, this);
+                        LOG.debug("staying in dataMode=false for response {} on {}", metaData, this);
                 }
                 else
                 {
                     // Expect DATA frames now.
-                    parserDataMode = true;
                     parser.setDataMode(true);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("switching to parserDataMode=true for response {} on {}", metaData, this);
+                        LOG.debug("switching to dataMode=true for response {} on {}", metaData, this);
                 }
             }
             else
@@ -510,23 +406,37 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (!frame.isLast())
                     frame = new HeadersFrame(metaData, true);
             }
-            if (frame.isLast())
+
+            HeadersFrame headersFrame = frame;
+            if (headersFrame.isLast())
                 shutdownInput();
-            super.onHeaders(streamId, frame);
+
+            Runnable existing = action.getAndSet(() -> super.onHeaders(streamId, headersFrame));
+            if (existing != null)
+                throw new IllegalStateException("existing onHeaders action " + existing);
         }
 
         @Override
         public void onData(long streamId, DataFrame frame)
         {
-            if (dataFrame != null)
-                throw new IllegalStateException();
-            dataFrame = frame;
+            if (LOG.isDebugEnabled())
+                LOG.debug("onData #{} {} on {}", streamId, frame, this);
+
             if (frame.isLast())
-            {
-                dataLast = true;
                 shutdownInput();
-            }
-            super.onData(streamId, frame);
+
+            networkBuffer.retain();
+            StreamData data = new StreamData(frame, networkBuffer);
+
+            Runnable existing = action.getAndSet(() ->
+            {
+                super.onData(streamId, frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("notifying {} on {}", data, stream);
+                stream.onData(data);
+            });
+            if (existing != null)
+                throw new IllegalStateException("existing onData action " + existing);
         }
 
         private void shutdownInput()

@@ -59,7 +59,7 @@ public class HTTP3StreamClient extends HTTP3Stream implements  Stream.Client
             valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
         if (valid)
         {
-            notIdle();
+            onHeaders(frame);
             notifyResponse(frame);
             updateClose(frame.isLast(), false);
         }

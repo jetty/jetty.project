@@ -34,7 +34,6 @@ import org.eclipse.jetty.ee10.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEventTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,14 +49,14 @@ public class DecoderReaderManySmallTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        server = new CoreServer(WebSocketNegotiator.from((negotiation) ->
+        server = new CoreServer((req, resp, cb) ->
         {
-            List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
+            List<String> offeredSubProtocols = req.getSubProtocols();
             if (!offeredSubProtocols.isEmpty())
-                negotiation.setSubprotocol(offeredSubProtocols.get(0));
+                resp.setAcceptedSubProtocol(offeredSubProtocols.get(0));
 
             return new EventIdFrameHandler();
-        }));
+        });
         server.start();
 
         client = ContainerProvider.getWebSocketContainer();

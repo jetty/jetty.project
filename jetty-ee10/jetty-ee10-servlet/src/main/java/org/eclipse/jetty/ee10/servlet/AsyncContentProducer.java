@@ -19,6 +19,7 @@ import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.NanoTime;
@@ -488,6 +489,9 @@ class AsyncContentProducer implements ContentProducer
                 _firstByteNanoTime = NanoTime.now();
             if (LOG.isDebugEnabled())
                 LOG.debug("produceRawChunk updated _rawBytesArrived to {} and _firstByteTimeStamp to {} {}", _rawBytesArrived, _firstByteNanoTime, this);
+            // TODO: notify channel listeners (see ee9)?
+            if (chunk instanceof Trailers trailers)
+                _servletChannel.onTrailers(trailers.getTrailers());
         }
         if (LOG.isDebugEnabled())
             LOG.debug("produceRawChunk produced {} {}", chunk, this);

@@ -1068,13 +1068,13 @@ public final class URIUtil
     }
 
     /** Add a path and a query string
-     * @param path The path which may already contain contain a query
-     * @param query The query string or null if no query to be added
-     * @return The path with any non null query added after a '?' or '&amp;' as appropriate.
+     * @param path The path which may already contain a query
+     * @param query The query string to add (if blank, no query is added)
+     * @return The path with any non-blank query added after a '?' or '&amp;' as appropriate.
      */
     public static String addPathQuery(String path, String query)
     {
-        if (query == null)
+        if (StringUtil.isBlank(query))
             return path;
         if (path.indexOf('?') >= 0)
             return path + '&' + query;

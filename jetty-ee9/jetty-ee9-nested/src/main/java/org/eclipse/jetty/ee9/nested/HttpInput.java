@@ -275,28 +275,19 @@ public class HttpInput extends ServletInputStream implements Runnable
             Content.Chunk content = _contentProducer.nextContent();
             if (content == null)
                 throw new IllegalStateException("read on unready input");
-            if (!content.isTerminal())
-            {
-                int read = get(content, b, off, len);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read produced {} byte(s) {}", read, this);
-                if (!content.hasRemaining())
-                    _contentProducer.reclaim(content);
-                return read;
-            }
 
-            if (content instanceof Content.Chunk.Error errorContent)
+            if (content.isTerminal())
             {
-                Throwable error = errorContent.getCause();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read error={} {}", error, this);
-                if (error instanceof IOException)
-                    throw (IOException)error;
-                throw new IOException(error);
-            }
+                if (content instanceof Content.Chunk.Error errorContent)
+                {
+                    Throwable error = errorContent.getCause();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("read error={} {}", error, this);
+                    if (error instanceof IOException)
+                        throw (IOException)error;
+                    throw new IOException(error);
+                }
 
-            if (content == Content.Chunk.EOF)
-            {
                 if (LOG.isDebugEnabled())
                     LOG.debug("read at EOF, setting consumed EOF to true {}", this);
                 _consumedEof = true;
@@ -305,8 +296,15 @@ public class HttpInput extends ServletInputStream implements Runnable
                     scheduleReadListenerNotification();
                 return -1;
             }
-
-            throw new AssertionError("no data, no error and not EOF");
+            else
+            {
+                int read = get(content, b, off, len);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read produced {} byte(s) {}", read, this);
+                if (!content.hasRemaining())
+                    _contentProducer.reclaim(content);
+                return read;
+            }
         }
     }
 
@@ -389,7 +387,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 _httpChannel.getResponse().getHttpFields().add(HttpFields.CONNECTION_CLOSE);
                 _readListener.onError(error);
             }
-            else if (content == Content.Chunk.EOF)
+            else
             {
                 try
                 {

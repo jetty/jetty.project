@@ -534,9 +534,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         public List<Handler> getHandlers()
         {
             Handler next = getHandler();
-            if (next == null)
-                return Collections.emptyList();
-            return List.of(next);
+            return (next == null) ? Collections.emptyList() : Collections.singletonList(next);
         }
 
         @Override

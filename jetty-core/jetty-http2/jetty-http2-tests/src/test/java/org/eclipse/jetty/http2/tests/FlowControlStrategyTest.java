@@ -257,14 +257,16 @@ public abstract class FlowControlStrategyTest
                             Map<Integer, Integer> settings = new HashMap<>();
                             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, size);
                             stream.getSession().settings(new SettingsFrame(settings, false), Callback.NOOP);
+                            stream.demand();
                             // Do not release the data here.
                         }
                         else if (dataFrameCount > 1)
                         {
                             // Release the data.
                             data.release();
+                            if (!data.frame().isEndStream())
+                                stream.demand();
                         }
-                        stream.demand();
                     }
                 };
             }
@@ -371,9 +373,10 @@ public abstract class FlowControlStrategyTest
                     {
                         // Consume totally.
                         data.release();
-                        stream.demand();
                         if (data.frame().isEndStream())
                             dataLatch.countDown();
+                        else
+                            stream.demand();
                     }
                     else
                     {
@@ -448,9 +451,10 @@ public abstract class FlowControlStrategyTest
                             {
                                 // Consume totally.
                                 data.release();
-                                stream.demand();
                                 if (data.frame().isEndStream())
                                     dataLatch.countDown();
+                                else
+                                    stream.demand();
                             }
                             else
                             {
@@ -560,9 +564,10 @@ public abstract class FlowControlStrategyTest
                 Stream.Data data = stream.readData();
                 // Do not consume the data to reduce the session window.
                 dataList1.add(data);
-                stream.demand();
                 if (data.frame().isEndStream())
                     prepareLatch.countDown();
+                else
+                    stream.demand();
             }
         });
         assertTrue(prepareLatch.await(5, TimeUnit.SECONDS));
@@ -574,8 +579,9 @@ public abstract class FlowControlStrategyTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                stream.readData();
-                stream.demand();
+                Stream.Data data = stream.readData();
+                if (!data.frame().isEndStream())
+                    stream.demand();
                 // Do not release it to stall flow control.
             }
         });
@@ -588,8 +594,9 @@ public abstract class FlowControlStrategyTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                stream.readData();
-                stream.demand();
+                Stream.Data data = stream.readData();
+                if (!data.frame().isEndStream())
+                    stream.demand();
                 // Do not release it to stall flow control.
             }
         });
@@ -604,9 +611,10 @@ public abstract class FlowControlStrategyTest
             {
                 Stream.Data data = stream.readData();
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
 
@@ -662,9 +670,10 @@ public abstract class FlowControlStrategyTest
                 frame.getData().get(bytes, received, remaining);
                 this.received += remaining;
                 data.release();
-                stream.demand();
                 if (frame.isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
 
@@ -691,7 +700,12 @@ public abstract class FlowControlStrategyTest
                     public void onDataAvailable(Stream stream)
                     {
                         Stream.Data data = stream.readData();
-                        completable.thenRun(() -> stream.data(data.frame(), Callback.from(Callback.from(data::release), stream::demand)));
+                        completable.thenRun(() -> stream.data(data.frame(), Callback.from(() ->
+                        {
+                            data.release();
+                            if (!data.frame().isEndStream())
+                                stream.demand();
+                        })));
                     }
                 };
             }
@@ -726,9 +740,10 @@ public abstract class FlowControlStrategyTest
                 Stream.Data data = stream.readData();
                 responseContent.put(data.frame().getData());
                 data.release();
-                stream.demand();
                 if (data.frame().isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
         completable.thenAccept(stream ->
@@ -760,8 +775,9 @@ public abstract class FlowControlStrategyTest
                     public void onDataAvailable(Stream stream)
                     {
                         // Read but do not release the Data.
-                        stream.readData();
-                        stream.demand();
+                        Stream.Data data = stream.readData();
+                        if (!data.frame().isEndStream())
+                            stream.demand();
                     }
                 };
             }
@@ -864,8 +880,9 @@ public abstract class FlowControlStrategyTest
                     public void onDataAvailable(Stream stream)
                     {
                         // Read but do not release the Data.
-                        stream.readData();
-                        stream.demand();
+                        Stream.Data data = stream.readData();
+                        if (!data.frame().isEndStream())
+                            stream.demand();
                     }
                 };
             }
@@ -1025,13 +1042,16 @@ public abstract class FlowControlStrategyTest
                     {
                         Stream.Data data = stream.readData();
                         dataList.add(data);
-                        stream.demand();
                         if (data.frame().isEndStream())
                         {
                             // Release the Data when the stream is already remotely closed.
                             dataList.forEach(Stream.Data::release);
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
+                        else
+                        {
+                            stream.demand();
                         }
                     }
                 };

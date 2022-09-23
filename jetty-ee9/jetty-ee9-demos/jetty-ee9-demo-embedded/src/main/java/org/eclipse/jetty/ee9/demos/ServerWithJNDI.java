@@ -21,7 +21,6 @@ import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * ServerWithJNDI
@@ -37,7 +36,7 @@ public class ServerWithJNDI
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         Path testJndiWar = JettyDemos.find("jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war");
-        webapp.setWarResource(ResourceFactory.of(webapp).newResource(testJndiWar));
+        webapp.setWarResource(webapp.getResourceFactory().newResource(testJndiWar));
         server.setHandler(webapp);
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml

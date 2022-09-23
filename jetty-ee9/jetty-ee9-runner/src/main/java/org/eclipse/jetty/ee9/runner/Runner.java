@@ -112,29 +112,12 @@ public class Runner
             if (lib == null || !lib.exists())
                 throw new IllegalStateException("No such lib: " + lib);
 
-            String[] list = lib.list();
-            if (list == null)
-                return;
-
-            for (String path : list)
+            for (Resource item: lib.list())
             {
-                if (".".equals(path) || "..".equals(path))
-                    continue;
-
-                try (Resource item = lib.addPath(path))
-                {
-                    if (item.isDirectory())
-                        addJars(item);
-                    else
-                    {
-                        String lowerCasePath = path.toLowerCase(Locale.ENGLISH);
-                        if (lowerCasePath.endsWith(".jar") ||
-                            lowerCasePath.endsWith(".zip"))
-                        {
-                            _classpath.add(item.getURI());
-                        }
-                    }
-                }
+                if (item.isDirectory())
+                    addJars(item);
+                else if (FileID.isLibArchive(item.getFileName()))
+                    _classpath.add(item.getURI());
             }
         }
 

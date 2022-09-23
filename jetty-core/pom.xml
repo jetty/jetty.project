@@ -35,6 +35,7 @@
     <module>jetty-session</module>
     <module>jetty-slf4j-impl</module>
     <module>jetty-start</module>
+    <module>jetty-tests</module>
     <module>jetty-unixdomain-server</module>
     <module>jetty-util</module>
     <module>jetty-util-ajax</module>

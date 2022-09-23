@@ -40,7 +40,6 @@ public class WebInfConfiguration extends AbstractConfiguration
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.ee9.webapp.tmpResourceBase";
 
     protected Resource _preUnpackBaseResource;
-    private ResourceFactory.Closeable _resourceFactory;
 
     public WebInfConfiguration()
     {
@@ -91,9 +90,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured)
             context.setTempDirectory(null);
-
-        IO.close(_resourceFactory);
-        _resourceFactory = null;
 
         //reset the base resource back to what it was before we did any unpacking of resources
         context.setBaseResource(_preUnpackBaseResource);
@@ -280,7 +276,6 @@ public class WebInfConfiguration extends AbstractConfiguration
     public void unpack(WebAppContext context) throws IOException
     {
         Resource webApp = context.getBaseResource();
-        _resourceFactory = ResourceFactory.closeable();
         _preUnpackBaseResource = context.getBaseResource();
 
         if (webApp == null)
@@ -316,7 +311,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                webApp = _resourceFactory.newJarFileResource(webApp.getURI());
+                webApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
             }
 
             // If we should extract or the URL is still not usable
@@ -333,7 +328,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (war != null)
                 {
                     // look for a sibling like "foo/" to a "foo.war"
-                    Path warfile = _resourceFactory.newResource(war).getPath();
+                    Path warfile = context.getResourceFactory().newResource(war).getPath();
                     if (warfile != null && warfile.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
                     {
                         Path sibling = warfile.getParent().resolve(warfile.getFileName().toString().substring(0, warfile.getFileName().toString().length() - 4));
@@ -396,7 +391,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                         }
                     }
                 }
-                webApp = _resourceFactory.newResource(extractedWebAppDir.normalize());
+                webApp = context.getResourceFactory().newResource(extractedWebAppDir.normalize());
             }
 
             // Now do we have something usable?
@@ -449,7 +444,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 webInfClasses.copyTo(webInfClassesDir.toPath());
             }
 
-            webInf = _resourceFactory.newResource(extractedWebInfDir.getCanonicalPath());
+            webInf = context.getResourceFactory().newResource(extractedWebInfDir.getCanonicalPath());
 
             Resource rc = Resource.combine(webInf, webApp);
 

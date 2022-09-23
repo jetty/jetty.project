@@ -185,7 +185,7 @@ public class MockHttpStream implements HttpStream
 
         if (last)
         {
-            Supplier<HttpFields> trailersSupplier = _response.get().getTrailerSupplier();
+            Supplier<HttpFields> trailersSupplier = _response.get().getTrailersSupplier();
             if (trailersSupplier != null)
             {
                 HttpFields trailers = trailersSupplier.get();

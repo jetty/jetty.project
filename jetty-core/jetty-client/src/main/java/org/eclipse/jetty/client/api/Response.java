@@ -70,6 +70,11 @@ public interface Response
     HttpFields getHeaders();
 
     /**
+     * @return the trailers of this response
+     */
+    HttpFields getTrailers();
+
+    /**
      * Attempts to abort the receive of this response.
      *
      * @param cause the abort cause, must not be null

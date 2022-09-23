@@ -48,12 +48,6 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
         this.session = session;
     }
 
-    @Override
-    protected void onDataAvailable(long streamId)
-    {
-        session.onDataAvailable(streamId);
-    }
-
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
         HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);

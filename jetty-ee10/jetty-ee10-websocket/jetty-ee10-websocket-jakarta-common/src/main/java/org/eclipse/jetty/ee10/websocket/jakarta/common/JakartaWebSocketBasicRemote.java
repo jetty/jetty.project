@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.RemoteEndpoint;
@@ -64,7 +63,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.BINARY).setPayload(data), b, false);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -96,7 +95,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         frame.setFin(isLast);
         FutureCallback b = new FutureCallback();
         sendFrame(frame, b, false);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -104,7 +103,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
     {
         FutureCallback b = new FutureCallback();
         super.sendObject(data, b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -118,7 +117,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, false);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -150,12 +149,6 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         frame.setFin(isLast);
         FutureCallback b = new FutureCallback();
         sendFrame(frame, b, false);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
-    }
-
-    private long getBlockingTimeout()
-    {
-        long idleTimeout = getIdleTimeout();
-        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
+        b.block();
     }
 }

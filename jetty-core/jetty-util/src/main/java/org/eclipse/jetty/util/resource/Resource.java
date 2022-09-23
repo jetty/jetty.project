@@ -29,7 +29,6 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -371,48 +370,6 @@ public abstract class Resource implements Iterable<Resource>
         {
             IO.copy(in, out);
         }
-    }
-
-    /**
-     * Generate a weak ETag reference for this Resource.
-     *
-     * @return the weak ETag reference for this resource.
-     */
-    public String getWeakETag()
-    {
-        return getWeakETag("");
-    }
-
-    public String getWeakETag(String suffix)
-    {
-        StringBuilder b = new StringBuilder(32);
-        b.append("W/\"");
-
-        String name = getName();
-        int length = name.length();
-        long lhash = 0;
-        for (int i = 0; i < length; i++)
-        {
-            lhash = 31 * lhash + name.charAt(i);
-        }
-
-        Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
-        b.append(encoder.encodeToString(longToBytes(lastModified().toEpochMilli() ^ lhash)));
-        b.append(encoder.encodeToString(longToBytes(length() ^ lhash)));
-        b.append(suffix);
-        b.append('"');
-        return b.toString();
-    }
-
-    private static byte[] longToBytes(long value)
-    {
-        byte[] result = new byte[Long.BYTES];
-        for (int i = Long.BYTES - 1; i >= 0; i--)
-        {
-            result[i] = (byte)(value & 0xFF);
-            value >>= 8;
-        }
-        return result;
     }
 
     public Collection<Resource> getAllResources()

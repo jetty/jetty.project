@@ -43,7 +43,6 @@ import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +55,7 @@ public abstract class AbstractHandshaker implements Handshaker
     @Override
     public boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
     {
-        if (!validateRequest(request))
+        if (!isWebSocketUpgradeRequest(request))
             return false;
 
         WebSocketNegotiation negotiation = newNegotiation(request, response, callback, components);
@@ -68,7 +67,7 @@ public abstract class AbstractHandshaker implements Handshaker
             return false;
 
         // Negotiate the FrameHandler
-        FrameHandler handler = negotiator.negotiate(negotiation);
+        FrameHandler handler = negotiator.negotiate(negotiation.getRequest(), negotiation.getResponse(), negotiation.getCallback());
         if (handler == null)
             return true;
 
@@ -156,9 +155,21 @@ public abstract class AbstractHandshaker implements Handshaker
         return true;
     }
 
-    protected abstract boolean validateRequest(Request request);
-
     protected abstract WebSocketNegotiation newNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents);
+
+    @Override
+    public boolean isWebSocketUpgradeRequest(Request request)
+    {
+        String wsVersionHeader = request.getHeaders().get(HttpHeader.SEC_WEBSOCKET_VERSION);
+        if (!WebSocketConstants.SPEC_VERSION_STRING.equals(wsVersionHeader))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded: unsupported version {} {}", wsVersionHeader, request);
+            return false;
+        }
+
+        return true;
+    }
 
     protected boolean validateNegotiation(WebSocketNegotiation negotiation)
     {
@@ -166,13 +177,6 @@ public abstract class AbstractHandshaker implements Handshaker
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded: no upgrade header or connection upgrade {}", negotiation.getRequest());
-            return false;
-        }
-
-        if (!WebSocketConstants.SPEC_VERSION_STRING.equals(negotiation.getVersion()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: unsupported version {} {}", negotiation.getVersion(), negotiation.getRequest());
             return false;
         }
 

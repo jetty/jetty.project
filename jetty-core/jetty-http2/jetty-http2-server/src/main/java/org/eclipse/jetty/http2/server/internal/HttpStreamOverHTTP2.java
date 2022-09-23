@@ -278,7 +278,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                         response.getReason(),
                         response.getFields(),
                         realContentLength,
-                        response.getTrailerSupplier()
+                        response.getTrailersSupplier()
                     );
                 }
                 else if (hasContent && contentLength != realContentLength)
@@ -387,7 +387,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = _metaData.getTrailerSupplier();
+        Supplier<HttpFields> supplier = _metaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();

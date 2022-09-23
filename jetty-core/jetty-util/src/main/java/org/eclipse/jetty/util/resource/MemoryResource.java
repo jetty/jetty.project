@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -77,7 +78,7 @@ public class MemoryResource extends Resource
     {
         Path p = getPath();
         if (p == null)
-            return null;
+            return _uri.toASCIIString();
         return p.toAbsolutePath().toString();
     }
 
@@ -86,7 +87,7 @@ public class MemoryResource extends Resource
     {
         Path p = getPath();
         if (p == null)
-            return null;
+            return FileID.getFileName(_uri);
         Path fn = p.getFileName();
         if (fn == null)
             return ""; // no segments, so no filename

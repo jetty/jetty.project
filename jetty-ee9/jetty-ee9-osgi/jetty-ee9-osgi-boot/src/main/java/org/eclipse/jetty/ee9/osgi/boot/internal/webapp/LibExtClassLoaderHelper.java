@@ -105,7 +105,7 @@ public class LibExtClassLoaderHelper
         {
             for (File f : libExt.listFiles())
             {
-                if (f.getName().endsWith(".jar"))
+                if (FileID.isJavaArchive(f.getName()))
                 {
                     // cheap to tolerate folders so let's do it.
                     URL url = f.toURI().toURL();
@@ -152,7 +152,7 @@ public class LibExtClassLoaderHelper
                 {
                     for (File f : libExt.listFiles())
                     {
-                        if (f.getName().endsWith(".jar"))
+                        if (FileID.isJavaArchive(f.getName()))
                         {
                             // cheap to tolerate folders so let's do it.
                             URL url = f.toURI().toURL();

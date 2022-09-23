@@ -17,6 +17,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
 
@@ -30,31 +33,12 @@ public class XmlAppendable
     private final Stack<String> _tags = new Stack<>();
     private String _space = "";
 
-    public XmlAppendable(OutputStream out, String encoding) throws IOException
+    public XmlAppendable(OutputStream out) throws IOException
     {
-        this(new OutputStreamWriter(out, encoding), encoding);
-    }
-
-    public XmlAppendable(Appendable out) throws IOException
-    {
-        this(out, 2);
-    }
-
-    public XmlAppendable(Appendable out, String encoding) throws IOException
-    {
-        this(out, 2, encoding);
-    }
-
-    public XmlAppendable(Appendable out, int indent) throws IOException
-    {
-        this(out, indent, "utf-8");
-    }
-
-    public XmlAppendable(Appendable out, int indent, String encoding) throws IOException
-    {
-        _out = out;
-        _indent = indent;
-        _out.append("<?xml version=\"1.0\" encoding=\"").append(encoding).append("\"?>\n");
+        Charset utf8 = StandardCharsets.UTF_8;
+        _out = new OutputStreamWriter(out, utf8);
+        _indent = 2;
+        _out.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     }
 
     public XmlAppendable openTag(String tag, Map<String, String> attributes) throws IOException

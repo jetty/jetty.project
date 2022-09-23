@@ -21,7 +21,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.server.internal.WebSocketNegotiation;
 
 /**
  * Upgrade request used for websocket negotiation.
@@ -39,6 +41,11 @@ public class ServerUpgradeRequest extends Request.Wrapper
         super(baseRequest);
         this.negotiation = negotiation;
         this.request = baseRequest;
+    }
+
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return negotiation.getWebSocketComponents();
     }
 
     public void upgrade(Attributes attributes)
@@ -94,7 +101,6 @@ public class ServerUpgradeRequest extends Request.Wrapper
 
     /**
      * @return The extensions offered
-     * @see WebSocketNegotiation#getOfferedExtensions()
      */
     public List<ExtensionConfig> getExtensions()
     {

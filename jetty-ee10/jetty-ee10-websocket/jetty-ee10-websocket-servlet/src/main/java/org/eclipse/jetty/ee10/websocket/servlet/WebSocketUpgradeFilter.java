@@ -30,6 +30,7 @@ import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FutureCallback;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,13 +160,31 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
         if (baseRequest == null)
             throw new IllegalStateException("Base Request not available");
+        ServletContextResponse baseResponse = baseRequest.getResponse();
 
-        // provide a null default customizer the customizer will be on the negotiator in the mapping
-        FutureCallback callback = new FutureCallback();
-        if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, defaultCustomizer))
+        // Do preliminary check before proceeding to attempt an upgrade.
+        if (mappings.getHandshaker().isWebSocketUpgradeRequest(baseRequest))
         {
-            callback.block();
-            return;
+            // provide a null default customizer the customizer will be on the negotiator in the mapping
+            FutureCallback callback = new FutureCallback();
+            try
+            {
+                // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
+                // are accessible when websocket-core calls back the Jetty WebSocket creator.
+                baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+                baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+
+                if (mappings.upgrade(baseRequest, baseResponse, callback, defaultCustomizer))
+                {
+                    callback.block();
+                    return;
+                }
+            }
+            finally
+            {
+                baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            }
         }
 
         // If we reach this point, it means we had an incoming request to upgrade

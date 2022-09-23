@@ -180,11 +180,19 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link SslContextFactory} that manages TLS encryption
+     * @return the {@link SslContextFactory.Client} that manages TLS encryption
      */
     public SslContextFactory.Client getSslContextFactory()
     {
         return connector.getSslContextFactory();
+    }
+
+    /**
+     * @param sslContextFactory the {@link SslContextFactory.Client} that manages TLS encryption
+     */
+    public void setSslContextFactory(SslContextFactory.Client sslContextFactory)
+    {
+        connector.setSslContextFactory(sslContextFactory);
     }
 
     @Override

@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -403,7 +404,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
             _lastAccessed = Instant.now();
 
-            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, resource.getWeakETag()) : null;
+            _etag = CachedContentFactory.this._etags ? EtagUtils.createWeakEtagField(resource) : null;
 
             if (precompressedResources != null)
             {
@@ -444,6 +445,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public String getETagValue()
         {
+            if (_etag == null)
+                return null;
             return _etag.getValue();
         }
 
@@ -603,7 +606,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _content = content;
             _precompressedContent = precompressedContent;
 
-            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format.getEtagSuffix())) : null;
+            _etag = (CachedContentFactory.this._etags) ? EtagUtils.createWeakEtagField(_content.getResource(), format.getEtagSuffix()) : null;
         }
 
         public boolean isValid()

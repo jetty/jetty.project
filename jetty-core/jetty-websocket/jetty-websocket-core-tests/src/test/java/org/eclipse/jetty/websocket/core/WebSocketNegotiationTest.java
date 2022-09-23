@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +36,8 @@ import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,32 +79,32 @@ public class WebSocketNegotiationTest extends WebSocketTester
         WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator()
         {
             @Override
-            public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
+            public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
             {
-                if (negotiation.getOfferedSubprotocols().isEmpty())
+                if (request.getSubProtocols().isEmpty())
                 {
-                    negotiation.setSubprotocol("NotOffered");
+                    response.setAcceptedSubProtocol("NotOffered");
                     return new EchoFrameHandler();
                 }
 
-                String subprotocol = negotiation.getOfferedSubprotocols().get(0);
-                negotiation.setSubprotocol(subprotocol);
+                String subprotocol = request.getSubProtocols().get(0);
+                response.setAcceptedSubProtocol(subprotocol);
                 switch (subprotocol)
                 {
                     case "testExtensionSelection":
-                        negotiation.setNegotiatedExtensions(List.of(ExtensionConfig.parse("permessage-deflate;client_no_context_takeover")));
+                        response.setExtensions(List.of(ExtensionConfig.parse("permessage-deflate;client_no_context_takeover")));
                         break;
 
                     case "testNotOfferedParameter":
-                        negotiation.setNegotiatedExtensions(List.of(ExtensionConfig.parse("permessage-deflate;server_no_context_takeover")));
+                        response.setExtensions(List.of(ExtensionConfig.parse("permessage-deflate;server_no_context_takeover")));
                         break;
 
                     case "testNotAcceptingExtensions":
-                        negotiation.setNegotiatedExtensions(Collections.emptyList());
+                        response.setExtensions(Collections.emptyList());
                         break;
 
                     case "testNoSubProtocolSelected":
-                        negotiation.setSubprotocol(null);
+                        response.setAcceptedSubProtocol(null);
                         break;
 
                     case "test":

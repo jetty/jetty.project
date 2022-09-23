@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +46,7 @@ public class DemandTest
 
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler();
         _server.setHandler(upgradeHandler);
-        upgradeHandler.addMapping("/", WebSocketNegotiator.from((neg) -> new EchoFrameHandler()));
+        upgradeHandler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler());
         _server.start();
 
         _client = new WebSocketCoreClient();

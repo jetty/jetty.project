@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.client.internal;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -52,16 +51,9 @@ public class HTTP2ClientSession extends HTTP2Session
         {
             MetaData metaData = frame.getMetaData();
             if (metaData.isRequest())
-            {
                 onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_response");
-            }
             else
-            {
                 stream.process(frame, Callback.NOOP);
-                if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                    removeStream(stream);
-                notifyHeaders(stream, frame);
-            }
         }
         else
         {

@@ -14,11 +14,14 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
@@ -27,11 +30,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -43,11 +44,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -373,12 +377,163 @@ public class ResourceTest
     }
 
     @Test
-    @Disabled
-    public void testDotAlias()
+    public void testDotAliasDirExists(WorkDir workDir) throws IOException
     {
-        Resource resource = resourceFactory.newResource("/foo/bar");
-        Resource same = resource.resolve(".");
-        assertNotNull(same);
-        assertTrue(same.isAlias());
+        Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
+        FS.ensureDirExists(dir);
+        Resource resource = resourceFactory.newResource(dir);
+        Resource dot = resource.resolve(".");
+        assertNotNull(dot);
+        assertTrue(dot.exists());
+        assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
+        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getAlias())));
+    }
+
+    @Test
+    public void testDotAliasDirDoesNotExist(WorkDir workDir)
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
+        // at this point we have a directory reference that does not exist
+        Resource resource = resourceFactory.newResource(dir);
+        Resource dot = resource.resolve(".");
+        assertNotNull(dot);
+        assertFalse(dot.exists());
+        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as directory doesn't exist");
+    }
+
+    @Test
+    public void testDotAliasFileExists(WorkDir workDir) throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("foo");
+        FS.ensureDirExists(dir);
+        Path file = dir.resolve("bar.txt");
+        FS.touch(file);
+        Resource resource = resourceFactory.newResource(file);
+        Resource dot = resource.resolve(".");
+        assertNotNull(dot);
+        assertTrue(dot.exists());
+        assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
+        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getAlias())));
+    }
+
+    @Test
+    public void testDotAliasFileDoesNotExists(WorkDir workDir) throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("foo");
+        FS.ensureDirExists(dir);
+        Path file = dir.resolve("bar.txt");
+        // at this point we have a file reference that does not exist
+        assertFalse(Files.exists(file));
+        Resource resource = resourceFactory.newResource(file);
+        Resource dot = resource.resolve(".");
+        assertNotNull(dot);
+        assertFalse(dot.exists());
+        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as file doesn't exist");
+    }
+
+    @Test
+    public void testJrtResourceModule()
+    {
+        Resource resource = ResourceFactory.root().newResource("jrt:/java.base");
+
+        assertThat(resource.exists(), is(true));
+        assertThat(resource.isDirectory(), is(true));
+        assertThat(resource.length(), is(0L));
+    }
+
+    @Test
+    public void testJrtResourceAllModules()
+    {
+        Resource resource = ResourceFactory.root().newResource("jrt:/");
+
+        assertThat(resource.exists(), is(true));
+        assertThat(resource.isDirectory(), is(true));
+        assertThat(resource.length(), is(0L));
+    }
+
+    /**
+     * Test a class path resource for existence.
+     */
+    @Test
+    public void testClassPathResourceClassRelative()
+    {
+        final String classPathName = "Resource.class";
+
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
+
+        // A class path cannot be a directory
+        assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+
+        // A class path must exist
+        assertTrue(resource.exists(), "Class path resource does not exist.");
+    }
+
+    /**
+     * Test a class path resource for existence.
+     */
+    @Test
+    public void testClassPathResourceClassAbsolute()
+    {
+        final String classPathName = "/org/eclipse/jetty/util/resource/Resource.class";
+
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
+
+        // A class path cannot be a directory
+        assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+
+        // A class path must exist
+        assertTrue(resource.exists(), "Class path resource does not exist.");
+    }
+
+    /**
+     * Test a class path resource for directories.
+     *
+     * @throws Exception failed test
+     */
+    @Test
+    public void testClassPathResourceDirectory() throws Exception
+    {
+        // If the test runs in the module-path, resource "/" cannot be found.
+        assumeFalse(Resource.class.getModule().isNamed());
+
+        final String classPathName = "/";
+
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
+
+        // A class path must be a directory
+        assertTrue(resource.isDirectory(), "Class path must be a directory.");
+
+        assertTrue(Files.isDirectory(resource.getPath()), "Class path returned file must be a directory.");
+
+        // A class path must exist
+        assertTrue(resource.exists(), "Class path resource does not exist.");
+    }
+
+    /**
+     * Test a class path resource for a file.
+     *
+     * @throws Exception failed test
+     */
+    @Test
+    public void testClassPathResourceFile() throws Exception
+    {
+        final String fileName = "resource.txt";
+        final String classPathName = "/" + fileName;
+
+        // Will locate a resource in the class path
+        Resource resource = resourceFactory.newClassPathResource(classPathName);
+
+        // A class path cannot be a directory
+        assertFalse(resource.isDirectory(), "Class path must be a directory.");
+
+        assertNotNull(resource);
+
+        Path path = resource.getPath();
+
+        assertEquals(fileName, path.getFileName().toString(), "File name from class path is not equal.");
+        assertTrue(Files.isRegularFile(path), "File returned from class path should be a regular file.");
+
+        // A class path must exist
+        assertTrue(resource.exists(), "Class path resource does not exist.");
     }
 }

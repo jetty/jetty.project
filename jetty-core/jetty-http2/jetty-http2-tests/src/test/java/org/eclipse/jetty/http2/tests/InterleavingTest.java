@@ -89,7 +89,8 @@ public class InterleavingTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 // Do not release.
                 dataQueue.offer(data);
-                stream.demand();
+                if (!data.frame().isEndStream())
+                    stream.demand();
             }
         };
 

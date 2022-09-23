@@ -78,9 +78,10 @@ public class JDK9HTTP2ClientTest
                     Stream.Data data = stream.readData();
                     System.err.println(data);
                     data.release();
-                    stream.demand();
                     if (data.frame().isEndStream())
                         latch.countDown();
+                    else
+                        stream.demand();
                 }
             });
 

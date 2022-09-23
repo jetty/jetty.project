@@ -95,6 +95,29 @@ public class FileIDTest
         }
     }
 
+    public static Stream<Arguments> fileNameSource()
+    {
+        return Stream.of(
+            Arguments.of(null, ""),
+            Arguments.of(URI.create("file:/"), ""),
+            Arguments.of(URI.create("file:///"), ""),
+            Arguments.of(URI.create("file:zed/"), ""),
+            Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
+            Arguments.of(URI.create("file:///path/to/dir/"), ""),
+            Arguments.of(URI.create("http://eclipse.org/jetty/"), ""),
+            Arguments.of(URI.create("http://eclipse.org/jetty/index.html"), "index.html"),
+            Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fileNameSource")
+    public void testGetFileName(URI uri, String expected)
+    {
+        String actual = FileID.getFileName(uri);
+        assertThat(actual, is(expected));
+    }
+
     public static Stream<Arguments> hasNamedPathSegmentTrueCases()
     {
         return Stream.of(
@@ -300,6 +323,8 @@ public class FileIDTest
         "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "jar:file:///home/user/plugins/PLUGIN.JAR",
+        "jar:file:///home/user/plugins/Fragment.Jar",
         "file:/home/user/install/jetty-home-12.0.0.zip",
         "file:/opt/websites/webapps/company.war",
         "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"

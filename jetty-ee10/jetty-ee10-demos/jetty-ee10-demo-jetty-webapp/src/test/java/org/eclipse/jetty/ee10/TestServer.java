@@ -115,7 +115,7 @@ public class TestServer
         Path webappBase = webappProjectRoot.resolve("jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src/main/webapp");
         if (!Files.exists(webappBase))
             throw new FileNotFoundException(webappBase.toString());
-        webapp.setBaseResource(ResourceFactory.of(server).newResource(webappBase));
+        webapp.setBaseResource(webapp.getResourceFactory().newResource(webappBase));
         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
             ".*/test-jetty-webapp/target/classes.*$|" +
                 ".*/jakarta.servlet.api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard.*\\.jar$"
