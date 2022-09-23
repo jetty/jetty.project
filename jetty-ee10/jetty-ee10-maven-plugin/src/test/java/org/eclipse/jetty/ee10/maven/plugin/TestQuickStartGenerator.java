@@ -53,7 +53,7 @@ public class TestQuickStartGenerator
 
         Path propsFile = tmpDir.resolve("webapp.props");
         Files.createFile(propsFile);
-        generator.setWebAppPropsFile(propsFile);
+        generator.setWebAppProps(propsFile);
         generator.generate();
         assertTrue(Files.exists(propsFile));
         assertThat(Files.size(propsFile), greaterThan(0L));

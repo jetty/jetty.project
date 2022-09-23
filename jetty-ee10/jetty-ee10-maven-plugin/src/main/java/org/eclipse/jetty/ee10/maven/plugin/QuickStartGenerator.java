@@ -32,7 +32,7 @@ public class QuickStartGenerator
 {
     private final Path quickstartXml;
     private final MavenWebAppContext webApp;
-    private Path webAppPropsFile;
+    private Path webAppProps;
     private String contextXml;
     private boolean prepared = false;
     private Server server;
@@ -80,17 +80,17 @@ public class QuickStartGenerator
         this.server = server;
     }
 
-    public Path getWebAppPropsFile()
+    public Path getWebAppProps()
     {
-        return webAppPropsFile;
+        return webAppProps;
     }
 
     /**
-     * @param webAppPropsFile properties file describing the webapp
+     * @param webAppProps properties file describing the webapp
      */
-    public void setWebAppPropsFile(Path webAppPropsFile)
+    public void setWebAppProps(Path webAppProps)
     {
-        this.webAppPropsFile = webAppPropsFile;
+        this.webAppProps = webAppProps;
     }
     
     public String getContextXml()
@@ -170,8 +170,8 @@ public class QuickStartGenerator
             webApp.start(); //just enough to generate the quickstart
 
             //save config of the webapp BEFORE we stop
-            if (webAppPropsFile != null)
-                WebAppPropertyConverter.toProperties(webApp, webAppPropsFile.toFile(), contextXml);
+            if (webAppProps != null)
+                WebAppPropertyConverter.toProperties(webApp, webAppProps.toFile(), contextXml);
         }
         finally
         {
