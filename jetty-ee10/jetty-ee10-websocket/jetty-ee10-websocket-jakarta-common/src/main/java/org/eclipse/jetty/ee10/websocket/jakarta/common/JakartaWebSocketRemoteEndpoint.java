@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.SendHandler;
@@ -33,6 +28,10 @@ import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
 
 public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteEndpoint, OutgoingFrames
 {
@@ -63,7 +62,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
     {
         FutureCallback b = new FutureCallback();
         coreSession.flush(b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -225,7 +224,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -236,7 +235,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     protected void assertMessageNotNull(Object data)
@@ -253,11 +252,5 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         {
             throw new IllegalArgumentException("SendHandler cannot be null");
         }
-    }
-
-    private long getBlockingTimeout()
-    {
-        long idleTimeout = getIdleTimeout();
-        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }

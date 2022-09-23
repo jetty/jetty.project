@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.ee10.websocket.common;
 
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee10.websocket.api.BatchMode;
 import org.eclipse.jetty.ee10.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.BufferUtil;
@@ -30,6 +24,11 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -70,8 +69,8 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee10.webs
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
         coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
-            Callback.from(callback::writeSuccess, callback::writeFailed),
-            isBatch());
+                Callback.from(callback::writeSuccess, callback::writeFailed),
+                isBatch());
     }
 
     @Override
@@ -79,7 +78,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee10.webs
     {
         FutureCallback b = new FutureCallback();
         sendPartialBytes(fragment, isLast, b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -121,7 +120,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee10.webs
     {
         FutureCallback b = new FutureCallback();
         sendPartialText(fragment, isLast, b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -140,7 +139,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee10.webs
     public void sendPing(ByteBuffer applicationData, WriteCallback callback)
     {
         coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData),
-            Callback.from(callback::writeSuccess, callback::writeFailed), false);
+                Callback.from(callback::writeSuccess, callback::writeFailed), false);
     }
 
     @Override
@@ -153,7 +152,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee10.webs
     public void sendPong(ByteBuffer applicationData, WriteCallback callback)
     {
         coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
-            Callback.from(callback::writeSuccess, callback::writeFailed), false);
+                Callback.from(callback::writeSuccess, callback::writeFailed), false);
     }
 
     private void sendPartialText(String fragment, boolean isLast, Callback callback)
@@ -188,7 +187,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee10.webs
     {
         FutureCallback b = new FutureCallback();
         coreSession.sendFrame(frame, b, false);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -231,12 +230,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee10.webs
     {
         FutureCallback b = new FutureCallback();
         coreSession.flush(b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
-    }
-
-    private long getBlockingTimeout()
-    {
-        long idleTimeout = coreSession.getIdleTimeout().toMillis();
-        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
+        b.block();
     }
 }
