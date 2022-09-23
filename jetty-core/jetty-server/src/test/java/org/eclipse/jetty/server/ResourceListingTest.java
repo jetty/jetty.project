@@ -338,7 +338,8 @@ public class ResourceListingTest
             // Resolve directory
             Resource resource = resourceBase.resolve("dir%3B");
 
-            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
+            // Context
+            String content = ResourceListing.getAsXHTML(resource, "/context/dir%3B/", false, null);
             assertTrue(isValidXHtml(content));
 
             // Should not see double-encoded ";"

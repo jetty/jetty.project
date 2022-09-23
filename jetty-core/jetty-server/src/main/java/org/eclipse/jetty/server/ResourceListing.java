@@ -238,7 +238,7 @@ public class ResourceListing
             buf.append("<td class=\"lastmodified\">");
             Instant lastModified = item.lastModified();
             buf.append(formatter.format(lastModified));
-            buf.append("&nbsp;</td>");
+            buf.append(NBSP).append("</td>");
 
             // Size
             buf.append("<td class=\"size\">");
