@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URL;
 
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -30,6 +31,8 @@ import org.slf4j.LoggerFactory;
 public class WebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
+
+    private ResourceFactory.Closeable _resourceFactory;
 
     public WebXmlConfiguration()
     {
@@ -56,7 +59,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     if (url != null)
                     {
                         URI uri = url.toURI();
-                        dftResource = context.getResourceFactory().newResource(uri);
+                        _resourceFactory = ResourceFactory.closeable();
+                        dftResource = _resourceFactory.newResource(uri);
                     }
                 }
                 if (dftResource == null)
@@ -127,6 +131,9 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler)
                 context.getErrorHandler()).setErrorPages(null);
+
+        IO.close(_resourceFactory);
+        _resourceFactory = null;
 
         // TODO remove classpaths from classloader
     }

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.nio.file.Path;
-
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -22,16 +20,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class OverrideDescriptor extends WebDescriptor
 {
-    /**
-     * @deprecated use {@link OverrideDescriptor(Path)} instead
-     */
-    @Deprecated
     public OverrideDescriptor(Resource xml)
-    {
-        super(xml);
-    }
-
-    public OverrideDescriptor(Path xml)
     {
         super(xml);
     }

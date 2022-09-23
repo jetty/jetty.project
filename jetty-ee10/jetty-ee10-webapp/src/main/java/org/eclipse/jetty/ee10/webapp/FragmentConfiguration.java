@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.util.resource.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * FragmentConfiguration
@@ -27,10 +24,6 @@ import org.slf4j.LoggerFactory;
  */
 public class FragmentConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FragmentConfiguration.class);
-    // Holds a Map<Resource, Resource> .
-    //  key: Resource to the Jar
-    //  value: Resource to the web fragment xml
     public static final String FRAGMENT_RESOURCES = "org.eclipse.jetty.webFragments";
 
     public FragmentConfiguration()
@@ -66,11 +59,7 @@ public class FragmentConfiguration extends AbstractConfiguration
         {
             for (Map.Entry<Resource, Resource> entry : frags.entrySet())
             {
-                Path path = entry.getValue().getPath();
-                if (path != null)
-                    metaData.addFragmentDescriptor(entry.getKey(), new FragmentDescriptor(path));
-                else
-                    LOG.warn("Invalid Fragment Descriptor {} points to unreadable Resource {}", entry.getKey(), entry.getValue());
+                metaData.addFragmentDescriptor(entry.getKey(), new FragmentDescriptor(entry.getValue()));
             }
         }
     }

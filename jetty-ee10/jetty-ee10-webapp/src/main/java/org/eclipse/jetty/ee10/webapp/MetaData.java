@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.lang.annotation.Annotation;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -315,7 +314,7 @@ public class MetaData
             Descriptor existing = _webFragmentNameMap.get(descriptor.getName());
             if (existing != null && !isAllowDuplicateFragmentNames())
             {
-                throw new IllegalStateException("Duplicate fragment name: " + descriptor.getName() + " for " + existing.getPath() + " and " + descriptor.getPath());
+                throw new IllegalStateException("Duplicate fragment name: " + descriptor.getName() + " for " + existing.getResource() + " and " + descriptor.getResource());
             }
             else
                 _webFragmentNameMap.put(descriptor.getName(), descriptor);
@@ -598,8 +597,7 @@ public class MetaData
      */
     public FragmentDescriptor getFragmentDescriptor(Resource descriptorResource)
     {
-        Path descriptorPath = descriptorResource.getPath();
-        return _webFragmentRoots.stream().filter(d -> d.getPath().equals(descriptorPath)).findFirst().orElse(null);
+        return _webFragmentRoots.stream().filter(d -> d.getResource().equals(descriptorResource)).findFirst().orElse(null);
     }
 
     /**

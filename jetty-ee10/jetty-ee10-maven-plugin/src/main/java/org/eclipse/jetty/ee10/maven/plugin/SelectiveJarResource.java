@@ -39,8 +39,6 @@ import org.slf4j.LoggerFactory;
  * SelectiveJarResource
  *
  * Selectively copies resources from a jar file based on includes/excludes.
- * TODO: investigate if copyTo() can instead have an IncludeExcludeSet as a parameter?
- * TODO: or have a smaller ResourceWrapper jetty-core class that can be overridden for specific behavior like in this class
  */
 public class SelectiveJarResource extends Resource
 {
@@ -134,12 +132,6 @@ public class SelectiveJarResource extends Resource
     public String getFileName()
     {
         return _delegate.getFileName();
-    }
-
-    @Override
-    public Resource resolve(String subUriPath)
-    {
-        return _delegate.resolve(subUriPath);
     }
 
     @Override

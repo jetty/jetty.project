@@ -13,22 +13,20 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.File;
 
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TestRunAsAnnotation
 {
-    public WorkDir workDir;
-
     @Test
     public void testRunAsAnnotation() throws Exception
     {
@@ -47,8 +45,7 @@ public class TestRunAsAnnotation
         holder2.setHeldClass(ServletC.class);
         holder2.setInitOrder(1);
         wac.getServletHandler().addServletWithMapping(holder2, "/foo2/*");
-        Path fakeXml = workDir.getEmptyPathDir().resolve("fake.xml");
-        Files.createFile(fakeXml);
+        Resource fakeXml = ResourceFactory.root().newResource(new File(MavenTestingUtils.getTargetTestingDir("run-as"), "fake.xml").toPath());
         wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(fakeXml));
         
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);
@@ -57,6 +54,6 @@ public class TestRunAsAnnotation
         parser.introspect(new ServletC(), null);
         
         assertEquals("admin", holder.getRunAsRole());
-        assertNull(holder2.getRunAsRole());
+        assertEquals(null, holder2.getRunAsRole());
     }
 }

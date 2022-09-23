@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -44,16 +43,7 @@ public class FragmentDescriptor extends WebDescriptor
     protected List<String> _afters = new ArrayList<String>();
     protected String _name;
 
-    /**
-     * @deprecated use {@link FragmentDescriptor(Path)} instead
-     */
-    @Deprecated
     public FragmentDescriptor(Resource xml)
-    {
-        super(xml);
-    }
-
-    public FragmentDescriptor(Path xml)
         throws Exception
     {
         super(xml);
@@ -119,7 +109,7 @@ public class FragmentDescriptor extends WebDescriptor
             if (node.getTag().equalsIgnoreCase("others"))
             {
                 if (_otherType != OtherType.None)
-                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml.toUri());
+                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml.getURI());
 
                 _otherType = OtherType.Before;
             }
@@ -146,7 +136,7 @@ public class FragmentDescriptor extends WebDescriptor
             if (node.getTag().equalsIgnoreCase("others"))
             {
                 if (_otherType != OtherType.None)
-                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml.toUri());
+                    throw new IllegalStateException("Duplicate <other> clause detected in " + _xml.getURI());
 
                 _otherType = OtherType.After;
             }

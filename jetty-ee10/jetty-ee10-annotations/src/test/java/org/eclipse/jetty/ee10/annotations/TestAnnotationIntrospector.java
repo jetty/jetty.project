@@ -72,14 +72,14 @@ public class TestAnnotationIntrospector
             //a DESCRIPTOR sourced servlet can be introspected if web-fragment.xml medata-complete==false && web.xml metadata-complete==false
             file = MavenTestingUtils.getTestResourceFile("web-fragment4false.xml");
             resource = ResourceFactory.root().newResource(file.toPath());
-            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource.getPath()));
+            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
             //a DESCRIPTOR sourced servlet cannot be introspected if web-fragment.xml medata-complete==true (&& web.xml metadata-complete==false)
             file = MavenTestingUtils.getTestResourceFile("web-fragment4true.xml");
             resource = ResourceFactory.root().newResource(file.toPath());
-            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource.getPath()));
+            wac.getMetaData().addFragmentDescriptor(ResourceFactory.root().newResource(file.getParentFile().toPath()), new FragmentDescriptor(resource));
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, resource.toString()));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));
 
