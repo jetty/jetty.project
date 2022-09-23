@@ -512,7 +512,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyFragment(Resource webFrag)
     {
-        return !webFrag.exists() || webFrag.isDirectory();
+        return webFrag == null || webFrag.isDirectory();
     }
 
     /**

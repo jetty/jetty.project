@@ -159,9 +159,6 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         if (LOG.isDebugEnabled())
             LOG.debug("Loading {} from {}", this, config);
 
-        if (!config.exists())
-            throw new IllegalStateException("Config does not exist: " + config);
-
         Properties properties = new Properties();
         try (InputStream inputStream = config.newInputStream())
         {

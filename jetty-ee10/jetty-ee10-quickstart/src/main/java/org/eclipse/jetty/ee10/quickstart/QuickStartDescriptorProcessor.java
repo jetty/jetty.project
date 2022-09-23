@@ -203,10 +203,9 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 for (URI uri : uris)
                 {
                     Resource r = _resourceFactory.newResource(uri);
-                    if (r.exists())
-                        visitMetaInfResource(context, r);
-                    else
+                    if (r == null)
                         throw new IllegalArgumentException("Resource not found: " + r);
+                    visitMetaInfResource(context, r);
                 }
             }
             default ->

@@ -369,7 +369,7 @@ public class MavenWebAppContext extends WebAppContext
 
         // If no regular resource exists check for access to /WEB-INF/lib or
         // /WEB-INF/classes
-        if ((resource == null || !resource.exists()) && pathInContext != null && _classes != null)
+        if (resource == null && pathInContext != null && _classes != null)
         {
             // Normalize again to look for the resource inside /WEB-INF subdirectories.
             String uri = URIUtil.normalizePath(pathInContext);
