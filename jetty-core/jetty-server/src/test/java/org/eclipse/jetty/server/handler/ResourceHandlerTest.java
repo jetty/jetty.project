@@ -2801,7 +2801,8 @@ public class ResourceHandlerTest
      * migrate through the ResourceHandler before it hits the
      * ResourceListing.getAsXHTML for output production
      * </p>
-     */    @Test
+     */
+    @Test
     public void testListingXSS() throws Exception
     {
         // Allow unsafe URI requests for this test case specifically
@@ -2825,8 +2826,6 @@ public class ResourceHandlerTest
          * URI spec to still produce a listing.  This path-param value should not make it
          * down to the ResourceListing.getAsXHTML() method.
          */
-        // TODO: investigate why ResourceHandler isn't producing a directory listing when asked here.
-        // TODO: this request currently produces a 404
         String req1 = """
             GET /context/;<script>window.alert("hi");</script> HTTP/1.1\r
             Host: local\r
