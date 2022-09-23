@@ -465,13 +465,13 @@ public class DefaultServletTest
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
-        assertThat(body, containsString(">#hashcode&nbsp;<")); // text on page
+        assertThat(body, containsString(">#hashcode&#160;<")); // text on page
         assertThat(body, containsString("/oddities/%23hashcode")); // generated link
 
-        assertThat(body, containsString(">other%2fkind%2Fof%2fslash&nbsp;<")); // text on page
+        assertThat(body, containsString(">other%2fkind%2Fof%2fslash&#160;<")); // text on page
         assertThat(body, containsString("/oddities/other%252fkind%252Fof%252fslash")); // generated link
 
-        assertThat(body, containsString(">a file with a space&nbsp;<")); // text on page
+        assertThat(body, containsString(">a file with a space&#160;<")); // text on page
         assertThat(body, containsString("/oddities/a%20file%20with%20a%20space")); // generated link
 
         assertThat(body, not(containsString(extraResourceBaseString)));
