@@ -240,7 +240,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
             return (Path)attr;
 
         Path webInfDir = getWebInfPath(context);
-        Path qstartFile = webInfDir.resolve("quickstart-web.xml");
+        Path qstartPath = webInfDir.resolve("quickstart-web.xml");
 
         if (attr != null && StringUtil.isNotBlank(attr.toString()))
         {
@@ -263,14 +263,14 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Using quickstart attribute {} value of {}", attr, attrValue);
-                    qstartFile = attrPath;
+                    qstartPath = attrPath;
                 }
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Using quickstart location: {}", qstartFile);
-        context.setAttribute(QUICKSTART_WEB_XML, qstartFile);
-        return qstartFile;
+            LOG.debug("Using quickstart location: {}", qstartPath);
+        context.setAttribute(QUICKSTART_WEB_XML, qstartPath);
+        return qstartPath;
     }
 
     private static Path getWebInfPath(WebAppContext context) throws IOException
@@ -284,11 +284,23 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         if (webInfDir == null)
         {
-            Path baseResourcePath = context.getBaseResource().getPath();
+            Path baseResourcePath = findFirstWritablePath(context);
             webInfDir = baseResourcePath.resolve("WEB-INF");
             if (!Files.exists(webInfDir))
                 Files.createDirectories(webInfDir);
         }
         return webInfDir;
+    }
+
+    private static Path findFirstWritablePath(WebAppContext context) throws IOException
+    {
+        for (Resource resource: context.getBaseResource())
+        {
+            Path path = resource.getPath();
+            if (path == null || !Files.isDirectory(path) || !Files.isWritable(path))
+                continue; // skip
+            return path;
+        }
+        throw new IOException("Unable to find writable path in Base Resources");
     }
 }
