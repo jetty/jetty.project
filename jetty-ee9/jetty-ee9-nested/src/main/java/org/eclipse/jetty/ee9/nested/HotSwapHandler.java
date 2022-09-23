@@ -85,18 +85,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-    }
-
-    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Handler handler = _handler;
