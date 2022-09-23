@@ -91,7 +91,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
         Resource resource = super.getJarFor(service);
         // TODO This is not correct, but implemented like this to be bug for bug compatible
         // with previous implementation that could only handle actual jars and not bundles.
-        if (resource != null && !resource.toString().endsWith(".jar"))
+        if (resource != null && !FileID.isJavaArchive(resource.getURI()))
             return null;
         return resource;
     }

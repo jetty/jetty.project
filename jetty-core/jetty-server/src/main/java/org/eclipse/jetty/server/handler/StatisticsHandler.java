@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -42,8 +43,8 @@ public class StatisticsHandler extends Handler.Wrapper
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
     private final SampleStatistic _processTimeStats = new SampleStatistic();
-    private final LongAdder _processThrows = new LongAdder();
-    private final LongAdder _handleThrows = new LongAdder();
+    private final LongAdder _processingErrors = new LongAdder();
+    private final LongAdder _handlingErrors = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -53,7 +54,7 @@ public class StatisticsHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        long beginTimeStamp = System.nanoTime();
+        long beginNanoTime = NanoTime.now();
         _handleStats.increment();
         StatisticsRequest statisticsRequest = new StatisticsRequest(request);
 
@@ -63,13 +64,13 @@ public class StatisticsHandler extends Handler.Wrapper
         }
         catch (Throwable t)
         {
-            _handleThrows.increment();
+            _handlingErrors.increment();
             throw t;
         }
         finally
         {
             _handleStats.decrement();
-            _handleTimeStats.record(System.nanoTime() - beginTimeStamp);
+            _handleTimeStats.record(NanoTime.since(beginNanoTime));
         }
     }
 
@@ -83,8 +84,8 @@ public class StatisticsHandler extends Handler.Wrapper
         _requestTimeStats.reset();
         _handleTimeStats.reset();
         _processTimeStats.reset();
-        _processThrows.reset();
-        _handleThrows.reset();
+        _processingErrors.reset();
+        _handlingErrors.reset();
         _responses1xx.reset();
         _responses2xx.reset();
         _responses3xx.reset();
@@ -141,15 +142,15 @@ public class StatisticsHandler extends Handler.Wrapper
     }
 
     @ManagedAttribute("number of requests that threw an exception during handling")
-    public int getHandleThrows()
+    public int getHandlingErrors()
     {
-        return _handleThrows.intValue();
+        return _handlingErrors.intValue();
     }
 
     @ManagedAttribute("number of requests that threw an exception during processing")
-    public int getProcessThrows()
+    public int getProcessingErrors()
     {
-        return _processThrows.intValue();
+        return _processingErrors.intValue();
     }
 
     @ManagedAttribute("")
@@ -252,7 +253,7 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         private final LongAdder _bytesRead = new LongAdder();
         private final LongAdder _bytesWritten = new LongAdder();
-        private long _processStartTimeStamp;
+        private long _processStartNanoTime;
 
         private StatisticsRequest(Request request)
         {
@@ -283,13 +284,13 @@ public class StatisticsHandler extends Handler.Wrapper
 
         private long spentTimeNs()
         {
-            return System.nanoTime() - _processStartTimeStamp;
+            return NanoTime.since(_processStartNanoTime);
         }
 
         @Override
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
-            _processStartTimeStamp = System.nanoTime();
+            _processStartNanoTime = NanoTime.now();
             _processStats.increment();
             _requestStats.increment();
 
@@ -342,7 +343,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 public void succeeded()
                 {
                     _requestStats.decrement();
-                    _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
                     super.succeeded();
                 }
 
@@ -350,7 +351,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 public void failed(Throwable x)
                 {
                     _requestStats.decrement();
-                    _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
+                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
                     super.failed(x);
                 }
             });
@@ -361,13 +362,13 @@ public class StatisticsHandler extends Handler.Wrapper
             }
             catch (Throwable t)
             {
-                _processThrows.increment();
+                _processingErrors.increment();
                 throw t;
             }
             finally
             {
                 _processStats.decrement();
-                _processTimeStats.record(System.nanoTime() - _processStartTimeStamp);
+                _processTimeStats.record(NanoTime.since(_processStartNanoTime));
             }
         }
     }

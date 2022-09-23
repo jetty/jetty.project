@@ -74,7 +74,7 @@ public class RequestTrailersTest extends AbstractTest
 
         HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
-        request.trailers(() -> trailers);
+        request.trailersSupplier(() -> trailers);
         if (content != null)
             request.body(new StringRequestContent(content));
 
@@ -101,7 +101,6 @@ public class RequestTrailersTest extends AbstractTest
                     {
                         Stream.Data data = stream.readData();
                         data.release();
-                        stream.demand();
                         // We should not receive an empty HEADERS frame for the
                         // trailers, but instead a DATA frame with endStream=true.
                         if (data.frame().isEndStream())
@@ -110,6 +109,10 @@ public class RequestTrailersTest extends AbstractTest
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                             stream.headers(responseFrame, Callback.NOOP);
                         }
+                        else
+                        {
+                            stream.demand();
+                        }
                     }
                 };
             }
@@ -117,7 +120,7 @@ public class RequestTrailersTest extends AbstractTest
 
         HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
-        request.trailers(() -> trailers);
+        request.trailersSupplier(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);
 
@@ -168,7 +171,7 @@ public class RequestTrailersTest extends AbstractTest
 
         HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
-        request.trailers(() -> trailers);
+        request.trailersSupplier(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);
 

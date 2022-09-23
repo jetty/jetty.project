@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.eclipse.jetty.http.CompressedContentFormat.BR;
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -73,25 +72,8 @@ public class GZIPContentDecoderTest
     }
 
     @Test
-    public void testCompressedContentFormat()
+    public void testStripSuffixes()
     {
-        assertTrue(CompressedContentFormat.tagEquals("tag", "tag"));
-        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag\""));
-        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag" + GZIP.getEtagSuffix() + "\""));
-        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag" + BR.getEtagSuffix() + "\""));
-        assertTrue(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234567\""));
-        assertTrue(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234567" + GZIP.getEtagSuffix() + "\""));
-
-        assertFalse(CompressedContentFormat.tagEquals("Zag", "Xag" + GZIP.getEtagSuffix()));
-        assertFalse(CompressedContentFormat.tagEquals("xtag", "tag"));
-        assertFalse(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234111\""));
-        assertFalse(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234111" + GZIP.getEtagSuffix() + "\""));
-
-        assertTrue(CompressedContentFormat.tagEquals("12345", "\"12345\""));
-        assertTrue(CompressedContentFormat.tagEquals("\"12345\"", "12345"));
-        assertTrue(CompressedContentFormat.tagEquals("12345", "\"12345" + GZIP.getEtagSuffix() + "\""));
-        assertTrue(CompressedContentFormat.tagEquals("\"12345\"", "12345" + GZIP.getEtagSuffix()));
-
         assertThat(GZIP.stripSuffixes("12345"), is("12345"));
         assertThat(GZIP.stripSuffixes("12345, 666" + GZIP.getEtagSuffix()), is("12345, 666"));
         assertThat(GZIP.stripSuffixes("12345, 666" + GZIP.getEtagSuffix() + ",W/\"9999" + GZIP.getEtagSuffix() + "\""),
@@ -132,7 +114,7 @@ public class GZIPContentDecoderTest
         {
             baos.write(read);
         }
-        assertEquals(data, new String(baos.toByteArray(), StandardCharsets.UTF_8));
+        assertEquals(data, baos.toString(StandardCharsets.UTF_8));
     }
 
     @Test

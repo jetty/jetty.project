@@ -268,7 +268,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             String longType = _dbAdaptor.getLongType();
             String stringType = _dbAdaptor.getStringType();
 
-            return "create table " + _tableName + " (" + _idColumn + " " + stringType + "(120), " +
+            return "create table " + getSchemaTableName() + " (" + _idColumn + " " + stringType + "(120), " +
                 _contextPathColumn + " " + stringType + "(60), " + _virtualHostColumn + " " + stringType + "(60), " + _lastNodeColumn + " " + stringType + "(60), " + _accessTimeColumn + " " + longType + ", " +
                 _lastAccessTimeColumn + " " + longType + ", " + _createTimeColumn + " " + longType + ", " + _cookieTimeColumn + " " + longType + ", " +
                 _lastSavedTimeColumn + " " + longType + ", " + _expiryTimeColumn + " " + longType + ", " + _maxIntervalColumn + " " + longType + ", " +

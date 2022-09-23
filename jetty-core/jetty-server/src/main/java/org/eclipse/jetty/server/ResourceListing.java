@@ -13,25 +13,24 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
-import java.text.DateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.resource.PathCollators;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +61,9 @@ public class ResourceListing
         if (base == null || !resource.isDirectory())
             return null;
 
-        List<Path> listing = new ArrayList<>();
-        collectListing(listing, resource);
+        List<Resource> listing = resource.list().stream()
+            .filter(distinctBy(Resource::getFileName))
+            .collect(Collectors.toCollection(ArrayList::new));
 
         boolean sortOrderAscending = true;
         String sortColumn = "N"; // name (or "M" for Last Modified, or "S" for Size)
@@ -94,12 +94,12 @@ public class ResourceListing
         }
 
         // Perform sort
-        Comparator<? super Path> sort = switch (sortColumn)
-            {
-                case "M" -> PathCollators.byLastModified(sortOrderAscending);
-                case "S" -> PathCollators.bySize(sortOrderAscending);
-                default -> PathCollators.byName(sortOrderAscending); // sorts by filename only (not full path)
-            };
+        Comparator<? super Resource> sort = switch (sortColumn)
+        {
+            case "M" -> ResourceCollators.byLastModified(sortOrderAscending);
+            case "S" -> ResourceCollators.bySize(sortOrderAscending);
+            default -> ResourceCollators.byName(sortOrderAscending);
+        };
         listing.sort(sort);
 
         String decodedBase = URIUtil.decodePath(base);
@@ -209,33 +209,26 @@ public class ResourceListing
             buf.append("</tr>\n");
         }
 
-        DateFormat dfmt = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
+        // TODO: Use Locale and/or ZoneId from Request?
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.MEDIUM)
+            .withZone(ZoneId.systemDefault());
 
-        for (Path item : listing)
+        for (Resource item : listing)
         {
-            Path fileName = item.getFileName();
-            if (fileName == null)
-            {
-                continue; // skip
-            }
-
-            String name = fileName.toString();
+            // Listings always return non-composite Resource entries
+            String name = item.getFileName();
             if (StringUtil.isBlank(name))
-            {
-                return null;
-            }
+                continue; // a resource either not backed by a filename (eg: MemoryResource), or has no filename (eg: a segment-less root "/")
 
-            if (Files.isDirectory(item))
-            {
+            // Ensure name has a slash if it's a directory
+            if (item.isDirectory() && !name.endsWith("/"))
                 name += URIUtil.SLASH;
-            }
 
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
-
-            // TODO This produces absolute links with the /context/ path included, investigate if we can use relative links reliably now
-            String href = URIUtil.addEncodedPaths(encodedBase, URIUtil.encodePath(name));
-            buf.append(href);
+            // TODO should this be a relative link?
+            String path = URIUtil.addEncodedPaths(encodedBase, URIUtil.encodePath(name));
+            buf.append(path);
             buf.append("\">");
             buf.append(deTag(name));
             buf.append(NBSP);
@@ -243,35 +236,20 @@ public class ResourceListing
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
-
-            try
-            {
-                FileTime lastModified = Files.getLastModifiedTime(item, LinkOption.NOFOLLOW_LINKS);
-                buf.append(dfmt.format(new Date(lastModified.toMillis())));
-            }
-            catch (IOException ignore)
-            {
-                // do nothing (lastModifiedTime not supported by this file system)
-            }
-            buf.append(NBSP).append("</td>");
+            Instant lastModified = item.lastModified();
+            buf.append(formatter.format(lastModified));
+            buf.append("&nbsp;</td>");
 
             // Size
             buf.append("<td class=\"size\">");
-
-            try
+            long length = item.length();
+            if (length >= 0)
             {
-                long length = Files.size(item);
-                if (length >= 0)
-                {
-                    buf.append(String.format("%,d bytes", length));
-                }
-            }
-            catch (IOException ignore)
-            {
-                // do nothing (size not supported by this file system)
+                buf.append(String.format("%,d bytes", item.length()));
             }
             buf.append(NBSP).append("</td></tr>\n");
         }
+
         buf.append("</tbody>\n");
         buf.append("</table>\n");
         buf.append("</body></html>\n");
@@ -279,43 +257,11 @@ public class ResourceListing
         return buf.toString();
     }
 
-    private static void collectListing(List<Path> listing, Resource resource)
+    /* TODO: see if we can use {@link Collectors#groupingBy} */
+    private static <T> Predicate<T> distinctBy(Function<? super T, Object> keyExtractor)
     {
-        if (resource == null)
-            return;
-
-        if (resource instanceof ResourceCollection resourceCollection)
-        {
-            for (Resource child: resourceCollection.getResources())
-            {
-                collectListing(listing, child);
-            }
-            return;
-        }
-
-        Path path = resource.getPath();
-        if (path == null)
-            return;
-
-        if (!Files.isDirectory(path))
-        {
-            listing.add(path);
-            return;
-        }
-
-        try (Stream<Path> listStream = Files.list(path))
-        {
-            listStream.forEach((entry) ->
-            {
-                if (!listing.contains(entry))
-                    listing.add(entry);
-            });
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to get Directory Listing for: {}", resource, e);
-        }
+        HashSet<Object> map = new HashSet<>();
+        return t -> map.add(keyExtractor.apply(t));
     }
 
     /**

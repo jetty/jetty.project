@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -89,7 +90,7 @@ public class GzipHandlerCommitTest
 
         URI uri = server.getURI().resolve("/test/");
         Request request = client.newRequest(uri);
-        request.header(HttpHeader.CONNECTION, "Close");
+        request.headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         request.onResponseHeaders((r) -> latch.countDown());
         ContentResponse response = request.send();
         assertThat("Response status", response.getStatus(), is(200));
@@ -116,7 +117,7 @@ public class GzipHandlerCommitTest
 
         URI uri = server.getURI().resolve("/test/");
         Request request = client.newRequest(uri);
-        request.header(HttpHeader.CONNECTION, "Close");
+        request.headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         request.onResponseHeaders((r) -> latch.countDown());
         ContentResponse response = request.send();
         assertThat("Response status", response.getStatus(), is(200));

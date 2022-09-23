@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,7 +52,9 @@ public interface Response extends Content.Sink
 
     HttpFields.Mutable getHeaders();
 
-    HttpFields.Mutable getOrCreateTrailers();
+    Supplier<HttpFields> getTrailersSupplier();
+
+    void setTrailersSupplier(Supplier<HttpFields> trailers);
 
     boolean isCommitted();
 
@@ -59,13 +62,21 @@ public interface Response extends Content.Sink
 
     void reset();
 
-    default boolean writeTrailers(Content.Chunk chunk, Callback callback)
+    default boolean writeTrailers(Content.Chunk chunk, Callback ignored)
     {
         if (chunk instanceof Trailers trailers)
         {
-            getOrCreateTrailers().add(trailers.getTrailers());
-            write(true, null, callback);
-            return true;
+            HttpFields requestTrailers = trailers.getTrailers();
+            if (requestTrailers != null)
+            {
+                Supplier<HttpFields> supplier = getTrailersSupplier();
+                if (supplier != null)
+                {
+                    HttpFields responseTrailers = supplier.get();
+                    if (responseTrailers instanceof HttpFields.Mutable mutable)
+                        mutable.add(requestTrailers);
+                }
+            }
         }
         return false;
     }
@@ -375,9 +386,15 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public HttpFields.Mutable getOrCreateTrailers()
+        public Supplier<HttpFields> getTrailersSupplier()
         {
-            return getWrapped().getOrCreateTrailers();
+            return getWrapped().getTrailersSupplier();
+        }
+
+        @Override
+        public void setTrailersSupplier(Supplier<HttpFields> trailers)
+        {
+            getWrapped().setTrailersSupplier(trailers);
         }
 
         @Override

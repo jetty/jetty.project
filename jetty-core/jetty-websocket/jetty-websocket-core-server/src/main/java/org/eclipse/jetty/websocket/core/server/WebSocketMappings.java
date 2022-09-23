@@ -229,6 +229,21 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         return negotiator;
     }
 
+    /**
+     * <p>Attempts to find a WebSocket mapping and upgrade a request to WebSocket.</p>
+     *
+     * <p>Returns {@code true} if the WebSocket upgrade is successful and a successful response is generated and the callback
+     * eventually completed, or if the WebSocket upgrade failed and a failure response is generated and the callback eventually
+     * completed. Returns {@code false} if a response is not generated and the caller is responsible for generating a response
+     * and completing the callback.</p>
+     *
+     * @param request the request
+     * @param response the response
+     * @param callback the callback
+     * @param defaultCustomizer the customizer
+     * @return true if the WebSocket upgrade was accepted
+     * @throws IOException there is an error during the upgrade
+     */
     public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
     {
         String target = request.getPathInContext();
@@ -239,13 +254,25 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
             request.setAttribute(PathSpec.class.getName(), pathSpec);
         });
 
-        if (negotiator == null)
-            return false;
-
-        // We have an upgrade request
-        return handshaker.upgradeRequest(negotiator, request, response, callback, components, defaultCustomizer);
+        return upgrade(negotiator, request, response, callback, defaultCustomizer);
     }
 
+    /**
+     * <p>Attempts to find a WebSocket mapping and upgrade a request to WebSocket.</p>
+     *
+     * <p>Returns {@code true} if the WebSocket upgrade is successful and a successful response is generated and the callback
+     * eventually completed, or if the WebSocket upgrade failed and a failure response is generated and the callback eventually
+     * completed. Returns {@code false} if a response is not generated and the caller is responsible for generating a response
+     * and completing the callback.</p>
+     *
+     * @param negotiator the negotiator
+     * @param request the request
+     * @param response the response
+     * @param callback the callback
+     * @param defaultCustomizer the customizer
+     * @return true if the WebSocket upgrade was accepted
+     * @throws IOException there is an error during the upgrade
+     */
     public boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
     {
         if (negotiator == null)

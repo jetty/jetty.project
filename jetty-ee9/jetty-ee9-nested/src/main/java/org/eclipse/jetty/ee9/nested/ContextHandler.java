@@ -1463,22 +1463,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             Resource resource = getResource(path);
 
-            if (resource != null && resource.exists())
-            {
-                if (!path.endsWith(URIUtil.SLASH))
-                    path = path + URIUtil.SLASH;
+            if (!path.endsWith(URIUtil.SLASH))
+                path = path + URIUtil.SLASH;
 
-                List<String> l = resource.list();
-                if (l != null)
+            HashSet<String> set = new HashSet<>();
+
+            for (Resource r: resource)
+            {
+                for (Resource item: r.list())
                 {
-                    HashSet<String> set = new HashSet<>();
-                    for (int i = 0; i < l.size(); i++)
-                    {
-                        set.add(path + l.get(i));
-                    }
-                    return set;
+                    set.add(path + item.getFileName());
                 }
             }
+            return set;
         }
         catch (Exception e)
         {

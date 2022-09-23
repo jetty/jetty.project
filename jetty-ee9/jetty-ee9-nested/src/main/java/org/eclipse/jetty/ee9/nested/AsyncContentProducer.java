@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -43,7 +44,7 @@ class AsyncContentProducer implements ContentProducer
     private Content.Chunk _rawContent;
     private Content.Chunk _transformedContent;
     private boolean _error;
-    private long _firstByteTimeStamp = Long.MIN_VALUE;
+    private long _firstByteNanoTime = Long.MIN_VALUE;
     private long _rawContentArrived;
 
     AsyncContentProducer(HttpChannel httpChannel)
@@ -90,7 +91,7 @@ class AsyncContentProducer implements ContentProducer
         _rawContent = null;
         _transformedContent = null;
         _error = false;
-        _firstByteTimeStamp = Long.MIN_VALUE;
+        _firstByteNanoTime = Long.MIN_VALUE;
         _rawContentArrived = 0L;
     }
 
@@ -144,10 +145,10 @@ class AsyncContentProducer implements ContentProducer
         assertLocked();
         long minRequestDataRate = _httpChannel.getHttpConfiguration().getMinRequestDataRate();
         if (LOG.isDebugEnabled())
-            LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteTimeStamp, this);
-        if (minRequestDataRate > 0 && _firstByteTimeStamp != Long.MIN_VALUE)
+            LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteNanoTime, this);
+        if (minRequestDataRate > 0 && _firstByteNanoTime != Long.MIN_VALUE)
         {
-            long period = System.nanoTime() - _firstByteTimeStamp;
+            long period = NanoTime.since(_firstByteNanoTime);
             if (period > 0)
             {
                 long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
@@ -474,10 +475,10 @@ class AsyncContentProducer implements ContentProducer
         if (content != null)
         {
             _rawContentArrived += content.remaining();
-            if (_firstByteTimeStamp == Long.MIN_VALUE)
-                _firstByteTimeStamp = System.nanoTime();
+            if (_firstByteNanoTime == Long.MIN_VALUE)
+                _firstByteNanoTime = NanoTime.now();
             if (LOG.isDebugEnabled())
-                LOG.debug("produceRawContent updated rawContentArrived to {} and firstByteTimeStamp to {} {}", _rawContentArrived, _firstByteTimeStamp, this);
+                LOG.debug("produceRawContent updated rawContentArrived to {} and firstByteTimeStamp to {} {}", _rawContentArrived, _firstByteNanoTime, this);
 
             // TODO do we really need these listeners?
             if (content.hasRemaining())

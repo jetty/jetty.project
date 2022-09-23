@@ -214,9 +214,9 @@ public class Request implements HttpServletRequest
         Map<String, String> trailers = new HashMap<>();
         for (HttpField field : trailersFields)
         {
-            String key = field.getName().toLowerCase();
-            String value = trailers.get(key);
-            trailers.put(key, value == null ? field.getValue() : value + "," + field.getValue());
+            String key = field.getLowerCaseName();
+            // Servlet spec requires field names to be lower case.
+            trailers.merge(key, field.getValue(), (existing, value) -> existing + "," + value);
         }
         return trailers;
     }
@@ -1172,7 +1172,9 @@ public class Request implements HttpServletRequest
     {
         final StringBuffer url = new StringBuffer(128);
         URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
-        url.append(getRequestURI());
+        String path = getRequestURI();
+        if (path != null)
+            url.append(path);
         return url;
     }
 

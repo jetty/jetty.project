@@ -16,7 +16,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -28,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -227,7 +230,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.newResource(compressedPathInContext);
-                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                        if (compressedResource.exists() && compressedResource.lastModified().isAfter(resource.lastModified()) &&
                             compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
@@ -268,12 +271,12 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
-                if (compressedContent != null && compressedContent.isValid() && Files.getLastModifiedTime(compressedContent.getResource().getPath()).toMillis() >= resource.lastModified())
+                if (compressedContent != null && compressedContent.isValid() && Files.getLastModifiedTime(compressedContent.getResource().getPath()).toInstant().isAfter(resource.lastModified()))
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
                 Resource compressedResource = _factory.newResource(compressedPathInContext);
-                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                if (compressedResource.exists() && compressedResource.lastModified().isAfter(resource.lastModified()) &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
@@ -291,19 +294,10 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         while (_cache.size() > 0 && (_cachedFiles.get() > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
         {
             // Scan the entire cache and generate an ordered list by last accessed time.
-            SortedSet<CachedHttpContent> sorted = new TreeSet<>((c1, c2) ->
-            {
-                if (c1._lastAccessed < c2._lastAccessed)
-                    return -1;
-
-                if (c1._lastAccessed > c2._lastAccessed)
-                    return 1;
-
-                if (c1._contentLengthValue < c2._contentLengthValue)
-                    return -1;
-
-                return c1._key.compareTo(c2._key);
-            });
+            SortedSet<CachedHttpContent> sorted = new TreeSet<>(
+                Comparator.comparing((CachedHttpContent c) -> c._lastAccessed)
+                    .thenComparingLong(c -> c._contentLengthValue)
+                    .thenComparing(c -> c._key));
             sorted.addAll(_cache.values());
 
             // Invalidate least recently used first
@@ -381,13 +375,13 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         private final MimeTypes.Type _mimeType;
         private final HttpField _contentLength;
         private final HttpField _lastModified;
-        private final long _lastModifiedValue;
+        private final Instant _lastModifiedValue;
         private final HttpField _etag;
         private final Map<CompressedContentFormat, CachedPrecompressedHttpContent> _precompressed;
         private final AtomicReference<ByteBuffer> _indirectBuffer = new AtomicReference<>();
         private final AtomicReference<ByteBuffer> _directBuffer = new AtomicReference<>();
         private final AtomicReference<ByteBuffer> _mappedBuffer = new AtomicReference<>();
-        private volatile long _lastAccessed;
+        private volatile Instant _lastAccessed;
 
         CachedHttpContent(String pathInContext, Resource resource, Map<CompressedContentFormat, CachedHttpContent> precompressedResources)
         {
@@ -400,8 +394,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _mimeType = _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
 
             boolean exists = resource.exists();
-            _lastModifiedValue = exists ? resource.lastModified() : -1L;
-            _lastModified = _lastModifiedValue == -1 ? null
+            _lastModifiedValue = exists ? resource.lastModified() : null;
+            _lastModified = _lastModifiedValue == null ? null
                 : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
 
             _contentLengthValue = exists ? resource.length() : 0;
@@ -410,9 +404,9 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             if (_cachedFiles.incrementAndGet() > _maxCachedFiles)
                 shrinkCache();
 
-            _lastAccessed = System.currentTimeMillis();
+            _lastAccessed = Instant.now();
 
-            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, resource.getWeakETag()) : null;
+            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, EtagUtils.computeWeakEtag(resource.getPath())) : null;
 
             if (precompressedResources != null)
             {
@@ -460,7 +454,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         {
             if (_lastModifiedValue == _resource.lastModified() && _contentLengthValue == _resource.length())
             {
-                _lastAccessed = System.currentTimeMillis();
+                _lastAccessed = Instant.now();
                 return true;
             }
 

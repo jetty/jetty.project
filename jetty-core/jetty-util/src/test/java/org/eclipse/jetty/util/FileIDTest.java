@@ -80,7 +80,6 @@ public class FileIDTest
     @MethodSource("basenameCases")
     public void testGetBasename(String input, String expected) throws IOException
     {
-
         Path outputJar = workDir.getEmptyPathDir().resolve("test.jar");
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
@@ -94,6 +93,29 @@ public class FileIDTest
             String actual = FileID.getBasename(path);
             assertThat("getBasename(%s, \"%s\")".formatted(path, expected), actual, is(expected));
         }
+    }
+
+    public static Stream<Arguments> fileNameSource()
+    {
+        return Stream.of(
+            Arguments.of(null, ""),
+            Arguments.of(URI.create("file:/"), ""),
+            Arguments.of(URI.create("file:///"), ""),
+            Arguments.of(URI.create("file:zed/"), ""),
+            Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
+            Arguments.of(URI.create("file:///path/to/dir/"), ""),
+            Arguments.of(URI.create("http://eclipse.org/jetty/"), ""),
+            Arguments.of(URI.create("http://eclipse.org/jetty/index.html"), "index.html"),
+            Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fileNameSource")
+    public void testGetFileName(URI uri, String expected)
+    {
+        String actual = FileID.getFileName(uri);
+        assertThat(actual, is(expected));
     }
 
     public static Stream<Arguments> hasNamedPathSegmentTrueCases()
@@ -230,12 +252,13 @@ public class FileIDTest
         "jar:file:/home/user/project/with.jar/in/path/name",
         "file:/home/user/project/directory/",
         "file:/home/user/hello.ear",
-        "/home/user/hello.jar",
-        "/home/user/app.war"
+        "file:/opt/websites/webapps/company.war", // war files are not lib archives (the classes are not in the right place)
+        "/home/user/app.war",  // not a absolute URI
+        "/home/user/hello.jar"
     })
-    public void testIsArchiveUriFalse(String rawUri)
+    public void testIsLibArchiveUriFalse(String rawUri)
     {
-        assertFalse(FileID.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
+        assertFalse(FileID.isLibArchive(URI.create(rawUri)), "Should not be detected as a Lib Archive: " + rawUri);
     }
 
     @ParameterizedTest
@@ -244,12 +267,71 @@ public class FileIDTest
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
         "file:/home/user/install/jetty-home-12.0.0.zip",
+        "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"
+    })
+    public void testIsLibArchiveUriTrue(String rawUri)
+    {
+        assertTrue(FileID.isLibArchive(URI.create(rawUri)), "Should be detected as a Lib Archive: " + rawUri);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "jar:file:/home/user/project/with.jar/in/path/name",
+        "/home/user/project/with.jar/in/path/name",
+        "/home/user/project/directory/",
+        "/home/user/hello.ear",
+        "/opt/websites/webapps/company.war",
+        "/home/user/app.war",
+        "/home/user/hello.tar.gz",
+        "webapp.war",
+        "name"
+    })
+    public void testIsLibArchiveStringFalse(String str)
+    {
+        assertFalse(FileID.isLibArchive(str), "Should not be detected as a Lib Archive: " + str);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "company-1.0.jar",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "file:/home/user/install/jetty-home-12.0.0.zip",
+        "/home/user/install/jetty-home-12.0.0.zip",
+        "jetty-util-12.jar"
+    })
+    public void testIsLibArchiveStringTrue(String str)
+    {
+        assertTrue(FileID.isLibArchive(str), "Should be detected as a Lib Archive: " + str);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "jar:file:/home/user/project/with.jar/in/path/name",
+        "file:/home/user/project/directory/",
+        "file:/home/user/hello.ear",
+        "/home/user/app.war",  // not a absolute URI
+        "/home/user/hello.jar"
+    })
+    public void testIsArchiveUriFalse(String rawUri)
+    {
+        assertFalse(FileID.isArchive(URI.create(rawUri)), "Should not be detected as an Archive: " + rawUri);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
+        "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
+        "jar:file:///home/user/plugins/PLUGIN.JAR",
+        "jar:file:///home/user/plugins/Fragment.Jar",
+        "file:/home/user/install/jetty-home-12.0.0.zip",
         "file:/opt/websites/webapps/company.war",
         "jar:file:/home/user/.m2/repository/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar!/META-INF/resources"
     })
     public void testIsArchiveUriTrue(String rawUri)
     {
-        assertTrue(FileID.isArchive(URI.create(rawUri)), "Should be detected as a JAR URI: " + rawUri);
+        assertTrue(FileID.isArchive(URI.create(rawUri)), "Should be detected as an Archive: " + rawUri);
     }
 
     @ParameterizedTest
@@ -347,7 +429,7 @@ public class FileIDTest
         "cee.jar",
         "cee.zip"
     })
-    public void testIsWebArchiveFalse(String input) throws IOException
+    public void testIsWebArchiveStringFalse(String input) throws IOException
     {
         assertFalse(FileID.isWebArchive(input), "isWebArchive((String) \"%s\")".formatted(input));
         Path path = touchTestPath(input);
@@ -363,7 +445,7 @@ public class FileIDTest
         "ZED.WAR",
         "Zed.War"
     })
-    public void testIsWebArchiveTrue(String input) throws IOException
+    public void testIsWebArchiveStringTrue(String input) throws IOException
     {
         assertTrue(FileID.isWebArchive(input), "isWebArchive((String) \"%s\")".formatted(input));
         Path path = touchTestPath(input);

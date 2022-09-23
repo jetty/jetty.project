@@ -18,7 +18,6 @@ import java.util.Collections;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
 public class WebSocketHttpFieldsWrapper extends HttpFieldsWrapper
 {

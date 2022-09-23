@@ -28,12 +28,14 @@
     <module>jetty-jmx</module>
     <module>jetty-jndi</module>
     <module>jetty-keystore</module>
+    <module>jetty-proxy</module>
     <module>jetty-quic</module>
     <module>jetty-rewrite</module>
     <module>jetty-server</module>
     <module>jetty-session</module>
     <module>jetty-slf4j-impl</module>
     <module>jetty-start</module>
+    <module>jetty-tests</module>
     <module>jetty-unixdomain-server</module>
     <module>jetty-util</module>
     <module>jetty-util-ajax</module>

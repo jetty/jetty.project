@@ -39,7 +39,7 @@ public class TestSelectiveJarResource
     {
         Path unpackDir = workDir.getEmptyPathDir();
 
-        Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
+        Path testJar = MavenTestingUtils.getTargetPath("test-classes/selective-jar-test.jar");
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource resource = resourceFactory.newJarFileResource(testJar.toUri());
@@ -65,7 +65,7 @@ public class TestSelectiveJarResource
     {
         Path unpackDir = workDir.getEmptyPathDir();
 
-        Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
+        Path testJar = MavenTestingUtils.getTargetPath("test-classes/selective-jar-test.jar");
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource resource = resourceFactory.newJarFileResource(testJar.toUri());
@@ -91,7 +91,7 @@ public class TestSelectiveJarResource
     {
         Path unpackDir = workDir.getEmptyPathDir();
 
-        Path testJar = MavenTestingUtils.getTestResourcePathFile("selective-jar-test.jar");
+        Path testJar = MavenTestingUtils.getTargetPath("test-classes/selective-jar-test.jar");
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource resource = resourceFactory.newJarFileResource(testJar.toUri());

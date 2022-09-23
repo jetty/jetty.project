@@ -29,7 +29,6 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,6 +67,7 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -1016,7 +1016,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     private void notIdle()
     {
-        streamsState.idleTime = System.nanoTime();
+        streamsState.idleNanoTime = NanoTime.now();
     }
 
     public void onFrame(Frame frame)
@@ -1182,21 +1182,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         try
         {
             listener.onFailure(session, failure, callback);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("Failure while notifying listener {}", listener, x);
-        }
-    }
-
-    protected void notifyHeaders(Stream stream, HeadersFrame frame)
-    {
-        Stream.Listener listener = stream.getListener();
-        if (listener == null)
-            return;
-        try
-        {
-            listener.onHeaders(stream, frame);
         }
         catch (Throwable x)
         {
@@ -1474,7 +1459,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         private final Queue<Slot> slots = new ArrayDeque<>();
         // Must be incremented with the lock held.
         private final AtomicLong streamCount = new AtomicLong();
-        private long idleTime = System.nanoTime();
+        private long idleNanoTime = NanoTime.now();
         private CloseState closed = CloseState.NOT_CLOSED;
         private Runnable zeroStreamsAction;
         private GoAwayFrame goAwayRecv;
@@ -1814,7 +1799,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 {
                     case NOT_CLOSED ->
                     {
-                        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTime);
+                        long elapsed = NanoTime.millisSince(idleNanoTime);
                         if (elapsed < endPoint.getIdleTimeout())
                             return false;
                         notify = true;
@@ -2281,7 +2266,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         @Override
         protected boolean onExpired(HTTP2Stream stream)
         {
-            stream.onIdleExpired(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
+            stream.onIdleTimeout(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
             return false;
         }
     }

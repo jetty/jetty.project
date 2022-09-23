@@ -19,7 +19,6 @@ import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,13 +90,11 @@ public class ConcurrencyTest
                 }
                 // Wait for all workers to be ready
                 barrier.await();
-                long start = System.nanoTime();
+                long start = NanoTime.now();
 
                 // Wait for all workers to be done
                 barrier.await();
-                long end = System.nanoTime();
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
-                System.err.println("Elapsed ms:" + elapsed);
+                System.err.println("Elapsed ms:" + NanoTime.millisSince(start));
                 executor.shutdownNow();
 
                 // Perform one request to get the result - the session
@@ -153,7 +151,7 @@ public class ConcurrencyTest
                 // Wait for all workers to be ready
                 barrier.await();
 
-                Random random = new Random(System.nanoTime());
+                Random random = new Random();
 
                 for (int i = 0; i < requestsCount; ++i)
                 {

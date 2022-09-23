@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -56,7 +55,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -296,7 +294,6 @@ public class SessionHandlerTest
         }
     }
 
-    @Disabled
     @Test
     public void testSimpleSessionCreation() throws Exception
     {
@@ -473,7 +470,7 @@ public class SessionHandlerTest
         mgr.setSessionCache(cache);
         mgr.setSessionIdManager(idMgr);
 
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long now = System.currentTimeMillis();
 
         Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
         session.setExtendedId("123.node1");
@@ -512,7 +509,7 @@ public class SessionHandlerTest
         mgr.setSessionCache(cache);
         mgr.setSessionIdManager(idMgr);
 
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long now = System.currentTimeMillis();
 
         Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
 

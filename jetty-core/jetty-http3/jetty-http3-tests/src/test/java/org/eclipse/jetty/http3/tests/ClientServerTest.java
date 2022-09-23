@@ -225,10 +225,10 @@ public class ClientServerTest extends AbstractClientServerTest
                         }
                         // Recycle the ByteBuffer in data.frame.
                         data.release();
-                        // Call me again immediately.
-                        stream.demand();
                         if (data.isLast())
                             serverLatch.get().countDown();
+                        else
+                            stream.demand();
                     }
                 };
             }
@@ -296,8 +296,12 @@ public class ClientServerTest extends AbstractClientServerTest
                         stream.data(new DataFrame(data.getByteBuffer(), data.isLast()))
                             // Always release.
                             .whenComplete((s, x) -> data.release())
-                            // Demand only if successful.
-                            .thenRun(stream::demand);
+                            // Demand only if successful and not last.
+                            .thenRun(() ->
+                            {
+                                if (!data.isLast())
+                                    stream.demand();
+                            });
                     }
                 };
             }
@@ -313,32 +317,33 @@ public class ClientServerTest extends AbstractClientServerTest
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);
         CountDownLatch clientDataLatch = new CountDownLatch(1);
         Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    clientResponseLatch.countDown();
-                    stream.demand();
-                }
+                clientResponseLatch.countDown();
+                stream.demand();
+            }
 
-                @Override
-                public void onDataAvailable(Stream.Client stream)
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                // Read data.
+                Stream.Data data = stream.readData();
+                if (data == null)
                 {
-                    // Read data.
-                    Stream.Data data = stream.readData();
-                    if (data != null)
-                    {
-                        // Consume data.
-                        byteBuffer.put(data.getByteBuffer());
-                        data.release();
-                        if (data.isLast())
-                            clientDataLatch.countDown();
-                    }
-                    // Demand more data.
                     stream.demand();
+                    return;
                 }
-            })
-            .get(5, TimeUnit.SECONDS);
+                // Consume data.
+                byteBuffer.put(data.getByteBuffer());
+                data.release();
+                if (data.isLast())
+                    clientDataLatch.countDown();
+                else
+                    stream.demand();
+            }
+        }).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true));
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));

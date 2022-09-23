@@ -15,11 +15,11 @@ package org.eclipse.jetty.ee9.quickstart;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PreconfigureStandardTestWar
 {
-    private static final long __start = System.nanoTime();
+    private static final long __start = NanoTime.now();
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     public static Path getTargetDir()
@@ -56,7 +56,7 @@ public class PreconfigureStandardTestWar
             target.toString(),
             MavenTestingUtils.getTestResourceFile("test-spec.xml").toString());
 
-        LOG.info("Preconfigured in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - __start));
+        LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 
         if (LOG.isDebugEnabled())
         {

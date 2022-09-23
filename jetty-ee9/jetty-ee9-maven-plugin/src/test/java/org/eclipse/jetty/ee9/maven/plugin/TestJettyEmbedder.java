@@ -14,8 +14,9 @@
 package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
@@ -24,7 +25,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +44,7 @@ public class TestJettyEmbedder
     {
         Path baseResource = workDir.getEmptyPathDir();
         MavenWebAppContext webApp = new MavenWebAppContext();
-        webApp.setBaseResource(ResourceFactory.of(webApp).newResource(baseResource));
+        webApp.setBaseResource(webApp.getResourceFactory().newResource(baseResource));
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
 
@@ -57,7 +57,7 @@ public class TestJettyEmbedder
         jetty.setJettyXmlFiles(null);
         jetty.setJettyProperties(null);
         jetty.setLoginServices(null);
-        jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());
+        jetty.setContextXml(MavenTestingUtils.getTargetPath("test-classes/embedder-context.xml").toFile().getAbsolutePath());
         jetty.setWebApp(webApp);
 
         try
@@ -82,14 +82,14 @@ public class TestJettyEmbedder
     {
         MavenWebAppContext webApp = new MavenWebAppContext();
         Path baseResource = workDir.getEmptyPathDir();
-        webApp.setBaseResource(ResourceFactory.of(webApp).newResource(baseResource));
+        webApp.setBaseResource(webApp.getResourceFactory().newResource(baseResource));
         Server server = new Server();
         Map<String, String> jettyProperties = new HashMap<>();
         jettyProperties.put("jetty.server.dumpAfterStart", "false");
 
         ContextHandler otherHandler = new ContextHandler();
         otherHandler.setContextPath("/other");
-        otherHandler.setBaseResource(ResourceFactory.of(webApp).newResource(MavenTestingUtils.getTestResourcePathDir("root")));
+        otherHandler.setBaseResource(webApp.getResourceFactory().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
 
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
@@ -98,12 +98,12 @@ public class TestJettyEmbedder
         jetty.setHttpConnector(connector);
         jetty.setExitVm(false);
         jetty.setServer(server);
-        jetty.setContextHandlers(Arrays.asList(otherHandler));
+        jetty.setContextHandlers(List.of(otherHandler));
         jetty.setRequestLog(null);
-        jetty.setJettyXmlFiles(Arrays.asList(MavenTestingUtils.getTestResourceFile("embedder-jetty.xml")));
+        jetty.setJettyXmlFiles(Collections.singletonList(MavenTestingUtils.getTargetFile("test-classes/embedder-jetty.xml")));
         jetty.setJettyProperties(jettyProperties);
         jetty.setLoginServices(null);
-        jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());
+        jetty.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath());
         jetty.setWebApp(webApp);
 
         try

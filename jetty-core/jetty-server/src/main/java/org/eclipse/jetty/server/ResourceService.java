@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -175,7 +176,7 @@ public class ResourceService
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
                 if (q != null && q.length() != 0)
                     pathInContext += "?" + q;
-                Response.sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
+                sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
                 return;
             }
 
@@ -202,7 +203,7 @@ public class ResourceService
                 }
             }
 
-            // TODO this should be done by HttpContent#getContentEncoding
+            // TODO this should be done by HttpContent#getContentEncoding?
             if (isGzippedContent(pathInContext))
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
 
@@ -214,14 +215,34 @@ public class ResourceService
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
-            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            writeHttpError(request, response, callback, HttpStatus.NOT_FOUND_404);
         }
         catch (IllegalArgumentException e)
         {
             LOG.warn("Failed to serve resource: {}", pathInContext, e);
             if (!response.isCommitted())
-                Response.writeError(request, response, callback, e);
+                writeHttpError(request, response, callback, e);
         }
+    }
+
+    protected void writeHttpError(Request request, Response response, Callback callback, int status)
+    {
+        Response.writeError(request, response, callback, status);
+    }
+
+    protected void writeHttpError(Request request, Response response, Callback callback, Throwable cause)
+    {
+        Response.writeError(request, response, callback, cause);
+    }
+
+    protected void writeHttpError(Request request, Response response, Callback callback, int status, String msg, Throwable cause)
+    {
+        Response.writeError(request, response, callback, status, msg, cause);
+    }
+
+    protected void sendRedirect(Request request, Response response, Callback callback, String target)
+    {
+        Response.sendRedirect(request, response, callback, target);
     }
 
     private List<String> getPreferredEncodingOrder(Request request)
@@ -327,51 +348,31 @@ public class ResourceService
             if (_etags)
             {
                 String etag = content.getETagValue();
-                if (ifm != null)
+                if (etag != null)
                 {
-                    boolean match = false;
-                    if (etag != null && !etag.startsWith("W/"))
+                    if (ifm != null)
                     {
-                        QuotedCSV quoted = new QuotedCSV(true, ifm);
-                        for (String etagWithSuffix : quoted)
+                        String matched = matchesEtag(etag, ifm);
+                        if (matched == null)
                         {
-                            if (CompressedContentFormat.tagEquals(etag, etagWithSuffix))
-                            {
-                                match = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!match)
-                    {
-                        Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
-                        return true;
-                    }
-                }
-
-                if (ifnm != null && etag != null)
-                {
-                    // Handle special case of exact match OR gzip exact match
-                    if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
-                    {
-                        Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                        return true;
-                    }
-
-                    // Handle list of tags
-                    QuotedCSV quoted = new QuotedCSV(true, ifnm);
-                    for (String tag : quoted)
-                    {
-                        if (CompressedContentFormat.tagEquals(etag, tag))
-                        {
-                            Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                            writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                             return true;
                         }
                     }
 
-                    // If etag requires content to be served, then do not check if-modified-since
-                    return false;
+                    if (ifnm != null)
+                    {
+                        String matched = matchesEtag(etag, ifnm);
+                        if (matched != null)
+                        {
+                            response.getHeaders().put(HttpHeader.ETAG, matched);
+                            writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                            return true;
+                        }
+
+                        // If etag requires content to be served, then do not check if-modified-since
+                        return false;
+                    }
                 }
             }
 
@@ -382,14 +383,14 @@ public class ResourceService
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
-                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                    writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE);
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
-                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                    writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
             }
@@ -397,18 +398,49 @@ public class ResourceService
             // Parse the if[un]modified dates and compare to resource
             if (ifums != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 > ifums / 1000)
             {
-                Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                 return true;
             }
         }
         catch (IllegalArgumentException iae)
         {
             if (!response.isCommitted())
-                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, null, iae);
+                writeHttpError(request, response, callback, HttpStatus.BAD_REQUEST_400, null, iae);
             throw iae;
         }
 
         return false;
+    }
+
+    /**
+     * Find a matches between a Content ETag and a Request Field ETag reference.
+     * @param contentETag the content etag to match against (can be null)
+     * @param requestEtag the request etag (can be null, a single entry, or even a CSV list)
+     * @return the matched etag, or null if no matches.
+     */
+    private String matchesEtag(String contentETag, String requestEtag)
+    {
+        if (contentETag == null || requestEtag == null)
+        {
+            return null;
+        }
+
+        // Per https://www.rfc-editor.org/rfc/rfc9110#section-8.8.3
+        // An Etag header field value can contain a "," (comma) within itself.
+        //   If-Match: W/"abc,xyz", "123456"
+        // This means we have to parse with QuotedCSV all the time, as we cannot just
+        // test for the existence of a "," (comma) in the value to know if it's delimited or not
+        QuotedCSV quoted = new QuotedCSV(true, requestEtag);
+        for (String tag : quoted)
+        {
+            if (EtagUtils.matches(contentETag, tag))
+            {
+                return tag;
+            }
+        }
+
+        // no matches
+        return null;
     }
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
@@ -425,7 +457,7 @@ public class ResourceService
                 uri.param(parameter);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
-                Response.sendRedirect(request, response, callback, uri.getPathQuery());
+                sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
         }
@@ -480,7 +512,7 @@ public class ResourceService
             case REDIRECT ->
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                Response.sendRedirect(request, response, callback, welcomeAction.target);
+                sendRedirect(request, response, callback, welcomeAction.target);
             }
             case SERVE ->
             {
@@ -518,11 +550,11 @@ public class ResourceService
         return new WelcomeAction(WelcomeActionType.SERVE, welcomeTarget);
     }
 
-    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
+    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
     {
         if (!_dirAllowed)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -530,7 +562,7 @@ public class ResourceService
         String listing = ResourceListing.getAsXHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -755,6 +787,7 @@ public class ResourceService
     {
         _precompressedFormats.clear();
         _precompressedFormats.addAll(precompressedFormats);
+        // TODO: this preferred encoding order should be a separate configurable
         _preferredEncodingOrder.clear();
         _preferredEncodingOrder.addAll(_precompressedFormats.stream().map(CompressedContentFormat::getEncoding).toList());
     }

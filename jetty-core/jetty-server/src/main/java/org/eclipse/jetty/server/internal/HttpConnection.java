@@ -68,6 +68,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -1032,16 +1033,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public boolean messageComplete()
         {
-            // TODO: Not sure what this logic was doing.
-//            HttpStreamOverHTTP1 stream = _stream.get();
-//            stream._chunk = ContentOLD.last(stream._chunk);
-//            if (_trailers != null && (stream._chunk == null || stream._chunk == Content.Chunk.EOF))
-//                stream._chunk = new Trailers(_trailers.asImmutable());
-//            else
-//                stream._chunk = ContentOLD.last(stream._chunk);
-//            return false;
-
-            // TODO: verify this new, simpler, logic.
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream._chunk != null)
                 throw new IllegalStateException();
@@ -1156,7 +1147,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
-        private final long _nanoTimestamp = System.nanoTime();
+        private final long _nanoTime = NanoTime.now();
         private final long _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
@@ -1290,6 +1281,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.authority(hostPort.getHost(), port);
             }
 
+            // Set path (if not already set)
+            if (_uri.getPath() == null)
+            {
+                _uri.path("/");
+            }
+
             _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
 
             Runnable handle = _httpChannel.onRequest(_request);
@@ -1385,7 +1382,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public long getNanoTimeStamp()
         {
-            return _nanoTimestamp;
+            return _nanoTime;
         }
 
         @Override

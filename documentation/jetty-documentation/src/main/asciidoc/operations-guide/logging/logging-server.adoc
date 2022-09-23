@@ -165,7 +165,7 @@ $JETTY_BASE
 │   └── logging
 │       ├── log4j-api-<version>.jar
 │       ├── log4j-core-<version>.jar
-│       └── log4j-slf4j18-impl-<version>.jar
+│       └── log4j-slf4j2-impl-<version>.jar
 ├── resources
 │   └── log4j2.xml
 └── start.d

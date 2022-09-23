@@ -74,6 +74,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.Sweeper;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,12 +143,13 @@ public class HttpClient extends ContainerLifeCycle
     private boolean tcpNoDelay = true;
     private boolean strictEventOrdering = false;
     private HttpField encodingField;
-    private boolean removeIdleDestinations = false;
+    private long destinationIdleTimeout;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
+    private Sweeper destinationSweeper;
 
     /**
      * Creates a HttpClient instance that can perform HTTP/1.1 requests to non-TLS and TLS destinations.
@@ -178,11 +180,19 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the {@link SslContextFactory} that manages TLS encryption
+     * @return the {@link SslContextFactory.Client} that manages TLS encryption
      */
     public SslContextFactory.Client getSslContextFactory()
     {
         return connector.getSslContextFactory();
+    }
+
+    /**
+     * @param sslContextFactory the {@link SslContextFactory.Client} that manages TLS encryption
+     */
+    public void setSslContextFactory(SslContextFactory.Client sslContextFactory)
+    {
+        connector.setSslContextFactory(sslContextFactory);
     }
 
     @Override
@@ -222,7 +232,14 @@ public class HttpClient extends ContainerLifeCycle
         cookieStore = cookieManager.getCookieStore();
 
         transport.setHttpClient(this);
+
         super.doStart();
+
+        if (getDestinationIdleTimeout() > 0L)
+        {
+            destinationSweeper = new Sweeper(scheduler, 1000L);
+            destinationSweeper.start();
+        }
     }
 
     private CookieManager newCookieManager()
@@ -233,6 +250,12 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
+        if (destinationSweeper != null)
+        {
+            destinationSweeper.stop();
+            destinationSweeper = null;
+        }
+
         decoderFactories.clear();
         handlers.clear();
 
@@ -288,6 +311,11 @@ public class HttpClient extends ContainerLifeCycle
     CookieManager getCookieManager()
     {
         return cookieManager;
+    }
+
+    Sweeper getDestinationSweeper()
+    {
+        return destinationSweeper;
     }
 
     /**
@@ -529,21 +557,28 @@ public class HttpClient extends ContainerLifeCycle
      */
     public HttpDestination resolveDestination(Origin origin)
     {
-        return destinations.computeIfAbsent(origin, o ->
+        return destinations.compute(origin, (k, v) ->
         {
-            HttpDestination destination = getTransport().newHttpDestination(o);
-            // Start the destination before it's published to other threads.
-            addManaged(destination);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Created {}", destination);
-            return destination;
+            if (v == null || v.stale())
+            {
+                HttpDestination newDestination = getTransport().newHttpDestination(k);
+                // Start the destination before it's published to other threads.
+                addManaged(newDestination);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Created {}; existing: '{}'", newDestination, v);
+                return newDestination;
+            }
+            return v;
         });
     }
 
     protected boolean removeDestination(HttpDestination destination)
     {
+        boolean removed = destinations.remove(destination.getOrigin(), destination);
         removeBean(destination);
-        return destinations.remove(destination.getOrigin(), destination);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Removed {}; result: {}", destination, removed);
+        return removed;
     }
 
     /**
@@ -926,28 +961,6 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return whether TCP_NODELAY is enabled
-     * @deprecated use {@link ClientConnector#isTCPNoDelay()} instead
-     */
-    @ManagedAttribute(value = "Whether the TCP_NODELAY option is enabled", name = "tcpNoDelay")
-    @Deprecated
-    public boolean isTCPNoDelay()
-    {
-        return tcpNoDelay;
-    }
-
-    /**
-     * @param tcpNoDelay whether TCP_NODELAY is enabled
-     * @see java.net.Socket#setTcpNoDelay(boolean)
-     * @deprecated use {@link ClientConnector#setTCPNoDelay(boolean)} instead
-     */
-    @Deprecated
-    public void setTCPNoDelay(boolean tcpNoDelay)
-    {
-        this.tcpNoDelay = tcpNoDelay;
-    }
-
-    /**
      * Gets the http compliance mode for parsing http responses.
      * The default http compliance level is {@link HttpCompliance#RFC7230} which is the latest HTTP/1.1 specification
      *
@@ -1011,30 +1024,37 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return whether destinations that have no connections should be removed
-     * @see #setRemoveIdleDestinations(boolean)
+     * The default value is 0
+     * @return the time in ms after which idle destinations are removed
+     * @see #setDestinationIdleTimeout(long)
      */
-    @ManagedAttribute("Whether idle destinations are removed")
-    public boolean isRemoveIdleDestinations()
+    @ManagedAttribute("The time in ms after which idle destinations are removed, disabled when zero or negative")
+    public long getDestinationIdleTimeout()
     {
-        return removeIdleDestinations;
+        return destinationIdleTimeout;
     }
 
     /**
-     * Whether destinations that have no connections (nor active nor idle) should be removed.
      * <p>
-     * Applications typically make request to a limited number of destinations so keeping
-     * destinations around is not a problem for the memory or the GC.
-     * However, for applications that hit millions of different destinations (e.g. a spider
-     * bot) it would be useful to be able to remove the old destinations that won't be visited
-     * anymore and leave space for new destinations.
+     * Whether destinations that have no connections (nor active nor idle) and no exchanges
+     * should be removed after the specified timeout.
+     * </p>
+     * <p>
+     * If the specified {@code destinationIdleTimeout} is 0 or negative, then the destinations
+     * are not removed.
+     * </p>
+     * <p>
+     * Avoids accumulating destinations when applications (e.g. a spider bot or web crawler)
+     * hit a lot of different destinations that won't be visited again.
+     * </p>
      *
-     * @param removeIdleDestinations whether destinations that have no connections should be removed
-     * @see org.eclipse.jetty.client.DuplexConnectionPool
+     * @param destinationIdleTimeout the time in ms after which idle destinations are removed
      */
-    public void setRemoveIdleDestinations(boolean removeIdleDestinations)
+    public void setDestinationIdleTimeout(long destinationIdleTimeout)
     {
-        this.removeIdleDestinations = removeIdleDestinations;
+        if (isStarted())
+            throw new IllegalStateException();
+        this.destinationIdleTimeout = destinationIdleTimeout;
     }
 
     /**
@@ -1123,17 +1143,6 @@ public class HttpClient extends ContainerLifeCycle
     protected HttpField getAcceptEncodingField()
     {
         return encodingField;
-    }
-
-    /**
-     * @param host the host to normalize
-     * @return the host itself
-     * @deprecated no replacement, do not use it
-     */
-    @Deprecated
-    protected String normalizeHost(String host)
-    {
-        return host;
     }
 
     public static int normalizePort(String scheme, int port)

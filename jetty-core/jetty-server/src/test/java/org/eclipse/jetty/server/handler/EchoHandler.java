@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -37,7 +38,10 @@ public class EchoHandler extends Handler.Processor.NonBlocking
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
 
         if (request.getHeaders().contains(HttpHeader.TRAILER))
-            response.getOrCreateTrailers();
+        {
+            HttpFields.Mutable responseTrailers = HttpFields.build();
+            response.setTrailersSupplier(() -> responseTrailers);
+        }
 
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)

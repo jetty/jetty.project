@@ -13,13 +13,14 @@
 
   <properties>
     <sonar.skip>true</sonar.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <modules>
     <!-- <module>jetty-ee9-test-bad-websocket-webapp</module> -->
     <!-- <module>jetty-ee9-test-cdi</module> -->
     <!-- <module>jetty-ee9-test-http2-webapp</module> -->
-    <!-- <module>jetty-ee9-test-http-client-transport</module> -->
+    <module>jetty-ee9-test-client-transports</module>
     <!-- <module>jetty-ee9-test-integration</module> -->
     <!-- <module>jetty-ee9-test-jmx</module> -->
     <module>jetty-ee9-test-jndi</module>
@@ -40,14 +41,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

@@ -27,6 +27,7 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
@@ -754,6 +755,12 @@ public class ServletChannel implements Runnable
     protected boolean checkAndPrepareUpgrade()
     {
         return false;
+    }
+
+    void onTrailers(HttpFields trailers)
+    {
+        _request.setTrailers(trailers);
+        _combinedListener.onRequestTrailers(_request);
     }
 
     public void onCompleted()

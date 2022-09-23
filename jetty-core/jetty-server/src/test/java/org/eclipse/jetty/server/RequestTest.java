@@ -88,6 +88,42 @@ public class RequestTest
         assertThat(response.getContent(), containsString("pathInContext=/foo%2Fbar"));
     }
 
+    @Test
+    public void testConnectRequestURLSameAsHost() throws Exception
+    {
+        String request = """
+                CONNECT myhost:9999 HTTP/1.1\r
+                Host: myhost:9999\r
+                Connection: close\r
+                \r
+                """;
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
+        assertThat(responseBody, containsString("httpURI.path=/"));
+        assertThat(responseBody, containsString("servername=myhost"));
+    }
+
+    @Test
+    public void testConnectRequestURLDifferentThanHost() throws Exception
+    {
+        // per spec, "Host" is ignored if request-target is authority-form
+        String request = """
+                CONNECT myhost:9999 HTTP/1.1\r
+                Host: otherhost:8888\r
+                Connection: close\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
+        assertThat(responseBody, containsString("httpURI.path=/"));
+        assertThat(responseBody, containsString("servername=myhost"));
+    }
+
     /**
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.

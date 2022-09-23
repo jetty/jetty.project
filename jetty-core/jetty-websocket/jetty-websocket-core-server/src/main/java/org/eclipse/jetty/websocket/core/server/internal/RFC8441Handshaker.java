@@ -27,12 +27,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
 public class RFC8441Handshaker extends AbstractHandshaker
 {
     @Override
-    protected boolean validateRequest(Request request)
+    public boolean isWebSocketUpgradeRequest(Request request)
     {
         if (!HttpMethod.CONNECT.is(request.getMethod()))
         {
@@ -48,7 +47,7 @@ public class RFC8441Handshaker extends AbstractHandshaker
             return false;
         }
 
-        return true;
+        return super.isWebSocketUpgradeRequest(request);
     }
 
     @Override

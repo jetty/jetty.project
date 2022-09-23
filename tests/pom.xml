@@ -17,8 +17,6 @@
     <maven.source.skip>true</maven.source.skip>
   </properties>
   <modules>
-    <module>jetty-ee9-test-maven-plugin</module>
-    <module>jetty-ee10-test-maven-plugin</module>
     <!-- TODO -->
     <!-- module>jetty-jmh</module -->
     <module>test-distribution</module>

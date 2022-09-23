@@ -56,6 +56,11 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         mappings.addMapping(pathSpec, negotiator);
     }
 
+    public Configuration getConfiguration()
+    {
+        return customizer;
+    }
+
     @Override
     public Request.Processor handle(Request request) throws Exception
     {

@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP3.class);
 
     private final AutoLock lock = new AutoLock();
-    private final long nanoTime = System.nanoTime();
+    private final long nanoTime = NanoTime.now();
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
@@ -218,6 +219,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private Content.Chunk createChunk(Stream.Data data)
     {
+        if (data == Stream.Data.EOF)
+            return Content.Chunk.EOF;
+
         // As we are passing the ByteBuffer to the Chunk we need to retain.
         data.retain();
         return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data);
@@ -274,7 +278,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                         response.getReason(),
                         response.getFields(),
                         realContentLength,
-                        response.getTrailerSupplier()
+                        response.getTrailersSupplier()
                     );
                 }
                 else if (hasContent && contentLength != realContentLength)
@@ -394,7 +398,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = metaData.getTrailerSupplier();
+        Supplier<HttpFields> supplier = metaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();

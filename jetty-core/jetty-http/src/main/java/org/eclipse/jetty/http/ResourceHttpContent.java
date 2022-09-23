@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,8 +33,8 @@ public class ResourceHttpContent implements HttpContent
     final Resource _resource;
     final Path _path;
     final String _contentType;
+    final HttpField _etag;
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
-    String _etag;
 
     public ResourceHttpContent(final Resource resource, final String contentType)
     {
@@ -45,6 +46,7 @@ public class ResourceHttpContent implements HttpContent
         _resource = resource;
         _path = resource.getPath();
         _contentType = contentType;
+        _etag = EtagUtils.createWeakEtagField(resource);
         if (precompressedContents == null)
         {
             _precompressedContents = null;
@@ -98,33 +100,35 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public HttpField getLastModified()
     {
-        long lm = _resource.lastModified();
-        return lm >= 0 ? new HttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(lm)) : null;
+        Instant lm = _resource.lastModified();
+        return new HttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(lm));
     }
 
     @Override
     public String getLastModifiedValue()
     {
-        long lm = _resource.lastModified();
-        return lm >= 0 ? DateGenerator.formatDate(lm) : null;
+        Instant lm = _resource.lastModified();
+        return DateGenerator.formatDate(lm);
     }
 
     @Override
     public HttpField getETag()
     {
-        return new HttpField(HttpHeader.ETAG, getETagValue());
+        return _etag;
     }
 
     @Override
     public String getETagValue()
     {
-        return _resource.getWeakETag();
+        if (_etag == null)
+            return null;
+        return _etag.getValue();
     }
 
     @Override
     public HttpField getContentLength()
     {
-        long l = _resource.length();
+        long l = getContentLengthValue();
         return l == -1 ? null : new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, l);
     }
 

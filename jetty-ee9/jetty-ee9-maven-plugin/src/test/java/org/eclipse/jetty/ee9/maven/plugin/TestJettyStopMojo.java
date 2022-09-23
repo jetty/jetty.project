@@ -19,10 +19,12 @@ import java.io.LineNumberReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import org.eclipse.jetty.server.ShutdownMonitor;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
@@ -233,7 +235,7 @@ public class TestJettyStopMojo
 
         mojo.execute();
         
-        log.assertContains("Waiting 5 seconds for jetty " + Long.toString(thisPid) + " to stop");
+        log.assertContains("Waiting 5 seconds for jetty " + thisPid + " to stop");
     }
     
     @Test
@@ -267,34 +269,29 @@ public class TestJettyStopMojo
         command.directory(MavenTestingUtils.getTargetDir());
         Process fork = command.start();
 
-        Thread.sleep(500);
-        while (!file.exists() && file.length() == 0)
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(file::exists);
+        final String[] port = {null};
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() ->
         {
-            Thread.sleep(300);
-        }
-
-        String tmp = "";
-        String port = null;
-        try (LineNumberReader reader = new LineNumberReader(new FileReader(file)))
-        {
-            while (port == null && tmp != null)
+            Optional<String> tmp = Files.readAllLines(file.toPath()).stream()
+                    .filter(s -> s.startsWith("STOP.PORT=")).findFirst();
+            if (tmp.isPresent())
             {
-                tmp = reader.readLine();
-                if (tmp != null)
-                {
-                    if (tmp.startsWith("STOP.PORT="))
-                        port = tmp.substring(10);
-                }
+                // TODO validate it's an integer
+                port[0] = tmp.get().substring(10);
+                return true;
             }
-        }
+            return false;
 
-        assertNotNull(port);
+        });
+
+        assertNotNull(port[0]);
 
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopWait = 5;
         mojo.stopKey = stopKey;
-        mojo.stopPort = Integer.parseInt(port);
+        mojo.stopPort = Integer.parseInt(port[0]);
         mojo.setLog(log);
 
         mojo.execute();

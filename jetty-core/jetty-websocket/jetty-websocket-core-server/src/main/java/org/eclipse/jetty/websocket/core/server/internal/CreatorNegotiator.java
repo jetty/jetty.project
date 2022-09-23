@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
@@ -48,28 +47,25 @@ public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
     }
 
     @Override
-    public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
+    public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
     {
-        Context context = negotiation.getRequest().getContext();
-        ServerUpgradeRequest upgradeRequest = negotiation.getRequest();
-        ServerUpgradeResponse upgradeResponse = negotiation.getResponse();
-
+        Context context = request.getContext();
         Object websocketPojo;
         try
         {
             AtomicReference<Object> result = new AtomicReference<>();
-            context.run(() -> result.set(creator.createWebSocket(upgradeRequest, upgradeResponse, negotiation.getCallback())));
+            context.run(() -> result.set(creator.createWebSocket(request, response, callback)));
             websocketPojo = result.get();
         }
         catch (Throwable t)
         {
-            negotiation.getCallback().failed(t);
+            callback.failed(t);
             return null;
         }
 
         if (websocketPojo == null)
             return null;
-        return factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
+        return factory.newFrameHandler(websocketPojo, request, response);
     }
 
     @Override

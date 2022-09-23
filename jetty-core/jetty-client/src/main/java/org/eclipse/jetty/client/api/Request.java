@@ -26,11 +26,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
@@ -173,27 +173,17 @@ public interface Request
     Request headers(Consumer<HttpFields.Mutable> consumer);
 
     /**
-     * @param name the name of the header
-     * @param value the value of the header
-     * @return this request object
-     * @see #header(HttpHeader, String)
-     * @deprecated use {@link #headers(Consumer)} instead
+     * @return the supplier of the trailers of this request
      */
-    @Deprecated
-    Request header(String name, String value);
+    Supplier<HttpFields> getTrailersSupplier();
 
     /**
-     * <p>Adds the given {@code value} to the specified {@code header}.</p>
-     * <p>Multiple calls with the same parameters will add multiple values;
-     * use the value {@code null} to remove the header completely.</p>
+     * Provides the trailers of this request.
      *
-     * @param header the header name
-     * @param value the value of the header
+     * @param trailers the supplier of the trailers of this request
      * @return this request object
-     * @deprecated use {@link #headers(Consumer)} instead
      */
-    @Deprecated
-    Request header(HttpHeader header, String value);
+    Request trailersSupplier(Supplier<HttpFields> trailers);
 
     /**
      * @return the cookies associated with this request

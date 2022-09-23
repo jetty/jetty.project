@@ -931,10 +931,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     {
         server.getThreadPool().execute(() ->
         {
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            long start = NanoTime.now();
             try
             {
-                while (System.nanoTime() < end)
+                while (NanoTime.secondsSince(start) < 10)
                 {
                     switch (request.getHttpChannelState().getState())
                     {

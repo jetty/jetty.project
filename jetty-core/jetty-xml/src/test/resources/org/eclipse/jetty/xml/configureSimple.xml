@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- intentionally simple, no xsd/dtd reference to the jetty specific configure -->
+<Configure>
+</Configure>

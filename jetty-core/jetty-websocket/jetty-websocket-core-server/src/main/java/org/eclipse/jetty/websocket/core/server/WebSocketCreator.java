@@ -15,12 +15,11 @@ package org.eclipse.jetty.websocket.core.server;
 
 import org.eclipse.jetty.util.Callback;
 
-// TODO: improve javadoc.
 /**
  * Abstract WebSocket creator interface.
  * <p>
- * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol,
- * then you will be required to implement a custom WebSocketCreator implementation.
+ * This can be used for filtering of the WebSocket object creation due to criteria such as origin or sub-protocol,
+ * or for choosing a specific WebSocket object based on the upgrade request.
  * </p>
  */
 public interface WebSocketCreator
@@ -28,10 +27,14 @@ public interface WebSocketCreator
     /**
      * Create a websocket from the incoming request.
      *
-     * @param req the request details
-     * @param resp the response details
-     * @param callback callback
-     * @return a websocket object to use, or null if no websocket should be created from this request.
+     * <p>If the creator returns null it is responsible for completing the {@link Callback} and sending a response.
+     * But if the creator intends to return non-null WebSocket object, it MUST NOT write content to the response or
+     * complete the {@link Callback}, but it may modify the response headers.</p>
+     *
+     * @param request the request details
+     * @param response the response details
+     * @param callback the callback, should only be completed by the creator if a null WebSocket object is returned.
+     * @return the WebSocket object, or null to take responsibility to send error response if no WebSocket is to be created.
      */
-    Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp, Callback callback);
+    Object createWebSocket(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback);
 }

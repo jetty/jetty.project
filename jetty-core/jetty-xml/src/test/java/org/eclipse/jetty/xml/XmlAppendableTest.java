@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.xml;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,8 +27,8 @@ public class XmlAppendableTest
     @Test
     public void test() throws Exception
     {
-        StringBuilder b = new StringBuilder();
-        XmlAppendable out = new XmlAppendable(b);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        XmlAppendable out = new XmlAppendable(outputStream);
         Map<String, String> attr = new LinkedHashMap<>();
 
         out.openTag("test");
@@ -45,22 +47,26 @@ public class XmlAppendableTest
         out.closeTag();
 
         String expected =
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<test>\n" +
-                "  <tag/>\n" +
-                "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\"/>\n" +
-                "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\">content</tag>\n" +
-                "  <level1>\n" +
-                "    <tag>content</tag>\n" +
-                "    <tag>content</tag>\n" +
-                "  </level1>\n" +
-                "  <level1 name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\">\n" +
-                "    <level2>\n" +
-                "      <tag>content</tag>\n" +
-                "      <tag>content</tag>\n" +
-                "    </level2>\n" +
-                "  </level1>\n" +
-                "</test>\n";
-        assertEquals(expected, b.toString());
+            """
+                <?xml version="1.0" encoding="utf-8"?>
+                <test>
+                  <tag/>
+                  <tag name="attr value" noval="" quotes="&apos;&quot;"/>
+                  <tag name="attr value" noval="" quotes="&apos;&quot;">content</tag>
+                  <level1>
+                    <tag>content</tag>
+                    <tag>content</tag>
+                  </level1>
+                  <level1 name="attr value" noval="" quotes="&apos;&quot;">
+                    <level2>
+                      <tag>content</tag>
+                      <tag>content</tag>
+                    </level2>
+                  </level1>
+                </test>
+                """;
+
+        String result = outputStream.toString(StandardCharsets.UTF_8);
+        assertEquals(expected, result);
     }
 }

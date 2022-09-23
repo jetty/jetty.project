@@ -19,11 +19,12 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.URIUtil;
@@ -218,6 +219,20 @@ public class ResourceCollection extends Resource
     }
 
     @Override
+    public String getFileName()
+    {
+        for (Resource r : _resources)
+        {
+            String filename = r.getFileName();
+            if (filename != null)
+            {
+                return filename;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public URI getURI()
     {
         for (Resource r : _resources)
@@ -238,17 +253,18 @@ public class ResourceCollection extends Resource
     }
 
     @Override
-    public long lastModified()
+    public Instant lastModified()
     {
+        Instant instant = null;
         for (Resource r : _resources)
         {
-            long lm = r.lastModified();
-            if (lm != -1)
+            Instant lm = r.lastModified();
+            if (instant == null || lm.isAfter(instant))
             {
-                return lm;
+                instant = lm;
             }
         }
-        return -1;
+        return instant;
     }
 
     @Override
@@ -257,22 +273,20 @@ public class ResourceCollection extends Resource
         return -1;
     }
 
-    /**
-     * @return The list of resource names(merged) contained in the collection of resources.
-     */
     @Override
-    public List<String> list()
+    public Iterator<Resource> iterator()
     {
-        HashSet<String> set = new HashSet<>();
+        return _resources.iterator();
+    }
+
+    @Override
+    public List<Resource> list()
+    {
+        List<Resource> result = new ArrayList<>();
         for (Resource r : _resources)
         {
-            List<String> list = r.list();
-            if (list != null)
-                set.addAll(list);
+            result.addAll(r.list());
         }
-
-        ArrayList<String> result = new ArrayList<>(set);
-        result.sort(Comparator.naturalOrder());
         return result;
     }
 
@@ -284,6 +298,23 @@ public class ResourceCollection extends Resource
         {
             _resources.get(r).copyTo(destination);
         }
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        ResourceCollection other = (ResourceCollection)o;
+        return Objects.equals(_resources, other._resources);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(_resources);
     }
 
     /**

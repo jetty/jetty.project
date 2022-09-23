@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -99,6 +100,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private org.eclipse.jetty.server.Request _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
+    private Supplier<HttpFields> _responseTrailers;
 
     public HttpChannel(ContextHandler contextHandler, ConnectionMetaData connectionMetaData)
     {
@@ -806,12 +808,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public boolean isExpecting100Continue()
     {
-        return false;
+        return _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
     }
 
     public boolean isExpecting102Processing()
     {
-        return false;
+        return _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.PROCESSING.asString());
     }
 
     @Override
@@ -1028,9 +1030,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (response != null)
         {
+            // TODO: why can't we just do _coreResponse.setMetaData(response), without copying?
             _coreResponse.setStatus(response.getStatus());
+            // TODO: at least avoid copying the headers?
             _coreResponse.getHeaders().add(response.getFields());
-            // TODO trailer stuff?
+            _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
         _coreResponse.write(complete, content, callback);
     }

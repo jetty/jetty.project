@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.runner;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -106,32 +106,17 @@ public class Runner
     {
         private List<URI> _classpath = new ArrayList<>();
 
-        public void addJars(Resource lib) throws IOException
+        public void addJars(Resource lib)
         {
             if (lib == null || !lib.exists())
                 throw new IllegalStateException("No such lib: " + lib);
 
-            List<String> list = lib.list();
-            if (list == null)
-                return;
-
-            for (String path : list)
+            for (Resource item: lib.list())
             {
-                if (".".equals(path) || "..".equals(path))
-                    continue;
-
-                Resource item = lib.resolve(path);
                 if (item.isDirectory())
                     addJars(item);
-                else
-                {
-                    String lowerCasePath = path.toLowerCase(Locale.ENGLISH);
-                    if (lowerCasePath.endsWith(".jar") ||
-                        lowerCasePath.endsWith(".zip"))
-                    {
-                        _classpath.add(item.getURI());
-                    }
-                }
+                else if (FileID.isLibArchive(item.getFileName()))
+                    _classpath.add(item.getURI());
             }
         }
 

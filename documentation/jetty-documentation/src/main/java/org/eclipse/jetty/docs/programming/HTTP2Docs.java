@@ -48,16 +48,8 @@ public class HTTP2Docs
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::dataUnwrap[]
-        class Chunk
+        record Chunk(ByteBuffer byteBuffer, Callback callback)
         {
-            private final ByteBuffer buffer;
-            private final Callback callback;
-
-            Chunk(ByteBuffer buffer, Callback callback)
-            {
-                this.buffer = buffer;
-                this.callback = callback;
-            }
         }
 
         // A queue that consumers poll to consume content asynchronously.
@@ -80,17 +72,18 @@ public class HTTP2Docs
                 }
 
                 // Get the content buffer.
-                ByteBuffer buffer = data.frame().getData();
+                ByteBuffer byteBuffer = data.frame().getData();
 
                 // Unwrap the Data object, converting it to a Chunk.
                 // The Data.release() semantic is maintained in the completion of the Callback.
-                dataQueue.offer(new Chunk(buffer, Callback.from(() ->
+                dataQueue.offer(new Chunk(byteBuffer, Callback.from(() ->
                 {
                     // When the buffer has been consumed, then:
                     // A) release the Data object.
                     data.release();
-                    // B) demand more DATA frames.
-                    stream.demand();
+                    // B) possibly demand more DATA frames.
+                    if (!data.frame().isEndStream())
+                        stream.demand();
                 })));
 
                 // Do not demand more data here, to avoid to overflow the queue.

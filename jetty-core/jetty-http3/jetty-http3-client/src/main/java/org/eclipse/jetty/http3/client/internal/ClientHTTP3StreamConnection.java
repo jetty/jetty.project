@@ -19,17 +19,8 @@ import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 
 public class ClientHTTP3StreamConnection extends HTTP3StreamConnection
 {
-    private final ClientHTTP3Session session;
-
     public ClientHTTP3StreamConnection(QuicStreamEndPoint endPoint, ClientHTTP3Session session, MessageParser parser)
     {
         super(endPoint, session.getQuicSession().getExecutor(), session.getQuicSession().getByteBufferPool(), parser);
-        this.session = session;
-    }
-
-    @Override
-    protected void onDataAvailable(long streamId)
-    {
-        session.onDataAvailable(streamId);
     }
 }

@@ -371,8 +371,8 @@ public class SSLEngineTest
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
-                request.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");
-            String sslId = sslData.getId();
+                request.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
+            String sslId = sslData.sessionId();
             assertNotNull(sslId);
 
             Fields fields = Request.extractQueryParameters(request);

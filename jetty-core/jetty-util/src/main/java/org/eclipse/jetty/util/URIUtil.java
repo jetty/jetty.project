@@ -630,8 +630,11 @@ public final class URIUtil
                             if (u == 'u')
                             {
                                 // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
-                                // This is wrong. This is a codepoint not a char
-                                builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
+                                int[] codePoints = {(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16))};
+                                String str = new String(codePoints, 0, 1);
+                                byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                                for (byte b: bytes)
+                                    builder.append(b);
                                 i += 5;
                             }
                             else
@@ -694,27 +697,63 @@ public final class URIUtil
         }
     }
 
+    /**
+     * Test if codepoint is safe and unambiguous to pass as input to {@link URI}
+     *
+     * @param code the codepoint code to test
+     * @return true if safe to decode, otherwise false;
+     */
     private static boolean isSafe(int code)
     {
+        // Allow any 8-bit character (as it's likely unicode).
+        // or any character labeled with true in __uriSupportedCharacters static
         return (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code]);
     }
 
     /**
-     * @param code the character code to check
+     * If the codepoint is safe, do nothing, else add the UTF-8 URI encoded form of the codepoint.
+     *
+     * @param code the codepoint to check
      * @param builder The builder to encode into
-     * @return True if the character is safe and not encoded into the buffer
+     * @return true if the decoded value is safe to pass as input to {@link URI}, otherwise false;
      */
     private static boolean isSafeElseEncode(int code, Utf8StringBuilder builder)
     {
         if (isSafe(code))
             return true;
 
-        builder.append('%');
-        int d = (0xF0 & code) >> 4;
-        builder.append((char)('0' + d));
-        d = 0xF & code;
-        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
+        encodeCodepoint(code, builder);
         return false;
+    }
+
+    private static void encodeCodepoint(int code, Utf8StringBuilder builder)
+    {
+        // Code point is 7-bit, simple encode
+        if (code <= 0x7F)
+        {
+            builder.append('%');
+            appendHexValue(builder, (byte)code);
+        }
+        else
+        {
+            // Code point is 8-bit, figure out the UTF-8 percent encoding for that codepoint and add it
+            int[] codePoints = {code};
+            String str = new String(codePoints, 0, 1);
+            byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+            for (byte b: bytes)
+            {
+                builder.append('%');
+                appendHexValue(builder, b);
+            }
+        }
+    }
+
+    private static void appendHexValue(Utf8StringBuilder builder, byte value)
+    {
+        byte d = (byte)((0xF0 & value) >> 4);
+        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
+        d = (byte)(0xF & value);
+        builder.append((char)((d > 9 ? ('A' - 10) : '0') + d));
     }
 
     /**
@@ -1029,13 +1068,13 @@ public final class URIUtil
     }
 
     /** Add a path and a query string
-     * @param path The path which may already contain contain a query
-     * @param query The query string or null if no query to be added
-     * @return The path with any non null query added after a '?' or '&amp;' as appropriate.
+     * @param path The path which may already contain a query
+     * @param query The query string to add (if blank, no query is added)
+     * @return The path with any non-blank query added after a '?' or '&amp;' as appropriate.
      */
     public static String addPathQuery(String path, String query)
     {
-        if (query == null)
+        if (StringUtil.isBlank(query))
             return path;
         if (path.indexOf('?') >= 0)
             return path + '&' + query;
@@ -1545,68 +1584,159 @@ public final class URIUtil
         }
     }
 
-    public static boolean equalsIgnoreEncodings(String uriA, String uriB)
+    // Only URIUtil is using this method
+    static boolean equalsIgnoreEncodings(String uriA, String uriB)
     {
-        int lenA = uriA.length();
-        int lenB = uriB.length();
-        int a = 0;
-        int b = 0;
-
-        while (a < lenA && b < lenB)
+        try
         {
-            int oa = uriA.charAt(a++);
-            int ca = oa;
-            if (ca == '%')
-            {
-                ca = lenientPercentDecode(uriA, a);
-                if (ca == (-1))
-                {
-                    ca = '%';
-                }
-                else
-                {
-                    a += 2;
-                }
-            }
-
-            int ob = uriB.charAt(b++);
-            int cb = ob;
-            if (cb == '%')
-            {
-                cb = lenientPercentDecode(uriB, b);
-                if (cb == (-1))
-                {
-                    cb = '%';
-                }
-                else
-                {
-                    b += 2;
-                }
-            }
-
-            // Don't match on encoded slash
-            if (ca == '/' && oa != ob)
-                return false;
-
-            if (ca != cb)
-                return false;
+            String safeDecodedUriA = ensureSafeEncoding(uriA);
+            String safeDecodedUriB = ensureSafeEncoding(uriB);
+            return safeDecodedUriA.equals(safeDecodedUriB);
         }
-        return a == lenA && b == lenB;
+        catch (IllegalArgumentException e)
+        {
+            return false;
+        }
     }
 
-    private static int lenientPercentDecode(String str, int offset)
+    static String ensureSafeEncoding(String path)
     {
-        if (offset >= str.length())
-            return -1;
+        if (path == null)
+            return null;
+        if ("".equals(path) || "/".equals(path))
+            return path;
 
-        if (StringUtil.isHex(str, offset, 2))
+        int offset = 0;
+        int length = path.length();
+
+        try
         {
-            return TypeUtil.parseInt(str, offset, 2, 16);
+            Utf8StringBuilder builder = null;
+            int end = offset + length;
+            for (int i = offset; i < end; i++)
+            {
+                char c = path.charAt(i);
+                if (c == '%')
+                {
+                    if (builder == null)
+                    {
+                        builder = new Utf8StringBuilder(path.length());
+                        builder.append(path, offset, i - offset);
+                    }
+                    if ((i + 2) < end)
+                    {
+                        char u = path.charAt(i + 1);
+                        if (u == 'u')
+                        {
+                            if (TypeUtil.isHex(path, i + 2, 4))
+                            {
+                                // Always decode percent-u encoding to UTF-8
+                                int codepoint = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
+                                encodeCodepoint(codepoint, builder);
+                                i += 5;
+                            }
+                            else
+                            {
+                                // not valid percent-u, encode the percent symbol
+                                builder.append("%25");
+                            }
+                        }
+                        else
+                        {
+                            if (TypeUtil.isHex(path, i + 1, 2))
+                            {
+                                // valid Hex, attempt to decode it
+                                byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
+                                if (mustBeEncoded(b) || b == 0x2F)
+                                {
+                                    // unsafe, keep encoding
+                                    encodeCodepoint(b, builder);
+                                }
+                                else
+                                {
+                                    // safe to decode
+                                    builder.append(b);
+                                }
+                                i += 2;
+                            }
+                            else
+                            {
+                                // not valid percent encoding, encode the percent symbol
+                                builder.append("%25");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // incomplete percent encoding, encode the percent symbol
+                        builder.append("%25");
+                    }
+                }
+                else
+                {
+                    if (mustBeEncoded(c))
+                    {
+                        if (builder == null)
+                        {
+                            builder = new Utf8StringBuilder(path.length());
+                            builder.append(path, offset, i - offset);
+                        }
+                        encodeCodepoint(c, builder);
+                    }
+                    else
+                    {
+                        if (builder != null)
+                            builder.append(c);
+                    }
+                }
+            }
+
+            if (builder != null)
+                return builder.toString();
+            return path;
         }
-        else
+        catch (IllegalArgumentException e)
         {
-            return -1;
+            throw e;
         }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException("cannot decode URI", e);
+        }
+    }
+
+    /**
+     * Check codepoint for rules on URI encoding.
+     *
+     * <p>
+     *     This does not allow 8-bit characters, unlike {@link #isSafe(int)}
+     * </p>
+     *
+     * @param codepoint the codepoint to check
+     * @return true if the codepoint must be encoded, false otherwise
+     */
+    private static boolean mustBeEncoded(int codepoint)
+    {
+        // 8-bit
+        if (codepoint > 0x7F)
+            return true;
+
+        // control characters
+        if ((codepoint <= 0x1F) || (codepoint == 0x7F)) // control characters
+            return true;
+
+        // unsafe characters
+        if (codepoint == '"' || codepoint == '<' || codepoint == '>' || codepoint == '%' ||
+            codepoint == '{' || codepoint == '}' || codepoint == '|' || codepoint == '\\' ||
+            codepoint == '^' || codepoint == '`')
+            return true;
+
+        // additional raw characters rejected by java.net.URI
+        if ((codepoint == ' ') || (codepoint == '[') || (codepoint == ']'))
+            return true;
+
+        // additional raw characters rejected by Paths.get(URI)
+        return ((codepoint == '?') || (codepoint == '#'));
     }
 
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
@@ -1614,6 +1744,10 @@ public final class URIUtil
         if (uriA.equals(uriB))
             return true;
 
+        if (uriA.toASCIIString().equals(uriB.toASCIIString()))
+            return true;
+
+        // TODO: this check occurs in uriA.equals(uriB)
         if (uriA.getScheme() == null)
         {
             if (uriB.getScheme() != null)
@@ -1642,20 +1776,49 @@ public final class URIUtil
     }
 
     /**
+     * Add a sub path to an existing URI.
+     *
      * @param uri A URI to add the path to
-     * @param path A decoded path element
+     * @param path A safe path element
      * @return URI with path added.
+     * @see #addPaths(String, String)
      */
     public static URI addPath(URI uri, String path)
     {
-        String base = uri.toASCIIString();
-        StringBuilder buf = new StringBuilder(base.length() + path.length() * 3);
+        Objects.requireNonNull(uri, "URI");
+
+        if (path == null || "".equals(path))
+            return uri;
+
+        // collapse any "//" paths in the path portion
+        path = compactPath(path);
+
+        int pathLen = path.length();
+
+        if (pathLen == 0)
+            return uri;
+
+        // Correct any bad `file:/path` usages, and
+        // force encoding of characters that must be encoded (such as unicode)
+        // for the base
+        String base = correctFileURI(uri).toASCIIString();
+
+        // ensure that the base has a safe encoding suitable for both
+        // URI and Paths.get(URI) later usage
+        path = ensureSafeEncoding(path);
+        pathLen = path.length();
+
+        if (base.length() == 0)
+            return URI.create(path);
+
+        StringBuilder buf = new StringBuilder(base.length() + pathLen * 3);
         buf.append(base);
         if (buf.charAt(base.length() - 1) != '/')
             buf.append('/');
 
+        // collapse any "//" paths in the path portion
         int offset = path.charAt(0) == '/' ? 1 : 0;
-        encodePath(buf, path, offset);
+        buf.append(path, offset, pathLen);
 
         return URI.create(buf.toString());
     }
@@ -1759,7 +1922,7 @@ public final class URIUtil
                         {
                             listStream
                                 .filter(Files::isRegularFile)
-                                .filter(FileID::isArchive)
+                                .filter(FileID::isLibArchive)
                                 .sorted(Comparator.naturalOrder())
                                 .forEach(path -> uris.add(toJarFileUri(path.toUri())));
                         }

@@ -133,12 +133,7 @@ public class OverlayManager
 
         //Get the name of the overlayed war and unpack it to a dir of the
         //same name in the temporary directory
-        String name = overlay.getResource().getName();
-        if (name.endsWith("!/"))
-            name = name.substring(0, name.length() - 2);
-        int i = name.lastIndexOf('/');
-        if (i > 0)
-            name = name.substring(i + 1, name.length());
+        String name = overlay.getResource().getFileName();
         name = name.replace('.', '_');
  
         File overlaysDir = new File(warPlugin.getProject().getBuild().getDirectory(), "jetty_overlays");

@@ -129,6 +129,12 @@ public class SelectiveJarResource extends Resource
     }
 
     @Override
+    public String getFileName()
+    {
+        return _delegate.getFileName();
+    }
+
+    @Override
     public void copyTo(Path directory) throws IOException
     {
         if (_includes == null)

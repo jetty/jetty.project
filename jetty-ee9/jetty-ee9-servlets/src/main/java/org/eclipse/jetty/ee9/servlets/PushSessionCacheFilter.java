@@ -18,7 +18,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -34,6 +33,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +88,7 @@ public class PushSessionCacheFilter implements Filter
                             @SuppressWarnings("unchecked")
                             ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
                             Long last = timestamps.get(refererTarget._path);
-                            if (last != null && TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - last) < _associateDelay)
+                            if (last != null && NanoTime.millisSince(last) < _associateDelay)
                             {
                                 if (refererTarget._associated.putIfAbsent(target._path, target) == null)
                                 {
@@ -138,7 +138,7 @@ public class PushSessionCacheFilter implements Filter
             timestamps = new ConcurrentHashMap<>();
             session.setAttribute(TIMESTAMP_ATTR, timestamps);
         }
-        timestamps.put(uri, System.nanoTime());
+        timestamps.put(uri, NanoTime.now());
 
         // Push any associated resources.
         PushBuilder builder = request.newPushBuilder();

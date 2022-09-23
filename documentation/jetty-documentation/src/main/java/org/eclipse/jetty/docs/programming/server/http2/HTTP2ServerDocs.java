@@ -167,8 +167,11 @@ public class HTTP2ServerDocs
                         // Tell the implementation that the buffer has been consumed.
                         data.release();
 
-                        // Demand more DATA frames when they are available.
-                        stream.demand();
+                        if (!data.frame().isEndStream())
+                        {
+                            // Demand more DATA frames when they are available.
+                            stream.demand();
+                        }
                     }
                 };
             }

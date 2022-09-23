@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -36,7 +35,8 @@ import org.eclipse.jetty.websocket.core.WebSocketServer;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,14 +64,14 @@ public class PerMessageDeflaterBufferSizeTest
         int inflateBufferSize = -1;
 
         @Override
-        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
+        public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
         {
-            for (ExtensionConfig extensionConfig : negotiation.getOfferedExtensions())
+            for (ExtensionConfig extensionConfig : request.getExtensions())
             {
                 assertFalse(extensionConfig.getName().startsWith("@"));
             }
 
-            for (ExtensionConfig extensionConfig : negotiation.getNegotiatedExtensions())
+            for (ExtensionConfig extensionConfig : response.getExtensions())
             {
                 if ("permessage-deflate".equals(extensionConfig.getName()))
                 {

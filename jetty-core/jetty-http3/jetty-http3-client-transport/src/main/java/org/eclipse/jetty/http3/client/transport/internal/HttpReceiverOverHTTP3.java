@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
@@ -34,8 +33,6 @@ import org.slf4j.LoggerFactory;
 public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
-
-    private final AtomicBoolean notifySuccess = new AtomicBoolean();
 
     protected HttpReceiverOverHTTP3(HttpChannelOverHTTP3 channel)
     {
@@ -59,10 +56,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         if (exchange == null)
             return;
 
-        if (notifySuccess.get())
-            responseSuccess(exchange);
-        else
-            getHttpChannel().getStream().demand();
+        getHttpChannel().getStream().demand();
     }
 
     @Override
@@ -87,7 +81,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
             // TODO: add support for HttpMethod.CONNECT.
 
-            notifySuccess.set(frame.isLast());
             if (responseHeaders(exchange))
             {
                 int status = response.getStatus();
@@ -117,7 +110,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             ByteBuffer byteBuffer = data.getByteBuffer();
             if (byteBuffer.hasRemaining())
             {
-                notifySuccess.set(data.isLast());
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
@@ -162,6 +154,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
+
         responseSuccess(exchange);
     }
 

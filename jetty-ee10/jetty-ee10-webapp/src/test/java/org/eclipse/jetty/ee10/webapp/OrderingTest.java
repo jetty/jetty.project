@@ -85,6 +85,12 @@ public class OrderingTest
         }
 
         @Override
+        public String getFileName()
+        {
+            return null;
+        }
+
+        @Override
         public URI getURI()
         {
             return null;
@@ -103,21 +109,9 @@ public class OrderingTest
         }
 
         @Override
-        public long lastModified()
-        {
-            return 0;
-        }
-
-        @Override
         public long length()
         {
             return 0;
-        }
-
-        @Override
-        public List<String> list()
-        {
-            return null;
         }
     }
 

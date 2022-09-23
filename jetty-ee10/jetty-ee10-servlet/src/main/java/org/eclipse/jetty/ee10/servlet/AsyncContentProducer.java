@@ -19,8 +19,10 @@ import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -42,7 +44,7 @@ class AsyncContentProducer implements ContentProducer
     private Content.Chunk _rawChunk;
     private Content.Chunk _transformedChunk;
     private boolean _error;
-    private long _firstByteTimeStamp = Long.MIN_VALUE;
+    private long _firstByteNanoTime = Long.MIN_VALUE;
     private long _rawBytesArrived;
 
     AsyncContentProducer(ServletChannel servletChannel)
@@ -89,7 +91,7 @@ class AsyncContentProducer implements ContentProducer
         _rawChunk = null;
         _transformedChunk = null;
         _error = false;
-        _firstByteTimeStamp = Long.MIN_VALUE;
+        _firstByteNanoTime = Long.MIN_VALUE;
         _rawBytesArrived = 0L;
     }
 
@@ -143,10 +145,10 @@ class AsyncContentProducer implements ContentProducer
         assertLocked();
         long minRequestDataRate = _servletChannel.getHttpConfiguration().getMinRequestDataRate();
         if (LOG.isDebugEnabled())
-            LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteTimeStamp, this);
-        if (minRequestDataRate > 0 && _firstByteTimeStamp != Long.MIN_VALUE)
+            LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteNanoTime, this);
+        if (minRequestDataRate > 0 && _firstByteNanoTime != Long.MIN_VALUE)
         {
-            long period = System.nanoTime() - _firstByteTimeStamp;
+            long period = NanoTime.since(_firstByteNanoTime);
             if (period > 0)
             {
                 long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
@@ -483,10 +485,13 @@ class AsyncContentProducer implements ContentProducer
         if (chunk != null)
         {
             _rawBytesArrived += chunk.remaining();
-            if (_firstByteTimeStamp == Long.MIN_VALUE)
-                _firstByteTimeStamp = System.nanoTime();
+            if (_firstByteNanoTime == Long.MIN_VALUE)
+                _firstByteNanoTime = NanoTime.now();
             if (LOG.isDebugEnabled())
-                LOG.debug("produceRawChunk updated _rawBytesArrived to {} and _firstByteTimeStamp to {} {}", _rawBytesArrived, _firstByteTimeStamp, this);
+                LOG.debug("produceRawChunk updated _rawBytesArrived to {} and _firstByteTimeStamp to {} {}", _rawBytesArrived, _firstByteNanoTime, this);
+            // TODO: notify channel listeners (see ee9)?
+            if (chunk instanceof Trailers trailers)
+                _servletChannel.onTrailers(trailers.getTrailers());
         }
         if (LOG.isDebugEnabled())
             LOG.debug("produceRawChunk produced {} {}", chunk, this);

@@ -25,6 +25,10 @@ public interface JettyWebSocketCreator
     /**
      * Create a websocket from the incoming request.
      *
+     * <p>If no websocket is to be created (return value of null), the {@link JettyWebSocketCreator}
+     * is responsible for sending a response with {@link JettyServerUpgradeResponse#sendError(int, String)},
+     * {@link JettyServerUpgradeResponse#sendForbidden(String)} or {@link JettyServerUpgradeResponse#setStatusCode(int)}.</p>
+     *
      * @param req the request details
      * @param resp the response details
      * @return a websocket object to use, or null if no websocket should be created from this request.

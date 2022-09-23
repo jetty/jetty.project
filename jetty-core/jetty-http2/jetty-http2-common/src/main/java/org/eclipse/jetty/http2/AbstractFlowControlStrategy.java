@@ -26,6 +26,7 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -215,21 +216,21 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 
     protected void onSessionStalled(Session session)
     {
-        sessionStall.set(System.nanoTime());
+        sessionStall.set(NanoTime.now());
         if (LOG.isDebugEnabled())
             LOG.debug("Session stalled {}", session);
     }
 
     protected void onStreamStalled(Stream stream)
     {
-        streamsStalls.put(stream, System.nanoTime());
+        streamsStalls.put(stream, NanoTime.now());
         if (LOG.isDebugEnabled())
             LOG.debug("Stream stalled {}", stream);
     }
 
     protected void onSessionUnstalled(Session session)
     {
-        long stallTime = System.nanoTime() - sessionStall.getAndSet(0);
+        long stallTime = NanoTime.since(sessionStall.getAndSet(0));
         sessionStallTime.addAndGet(stallTime);
         if (LOG.isDebugEnabled())
             LOG.debug("Session unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), session);
@@ -240,7 +241,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         Long time = streamsStalls.remove(stream);
         if (time != null)
         {
-            long stallTime = System.nanoTime() - time;
+            long stallTime = NanoTime.since(time);
             streamsStallTime.addAndGet(stallTime);
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), stream);
@@ -253,7 +254,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         long pastStallTime = sessionStallTime.get();
         long currentStallTime = sessionStall.get();
         if (currentStallTime != 0)
-            currentStallTime = System.nanoTime() - currentStallTime;
+            currentStallTime = NanoTime.since(currentStallTime);
         return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 
@@ -261,8 +262,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     public long getStreamsStallTime()
     {
         long pastStallTime = streamsStallTime.get();
-        long now = System.nanoTime();
-        long currentStallTime = streamsStalls.values().stream().reduce(0L, (result, time) -> now - time);
+        long now = NanoTime.now();
+        long currentStallTime = streamsStalls.values().stream().reduce(0L, (result, time) -> NanoTime.elapsed(time, now));
         return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 

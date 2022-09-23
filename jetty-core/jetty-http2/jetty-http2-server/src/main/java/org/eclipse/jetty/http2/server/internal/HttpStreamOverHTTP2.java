@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -51,7 +52,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
     private final HTTP2Stream _stream;
-    private final long _nanoTimeStamp;
+    private final long _nanoTime;
     private Content.Chunk _chunk;
     private MetaData.Response _metaData;
     private boolean committed;
@@ -62,7 +63,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         _connection = connection;
         _httpChannel = httpChannel;
         _stream = stream;
-        _nanoTimeStamp = System.nanoTime();
+        _nanoTime = NanoTime.now();
     }
 
     @Override
@@ -74,7 +75,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public long getNanoTimeStamp()
     {
-        return _nanoTimeStamp;
+        return _nanoTime;
     }
 
     public Runnable onRequest(HeadersFrame frame)
@@ -277,7 +278,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                         response.getReason(),
                         response.getFields(),
                         realContentLength,
-                        response.getTrailerSupplier()
+                        response.getTrailersSupplier()
                     );
                 }
                 else if (hasContent && contentLength != realContentLength)
@@ -386,7 +387,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = _metaData.getTrailerSupplier();
+        Supplier<HttpFields> supplier = _metaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();

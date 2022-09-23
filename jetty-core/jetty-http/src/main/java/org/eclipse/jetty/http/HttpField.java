@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
@@ -364,11 +365,18 @@ public class HttpField
 
     public String[] getValues()
     {
+        List<String> values = getValueList();
+        if (values == null)
+            return null;
+        return values.toArray(String[]::new);
+    }
+
+    public List<String> getValueList()
+    {
         if (_value == null)
             return null;
-
         QuotedCSV list = new QuotedCSV(false, _value);
-        return list.getValues().toArray(new String[list.size()]);
+        return list.getValues();
     }
 
     @Override

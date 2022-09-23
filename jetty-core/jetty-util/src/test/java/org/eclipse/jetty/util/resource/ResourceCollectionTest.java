@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -35,13 +36,18 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -66,6 +72,7 @@ public class ResourceCollectionTest
     @Test
     public void testList() throws Exception
     {
+        Path testBaseDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource");
         Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
@@ -75,9 +82,36 @@ public class ResourceCollectionTest
             resourceFactory.newResource(two),
             resourceFactory.newResource(three)
         );
-        assertThat(rc.list(), contains("1.txt", "2.txt", "3.txt", "dir/"));
-        assertThat(rc.resolve("dir").list(), contains("1.txt", "2.txt", "3.txt"));
-        assertThat(rc.resolve("unknown").list(), nullValue());
+
+        Function<Resource, String> relativizeToTestResources = (r) -> testBaseDir.toUri().relativize(r.getURI()).toASCIIString();
+
+        List<Resource> listing = rc.list();
+        List<String> listingFilenames = listing.stream().map(relativizeToTestResources).toList();
+
+        String[] expected = new String[] {
+            "one/dir/",
+            "one/1.txt",
+            "two/2.txt",
+            "two/dir/",
+            "two/1.txt",
+            "three/3.txt",
+            "three/2.txt",
+            "three/dir/"
+        };
+
+        assertThat(listingFilenames, containsInAnyOrder(expected));
+
+        listingFilenames = rc.resolve("dir").list().stream().map(relativizeToTestResources).toList();
+
+        expected = new String[] {
+            "one/dir/1.txt",
+            "two/dir/2.txt",
+            "three/dir/3.txt"
+        };
+
+        assertThat(listingFilenames, containsInAnyOrder(expected));
+
+        assertThat(rc.resolve("unknown").list(), is(empty()));
 
         assertEquals(getContent(rc, "1.txt"), "1 - one");
         assertEquals(getContent(rc, "2.txt"), "2 - two");
@@ -171,6 +205,82 @@ public class ResourceCollectionTest
             actual.add(res.getURI());
         }
         assertThat(actual, contains(expected));
+    }
+
+    @Test
+    public void testIterable()
+    {
+        Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+        Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+        Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+        Path dirFoo = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
+
+        Resource compositeA = Resource.combine(
+            List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three)
+            )
+        );
+
+        Resource compositeB = Resource.combine(
+            List.of(
+                // the original composite Resource
+                compositeA,
+                // a duplicate entry
+                resourceFactory.newResource(two),
+                // a new entry
+                resourceFactory.newResource(dirFoo)
+            )
+        );
+
+        List<URI> actual = new ArrayList<>();
+        for (Resource resource: compositeB)
+        {
+            actual.add(resource.getURI());
+        }
+
+        URI[] expected = new URI[] {
+            one.toUri(),
+            two.toUri(),
+            three.toUri(),
+            dirFoo.toUri()
+        };
+
+        assertThat(actual, contains(expected));
+    }
+
+    /**
+     * Demonstrate behavior of ResourceCollection.resolve() when dealing with
+     * conflicting names between Directories and Files.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"foo", "/foo", "foo/", "/foo/"})
+    public void testResolveConflictDirAndFile(String input) throws IOException
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path dirA = base.resolve("dirA");
+        FS.ensureDirExists(dirA);
+        Files.createDirectory(dirA.resolve("foo"));
+
+        Path dirB = base.resolve("dirB");
+        FS.ensureDirExists(dirB);
+        Files.createDirectory(dirB.resolve("foo"));
+
+        Path dirC = base.resolve("dirC");
+        FS.ensureDirExists(dirC);
+        Files.createFile(dirC.resolve("foo"));
+
+        Resource rc = Resource.combine(
+            ResourceFactory.root().newResource(dirA),
+            ResourceFactory.root().newResource(dirB),
+            ResourceFactory.root().newResource(dirC)
+        );
+
+        Resource result = rc.resolve(input);
+        assertThat(result, instanceOf(PathResource.class));
+        assertThat(result.getPath().toUri().toASCIIString(), endsWith("dirC/foo"));
+        assertFalse(result.isDirectory());
     }
 
     @Test

@@ -185,22 +185,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler(String.format("Connector-Scheduler-%x", hashCode()), false);
         addBean(_scheduler);
 
-        synchronized (server)
+        if (pool == null)
         {
+            // Look for (and cache) a common pool on the server
+            pool = server.getBean(ByteBufferPool.class);
             if (pool == null)
             {
-                // Look for (and cache) a common pool on the server
-                pool = server.getBean(ByteBufferPool.class);
-                if (pool == null)
-                {
-                    pool = new LogarithmicArrayByteBufferPool();
-                    server.addBean(pool, true);
-                }
-                addBean(pool, false);
-            }
-            else
-            {
-                addBean(pool, true);
+                pool = new LogarithmicArrayByteBufferPool();
+                server.addBean(pool, true);
             }
         }
         _byteBufferPool = pool;

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -56,6 +57,21 @@ public class ResourceAliasTest
     {
         resourceFactory.close();
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @Test
+    public void testAliasNavigation() throws IOException
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path foo = baseDir.resolve("foo");
+        Files.createDirectories(foo);
+        Files.writeString(foo.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+
+        Resource resource = ResourceFactory.root().newResource(baseDir);
+        Resource test = resource.resolve("/bar/../foo/test.txt");
+        assertTrue(test.exists(), "Should exist");
+        assertTrue(test.isAlias(), "Should be an alias");
     }
 
     @Test

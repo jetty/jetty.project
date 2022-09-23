@@ -161,6 +161,11 @@ public interface Request extends Attributes, Content.Source
      */
     HttpFields getHeaders();
 
+    /**
+     * @return the HTTP trailers of this request, or {@code null} if they are not present
+     */
+    HttpFields getTrailers();
+
     long getTimeStamp();
 
     // TODO: see above.
@@ -514,6 +519,12 @@ public interface Request extends Attributes, Content.Source
         public HttpFields getHeaders()
         {
             return getWrapped().getHeaders();
+        }
+
+        @Override
+        public HttpFields getTrailers()
+        {
+            return getWrapped().getTrailers();
         }
 
         @Override

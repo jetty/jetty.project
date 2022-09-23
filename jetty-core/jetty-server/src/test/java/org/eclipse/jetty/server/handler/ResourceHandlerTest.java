@@ -37,6 +37,7 @@ import java.util.zip.ZipOutputStream;
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -96,8 +97,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Resource Handler test
- *
- * TODO: increase the testing going on here
  */
 @ExtendWith(WorkDirExtension.class)
 public class ResourceHandlerTest
@@ -205,10 +204,6 @@ public class ResourceHandlerTest
         );
 
         List<String> notEncodedPrefixes = new ArrayList<>();
-        if (!OS.WINDOWS.isCurrentOs())
-        {
-            notEncodedPrefixes.add("/context/dir?");
-        }
         notEncodedPrefixes.add("/context/dir;");
 
         for (String prefix : notEncodedPrefixes)
@@ -247,7 +242,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
@@ -257,34 +252,19 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
-            // A Raw Question mark in the prefix can be interpreted as a query section
-            if (prefix.contains("?"))
-            {
-                scenarios.addScenario("""
-                        GET @PREFIX@/../index.html HTTP/1.1\r
-                        Host: local\r
-                        Connection: close\r
-                        \r
-                        """.replace("@PREFIX@", prefix),
-                    HttpStatus.NOT_FOUND_404
-                );
-            }
-            else
-            {
-                scenarios.addScenario("""
-                        GET @PREFIX@/../index.html HTTP/1.1\r
-                        Host: local\r
-                        Connection: close\r
-                        \r
-                        """.replace("@PREFIX@", prefix),
-                    HttpStatus.OK_200,
-                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
-                );
-            }
+            scenarios.addScenario("""
+                    GET @PREFIX@/../index.html HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """.replace("@PREFIX@", prefix),
+                HttpStatus.NOT_FOUND_404,
+                (response) -> assertThat(response.getContent(), not(containsString("Hello Index")))
+            );
 
             scenarios.addScenario("""
                     GET @PREFIX@/%2E%2E/index.html HTTP/1.1\r
@@ -292,7 +272,7 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400
+                HttpStatus.BAD_REQUEST_400
             );
 
             scenarios.addScenario("""
@@ -770,8 +750,35 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
-    public void testBrotli() throws Exception
+    public void testBrotliInitialCompressed() throws Exception
+    {
+        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
+        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
+
+        _rootResourceHandler.setDirAllowed(false);
+        _rootResourceHandler.setRedirectWelcome(false);
+        _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.BR);
+        _rootResourceHandler.setEtags(true);
+
+        String rawResponse = _local.getResponse("""
+            GET /context/data0.txt HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            Accept-Encoding: gzip;q=0.9,br\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
+        String body = response.getContent();
+        assertThat(body, containsString("fake brotli"));
+    }
+
+    @Test
+    public void testBrotliWithEtags() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
@@ -802,13 +809,13 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
+        String etagBr = EtagUtils.rewriteWithSuffix(etag, "--br");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip;q=0.9,br\r
+            Accept-Encoding: gzip;q=0.9,br\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -825,7 +832,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt.br HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br,gzip\r
+            Accept-Encoding: br,gzip\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -843,7 +850,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt.br HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: W/"wobble"\r
             \r
             """);
@@ -862,7 +869,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etagBr));
@@ -874,7 +881,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -886,7 +893,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etagBr));
@@ -898,7 +905,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -908,7 +915,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testCachedBrotli() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
@@ -940,13 +946,13 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
+        String etagBr = EtagUtils.rewriteWithSuffix(etag, "--br");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -963,7 +969,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt.br HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -981,7 +987,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etagBr));
@@ -993,7 +999,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -1005,7 +1011,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etagBr));
@@ -1017,7 +1023,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:br\r
+            Accept-Encoding: br\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -1027,7 +1033,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testCachedGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1062,13 +1067,13 @@ public class ResourceHandlerTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
+        String etagGzip = EtagUtils.rewriteWithSuffix(etag, "--gzip");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Connection: close\r
             Host: localhost:8080\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -1085,7 +1090,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt.gz HTTP/1.1\r
             Connection: close\r
             Host: localhost:8080\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -1103,7 +1108,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etagGzip));
@@ -1115,7 +1120,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -1127,7 +1132,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etagGzip));
@@ -1139,7 +1144,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -1293,7 +1298,6 @@ public class ResourceHandlerTest
     public void testCachingMaxCachedFilesRespected() throws Exception
     {
         copySimpleTestResource(docRoot);
-        // TODO explicitly turn on caching
         long expectedSizeBig = Files.size(docRoot.resolve("big.txt"));
         long expectedSizeSimple = Files.size(docRoot.resolve("simple.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
@@ -1336,7 +1340,6 @@ public class ResourceHandlerTest
     @Test
     public void testCachingNotFoundNotCached() throws Exception
     {
-        // TODO explicitly turn on caching
         CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
@@ -1357,15 +1360,14 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testCachingPrecompressedFilesCached() throws Exception
     {
-        // TODO explicitly turn on caching
+        setupBigFiles(docRoot);
         long expectedSize = Files.size(docRoot.resolve("big.txt")) +
             Files.size(docRoot.resolve("big.txt.gz"));
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
 
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
+        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
@@ -1409,16 +1411,15 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testCachingPrecompressedFilesCachedEtagged() throws Exception
     {
-        // TODO explicitly turn on caching
+        setupBigFiles(docRoot);
         long expectedSize = Files.size(docRoot.resolve("big.txt")) +
             Files.size(docRoot.resolve("big.txt.gz"));
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
 
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
         _rootResourceHandler.setEtags(true);
+        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
@@ -1494,7 +1495,6 @@ public class ResourceHandlerTest
     @Test
     public void testCachingRefreshing() throws Exception
     {
-        // TODO explicitly turn on caching
         Path tempPath = docRoot.resolve("temp.txt");
         Files.writeString(tempPath, "temp file");
         long expectedSize = Files.size(tempPath);
@@ -1549,7 +1549,6 @@ public class ResourceHandlerTest
     public void testCachingWelcomeFileCached() throws Exception
     {
         copySimpleTestResource(docRoot);
-        // TODO explicitly turn on caching
         long expectedSize = Files.size(docRoot.resolve("directory/welcome.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
 
@@ -1628,7 +1627,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testCustomCompressionFormats() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
@@ -1650,7 +1648,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:bzip2, br, gzip\r
+            Accept-Encoding: bzip2, br, gzip\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -1662,12 +1660,10 @@ public class ResourceHandlerTest
         body = response.getContent();
         assertThat(body, containsString("fake bzip2"));
 
-        // TODO: show accept-encoding search order issue (shouldn't this request return data0.txt.br?)
-
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
-            Accept-Encoding:br, gzip\r
+            Accept-Encoding: br, gzip\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -1681,45 +1677,50 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testDefaultBrotliOverGzip() throws Exception
     {
-        Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
-        Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
-        Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
+        Path textFile = docRoot.resolve("data0.txt");
+        Path textBrFile = docRoot.resolve("data0.txt.br");
+        Path textGzipFile = docRoot.resolve("data0.txt.gz");
+        Files.writeString(textFile, "Hello Text 0", UTF_8);
+        Files.writeString(textBrFile, "fake brotli", UTF_8);
+        Files.writeString(textGzipFile, "fake gzip", UTF_8);
 
-        _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP, CompressedContentFormat.BR);
+        // This tests the ResourceService Preferred Encoding Order configuration
+        _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.BR, CompressedContentFormat.GZIP);
 
         String rawResponse;
         HttpTester.Response response;
         String body;
 
+        // Request Ordered [gzip, compress, br] - should favor [br] due to ResourceService preferred encoding order
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip, compress, br\r
+            Accept-Encoding: gzip, compress, br\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
+        assertThat(response.toString(), response.getField(HttpHeader.CONTENT_LENGTH).getLongValue(), is(Files.size(textBrFile)));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
+        // Request weighted [br] lower than defaults of [gzip, compress] - should favor [gzip] due to weighting
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip, compress, br;q=0.9\r
+            Accept-Encoding: gzip, compress, br;q=0.9\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
+        assertThat(response.toString(), response.getField(HttpHeader.CONTENT_LENGTH).getLongValue(), is(Files.size(textGzipFile)));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
@@ -1727,50 +1728,45 @@ public class ResourceHandlerTest
         assertThat(body, containsString("fake gzip"));
     }
 
-    @Test
-    public void testDirectoryRedirect() throws Exception
+    public static Stream<Arguments> directoryRedirectSource()
     {
-        copySimpleTestResource(docRoot);
-
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+        return Stream.of(
+            Arguments.of("""
                 GET /context/directory HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
-                """));
-        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/"));
-
-        response = HttpTester.parseResponse(
-            _local.getResponse("""
+                """, "/context/directory/"),
+            Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678 HTTP/1.1\r
                 Host: local\r
                 Connection: close\r              
                 \r
-                """));
-        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/;JSESSIONID=12345678"));
-
-        response = HttpTester.parseResponse(
-            _local.getResponse("""
+                """, "/context/directory/;JSESSIONID=12345678"),
+            Arguments.of("""
                 GET /context/directory?name=value HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
-                """));
-        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/?name=value"));
-
-        response = HttpTester.parseResponse(
-            _local.getResponse("""
+                """, "/context/directory/?name=value"),
+            Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678?name=value HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
-                """));
+                """, "/context/directory/;JSESSIONID=12345678?name=value")
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] {1}")
+    @MethodSource("directoryRedirectSource")
+    public void testDirectoryRedirect(String rawRequest, String expectedLocationEndsWith) throws Exception
+    {
+        copySimpleTestResource(docRoot);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse(rawRequest));
         assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response.get(LOCATION), endsWith("/context/directory/;JSESSIONID=12345678?name=value"));
+        assertThat(response.get(LOCATION), endsWith(expectedLocationEndsWith));
     }
 
     @Test
@@ -1918,35 +1914,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    public void testEtagIfMatchAlwaysFailsDueToWeakEtag() throws Exception
-    {
-        copyBigText(docRoot);
-        _rootResourceHandler.setEtags(true);
-
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
-                GET /context/big.txt HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                \r
-                """));
-
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.get(ETAG), notNullValue());
-        String etag = response.get(ETAG);
-
-        response = HttpTester.parseResponse(
-            _local.getResponse("""
-                GET /context/big.txt HTTP/1.1\r
-                Host: local\r
-                Connection: close\r
-                If-Match: %s\r
-                \r
-                """.formatted(etag)));
-        assertThat(response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
-    }
-
-    @Test
     public void testEtagIfNoneMatchModifiedFile() throws Exception
     {
         _rootResourceHandler.setEtags(true);
@@ -2067,7 +2034,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/swedish-%C3%A5.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -2078,7 +2045,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/swedish-a%CC%8A.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -2113,7 +2080,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/swedish-a%CC%8A.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -2124,7 +2091,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/swedish-%C3%A5.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -2140,7 +2107,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -2174,7 +2140,7 @@ public class ResourceHandlerTest
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
         String etag = response.get(HttpHeader.ETAG);
-        String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
+        String etagGzip = EtagUtils.rewriteWithSuffix(etag, "--gzip");
 
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -2230,12 +2196,12 @@ public class ResourceHandlerTest
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        String badEtagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2X--gzip\"");
+        String badEtagGzip = EtagUtils.rewriteWithSuffix(etag, "-gzip");
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", badEtagGzip));
@@ -2246,7 +2212,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etagGzip));
@@ -2258,7 +2224,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -2270,7 +2236,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etagGzip));
@@ -2281,7 +2247,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
-            Accept-Encoding:gzip\r
+            Accept-Encoding: gzip\r
             If-None-Match: W/"foobar",@ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -2341,16 +2307,9 @@ public class ResourceHandlerTest
         "Hello World",
         "Now is the time for all good men to come to the aid of the party"
     })
-    @Disabled
     public void testIfETag(String content) throws Exception
     {
         Files.writeString(docRoot.resolve("file.txt"), content, UTF_8);
-
-        /* TODO: need way to configure resource cache?
-        resourceHandler.setInitParameter("maxCacheSize", "4096");
-        resourceHandler.setInitParameter("maxCachedFileSize", "25");
-        resourceHandler.setInitParameter("maxCachedFiles", "100");
-         */
         _rootResourceHandler.setEtags(true);
 
         String rawResponse;
@@ -2359,7 +2318,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -2371,7 +2330,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             If-None-Match: @ETAG@\r
             \r
             """.replace("@ETAG@", etag));
@@ -2381,17 +2340,17 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             If-None-Match: wibble,@ETAG@,wobble\r
             \r
-            """.replace("@ETAG", etag));
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             If-None-Match: wibble\r
             \r
             """);
@@ -2401,7 +2360,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             If-None-Match: wibble, wobble\r
             \r
             """);
@@ -2411,27 +2370,27 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             If-Match: @ETAG@\r
             \r
-            """.replace("@ETAG", etag));
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             If-Match: wibble,@ETAG@,wobble\r
             \r
-            """.replace("@ETAG", etag));
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             If-Match: wibble\r
             \r
             """);
@@ -2441,7 +2400,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host: test\r
-            Connection:close\r
+            Connection: close\r
             If-Match: wibble, wobble\r
             \r
             """);
@@ -2481,7 +2440,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -2493,7 +2452,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             If-Modified-Since: @LASTMODIFIED@\r
             \r
             """.replace("@LASTMODIFIED@", lastModified));
@@ -2503,7 +2462,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             If-Modified-Since: @DATE@\r
             \r
             """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() - 10000)));
@@ -2513,7 +2472,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             If-Modified-Since: @DATE@\r
             \r
             """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() + 10000)));
@@ -2523,7 +2482,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             If-Unmodified-Since: @DATE@\r
             \r
             """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() + 10000)));
@@ -2533,7 +2492,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
             Host:test\r
-            Connection:close\r
+            Connection: close\r
             If-Unmodified-Since: @DATE@\r
             \r
             """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() - 10000)));
@@ -2635,6 +2594,26 @@ public class ResourceHandlerTest
     }
 
     @Test
+    public void testJettyDirListing() throws Exception
+    {
+        copySimpleTestResource(docRoot);
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("jetty-dir.css"));
+        assertThat(response.getContent(), containsString("Directory: /context/"));
+        assertThat(response.getContent(), containsString("big.txt"));
+        assertThat(response.getContent(), containsString("directory"));
+        assertThat(response.getContent(), containsString("simple.txt"));
+    }
+
+    @Test
     public void testJettyDirRedirect() throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(
@@ -2655,7 +2634,7 @@ public class ResourceHandlerTest
      */
     @ParameterizedTest
     @MethodSource("contextBreakoutScenarios")
-    public void testContextBreakout(ResourceHandlerTest.Scenario scenario) throws Exception
+    public void testListingContextBreakout(ResourceHandlerTest.Scenario scenario) throws Exception
     {
         _rootResourceHandler.setDirAllowed(true);
         _rootResourceHandler.setWelcomeFiles("index.html");
@@ -2697,6 +2676,121 @@ public class ResourceHandlerTest
     }
 
     /**
+     * A regression on windows allowed the directory listing show
+     * the fully qualified paths within the directory listing.
+     * This test ensures that this behavior will not arise again.
+     */
+    @Test
+    public void testListingFilenamesOnly() throws Exception
+    {
+        /* create some content in the docroot */
+        FS.ensureDirExists(docRoot);
+        Path one = docRoot.resolve("one");
+        FS.ensureDirExists(one);
+        Path deep = one.resolve("deep");
+        FS.ensureDirExists(deep);
+        FS.touch(deep.resolve("foo"));
+        FS.ensureDirExists(docRoot.resolve("two"));
+        FS.ensureDirExists(docRoot.resolve("three"));
+
+        String resBasePath = docRoot.toAbsolutePath().toString();
+
+        String req1 = """
+            GET /context/one/deep/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
+        String rawResponse = _local.getResponse(req1);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        String body = response.getContent();
+        assertThat(body, containsString("/foo"));
+        assertThat(body, not(containsString(resBasePath)));
+    }
+
+    @Test
+    public void testListingProperUrlEncoding() throws Exception
+    {
+        /* create some content in the docroot */
+
+        Path wackyDir = docRoot.resolve("dir;"); // this should not be double-encoded.
+        FS.ensureDirExists(wackyDir);
+
+        FS.ensureDirExists(wackyDir.resolve("four"));
+        FS.ensureDirExists(wackyDir.resolve("five"));
+        FS.ensureDirExists(wackyDir.resolve("six"));
+
+        /* At this point we have the following
+         * testListingProperUrlEncoding/
+         * `-- docroot
+         *     `-- dir;
+         *         |-- five
+         *         |-- four
+         *         `-- six
+         */
+
+        // First send request in improper, unencoded way.
+        // Since this is interpreted as a path parameter, this raw ';' should not
+        // make its way down to the ResourceService
+        String rawResponse = _local.getResponse("""
+            GET /context/dir;/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        // Now send request in proper, encoded format.
+        rawResponse = _local.getResponse("""
+            GET /context/dir%3B/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+
+        String body = response.getContent();
+        // Should not see double-encoded ";"
+        // First encoding: ";" -> "%3b"
+        // Second encoding: "%3B" -> "%253B" (BAD!)
+        assertThat(body, not(containsString("%253B")));
+
+        assertThat(body, containsString("/dir%3B/"));
+        assertThat(body, containsString("/dir%3B/four/"));
+        assertThat(body, containsString("/dir%3B/five/"));
+        assertThat(body, containsString("/dir%3B/six/"));
+    }
+
+    @Test
+    public void testListingWithQuestionMarks() throws Exception
+    {
+        /* create some content in the docroot */
+        FS.ensureDirExists(docRoot.resolve("one"));
+        FS.ensureDirExists(docRoot.resolve("two"));
+        FS.ensureDirExists(docRoot.resolve("three"));
+
+        // Creating dir 'f??r' (Might not work in Windows)
+        assumeMkDirSupported(docRoot, "f??r");
+
+        String rawResponse = _local.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        String body = response.getContent();
+        assertThat(body, containsString("f??r"));
+    }
+
+    /**
      * <p>
      * Tests to ensure that when requesting a legit directory listing, you
      * cannot arbitrarily include XSS in the output via careful manipulation
@@ -2707,8 +2801,7 @@ public class ResourceHandlerTest
      * migrate through the ResourceHandler before it hits the
      * ResourceListing.getAsXHTML for output production
      * </p>
-     */
-    @Test
+     */    @Test
     public void testListingXSS() throws Exception
     {
         // Allow unsafe URI requests for this test case specifically
@@ -2722,6 +2815,9 @@ public class ResourceHandlerTest
         FS.ensureDirExists(one);
         FS.ensureDirExists(docRoot.resolve("two"));
         FS.ensureDirExists(docRoot.resolve("three"));
+
+        Path alert = one.resolve("onmouseclick='alert(oops)'");
+        FS.touch(alert);
 
         /*
          * Intentionally bad request URI. Sending a non-encoded URI with typically
@@ -2831,7 +2927,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testPrecompressedGzipWorks() throws Exception
     {
         setupBigFiles(docRoot);
@@ -2931,7 +3026,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @Disabled
     public void testProgrammaticCustomCompressionFormats() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
@@ -2953,7 +3047,7 @@ public class ResourceHandlerTest
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
-            Accept-Encoding:bzip2, br, gzip\r
+            Accept-Encoding: bzip2, br, gzip\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
@@ -2970,7 +3064,7 @@ public class ResourceHandlerTest
         rawResponse = _local.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
             Host: localhost:8080\r
-            Accept-Encoding:br, gzip\r
+            Accept-Encoding: br, gzip\r
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);

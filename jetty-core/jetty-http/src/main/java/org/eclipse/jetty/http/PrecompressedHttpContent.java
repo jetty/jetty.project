@@ -24,47 +24,51 @@ public class PrecompressedHttpContent implements HttpContent
     private final HttpContent _content;
     private final HttpContent _precompressedContent;
     private final CompressedContentFormat _format;
+    private final HttpField _etag;
 
     public PrecompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
     {
+        if (content == null)
+            throw new IllegalArgumentException("Null HttpContent");
+        if (precompressedContent == null)
+            throw new IllegalArgumentException("Null Precompressed HttpContent");
+        if (format == null)
+            throw new IllegalArgumentException("Null Compressed Content Format");
+
         _content = content;
         _precompressedContent = precompressedContent;
         _format = format;
-        if (_precompressedContent == null || _format == null)
-        {
-            throw new NullPointerException("Missing compressed content and/or format");
-        }
+        _etag = EtagUtils.createWeakEtagField(_content.getResource(), _format.getEtagSuffix());
     }
 
     @Override
     public Resource getResource()
     {
-        return _content.getResource();
+        return _precompressedContent.getResource();
     }
 
     @Override
     public HttpField getETag()
     {
-        return new HttpField(HttpHeader.ETAG, getETagValue());
+        return _etag;
     }
 
     @Override
     public String getETagValue()
     {
-        //return _content.getResource().getWeakETag(_format.getEtagSuffix());
-        return null;
+        return getETag().getValue();
     }
 
     @Override
     public HttpField getLastModified()
     {
-        return _content.getLastModified();
+        return _precompressedContent.getLastModified();
     }
 
     @Override
     public String getLastModifiedValue()
     {
-        return _content.getLastModifiedValue();
+        return _precompressedContent.getLastModifiedValue();
     }
 
     @Override

@@ -1,5 +1,86 @@
 jetty-12.0.0-SNAPSHOT
 
+jetty-12.0.0.alpha1 - 15 September 2022
+ + 8474 Jetty 12 : Resource API Review
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8532 Review System.nanoTime() usages
+ + 8540 Maven pom is not correct for `org.eclipse.jetty/infinispan-embedded`
+   and `org.eclipse.jetty/infinispan-remote`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target
+
+jetty-11.0.12 - 14 September 2022
+ + 7970 Maven Plugin - the option to set extraClasspath in the plugin
+   configuration isn't working
+ + 8007 Support Loom
+ + 8151 `JakartaWebSocketSession.close()` blocks long time when called from
+   `SendHandlerCallback`
+ + 8152 jetty.sh does not read JAVA_OPTIONS anymore
+ + 8170 WebSockets closed abruptly when using HTTP/2
+ + 8196 Remove unused jetty-plus.xml file
+ + 8206 Stopping server from within AbstractConnector#accept fails and results
+   in a partially stopped QueuedThreadPool
+ + 8216 OpenID logout / more extensibible OpenIdConfiguration
+ + 8222 Jetty start.jar fails with NullPointerException when referencing a non
+   existent module and using JVM args
+ + 8259 Symlinks cause 404 with DefaultServlet when its "resourceBase" is
+   different from ContextHandler's
+ + 8294 java.lang.ClassCastException: class org.eclipse.jetty.http.HttpField
+   cannot be cast to class org.eclipse.jetty.http.HttpCookie$SetCookieHttpField
+ + 8296 SymlinkAllowedResourceAliasChecker is initialized after checkAlias is
+   called resulting that access to resource is denied
+ + 8319 Allow configuring initial queue size per destination
+ + 8353 Automatic pongs should not be sent when connection is closed
+ + 8414 BlockingArrayQueue drops all contents on drain
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8497 `jetty-bom/11.0.11` depends on `jetty-slf4j-impl/10.0.8-SNAPSHO` that
+   cause 404 error
+ + 8532 Review System.nanoTime() usages
+ + 8540 Maven pom is not correct for `org.eclipse.jetty/infinispan-embedded`
+   and `org.eclipse.jetty/infinispan-remote`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target
+   
+jetty-10.0.12 - 14 September 2022
+ + 7970 Maven Plugin - the option to set extraClasspath in the plugin
+   configuration isn't working
+ + 8007 Support Loom
+ + 8151 `JakartaWebSocketSession.close()` blocks long time when called from
+   `SendHandlerCallback`
+ + 8152 jetty.sh does not read JAVA_OPTIONS anymore
+ + 8170 WebSockets closed abruptly when using HTTP/2
+ + 8196 Remove unused jetty-plus.xml file
+ + 8206 Stopping server from within AbstractConnector#accept fails and results
+   in a partially stopped QueuedThreadPool
+ + 8216 OpenID logout / more extensibible OpenIdConfiguration
+ + 8222 Jetty start.jar fails with NullPointerException when referencing a non
+   existent module and using JVM args
+ + 8259 Symlinks cause 404 with DefaultServlet when its "resourceBase" is
+   different from ContextHandler's
+ + 8294 java.lang.ClassCastException: class org.eclipse.jetty.http.HttpField
+   cannot be cast to class org.eclipse.jetty.http.HttpCookie$SetCookieHttpField
+ + 8296 SymlinkAllowedResourceAliasChecker is initialized after checkAlias is
+   called resulting that access to resource is denied
+ + 8319 Allow configuring initial queue size per destination
+ + 8353 Automatic pongs should not be sent when connection is closed
+ + 8414 BlockingArrayQueue drops all contents on drain
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8532 Review System.nanoTime() usages
+ + 8540 Maven pom is not correct for `org.eclipse.jetty/infinispan-embedded`
+   and `org.eclipse.jetty/infinispan-remote`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target
+
+jetty-9.4.49.v20220914 - 14 September 2022
+ + 8414 BlockingArrayQueue drops all contents on drain
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target   
+
+
+jetty-12.0.0.alpha0 - 22 August 2022
+ + First alpha release of Jetty 12. A lot changes but very good changes!
+
 jetty-11.0.11 - 21 June 2022
  + 8184 All suffix globs except first fail to match if path has `.` character
    in prefix section
@@ -342,15 +423,15 @@ jetty-11.0.7 - 06 October 2021
    active modules
  + 6487 Expose ServletHolder getter in ServletHandler$ChainEnd for auditing
    libraries to use
- + 6489 Some URI valid compliance modes cannot be set in .ini file.
+ + 6489 Some URI valid compliance modes cannot be set in .ini file
  + 6491 onDataAvailable() not called when HttpParser is closed prematurely
  + 6497 Replace SameFileAliasChecker
- + 6520 Error page has HTML error when writePoweredBy is enabled.
+ + 6520 Error page has HTML error when writePoweredBy is enabled
  + 6544 Using jetty.gzip.excludedMimeTypeList property results in an error
  + 6545 image/webp MIME type support
  + 6552 FileBufferedInterceptor.dispose not working due to locked file
  + 6553 Review usage of Authentication.UNAUTHENTICATED in SecurityHandler
- + 6554 Allow creation of DefaultIdentityService without realmName.
+ + 6554 Allow creation of DefaultIdentityService without realmName
  + 6556 MemcachedSessionDataMap needs to set the context classloader before
    serialization/deseriazliation.
  + 6558 Allow to configure return type in JSON array parsing
@@ -366,7 +447,7 @@ jetty-11.0.7 - 06 October 2021
  + 6617 Add basic auth support for OpenId token endpoint (client_secret_basic)
  + 6618 ID token `azp` claim should not be required if `aud` is single value
    array
- + 6642 WebSocket handling of Connection: upgrade,close.
+ + 6642 WebSocket handling of Connection: upgrade,close
  + 6646 Deadlock in HTTP2Flusher when using a small thread pool due to
    incorrect InvocableType
  + 6652 Improve ReservedThreadExecutor dump
@@ -415,15 +496,15 @@ jetty-10.0.7 - 06 October 2021
    active modules
  + 6487 Expose ServletHolder getter in ServletHandler$ChainEnd for auditing
    libraries to use
- + 6489 Some URI valid compliance modes cannot be set in .ini file.
+ + 6489 Some URI valid compliance modes cannot be set in .ini file
  + 6491 onDataAvailable() not called when HttpParser is closed prematurely
  + 6497 Replace SameFileAliasChecker
- + 6520 Error page has HTML error when writePoweredBy is enabled.
+ + 6520 Error page has HTML error when writePoweredBy is enabled
  + 6544 Using jetty.gzip.excludedMimeTypeList property results in an error
  + 6545 image/webp MIME type support
  + 6552 FileBufferedInterceptor.dispose not working due to locked file
  + 6553 Review usage of Authentication.UNAUTHENTICATED in SecurityHandler
- + 6554 Allow creation of DefaultIdentityService without realmName.
+ + 6554 Allow creation of DefaultIdentityService without realmName
  + 6556 MemcachedSessionDataMap needs to set the context classloader before
    serialization/deseriazliation.
  + 6558 Allow to configure return type in JSON array parsing
@@ -438,7 +519,7 @@ jetty-10.0.7 - 06 October 2021
  + 6617 Add basic auth support for OpenId token endpoint (client_secret_basic)
  + 6618 ID token `azp` claim should not be required if `aud` is single value
    array
- + 6642 WebSocket handling of Connection: upgrade,close.
+ + 6642 WebSocket handling of Connection: upgrade,close
  + 6646 Deadlock in HTTP2Flusher when using a small thread pool due to
    incorrect InvocableType
  + 6652 Improve ReservedThreadExecutor dump
@@ -849,7 +930,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
