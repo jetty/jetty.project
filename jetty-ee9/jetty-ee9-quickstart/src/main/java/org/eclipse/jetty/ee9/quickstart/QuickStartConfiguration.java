@@ -102,7 +102,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         //look for quickstart-web.xml in WEB-INF of webapp
         Path quickStartWebXml = getQuickStartWebXml(context);
         if (LOG.isDebugEnabled())
-            LOG.debug("quickStartWebXml={}", quickStartWebXml);
+            LOG.debug("quickStartWebXml={} exists={}", quickStartWebXml, Files.exists(quickStartWebXml));
 
         //Get the mode
         Object o = context.getAttribute(MODE);
@@ -211,7 +211,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
     protected void quickStart(WebAppContext context)
         throws Exception
     {
-        LOG.info("Quickstarting {}", context);
+        if (LOG.isDebugEnabled())
+            LOG.info("Quickstarting {}", context);
         _quickStart = true;
         context.setConfigurations(context.getConfigurations().stream()
             .filter(c -> !__replacedConfigurations.contains(c.replaces()))
