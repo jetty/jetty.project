@@ -303,37 +303,37 @@ public class PathResourceTest
             // Test not alias paths
             Resource resource = resourceFactory.newResource(file);
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file.toUri());
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file.toUri().toString());
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = archiveResource.resolve("test.txt");
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
 
             // Test alias paths
             resource = resourceFactory.newResource(file0);
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file0.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file0.toUri());
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file0.toUri().toString());
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
 
             resource = archiveResource.resolve("test.txt\0");
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
         }
         catch (InvalidPathException e)
         {
@@ -402,9 +402,9 @@ public class PathResourceTest
             assertThat("resource.uri.alias", resourceFactory.newResource(resFoo.getURI()).isAlias(), is(false));
             assertThat("resource.file.alias", resourceFactory.newResource(resFoo.getPath()).isAlias(), is(false));
 
-            assertThat("alias", resBar.getAlias(), is(resFoo.getURI()));
-            assertThat("uri.alias", resourceFactory.newResource(resBar.getURI()).getAlias(), is(resFoo.getURI()));
-            assertThat("file.alias", resourceFactory.newResource(resBar.getPath()).getAlias(), is(resFoo.getURI()));
+            assertThat("targetURI", resBar.getTargetURI(), is(resFoo.getURI()));
+            assertThat("uri.targetURI", resourceFactory.newResource(resBar.getURI()).getTargetURI(), is(resFoo.getURI()));
+            assertThat("file.targetURI", resourceFactory.newResource(resBar.getPath()).getTargetURI(), is(resFoo.getURI()));
         }
         catch (InvalidPathException e)
         {

@@ -49,79 +49,8 @@ public class PathResource extends Resource
 
     private final Path path;
     private final URI uri;
-    private boolean aliasChecked = false;
+    private boolean targetResolved = false;
     private Path alias;
-
-    private Path checkAliasPath()
-    {
-        Path abs = path;
-
-        // TODO: is this a valid shortcut?
-        // If the path doesn't exist, then there's no alias to reference
-        if (!Files.exists(path))
-            return null;
-
-        /* Catch situation where the Path class has already normalized
-         * the URI eg. input path "aa./foo.txt"
-         * from an #resolve(String) is normalized away during
-         * the creation of a Path object reference.
-         * If the URI is different from the Path.toUri() then
-         * we will just use the original URI to construct the
-         * alias reference Path.
-         *
-         * We use the method `toUri(Path)` here, instead of
-         * Path.toUri() to ensure that the path contains
-         * a trailing slash if it's a directory, (something
-         * not all FileSystems seem to support)
-         */
-        if (!URIUtil.equalsIgnoreEncodings(uri, toUri(path)))
-        {
-            try
-            {
-                // Use normalized path to get past navigational references like "/bar/../foo/test.txt"
-                Path ref = Paths.get(uri.normalize());
-                return ref.toRealPath();
-            }
-            catch (IOException ioe)
-            {
-                // If the toRealPath() call fails, then let
-                // the alias checking routines continue on
-                // to other techniques.
-                LOG.trace("IGNORED", ioe);
-            }
-        }
-
-        if (!abs.isAbsolute())
-            abs = path.toAbsolutePath();
-
-        // Any normalization difference means it's an alias,
-        // and we don't want to bother further to follow
-        // symlinks as it's an alias anyway.
-        Path normal = path.normalize();
-        if (!isSameName(abs, normal))
-            return normal;
-
-        try
-        {
-            if (Files.isSymbolicLink(path))
-                return path.getParent().resolve(Files.readSymbolicLink(path));
-            if (Files.exists(path))
-            {
-                Path real = abs.toRealPath();
-                if (!isSameName(abs, real))
-                    return real;
-            }
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-        catch (Exception e)
-        {
-            LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
-        }
-        return null;
-    }
 
     /**
      * Test if the paths are the same name.
@@ -325,16 +254,87 @@ public class PathResource extends Resource
     }
 
     @Override
-    public URI getAlias()
+    public URI getTargetURI()
     {
-        if (!aliasChecked)
+        if (!targetResolved)
         {
-            alias = checkAliasPath();
-            aliasChecked = true;
+            alias = resolveTargetAliasPath();
+            targetResolved = true;
         }
         if (alias == null)
             return null;
         return alias.toUri();
+    }
+
+    private Path resolveTargetAliasPath()
+    {
+        Path abs = path;
+
+        // TODO: is this a valid shortcut?
+        // If the path doesn't exist, then there's no alias to reference
+        if (!Files.exists(path))
+            return null;
+
+        /* Catch situation where the Path class has already normalized
+         * the URI eg. input path "aa./foo.txt"
+         * from an #resolve(String) is normalized away during
+         * the creation of a Path object reference.
+         * If the URI is different from the Path.toUri() then
+         * we will just use the original URI to construct the
+         * alias reference Path.
+         *
+         * We use the method `toUri(Path)` here, instead of
+         * Path.toUri() to ensure that the path contains
+         * a trailing slash if it's a directory, (something
+         * not all FileSystems seem to support)
+         */
+        if (!URIUtil.equalsIgnoreEncodings(uri, toUri(path)))
+        {
+            try
+            {
+                // Use normalized path to get past navigational references like "/bar/../foo/test.txt"
+                Path ref = Paths.get(uri.normalize());
+                return ref.toRealPath();
+            }
+            catch (IOException ioe)
+            {
+                // If the toRealPath() call fails, then let
+                // the alias checking routines continue on
+                // to other techniques.
+                LOG.trace("IGNORED", ioe);
+            }
+        }
+
+        if (!abs.isAbsolute())
+            abs = path.toAbsolutePath();
+
+        // Any normalization difference means it's an alias,
+        // and we don't want to bother further to follow
+        // symlinks as it's an alias anyway.
+        Path normal = path.normalize();
+        if (!isSameName(abs, normal))
+            return normal;
+
+        try
+        {
+            if (Files.isSymbolicLink(path))
+                return path.getParent().resolve(Files.readSymbolicLink(path));
+            if (Files.exists(path))
+            {
+                Path real = abs.toRealPath();
+                if (!isSameName(abs, real))
+                    return real;
+            }
+        }
+        catch (IOException e)
+        {
+            LOG.trace("IGNORED", e);
+        }
+        catch (Exception e)
+        {
+            LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
+        }
+        return null;
     }
 
     @Override

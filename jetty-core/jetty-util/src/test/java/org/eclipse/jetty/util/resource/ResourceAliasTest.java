@@ -132,37 +132,37 @@ public class ResourceAliasTest
             // Test not alias paths
             Resource resource = resourceFactory.newResource(file);
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file.toUri());
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file.toUri().toString());
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
             resource = dir.resolve("test.txt");
             assertTrue(resource.exists());
-            assertNull(resource.getAlias());
+            assertNull(resource.getTargetURI());
 
             // Test alias paths
             resource = resourceFactory.newResource(file0);
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file0.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file0.toUri());
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
             resource = resourceFactory.newResource(file0.toUri().toString());
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
 
             resource = dir.resolve("test.txt\0");
             assertTrue(resource.exists());
-            assertNotNull(resource.getAlias());
+            assertNotNull(resource.getTargetURI());
         }
         catch (InvalidPathException e)
         {

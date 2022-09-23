@@ -290,7 +290,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Use real location (if different) for WAR file, so that change/modification monitoring can work.
-            URI realUri = webApp.getAlias();
+            URI realUri = webApp.getTargetURI();
             if (realUri != null)
             {
                 if (LOG.isDebugEnabled())
