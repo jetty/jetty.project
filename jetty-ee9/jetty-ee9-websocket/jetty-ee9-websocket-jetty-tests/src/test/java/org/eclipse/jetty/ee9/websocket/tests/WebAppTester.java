@@ -44,7 +44,6 @@ import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +153,7 @@ public class WebAppTester extends ContainerLifeCycle
             // Configure the WebAppContext.
             _context = new WebAppContext();
             _context.setContextPath(contextPath);
-            _context.setBaseResource(ResourceFactory.of(_context).newResource(_contextDir));
+            _context.setBaseResource(_context.getResourceFactory().newResource(_contextDir));
 
             _context.setConfigurations(new Configuration[]
             {

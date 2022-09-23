@@ -1253,7 +1253,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setExtraClasspath(String extraClasspath)
     {
         List<URI> uris = URIUtil.split(extraClasspath);
-        setExtraClasspath(ResourceFactory.of(this).newResource(uris));
+        setExtraClasspath(this.getResourceFactory().newResource(uris));
     }
 
     public void setExtraClasspath(ResourceCollection extraClasspath)
