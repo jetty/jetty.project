@@ -56,8 +56,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final HttpChannel _httpChannel;
     private final HTTP2Stream _stream;
     private final long _nanoTime;
-    private MetaData.Request _request;
-    private MetaData.Response _response;
+    private MetaData.Request _requestMetaData;
+    private MetaData.Response _responseMetaData;
     private Content.Chunk _chunk;
     private boolean committed;
     private boolean _demand;
@@ -87,9 +87,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         try
         {
-            _request = (MetaData.Request)frame.getMetaData();
+            _requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            Runnable handler = _httpChannel.onRequest(_request);
+            Runnable handler = _httpChannel.onRequest(_requestMetaData);
 
             if (frame.isEndStream())
             {
@@ -99,7 +99,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
             }
 
-            HttpFields fields = _request.getFields();
+            HttpFields fields = _requestMetaData.getFields();
 
             _expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
@@ -107,7 +107,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             {
                 LOG.debug("HTTP2 request #{}/{}, {} {} {}{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                    _request.getMethod(), _request.getURI(), _request.getHttpVersion(),
+                    _requestMetaData.getMethod(), _requestMetaData.getURI(), _requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
 
@@ -188,7 +188,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (_expects100Continue)
             {
                 _expects100Continue = false;
-                send(_request, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
+                send(_requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
             }
             _stream.demand();
         }
@@ -258,7 +258,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
     {
-        _response = response;
+        _responseMetaData = response;
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
@@ -291,7 +291,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
-                    _response = new MetaData.Response(
+                    _responseMetaData = new MetaData.Response(
                         response.getHttpVersion(),
                         response.getStatus(),
                         response.getReason(),
@@ -372,7 +372,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (last && !isTunnel(request, _response)))
+        if (hasContent || (last && !isTunnel(request, _responseMetaData)))
         {
             if (last)
             {
@@ -407,7 +407,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = _response.getTrailersSupplier();
+        Supplier<HttpFields> supplier = _responseMetaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();

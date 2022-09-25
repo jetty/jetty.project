@@ -53,8 +53,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
-    private MetaData.Request request;
-    private MetaData.Response response;
+    private MetaData.Request requestMetaData;
+    private MetaData.Response responseMetaData;
     private Content.Chunk chunk;
     private boolean committed;
     private boolean expects100Continue;
@@ -82,9 +82,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         try
         {
-            request = (MetaData.Request)frame.getMetaData();
+            requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            Runnable handler = httpChannel.onRequest(request);
+            Runnable handler = httpChannel.onRequest(requestMetaData);
 
             if (frame.isLast())
             {
@@ -94,11 +94,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 }
             }
 
-            HttpFields fields = request.getFields();
+            HttpFields fields = requestMetaData.getFields();
 
             expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            boolean connect = request instanceof MetaData.ConnectRequest;
+            boolean connect = requestMetaData instanceof MetaData.ConnectRequest;
 
             if (!connect)
                 connection.setApplicationMode(true);
@@ -107,7 +107,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             {
                 LOG.debug("HTTP3 request #{}/{}, {} {} {}{}{}",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    requestMetaData.getMethod(), requestMetaData.getURI(), requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
 
@@ -184,7 +184,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (expects100Continue)
             {
                 expects100Continue = false;
-                send(request, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
+                send(requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
             }
             stream.demand();
         }
@@ -260,7 +260,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        this.response = response;
+        this.responseMetaData = response;
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
@@ -292,7 +292,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
-                    this.response = new MetaData.Response(
+                    this.responseMetaData = new MetaData.Response(
                         response.getHttpVersion(),
                         response.getStatus(),
                         response.getReason(),
@@ -383,7 +383,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (lastContent && !isTunnel(request, response)))
+        if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
         {
             if (lastContent)
             {
@@ -418,7 +418,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = response.getTrailersSupplier();
+        Supplier<HttpFields> supplier = responseMetaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();
