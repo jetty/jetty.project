@@ -81,6 +81,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
             conversation.updateResponseListeners(null);
 
             HttpExchange exchange = conversation.getExchanges().peekLast();
+            assert exchange != null;
+
             if (response.getStatus() == HttpStatus.CONTINUE_100)
             {
                 // All good, continue.

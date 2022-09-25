@@ -19,6 +19,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 
 /**
@@ -46,7 +47,11 @@ public class ProcessingProtocolHandler implements ProtocolHandler
         return new ProcessingListener();
     }
 
-    private static class ProcessingListener extends BufferingResponseListener
+    protected void onProcessing(Request request, HttpFields responseHeaders)
+    {
+    }
+
+    private class ProcessingListener extends BufferingResponseListener
     {
         private final ResponseNotifier notifier = new ResponseNotifier();
 
@@ -60,8 +65,11 @@ public class ProcessingProtocolHandler implements ProtocolHandler
             conversation.updateResponseListeners(null);
 
             HttpExchange exchange = conversation.getExchanges().peekLast();
-            if (exchange != null)
-                exchange.resetResponse();
+            assert exchange != null;
+
+            HttpFields responseHeaders = HttpFields.build(response.getHeaders());
+            exchange.resetResponse();
+            onProcessing(request, responseHeaders);
         }
 
         @Override

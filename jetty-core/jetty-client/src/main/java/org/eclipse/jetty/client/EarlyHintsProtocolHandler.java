@@ -19,6 +19,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 
 /**
@@ -46,7 +47,11 @@ public class EarlyHintsProtocolHandler implements ProtocolHandler
         return new EarlyHintsListener();
     }
 
-    private static class EarlyHintsListener extends BufferingResponseListener
+    protected void onEarlyHints(Request request, HttpFields responseHeaders)
+    {
+    }
+
+    private class EarlyHintsListener extends BufferingResponseListener
     {
         private final ResponseNotifier notifier = new ResponseNotifier();
 
@@ -60,8 +65,11 @@ public class EarlyHintsProtocolHandler implements ProtocolHandler
             conversation.updateResponseListeners(null);
 
             HttpExchange exchange = conversation.getExchanges().peekLast();
-            if (exchange != null)
-                exchange.resetResponse();
+            assert exchange != null;
+
+            HttpFields responseHeaders = HttpFields.build(response.getHeaders());
+            exchange.resetResponse();
+            onEarlyHints(request, responseHeaders);
         }
 
         @Override

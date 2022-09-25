@@ -26,17 +26,6 @@ import org.slf4j.LoggerFactory;
  */
 public interface Promise<C>
 {
-    default void completeWith(CompletableFuture<C> cf)
-    {
-        cf.whenComplete((c, x) ->
-        {
-            if (x == null)
-                succeeded(c);
-            else
-                failed(x);
-        });
-    }
-
     /**
      * <p>Callback invoked when the operation completes.</p>
      *
