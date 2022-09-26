@@ -327,8 +327,28 @@ public interface Response
     /**
      * Listener for the request and response completed event.
      */
-    interface CompleteListener extends ResponseListener
+    interface CompleteListener extends ContentSourceListener
     {
+        default void onContentSource(Response response, Content.Source contentSource)
+        {
+            Content.Chunk chunk = contentSource.read();
+            if (chunk == null)
+            {
+                contentSource.demand(() -> onContentSource(response, contentSource));
+                return;
+            }
+            if (chunk instanceof Content.Chunk.Error error)
+            {
+                response.abort(error.getCause());
+                return;
+            }
+
+            chunk.release();
+
+            if (!chunk.isLast())
+                contentSource.demand(() -> onContentSource(response, contentSource));
+        }
+
         /**
          * Callback method invoked when the request <em><b>and</b></em> the response have been processed,
          * either successfully or not.
@@ -392,6 +412,12 @@ public interface Response
          */
         class Adapter implements Listener
         {
+        }
+
+        @Override
+        default void onContentSource(Response response, Content.Source contentSource)
+        {
+            CompleteListener.super.onContentSource(response, contentSource);
         }
     }
 }
