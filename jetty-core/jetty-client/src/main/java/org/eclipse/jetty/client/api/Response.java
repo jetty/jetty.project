@@ -417,7 +417,7 @@ public interface Response
         @Override
         default void onContentSource(Response response, Content.Source contentSource)
         {
-            CompleteListener.super.onContentSource(response, contentSource);
+            ContentListener.super.onContentSource(response, contentSource);
         }
     }
 }
