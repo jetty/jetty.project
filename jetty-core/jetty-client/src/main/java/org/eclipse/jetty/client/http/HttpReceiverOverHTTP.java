@@ -65,7 +65,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return contentSource;
     }
 
-    public class ContentSource implements Content.Source
+    private class ContentSource implements Content.Source
     {
         private final SerializedInvoker invoker = new SerializedInvoker();
         private volatile Content.Chunk currentChunk;
@@ -602,6 +602,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         firstContent.set(true);
         contentActionRef.set(null);
         contentGenerated = null;
+        contentSource = null;
     }
 
     private void failAndClose(Throwable failure)
