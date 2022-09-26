@@ -14,47 +14,38 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-@Disabled // TODO
 public class ResourceCacheTest
 {
     public WorkDir workDir;
@@ -126,6 +117,23 @@ public class ResourceCacheTest
         }
     }
 
+    private static CachingContentFactory newCachingContentFactory(CachingContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer)
+    {
+        return newCachingContentFactory(parent, factory, mimeTypes, useFileMappedBuffer, c -> true);
+    }
+
+    private static CachingContentFactory newCachingContentFactory(CachingContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer, Predicate<HttpContent> predicate)
+    {
+        return new CachingContentFactory(parent, new ResourceContentFactory(factory, mimeTypes, List.of(CompressedContentFormat.NONE)), useFileMappedBuffer)
+        {
+            @Override
+            protected boolean isCacheable(HttpContent httpContent)
+            {
+                return super.isCacheable(httpContent) && predicate.test(httpContent);
+            }
+        };
+    }
+
     @Test
     public void testMultipleSources1() throws Exception
     {
@@ -141,21 +149,21 @@ public class ResourceCacheTest
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory rc3 = new CachedContentFactory(null, ResourceFactory.of(r.get(2)), mime, false, false, CompressedContentFormat.NONE);
-        CachedContentFactory rc2 = new CachedContentFactory(rc3, ResourceFactory.of(r.get(1)), mime, false, false, CompressedContentFormat.NONE);
-        CachedContentFactory rc1 = new CachedContentFactory(rc2, ResourceFactory.of(r.get(0)), mime, false, false, CompressedContentFormat.NONE);
+        CachingContentFactory rc3 = newCachingContentFactory(null, ResourceFactory.of(r.get(2)), mime, false);
+        CachingContentFactory rc2 = newCachingContentFactory(rc3, ResourceFactory.of(r.get(1)), mime, false);
+        CachingContentFactory rc1 = newCachingContentFactory(rc2, ResourceFactory.of(r.get(0)), mime, false);
 
-        assertEquals(getContent(rc1, "1.txt"), "1 - one");
-        assertEquals(getContent(rc1, "2.txt"), "2 - two");
-        assertEquals(getContent(rc1, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(rc1, "1.txt"));
+        assertEquals("2 - two", getContent(rc1, "2.txt"));
+        assertEquals("3 - three", getContent(rc1, "3.txt"));
 
-        assertEquals(getContent(rc2, "1.txt"), "1 - two");
-        assertEquals(getContent(rc2, "2.txt"), "2 - two");
-        assertEquals(getContent(rc2, "3.txt"), "3 - three");
+        assertEquals("1 - two", getContent(rc2, "1.txt"));
+        assertEquals("2 - two", getContent(rc2, "2.txt"));
+        assertEquals("3 - three", getContent(rc2, "3.txt"));
 
         assertNull(getContent(rc3, "1.txt"));
-        assertEquals(getContent(rc3, "2.txt"), "2 - three");
-        assertEquals(getContent(rc3, "3.txt"), "3 - three");
+        assertEquals("2 - three", getContent(rc3, "2.txt"));
+        assertEquals("3 - three", getContent(rc3, "3.txt"));
     }
 
     @Test
@@ -173,198 +181,23 @@ public class ResourceCacheTest
         List<Resource> r = rc.getResources();
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory rc3 = new CachedContentFactory(null, ResourceFactory.of(r.get(2)), mime, false, false, CompressedContentFormat.NONE);
-        CachedContentFactory rc2 = new CachedContentFactory(rc3, ResourceFactory.of(r.get(1)), mime, false, false, CompressedContentFormat.NONE)
-        {
-            @Override
-            public boolean isCacheable(Resource resource)
-            {
-                return super.isCacheable(resource) && !resource.getFileName().equals("2.txt");
-            }
-        };
+        CachingContentFactory rc3 = newCachingContentFactory(null, ResourceFactory.of(r.get(2)), mime, false);
+        CachingContentFactory rc2 = newCachingContentFactory(rc3, ResourceFactory.of(r.get(1)), mime, false,
+            httpContent -> !httpContent.getResource().getFileName().equals("2.txt"));
 
-        CachedContentFactory rc1 = new CachedContentFactory(rc2, ResourceFactory.of(r.get(0)), mime, false, false, CompressedContentFormat.NONE);
+        CachingContentFactory rc1 = newCachingContentFactory(rc2, ResourceFactory.of(r.get(0)), mime, false);
 
-        assertEquals(getContent(rc1, "1.txt"), "1 - one");
-        assertEquals(getContent(rc1, "2.txt"), "2 - two");
-        assertEquals(getContent(rc1, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(rc1, "1.txt"));
+        assertEquals("2 - two", getContent(rc1, "2.txt"));
+        assertEquals("3 - three", getContent(rc1, "3.txt"));
 
-        assertEquals(getContent(rc2, "1.txt"), "1 - two");
-        assertEquals(getContent(rc2, "2.txt"), "2 - two");
-        assertEquals(getContent(rc2, "3.txt"), "3 - three");
+        assertEquals("1 - two", getContent(rc2, "1.txt"));
+        assertEquals("2 - two", getContent(rc2, "2.txt"));
+        assertEquals("3 - three", getContent(rc2, "3.txt"));
 
         assertNull(getContent(rc3, "1.txt"));
-        assertEquals(getContent(rc3, "2.txt"), "2 - three");
-        assertEquals(getContent(rc3, "3.txt"), "3 - three");
-    }
-
-    @Test
-    public void testResourceCache() throws Exception
-    {
-        final Resource directory;
-        File[] files = new File[10];
-        String[] names = new String[files.length];
-        CachedContentFactory cache;
-
-        Path basePath = workDir.getEmptyPathDir();
-
-        for (int i = 0; i < files.length; i++)
-        {
-            Path tmpFile = basePath.resolve("R-" + i + ".txt");
-            try (BufferedWriter writer = Files.newBufferedWriter(tmpFile, UTF_8, StandardOpenOption.CREATE_NEW))
-            {
-                for (int j = 0; j < (i * 10 - 1); j++)
-                {
-                    writer.write(' ');
-                }
-                writer.write('\n');
-            }
-            files[i] = tmpFile.toFile();
-            names[i] = tmpFile.getFileName().toString();
-        }
-
-        directory = ResourceFactory.root().newResource(files[0].getParentFile().getAbsolutePath());
-
-        cache = new CachedContentFactory(null, ResourceFactory.of(directory), new MimeTypes(), false, false, CompressedContentFormat.NONE);
-
-        cache.setMaxCacheSize(95);
-        cache.setMaxCachedFileSize(85);
-        cache.setMaxCachedFiles(4);
-
-        assertNull(cache.getContent("does not exist"));
-        assertTrue(cache.getContent(names[9]) instanceof ResourceHttpContent);
-        assertNotNull(cache.getContent(names[9]).getBuffer());
-
-        HttpContent content;
-        content = cache.getContent(names[8]);
-        assertThat(content, is(not(nullValue())));
-        assertEquals(80, content.getContentLengthValue());
-        assertEquals(0, cache.getCachedSize());
-
-        if (org.junit.jupiter.api.condition.OS.LINUX.isCurrentOs())
-        {
-            // Initially not using memory mapped files
-            content.getBuffer();
-            assertEquals(80, cache.getCachedSize());
-
-            // with both types of buffer loaded, this is too large for cache
-            content.getBuffer();
-            assertEquals(0, cache.getCachedSize());
-            assertEquals(0, cache.getCachedFiles());
-
-            cache = new CachedContentFactory(null, ResourceFactory.of(directory), new MimeTypes(), true, false, CompressedContentFormat.NONE);
-            cache.setMaxCacheSize(95);
-            cache.setMaxCachedFileSize(85);
-            cache.setMaxCachedFiles(4);
-
-            content = cache.getContent(names[8]);
-            content.getBuffer();
-            assertEquals(cache.isUseFileMappedBuffer() ? 0 : 80, cache.getCachedSize());
-
-            // with both types of buffer loaded, this is not too large for cache because
-            // mapped buffers don't count, so we can continue
-        }
-
-        content.getBuffer();
-        assertEquals(80, cache.getCachedSize());
-        assertEquals(1, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[1]);
-        assertEquals(80, cache.getCachedSize());
-        content.getBuffer();
-        assertEquals(90, cache.getCachedSize());
-        assertEquals(2, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[2]);
-        content.getBuffer();
-        assertEquals(30, cache.getCachedSize());
-        assertEquals(2, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[3]);
-        content.getBuffer();
-        assertEquals(60, cache.getCachedSize());
-        assertEquals(3, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[4]);
-        content.getBuffer();
-        assertEquals(90, cache.getCachedSize());
-        assertEquals(3, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[5]);
-        content.getBuffer();
-        assertEquals(90, cache.getCachedSize());
-        assertEquals(2, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[6]);
-        content.getBuffer();
-        assertEquals(60, cache.getCachedSize());
-        assertEquals(1, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        try (OutputStream out = new FileOutputStream(files[6]))
-        {
-            out.write(' ');
-        }
-        content = cache.getContent(names[7]);
-        content.getBuffer();
-        assertEquals(70, cache.getCachedSize());
-        assertEquals(1, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[6]);
-        content.getBuffer();
-        assertEquals(71, cache.getCachedSize());
-        assertEquals(2, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[0]);
-        content.getBuffer();
-        assertEquals(72, cache.getCachedSize());
-        assertEquals(3, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[1]);
-        content.getBuffer();
-        assertEquals(82, cache.getCachedSize());
-        assertEquals(4, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[2]);
-        content.getBuffer();
-        assertEquals(32, cache.getCachedSize());
-        assertEquals(4, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        content = cache.getContent(names[3]);
-        content.getBuffer();
-        assertEquals(61, cache.getCachedSize());
-        assertEquals(4, cache.getCachedFiles());
-
-        Thread.sleep(200);
-
-        cache.flushCache();
-        assertEquals(0, cache.getCachedSize());
-        assertEquals(0, cache.getCachedFiles());
-
-        cache.flushCache();
+        assertEquals("2 - three", getContent(rc3, "2.txt"));
+        assertEquals("3 - three", getContent(rc3, "3.txt"));
     }
 
     @Test
@@ -375,18 +208,18 @@ public class ResourceCacheTest
         Resource resource = ResourceFactory.root().newResource(basePath.resolve("four"));
         MimeTypes mime = new MimeTypes();
 
-        CachedContentFactory cache = new CachedContentFactory(null, ResourceFactory.of(resource), mime, false, false, CompressedContentFormat.NONE);
+        CachingContentFactory cache = newCachingContentFactory(null, ResourceFactory.of(resource), mime, false);
 
         assertEquals(getContent(cache, "four.txt"), "4 - four");
         assertEquals(getContent(cache, "four"), "4 - four (no extension)");
     }
 
-    static String getContent(CachedContentFactory rc, String path) throws Exception
+    static String getContent(CachingContentFactory rc, String path) throws Exception
     {
         HttpContent content = rc.getContent(path);
         if (content == null)
             return null;
 
-        return BufferUtil.toString(content.getBuffer());
+        return IO.toString(content.getResource().newInputStream());
     }
 }
