@@ -17,7 +17,7 @@ import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.io.Content;
 
 public class HttpReceiverOverFCGI extends HttpReceiver
 {
@@ -27,7 +27,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
-    protected ReceiverContentSource newContentSource()
+    protected Content.Source newContentSource()
     {
         return null;
     }
@@ -57,9 +57,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
-    protected boolean responseContent(HttpExchange exchange, Callback callback)
+    protected void withinContentState(HttpExchange exchange, Runnable runnable) throws IllegalStateException
     {
-        return super.responseContent(exchange, callback);
+        super.withinContentState(exchange, runnable);
     }
 
     @Override
