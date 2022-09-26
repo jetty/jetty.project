@@ -124,7 +124,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
                 });
 
                 // TODO Stream.Data data is lost here
-                boolean proceed = false;//responseContent(exchange, callback);
+                boolean proceed = false; //responseContent(exchange, callback);
                 if (proceed)
                 {
                     if (data.isLast())

@@ -128,7 +128,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-            return false;//receiver.responseContent(exchange, callback);
+            return false; //receiver.responseContent(exchange, callback);
         callback.succeeded();
         return false;
     }
