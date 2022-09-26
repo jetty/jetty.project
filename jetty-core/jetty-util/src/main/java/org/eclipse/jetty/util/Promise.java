@@ -124,6 +124,21 @@ public interface Promise<C>
      */
     class Completable<S> extends CompletableFuture<S> implements Promise<S>
     {
+        /**
+         * <p>Creates a new {@code Completable} to be consumed by the given
+         * {@code consumer}, then returns the newly created {@code Completable}.</p>
+         *
+         * @param consumer the code that consumes the newly created {@code Completable}
+         * @return the newly created {@code Completable}
+         * @param <R> the type of the result
+         */
+        public static <R> Completable<R> with(Consumer<Promise<R>> consumer)
+        {
+            Completable<R> completable = new Completable<>();
+            consumer.accept(completable);
+            return completable;
+        }
+
         @Override
         public void succeeded(S result)
         {

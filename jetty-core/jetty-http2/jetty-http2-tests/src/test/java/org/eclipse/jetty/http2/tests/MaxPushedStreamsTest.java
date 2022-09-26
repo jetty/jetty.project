@@ -37,7 +37,6 @@ import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
@@ -74,12 +73,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                 // Push maxPushed resources...
                 IntStream.range(0, maxPushed)
                     .mapToObj(i -> new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_" + i, HttpFields.EMPTY)))
-                    .map(pushFrame ->
-                    {
-                        Promise.Completable<Stream> promise = new Promise.Completable<>();
-                        stream.push(pushFrame, promise, null);
-                        return promise;
-                    })
+                    .map(pushFrame -> stream.push(pushFrame, null))
                     // ... wait for the pushed streams...
                     .reduce(result, (cfList, cfStream) -> cfList.thenCombine(cfStream, add),
                         (cfList1, cfList2) -> cfList1.thenCombine(cfList2, addAll))
@@ -87,8 +81,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                     .thenApply(streams ->
                     {
                         PushPromiseFrame extraPushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_extra", HttpFields.EMPTY));
-                        FuturePromise<Stream> extraPromise = new FuturePromise<>();
-                        stream.push(extraPushFrame, extraPromise, new Stream.Listener()
+                        stream.push(extraPushFrame, new Stream.Listener()
                         {
                             @Override
                             public void onReset(Stream stream, ResetFrame frame, Callback callback)
@@ -104,13 +97,13 @@ public class MaxPushedStreamsTest extends AbstractTest
                     .thenAccept(streams -> streams.forEach(pushedStream ->
                     {
                         DataFrame data = new DataFrame(pushedStream.getId(), BufferUtil.EMPTY_BUFFER, true);
-                        pushedStream.data(data, Callback.NOOP);
+                        pushedStream.data(data);
                     }))
                     // ... then send the response.
                     .thenRun(() ->
                     {
                         MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true));
                     });
                 return null;
             }

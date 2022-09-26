@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -356,9 +357,8 @@ public class PrefaceTest extends AbstractTest
             http2Client.start();
 
             CountDownLatch failureLatch = new CountDownLatch(1);
-            Promise.Completable<Session> promise = new Promise.Completable<>();
             InetSocketAddress address = new InetSocketAddress("localhost", server.getLocalPort());
-            http2Client.connect(address, new Session.Listener()
+            CompletableFuture<Session> promise = http2Client.connect(address, new Session.Listener()
             {
                 @Override
                 public void onFailure(Session session, Throwable failure, Callback callback)
@@ -366,7 +366,7 @@ public class PrefaceTest extends AbstractTest
                     failureLatch.countDown();
                     callback.succeeded();
                 }
-            }, promise);
+            });
 
             try (Socket socket = server.accept())
             {
