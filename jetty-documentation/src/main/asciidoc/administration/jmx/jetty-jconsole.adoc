@@ -79,7 +79,7 @@ The MBean tab of JConsole allows access to managed objects within the Java appli
 If you also want to interact with the Jetty JMX implementation via JConsole, you need to start Jetty JMX in a form that JConsole can access.
 See xref:using-jmx[] for more information.
 
-image:administration/jmx/images/console3.png[image,width=576]
+image:administration/jmx/images/jconsole3.png[image,width=576]
 
 [[jetty-jmc-monitoring]]
 ==== Monitoring Jetty with JMC
