@@ -1053,8 +1053,7 @@ public class StreamResetTest extends AbstractTest
             {
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
-                Callback.Completable completable = new Callback.Completable();
-                stream.headers(responseFrame, completable);
+                stream.headers(responseFrame, Callback.NOOP);
                 return null;
             }
         }, http2Factory);

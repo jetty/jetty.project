@@ -470,43 +470,30 @@ public class Response implements HttpServletResponse
 
         switch (code)
         {
-            case -1:
-                _channel.abort(new IOException(message));
-                break;
-            case HttpStatus.PROCESSING_102:
-                sendProcessing();
-                break;
-            case HttpStatus.EARLY_HINT_103:
-                sendEarlyHint();
-                break;
-            default:
-                _channel.getState().sendError(code, message);
-                break;
+            case -1 -> _channel.abort(new IOException(message));
+            case HttpStatus.PROCESSING_102 -> sendProcessing();
+            case HttpStatus.EARLY_HINT_103 -> sendEarlyHint();
+            default -> _channel.getState().sendError(code, message);
         }
     }
 
     /**
-     * Sends a 102-Processing response.
-     * If the request had an Expect header starting with 102, then
-     * a 102 response is sent. This indicates that the request still be processed and real response
-     * can still be sent.   This method is called by sendError if it is passed 102.
+     * Sends a 102 Processing interim response.
+     * This method is called by {@link #sendError(int)} if it is passed status code 102.
      *
      * @throws IOException if unable to send the 102 response
      * @see HttpServletResponse#sendError(int)
      */
     public void sendProcessing() throws IOException
     {
-        if (_channel.isExpecting102Processing() && !isCommitted())
-        {
-            _channel.sendResponse(HttpGenerator.PROGRESS_102_INFO, null, true);
-        }
+        if (!isCommitted())
+            _channel.send102Processing(_fields.asImmutable());
     }
 
     /**
-     * Sends a 103 Early Hint response.
-     *
-     * Send a 103 response as per <a href="https://datatracker.ietf.org/doc/html/rfc8297">RFC8297</a>
-     * This method is called by sendError if it is passed 103.
+     * Sends a 103 Early Hints interim response, as per
+     * <a href="https://datatracker.ietf.org/doc/html/rfc8297">RFC8297</a>.
+     * This method is called by {@link #sendError(int)} if it is passed status code 103.
      *
      * @throws IOException if unable to send the 103 response
      * @see jakarta.servlet.http.HttpServletResponse#sendError(int)
@@ -514,8 +501,7 @@ public class Response implements HttpServletResponse
     public void sendEarlyHint() throws IOException
     {
         if (!isCommitted())
-            _channel.sendResponse(new MetaData.Response(_channel.getRequest().getHttpVersion(), HttpStatus.EARLY_HINT_103,
-                _channel.getResponse()._fields.asImmutable()), null, true);
+            _channel.send103EarlyHints(_fields.asImmutable());
     }
 
     /**

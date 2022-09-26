@@ -14,8 +14,6 @@
 package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,17 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpConversation;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.ProtocolHandler;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -42,9 +33,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO: these tests fail with "last already written" since in core Jetty
-//  we don't handle well writing 2 HTTP responses one after the other.
-@Disabled
 public class InformationalResponseTest extends AbstractTest
 {
     @ParameterizedTest
@@ -65,50 +53,6 @@ public class InformationalResponseTest extends AbstractTest
         long idleTimeout = 10000;
         setStreamIdleTimeout(idleTimeout);
 
-        CountDownLatch processingLatch = new CountDownLatch(1);
-        client.getProtocolHandlers().put(new ProtocolHandler()
-        {
-            @Override
-            public String getName()
-            {
-                return "Processing";
-            }
-
-            @Override
-            public boolean accept(org.eclipse.jetty.client.api.Request request, Response response)
-            {
-                return response.getStatus() == HttpStatus.PROCESSING_102;
-            }
-
-            @Override
-            public Response.Listener getResponseListener()
-            {
-                return new Response.Listener()
-                {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        processingLatch.countDown();
-                        var request = response.getRequest();
-                        HttpConversation conversation = ((HttpRequest)request).getConversation();
-                        // Reset the conversation listeners, since we are going to receive another response code
-                        conversation.updateResponseListeners(null);
-
-                        HttpExchange exchange = conversation.getExchanges().peekLast();
-                        if (exchange != null && response.getStatus() == HttpStatus.PROCESSING_102)
-                        {
-                            // All good, continue.
-                            exchange.resetResponse();
-                        }
-                        else
-                        {
-                            response.abort(new IllegalStateException("should not have accepted"));
-                        }
-                    }
-                };
-            }
-        });
-
         CountDownLatch completeLatch = new CountDownLatch(1);
         AtomicReference<Response> response = new AtomicReference<>();
         BufferingResponseListener listener = new BufferingResponseListener()
@@ -122,11 +66,9 @@ public class InformationalResponseTest extends AbstractTest
         };
         client.newRequest(newURI(transport))
             .method("GET")
-            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.PROCESSING))
             .timeout(10, TimeUnit.SECONDS)
             .send(listener);
 
-        assertTrue(processingLatch.await(10, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(10, TimeUnit.SECONDS));
         assertThat(response.get().getStatus(), is(200));
         assertThat(listener.getContentAsString(), is("OK"));
@@ -141,61 +83,17 @@ public class InformationalResponseTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.setHeader("Hint", "one");
+                response.addHeader("Hint", "one");
                 response.sendError(HttpStatus.EARLY_HINT_103);
-                response.setHeader("Hint", "two");
+                response.addHeader("Hint", "two");
                 response.sendError(HttpStatus.EARLY_HINT_103);
-                response.setHeader("Hint", "three");
+                response.addHeader("Hint", "three");
                 response.setStatus(200);
                 response.getOutputStream().print("OK");
             }
         });
         long idleTimeout = 10000;
         setStreamIdleTimeout(idleTimeout);
-
-        List<String> hints = new CopyOnWriteArrayList<>();
-        client.getProtocolHandlers().put(new ProtocolHandler()
-        {
-            @Override
-            public String getName()
-            {
-                return "EarlyHint";
-            }
-
-            @Override
-            public boolean accept(org.eclipse.jetty.client.api.Request request, Response response)
-            {
-                return response.getStatus() == HttpStatus.EARLY_HINT_103;
-            }
-
-            @Override
-            public Response.Listener getResponseListener()
-            {
-                return new Response.Listener()
-                {
-                    @Override
-                    public void onSuccess(Response response)
-                    {
-                        var request = response.getRequest();
-                        HttpConversation conversation = ((HttpRequest)request).getConversation();
-                        // Reset the conversation listeners, since we are going to receive another response code
-                        conversation.updateResponseListeners(null);
-
-                        HttpExchange exchange = conversation.getExchanges().peekLast();
-                        if (exchange != null && response.getStatus() == HttpStatus.EARLY_HINT_103)
-                        {
-                            // All good, continue.
-                            hints.add(response.getHeaders().get("Hint"));
-                            exchange.resetResponse();
-                        }
-                        else
-                        {
-                            response.abort(new IllegalStateException("should not have accepted"));
-                        }
-                    }
-                };
-            }
-        });
 
         CountDownLatch complete = new CountDownLatch(1);
         AtomicReference<Response> response = new AtomicReference<>();
@@ -204,7 +102,6 @@ public class InformationalResponseTest extends AbstractTest
             @Override
             public void onComplete(Result result)
             {
-                hints.add(result.getResponse().getHeaders().get("Hint"));
                 response.set(result.getResponse());
                 complete.countDown();
             }
@@ -217,6 +114,6 @@ public class InformationalResponseTest extends AbstractTest
         assertTrue(complete.await(5, TimeUnit.SECONDS));
         assertThat(response.get().getStatus(), is(200));
         assertThat(listener.getContentAsString(), is("OK"));
-        assertThat(hints, contains("one", "two", "three"));
+        assertThat(response.get().getHeaders().getValuesList("Hint"), contains("one", "two", "three"));
     }
 }

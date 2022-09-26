@@ -844,7 +844,7 @@ public class Request implements HttpServletRequest
         _inputState = INPUT_STREAM;
 
         if (_channel.isExpecting100Continue())
-            _channel.continue100(_input.available());
+            _channel.send100Continue(_input.available());
 
         return _input;
     }
@@ -1532,23 +1532,25 @@ public class Request implements HttpServletRequest
         _channel.getResponse().getHttpOutput().reopen();
 
         _coreRequest = coreRequest;
+        setTimeStamp(coreRequest.getTimeStamp());
+
         _metaData = new MetaData.Request(
-            _coreRequest.getMethod(),
-            _coreRequest.getHttpURI(),
-            _coreRequest.getConnectionMetaData().getHttpVersion(),
-            _coreRequest.getHeaders());
+            coreRequest.getMethod(),
+            coreRequest.getHttpURI(),
+            coreRequest.getConnectionMetaData().getHttpVersion(),
+            coreRequest.getHeaders());
 
         _attributes = new ServletAttributes(coreRequest);
 
-        _method = _coreRequest.getMethod();
-        _uri = _coreRequest.getHttpURI();
+        _method = coreRequest.getMethod();
+        _uri = coreRequest.getHttpURI();
 
         _pathInContext = _context.getContextHandler().isCanonicalEncodingURIs()
-            ? _coreRequest.getPathInContext()
-            : URIUtil.decodePath(_coreRequest.getPathInContext());
-        _httpFields = _coreRequest.getHeaders();
+            ? coreRequest.getPathInContext()
+            : URIUtil.decodePath(coreRequest.getPathInContext());
+        _httpFields = coreRequest.getHeaders();
 
-        setSecure(_coreRequest.isSecure());
+        setSecure(coreRequest.isSecure());
     }
 
     public org.eclipse.jetty.server.Request getCoreRequest()

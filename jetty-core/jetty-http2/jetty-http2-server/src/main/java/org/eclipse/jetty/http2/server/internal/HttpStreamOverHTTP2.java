@@ -19,6 +19,9 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -53,10 +56,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final HttpChannel _httpChannel;
     private final HTTP2Stream _stream;
     private final long _nanoTime;
+    private MetaData.Request _requestMetaData;
+    private MetaData.Response _responseMetaData;
     private Content.Chunk _chunk;
-    private MetaData.Response _metaData;
     private boolean committed;
     private boolean _demand;
+    private boolean _expects100Continue;
 
     public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, HTTP2Stream stream)
     {
@@ -82,9 +87,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         try
         {
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
+            _requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            Runnable handler = _httpChannel.onRequest(request);
+            Runnable handler = _httpChannel.onRequest(_requestMetaData);
 
             if (frame.isEndStream())
             {
@@ -94,16 +99,15 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
             }
 
-            HttpFields fields = request.getFields();
+            HttpFields fields = _requestMetaData.getFields();
 
-            // TODO: handle 100 continue.
-//            _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+            _expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("HTTP2 request #{}/{}, {} {} {}{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    _requestMetaData.getMethod(), _requestMetaData.getURI(), _requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
 
@@ -147,6 +151,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             chunk = createChunk(data);
             data.release();
 
+            // Some content is read, but the 100 Continue interim
+            // response has not been sent yet, then don't bother
+            // sending it later, as the client already sent the content.
+            if (_expects100Continue && chunk.hasRemaining())
+                _expects100Continue = false;
+
             try (AutoLock ignored = lock.lock())
             {
                 _chunk = chunk;
@@ -164,7 +174,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             // We may have a non-demanded chunk in case of trailers.
             if (_chunk != null)
                 notify = true;
-            // Make sure we only demand(1) to make this method is idempotent.
             else if (!_demand)
                 demand = _demand = true;
         }
@@ -176,6 +185,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else if (demand)
         {
+            if (_expects100Continue)
+            {
+                _expects100Continue = false;
+                send(_requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
+            }
             _stream.demand();
         }
     }
@@ -244,7 +258,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
     {
-        _metaData = response;
+        _responseMetaData = response;
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
@@ -256,12 +270,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
+
             if (hasContent)
             {
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-            headersFrame = new HeadersFrame(streamId, _metaData, null, false);
+
+            if (_expects100Continue && response.getStatus() == HttpStatus.CONTINUE_100)
+                _expects100Continue = false;
+
+            headersFrame = new HeadersFrame(streamId, response, null, false);
         }
         else
         {
@@ -272,7 +291,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
-                    _metaData = new MetaData.Response(
+                    _responseMetaData = new MetaData.Response(
                         response.getHttpVersion(),
                         response.getStatus(),
                         response.getReason(),
@@ -290,7 +309,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             if (hasContent)
             {
-                headersFrame = new HeadersFrame(streamId, _metaData, null, false);
+                headersFrame = new HeadersFrame(streamId, response, null, false);
                 if (last)
                 {
                     HttpFields trailers = retrieveTrailers();
@@ -313,27 +332,27 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             {
                 if (last)
                 {
-                    if (isTunnel(request, _metaData))
+                    if (isTunnel(request, response))
                     {
-                        headersFrame = new HeadersFrame(streamId, _metaData, null, false);
+                        headersFrame = new HeadersFrame(streamId, response, null, false);
                     }
                     else
                     {
                         HttpFields trailers = retrieveTrailers();
                         if (trailers == null)
                         {
-                            headersFrame = new HeadersFrame(streamId, _metaData, null, true);
+                            headersFrame = new HeadersFrame(streamId, response, null, true);
                         }
                         else
                         {
-                            headersFrame = new HeadersFrame(streamId, _metaData, null, false);
+                            headersFrame = new HeadersFrame(streamId, response, null, false);
                             trailersFrame = new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                         }
                     }
                 }
                 else
                 {
-                    headersFrame = new HeadersFrame(streamId, _metaData, null, false);
+                    headersFrame = new HeadersFrame(streamId, response, null, false);
                 }
             }
         }
@@ -342,9 +361,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                System.lineSeparator(), HttpVersion.HTTP_2, _metaData.getStatus(),
-                System.lineSeparator(), _metaData.getFields());
+                System.lineSeparator(), HttpVersion.HTTP_2, response.getStatus(),
+                System.lineSeparator(), response.getFields());
         }
+
         _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
     }
 
@@ -352,7 +372,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (last && !isTunnel(request, _metaData)))
+        if (hasContent || (last && !isTunnel(request, _responseMetaData)))
         {
             if (last)
             {
@@ -387,7 +407,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = _metaData.getTrailersSupplier();
+        Supplier<HttpFields> supplier = _responseMetaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();
