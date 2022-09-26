@@ -295,4 +295,4 @@ Once you have run `prunsrv.exe //IS/<service-name>` (done for you in the above b
 
 Open the Service View and start your service.
 
-image:administration/strartup/images/windows-service-jetty.png[image,width=576]
+image:administration/startup/images/windows-service-jetty.png[image,width=576]
