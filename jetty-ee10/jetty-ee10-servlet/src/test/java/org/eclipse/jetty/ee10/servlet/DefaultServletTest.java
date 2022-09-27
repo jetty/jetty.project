@@ -2090,7 +2090,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -2243,7 +2242,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testCachedGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -2371,7 +2369,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testBrotli() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
@@ -2511,7 +2508,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testCachedBrotli() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
@@ -2636,7 +2632,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testDefaultBrotliOverGzip() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
@@ -2685,7 +2680,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testCustomCompressionFormats() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
