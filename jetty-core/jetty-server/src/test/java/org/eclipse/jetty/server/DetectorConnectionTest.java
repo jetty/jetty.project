@@ -369,9 +369,8 @@ public class DetectorConnectionTest
                 // omitting this will leak the buffer
                 connector.getByteBufferPool().release(buffer);
 
-                Callback.Completable completable = new Callback.Completable();
-                endPoint.write(completable, ByteBuffer.wrap("No upgrade for you".getBytes(StandardCharsets.US_ASCII)));
-                completable.whenComplete((r, x) -> endPoint.close());
+                Callback.Completable.with(c -> endPoint.write(c, ByteBuffer.wrap("No upgrade for you".getBytes(StandardCharsets.US_ASCII))))
+                    .whenComplete((r, x) -> endPoint.close());
             }
         };
         HttpConnectionFactory http = new HttpConnectionFactory();

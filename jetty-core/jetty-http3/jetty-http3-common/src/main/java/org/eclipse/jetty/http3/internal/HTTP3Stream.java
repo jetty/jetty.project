@@ -394,9 +394,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     public Promise.Completable<Stream> writeFrame(Frame frame)
     {
         notIdle();
-        Promise.Completable<Stream> completable = new Promise.Completable<>();
-        session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> completable.succeeded(this), completable::failed));
-        return completable;
+        return Promise.Completable.with(p ->
+            session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> p.succeeded(this), p::failed)));
     }
 
     public boolean isClosed()

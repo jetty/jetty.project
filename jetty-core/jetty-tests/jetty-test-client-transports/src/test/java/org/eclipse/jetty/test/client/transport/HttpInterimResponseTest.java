@@ -70,12 +70,7 @@ public class HttpInterimResponseTest extends AbstractTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
-                    .thenCompose(ignored ->
-                    {
-                        Callback.Completable c = new Callback.Completable();
-                        Content.Source.consumeAll(request, c);
-                        return c;
-                    })
+                    .thenCompose(ignored -> Callback.Completable.with(c -> Content.Source.consumeAll(request, c)))
                     .thenCompose(ignored ->
                     {
                         HttpFields.Mutable fields1 = HttpFields.build();
@@ -111,9 +106,7 @@ public class HttpInterimResponseTest extends AbstractTest
                     {
                         response.getHeaders().put("X-Header-Foo", "Foo");
                         response.getHeaders().add(hints);
-                        Callback.Completable c = new Callback.Completable();
-                        Content.Sink.write(response, true, "response-content", c);
-                        return c;
+                        return Callback.Completable.with(c -> Content.Sink.write(response, true, "response-content", c));
                     });
                 callback.completeWith(completable);
             }
