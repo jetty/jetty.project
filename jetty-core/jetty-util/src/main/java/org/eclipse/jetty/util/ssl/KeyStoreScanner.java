@@ -55,9 +55,9 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
             throw new IllegalArgumentException("expected keystore file not directory");
 
         // Use real location of keystore (if different), so that change monitoring can work properly
-        URI realUri = keystoreResource.getTargetURI();
-        if (realUri != null)
-            monitoredFile = Paths.get(realUri);
+        URI targetURI = keystoreResource.getTargetURI();
+        if (targetURI != null)
+            monitoredFile = Paths.get(targetURI);
 
         keystoreFile = monitoredFile;
         if (LOG.isDebugEnabled())
