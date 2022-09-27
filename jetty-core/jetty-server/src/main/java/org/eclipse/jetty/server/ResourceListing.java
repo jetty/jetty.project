@@ -42,8 +42,6 @@ import org.slf4j.LoggerFactory;
 public class ResourceListing
 {
     public static final Logger LOG = LoggerFactory.getLogger(ResourceListing.class);
-    // Non-Breaking Space suitable for XHTML and XML
-    private static final String NBSP = "&#160;";
 
     /**
      * Convert the Resource directory into an XHTML directory listing.
@@ -107,13 +105,15 @@ public class ResourceListing
 
         StringBuilder buf = new StringBuilder(4096);
 
-        // Doctype Declaration (HTML5)
-        buf.append("<!DOCTYPE html>\n");
-        buf.append("<html lang=\"en\">\n");
+        // Doctype Declaration + XHTML
+        buf.append("""
+            <?xml version="1.0" encoding="utf-8"?>
+            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+            <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+            """);
 
         // HTML Header
         buf.append("<head>\n");
-        buf.append("<meta charset=\"utf-8\"/>\n");
         buf.append("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />\n");
         buf.append("<title>");
         buf.append(title);
@@ -125,8 +125,8 @@ public class ResourceListing
         buf.append("<h1 class=\"title\">").append(title).append("</h1>\n");
 
         // HTML Table
-        final String ARROW_DOWN = NBSP + " &#8681;";
-        final String ARROW_UP = NBSP + " &#8679;";
+        final String ARROW_DOWN = "&nbsp; &#8681;";
+        final String ARROW_UP = "&nbsp; &#8679;";
 
         buf.append("<table class=\"listing\">\n");
         buf.append("<thead>\n");
@@ -231,14 +231,13 @@ public class ResourceListing
             buf.append(path);
             buf.append("\">");
             buf.append(deTag(name));
-            buf.append(NBSP);
-            buf.append("</a></td>");
+            buf.append("&nbsp;</a></td>");
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
             Instant lastModified = item.lastModified();
             buf.append(formatter.format(lastModified));
-            buf.append(NBSP).append("</td>");
+            buf.append("&nbsp;</td>");
 
             // Size
             buf.append("<td class=\"size\">");
@@ -247,7 +246,7 @@ public class ResourceListing
             {
                 buf.append(String.format("%,d bytes", item.length()));
             }
-            buf.append(NBSP).append("</td></tr>\n");
+            buf.append("&nbsp;</td></tr>\n");
         }
 
         buf.append("</tbody>\n");

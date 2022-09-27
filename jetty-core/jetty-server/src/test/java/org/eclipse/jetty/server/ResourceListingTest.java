@@ -21,26 +21,33 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import javax.xml.XMLConstants;
+import javax.xml.catalog.Catalog;
+import javax.xml.catalog.CatalogManager;
+import javax.xml.catalog.CatalogResolver;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.xhtml.CatalogXHTML;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ResourceListingTest
@@ -406,15 +413,52 @@ public class ResourceListingTest
 
     private static boolean isValidXHtml(String content)
     {
-        // we expect that our generated output conforms to text/xhtml is well formed
+        // we expect that our generated output conforms to text/xhtml is well-formed
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))
         {
+            Catalog catalog = CatalogXHTML.getCatalog();
+            CatalogResolver resolver = CatalogManager.catalogResolver(catalog);
+
             DocumentBuilderFactory xmlDocumentBuilderFactory = DocumentBuilderFactory.newInstance();
-            xmlDocumentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            xmlDocumentBuilderFactory.setValidating(true);
             DocumentBuilder db = xmlDocumentBuilderFactory.newDocumentBuilder();
-            // We consider this content to be XML well formed if these 2 lines do not throw an Exception
+            db.setEntityResolver(resolver);
+            List<SAXParseException> errors = new ArrayList<>();
+            db.setErrorHandler(new ErrorHandler()
+            {
+                @Override
+                public void warning(SAXParseException exception)
+                {
+                    exception.printStackTrace();
+                }
+
+                @Override
+                public void error(SAXParseException exception)
+                {
+                    errors.add(exception);
+                }
+
+                @Override
+                public void fatalError(SAXParseException exception)
+                {
+                    errors.add(exception);
+                }
+            });
+
+            // We consider this content to be XML well-formed if these 2 lines do not throw an Exception
             Document doc = db.parse(inputStream);
             doc.getDocumentElement().normalize();
+
+            if (errors.size() > 0)
+            {
+                IOException ioException = new IOException("Failed to validate XHTML");
+                for (SAXException saxException : errors)
+                {
+                    ioException.addSuppressed(saxException);
+                }
+                fail(ioException);
+            }
+
             return true; // it's well-formed
         }
         catch (IOException | ParserConfigurationException | SAXException e)
