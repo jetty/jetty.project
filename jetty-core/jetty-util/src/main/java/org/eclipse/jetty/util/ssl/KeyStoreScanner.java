@@ -57,10 +57,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         // Use real location of keystore (if different), so that change monitoring can work properly
         URI realUri = keystoreResource.getTargetURI();
         if (realUri != null)
-        {
-            // this resource has an alias, use the alias, as that's what's returned in the Scanner
             monitoredFile = Paths.get(realUri);
-        }
 
         keystoreFile = monitoredFile;
         if (LOG.isDebugEnabled())
