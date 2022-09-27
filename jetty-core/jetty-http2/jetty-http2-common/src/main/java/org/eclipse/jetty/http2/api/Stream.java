@@ -416,18 +416,6 @@ public interface Stream
         }
 
         @Override
-        public void retain()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return true;
-        }
-
-        @Override
         public String toString()
         {
             return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), frame());
@@ -438,6 +426,18 @@ public interface Stream
             public EOF(int streamId)
             {
                 super(new DataFrame(streamId, BufferUtil.EMPTY_BUFFER, true));
+            }
+
+            @Override
+            public void retain()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean release()
+            {
+                return true;
             }
         }
     }
