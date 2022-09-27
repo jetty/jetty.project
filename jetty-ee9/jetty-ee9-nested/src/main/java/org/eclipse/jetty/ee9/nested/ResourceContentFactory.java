@@ -87,7 +87,7 @@ public class ResourceContentFactory implements ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 Resource compressedResource = _factory.newResource(compressedPathInContext);
-                if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified().compareTo(resource.lastModified()) >= 0 &&
+                if (compressedResource != null && compressedResource.exists() && ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
@@ -96,6 +96,17 @@ public class ResourceContentFactory implements ContentFactory
                 return new ResourceHttpContent(resource, mt, compressedContents);
         }
         return new ResourceHttpContent(resource, mt);
+    }
+
+    /**
+     * <p>Utility to compare {@link Resource#lastModified()} of two resources.</p>
+     * @param resource1 the first resource to test.
+     * @param resource2 the second resource to test.
+     * @return true if modified time of resource1 is newer or equal to that of resource2.
+     */
+    static boolean newerThanOrEqual(Resource resource1, Resource resource2)
+    {
+        return !resource2.lastModified().isAfter(resource1.lastModified());
     }
 
     @Override
