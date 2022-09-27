@@ -285,7 +285,10 @@ public class ResourceCollection extends Resource
         List<Resource> result = new ArrayList<>();
         for (Resource r : _resources)
         {
-            result.addAll(r.list());
+            if (r.isDirectory())
+                result.addAll(r.list());
+            else
+                result.add(r);
         }
         return result;
     }

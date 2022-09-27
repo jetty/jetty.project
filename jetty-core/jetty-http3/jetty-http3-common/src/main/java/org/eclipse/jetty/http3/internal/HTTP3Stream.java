@@ -394,9 +394,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     public Promise.Completable<Stream> writeFrame(Frame frame)
     {
         notIdle();
-        Promise.Completable<Stream> completable = new Promise.Completable<>();
-        session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> completable.succeeded(this), completable::failed));
-        return completable;
+        return Promise.Completable.with(p ->
+            session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> p.succeeded(this), p::failed)));
     }
 
     public boolean isClosed()
@@ -463,9 +462,42 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         );
     }
 
+    /**
+     * <p>Defines the state of the stream for received frames,</p>
+     * <p>allowing to verify that a frame sequence is valid for
+     * the HTTP protocol.</p>
+     * <p>For example, for a stream in the {@link #INITIAL} state,
+     * receiving a {@link DataFrame} would move the stream to the
+     * {@link #DATA} state which would be invalid, since for the
+     * HTTP protocol a {@link HeadersFrame} is expected before
+     * any {@link DataFrame}.</p>
+     */
     protected enum FrameState
     {
-        INITIAL, INFORMATIONAL, HEADER, DATA, TRAILER, FAILED
+        /**
+         * The initial state of the stream, before it receives any frame.
+         */
+        INITIAL,
+        /**
+         * The stream has received an HTTP informational response.
+         */
+        INFORMATIONAL,
+        /**
+         * The stream has received an HTTP final response.
+         */
+        HEADER,
+        /**
+         * The stream has received HTTP content.
+         */
+        DATA,
+        /**
+         * The stream has received an HTTP trailer.
+         */
+        TRAILER,
+        /**
+         * The stream has encountered a failure.
+         */
+        FAILED
     }
 
     private enum CloseState

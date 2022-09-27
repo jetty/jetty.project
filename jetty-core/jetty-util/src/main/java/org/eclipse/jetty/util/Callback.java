@@ -478,6 +478,20 @@ public interface Callback extends Invocable
     class Completable extends CompletableFuture<Void> implements Callback
     {
         /**
+         * <p>Creates a new {@code Completable} to be consumed by the given
+         * {@code consumer}, then returns the newly created {@code Completable}.</p>
+         *
+         * @param consumer the code that consumes the newly created {@code Completable}
+         * @return the newly created {@code Completable}
+         */
+        public static Completable with(Consumer<Completable> consumer)
+        {
+            Completable completable = new Completable();
+            consumer.accept(completable);
+            return completable;
+        }
+
+        /**
          * Creates a completable future given a callback.
          *
          * @param callback The nested callback.

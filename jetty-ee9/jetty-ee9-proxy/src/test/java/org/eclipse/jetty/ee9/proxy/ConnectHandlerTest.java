@@ -872,15 +872,14 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     else
                     {
                         builder.append("\r\n");
-                        Callback.Completable completable = new Callback.Completable();
-                        Content.Sink.write(response, false, builder.toString(), completable);
-                        completable.whenComplete((r, x) ->
-                        {
-                            if (x != null)
-                                callback.failed(x);
-                            else
-                                response.write(true, ByteBuffer.wrap(bytes), callback);
-                        });
+                        Callback.Completable.with(c -> Content.Sink.write(response, false, builder.toString(), c))
+                            .whenComplete((r, x) ->
+                            {
+                                if (x != null)
+                                    callback.failed(x);
+                                else
+                                    response.write(true, ByteBuffer.wrap(bytes), callback);
+                            });
                     }
                 }
                 case "/close" ->

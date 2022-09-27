@@ -26,7 +26,7 @@ import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP3StreamClient extends HTTP3Stream implements  Stream.Client
+public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3StreamClient.class);
 
@@ -50,13 +50,14 @@ public class HTTP3StreamClient extends HTTP3Stream implements  Stream.Client
     public void onResponse(HeadersFrame frame)
     {
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
-        boolean valid;
-        if (response.getStatus() == HttpStatus.CONTINUE_100)
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
-        else if (response.getStatus() == HttpStatus.EARLY_HINT_103)
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.HEADER, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
-        else
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
+        int status = response.getStatus();
+        boolean valid = switch (status)
+        {
+            case HttpStatus.CONTINUE_100 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
+            case HttpStatus.PROCESSING_102,
+                HttpStatus.EARLY_HINT_103 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
+            default -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
+        };
         if (valid)
         {
             onHeaders(frame);

@@ -279,7 +279,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testExpectContinuesAvailable() throws Exception
+    public void testExpect100ContinueContentAvailable() throws Exception
     {
         LocalConnector.LocalEndPoint endp = _connector.connect();
         endp.addInput(
@@ -299,7 +299,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testExpectContinues() throws Exception
+    public void testExpect100Continue() throws Exception
     {
         LocalConnector.LocalEndPoint endp = _connector.executeRequest(
             """

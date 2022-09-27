@@ -28,6 +28,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
@@ -42,6 +44,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,18 +69,11 @@ public class ServletChannel implements Runnable
     private ServletContextRequest _request;
     private long _oldIdleTimeout;
     private Callback _callback;
-
+    private boolean _expects100Continue;
     // TODO:
     private final Listener _combinedListener = NOOP_LISTENER;
-
-    /**
-     * Bytes written after interception (eg after compression)
-     */
+    // Bytes written after interception (e.g. after compression).
     private long _written;
-
-    public ServletChannel()
-    {
-    }
 
     public void setCallback(Callback callback)
     {
@@ -94,10 +90,9 @@ public class ServletChannel implements Runnable
         _state = new ServletRequestState(this); // TODO can this be recycled?
         _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
         _connector = request.getConnectionMetaData().getConnector();
-
         // TODO: can we do this?
         _configuration = request.getConnectionMetaData().getHttpConfiguration();
-
+        _expects100Continue = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
         request.getHttpInput().init();
 
         if (LOG.isDebugEnabled())
@@ -326,7 +321,23 @@ public class ServletChannel implements Runnable
      */
     public void continue100(int available) throws IOException
     {
-        throw new UnsupportedOperationException();
+        if (isExpecting100Continue())
+        {
+            _expects100Continue = false;
+            if (available == 0)
+            {
+                if (isCommitted())
+                    throw new IOException("Committed before 100 Continue");
+                try
+                {
+                    getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get();
+                }
+                catch (Throwable x)
+                {
+                    throw IO.rethrow(x);
+                }
+            }
+        }
     }
 
     public void recycle()
@@ -712,7 +723,7 @@ public class ServletChannel implements Runnable
 
     public boolean isExpecting100Continue()
     {
-        return false;
+        return _expects100Continue;
     }
 
     public boolean isExpecting102Processing()

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -168,8 +169,7 @@ public class StreamResetTest extends AbstractTest
             {
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
-                Callback.Completable completable = new Callback.Completable();
-                stream.headers(responseFrame, completable);
+                CompletableFuture<Stream> completable = stream.headers(responseFrame);
                 stream.demand();
                 return new Stream.Listener()
                 {
@@ -178,15 +178,8 @@ public class StreamResetTest extends AbstractTest
                     {
                         Stream.Data data = stream.readData();
                         data.release();
-                        completable.thenRun(() ->
-                            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
-                            {
-                                @Override
-                                public void succeeded()
-                                {
-                                    serverDataLatch.countDown();
-                                }
-                            }));
+                        completable.thenCompose(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(16), true)))
+                            .thenRun(serverDataLatch::countDown);
                     }
 
                     @Override
@@ -329,9 +322,8 @@ public class StreamResetTest extends AbstractTest
                 try
                 {
                     commitLatch.await(5, TimeUnit.SECONDS);
-                    Callback.Completable completable = new Callback.Completable();
-                    stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), completable);
-                    completable.thenRun(resetLatch::countDown);
+                    stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code))
+                        .thenRun(resetLatch::countDown);
                 }
                 catch (InterruptedException x)
                 {
@@ -416,9 +408,8 @@ public class StreamResetTest extends AbstractTest
                 try
                 {
                     commitLatch.await(5, TimeUnit.SECONDS);
-                    Callback.Completable completable = new Callback.Completable();
-                    stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), completable);
-                    completable.thenRun(resetLatch::countDown);
+                    stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code))
+                        .thenRun(resetLatch::countDown);
                 }
                 catch (InterruptedException x)
                 {
@@ -1053,8 +1044,7 @@ public class StreamResetTest extends AbstractTest
             {
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
-                Callback.Completable completable = new Callback.Completable();
-                stream.headers(responseFrame, completable);
+                stream.headers(responseFrame, Callback.NOOP);
                 return null;
             }
         }, http2Factory);

@@ -21,6 +21,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import jakarta.servlet.ServletContext;
@@ -646,47 +647,22 @@ public class ServletContextResponse extends ContextResponse
         @Override
         public void sendError(int sc, String msg) throws IOException
         {
-            // TODO
             switch (sc)
             {
-                case -1:
-                {
-                    _servletChannel.abort(new IOException(msg));
-                    break;
-                }
-                case HttpStatus.PROCESSING_102:
-                {
-                    // TODO: should we check whether an Expect: 102 header is present?
-                    if (!isCommitted())
-                    {
-                        try (Blocker.Callback blocker = Blocker.callback())
-                        {
-                            _response.setStatus(HttpStatus.PROCESSING_102);
-                            _response.write(true, null, blocker);
-                            blocker.block();
-                        }
-                    }
-                    break;
-                }
-                case HttpStatus.EARLY_HINT_103:
+                case -1 -> _servletChannel.abort(new IOException(msg));
+                case HttpStatus.PROCESSING_102, HttpStatus.EARLY_HINT_103 ->
                 {
                     if (!isCommitted())
                     {
                         try (Blocker.Callback blocker = Blocker.callback())
                         {
-                            _response.setStatus(HttpStatus.EARLY_HINT_103);
-                            _response.write(true, null, blocker);
+                            CompletableFuture<Void> completable = _response.writeInterim(sc, _response.getHeaders().asImmutable());
+                            blocker.completeWith(completable);
                             blocker.block();
                         }
                     }
-                    break;
                 }
-                default:
-                {
-                    // This is just a state change
-                    getState().sendError(sc, msg);
-                    break;
-                }
+                default -> getState().sendError(sc, msg);
             }
         }
 

@@ -17,19 +17,6 @@
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <org.eclipse.jetty.test.client.transport.H3.enable>${h3.test.enabled}</org.eclipse.jetty.test.client.transport.H3.enable>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <profiles>
     <profile>
       <id>enable-incubator-foreign</id>

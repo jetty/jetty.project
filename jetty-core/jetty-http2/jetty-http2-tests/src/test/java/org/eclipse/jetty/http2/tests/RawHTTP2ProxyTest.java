@@ -167,27 +167,24 @@ public class RawHTTP2ProxyTest
                             LOGGER.debug("SERVER2 received {}", data);
                         data.release();
                         MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                        Callback.Completable completable1 = new Callback.Completable();
                         HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("SERVER2 sending {}", reply);
-                        stream.headers(reply, completable1);
-                        completable1.thenCompose(ignored ->
-                        {
-                            Callback.Completable completable2 = new Callback.Completable();
-                            DataFrame dataFrame = new DataFrame(stream.getId(), buffer1.slice(), false);
-                            if (LOGGER.isDebugEnabled())
-                                LOGGER.debug("SERVER2 sending {}", dataFrame);
-                            stream.data(dataFrame, completable2);
-                            return completable2;
-                        }).thenRun(() ->
-                        {
-                            MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            HeadersFrame end = new HeadersFrame(stream.getId(), trailer, null, true);
-                            if (LOGGER.isDebugEnabled())
-                                LOGGER.debug("SERVER2 sending {}", end);
-                            stream.headers(end, Callback.NOOP);
-                        });
+                        stream.headers(reply)
+                            .thenCompose(s ->
+                            {
+                                DataFrame dataFrame = new DataFrame(s.getId(), buffer1.slice(), false);
+                                if (LOGGER.isDebugEnabled())
+                                    LOGGER.debug("SERVER2 sending {}", dataFrame);
+                                return s.data(dataFrame);
+                            }).thenAccept(s ->
+                            {
+                                MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                HeadersFrame end = new HeadersFrame(s.getId(), trailer, null, true);
+                                if (LOGGER.isDebugEnabled())
+                                    LOGGER.debug("SERVER2 sending {}", end);
+                                s.headers(end);
+                            });
                     }
                 };
             }

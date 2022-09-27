@@ -636,7 +636,7 @@ public class ResourceService
 
         byte[] data = null;
         String base = URIUtil.addEncodedPaths(request.getRequestURI(), URIUtil.SLASH);
-        String dir = ResourceListing.getAsHTML(resource, base, pathInContext.length() > 1, request.getQueryString());
+        String dir = ResourceListing.getAsXHTML(resource, base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,

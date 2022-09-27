@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,6 +63,9 @@ public interface Response extends Content.Sink
 
     void reset();
 
+    CompletableFuture<Void> writeInterim(int status, HttpFields headers);
+
+    // TODO: make it static, otherwise we must override it in Wrapper.
     default boolean writeTrailers(Content.Chunk chunk, Callback ignored)
     {
         if (chunk instanceof Trailers trailers)
@@ -156,7 +160,6 @@ public interface Response extends Content.Sink
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
                 CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-                HttpCookie oldCookie;
                 if (field instanceof HttpCookie.SetCookieHttpField)
                 {
                     if (!HttpCookie.match(((HttpCookie.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
@@ -203,8 +206,6 @@ public interface Response extends Content.Sink
 
     static void writeError(Request request, Response response, Callback callback, int status, String message, Throwable cause)
     {
-        // TODO what about 102 Processing?
-
         // Retrieve the Logger instance here, rather than having a
         // public field that will force a transitive dependency on SLF4J.
         Logger logger = LoggerFactory.getLogger(Response.class);
@@ -419,6 +420,12 @@ public interface Response extends Content.Sink
         public void reset()
         {
             getWrapped().reset();
+        }
+
+        @Override
+        public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
+        {
+            return getWrapped().writeInterim(status, headers);
         }
     }
 }

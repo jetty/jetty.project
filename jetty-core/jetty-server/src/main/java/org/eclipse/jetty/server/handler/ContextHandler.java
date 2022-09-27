@@ -855,7 +855,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (resource.isAlias())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
+                LOG.debug("Aliased resource: {} -> {}", resource, resource.getTargetURI());
 
             // alias checks
             for (AliasCheck check : _aliasChecks)
