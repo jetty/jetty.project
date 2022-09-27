@@ -87,7 +87,7 @@ public class ResourceContentFactory implements ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 Resource compressedResource = _factory.newResource(compressedPathInContext);
-                if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified().isAfter(resource.lastModified()) &&
+                if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified().compareTo(resource.lastModified()) >= 0 &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));

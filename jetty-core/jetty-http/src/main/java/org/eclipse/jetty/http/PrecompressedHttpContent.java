@@ -139,7 +139,7 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public ByteBuffer getBuffer()
     {
-        return _content.getBuffer();
+        return _precompressedContent.getBuffer();
     }
 
     @Override
