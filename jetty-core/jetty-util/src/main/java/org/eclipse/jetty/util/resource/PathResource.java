@@ -50,7 +50,7 @@ public class PathResource extends Resource
     private final Path path;
     private final URI uri;
     private boolean targetResolved = false;
-    private Path alias;
+    private Path targetPath;
 
     /**
      * Test if the paths are the same name.
@@ -170,7 +170,7 @@ public class PathResource extends Resource
     @Override
     public boolean exists()
     {
-        return Files.exists(alias != null ? alias : path);
+        return Files.exists(targetPath != null ? targetPath : path);
     }
 
     @Override
@@ -258,12 +258,12 @@ public class PathResource extends Resource
     {
         if (!targetResolved)
         {
-            alias = resolveTargetPath();
+            targetPath = resolveTargetPath();
             targetResolved = true;
         }
-        if (alias == null)
+        if (targetPath == null)
             return null;
-        return alias.toUri();
+        return targetPath.toUri();
     }
 
     private Path resolveTargetPath()

@@ -292,12 +292,12 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Use real location (if different) for WAR file, so that change/modification monitoring can work.
-            URI realUri = webApp.getTargetURI();
-            if (realUri != null)
+            URI targetURI = webApp.getTargetURI();
+            if (targetURI != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} anti-aliased to {}", webApp, realUri);
-                webApp = context.newResource(realUri);
+                    LOG.debug("{} anti-aliased to {}", webApp, targetURI);
+                webApp = context.newResource(targetURI);
             }
 
             if (LOG.isDebugEnabled())
