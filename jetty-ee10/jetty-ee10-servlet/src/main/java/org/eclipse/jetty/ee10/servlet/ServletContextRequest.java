@@ -112,7 +112,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         if (request instanceof ServletApiRequest)
             return ((ServletApiRequest)request).getRequest();
 
-        throw new IllegalStateException();
+        throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
     }
 
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
