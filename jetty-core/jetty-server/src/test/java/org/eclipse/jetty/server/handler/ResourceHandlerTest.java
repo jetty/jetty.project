@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -2626,6 +2627,11 @@ public class ResourceHandlerTest
         assertThat(response.get(LOCATION), endsWith("/context/"));
     }
 
+    /**
+     * Tests to attempt to break out of the Context restrictions by
+     * abusing encoding (or lack thereof), listing output,
+     * welcome file behaviors, and more.
+     */
     @ParameterizedTest
     @MethodSource("contextBreakoutScenarios")
     public void testListingContextBreakout(ResourceHandlerTest.Scenario scenario) throws Exception
@@ -2784,9 +2790,27 @@ public class ResourceHandlerTest
         assertThat(body, containsString("f??r"));
     }
 
+    /**
+     * <p>
+     * Tests to ensure that when requesting a legit directory listing, you
+     * cannot arbitrarily include XSS in the output via careful manipulation
+     * of the request path.
+     * </p>
+     * <p>
+     * This is mainly a test of how the raw request details evolve over time, and
+     * migrate through the ResourceHandler before it hits the
+     * ResourceListing.getAsXHTML for output production
+     * </p>
+     */
     @Test
     public void testListingXSS() throws Exception
     {
+        // Allow unsafe URI requests for this test case specifically
+        // The requests below abuse the path-param features of URI, and the default UriCompliance mode
+        // will prevent the use those requests as a 400 Bad Request: Ambiguous URI empty segment
+        HttpConfiguration httpConfiguration = _local.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration();
+        httpConfiguration.setUriCompliance(UriCompliance.UNSAFE);
+
         /* create some content in the docroot */
         Path one = docRoot.resolve("one");
         FS.ensureDirExists(one);
@@ -2798,7 +2822,9 @@ public class ResourceHandlerTest
 
         /*
          * Intentionally bad request URI. Sending a non-encoded URI with typically
-         * encoded characters '<', '>', and '"'.
+         * encoded characters '<', '>', and '"', using the path-param feature of the
+         * URI spec to still produce a listing.  This path-param value should not make it
+         * down to the ResourceListing.getAsXHTML() method.
          */
         String req1 = """
             GET /context/;<script>window.alert("hi");</script> HTTP/1.1\r
