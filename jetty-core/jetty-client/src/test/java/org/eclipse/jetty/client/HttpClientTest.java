@@ -1815,12 +1815,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
 
             @Override
-            public void onContentSource(Response response, Content.Source contentSource)
-            {
-                Response.ContentListener.super.onContentSource(response, contentSource);
-            }
-
-            @Override
             public void onComplete(Result result)
             {
                 if (result.isSucceeded())

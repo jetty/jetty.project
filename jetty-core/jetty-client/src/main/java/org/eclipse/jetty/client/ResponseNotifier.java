@@ -100,15 +100,31 @@ public class ResponseNotifier
     public void notifyContent(Response response, Content.Source contentSource, List<Response.ContentSourceListener> contentListeners)
     {
         int count = contentListeners.size();
-        if (count == 1)
+        if (count == 0)
         {
+            // Exactly 0 ContentSourceListener -> drive the read/demand loop internally here.
+            driveDemandLoop(contentSource);
+        }
+        else if (count == 1)
+        {
+            // Exactly 1 ContentSourceListener -> notify it so that it drives the read/demand loop.
             Response.ContentSourceListener listener = contentListeners.get(0);
             notifyContent(listener, response, contentSource);
         }
         else
         {
-            throw new UnsupportedOperationException();
+            // TODO 2+ ContentSourceListener cannot be supported, 2+ other listeners can be supported -> listeners must be reworked
+            throw new UnsupportedOperationException(count + " listeners were registered while there should be exactly 1");
         }
+    }
+
+    private void driveDemandLoop(Content.Source contentSource)
+    {
+        Content.Chunk read = contentSource.read();
+        if (read != null)
+            read.release();
+        if (read == null || !read.isLast())
+            contentSource.demand(() -> driveDemandLoop(contentSource));
     }
 
     private void notifyContent(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
