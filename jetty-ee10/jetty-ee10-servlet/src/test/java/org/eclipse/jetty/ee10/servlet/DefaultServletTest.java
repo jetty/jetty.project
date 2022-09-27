@@ -2730,7 +2730,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled
     public void testProgrammaticCustomCompressionFormats() throws Exception
     {
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
@@ -2738,13 +2737,22 @@ public class DefaultServletTest
         Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
-        ResourceService resourceService = new ResourceService();
-        resourceService.setPrecompressedFormats(List.of(
-                new CompressedContentFormat("bzip2", ".bz2"),
-                new CompressedContentFormat("gzip", ".gz"),
-                new CompressedContentFormat("br", ".br")
-        ));
-        ServletHolder defholder = new ServletHolder(new DefaultServlet()); // TODO: how to integrate resource service / precompressed format
+        DefaultServlet defaultServlet = new DefaultServlet();
+        ServletHolder defholder = new ServletHolder(defaultServlet)
+        {
+            @Override
+            public void initialize() throws Exception
+            {
+                super.initialize();
+                ResourceService resourceService = defaultServlet.getResourceService();
+                resourceService.setPrecompressedFormats(List.of(
+                    new CompressedContentFormat("bzip2", ".bz2"),
+                    new CompressedContentFormat("gzip", ".gz"),
+                    new CompressedContentFormat("br", ".br")
+                ));
+            }
+        };
+
         context.addServlet(defholder, "/");
         defholder.setInitParameter("resourceBase", docRoot.toString());
 
@@ -2904,7 +2912,6 @@ public class DefaultServletTest
         "Hello World",
         "Now is the time for all good men to come to the aid of the party"
     })
-    @Disabled
     public void testIfETag(String content) throws Exception
     {
         Files.writeString(docRoot.resolve("file.txt"), content, UTF_8);
@@ -2947,7 +2954,7 @@ public class DefaultServletTest
             Connection:close\r
             If-None-Match: wibble,@ETAG@,wobble\r
             \r
-            """.replace("@ETAG", etag));
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
@@ -2977,7 +2984,7 @@ public class DefaultServletTest
             Connection:close\r
             If-Match: @ETAG@\r
             \r
-            """.replace("@ETAG", etag));
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 
@@ -2987,7 +2994,7 @@ public class DefaultServletTest
             Connection:close\r
             If-Match: wibble,@ETAG@,wobble\r
             \r
-            """.replace("@ETAG", etag));
+            """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
 

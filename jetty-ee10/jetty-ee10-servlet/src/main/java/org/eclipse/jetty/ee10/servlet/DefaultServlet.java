@@ -92,6 +92,11 @@ public class DefaultServlet extends HttpServlet
 
     private boolean _isPathInfoOnly = false;
 
+    public ResourceService getResourceService()
+    {
+        return _resourceService;
+    }
+
     @Override
     public void init() throws ServletException
     {
