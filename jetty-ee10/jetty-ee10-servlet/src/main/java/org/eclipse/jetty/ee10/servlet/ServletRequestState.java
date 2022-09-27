@@ -1183,11 +1183,6 @@ public class ServletRequestState
         }
     }
 
-    public Request getBaseRequest()
-    {
-        return _servletChannel.getRequest();
-    }
-
     public ServletContextHandler getContextHandler()
     {
         return _servletChannel.getContextHandler();

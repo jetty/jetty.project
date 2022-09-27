@@ -157,13 +157,11 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
-        if (baseRequest == null)
-            throw new IllegalStateException("Base Request not available");
-        ServletContextResponse baseResponse = baseRequest.getResponse();
+        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
 
         // Do preliminary check before proceeding to attempt an upgrade.
-        if (mappings.getHandshaker().isWebSocketUpgradeRequest(baseRequest))
+        if (mappings.getHandshaker().isWebSocketUpgradeRequest(servletContextRequest))
         {
             // provide a null default customizer the customizer will be on the negotiator in the mapping
             FutureCallback callback = new FutureCallback();
@@ -171,10 +169,10 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             {
                 // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
                 // are accessible when websocket-core calls back the Jetty WebSocket creator.
-                baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-                baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+                servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+                servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
-                if (mappings.upgrade(baseRequest, baseResponse, callback, defaultCustomizer))
+                if (mappings.upgrade(servletContextRequest, servletContextResponse, callback, defaultCustomizer))
                 {
                     callback.block();
                     return;
@@ -182,8 +180,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             }
             finally
             {
-                baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-                baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+                servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+                servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
             }
         }
 
