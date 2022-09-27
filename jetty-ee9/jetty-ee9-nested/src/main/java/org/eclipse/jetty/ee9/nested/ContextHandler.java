@@ -1404,7 +1404,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (resource.isAlias())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aliased resource: {}~={}", resource, resource.getTargetURI());
+                LOG.debug("Alias resource {} for {}", resource, resource.getTargetURI());
 
             // alias checks
             for (AliasCheck check : getAliasChecks())
