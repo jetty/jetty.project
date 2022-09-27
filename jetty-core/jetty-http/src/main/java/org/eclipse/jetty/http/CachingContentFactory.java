@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class CachingContentFactory implements HttpContent.ContentFactory
 {
-    private final CachingContentFactory _parent;
+    private final HttpContent.ContentFactory _parent;
     private final HttpContent.ContentFactory _authority;
     private final boolean _useFileMappedBuffer;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
@@ -62,7 +62,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         this (null, authority, useFileMappedBuffer);
     }
 
-    public CachingContentFactory(CachingContentFactory parent, HttpContent.ContentFactory authority, boolean useFileMappedBuffer)
+    public CachingContentFactory(HttpContent.ContentFactory parent, HttpContent.ContentFactory authority, boolean useFileMappedBuffer)
     {
         _parent = parent;
         _authority = authority;
