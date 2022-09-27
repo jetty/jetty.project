@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -197,6 +198,7 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testContentWhileStalling(Transport transport) throws Exception
     {
         CountDownLatch serverContentLatch = new CountDownLatch(1);
@@ -270,6 +272,7 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testTwoListenersWithDifferentDemand(Transport transport) throws Exception
     {
         int bufferSize = 1536;
@@ -346,6 +349,7 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testGZippedResponseContentWithAsyncDemand(Transport transport) throws Exception
     {
         int chunks = 64;
@@ -392,6 +396,7 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testDelayedBeforeContentDemand(Transport transport) throws Exception
     {
         byte[] content = new byte[1024];
@@ -453,6 +458,7 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testDelayedBeforeContentDemandWithNoResponseContent(Transport transport) throws Exception
     {
         start(transport, new EmptyServerHandler());

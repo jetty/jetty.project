@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -89,6 +90,7 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testAbortOnContent(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler()
