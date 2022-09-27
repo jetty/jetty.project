@@ -258,7 +258,7 @@ public class PathResource extends Resource
     {
         if (!targetResolved)
         {
-            alias = resolveTargetAliasPath();
+            alias = resolveTargetPath();
             targetResolved = true;
         }
         if (alias == null)
@@ -266,7 +266,7 @@ public class PathResource extends Resource
         return alias.toUri();
     }
 
-    private Path resolveTargetAliasPath()
+    private Path resolveTargetPath()
     {
         Path abs = path;
 
