@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.Objects;
-
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -62,7 +60,7 @@ public class Source
      */
     public Source(Origin o, Resource resource)
     {
-        this(o, Objects.requireNonNull(resource).getURI().toASCIIString());
+        this(o, resource.getURI().toASCIIString());
         _resource = resource;
     }
 

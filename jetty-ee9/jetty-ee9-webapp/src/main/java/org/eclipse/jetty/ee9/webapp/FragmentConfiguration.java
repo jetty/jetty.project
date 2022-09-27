@@ -27,7 +27,7 @@ public class FragmentConfiguration extends AbstractConfiguration
     // Holds a Map<Resource, Resource> .
     //  key: Resource to the Jar
     //  value: Resource to the web fragment xml
-    public static final String FRAGMENT_RESOURCES = "org.eclipse.jetty.webFragments";
+    public static final String FRAGMENT_RESOURCES = FragmentConfiguration.class.getPackageName() + ".webFragments";
 
     public FragmentConfiguration()
     {

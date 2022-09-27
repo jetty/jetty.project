@@ -142,7 +142,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             case WebFragment:
             {
                 //ServletSpec p.75. No declaration in web.xml, but in multiple web-fragments. Error.
-                throw new IllegalStateException("Conflicting env-entry " + name + " in " + descriptor);
+                throw new IllegalStateException("Conflicting env-entry " + name + " in " + descriptor.getURI());
             }
             default:
                 break;

@@ -176,7 +176,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 if (descriptor instanceof FragmentDescriptor)
                 {
                     if (!((String)context.getInitParams().get(name)).equals(value))
-                        throw new IllegalStateException("Conflicting context-param " + name + "=" + value + " in " + descriptor);
+                        throw new IllegalStateException("Conflicting context-param " + name + "=" + value + " in " + descriptor.getURI());
                 }
                 break;
             }
