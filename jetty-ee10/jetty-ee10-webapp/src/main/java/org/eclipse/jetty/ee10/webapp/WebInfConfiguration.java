@@ -291,12 +291,13 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp == null)
                 throw new IllegalStateException("No resourceBase or war set for context");
 
-            // Accept aliases for WAR files
-            if (webApp.isAlias())
+            // Use real location (if different) for WAR file, so that change/modification monitoring can work.
+            URI targetURI = webApp.getTargetURI();
+            if (targetURI != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} anti-aliased to {}", webApp, webApp.getAlias());
-                webApp = context.newResource(webApp.getAlias());
+                    LOG.debug("{} anti-aliased to {}", webApp, targetURI);
+                webApp = context.newResource(targetURI);
             }
 
             if (LOG.isDebugEnabled())
