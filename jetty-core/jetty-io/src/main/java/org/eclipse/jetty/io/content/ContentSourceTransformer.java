@@ -117,7 +117,7 @@ public abstract class ContentSourceTransformer implements Content.Source
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("demand, delegating to raw source");
-            rawSource.demand(this::onRawAvailable);
+            invoker.run(() -> rawSource.demand(this::onRawAvailable));
         }
     }
 
