@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet.security.authentication;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
@@ -193,6 +194,12 @@ public class DeferredAuthentication implements Authentication.Deferred
         @Override
         public void reset()
         {
+        }
+
+        @Override
+        public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
+        {
+            return null;
         }
     };
 }

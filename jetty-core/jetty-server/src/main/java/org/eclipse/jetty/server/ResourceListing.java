@@ -44,7 +44,7 @@ public class ResourceListing
     public static final Logger LOG = LoggerFactory.getLogger(ResourceListing.class);
 
     /**
-     * Convert the Resource directory into an HTML directory listing.
+     * Convert the Resource directory into an XHTML directory listing.
      *
      * @param resource the resource to build the listing from
      * @param base The base URL
@@ -52,7 +52,7 @@ public class ResourceListing
      * @param query query params
      * @return the HTML as String
      */
-    public static String getAsHTML(Resource resource, String base, boolean parent, String query)
+    public static String getAsXHTML(Resource resource, String base, boolean parent, String query)
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
@@ -105,13 +105,15 @@ public class ResourceListing
 
         StringBuilder buf = new StringBuilder(4096);
 
-        // Doctype Declaration (HTML5)
-        buf.append("<!DOCTYPE html>\n");
-        buf.append("<html lang=\"en\">\n");
+        // Doctype Declaration + XHTML
+        buf.append("""
+            <?xml version="1.0" encoding="utf-8"?>
+            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+            <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+            """);
 
         // HTML Header
         buf.append("<head>\n");
-        buf.append("<meta charset=\"utf-8\">\n");
         buf.append("<link href=\"jetty-dir.css\" rel=\"stylesheet\" />\n");
         buf.append("<title>");
         buf.append(title);
@@ -145,7 +147,7 @@ public class ResourceListing
             }
         }
 
-        buf.append("<tr><th class=\"name\"><a href=\"?C=N&O=").append(order).append("\">");
+        buf.append("<tr><th class=\"name\"><a href=\"?C=N&amp;O=").append(order).append("\">");
         buf.append("Name").append(arrow);
         buf.append("</a></th>");
 
@@ -165,7 +167,7 @@ public class ResourceListing
             }
         }
 
-        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&O=").append(order).append("\">");
+        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&amp;O=").append(order).append("\">");
         buf.append("Last Modified").append(arrow);
         buf.append("</a></th>");
 
@@ -184,7 +186,7 @@ public class ResourceListing
                 arrow = ARROW_DOWN;
             }
         }
-        buf.append("<th class=\"size\"><a href=\"?C=S&O=").append(order).append("\">");
+        buf.append("<th class=\"size\"><a href=\"?C=S&amp;O=").append(order).append("\">");
         buf.append("Size").append(arrow);
         buf.append("</a></th></tr>\n");
         buf.append("</thead>\n");
@@ -197,6 +199,7 @@ public class ResourceListing
         {
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
+            // TODO This produces an absolute link from the /context/<listing-dir> path, investigate if we can use relative links reliably now
             buf.append(URIUtil.addPaths(encodedBase, "../"));
             buf.append("\">Parent Directory</a></td>");
             // Last Modified
@@ -228,8 +231,7 @@ public class ResourceListing
             buf.append(path);
             buf.append("\">");
             buf.append(deTag(name));
-            buf.append("&nbsp;");
-            buf.append("</a></td>");
+            buf.append("&nbsp;</a></td>");
 
             // Last Modified
             buf.append("<td class=\"lastmodified\">");
@@ -262,11 +264,18 @@ public class ResourceListing
     }
 
     /**
+     * <p>
      * Encode any characters that could break the URI string in an HREF.
-     * Such as <a href="/path/to;<script>Window.alert("XSS"+'%20'+"here");</script>">Link</a>
+     * </p>
      *
+     * <p>
+     *   Such as:
+     *   {@code <a href="/path/to;<script>Window.alert('XSS'+'%20'+'here');</script>">Link</a>}
+     * </p>
+     * <p>
      * The above example would parse incorrectly on various browsers as the "<" or '"' characters
      * would end the href attribute value string prematurely.
+     * </p>
      *
      * @param raw the raw text to encode.
      * @return the defanged text.

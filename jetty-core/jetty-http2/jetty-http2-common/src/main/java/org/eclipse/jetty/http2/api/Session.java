@@ -60,9 +60,7 @@ public interface Session
      */
     public default CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener)
     {
-        Promise.Completable<Stream> result = new Promise.Completable<>();
-        newStream(frame, result, listener);
-        return result;
+        return Promise.Completable.with(p -> newStream(frame, p, listener));
     }
 
     /**
@@ -86,6 +84,17 @@ public interface Session
      * that it is already referencing
      */
     public int priority(PriorityFrame frame, Callback callback);
+
+    /**
+     * <p>Sends the given SETTINGS {@code frame} to configure the session.</p>
+     *
+     * @param frame the SETTINGS frame to send
+     * @return a CompletableFuture that is notified when the frame has been sent
+     */
+    public default CompletableFuture<Void> settings(SettingsFrame frame)
+    {
+        return Callback.Completable.with(c -> settings(frame, c));
+    }
 
     /**
      * <p>Sends the given SETTINGS {@code frame} to configure the session.</p>

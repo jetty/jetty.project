@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -51,10 +50,10 @@ public class JettyForkedChild extends ContainerLifeCycle
 
     /**
      * @param args arguments that were passed to main
-     * @throws Exception
+     * @throws IOException if unable to configure
      */
     public JettyForkedChild(String[] args)
-        throws Exception
+        throws IOException
     {
         jetty = new JettyEmbedder();
         configure(args);
@@ -64,10 +63,10 @@ public class JettyForkedChild extends ContainerLifeCycle
      * Based on the args passed to the program, configure jetty.
      * 
      * @param args args that were passed to the program.
-     * @throws Exception
+     * @throws IOException if unable to load webprops
      */
     public void configure(String[] args)
-        throws Exception
+        throws IOException
     {
         Map<String, String> jettyProperties = new HashMap<>();
         
@@ -171,10 +170,9 @@ public class JettyForkedChild extends ContainerLifeCycle
      * present.
      * 
      * @return file contents as properties
-     * @throws FileNotFoundException
      * @throws IOException
      */
-    private Properties loadWebAppProps() throws FileNotFoundException, IOException
+    private Properties loadWebAppProps() throws IOException
     {
         Properties props = new Properties();
         if (Objects.nonNull(webAppPropsFile))

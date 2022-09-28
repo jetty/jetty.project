@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.test.client.transport;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -69,25 +70,19 @@ public class AbstractTest
     protected HttpClient client;
     protected Path unixDomainPath;
 
-    private static EnumSet<Transport> allTransports()
+    public static Collection<Transport> transports()
     {
         EnumSet<Transport> transports = EnumSet.allOf(Transport.class);
-        // Disable H3 tests unless explicitly enabled with a system property.
-        if (!Boolean.getBoolean("org.eclipse.jetty.test.client.transport.H3.enable"))
+        if ("ci".equals(System.getProperty("env")))
             transports.remove(Transport.H3);
         return transports;
     }
 
-    public static List<Transport> transports()
+    public static Collection<Transport> transportsNoFCGI()
     {
-        return List.copyOf(allTransports());
-    }
-
-    public static List<Transport> transportsNoFCGI()
-    {
-        EnumSet<Transport> transports = allTransports();
+        Collection<Transport> transports = transports();
         transports.remove(Transport.FCGI);
-        return List.copyOf(transports);
+        return transports;
     }
 
     @AfterEach

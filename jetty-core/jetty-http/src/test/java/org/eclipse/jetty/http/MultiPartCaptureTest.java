@@ -244,9 +244,8 @@ public class MultiPartCaptureTest
             List<MultiPart.Part> charSetParts = allParts.get("_charset_");
             if (charSetParts != null)
             {
-                Promise.Completable<String> promise = new Promise.Completable<>();
-                Content.Source.asString(charSetParts.get(0).getContent(), StandardCharsets.US_ASCII, promise);
-                defaultCharset = promise.get();
+                defaultCharset = Promise.Completable.<String>with(p -> Content.Source.asString(charSetParts.get(0).getContent(), StandardCharsets.US_ASCII, p))
+                    .get();
             }
 
             for (NameValue expected : partContainsContents)

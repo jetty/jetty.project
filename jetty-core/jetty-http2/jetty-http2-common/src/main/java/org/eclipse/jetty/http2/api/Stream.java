@@ -62,9 +62,7 @@ public interface Stream
      */
     public default CompletableFuture<Stream> headers(HeadersFrame frame)
     {
-        Promise.Completable<Stream> result = new Promise.Completable<>();
-        headers(frame, Callback.from(() -> result.succeeded(this), result::failed));
-        return result;
+        return Promise.Completable.with(p -> headers(frame, Callback.from(() -> p.succeeded(this), p::failed)));
     }
 
     /**
@@ -85,9 +83,7 @@ public interface Stream
      */
     public default CompletableFuture<Stream> push(PushPromiseFrame frame, Listener listener)
     {
-        Promise.Completable<Stream> result = new Promise.Completable<>();
-        push(frame, result, listener);
-        return result;
+        return Promise.Completable.with(p -> push(frame, p, listener));
     }
 
     /**
@@ -139,9 +135,7 @@ public interface Stream
      */
     public default CompletableFuture<Stream> data(DataFrame frame)
     {
-        Promise.Completable<Stream> result = new Promise.Completable<>();
-        data(frame, Callback.from(() -> result.succeeded(this), result::failed));
-        return result;
+        return Promise.Completable.with(p -> data(frame, Callback.from(() -> p.succeeded(this), p::failed)));
     }
 
     /**
@@ -155,7 +149,18 @@ public interface Stream
     /**
      * <p>Sends the given RST_STREAM {@code frame}.</p>
      *
-     * @param frame the RST_FRAME to send
+     * @param frame the RST_STREAM frame to send
+     * @return the CompletableFuture that gets notified when the frame has been sent
+     */
+    public default CompletableFuture<Void> reset(ResetFrame frame)
+    {
+        return Callback.Completable.with(c -> reset(frame, c));
+    }
+
+    /**
+     * <p>Sends the given RST_STREAM {@code frame}.</p>
+     *
+     * @param frame the RST_STREAM frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
     public void reset(ResetFrame frame, Callback callback);
@@ -348,7 +353,7 @@ public interface Stream
          * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
          *
          * @param stream the stream
-         * @param frame the RST_FRAME received
+         * @param frame the RST_STREAM frame received
          * @param callback the callback to complete when the reset has been handled
          */
         public default void onReset(Stream stream, ResetFrame frame, Callback callback)
@@ -416,18 +421,6 @@ public interface Stream
         }
 
         @Override
-        public void retain()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return true;
-        }
-
-        @Override
         public String toString()
         {
             return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), frame());
@@ -438,6 +431,18 @@ public interface Stream
             public EOF(int streamId)
             {
                 super(new DataFrame(streamId, BufferUtil.EMPTY_BUFFER, true));
+            }
+
+            @Override
+            public void retain()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean release()
+            {
+                return true;
             }
         }
     }

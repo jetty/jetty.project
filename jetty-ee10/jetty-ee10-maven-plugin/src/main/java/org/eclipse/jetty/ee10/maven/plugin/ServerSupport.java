@@ -54,9 +54,8 @@ public class ServerSupport
      * @param server the server to use
      * @param contextHandlers the context handlers to include
      * @param requestLog a request log to use
-     * @throws Exception
      */
-    public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
+    public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -148,9 +147,8 @@ public class ServerSupport
      * Add a WebAppContext to a Server
      * @param server the server to use
      * @param webapp the webapp to add
-     * @throws Exception
      */
-    public static void addWebApplication(Server server, WebAppContext webapp) throws Exception
+    public static void addWebApplication(Server server, WebAppContext webapp)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");

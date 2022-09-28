@@ -112,9 +112,8 @@ public class OptionalSslConnectionFactory extends DetectorConnectionFactory
                     "Connection: close\r\n" +
                     "\r\n" +
                     body;
-            Callback.Completable completable = new Callback.Completable();
-            endPoint.write(completable, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
-            completable.whenComplete((r, x) -> endPoint.close());
+            Callback.Completable.with(c -> endPoint.write(c, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII))))
+                .whenComplete((r, x) -> endPoint.close());
         }
         else
         {

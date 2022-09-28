@@ -222,8 +222,7 @@ public class HTTP2Test extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
-        Promise.Completable<Stream> streamCompletable = new Promise.Completable<>();
-        session.newStream(frame, streamCompletable, new Stream.Listener()
+        session.newStream(frame, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -235,18 +234,9 @@ public class HTTP2Test extends AbstractTest
                 else
                     stream.demand();
             }
-        });
-        streamCompletable.thenCompose(stream ->
-        {
-            DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(512), false);
-            Callback.Completable dataCompletable = new Callback.Completable();
-            stream.data(dataFrame, dataCompletable);
-            return dataCompletable.thenApply(y -> stream);
-        }).thenAccept(stream ->
-        {
-            DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true);
-            stream.data(dataFrame, Callback.NOOP);
-        });
+        })
+        .thenCompose(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(512), false)))
+        .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(1024), true)));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -546,9 +536,8 @@ public class HTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                Callback.Completable completable = new Callback.Completable();
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                stream.headers(new HeadersFrame(stream.getId(), response, null, false), completable);
+                CompletableFuture<Stream> completable = stream.headers(new HeadersFrame(stream.getId(), response, null, false));
                 stream.demand();
                 return new Stream.Listener()
                 {
@@ -559,11 +548,8 @@ public class HTTP2Test extends AbstractTest
                         data.release();
                         if (data.frame().isEndStream())
                         {
-                            completable.thenRun(() ->
-                            {
-                                DataFrame endFrame = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
-                                stream.data(endFrame, Callback.NOOP);
-                            });
+                            completable.thenAccept(s ->
+                                s.data(new DataFrame(s.getId(), BufferUtil.EMPTY_BUFFER, true)));
                         }
                         else
                         {
@@ -578,9 +564,8 @@ public class HTTP2Test extends AbstractTest
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
-        Promise.Completable<Stream> completable = new Promise.Completable<>();
         CountDownLatch completeLatch = new CountDownLatch(2);
-        session.newStream(frame, completable, new Stream.Listener()
+        Stream stream = session.newStream(frame, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
@@ -592,8 +577,7 @@ public class HTTP2Test extends AbstractTest
                 else
                     stream.demand();
             }
-        });
-        Stream stream = completable.get(5, TimeUnit.SECONDS);
+        }).get(5, TimeUnit.SECONDS);
 
         long sleep = 1000;
         DataFrame data1 = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), false)

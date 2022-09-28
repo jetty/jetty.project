@@ -326,6 +326,10 @@ public abstract class HttpSender
 
     public void proceed(HttpExchange exchange, Throwable failure)
     {
+        // Received a 100 Continue, although Expect header was not sent.
+        if (!contentSender.expect100)
+            return;
+
         contentSender.expect100 = false;
         if (failure == null)
             contentSender.iterate();

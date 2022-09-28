@@ -383,9 +383,7 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public CompletableFuture<Session> connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener)
     {
-        Promise.Completable<Session> result = new Promise.Completable<>();
-        connect(sslContextFactory, address, listener, result);
-        return result;
+        return Promise.Completable.with(p -> connect(sslContextFactory, address, listener, p));
     }
 
     public void connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)

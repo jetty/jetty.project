@@ -222,15 +222,14 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                Callback.Completable completable = new Callback.Completable();
-                response.write(false, ByteBuffer.allocate(1), completable);
-                completable.whenComplete((r, x) ->
-                {
-                    if (x != null)
-                        callback.failed(x);
-                    else
-                        response.write(true, ByteBuffer.allocate(2), callback);
-                });
+                Callback.Completable.with(c -> response.write(false, ByteBuffer.allocate(1), c))
+                    .whenComplete((r, x) ->
+                    {
+                        if (x != null)
+                            callback.failed(x);
+                        else
+                            response.write(true, ByteBuffer.allocate(2), callback);
+                    });
             }
         });
 
@@ -638,12 +637,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                int streamId = stream.getId();
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.NO_CONTENT_204, HttpFields.EMPTY);
-                HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
-                Callback.Completable callback = new Callback.Completable();
-                stream.headers(responseFrame, callback);
-                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(bytes), true), Callback.NOOP));
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
+                stream.headers(responseFrame)
+                    .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.wrap(bytes), true)));
                 return null;
             }
         });
@@ -671,12 +668,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 HttpFields fields = HttpFields.build()
                     .put(":method", "get");
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, fields, 0);
-                int streamId = stream.getId();
-                HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
-                Callback.Completable callback = new Callback.Completable();
-                stream.headers(responseFrame, callback);
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
                 byte[] bytes = "hello".getBytes(StandardCharsets.US_ASCII);
-                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(bytes), true), Callback.NOOP));
+                stream.headers(responseFrame)
+                    .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.wrap(bytes), true)));
                 return null;
             }
         });
@@ -705,9 +700,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 int streamId = stream.getId();
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
-                Callback.Completable callback = new Callback.Completable();
-                stream.headers(responseFrame, callback);
-                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(new byte[bytes]), true), Callback.NOOP));
+                stream.headers(responseFrame)
+                    .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.wrap(new byte[bytes]), true)));
                 return null;
             }
         });

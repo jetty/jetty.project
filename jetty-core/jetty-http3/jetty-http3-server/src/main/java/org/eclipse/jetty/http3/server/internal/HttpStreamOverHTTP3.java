@@ -21,6 +21,9 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -50,9 +53,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
+    private MetaData.Request requestMetaData;
+    private MetaData.Response responseMetaData;
     private Content.Chunk chunk;
-    private MetaData.Response metaData;
     private boolean committed;
+    private boolean expects100Continue;
 
     public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannel httpChannel, HTTP3StreamServer stream)
     {
@@ -77,9 +82,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         try
         {
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
+            requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            Runnable handler = httpChannel.onRequest(request);
+            Runnable handler = httpChannel.onRequest(requestMetaData);
 
             if (frame.isLast())
             {
@@ -89,12 +94,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 }
             }
 
-            HttpFields fields = request.getFields();
+            HttpFields fields = requestMetaData.getFields();
 
-            // TODO: handle 100 continue.
-//            expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+            expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            boolean connect = request instanceof MetaData.ConnectRequest;
+            boolean connect = requestMetaData instanceof MetaData.ConnectRequest;
 
             if (!connect)
                 connection.setApplicationMode(true);
@@ -103,7 +107,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             {
                 LOG.debug("HTTP3 request #{}/{}, {} {} {}{}{}",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    requestMetaData.getMethod(), requestMetaData.getURI(), requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
             }
 
@@ -147,6 +151,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
             chunk = createChunk(data);
             data.release();
 
+            // Some content is read, but the 100 Continue interim
+            // response has not been sent yet, then don't bother
+            // sending it later, as the client already sent the content.
+            if (expects100Continue && chunk.hasRemaining())
+                expects100Continue = false;
+
             try (AutoLock ignored = lock.lock())
             {
                 this.chunk = chunk;
@@ -171,6 +181,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }
         else
         {
+            if (expects100Continue)
+            {
+                expects100Continue = false;
+                send(requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
+            }
             stream.demand();
         }
     }
@@ -245,7 +260,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        metaData = response;
+        this.responseMetaData = response;
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
@@ -256,12 +271,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
+
             if (hasContent)
             {
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-            headersFrame = new HeadersFrame(metaData, false);
+
+            if (expects100Continue && response.getStatus() == HttpStatus.CONTINUE_100)
+                expects100Continue = false;
+
+            headersFrame = new HeadersFrame(response, false);
         }
         else
         {
@@ -272,7 +292,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
-                    metaData = new MetaData.Response(
+                    this.responseMetaData = new MetaData.Response(
                         response.getHttpVersion(),
                         response.getStatus(),
                         response.getReason(),
@@ -290,7 +310,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
             if (hasContent)
             {
-                headersFrame = new HeadersFrame(metaData, false);
+                headersFrame = new HeadersFrame(response, false);
                 if (lastContent)
                 {
                     HttpFields trailers = retrieveTrailers();
@@ -313,27 +333,27 @@ public class HttpStreamOverHTTP3 implements HttpStream
             {
                 if (lastContent)
                 {
-                    if (isTunnel(request, metaData))
+                    if (isTunnel(request, response))
                     {
-                        headersFrame = new HeadersFrame(metaData, false);
+                        headersFrame = new HeadersFrame(response, false);
                     }
                     else
                     {
                         HttpFields trailers = retrieveTrailers();
                         if (trailers == null)
                         {
-                            headersFrame = new HeadersFrame(metaData, true);
+                            headersFrame = new HeadersFrame(response, true);
                         }
                         else
                         {
-                            headersFrame = new HeadersFrame(metaData, false);
+                            headersFrame = new HeadersFrame(response, false);
                             trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                         }
                     }
                 }
                 else
                 {
-                    headersFrame = new HeadersFrame(metaData, false);
+                    headersFrame = new HeadersFrame(response, false);
                 }
             }
         }
@@ -342,8 +362,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             LOG.debug("HTTP3 Response #{}/{}:{}{} {}{}{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), HttpVersion.HTTP_3, metaData.getStatus(),
-                System.lineSeparator(), metaData.getFields());
+                System.lineSeparator(), HttpVersion.HTTP_3, response.getStatus(),
+                System.lineSeparator(), response.getFields());
         }
 
         CompletableFuture<Stream> cf = stream.respond(headersFrame);
@@ -363,7 +383,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (lastContent && !isTunnel(request, metaData)))
+        if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
         {
             if (lastContent)
             {
@@ -398,7 +418,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFields> supplier = metaData.getTrailersSupplier();
+        Supplier<HttpFields> supplier = responseMetaData.getTrailersSupplier();
         if (supplier == null)
             return null;
         HttpFields trailers = supplier.get();

@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +62,7 @@ public class WebAppClassLoaderTest
 
         _testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         _context = new WebAppContext();
-        Resource webapp = ResourceFactory.of(_context).newResource(_testWebappDir);
+        Resource webapp = _context.getResourceFactory().newResource(_testWebappDir);
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
         _context.setExtraClasspath("src/test/resources/ext/*");
