@@ -215,10 +215,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
         };
 
-        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
-        if (baseRequest == null)
-            throw new IllegalStateException("Base Request not available");
-        ServletContextResponse baseResponse = baseRequest.getResponse();
+        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
 
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
@@ -228,10 +226,10 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         {
             // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
-            if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, customizer))
+            if (handshaker.upgradeRequest(negotiator, servletContextRequest, servletContextResponse, callback, components, customizer))
             {
                 callback.block();
                 return true;
@@ -239,8 +237,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         }
         finally
         {
-            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
 
         return false;

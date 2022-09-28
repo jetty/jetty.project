@@ -122,7 +122,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         {
             //No servlet of this name has already been defined, either by a descriptor
             //or another annotation (which would be impossible).
-            Source source = new Source(Source.Origin.ANNOTATION, clazz.getName());
+            Source source = new Source(Source.Origin.ANNOTATION, clazz);
 
             holder = _context.getServletHandler().newServletHolder(source);
             holder.setHeldClass(clazz);
@@ -183,7 +183,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //about processing these url mappings
             if (existingMappings.isEmpty() || !containsNonDefaultMappings(existingMappings))
             {
-                mapping = new ServletMapping(new Source(Source.Origin.ANNOTATION, clazz.getName()));
+                mapping = new ServletMapping(new Source(Source.Origin.ANNOTATION, clazz));
                 mapping.setServletName(servletName);
                 mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
                 _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), annotation, clazz);

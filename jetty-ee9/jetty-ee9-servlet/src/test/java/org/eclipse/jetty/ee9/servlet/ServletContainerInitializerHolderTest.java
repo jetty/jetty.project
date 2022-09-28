@@ -69,7 +69,7 @@ public class ServletContainerInitializerHolderTest
     @Test
     public void testInstanceWithStartupClassesAndSource() throws Exception
     {
-        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(new Source(Origin.ANNOTATION, null), new SimpleSCI(), Integer.class);
+        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(new Source(Origin.ANNOTATION), new SimpleSCI(), Integer.class);
         assertEquals(Origin.ANNOTATION, holder.getSource().getOrigin());
         assertEquals(SimpleSCI.class, holder.getHeldClass());
         assertEquals("ContainerInitializer{org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolderTest$SimpleSCI,interested=[java.lang.Integer],applicable=[],annotated=[]}", holder.toString());

@@ -198,7 +198,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
             if (callbackHandler instanceof DefaultCallbackHandler)
             {
                 DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
-                dch.setRequest(ServletContextRequest.getBaseRequest(request));
+                dch.setRequest(ServletContextRequest.getServletContextRequest(request));
                 dch.setCredential(credentials);
                 dch.setUserName(username);
             }

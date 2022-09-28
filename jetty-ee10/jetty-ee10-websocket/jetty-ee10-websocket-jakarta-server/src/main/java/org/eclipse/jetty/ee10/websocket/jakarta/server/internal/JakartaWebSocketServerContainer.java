@@ -299,28 +299,26 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
-        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
-        if (baseRequest == null)
-            throw new IllegalStateException();
-        ServletContextResponse baseResponse = baseRequest.getResponse();
+        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
 
         FutureCallback callback = new FutureCallback();
         try
         {
             // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
             // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            baseRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
-            if (handshaker.upgradeRequest(negotiator, baseRequest, baseResponse, callback, components, defaultCustomizer))
+            if (handshaker.upgradeRequest(negotiator, servletContextRequest, servletContextResponse, callback, components, defaultCustomizer))
             {
                 callback.block();
             }
         }
         finally
         {
-            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
-            baseRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+            servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
     }
 

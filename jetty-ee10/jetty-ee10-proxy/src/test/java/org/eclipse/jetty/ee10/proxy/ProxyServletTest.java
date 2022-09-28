@@ -107,7 +107,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -610,8 +609,7 @@ public class ProxyServletTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Make sure the proxy coalesced the Via headers into just one.
-                ServletContextRequest servletContextRequest = ServletContextRequest.getBaseRequest(request);
-                assertNotNull(servletContextRequest);
+                ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
                 assertEquals(1, servletContextRequest.getHeaders().getFields(HttpHeader.VIA).size());
                 PrintWriter writer = response.getWriter();
                 List<String> viaValues = Collections.list(request.getHeaders("Via"));

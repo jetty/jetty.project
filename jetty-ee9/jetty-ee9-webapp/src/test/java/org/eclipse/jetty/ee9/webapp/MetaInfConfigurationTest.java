@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -22,7 +22,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,16 +93,16 @@ public class MetaInfConfigurationTest
     @Test
     public void testScanTypes() throws Exception
     {
-        File web25 = MavenTestingUtils.getTargetFile("test-classes/web25.xml");
-        File web31 = MavenTestingUtils.getTargetFile("test-classes/web31.xml");
-        File web31false = MavenTestingUtils.getTargetFile("test-classes/web31false.xml");
+        Path web25 = MavenTestingUtils.getTargetPath().resolve("test-classes/web25.xml");
+        Path web31 = MavenTestingUtils.getTargetPath().resolve("test-classes/web31.xml");
+        Path web31false = MavenTestingUtils.getTargetPath().resolve("test-classes/web31false.xml");
 
         //test a 2.5 webapp will not look for fragments as manually configured
         MetaInfConfiguration meta25 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context25 = new WebAppContext();
         context25.setConfigurationDiscovered(false);
-        context25.getMetaData().setWebDescriptor(new WebDescriptor(ResourceFactory.root().newResource(web25.toPath())));
+        context25.getMetaData().setWebDescriptor(new WebDescriptor(context25.getResourceFactory().newResource(web25)));
         context25.getServletContext().setEffectiveMajorVersion(2);
         context25.getServletContext().setEffectiveMinorVersion(5);
         meta25.preConfigure(context25);
@@ -112,7 +111,7 @@ public class MetaInfConfigurationTest
         MetaInfConfiguration meta25b = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context25b = new WebAppContext();
-        context25b.getMetaData().setWebDescriptor(new WebDescriptor(ResourceFactory.root().newResource(web25.toPath())));
+        context25b.getMetaData().setWebDescriptor(new WebDescriptor(context25b.getResourceFactory().newResource(web25)));
         context25b.getServletContext().setEffectiveMajorVersion(2);
         context25b.getServletContext().setEffectiveMinorVersion(5);
         meta25b.preConfigure(context25b);
@@ -121,7 +120,7 @@ public class MetaInfConfigurationTest
         MetaInfConfiguration meta31 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context31 = new WebAppContext();
-        context31.getMetaData().setWebDescriptor(new WebDescriptor(ResourceFactory.root().newResource(web31.toPath())));
+        context31.getMetaData().setWebDescriptor(new WebDescriptor(context31.getResourceFactory().newResource(web31)));
         context31.getServletContext().setEffectiveMajorVersion(3);
         context31.getServletContext().setEffectiveMinorVersion(1);
         meta31.preConfigure(context31);
@@ -131,7 +130,7 @@ public class MetaInfConfigurationTest
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context31false = new WebAppContext();
         context31false.setConfigurationDiscovered(true);
-        context31false.getMetaData().setWebDescriptor(new WebDescriptor(ResourceFactory.root().newResource(web31false.toPath())));
+        context31false.getMetaData().setWebDescriptor(new WebDescriptor(context31false.getResourceFactory().newResource(web31false)));
         context31false.getServletContext().setEffectiveMajorVersion(3);
         context31false.getServletContext().setEffectiveMinorVersion(1);
         meta31false.preConfigure(context31false);
@@ -162,6 +161,7 @@ public class MetaInfConfigurationTest
             context.setClassLoader(loader);
             config.findAndFilterContainerPaths(context);
             List<Resource> containerResources = context.getMetaData().getContainerResources();
+
             assertEquals(2, containerResources.size());
             for (Resource r : containerResources)
             {

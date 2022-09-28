@@ -55,7 +55,7 @@ public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
     public void start(WebAppContext context, Descriptor descriptor)
     {
         LOG.debug("process {}", descriptor);
-        _origin = (StringUtil.isBlank(_originAttribute) ? null : "  <!-- " + descriptor + " -->\n");
+        _origin = (StringUtil.isBlank(_originAttribute) ? null : "  <!-- " + descriptor.getURI() + " -->\n");
     }
 
     @Override

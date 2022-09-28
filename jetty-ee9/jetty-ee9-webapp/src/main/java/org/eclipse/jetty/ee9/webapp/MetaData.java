@@ -314,7 +314,7 @@ public class MetaData
             Descriptor existing = _webFragmentNameMap.get(descriptor.getName());
             if (existing != null && !isAllowDuplicateFragmentNames())
             {
-                throw new IllegalStateException("Duplicate fragment name: " + descriptor.getName() + " for " + existing.getResource() + " and " + descriptor.getResource());
+                throw new IllegalStateException("Duplicate fragment name: " + descriptor.getName() + " for " + existing.getURI() + " and " + descriptor.getURI());
             }
             else
                 _webFragmentNameMap.put(descriptor.getName(), descriptor);
@@ -448,7 +448,7 @@ public class MetaData
     {
         LOG.debug("metadata resolve {}", context);
 
-        // Ensure origins is fresh
+        //Ensure origins is fresh
         _origins.clear();
 
         // Set the ordered lib attribute
