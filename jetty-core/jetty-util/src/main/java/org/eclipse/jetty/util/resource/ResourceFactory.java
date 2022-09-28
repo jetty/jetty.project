@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -49,6 +50,9 @@ public interface ResourceFactory
      */
     default Resource newSystemResource(String resource)
     {
+        if (StringUtil.isBlank(resource))
+            return null;
+
         URL url = null;
         // Try to format as a URL?
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -110,6 +114,9 @@ public interface ResourceFactory
      */
     default Resource newClassPathResource(String resource)
     {
+        if (StringUtil.isBlank(resource))
+            return null;
+
         URL url = ResourceFactory.class.getResource(resource);
 
         if (url == null)
@@ -135,6 +142,9 @@ public interface ResourceFactory
      */
     default Resource newMemoryResource(URL url)
     {
+        if (url == null)
+            return null;
+
         return new MemoryResource(url);
     }
 
@@ -146,6 +156,9 @@ public interface ResourceFactory
      */
     default Resource newResource(String resource)
     {
+        if (StringUtil.isBlank(resource))
+            return null;
+
         return newResource(URIUtil.toURI(resource));
     }
 
@@ -157,6 +170,9 @@ public interface ResourceFactory
      */
     default Resource newResource(Path path)
     {
+        if (path == null)
+            return null;
+
         return newResource(path.toUri());
     }
 
@@ -168,11 +184,17 @@ public interface ResourceFactory
      */
     default ResourceCollection newResource(List<URI> uris)
     {
+        if ((uris == null) || (uris.isEmpty()))
+            return null;
+
         return Resource.combine(uris.stream().map(this::newResource).toList());
     }
 
     default Resource newResource(URL url)
     {
+        if (url == null)
+            return null;
+
         try
         {
             return newResource(url.toURI());
