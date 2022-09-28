@@ -365,10 +365,8 @@ public class ResourceService
                         String matched = matchesEtag(etag, ifnm);
                         if (matched != null)
                         {
-                            // If we do sendError it clears the ETag header.
-                            response.setStatus(HttpStatus.NOT_MODIFIED_304);
                             response.getHeaders().put(HttpHeader.ETAG, matched);
-                            response.write(true, null, callback);
+                            writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                             return true;
                         }
 
