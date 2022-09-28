@@ -649,7 +649,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             if (annotation != null)
                 classes = annotation.value();
             
-            DiscoveredServletContainerInitializerHolder holder = new DiscoveredServletContainerInitializerHolder(new Source(Origin.ANNOTATION, sci.getClass().getName()), sci);
+            DiscoveredServletContainerInitializerHolder holder = new DiscoveredServletContainerInitializerHolder(new Source(Origin.ANNOTATION, sci.getClass()), sci);
             _sciHolders.add(holder);
             
             if (classes.length > 0)

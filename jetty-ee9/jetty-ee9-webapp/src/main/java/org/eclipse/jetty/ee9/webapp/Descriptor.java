@@ -15,8 +15,6 @@ package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -33,19 +31,20 @@ public abstract class Descriptor
     protected XmlParser.Node _root;
     protected String _dtd;
 
-    public Descriptor(Resource xml)
+    public Descriptor(Resource resource)
     {
-        _xml = Objects.requireNonNull(xml);
+        _xml = Objects.requireNonNull(resource, "Resource must not be null");
+        if (_xml.isDirectory())
+            throw new IllegalArgumentException("Descriptor cannot be a directory");
     }
 
     public void parse(XmlParser parser)
         throws Exception
     {
-
         if (_root == null)
         {
             Objects.requireNonNull(parser);
-            try (InputStream is = Files.newInputStream(_xml.getPath(), StandardOpenOption.READ))
+            try (InputStream is = _xml.newInputStream())
             {
                 _root = parser.parse(is);
                 _dtd = parser.getDTD();
@@ -58,9 +57,9 @@ public abstract class Descriptor
         }
     }
 
-    public boolean isParsed()
+    public String getURI()
     {
-        return _root != null;
+        return _xml.getURI().toASCIIString();
     }
 
     public Resource getResource()
@@ -76,6 +75,6 @@ public abstract class Descriptor
     @Override
     public String toString()
     {
-        return this.getClass().getSimpleName() + "(" + _xml + ")";
+        return this.getClass().getSimpleName() + "(" + getURI() + ")";
     }
 }

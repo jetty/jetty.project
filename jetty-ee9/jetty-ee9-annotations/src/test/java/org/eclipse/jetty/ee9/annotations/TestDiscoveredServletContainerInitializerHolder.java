@@ -70,7 +70,7 @@ public class TestDiscoveredServletContainerInitializerHolder
         SampleServletContainerInitializer sci = new SampleServletContainerInitializer();
         
         AnnotationConfiguration.DiscoveredServletContainerInitializerHolder holder =
-            new AnnotationConfiguration.DiscoveredServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION, sci.getClass().getName()),
+            new AnnotationConfiguration.DiscoveredServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION, sci.getClass()),
             sci);
 
         //add the @HandlesTypes to the holder

@@ -86,7 +86,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         if (holder == null)
         {
             //Filter with this name does not already exist, so add it
-            holder = _context.getServletHandler().newFilterHolder(new Source(Source.Origin.ANNOTATION, clazz.getName()));
+            holder = _context.getServletHandler().newFilterHolder(new Source(Source.Origin.ANNOTATION, clazz));
             holder.setName(name);
 
             holder.setHeldClass(clazz);
