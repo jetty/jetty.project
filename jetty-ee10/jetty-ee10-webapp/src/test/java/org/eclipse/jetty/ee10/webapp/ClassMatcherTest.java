@@ -29,19 +29,14 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClassMatcherTest
 {
     private final ClassMatcher _pattern = new ClassMatcher();
     
-    protected static Supplier<URI> NULL_SUPPLIER = new Supplier<URI>()
-    {
-        public URI get()
-        {
-            return null;
-        } 
-    };
+    protected static Supplier<URI> NULL_SUPPLIER = () -> null;
     
     @BeforeEach
     public void before()
@@ -217,15 +212,15 @@ public class ClassMatcherTest
     {
         // jar from JVM classloader
         URI modString = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(modString);
+        assertNotNull(modString);
 
         // a jar from maven repo jar
         URI locJunit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(locJunit);
+        assertNotNull(locJunit);
 
         // class file
         URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(locTest);
+        assertNotNull(locTest);
 
         ClassMatcher pattern = new ClassMatcher();
 
@@ -240,7 +235,7 @@ public class ClassMatcherTest
         pattern.exclude("jrt:/java.base/");
 
         // Add jar for individual class and classes directory
-        pattern.exclude(locJunit.toString(), locTest.toString());
+        pattern.exclude(locJunit.toASCIIString(), locTest.toASCIIString());
 
         assertThat(pattern.match(String.class), is(false));
         assertThat(pattern.match(Test.class), is(false));

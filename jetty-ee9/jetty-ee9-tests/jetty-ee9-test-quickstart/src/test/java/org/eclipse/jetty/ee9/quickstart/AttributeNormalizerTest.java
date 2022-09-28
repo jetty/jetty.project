@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.ee9.quickstart;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -29,9 +29,9 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -39,127 +39,108 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AttributeNormalizerTest
 {
-    private static ResourceFactory.Closeable resourceFactory;
-
-    @BeforeEach
-    public void beforeEach()
+    public static Stream<Arguments> scenarios()
     {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    @AfterEach
-    public void afterEach()
-    {
-        IO.close(resourceFactory);
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    private static ResourceFactory getResourceFactory()
-    {
-        if (resourceFactory == null)
-            resourceFactory = ResourceFactory.closeable();
-        return resourceFactory;
-    }
-
-    public static Stream<Arguments> scenarios() throws IOException
-    {
-        final List<Scenario> data = new ArrayList<>();
+        final List<Arguments> data = new ArrayList<>();
         final String arch = String.format("%s/%s", System.getProperty("os.name"), System.getProperty("os.arch"));
 
         String title;
-        Map<String, String> env;
+        Path jettyHome;
+        Path jettyBase;
+        Path war;
 
         // ------
         title = "Typical Setup";
-
-        env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title, "jetty-distro"));
-        env.put("jetty.base", asTargetPath(title, "jetty-distro/demo.base"));
-        env.put("WAR", asTargetPath(title, "jetty-distro/demo.base/webapps/FOO"));
-
-        data.add(new Scenario(arch, title, env));
+        jettyHome = asTargetPath(title, "jetty-distro");
+        jettyBase = asTargetPath(title, "jetty-distro/demo.base");
+        war = asTargetPath(title, "jetty-distro/demo.base/webapps/FOO");
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
 
         // ------
         title = "Old Setup";
+        jettyHome = asTargetPath(title, "jetty-distro");
+        jettyBase = asTargetPath(title, "jetty-distro");
+        war = asTargetPath(title, "jetty-distro/webapps/FOO");
 
-        env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title, "jetty-distro"));
-        env.put("jetty.base", asTargetPath(title, "jetty-distro"));
-        env.put("WAR", asTargetPath(title, "jetty-distro/webapps/FOO"));
-
-        data.add(new Scenario(arch, title, env));
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
 
         // ------
-        // This puts the jetty.home inside of the jetty.base
+        // This puts the jetty.home inside the jetty.base
         title = "Overlap Setup";
-        env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title, "app/dist"));
-        env.put("jetty.base", asTargetPath(title, "app"));
-        env.put("WAR", asTargetPath(title, "app/webapps/FOO"));
+        jettyHome = asTargetPath(title, "app/dist");
+        jettyBase = asTargetPath(title, "app");
+        war = asTargetPath(title, "app/webapps/FOO");
 
-        data.add(new Scenario(arch, title, env));
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
 
         // ------
         // This tests a path scenario often seen on various automatic deployments tooling
         // such as Kubernetes, CircleCI, TravisCI, and Jenkins.
         title = "Nasty Path Setup";
-        env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title, "app%2Fnasty/dist"));
-        env.put("jetty.base", asTargetPath(title, "app%2Fnasty/base"));
-        env.put("WAR", asTargetPath(title, "app%2Fnasty/base/webapps/FOO"));
+        jettyHome = asTargetPath(title, "app%2Fnasty/dist");
+        jettyBase = asTargetPath(title, "app%2Fnasty/base");
+        war = asTargetPath(title, "app%2Fnasty/base/webapps/FOO");
 
-        data.add(new Scenario(arch, title, env));
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
 
-        // ------
-        title = "Root Path Setup";
-        env = new HashMap<>();
-        Path rootPath = MavenTestingUtils.getTargetPath().getRoot();
-        env.put("jetty.home", rootPath.toString());
-        env.put("jetty.base", rootPath.toString());
-        env.put("WAR", rootPath.resolve("webapps/root").toString());
-
-        data.add(new Scenario(arch, title, env));
-        return data.stream().map(Arguments::of);
+        return data.stream();
     }
 
-    private static final String asTargetPath(String title, String subpath)
+    private static Path asTargetPath(String title, String subpath)
     {
         Path rootPath = MavenTestingUtils.getTargetTestingPath(title);
         FS.ensureDirExists(rootPath);
         Path path = rootPath.resolve(FS.separators(subpath));
         FS.ensureDirExists(path);
 
-        return path.toString();
+        return path;
     }
 
-    private static Map<String, String> originalEnv = new HashMap<>();
+    private static final Map<String, String> originalEnv = new HashMap<>();
+    private static ResourceFactory.Closeable resourceFactory;
 
     @BeforeAll
     public static void rememberOriginalEnv()
     {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        resourceFactory = ResourceFactory.closeable();
         System.getProperties().stringPropertyNames()
-            .forEach((name) ->
-            {
-                originalEnv.put(name, System.getProperty(name));
-            });
+            .forEach((name) -> originalEnv.put(name, System.getProperty(name)));
+    }
+
+    @AfterAll
+    public static void afterAll()
+    {
+        IO.close(resourceFactory);
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @AfterEach
     public void restoreOriginalEnv()
     {
-        originalEnv.forEach((name, value) ->
+        originalEnv.forEach(AttributeNormalizerTest::restoreSystemProperty);
+    }
+
+    private static void restoreSystemProperty(String key, String value)
+    {
+        if (value == null)
         {
-            EnvUtils.restoreSystemProperty(name, value);
-        });
+            System.clearProperty(key);
+        }
+        else
+        {
+            System.setProperty(key, value);
+        }
     }
 
     private void assertNormalize(final Scenario scenario, Object o, String expected)
     {
         String result = scenario.normalizer.normalize(o);
-        assertThat("normalize((" + o.getClass().getSimpleName() + ") " + o.toString() + ")",
+        assertThat("normalize((" + o.getClass().getSimpleName() + ") " + Objects.toString(o, "<null>") + ")",
             result, is(expected));
     }
 
@@ -185,7 +166,7 @@ public class AttributeNormalizerTest
     public void testNormalizeWarAsString(final Scenario scenario)
     {
         // Normalize WAR as String path
-        assertNormalize(scenario, scenario.war, scenario.war); // only URL, File, URI are supported
+        assertNormalize(scenario, scenario.war.toString(), scenario.war.toString());
     }
 
     @ParameterizedTest
@@ -283,16 +264,16 @@ public class AttributeNormalizerTest
     public void testNormalizeWarAsURI(final Scenario scenario)
     {
         // Normalize WAR as URI
-        URI testWarURI = new File(scenario.war).toURI();
+        URI testWarURI = scenario.war.toUri();
         assertNormalize(scenario, testWarURI, "${WAR.uri}");
     }
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testNormalizeWarDeepAsFile(final Scenario scenario)
+    public void testNormalizeWarDeepAsPath(final Scenario scenario)
     {
         // Normalize WAR deep path as File
-        File testWarDeep = new File(new File(scenario.war), FS.separators("deep/ref")).getAbsoluteFile();
+        Path testWarDeep = scenario.war.resolve("deep/ref");
         assertNormalize(scenario, testWarDeep, "${WAR.path}" + FS.separators("/deep/ref"));
     }
 
@@ -301,7 +282,7 @@ public class AttributeNormalizerTest
     public void testNormalizeWarDeepAsString(final Scenario scenario)
     {
         // Normalize WAR deep path as String
-        File testWarDeep = new File(new File(scenario.war), FS.separators("deep/ref")).getAbsoluteFile();
+        Path testWarDeep = scenario.war.resolve("deep/ref");
         assertNormalize(scenario, testWarDeep.toString(), testWarDeep.toString());
     }
 
@@ -310,8 +291,8 @@ public class AttributeNormalizerTest
     public void testNormalizeWarDeepAsURI(final Scenario scenario)
     {
         // Normalize WAR deep path as URI
-        File testWarDeep = new File(new File(scenario.war), FS.separators("deep/ref")).getAbsoluteFile();
-        assertNormalize(scenario, testWarDeep.toURI(), "${WAR.uri}/deep/ref");
+        Path testWarDeep = scenario.war.resolve("deep/ref");
+        assertNormalize(scenario, testWarDeep.toUri(), "${WAR.uri}/deep/ref");
     }
 
     @ParameterizedTest
@@ -319,8 +300,8 @@ public class AttributeNormalizerTest
     public void testExpandWarDeep(final Scenario scenario)
     {
         // Expand WAR deep path
-        File testWarDeep = new File(new File(scenario.war), FS.separators("deep/ref"));
-        URI uri = URI.create("jar:" + testWarDeep.toURI().toASCIIString() + "!/other/file");
+        Path testWarDeep = scenario.war.resolve("deep/ref");
+        URI uri = URI.create("jar:" + testWarDeep.toUri().toASCIIString() + "!/other/file");
         assertExpandURI(scenario, "jar:${WAR.uri}/deep/ref!/other/file", uri);
     }
 
@@ -328,30 +309,31 @@ public class AttributeNormalizerTest
     {
         private final Path jettyHome;
         private final Path jettyBase;
-        private final String war;
+        private final Path war;
         private final String arch;
         private final String title;
-        private final Map<String, String> env;
         private final AttributeNormalizer normalizer;
 
-        public Scenario(String arch, String title, Map<String, String> env) throws IOException
+        public Scenario(String arch, String title, Path jettyHome, Path jettyBase, Path war)
         {
             this.arch = arch;
             this.title = title;
-            this.env = env;
 
             // Grab specific values of interest in general
-            jettyHome = new File(env.get("jetty.home")).toPath().toAbsolutePath();
-            jettyBase = new File(env.get("jetty.base")).toPath().toAbsolutePath();
-            war = env.get("WAR");
+            this.jettyHome = jettyHome;
+            this.jettyBase = jettyBase;
+            this.war = war;
 
-            // Set environment (skipping null and WAR)
-            env.entrySet().stream()
-                .filter((e) -> e.getValue() != null && !e.getKey().equalsIgnoreCase("WAR"))
-                .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
+            assertTrue(Files.exists(this.jettyHome));
+            assertTrue(Files.exists(this.jettyBase));
+            assertTrue(Files.exists(this.war));
+
+            // Set some System Properties that AttributeNormalizer expects
+            System.setProperty("jetty.home", jettyHome.toString());
+            System.setProperty("jetty.base", jettyBase.toString());
 
             // Setup normalizer
-            Resource webresource = getResourceFactory().newResource(war);
+            Resource webresource = resourceFactory.newResource(war);
             this.normalizer = new AttributeNormalizer(webresource);
         }
 

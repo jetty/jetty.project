@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -152,7 +151,6 @@ public class QuickStartTest
         server.stop();
     }
 
-    @Disabled //TODO needs DefaultServlet
     @Test
     public void testJNDIWar() throws Exception
     {
@@ -200,6 +198,7 @@ public class QuickStartTest
 
         URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+        assertEquals(200, connection.getResponseCode());
         String content = IO.toString((InputStream)connection.getContent());
         assertEquals(200, connection.getResponseCode());
         assertThat(content, Matchers.containsString("JNDI Demo WebApp"));

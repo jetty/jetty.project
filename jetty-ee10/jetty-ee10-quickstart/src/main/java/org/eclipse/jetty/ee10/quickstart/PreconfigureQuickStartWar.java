@@ -96,15 +96,13 @@ public class PreconfigureQuickStartWar
             if (war.isDirectory())
                 error("war file is directory");
 
-            if (dir != null)
-            {
+            if (!dir.exists())
                 Files.createDirectories(dir.getPath());
 
-                try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-                {
-                    // unpack contents of war to directory
-                    resourceFactory.newResource(URIUtil.toJarFileUri(war.getURI())).copyTo(dir.getPath());
-                }
+            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+            {
+                // unpack contents of war to directory
+                resourceFactory.newResource(URIUtil.toJarFileUri(war.getURI())).copyTo(dir.getPath());
             }
         }
 
