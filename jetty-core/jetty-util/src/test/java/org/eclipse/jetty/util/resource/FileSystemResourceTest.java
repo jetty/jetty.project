@@ -31,6 +31,7 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 
@@ -56,6 +57,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -143,16 +145,27 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNonAbsoluteURI() throws Exception
+    public void testNonAbsoluteURI(WorkDir workDir) throws Exception
     {
+        // Doesn't exist.
         Resource resource = ResourceFactory.root().newResource(new URI("path/to/resource"));
-        assertThat(resource, notNullValue());
-        assertThat(resource.getURI().toString(), startsWith("file:"));
-        assertThat(resource.getURI().toString(), endsWith("/path/to/resource"));
+        assertThat(resource, nullValue());
 
-        resource =  ResourceFactory.root().newResource(new URI("/path/to/resource"));
-        assertThat(resource, notNullValue());
-        assertThat(resource.getURI().toString(), is("file:///path/to/resource"));
+        // Create a directory
+        Path testdir = workDir.getEmptyPathDir().resolve("path/to/resource");
+        Files.createDirectories(testdir);
+
+        Path pwd = Paths.get(System.getProperty("user.dir"));
+        Path relativePath = pwd.relativize(testdir);
+
+        // Get a path relative name using unix/uri "/" (not windows "\")
+        String relativeName = FS.separators(relativePath.toString());
+        assertThat("Should not have path navigation entries", relativeName, not(containsString("..")));
+
+        resource = ResourceFactory.root().newResource(new URI(relativeName));
+        assertThat("Relative newResource: " + relativeName, resource, notNullValue());
+        assertThat(resource.getURI().toString(), startsWith("file:"));
+        assertThat(resource.getURI().toString(), endsWith("/path/to/resource/"));
     }
 
     @Test

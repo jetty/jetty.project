@@ -47,6 +47,14 @@ public class PathResource extends Resource
         .with("jrt")
         .build();
 
+    public static PathResource of(URI uri) throws IOException
+    {
+        Path path = Paths.get(uri.normalize());
+        if (!Files.exists(path))
+            return null;
+        return new PathResource(path, uri, false);
+    }
+
     private final Path path;
     private final URI uri;
     private boolean targetResolved = false;

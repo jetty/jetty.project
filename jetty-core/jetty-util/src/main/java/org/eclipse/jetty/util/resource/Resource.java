@@ -115,9 +115,9 @@ public abstract class Resource implements Iterable<Resource>
 
             // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
             if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-                return new PathResource(uri);
+                return PathResource.of(uri);
 
-            return new MountedPathResource(uri);
+            return MountedPathResource.of(uri);
         }
         catch (URISyntaxException | ProviderNotFoundException | IOException ex)
         {

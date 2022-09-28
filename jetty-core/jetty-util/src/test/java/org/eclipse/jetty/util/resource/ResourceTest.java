@@ -300,11 +300,13 @@ public class ResourceTest
 
         try
         {
-            String globReference = testDir.toAbsolutePath() + File.separator + '*';
-            Resource globResource = resourceFactory.newResource(globReference);
+            Path globFile = testDir.resolve("*");
+            Files.createFile(globFile);
+            assumeTrue(Files.exists(globFile)); // skip test if file wasn't created
+            Resource globResource = resourceFactory.newResource(globFile.toAbsolutePath().toString());
             assertNotNull(globResource, "Should have produced a Resource");
         }
-        catch (InvalidPathException e)
+        catch (InvalidPathException | IOException e)
         {
             // if unable to reference the glob file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
@@ -366,12 +368,35 @@ public class ResourceTest
     }
 
     @Test
-    public void testClimbAboveBase()
+    public void testClimbAboveBase(WorkDir workDir)
     {
-        Resource resource = resourceFactory.newResource("/foo/bar");
+        Path testdir = workDir.getEmptyPathDir().resolve("foo/bar");
+        FS.ensureDirExists(testdir);
+        Resource resource = resourceFactory.newResource(testdir);
         assertThrows(IllegalArgumentException.class, () -> resource.resolve(".."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./.."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./../bar"));
+    }
+
+    @Test
+    public void testNewResourcePathDoesNotExist(WorkDir workDir)
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
+        // at this point we have a directory reference that does not exist
+        Resource resource = resourceFactory.newResource(dir);
+        assertNull(resource);
+    }
+
+    @Test
+    public void testNewResourceFileDoesNotExists(WorkDir workDir) throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("foo");
+        FS.ensureDirExists(dir);
+        Path file = dir.resolve("bar.txt");
+        // at this point we have a file reference that does not exist
+        assertFalse(Files.exists(file));
+        Resource resource = resourceFactory.newResource(file);
+        assertNull(resource);
     }
 
     @Test
@@ -388,16 +413,6 @@ public class ResourceTest
     }
 
     @Test
-    public void testDotAliasDirDoesNotExist(WorkDir workDir)
-    {
-        Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
-        // at this point we have a directory reference that does not exist
-        Resource resource = resourceFactory.newResource(dir);
-        Resource dot = resource.resolve(".");
-        assertNull(dot);
-    }
-
-    @Test
     public void testDotAliasFileExists(WorkDir workDir) throws IOException
     {
         Path dir = workDir.getEmptyPathDir().resolve("foo");
@@ -410,19 +425,6 @@ public class ResourceTest
         assertTrue(dot.exists());
         assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
         assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getTargetURI())));
-    }
-
-    @Test
-    public void testDotAliasFileDoesNotExists(WorkDir workDir) throws IOException
-    {
-        Path dir = workDir.getEmptyPathDir().resolve("foo");
-        FS.ensureDirExists(dir);
-        Path file = dir.resolve("bar.txt");
-        // at this point we have a file reference that does not exist
-        assertFalse(Files.exists(file));
-        Resource resource = resourceFactory.newResource(file);
-        Resource dot = resource.resolve(".");
-        assertNull(dot);
     }
 
     @Test
