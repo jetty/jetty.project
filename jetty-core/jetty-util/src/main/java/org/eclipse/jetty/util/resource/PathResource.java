@@ -49,7 +49,7 @@ public class PathResource extends Resource
 
     private final Path path;
     private final URI uri;
-    private boolean targetResolved = false;
+    private boolean alias = false;
     private Path targetPath;
 
     /**
@@ -142,8 +142,8 @@ public class PathResource extends Resource
 
     PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
-        // normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
-        // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`
+        // Normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
+        // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`.
         this(Paths.get(uri.normalize()), uri, bypassAllowedSchemeCheck);
     }
 
@@ -170,7 +170,11 @@ public class PathResource extends Resource
     @Override
     public boolean exists()
     {
-        return Files.exists(targetPath != null ? targetPath : path);
+        if (Files.exists(path))
+            return true;
+        if (isAlias())
+            return Files.exists(targetPath);
+        return false;
     }
 
     @Override
@@ -221,6 +225,13 @@ public class PathResource extends Resource
     }
 
     @Override
+    public boolean isAlias()
+    {
+        checkAlias();
+        return alias;
+    }
+
+    @Override
     public String getName()
     {
         return path.toAbsolutePath().toString();
@@ -256,27 +267,45 @@ public class PathResource extends Resource
     @Override
     public URI getTargetURI()
     {
-        if (!targetResolved)
+        checkAlias();
+        return targetPath.toUri();
+    }
+
+    private void checkAlias()
+    {
+        if (targetPath == null)
         {
             targetPath = resolveTargetPath();
-            targetResolved = true;
+            if (Files.exists(targetPath))
+            {
+                if (!isSameName(path, targetPath))
+                    alias = true;
+                else if (!URIUtil.equalsIgnoreEncodings(uri, toUri(path)))
+                {
+                    /* Catch situation where the Path class has already normalized
+                     * the URI e.g. input path "aa./foo.txt"
+                     * from an #resolve(String) is normalized away during
+                     * the creation of a Path object reference.
+                     * If the URI is different from the Path.toUri() then
+                     * we will just use the original URI to construct the
+                     * alias reference Path.
+                     *
+                     * We use the method `toUri(Path)` here, instead of
+                     * Path.toUri() to ensure that the path contains
+                     * a trailing slash if it's a directory, (something
+                     * not all FileSystems seem to support)
+                     */
+                    alias = true;
+                }
+            }
         }
-        if (targetPath == null)
-            return null;
-        return targetPath.toUri();
     }
 
     private Path resolveTargetPath()
     {
-        // If the path doesn't exist, then there's no alias to reference
-        if (!Files.exists(path))
-            return null;
-
         try
         {
-            Path real = path.toRealPath();
-            if (!isSameName(path, real))
-                return real;
+            return path.normalize().toRealPath();
         }
         catch (IOException e)
         {
@@ -286,7 +315,8 @@ public class PathResource extends Resource
         {
             LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
         }
-        return null;
+
+        return path.normalize();
     }
 
     @Override

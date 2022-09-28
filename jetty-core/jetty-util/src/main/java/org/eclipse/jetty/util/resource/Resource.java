@@ -325,7 +325,7 @@ public abstract class Resource implements Iterable<Resource>
      */
     public boolean isAlias()
     {
-        return getTargetURI() != null;
+        return false;
     }
 
     /**
@@ -337,7 +337,7 @@ public abstract class Resource implements Iterable<Resource>
      */
     public URI getTargetURI()
     {
-        return null;
+        return getURI();
     }
 
     /**
