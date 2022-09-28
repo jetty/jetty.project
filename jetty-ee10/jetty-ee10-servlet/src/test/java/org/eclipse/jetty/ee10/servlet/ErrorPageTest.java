@@ -589,7 +589,7 @@ public class ErrorPageTest
                         hold.countDown();
 
                         // Wait until request async waiting
-                        while (ServletContextRequest.getBaseRequest(request).getServletRequestState().getState() == ServletRequestState.State.HANDLING)
+                        while (ServletContextRequest.getServletContextRequest(request).getServletRequestState().getState() == ServletRequestState.State.HANDLING)
                         {
                             try
                             {

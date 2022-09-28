@@ -181,9 +181,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        ServletContextRequest request = ServletContextRequest.getBaseRequest(req);
-        if (request == null)
-            throw new IllegalStateException("Base Request not available");
+        ServletContextRequest request = ServletContextRequest.getServletContextRequest(req);
         ServletContextResponse response = request.getResponse();
 
         // Do preliminary check before proceeding to attempt an upgrade.

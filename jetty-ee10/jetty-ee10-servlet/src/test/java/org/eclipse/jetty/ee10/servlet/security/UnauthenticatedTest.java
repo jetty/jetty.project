@@ -74,7 +74,7 @@ public class UnauthenticatedTest
                 @Override
                 protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
                 {
-                    ServletContextRequest scr = ServletContextRequest.getBaseRequest(req);
+                    ServletContextRequest scr = ServletContextRequest.getServletContextRequest(req);
                     resp.getWriter().println("authentication: " + scr.getServletApiRequest().getAuthentication());
                 }
 

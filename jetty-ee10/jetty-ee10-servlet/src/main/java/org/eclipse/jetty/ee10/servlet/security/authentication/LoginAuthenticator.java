@@ -125,7 +125,7 @@ public abstract class LoginAuthenticator implements Authenticator
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
                 if (session.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
                 {
-                    ServletContextRequest servletContextRequest = ServletContextRequest.getBaseRequest(httpRequest);
+                    ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(httpRequest);
                     Response response = servletContextRequest.getResponse().getWrapped();
                     String oldId = session.getId();
                     session.renewId(servletContextRequest);
