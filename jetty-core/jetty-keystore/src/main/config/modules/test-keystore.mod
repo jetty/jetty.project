@@ -6,7 +6,7 @@ DO NOT USE IN PRODUCTION!!!
 demo
 ssl
 
-[depend]
+[before]
 ssl
 
 [files]
