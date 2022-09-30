@@ -52,6 +52,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HttpInput;
 import org.eclipse.jetty.ee9.nested.HttpOutput;
 import org.eclipse.jetty.http.HttpHeader;
@@ -65,8 +66,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -93,7 +92,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-// TODO: most of these tests do not work because the scope listener mechanism is broken.
 @Disabled
 public class AsyncIOServletTest extends AbstractTest
 {
@@ -107,14 +105,14 @@ public class AsyncIOServletTest extends AbstractTest
         servletContextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
             @Override
-            public void enterScope(org.eclipse.jetty.server.Context context, Request request)
+            public void enterScope(ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request, Object reason)
             {
                 checkScope();
                 scope.set(new RuntimeException());
             }
 
             @Override
-            public void exitScope(org.eclipse.jetty.server.Context context, Request request)
+            public void exitScope(ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request)
             {
                 assertScope();
                 scope.set(null);

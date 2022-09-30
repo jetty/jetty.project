@@ -1070,61 +1070,37 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     protected void doStart() throws Exception
     {
-        getContext().call(() -> 
-        {    
-            _objFactory.addDecorator(new DeprecationWarning());
-            getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
+        _objFactory.addDecorator(new DeprecationWarning());
+        getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
 
-            if (getContextPath() == null)
-                throw new IllegalStateException("Null contextPath");
+        if (getContextPath() == null)
+            throw new IllegalStateException("Null contextPath");
 
-            Resource baseResource = getBaseResource();
-            if (baseResource != null && baseResource.isAlias())
-                LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
-                    baseResource, baseResource.getTargetURI(), this);
+        Resource baseResource = getBaseResource();
+        if (baseResource != null && baseResource.isAlias())
+            LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
+                baseResource, baseResource.getTargetURI(), this);
 
-            if (_logger == null)
-                _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
+        if (_logger == null)
+            _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
-            ClassLoader oldClassloader = null;
-            Thread currentThread = null;
-            ContextHandler.Context oldContext = null;
+        // TODO who uses this???
+        if (getServer() != null)
+            _servletContext.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
-            // TODO who uses this???
-            if (getServer() != null)
-                _servletContext.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
+        if (_mimeTypes == null)
+            _mimeTypes = new MimeTypes();
 
-            if (_mimeTypes == null)
-                _mimeTypes = new MimeTypes();
+        _durableListeners.addAll(getEventListeners());
 
-            _durableListeners.addAll(getEventListeners());
-
-            ClassLoader loader = getClassLoader();
-            try
-            {
-                // Set the classloader, context and enter scope
-                if (loader != null)
-                {
-                    currentThread = Thread.currentThread();
-                    oldClassloader = currentThread.getContextClassLoader();
-                    currentThread.setContextClassLoader(loader);
-                }
-
-                // defers the calling of super.doStart()
-                startContext();
-
-                contextInitialized();
-
-                LOG.info("Started {}", this);
-            }
-            finally
-            {
-                exitScope(null);
-                // reset the classloader
-                if (loader != null && currentThread != null)
-                    currentThread.setContextClassLoader(oldClassloader);
-            }
+        getContext().call(() ->
+        {
+            // defers the calling of super.doStart()
+            startContext();
+            contextInitialized();
         }, null);
+
+        LOG.info("Started {}", this);
     }
 
     @Override
