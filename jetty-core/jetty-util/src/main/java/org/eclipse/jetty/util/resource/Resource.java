@@ -329,11 +329,10 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * If this Resource is an alias pointing to a different location,
-     * return the target location as URI.
+     * The target URI of the resource. If this Resource is an alias pointing to a different location,
+     * this will resolve the alias to return the true target URI of the resource.
      *
-     * @return The target URI location of this resource,
-     *      or null if there is no target URI location (eg: not an alias, or a symlink)
+     * @return The target URI location of this resource, with any aliases resolved.
      */
     public URI getTargetURI()
     {
