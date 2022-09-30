@@ -164,8 +164,10 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     }
 
     /**
-     * @param httpContent the resource to test
-     * @return whether the httpContent is cacheable. The default implementation tests the cache sizes.
+     * Tests whether the given HttpContent is cacheable, and if there is enough room to fit it in the cache.
+     *
+     * @param httpContent the HttpContent to test.
+     * @return whether the HttpContent is cacheable.
      */
     protected boolean isCacheable(HttpContent httpContent)
     {
