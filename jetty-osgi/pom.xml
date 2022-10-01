@@ -14,7 +14,7 @@
   <properties>
     <osgi-version>3.18.0</osgi-version>
     <osgi-services-version>3.10.200</osgi-services-version>
-    <osgi-util-version>3.7.1</osgi-util-version>
+    <osgi-util-version>3.7.100</osgi-util-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
     <osgi-util-promise-version>1.2.0</osgi-util-promise-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
