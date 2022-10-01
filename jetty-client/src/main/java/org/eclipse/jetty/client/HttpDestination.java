@@ -311,6 +311,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             if (enqueue(exchanges, exchange))
             {
+                request.sent();
                 requestTimeouts.schedule(exchange);
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {

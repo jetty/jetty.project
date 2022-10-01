@@ -166,7 +166,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     public void connect(SelectableChannel channel, Object attachment)
     {
         ManagedSelector set = chooseSelector();
-        set.submit(set.new Connect(channel, attachment));
+        if (set != null)
+            set.submit(set.new Connect(channel, attachment));
     }
 
     /**

@@ -241,13 +241,13 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     {
         if (!closed.get())
             return false;
-        if (sweeps.incrementAndGet() < 4)
-            return false;
-        return true;
+        return sweeps.incrementAndGet() > 3;
     }
 
     public void remove()
     {
+        // Restore idle timeout
+        getEndPoint().setIdleTimeout(idleTimeout);
         getHttpDestination().remove(this);
     }
 
@@ -301,8 +301,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
             if (request instanceof HttpProxy.TunnelRequest)
             {
                 long connectTimeout = getHttpClient().getConnectTimeout();
+                // Use the connect timeout as a total timeout,
+                // since this request is to "connect" to the server.
                 request.timeout(connectTimeout, TimeUnit.MILLISECONDS)
-                        .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS);
+                    // Override the idle timeout in case
+                    // it is shorter than the connect timeout.
+                    .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS);
             }
 
             HttpConversation conversation = request.getConversation();

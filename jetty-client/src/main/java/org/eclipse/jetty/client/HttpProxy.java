@@ -234,7 +234,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
         private void tunnelFailed(EndPoint endPoint, Throwable failure)
         {
-            endPoint.close();
+            endPoint.close(failure);
             promise.failed(failure);
         }
 
