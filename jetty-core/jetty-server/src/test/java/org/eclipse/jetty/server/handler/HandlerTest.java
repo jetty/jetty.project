@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.util.List;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelTest;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
@@ -22,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -321,5 +325,68 @@ public class HandlerTest
         wrapper.setHandler(handler);
 
         assertThat(handler.getServer(), sameInstance(server));
+    }
+
+    @Test
+    public void testConditional() throws Exception
+    {
+        Server server = new Server();
+
+        Handler.Conditional conditional = new Handler.Conditional(List.of(
+            Request.forMethod("GET"),
+            Request.forPath(List.of("/include/*"), List.of("*.excluded"))));
+
+        server.setHandler(conditional);
+        conditional.setHandler(new HelloHandler());
+
+        LocalConnector local = new LocalConnector(server);
+        server.addConnector(local);
+        server.start();
+
+        assertThat(local.getResponse("GET / HTTP/1.0\r\n\r\n"), containsString(" 404 "));
+        assertThat(local.getResponse("GET /include/path HTTP/1.0\r\n\r\n"), containsString(" 200 "));
+        assertThat(local.getResponse("GET /include/path.excluded HTTP/1.0\r\n\r\n"), containsString(" 404 "));
+        assertThat(local.getResponse("POST /include/path HTTP/1.0\r\n\r\n"), containsString(" 404 "));
+    }
+
+    @Test
+    public void testConditionalSkipNext() throws Exception
+    {
+        Server server = new Server();
+
+        Handler.Conditional conditional = new Handler.Conditional(true, List.of(
+            Request.forMethod("GET"),
+            Request.forPath(List.of("/include/*"), List.of("*.excluded"))));
+
+        server.setHandler(conditional);
+
+        // A wrapper that may or may not modify the request/response.  Like GzipHandler
+        Handler.Wrapper wrapper = new Handler.Wrapper()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                Request.Processor processor = super.handle(request);
+                if (processor == null)
+                    return null;
+                return (req, res, cb) ->
+                {
+                    res.getHeaders().add("Wrapper", "applied");
+                    processor.process(req, res, cb);
+                };
+            }
+        };
+
+        conditional.setHandler(wrapper);
+        wrapper.setHandler(new HelloHandler());
+
+        LocalConnector local = new LocalConnector(server);
+        server.addConnector(local);
+        server.start();
+
+        assertThat(local.getResponse("GET / HTTP/1.0\r\n\r\n"), not(containsString("Wrapper: applied")));
+        assertThat(local.getResponse("GET /include/path HTTP/1.0\r\n\r\n"), containsString("Wrapper: applied"));
+        assertThat(local.getResponse("GET /include/path.excluded HTTP/1.0\r\n\r\n"), not(containsString("Wrapper: applied")));
+        assertThat(local.getResponse("POST /include/path HTTP/1.0\r\n\r\n"), not(containsString("Wrapper: applied")));
     }
 }

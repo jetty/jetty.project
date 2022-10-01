@@ -16,12 +16,14 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -360,6 +362,12 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            return null;
+        }
+
+        @Override
         public Server getServer()
         {
             return _server;
@@ -688,6 +696,82 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             {
                 super(InvocationType.NON_BLOCKING);
             }
+        }
+    }
+
+    class Conditional extends Wrapper
+    {
+        private final List<Predicate<Request>> _conditions = new ArrayList<>();
+        private final boolean _skipNext;
+
+        public Conditional()
+        {
+            this(false);
+        }
+
+        public Conditional(@Name("skipNext") boolean skipNext)
+        {
+            this(skipNext, null);
+        }
+
+        public Conditional(List<Predicate<Request>> conditions)
+        {
+            this(false, conditions);
+        }
+
+        public Conditional(@Name("skipNext") boolean skipNext, List<Predicate<Request>> conditions)
+        {
+            _skipNext = skipNext;
+            if (conditions != null)
+                setConditions(conditions);
+        }
+
+        public void setConditions(List<Predicate<Request>> conditions)
+        {
+            if (isStarted())
+                throw new IllegalStateException(getState());
+            _conditions.clear();
+            _conditions.addAll(conditions);
+        }
+
+        public List<Predicate<Request>> getConditions()
+        {
+            return Collections.unmodifiableList(_conditions);
+        }
+
+        public void add(Predicate<Request> condition)
+        {
+            if (isStarted())
+                throw new IllegalStateException(getState());
+            _conditions.add(condition);
+        }
+
+        public boolean remove(Predicate<Request> condition)
+        {
+            if (isStarted())
+                throw new IllegalStateException(getState());
+            return _conditions.remove(condition);
+        }
+
+        public boolean isSkipNext()
+        {
+            return _skipNext;
+        }
+
+        @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            for (Predicate<Request> p : _conditions)
+            {
+                if (!p.test(request))
+                {
+                    Handler next = getHandler();
+                    if (_skipNext && next instanceof Wrapper wrapper && wrapper.getHandler() != null)
+                        return wrapper.getHandler().handle(request);
+                    return null;
+                }
+            }
+            return super.handle(request);
         }
     }
 }

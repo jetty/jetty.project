@@ -18,6 +18,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -598,6 +601,36 @@ public interface Request extends Attributes, Content.Source
         {
             return (Request)super.getWrapped();
         }
+    }
+
+    static Predicate<Request> forMethod(String... included)
+    {
+        return forMethod(List.of(included), Collections.emptyList());
+    }
+
+    static Predicate<Request> forMethod(Collection<String> included, Collection<String> excluded)
+    {
+        IncludeExclude<String> methods = new IncludeExclude<>();
+        if (included != null)
+            methods.include(included.toArray(new String[0]));
+        if (excluded != null)
+            methods.exclude(excluded.toArray(new String[0]));
+        return r -> methods.test(r.getMethod());
+    }
+
+    static Predicate<Request> forPath(String... included)
+    {
+        return forPath(List.of(included), Collections.emptyList());
+    }
+
+    static Predicate<Request> forPath(Collection<String> included, Collection<String> excluded)
+    {
+        IncludeExclude<String> paths = new IncludeExclude<>(PathSpecSet.class);
+        if (included != null)
+            paths.include(included.toArray(new String[0]));
+        if (excluded != null)
+            paths.exclude(excluded.toArray(new String[0]));
+        return r -> paths.test(r.getPathInContext());
     }
 
     @SuppressWarnings("unchecked")
