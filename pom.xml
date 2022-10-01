@@ -88,7 +88,7 @@
     <jetty-quiche-native.version>0.12.0</jetty-quiche-native.version>
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jetty.test.version>5.9</jetty.test.version>
+    <jetty.test.version>6.0</jetty.test.version>
     <jmh.version>1.35</jmh.version>
     <jna.version>5.12.1</jna.version>
     <jnr-constants.version>0.10.3</jnr-constants.version>
