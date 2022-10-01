@@ -34,7 +34,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.3.3</checkstyle.version>
+    <checkstyle.version>10.3.4</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
     <commons.compress.version>1.21</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
@@ -49,7 +49,7 @@
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.15.1</hawtio.version>
+    <hawtio.version>2.15.2</hawtio.version>
     <hazelcast.version>4.2.5</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
@@ -100,7 +100,7 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
-    <junit.version>5.9.0</junit.version>
+    <junit.version>5.9.1</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.19.0</log4j2.version>
     <logback.version>1.4.1</logback.version>
@@ -123,7 +123,7 @@
     <testcontainers.version>1.17.3</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>1.20.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
