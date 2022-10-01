@@ -1210,7 +1210,7 @@ public class AsyncIOServletTest extends AbstractTest
             {
                 System.err.println("Service " + request);
 
-                HttpInput httpInput = Objects.requireNonNull(ServletContextRequest.getBaseRequest(request)).getHttpInput();
+                HttpInput httpInput = Objects.requireNonNull(ServletContextRequest.getServletContextRequest(request)).getHttpInput();
                 httpInput.addInterceptor(new HttpInput.Interceptor()
                 {
                     int state = 0;
