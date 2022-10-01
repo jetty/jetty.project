@@ -15,6 +15,7 @@ package org.eclipse.jetty.test.keystore;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,12 +56,12 @@ public class KeystoreGeneratorTest
     }
 
     @BeforeEach
-    public void before() throws Exception
+    public void before(WorkDir workDir) throws Exception
     {
         // Generate a test keystore.
         String password = "myKeystorePassword";
-        File targetTestingDir = MavenTestingUtils.getTargetTestingDir();
-        File myPassword = KeystoreGenerator.generateTestKeystore(targetTestingDir.getAbsolutePath(), password);
+        Path outputFile = workDir.getEmptyPathDir().resolve("keystore-test.p12");
+        File myPassword = KeystoreGenerator.generateTestKeystore(outputFile.toString(), password);
         assertTrue(myPassword.exists());
 
         // Configure the SslContextFactory and HttpConnectionFactory to use the keystore.
