@@ -17,7 +17,7 @@
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.0</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
-    <osgi-util-version>3.7.1</osgi-util-version>
+    <osgi-util-version>3.7.100</osgi-util-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
     <osgi-util-promise-version>1.2.0</osgi-util-promise-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
