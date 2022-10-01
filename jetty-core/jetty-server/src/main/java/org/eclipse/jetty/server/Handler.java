@@ -362,12 +362,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            return null;
-        }
-
-        @Override
         public Server getServer()
         {
             return _server;
@@ -699,6 +693,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
     }
 
+    /**
+     * A Handler Wrapper that conditionally applies the wrapped handler(s).
+     */
     class Conditional extends Wrapper
     {
         private final List<Predicate<Request>> _conditions = new ArrayList<>();
