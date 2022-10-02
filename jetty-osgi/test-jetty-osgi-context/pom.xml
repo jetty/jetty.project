@@ -58,11 +58,11 @@
               javax.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
               javax.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
               org.osgi.framework,
-              org.osgi.service.cm;version="1.2.0",
+              org.osgi.service.cm;version="${osgi-service-cm-version}",
               org.osgi.service.packageadmin,
               org.osgi.service.startlevel;version="1.0.0",
               org.osgi.service.url;version="1.0.0",
-              org.osgi.util.tracker;version="1.3.0",
+              org.osgi.util.tracker;version="${osgi-util-tracker-version}",
               *
             </Import-Package>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
