@@ -246,7 +246,6 @@
     <module>jetty-bom</module>
     <module>documentation</module>
     <module>jetty-keystore</module>
-    <module>jetty-p2</module>
     <module>jetty-unixdomain-server</module>
   </modules>
 
@@ -2048,6 +2047,16 @@
   </dependencyManagement>
 
   <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <!-- plugin org.eclipse.tycho:tycho-p2-repository-plugin:3.0.0+ can only be used with jfk 17 -->
+        <module>jetty-p2</module>
+      </modules>
+    </profile>
     <profile>
       <id>unix-domain-windows</id>
       <activation>
