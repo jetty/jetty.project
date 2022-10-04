@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -230,7 +231,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.newResource(compressedPathInContext);
-                        if (compressedResource.exists() && compressedResource.lastModified().isAfter(resource.lastModified()) &&
+                        if (compressedResource.exists() && ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
                             compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
@@ -271,12 +272,12 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
-                if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified().isAfter(resource.lastModified()))
+                if (compressedContent != null && compressedContent.isValid() && ResourceContentFactory.newerThanOrEqual(compressedContent.getResource(), resource))
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
                 Resource compressedResource = _factory.newResource(compressedPathInContext);
-                if (compressedResource.exists() && compressedResource.lastModified().isAfter(resource.lastModified()) &&
+                if (compressedResource.exists() && ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
                         new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
@@ -452,7 +453,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
         boolean isValid()
         {
-            if (_lastModifiedValue == _resource.lastModified() && _contentLengthValue == _resource.length())
+            if (Objects.equals(_lastModifiedValue, _resource.lastModified()) && _contentLengthValue == _resource.length())
             {
                 _lastAccessed = Instant.now();
                 return true;
@@ -611,7 +612,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
         public boolean isValid()
         {
-            return _precompressedContent.isValid() && _content.isValid() && _content.getResource().lastModified().isBefore(_precompressedContent.getResource().lastModified());
+            return _precompressedContent.isValid() && _content.isValid() &&
+                ResourceContentFactory.newerThanOrEqual(_precompressedContent.getResource(), _content.getResource());
         }
 
         @Override

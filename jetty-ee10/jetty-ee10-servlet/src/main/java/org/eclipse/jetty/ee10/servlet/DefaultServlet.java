@@ -93,6 +93,11 @@ public class DefaultServlet extends HttpServlet
 
     private boolean _isPathInfoOnly = false;
 
+    public ResourceService getResourceService()
+    {
+        return _resourceService;
+    }
+
     @Override
     public void init() throws ServletException
     {
@@ -118,8 +123,7 @@ public class DefaultServlet extends HttpServlet
 
         // TODO: should this come from context?
         MimeTypes mimeTypes = new MimeTypes();
-        // TODO: this is configured further down below - see _resourceService.setPrecompressedFormats
-        List<CompressedContentFormat> precompressedFormats = List.of();
+        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
         ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
@@ -157,7 +161,7 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
-        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
+        _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
         _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
