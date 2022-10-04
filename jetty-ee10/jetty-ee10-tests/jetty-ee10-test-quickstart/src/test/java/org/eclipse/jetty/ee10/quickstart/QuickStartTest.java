@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -152,7 +151,6 @@ public class QuickStartTest
         server.stop();
     }
 
-    @Disabled //TODO needs DefaultServlet
     @Test
     public void testJNDIWar() throws Exception
     {
