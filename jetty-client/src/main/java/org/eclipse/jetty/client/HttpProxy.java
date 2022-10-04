@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
@@ -195,10 +196,14 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             String target = destination.getOrigin().getAddress().asString();
             Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
+            long connectTimeout = httpClient.getConnectTimeout();
             Request connect = new TunnelRequest(httpClient, proxyAddress)
                 .method(HttpMethod.CONNECT)
                 .path(target)
-                .headers(headers -> headers.put(HttpHeader.HOST, target));
+                .headers(headers -> headers.put(HttpHeader.HOST, target))
+                // Use the connect timeout as a total timeout,
+                // since this request is to "connect" to the server.
+                .timeout(connectTimeout, TimeUnit.MILLISECONDS);
             ProxyConfiguration.Proxy proxy = destination.getProxy();
             if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());

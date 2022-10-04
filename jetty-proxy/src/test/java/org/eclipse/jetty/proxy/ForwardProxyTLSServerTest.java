@@ -869,6 +869,45 @@ public class ForwardProxyTLSServerTest
 
     @ParameterizedTest
     @MethodSource("proxyTLS")
+    public void testServerLongProcessingWithRequestIdleTimeout(SslContextFactory.Server proxyTLS) throws Exception
+    {
+        long timeout = 500;
+        startTLSServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                sleep(3 * timeout);
+                baseRequest.setHandled(true);
+            }
+        });
+        startProxy(proxyTLS);
+        HttpClient httpClient = newHttpClient();
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.setConnectTimeout(timeout);
+        // Short idle timeout for HttpClient.
+        httpClient.setIdleTimeout(timeout);
+        httpClient.start();
+
+        try
+        {
+            // The idle timeout is larger than the server processing time, request should succeed.
+            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                // Long idle timeout for the request, should override that of the client.
+                .idleTimeout(4 * timeout, TimeUnit.MILLISECONDS)
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("proxyTLS")
     public void testProxyLongProcessing(SslContextFactory.Server proxyTLS) throws Exception
     {
         long timeout = 500;

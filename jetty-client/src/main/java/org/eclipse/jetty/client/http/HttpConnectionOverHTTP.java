@@ -201,11 +201,26 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         return receiver.onUpgradeFrom();
     }
 
+    void onResponseHeaders(HttpExchange exchange)
+    {
+        HttpRequest request = exchange.getRequest();
+        if (request instanceof HttpProxy.TunnelRequest)
+        {
+            // Restore idle timeout
+            getEndPoint().setIdleTimeout(idleTimeout);
+        }
+    }
+
     public void release()
     {
         // Restore idle timeout
         getEndPoint().setIdleTimeout(idleTimeout);
         getHttpDestination().release(this);
+    }
+
+    public void remove()
+    {
+        getHttpDestination().remove(this);
     }
 
     @Override
@@ -242,13 +257,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         if (!closed.get())
             return false;
         return sweeps.incrementAndGet() > 3;
-    }
-
-    public void remove()
-    {
-        // Restore idle timeout
-        getEndPoint().setIdleTimeout(idleTimeout);
-        getHttpDestination().remove(this);
     }
 
     @Override
@@ -300,13 +308,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
 
             if (request instanceof HttpProxy.TunnelRequest)
             {
-                long connectTimeout = getHttpClient().getConnectTimeout();
-                // Use the connect timeout as a total timeout,
-                // since this request is to "connect" to the server.
-                request.timeout(connectTimeout, TimeUnit.MILLISECONDS)
-                    // Override the idle timeout in case
-                    // it is shorter than the connect timeout.
-                    .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS);
+                // Override the idle timeout in case it is shorter than the connect timeout.
+                request.idleTimeout(2 * getHttpClient().getConnectTimeout(), TimeUnit.MILLISECONDS);
             }
 
             HttpConversation conversation = request.getConversation();
