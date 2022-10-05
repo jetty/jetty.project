@@ -53,9 +53,7 @@
     <hazelcast.version>4.2.5</hazelcast.version>
     <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
     <infinispan.version>11.0.16.Final</infinispan.version>
-    <jackson.annotations.version>2.13.4</jackson.annotations.version>
-    <jackson.core.version>2.13.4</jackson.core.version>
-    <jackson.databind.version>2.13.4</jackson.databind.version>
+    <jackson.version>2.13.4</jackson.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
@@ -1904,19 +1902,11 @@
         <version>${commons.compress.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${jackson.core.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${jackson.databind.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-annotations</artifactId>
-        <version>${jackson.annotations.version}</version>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.wildfly.common</groupId>
