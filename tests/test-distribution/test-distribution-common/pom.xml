@@ -91,6 +91,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>jetty-http3-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>jetty-http3-client-transport</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-infinispan-common</artifactId>
       <scope>test</scope>

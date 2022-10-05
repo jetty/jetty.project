@@ -272,7 +272,6 @@ public class ResourceHandler extends Handler.Wrapper
     public void setPrecompressedFormats(List<CompressedContentFormat> precompressedFormats)
     {
         _resourceService.setPrecompressedFormats(precompressedFormats);
-        setupContentFactory();
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -288,7 +287,6 @@ public class ResourceHandler extends Handler.Wrapper
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
-        setupContentFactory();
     }
 
     /**

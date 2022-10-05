@@ -311,6 +311,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         {
             if (enqueue(exchanges, exchange))
             {
+                request.sent();
                 requestTimeouts.schedule(exchange);
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {
