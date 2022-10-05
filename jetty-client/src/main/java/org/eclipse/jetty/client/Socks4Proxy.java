@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -140,10 +141,19 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         @Override
         public void failed(Throwable x)
         {
-            close();
+            if (LOG.isDebugEnabled())
+                LOG.debug("SOCKS4 failure", x);
+            getEndPoint().close(x);
             @SuppressWarnings("unchecked")
             Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
             promise.failed(x);
+        }
+
+        @Override
+        public boolean onIdleExpired()
+        {
+            failed(new TimeoutException("Idle timeout expired"));
+            return false;
         }
 
         @Override

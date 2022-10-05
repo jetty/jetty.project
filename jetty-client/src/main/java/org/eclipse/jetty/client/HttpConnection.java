@@ -106,6 +106,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             SendFailure result;
             if (channel.associate(exchange))
             {
+                request.sent();
                 requestTimeouts.schedule(channel);
                 channel.send();
                 result = null;
