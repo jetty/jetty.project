@@ -750,6 +750,22 @@
           <version>${maven.war.plugin.version}</version>
         </plugin>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>${flatten.maven.plugin.version}</version>
+          <configuration>
+            <outputDirectory>${project.build.directory}</outputDirectory>
+            <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
+            <flattenMode>bom</flattenMode>
+            <updatePomFile>true</updatePomFile>
+            <pomElements>
+              <build>remove</build>
+              <properties>remove</properties>
+              <distributionManagement>remove</distributionManagement>
+            </pomElements>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
           <version>${jetty-version.maven.plugin.version}</version>
