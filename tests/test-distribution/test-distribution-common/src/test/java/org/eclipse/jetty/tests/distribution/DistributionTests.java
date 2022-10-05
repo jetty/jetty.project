@@ -25,6 +25,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -32,9 +33,12 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.util.IO;
@@ -42,6 +46,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,6 +55,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -98,14 +104,14 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
-        
+
         String mods = "resources,server,http," +
             toEnvironment("webapp", env) + "," +
             toEnvironment("deploy", env) + "," +
             toEnvironment("apache-jsp", env) + "," +
             toEnvironment("servlet", env) + "," +
             toEnvironment("quickstart", env);
-        
+
         String[] args1 = {
             "--approve-all-licenses",
             "--add-modules=" + mods
@@ -157,7 +163,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
-        
+
         String mods = "resources,server,http,jmx," +
             toEnvironment("webapp", env) + "," +
             toEnvironment("deploy", env) + "," +
@@ -204,7 +210,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
-        
+
         String mods = "resources,server,http,jmx," +
             toEnvironment("webapp", env) + "," +
             toEnvironment("deploy", env) + "," +
@@ -302,18 +308,18 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
-        
+
         String mods = "resources,server,http,logging-log4j2," +
             toEnvironment("webapp", env) + "," +
             toEnvironment("deploy", env) + "," +
             toEnvironment("apache-jsp", env) + "," +
             toEnvironment("servlet", env);
-        
+
         String[] args1 = {
             "--approve-all-licenses",
             "--add-modules=" + mods
         };
-        
+
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
@@ -341,7 +347,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             IO.delete(jettyBase.toFile());
         }
     }
-    
+
     @Disabled //TODO websocket modules broken
     @ParameterizedTest
     // @CsvSource({"http,ee10", "http,ee9", "https,ee9", "https,ee10"})
@@ -360,8 +366,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         String mods = "resources,server,jmx,websocket," +
             toEnvironment("webapp", env) + "," +
-            toEnvironment("deploy", env) + "," + 
-            toEnvironment("apache-jsp", env) + "," + 
+            toEnvironment("deploy", env) + "," +
+            toEnvironment("apache-jsp", env) + "," +
             toEnvironment("websocket-jetty-client", env) + "," +
             module;
 
@@ -419,8 +425,8 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         String mods = "resources,server,jmx,websocket," +
             toEnvironment("webapp", env) + "," +
-            toEnvironment("deploy", env) + "," + 
-            toEnvironment("apache-jsp", env) + "," + 
+            toEnvironment("deploy", env) + "," +
+            toEnvironment("apache-jsp", env) + "," +
             module;
         String[] args1 = {
             "--create-startd",
@@ -547,28 +553,28 @@ public class DistributionTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
-    
+
             File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-webapp:war:" + jettyVersion);
             distribution.installWarFile(webApp, "test1");
             distribution.installWarFile(webApp, "test2");
-    
+
             int port = distribution.freePort();
             String[] args2 = {
                 arg,
                 "jetty.http.port=" + port//,
                 //"jetty.server.dumpAfterStart=true"
             };
-    
+
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
-    
+
                 startHttpClient();
                 WebSocketClient wsClient = new WebSocketClient(client);
                 wsClient.start();
                 URI serverUri = URI.create("ws://localhost:" + port);
-    
+
                 // Verify /test1 is able to establish a WebSocket connection.
                 WsListener webSocketListener = new WsListener();
                 Session session = wsClient.connect(webSocketListener, serverUri.resolve("/test1")).get(10, TimeUnit.SECONDS);
@@ -577,7 +583,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 session.close();
                 assertTrue(webSocketListener.closeLatch.await(10, TimeUnit.SECONDS));
                 assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
-    
+
                 // Verify /test2 is able to establish a WebSocket connection.
                 webSocketListener = new WsListener();
                 session = wsClient.connect(webSocketListener, serverUri.resolve("/test2")).get(10, TimeUnit.SECONDS);
@@ -589,20 +595,20 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
-    
+
     public static class WsListener implements WebSocketListener
     {
         public BlockingArrayQueue<String> textMessages = new BlockingArrayQueue<>();
         public final CountDownLatch closeLatch = new CountDownLatch(1);
         public int closeCode;
-    
+
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
             this.closeCode = statusCode;
             closeLatch.countDown();
         }
-    
+
         @Override
         public void onWebSocketText(String message)
         {
@@ -1106,7 +1112,8 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    /*    @Test
+    @Test
+    @DisabledIfSystemProperty(named = "env", matches = "ci")
     public void testH3() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -1114,18 +1121,18 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyVersion(jettyVersion)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
-    
+
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http3,test-keystore"))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
-    
+
             int h2Port = distribution.freePort();
             int h3Port = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + h2Port, "jetty.quic.port=" + h3Port)))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
-    
+
                 HTTP3Client http3Client = new HTTP3Client();
                 http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
                 this.client = new HttpClient(new HttpClientTransportOverHTTP3(http3Client));
@@ -1138,5 +1145,33 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             }
         }
-    }*/
+    }
+
+    @Test
+    public void testDryRunProperties() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {"--add-to-start=server,logging-jetty"};
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            String[] args2 = {"--dry-run"};
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                run2.awaitFor(5, TimeUnit.SECONDS);
+                Queue<String> logs = run2.getLogs();
+                assertThat(logs.size(), equalTo(1));
+                assertThat(logs.poll(), not(containsString("${jetty.home.uri}")));
+            }
+        }
+    }
 }

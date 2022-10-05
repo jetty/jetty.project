@@ -510,6 +510,7 @@ public class StartArgs
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 
+            Props properties = coreEnvironment.getProperties();
             for (String x : getJvmArgs())
             {
                 if (x.startsWith("-D"))
@@ -519,11 +520,11 @@ public class StartArgs
                     String value = assign.length == 1 ? "" : assign[1];
 
                     Prop p = processSystemProperty(key, value, null);
-                    cmd.addRawArg("-D" + p.key + "=" + coreEnvironment.getProperties().expand(p.value));
+                    cmd.addRawArg("-D" + p.key + "=" + properties.expand(p.value));
                 }
                 else
                 {
-                    cmd.addRawArg(coreEnvironment.getProperties().expand(x));
+                    cmd.addRawArg(properties.expand(x));
                 }
             }
 
@@ -603,15 +604,16 @@ public class StartArgs
         // do properties and xmls
         if (parts.contains("args"))
         {
+            Props properties = coreEnvironment.getProperties();
             if (dryRun && execProperties == null)
             {
                 // pass properties as args
-                for (Prop p : coreEnvironment.getProperties())
+                for (Prop p : properties)
                 {
-                    cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
+                    cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(properties.expand(p.value)));
                 }
             }
-            else if (coreEnvironment.getProperties().size() > 0)
+            else if (properties.size() > 0)
             {
                 // pass properties as a temp property file
                 Path propPath;
@@ -621,11 +623,13 @@ public class StartArgs
                     propPath.toFile().deleteOnExit();
                 }
                 else
+                {
                     propPath = Paths.get(execProperties);
+                }
 
                 try (OutputStream out = Files.newOutputStream(propPath))
                 {
-                    coreEnvironment.getProperties().store(out, "start.jar properties");
+                    properties.store(out, "start.jar properties");
                 }
                 cmd.addRawArg(propPath.toAbsolutePath().toString());
             }

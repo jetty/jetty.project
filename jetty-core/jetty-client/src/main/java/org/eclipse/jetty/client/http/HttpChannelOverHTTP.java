@@ -131,7 +131,10 @@ public class HttpChannelOverHTTP extends HttpChannel
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing, reason: {} - {}", closeReason, connection);
-            connection.close();
+            if (result.isFailed())
+                connection.close(result.getFailure());
+            else
+                connection.close();
         }
         else
         {

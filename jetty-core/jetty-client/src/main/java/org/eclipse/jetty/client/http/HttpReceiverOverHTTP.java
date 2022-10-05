@@ -327,6 +327,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         // Store the EndPoint is case of upgrades, tunnels, etc.
         exchange.getRequest().getConversation().setAttribute(EndPoint.class.getName(), getHttpConnection().getEndPoint());
+        getHttpConnection().onResponseHeaders(exchange);
         return !responseHeaders(exchange);
     }
 

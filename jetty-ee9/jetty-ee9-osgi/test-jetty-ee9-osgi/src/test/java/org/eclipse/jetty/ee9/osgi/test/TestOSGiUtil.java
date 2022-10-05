@@ -165,7 +165,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         // END - slf4j 2.x
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-servlet-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.cm").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.component").versionAsInProject());

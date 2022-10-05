@@ -24,6 +24,7 @@ import java.security.Principal;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import javax.net.ssl.KeyManager;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -62,7 +64,6 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
@@ -72,6 +73,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -414,7 +416,7 @@ public class ForwardProxyTLSServerTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         });
-        assertThat(x.getCause(), Matchers.instanceOf(ConnectException.class));
+        assertThat(x.getCause(), instanceOf(ConnectException.class));
 
         httpClient.stop();
     }
@@ -826,6 +828,128 @@ public class ForwardProxyTLSServerTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
             assertEquals(body, content);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("proxyTLS")
+    public void testServerLongProcessing(SslContextFactory.Server proxyTLS) throws Exception
+    {
+        long timeout = 500;
+        startTLSServer(new EmptyServerHandler()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback) throws Exception
+            {
+                sleep(3 * timeout);
+                super.process(request, response, callback);
+            }
+        });
+        startProxy(proxyTLS);
+        HttpClient httpClient = newHttpClient();
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.setConnectTimeout(timeout);
+        httpClient.setIdleTimeout(4 * timeout);
+        httpClient.start();
+
+        try
+        {
+            // The idle timeout is larger than the server processing time, request should succeed.
+            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("proxyTLS")
+    public void testServerLongProcessingWithRequestIdleTimeout(SslContextFactory.Server proxyTLS) throws Exception
+    {
+        long timeout = 500;
+        startTLSServer(new EmptyServerHandler()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback) throws Exception
+            {
+                sleep(3 * timeout);
+                super.process(request, response, callback);
+            }
+        });
+        startProxy(proxyTLS);
+        HttpClient httpClient = newHttpClient();
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.setConnectTimeout(timeout);
+        // Short idle timeout for HttpClient.
+        httpClient.setIdleTimeout(timeout);
+        httpClient.start();
+
+        try
+        {
+            // The idle timeout is larger than the server processing time, request should succeed.
+            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                // Long idle timeout for the request, should override that of the client.
+                .idleTimeout(4 * timeout, TimeUnit.MILLISECONDS)
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("proxyTLS")
+    public void testProxyLongProcessing(SslContextFactory.Server proxyTLS) throws Exception
+    {
+        long timeout = 500;
+        startTLSServer(new EmptyServerHandler());
+        startProxy(proxyTLS, new ConnectHandler()
+        {
+            @Override
+            protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
+            {
+                sleep(3 * timeout);
+                super.handleConnect(request, response, callback, serverAddress);
+            }
+        });
+        HttpClient httpClient = newHttpClient();
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.setConnectTimeout(timeout);
+        httpClient.setIdleTimeout(10 * timeout);
+        httpClient.start();
+
+        try
+        {
+            // Connecting to the server through the proxy involves a CONNECT + 200
+            // so if the proxy delays the response, the client request interprets
+            // it as a "connect" timeout (rather than an idle timeout).
+            AtomicReference<Result> resultRef = new AtomicReference<>();
+            CountDownLatch latch = new CountDownLatch(1);
+            httpClient.newRequest("localhost", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .send(result ->
+                {
+                    resultRef.set(result);
+                    latch.countDown();
+                });
+
+            assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
+            Result result = resultRef.get();
+            assertTrue(result.isFailed());
+            assertThat(result.getFailure(), instanceOf(TimeoutException.class));
         }
         finally
         {
