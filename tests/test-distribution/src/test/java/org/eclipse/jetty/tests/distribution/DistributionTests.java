@@ -25,6 +25,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +65,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -1227,6 +1229,34 @@ public class DistributionTests extends AbstractJettyHomeTest
         finally
         {
             openIdProvider.stop();
+        }
+    }
+
+    @Test
+    public void testDryRunProperties() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {"--add-to-start=server,logging-jetty"};
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            String[] args2 = {"--dry-run"};
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                run2.awaitFor(5, TimeUnit.SECONDS);
+                Queue<String> logs = run2.getLogs();
+                assertThat(logs.size(), equalTo(1));
+                assertThat(logs.poll(), not(containsString("${jetty.home.uri}")));
+            }
         }
     }
 }
