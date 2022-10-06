@@ -95,19 +95,19 @@ public abstract class EncodableEntry
             {
                 // Indexed Field Line with Static Reference.
                 int relativeIndex = _entry.getIndex();
-                return 1 + NBitIntegerEncoder.octectsNeeded(6, relativeIndex);
+                return 1 + NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
             }
             else if (_entry.getIndex() < base)
             {
                 // Indexed Field Line with Dynamic Reference.
                 int relativeIndex =  base - (_entry.getIndex() + 1);
-                return 1 + NBitIntegerEncoder.octectsNeeded(6, relativeIndex);
+                return 1 + NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
             }
             else
             {
                 // Indexed Field Line with Post-Base Index.
                 int relativeIndex = _entry.getIndex() - base;
-                return 1 + NBitIntegerEncoder.octectsNeeded(4, relativeIndex);
+                return 1 + NBitIntegerEncoder.octetsNeeded(4, relativeIndex);
             }
         }
 
@@ -183,7 +183,7 @@ public abstract class EncodableEntry
             String value = getValue();
             int relativeIndex =  _nameEntry.getIndex() - base;
             int valueLength = _huffman ? HuffmanEncoder.octetsNeeded(value) : value.length();
-            return 1 + NBitIntegerEncoder.octectsNeeded(4, relativeIndex) + 1 + NBitIntegerEncoder.octectsNeeded(7, valueLength) + valueLength;
+            return 1 + NBitIntegerEncoder.octetsNeeded(4, relativeIndex) + 1 + NBitIntegerEncoder.octetsNeeded(7, valueLength) + valueLength;
         }
 
         @Override
@@ -246,7 +246,7 @@ public abstract class EncodableEntry
             String value = getValue();
             int nameLength = _huffman ? HuffmanEncoder.octetsNeeded(name) : name.length();
             int valueLength = _huffman ? HuffmanEncoder.octetsNeeded(value) : value.length();
-            return 2 + NBitIntegerEncoder.octectsNeeded(3, nameLength) + nameLength + NBitIntegerEncoder.octectsNeeded(7, valueLength) + valueLength;
+            return 2 + NBitIntegerEncoder.octetsNeeded(3, nameLength) + nameLength + NBitIntegerEncoder.octetsNeeded(7, valueLength) + valueLength;
         }
 
         @Override
