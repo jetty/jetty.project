@@ -151,6 +151,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     }
 
     @Test
+    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testResponseAbortSendsResetFrame() throws Exception
     {
         CountDownLatch resetLatch = new CountDownLatch(1);
