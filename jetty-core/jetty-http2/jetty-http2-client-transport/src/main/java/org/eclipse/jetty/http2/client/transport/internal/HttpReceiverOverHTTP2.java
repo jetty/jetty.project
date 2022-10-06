@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -42,7 +43,6 @@ import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,11 +65,19 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         return contentSource;
     }
 
+    @Override
+    protected void reset()
+    {
+        firstContent.set(true);
+        super.reset();
+    }
+
     private class ContentSource implements Content.Source
     {
-        private final SerializedInvoker invoker = new SerializedInvoker();
         private volatile Content.Chunk currentChunk;
         private volatile Runnable demandCallback;
+        private volatile boolean reachedEndStream = false;
+        private volatile boolean readEof = false;
 
         @Override
         public Content.Chunk read()
@@ -77,14 +85,43 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             Content.Chunk chunk = consumeCurrentChunk();
             if (chunk != null)
                 return chunk;
-            currentChunk = HttpReceiverOverHTTP2.this.read(false);
+            currentChunk = doRead();
             return consumeCurrentChunk();
+        }
+
+        private Content.Chunk doRead()
+        {
+            if (reachedEndStream)
+            {
+                readEof = true;
+                return Content.Chunk.EOF;
+            }
+
+            Stream.Data data = getStream().readData();
+            if (data == null)
+                return null;
+            DataFrame frame = data.frame();
+            if (frame.isEndStream())
+                reachedEndStream = true;
+            // TODO optimize when frame.isEndStream() and BB is empty
+            return Content.Chunk.from(frame.getData(), false, data);
         }
 
         public void onDataAvailable()
         {
+            Runnable demandCallback = this.demandCallback;
+            this.demandCallback = null;
             if (demandCallback != null)
-                invoker.run(this::invokeDemandCallback);
+            {
+                try
+                {
+                    demandCallback.run();
+                }
+                catch (Throwable x)
+                {
+                    fail(x);
+                }
+            }
         }
 
         private Content.Chunk consumeCurrentChunk()
@@ -107,47 +144,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             if (this.demandCallback != null)
                 throw new IllegalStateException();
             this.demandCallback = demandCallback;
-
-            invoker.run(this::meetDemand);
-        }
-
-        private void meetDemand()
-        {
-            while (true)
-            {
-                if (currentChunk != null)
-                {
-                    invoker.run(this::invokeDemandCallback);
-                    break;
-                }
-                else
-                {
-                    currentChunk = HttpReceiverOverHTTP2.this.read(false);
-                    if (currentChunk == null)
-                    {
-                        currentChunk = HttpReceiverOverHTTP2.this.read(true);
-                        if (currentChunk == null)
-                            return;
-                    }
-                }
-            }
-        }
-
-        private void invokeDemandCallback()
-        {
-            Runnable demandCallback = this.demandCallback;
-            this.demandCallback = null;
-            if (demandCallback != null)
-            {
-                try
-                {
-                    demandCallback.run();
-                }
-                catch (Throwable x)
-                {
-                    fail(x);
-                }
-            }
+            getStream().demand();
         }
 
         @Override
@@ -160,23 +157,17 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             }
             currentChunk = Content.Chunk.from(failure);
         }
-    }
 
-    private Content.Chunk read(boolean fillInterestIfNeeded)
-    {
-        HttpExchange httpExchange = getHttpExchange();
-        Stream stream = getHttpChannel().getStream();
+        private Stream getStream()
+        {
+            // TODO stream should be a field
+            return getHttpChannel().getStream();
+        }
 
-        AtomicReference<Stream.Data> dataRef = new AtomicReference<>();
-        withinContentState(httpExchange, () -> dataRef.set(stream.readData()));
-        if (fillInterestIfNeeded)
-            stream.demand();
-        Stream.Data data = dataRef.get();
-        if (data == null)
-            return null;
-        if (data.frame().isEndStream())
-            responseSuccess(httpExchange);
-        return Content.Chunk.from(data.frame().getData(), data.frame().isEndStream(), data);
+        private boolean hasReadEof()
+        {
+            return readEof;
+        }
     }
 
     @Override
@@ -309,6 +300,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     @Override
     public void onDataAvailable()
     {
+        // TODO these two variables should be given to the contentSource's ctor
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return;
@@ -317,31 +309,21 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             return;
 
         // TODO we could check for contentSource == null and instantiate it here if it was not instantiated by the HttpReceiver ctor
+        Runnable contentAction;
         if (firstContent.compareAndSet(true, false))
-        {
-            try
-            {
-                AtomicReference<Runnable> contentActionRef = new AtomicReference<>();
-                withinContentState(exchange, () -> contentActionRef.set(firstResponseContent(exchange)));
-
-                Runnable contentAction = contentActionRef.get();
-                contentAction.run(); // start onContentSource loop
-            }
-            catch (IllegalStateException e)
-            {
-                failAndClose(e);
-            }
-        }
+            contentAction = firstResponseContent(exchange); // This action starts the onContentSource loop.
         else
+            contentAction = () -> contentSource.onDataAvailable(); // This action calls the demand callback of the onContentSource loop.
+
+        try
         {
-            try
-            {
-                withinContentState(exchange, () -> contentSource.onDataAvailable());
-            }
-            catch (IllegalStateException e)
-            {
-                failAndClose(e);
-            }
+            withinContentState(exchange, contentAction);
+            if (contentSource.hasReadEof())
+                responseSuccess(exchange);
+        }
+        catch (IllegalStateException e)
+        {
+            failAndClose(e);
         }
     }
 

@@ -401,8 +401,11 @@ public abstract class HttpReceiver
 
         // Reset here to be ready for another response if the ContentSourceListener.onContentSource() loop was not started;
         // otherwise reset upon the ContentSourceListener.onContentSource() loop returning.
-        if (firstContent)
-            reset();
+
+        // TODO the if check is needed for HTTP1, breaks HTTP2 ; see HttpClientTest.testContentSourceListener() for H1
+        // and HttpClientTransportOverHTTP2Test.testInputStreamResponseListener() for H2.
+//        if (firstContent)
+        reset();
 
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
@@ -523,6 +526,7 @@ public abstract class HttpReceiver
             contentSource.fail(x);
         contentSource = newContentSource();
         firstContent = true;
+        failure = null;
     }
 
     public boolean abort(HttpExchange exchange, Throwable failure)
@@ -598,7 +602,11 @@ public abstract class HttpReceiver
             if (current == from)
             {
                 if (responseState.compareAndSet(current, to))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("State updated: {} -> {}", from, to);
                     return true;
+                }
             }
             else
             {
