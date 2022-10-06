@@ -6,7 +6,7 @@
 <!-- =============================================================== -->
 <Configure id='wac' class="org.eclipse.jetty.ee8.webapp.WebAppContext">
 
-  <Set name="contextPath">/test-jaas</Set>
+  <Set name="contextPath">/ee8-test-jaas</Set>
   <Set name="war"><Property name="jetty.webapps" default="." />/ee8-demo-jaas.war
   </Set>
   <Set name="extractWAR">true</Set>
