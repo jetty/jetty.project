@@ -256,10 +256,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     /**
      * @deprecated use {@link #getMatched(String)} instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public MappedResource<E> getMatch(String path)
     {
-        throw new UnsupportedOperationException("Use .getMatched(String) instead");
+        MatchedResource<E> matchedPath = getMatched(path);
+        return new MappedResource<>(matchedPath.getPathSpec(), matchedPath.getResource());
     }
 
     @Override
@@ -271,7 +272,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     /**
      * @deprecated use {@link PathSpec#from(String)} instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static PathSpec asPathSpec(String pathSpecString)
     {
         return PathSpec.from(pathSpecString);
