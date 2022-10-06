@@ -25,14 +25,14 @@
               <!-- This is for convenience so that the src/etc/login.conf file can stay unmodified when copied to $jetty.home/etc directory -->
                 <jetty.base>${basedir}/src/main/config/modules/demo.d</jetty.base>
               <!-- Mandatory. This system property tells JAAS where to find the login module configuration file -->
-                <java.security.auth.login.config>${basedir}/src/main/config/modules/demo.d/ee9-demo-login.conf</java.security.auth.login.config>
+                <java.security.auth.login.config>${basedir}/src/main/etc/ee9-demo-login.conf</java.security.auth.login.config>
             </systemProperties>
             <webApp>
               <contextPath>/test-jaas</contextPath>
               <securityHandler implementation="org.eclipse.jetty.security.ConstraintSecurityHandler">
                 <loginService implementation="org.eclipse.jetty.jaas.JAASLoginService">
                   <name>Test JAAS Realm</name>
-                  <loginModuleName>xyz</loginModuleName>
+                  <loginModuleName>ee9-xyz</loginModuleName>
                 </loginService>
               </securityHandler>
             </webApp>

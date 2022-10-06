@@ -1,20 +1,17 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-A meta module to enable all core demo modules.
+Setup for jaas demos.
 
 [environment]
 core
 
 [tags]
 demo
+webapp
 
 [depends]
-http
-https
-http2
-test-keystore
-work
-demo-root
-demo-moved-context
-demo-jaas
+core-deploy
+
+[files]
+basehome:modules/demo.d/demo-login.conf|etc/demo-login.conf
