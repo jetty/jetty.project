@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -56,6 +57,7 @@ import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -2004,6 +2006,40 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testInputStreamResponseListener(Scenario scenario) throws Exception
+    {
+        var bytes = 100_000;
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
+            {
+                response.write(true, ByteBuffer.wrap(new byte[bytes]), Callback.NOOP);
+            }
+        });
+
+        var requestCount = 10_000;
+        IntStream.range(0, requestCount).forEach(i ->
+        {
+            try
+            {
+                InputStreamResponseListener listener = new InputStreamResponseListener();
+                client.newRequest("localhost", connector.getLocalPort()).headers(httpFields -> httpFields.put("X-Request-Id", Integer.toString(i)))
+                    .scheme(scenario.getScheme())
+                    .send(listener);
+                Response response = listener.get(15, TimeUnit.SECONDS);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(bytes, listener.getInputStream().readAllBytes().length);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void assertCopyRequest(Request original)

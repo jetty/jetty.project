@@ -210,12 +210,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parseAndFill();
             Runnable contentAction = contentActionRef.getAndSet(null);
             if (contentAction != null)
-                contentAction.run(); // start onContentSource loop
+                contentAction.run(); // This starts the onContentSource loop.
             if (firstContent.get() && networkBuffer == null)
                 fillInterestedIfNeeded();
         }
         else
         {
+            // This calls the demand callback of the onContentSource loop.
             contentSource.onDataAvailable();
         }
     }
@@ -597,12 +598,14 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     protected void reset()
     {
-        super.reset();
+        if (LOG.isDebugEnabled())
+            LOG.debug("resetting {}", this);
         parser.reset();
         firstContent.set(true);
         contentActionRef.set(null);
         contentGenerated = null;
         contentSource = null;
+        super.reset();
     }
 
     private void failAndClose(Throwable failure)
