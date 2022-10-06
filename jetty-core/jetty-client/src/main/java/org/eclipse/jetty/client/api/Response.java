@@ -288,7 +288,15 @@ public interface Response
             else
                 longConsumerDemand = demand -> contentSource.demand(() -> internalOnContentSource(response, contentSource));
 
-            onContent(response, longConsumerDemand, chunk.getByteBuffer(), callback);
+            if (chunk.hasRemaining())
+            {
+                onContent(response, longConsumerDemand, chunk.getByteBuffer(), callback);
+            }
+            else
+            {
+                chunk.release();
+                longConsumerDemand.accept(0L);
+            }
         }
     }
 
