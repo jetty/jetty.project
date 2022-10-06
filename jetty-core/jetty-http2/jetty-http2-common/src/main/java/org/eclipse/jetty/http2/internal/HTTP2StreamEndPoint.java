@@ -363,7 +363,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public boolean tryFillInterested(Callback callback)
     {
-       boolean result = readCallback.compareAndSet(null, callback);
+        boolean result = readCallback.compareAndSet(null, callback);
         if (result)
         {
             if (data.get() != null)
