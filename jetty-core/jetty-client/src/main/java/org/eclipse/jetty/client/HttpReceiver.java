@@ -402,8 +402,8 @@ public abstract class HttpReceiver
         // Reset here to be ready for another response if the ContentSourceListener.onContentSource() loop was not started;
         // otherwise reset upon the ContentSourceListener.onContentSource() loop returning.
 
-        // TODO the if check is needed for HTTP1, breaks HTTP2 ; see HttpClientTest.testContentSourceListener() for H1
-        // and HttpClientTransportOverHTTP2Test.testInputStreamResponseListener() for H2.
+        // TODO the if() check fixes HttpClientTest.testContentSourceListener()
+        //  but breaks HttpClientTest.testInputStreamResponseListener().
 //        if (firstContent)
         reset();
 
