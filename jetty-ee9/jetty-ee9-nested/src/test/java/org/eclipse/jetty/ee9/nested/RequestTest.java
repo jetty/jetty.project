@@ -469,7 +469,7 @@ public class RequestTest
                 return s.count() == 2;
             }
         };
-        
+
         _server.stop();
         _context.setContextPath("/foo");
         _context.setResourceBase(".");
@@ -1686,11 +1686,11 @@ public class RequestTest
         assertEquals("value", cookies[0]);
         assertNull(cookies[1]);
     }
-    
+
     /**
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -1733,7 +1733,7 @@ public class RequestTest
         response = HttpTester.parseResponse(lep.getResponse());
         checkCookieResult(sessionId3, new String[] {sessionId1, sessionId2}, response.getContent());
     }
-    
+
     @Test
     public void testHashDOSKeys() throws Exception
     {
@@ -2402,7 +2402,7 @@ public class RequestTest
         {
         }
     }
-    
+
     private static void checkCookieResult(String containedCookie, String[] notContainedCookies, String response)
     {
         assertNotNull(containedCookie);
