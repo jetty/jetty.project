@@ -319,7 +319,7 @@ public class HpackEncoder
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer, 7, index);
                 if (_debug)
-                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(7, index));
+                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + (1 + NBitInteger.octetsNeeded(7, index));
             }
         }
         else
@@ -393,7 +393,7 @@ public class HpackEncoder
 
                     if (_debug)
                         encoding = "Lit" +
-                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(4, _context.index(name))))) +
+                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octetsNeeded(4, _context.index(name))))) +
                             (huffman ? "HuffV" : "LitV") +
                             (neverIndex ? "!!Idx" : "!Idx");
                 }
@@ -405,7 +405,7 @@ public class HpackEncoder
                     encodeValue(buffer, true, field.getValue());
                     if (_debug)
                         encoding = "Lit" +
-                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitInteger.octectsNeeded(4, _context.index(name)))) +
+                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitInteger.octetsNeeded(4, _context.index(name)))) +
                             "HuffV!Idx";
                 }
                 else
@@ -416,7 +416,7 @@ public class HpackEncoder
                     encodeName(buffer, (byte)0x40, 6, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
-                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(6, _context.index(name))))) +
+                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octetsNeeded(6, _context.index(name))))) +
                             (huffman ? "HuffVIdx" : "LitVIdx");
                 }
             }

@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 public class NBitIntegerEncoder
 {
-    public static int octectsNeeded(int n, long i)
+    public static int octetsNeeded(int n, long i)
     {
         if (n == 8)
         {
