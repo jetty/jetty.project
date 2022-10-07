@@ -45,6 +45,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -441,25 +443,37 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     /**
-     * Get MappedServlet for target.
+     * ServletHolder matching target path.
      *
      * @param target Path within _context or servlet name
-     * @return MappedServlet matched by path or name.  Named servlets have a null PathSpec
+     * @return MatchedResource, pointing to the {@link MappedResource} for the {@link ServletHolder}, and also the pathspec specific name/info sections for the match.
+     *      Named servlets have a null PathSpec and {@link MatchedResource}.
      */
-    public MappedServlet getMappedServlet(String target)
+    public MatchedResource<MappedServlet> getMatchedServlet(String target)
     {
         if (target.startsWith("/"))
         {
             if (_servletPathMap == null)
                 return null;
-
-            MatchedResource<MappedServlet> match = _servletPathMap.getMatched(target);
-            if (match == null)
-                return null;
-            return match.getResource();
+            return _servletPathMap.getMatched(target);
         }
 
-        return _servletNameMap.get(target);
+        MappedServlet holder = _servletNameMap.get(target);
+        if (holder == null)
+            return null;
+        return new MatchedResource<>(holder, null, MatchedPath.EMPTY);
+    }
+
+    /**
+     * ServletHolder matching path.
+     *
+     * @param target Path within _context or servlet name
+     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     */
+    public MappedServlet getMappedServlet(String target)
+    {
+        MatchedResource<MappedServlet> matchedResource = getMatchedServlet(target);
+        return matchedResource.getResource();
     }
 
     protected FilterChain getFilterChain(HttpServletRequest request, String pathInContext, ServletHolder servletHolder)
@@ -1448,7 +1462,7 @@ public class ServletHandler extends Handler.Wrapper
                 switch (pathSpec.getGroup())
                 {
                     case EXACT:
-                        _servletPathMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), _pathSpec.getPrefix());
+                        _servletPathMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), _pathSpec.getDeclaration());
                         break;
                     case ROOT:
                         _servletPathMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), "/");
@@ -1479,7 +1493,16 @@ public class ServletHandler extends Handler.Wrapper
             if (_servletPathMapping != null)
                 return _servletPathMapping;
             if (_pathSpec != null)
-                return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext);
+                return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext, null);
+            return null;
+        }
+
+        public ServletPathMapping getServletPathMapping(String pathInContext, MatchedPath matchedPath)
+        {
+            if (_servletPathMapping != null)
+                return _servletPathMapping;
+            if (_pathSpec != null)
+                return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext, matchedPath);
             return null;
         }
 
