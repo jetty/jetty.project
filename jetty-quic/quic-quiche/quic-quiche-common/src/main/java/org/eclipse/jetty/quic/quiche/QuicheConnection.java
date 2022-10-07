@@ -93,11 +93,12 @@ public abstract class QuicheConnection
     /**
      * Read the buffer of cipher text coming from the network.
      * @param buffer the buffer to read.
+     * @param local the local address on which the buffer was received.
      * @param peer the address of the peer from which the buffer was received.
      * @return how many bytes were consumed.
      * @throws IOException
      */
-    public abstract int feedCipherBytes(ByteBuffer buffer, SocketAddress peer) throws IOException;
+    public abstract int feedCipherBytes(ByteBuffer buffer, SocketAddress local, SocketAddress peer) throws IOException;
 
     /**
      * Fill the given buffer with cipher text to be sent.
