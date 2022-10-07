@@ -74,6 +74,8 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -203,7 +205,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _destroyServletContextListeners = new ArrayList<>();
-    protected final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
+    private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
@@ -1185,7 +1187,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     protected ServletContextRequest wrap(Request request, String pathInContext)
     {
-        ServletHandler.MappedServlet mappedServlet = _servletHandler.getMappedServlet(pathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
+        if (matchedResource == null)
+            return null;
+        ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
         if (mappedServlet == null)
             return null;
 
@@ -1200,7 +1205,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             // request.getComponents().getCache().put("blah.blah.ServletChannel", servletChannel); TODO: Re-enable.
         }
 
-        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);
+        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext,
+            matchedResource.getResource(), matchedResource.getPathSpec(), matchedResource.getMatchedPath());
         servletChannel.init(servletContextRequest);
         return servletContextRequest;
     }

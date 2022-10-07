@@ -60,7 +60,7 @@
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty-quiche-native.version>0.12.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jetty.test.version>5.9</jetty.test.version>
+    <jetty.test.version>6.0</jetty.test.version>
     <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
     <jmh.version>1.34</jmh.version>
     <jna.version>5.10.0</jna.version>
@@ -750,6 +750,22 @@
           <version>${maven.war.plugin.version}</version>
         </plugin>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>${flatten.maven.plugin.version}</version>
+          <configuration>
+            <outputDirectory>${project.build.directory}</outputDirectory>
+            <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
+            <flattenMode>bom</flattenMode>
+            <updatePomFile>true</updatePomFile>
+            <pomElements>
+              <build>remove</build>
+              <properties>remove</properties>
+              <distributionManagement>remove</distributionManagement>
+            </pomElements>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
           <version>${jetty-version.maven.plugin.version}</version>
@@ -1232,11 +1248,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-nosql</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jmx</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1248,6 +1259,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-keystore</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-nosql</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

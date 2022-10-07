@@ -70,6 +70,11 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
         }
     }
 
+    public ServerUpgradeRequest getServerUpgradeRequest()
+    {
+        return upgradeRequest;
+    }
+
     @Override
     public List<HttpCookie> getCookies()
     {

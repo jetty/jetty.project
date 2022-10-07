@@ -25,7 +25,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -224,7 +223,6 @@ public class MockHttpStream implements HttpStream
         return response != null && response.getStatus() >= 200;
     }
 
-    @Override
     public boolean isComplete()
     {
         return _completed.getCount() == 0;
@@ -257,17 +255,5 @@ public class MockHttpStream implements HttpStream
             mock.notPersistent();
         if (_complete.compareAndSet(null, x == null ? new Throwable() : x))
             _completed.countDown();
-    }
-
-    @Override
-    public void setUpgradeConnection(Connection connection)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Connection upgrade()
-    {
-        throw new UnsupportedOperationException();
     }
 }

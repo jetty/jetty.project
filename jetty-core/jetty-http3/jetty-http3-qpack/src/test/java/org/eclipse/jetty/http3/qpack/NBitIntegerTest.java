@@ -31,17 +31,17 @@ public class NBitIntegerTest
     @Test
     public void testOctetsNeeded()
     {
-        assertEquals(0, NBitIntegerEncoder.octectsNeeded(5, 10));
-        assertEquals(2, NBitIntegerEncoder.octectsNeeded(5, 1337));
-        assertEquals(1, NBitIntegerEncoder.octectsNeeded(8, 42));
-        assertEquals(3, NBitIntegerEncoder.octectsNeeded(8, 1337));
+        assertEquals(0, NBitIntegerEncoder.octetsNeeded(5, 10));
+        assertEquals(2, NBitIntegerEncoder.octetsNeeded(5, 1337));
+        assertEquals(1, NBitIntegerEncoder.octetsNeeded(8, 42));
+        assertEquals(3, NBitIntegerEncoder.octetsNeeded(8, 1337));
 
-        assertEquals(0, NBitIntegerEncoder.octectsNeeded(6, 62));
-        assertEquals(1, NBitIntegerEncoder.octectsNeeded(6, 63));
-        assertEquals(1, NBitIntegerEncoder.octectsNeeded(6, 64));
-        assertEquals(2, NBitIntegerEncoder.octectsNeeded(6, 63 + 0x00 + 0x80 * 0x01));
-        assertEquals(3, NBitIntegerEncoder.octectsNeeded(6, 63 + 0x00 + 0x80 * 0x80));
-        assertEquals(4, NBitIntegerEncoder.octectsNeeded(6, 63 + 0x00 + 0x80 * 0x80 * 0x80));
+        assertEquals(0, NBitIntegerEncoder.octetsNeeded(6, 62));
+        assertEquals(1, NBitIntegerEncoder.octetsNeeded(6, 63));
+        assertEquals(1, NBitIntegerEncoder.octetsNeeded(6, 64));
+        assertEquals(2, NBitIntegerEncoder.octetsNeeded(6, 63 + 0x00 + 0x80 * 0x01));
+        assertEquals(3, NBitIntegerEncoder.octetsNeeded(6, 63 + 0x00 + 0x80 * 0x80));
+        assertEquals(4, NBitIntegerEncoder.octetsNeeded(6, 63 + 0x00 + 0x80 * 0x80 * 0x80));
     }
 
     @Test
@@ -87,7 +87,7 @@ public class NBitIntegerTest
         String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
         assertEquals(expected, r);
 
-        assertEquals(expected.length() / 2, (n < 8 ? 1 : 0) + NBitIntegerEncoder.octectsNeeded(n, i));
+        assertEquals(expected.length() / 2, (n < 8 ? 1 : 0) + NBitIntegerEncoder.octetsNeeded(n, i));
     }
 
     @Test

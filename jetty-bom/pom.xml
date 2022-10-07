@@ -17,17 +17,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>flatten-maven-plugin</artifactId>
-        <version>${flatten.maven.plugin.version}</version>
-        <configuration>
-          <outputDirectory>${project.build.directory}</outputDirectory>
-          <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
-          <flattenMode>bom</flattenMode>
-          <updatePomFile>true</updatePomFile>
-          <pomElements>
-            <build>remove</build>
-            <properties>remove</properties>
-          </pomElements>
-        </configuration>
         <executions>
           <execution>
             <id>flatten</id>

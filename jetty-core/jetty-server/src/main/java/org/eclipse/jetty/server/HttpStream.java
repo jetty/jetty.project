@@ -26,10 +26,11 @@ import org.eclipse.jetty.util.Callback;
 public interface HttpStream extends Callback
 {
     /**
-     * Attribute used to get the {@link Connection} from the request attributes. This should not be used to set the
-     * connection as a request attribute, instead use {@link HttpStream#setUpgradeConnection(Connection)}.
+     * <p>Attribute name to be used as a {@link Request} attribute to store/retrieve
+     * the {@link Connection} created during the HTTP/1.1 upgrade mechanism or the
+     * HTTP/2 tunnel mechanism.</p>
      */
-    String UPGRADE_CONNECTION_ATTRIBUTE = HttpStream.class.getName() + ".UPGRADE";
+    String UPGRADE_CONNECTION_ATTRIBUTE = HttpStream.class.getName() + ".upgradeConnection";
 
     /**
      * @return an ID unique within the lifetime scope of the associated protocol connection.
@@ -65,13 +66,6 @@ public interface HttpStream extends Callback
     void push(MetaData.Request request);
 
     boolean isCommitted();
-
-    // TODO: remove this method? Only used in tests.
-    boolean isComplete();
-
-    void setUpgradeConnection(Connection connection);
-
-    Connection upgrade();
 
     default TunnelSupport getTunnelSupport()
     {
@@ -167,24 +161,6 @@ public interface HttpStream extends Callback
         public final boolean isCommitted()
         {
             return getWrapped().isCommitted();
-        }
-
-        @Override
-        public final boolean isComplete()
-        {
-            return getWrapped().isComplete();
-        }
-
-        @Override
-        public void setUpgradeConnection(Connection connection)
-        {
-            getWrapped().setUpgradeConnection(connection);
-        }
-
-        @Override
-        public Connection upgrade()
-        {
-            return getWrapped().upgrade();
         }
 
         @Override

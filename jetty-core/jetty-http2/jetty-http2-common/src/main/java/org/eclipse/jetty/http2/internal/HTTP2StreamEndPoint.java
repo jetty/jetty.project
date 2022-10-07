@@ -46,7 +46,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     private final AtomicBoolean eof = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicReference<Throwable> failure = new AtomicReference<>();
-    private Stream.Data data;
+    private final AtomicReference<Stream.Data> data = new AtomicReference<>();
     private Connection connection;
 
     public HTTP2StreamEndPoint(HTTP2Stream stream)
@@ -186,8 +186,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public int fill(ByteBuffer sink) throws IOException
     {
+        Stream.Data data = this.data.get();
         if (data != null)
-            return fillFromData(sink);
+            return fillFromData(data, sink);
 
         Throwable failure = this.failure.get();
         if (failure != null)
@@ -196,7 +197,8 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         if (eof.get())
             return -1;
 
-        Stream.Data data = this.data = stream.readData();
+        data = stream.readData();
+        this.data.set(data);
 
         if (LOG.isDebugEnabled())
             LOG.debug("filled {} on {}", data, this);
@@ -204,29 +206,36 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         if (data == null)
             return 0;
 
-        return fillFromData(sink);
+        return fillFromData(data, sink);
     }
 
-    private int fillFromData(ByteBuffer sink)
+    private int fillFromData(Stream.Data data, ByteBuffer sink)
     {
-        int sinkPosition = BufferUtil.flipToFill(sink);
+        int length = 0;
         ByteBuffer source = data.frame().getData();
-        int sourceLength = source.remaining();
-        int length = Math.min(sourceLength, sink.remaining());
-        int sourceLimit = source.limit();
-        source.limit(source.position() + length);
-        sink.put(source);
-        source.limit(sourceLimit);
-        BufferUtil.flipToFlush(sink, sinkPosition);
+        boolean hasContent = source.hasRemaining();
+        if (hasContent)
+        {
+            int sinkPosition = BufferUtil.flipToFill(sink);
+            int sourceLength = source.remaining();
+            length = Math.min(sourceLength, sink.remaining());
+            int sourceLimit = source.limit();
+            source.limit(source.position() + length);
+            sink.put(source);
+            source.limit(sourceLimit);
+            BufferUtil.flipToFlush(sink, sinkPosition);
+        }
 
         if (!source.hasRemaining())
         {
             boolean endStream = data.frame().isEndStream();
             eof.set(endStream);
             data.release();
-            data = null;
+            this.data.set(null);
             if (!endStream)
                 stream.demand();
+            if (!hasContent)
+                length = endStream ? -1 : 0;
         }
 
         return length;
@@ -356,7 +365,12 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     {
         boolean result = readCallback.compareAndSet(null, callback);
         if (result)
-            process();
+        {
+            if (data.get() != null)
+                process();
+            else
+                stream.demand();
+        }
         return result;
     }
 
