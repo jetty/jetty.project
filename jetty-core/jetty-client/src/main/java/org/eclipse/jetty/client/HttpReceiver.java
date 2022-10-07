@@ -66,7 +66,6 @@ public abstract class HttpReceiver
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final ContentListeners contentListeners = new ContentListeners();
     private final HttpChannel channel;
-    private volatile boolean firstContent = true;
     private Content.Source contentSource;
     private Throwable failure;
 
@@ -341,7 +340,6 @@ public abstract class HttpReceiver
     {
         if (LOG.isDebugEnabled())
             LOG.debug("firstResponseContent");
-        firstContent = false;
         return () ->
         {
             contentListeners.notifyContent(exchange.getResponse());
@@ -525,7 +523,6 @@ public abstract class HttpReceiver
         if (x != null)
             contentSource.fail(x);
         contentSource = newContentSource();
-        firstContent = true;
         failure = null;
     }
 
