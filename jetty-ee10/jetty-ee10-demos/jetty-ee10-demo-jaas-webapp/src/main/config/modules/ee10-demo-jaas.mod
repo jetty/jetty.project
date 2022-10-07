@@ -11,6 +11,7 @@ demo
 webapp
 
 [depends]
+demo-jaas
 ee10-deploy
 ee10-jaas
 jdbc

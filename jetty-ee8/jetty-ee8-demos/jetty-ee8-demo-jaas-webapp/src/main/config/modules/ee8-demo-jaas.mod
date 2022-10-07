@@ -11,6 +11,7 @@ demo
 webapp
 
 [depends]
+demo-jaas
 ee8-deploy
 ee8-jaas
 jdbc

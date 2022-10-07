@@ -8,10 +8,6 @@ core
 
 [tags]
 demo
-webapp
-
-[depends]
-core-deploy
 
 [files]
 basehome:modules/demo.d/demo-login.conf|etc/demo-login.conf

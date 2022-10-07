@@ -13,6 +13,7 @@
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
   </properties>
   <build>
+  <!--
       <plugins>
         <plugin>
           <groupId>org.eclipse.jetty.ee10</groupId>
@@ -21,9 +22,7 @@
           <configuration>
             <scan>10</scan>
             <systemProperties>
-              <!-- This is for convenience so that the src/etc/login.conf file can stay unmodified when copied to $jetty.home/etc directory -->
                 <jetty.base>${basedir}/src/main/config/modules/demo.d</jetty.base>
-              <!-- Mandatory. This system property tells JAAS where to find the login module configuration file -->
                 <java.security.auth.login.config>${basedir}/src/main/etc/ee10-demo-login.conf</java.security.auth.login.config>
             </systemProperties>
             <webApp>
@@ -38,5 +37,6 @@
           </configuration>
         </plugin>
       </plugins>
+  -->
   </build>
 </project>

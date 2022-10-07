@@ -17,4 +17,3 @@ test-keystore
 work
 demo-root
 demo-moved-context
-demo-jaas

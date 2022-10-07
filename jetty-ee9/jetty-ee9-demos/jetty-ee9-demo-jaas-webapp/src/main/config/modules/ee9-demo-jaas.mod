@@ -11,6 +11,7 @@ demo
 webapp
 
 [depends]
+demo-jaas
 ee9-deploy
 ee9-jaas
 jdbc
