@@ -17,10 +17,15 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EventListener;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
@@ -56,7 +61,6 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  */
 public class ServletChannel implements Runnable
 {
-    public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
     private final AtomicLong _requests = new AtomicLong();
@@ -67,11 +71,10 @@ public class ServletChannel implements Runnable
     private ServletRequestState _state;
     private ServletContextHandler.ServletContextApi _servletContextApi;
     private ServletContextRequest _request;
+    private boolean _expects100Continue;
+    private Listener _combinedListener;
     private long _oldIdleTimeout;
     private Callback _callback;
-    private boolean _expects100Continue;
-    // TODO:
-    private final Listener _combinedListener = NOOP_LISTENER;
     // Bytes written after interception (e.g. after compression).
     private long _written;
 
@@ -84,15 +87,16 @@ public class ServletChannel implements Runnable
 
     public void init(ServletContextRequest request)
     {
+        _connector = request.getConnectionMetaData().getConnector();
+        _executor = request.getContext();
+        _configuration = request.getConnectionMetaData().getHttpConfiguration();
+        _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+        _state = new ServletRequestState(this); // TODO can this be recycled?
         _servletContextApi = request.getContext().getServletContext();
         _request = request;
-        _executor = request.getContext();
-        _state = new ServletRequestState(this); // TODO can this be recycled?
-        _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-        _connector = request.getConnectionMetaData().getConnector();
-        // TODO: can we do this?
-        _configuration = request.getConnectionMetaData().getHttpConfiguration();
         _expects100Continue = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+        _combinedListener = new Listeners(request);
+
         request.getHttpInput().init();
 
         if (LOG.isDebugEnabled())
@@ -559,6 +563,7 @@ public class ServletChannel implements Runnable
                         }
 
                         // If send error is called we need to break.
+                        // TODO: is this necessary? It always returns false.
                         if (checkAndPrepareUpgrade())
                             break;
 
@@ -867,8 +872,6 @@ public class ServletChannel implements Runnable
      */
     public interface Listener extends EventListener
     {
-        // TODO do we need this class?
-
         /**
          * Invoked just after the HTTP request line and headers have been parsed.
          *
@@ -1010,6 +1013,151 @@ public class ServletChannel implements Runnable
          */
         default void onComplete(Request request)
         {
+        }
+    }
+
+    private class Listeners implements Listener
+    {
+        private final List<Listener> _listeners;
+
+        private Listeners(ServletContextRequest request)
+        {
+            Collection<Listener> connectorListeners = request.getConnectionMetaData().getConnector().getBeans(Listener.class);
+            List<Listener> handlerListeners = request.getContext().getServletContextHandler().getEventListeners().stream()
+                .filter(l -> l instanceof Listener)
+                .map(Listener.class::cast)
+                .toList();
+            _listeners = new ArrayList<>(connectorListeners);
+            _listeners.addAll(handlerListeners);
+        }
+
+        @Override
+        public void onRequestBegin(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onRequestBegin, request));
+        }
+
+        @Override
+        public void onBeforeDispatch(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onBeforeDispatch, request));
+        }
+
+        @Override
+        public void onDispatchFailure(Request request, Throwable failure)
+        {
+            _listeners.forEach(l -> notify(l::onDispatchFailure, request, failure));
+        }
+
+        @Override
+        public void onAfterDispatch(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onAfterDispatch, request));
+        }
+
+        @Override
+        public void onRequestContent(Request request, ByteBuffer content)
+        {
+            _listeners.forEach(l -> notify(l::onRequestContent, request, content));
+        }
+
+        @Override
+        public void onRequestContentEnd(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onRequestContentEnd, request));
+        }
+
+        @Override
+        public void onRequestTrailers(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onRequestTrailers, request));
+        }
+
+        @Override
+        public void onRequestEnd(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onRequestEnd, request));
+        }
+
+        @Override
+        public void onRequestFailure(Request request, Throwable failure)
+        {
+            _listeners.forEach(l -> notify(l::onDispatchFailure, request, failure));
+        }
+
+        @Override
+        public void onResponseBegin(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onResponseBegin, request));
+        }
+
+        @Override
+        public void onResponseCommit(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onResponseCommit, request));
+        }
+
+        @Override
+        public void onResponseContent(Request request, ByteBuffer content)
+        {
+            _listeners.forEach(l -> notify(l::onRequestContent, request, content));
+        }
+
+        @Override
+        public void onResponseEnd(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onResponseEnd, request));
+        }
+
+        @Override
+        public void onResponseFailure(Request request, Throwable failure)
+        {
+            _listeners.forEach(l -> notify(l::onDispatchFailure, request, failure));
+        }
+
+        @Override
+        public void onComplete(Request request)
+        {
+            _listeners.forEach(l -> notify(l::onComplete, request));
+        }
+
+        private void notify(Consumer<Request> consumer, Request request)
+        {
+            try
+            {
+                consumer.accept(request);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying %s event for %s".formatted(ServletChannel.Listener.class.getSimpleName(), request));
+            }
+        }
+
+        private void notify(BiConsumer<Request, Throwable> consumer, Request request, Throwable failure)
+        {
+            try
+            {
+                consumer.accept(request, failure);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying %s event for %s".formatted(ServletChannel.Listener.class.getSimpleName(), request));
+            }
+        }
+
+        private void notify(BiConsumer<Request, ByteBuffer> consumer, Request request, ByteBuffer byteBuffer)
+        {
+            try
+            {
+                consumer.accept(request, byteBuffer.slice());
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying %s event for %s".formatted(ServletChannel.Listener.class.getSimpleName(), request));
+            }
         }
     }
 }

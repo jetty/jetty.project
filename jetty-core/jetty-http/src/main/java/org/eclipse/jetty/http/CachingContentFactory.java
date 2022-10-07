@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * HttpContent.ContentFactory implementation that wraps any other HttpContent.ContentFactory instance
@@ -184,8 +185,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         long len = httpContent.getContentLengthValue();
         if (len <= 0)
             return false;
-        if (isUseFileMappedBuffer())
-            return true;
         return ((len <= _maxCachedFileSize) && (len + getCachedSize() <= _maxCacheSize));
     }
 
@@ -258,7 +257,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _contentLengthValue = resourceSize;
 
             // map the content into memory if possible
-            ByteBuffer byteBuffer = _useFileMappedBuffer ? BufferUtil.toMappedBuffer(_delegate.getResource(), 0, _contentLengthValue) : null;
+            ByteBuffer byteBuffer = _useFileMappedBuffer ? toMappedBuffer(_delegate.getResource(), _contentLengthValue) : null;
 
             if (byteBuffer == null)
             {
@@ -297,6 +296,18 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _buffer = byteBuffer;
             _lastModifiedValue = _delegate.getResource().lastModified();
             _lastAccessed = NanoTime.now();
+        }
+
+        private ByteBuffer toMappedBuffer(Resource resource, long length)
+        {
+            try
+            {
+                return BufferUtil.toMappedBuffer(resource, 0, length);
+            }
+            catch (Throwable x)
+            {
+                return null;
+            }
         }
 
         long calculateSize()

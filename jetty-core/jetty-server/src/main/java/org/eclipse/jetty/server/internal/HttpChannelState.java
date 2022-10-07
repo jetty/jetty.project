@@ -1370,7 +1370,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // is the request fully consumed?
                 Throwable unconsumed = stream.consumeAvailable();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("consumeAll: {} {} ", unconsumed == null, httpChannelState);
+                    LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState);
 
                 if (unconsumed != null && httpChannelState.getConnectionMetaData().isPersistent())
                 {
@@ -1536,6 +1536,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (needLastWrite)
+            {
                 _stream.send(_request._metaData, responseMetaData, true, null,
                     Callback.from(() -> httpChannel._handlerInvoker.failed(_failure),
                         x ->
@@ -1544,8 +1545,11 @@ public class HttpChannelState implements HttpChannel, Components
                                 _failure.addSuppressed(x);
                             httpChannel._handlerInvoker.failed(_failure);
                         }));
+            }
             else
+            {
                 httpChannel._handlerInvoker.failed(_failure);
+            }
         }
 
         @Override
