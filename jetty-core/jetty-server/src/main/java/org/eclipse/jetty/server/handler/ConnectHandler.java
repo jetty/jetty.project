@@ -205,6 +205,10 @@ public class ConnectHandler extends Handler.Wrapper
                     };
                 }
             }
+            else
+            {
+                return (req, res, cbk) -> Response.writeError(req, res, cbk, HttpStatus.NOT_IMPLEMENTED_501);
+            }
         }
         return super.handle(request);
     }

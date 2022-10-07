@@ -37,7 +37,7 @@ public class SetCapacityInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(5, _capacity) + 1;
+        int size = NBitIntegerEncoder.octetsNeeded(5, _capacity) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
         buffer.put((byte)0x20);
         NBitIntegerEncoder.encode(buffer, 5, _capacity);

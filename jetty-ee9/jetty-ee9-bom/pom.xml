@@ -17,17 +17,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>flatten-maven-plugin</artifactId>
-        <version>${flatten.maven.plugin.version}</version>
-        <configuration>
-          <outputDirectory>${project.build.directory}</outputDirectory>
-          <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
-          <flattenMode>bom</flattenMode>
-          <updatePomFile>true</updatePomFile>
-          <pomElements>
-            <build>remove</build>
-            <properties>remove</properties>
-          </pomElements>
-        </configuration>
         <executions>
           <execution>
             <id>flatten</id>
@@ -54,158 +43,131 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-annotations</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-apache-jsp</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-cdi</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-glassfish-jstl</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-jaas</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-jaspi</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
 
 <!--      <dependency>-->
 <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
 <!--        <artifactId>jetty-ee9-jspc-maven-plugin</artifactId>-->
-<!--        <version>${project.version}</version>-->
+<!--        <version>12.0.0-SNAPSHOT</version>-->
 <!--      </dependency>-->
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-maven-plugin</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-openid</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-plus</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-proxy</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-quickstart</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-nested</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-security</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-servlet</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-servlets</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-webapp</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jetty-api</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jetty-common</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
-        <version>${project.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-servlet</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <!-- Jakarta EE 9 Dependencies -->
-      <!-- FIXME to review it is not sure to be a good idea to have this in the bom -->
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-servlet-api</artifactId>
-        <version>${jetty.servlet.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet.jsp</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-websocket-api</artifactId>
-        <version>${jakarta.websocket.api.version}</version>
+        <version>12.0.0-SNAPSHOT</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

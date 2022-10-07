@@ -129,6 +129,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         {
             File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
             Path webXml = webInf.resolve("web.xml");
+            Files.deleteIfExists(webXml);
             IO.copy(testWebXml, webXml.toFile());
         }
 

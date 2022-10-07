@@ -31,9 +31,9 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,7 +46,7 @@ public class JspIncludeTest
     private static URI baseUri;
 
     @BeforeAll
-    public static void startServer() throws Exception
+    public static void startServer(WorkDir workDir) throws Exception
     {
         // Setup Server
         server = new Server();
@@ -55,20 +55,22 @@ public class JspIncludeTest
         server.addConnector(connector);
         
         //Base dir for test
-        File testDir = MavenTestingUtils.getTargetTestingDir("jsp");
+        File testDir = workDir.getEmptyPathDir().toFile();
         File testLibDir = new File(testDir, "WEB-INF/lib");
         FS.ensureDirExists(testLibDir);
                 
         //Make a taglib jar
         File srcTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
-        File scratchTagLibDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-taglib-scratch");
+        File scratchTagLibDir = new File(testDir, JspIncludeTest.class.getSimpleName() + "-taglib-scratch");
         IO.copy(srcTagLibDir, scratchTagLibDir);
         File tagLibJar =  new File(testLibDir, "testtaglib.jar");
         JAR.create(scratchTagLibDir, tagLibJar);
         
         //Copy content
+        File destWebAppDir = new File(testDir, "webapp");
+        FS.ensureDirExists(destWebAppDir);
         File srcWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
-        IO.copyDir(srcWebAppDir, testDir);
+        IO.copyDir(srcWebAppDir, destWebAppDir);
 
         // Configure WebAppContext
         Configurations.setServerDefault(server).add(new JettyWebXmlConfiguration(), new AnnotationConfiguration());
@@ -76,9 +78,9 @@ public class JspIncludeTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
 
-        File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-scratch");
+        File scratchDir = new File(testDir, JspIncludeTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
-        JspConfig.init(context, testDir.toURI(), scratchDir);
+        JspConfig.init(context, destWebAppDir.toURI(), scratchDir);
 
         server.setHandler(context);
 

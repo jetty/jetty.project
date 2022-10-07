@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * HttpContent.ContentFactory implementation that wraps any other HttpContent.ContentFactory instance
@@ -163,6 +164,30 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         }
     }
 
+    /**
+     * Tests whether the given HttpContent is cacheable, and if there is enough room to fit it in the cache.
+     *
+     * @param httpContent the HttpContent to test.
+     * @return whether the HttpContent is cacheable.
+     */
+    protected boolean isCacheable(HttpContent httpContent)
+    {
+        if (httpContent == null)
+            return false;
+
+        if (httpContent.getResource().isDirectory())
+            return false;
+
+        if (_maxCachedFiles <= 0)
+            return false;
+
+        // Will it fit in the cache?
+        long len = httpContent.getContentLengthValue();
+        if (len <= 0)
+            return false;
+        return ((len <= _maxCachedFileSize) && (len + getCachedSize() <= _maxCacheSize));
+    }
+
     @Override
     public HttpContent getContent(String path) throws IOException
     {
@@ -178,14 +203,14 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         }
 
         HttpContent httpContent = _authority.getContent(path);
-        // Do not cache directories or files that are too big
-        if (httpContent != null && !httpContent.getResource().isDirectory() && httpContent.getContentLengthValue() <= _maxCachedFileSize)
+        if (isCacheable(httpContent))
         {
             httpContent = cachingHttpContent = new CachingHttpContent(path, httpContent);
             _cache.put(path, cachingHttpContent);
             _cachedSize.addAndGet(cachingHttpContent.calculateSize());
             shrinkCache();
         }
+
         return httpContent;
     }
 
@@ -232,7 +257,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _contentLengthValue = resourceSize;
 
             // map the content into memory if possible
-            ByteBuffer byteBuffer = _useFileMappedBuffer ? BufferUtil.toMappedBuffer(_delegate.getResource(), 0, _contentLengthValue) : null;
+            ByteBuffer byteBuffer = _useFileMappedBuffer ? toMappedBuffer(_delegate.getResource(), _contentLengthValue) : null;
 
             if (byteBuffer == null)
             {
@@ -271,6 +296,18 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _buffer = byteBuffer;
             _lastModifiedValue = _delegate.getResource().lastModified();
             _lastAccessed = NanoTime.now();
+        }
+
+        private ByteBuffer toMappedBuffer(Resource resource, long length)
+        {
+            try
+            {
+                return BufferUtil.toMappedBuffer(resource, 0, length);
+            }
+            catch (Throwable x)
+            {
+                return null;
+            }
         }
 
         long calculateSize()

@@ -21,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Deque;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -94,7 +95,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-// TODO: most of these tests do not work because the scope listener mechanism is broken.
 @Disabled
 public class AsyncIOServletTest extends AbstractTest
 {
@@ -1210,7 +1210,7 @@ public class AsyncIOServletTest extends AbstractTest
             {
                 System.err.println("Service " + request);
 
-                HttpInput httpInput = ((ServletContextRequest)request).getHttpInput();
+                HttpInput httpInput = Objects.requireNonNull(ServletContextRequest.getServletContextRequest(request)).getHttpInput();
                 httpInput.addInterceptor(new HttpInput.Interceptor()
                 {
                     int state = 0;

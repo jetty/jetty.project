@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  * this factory are not intended to be cached, so memory limits for individual
  * HttpOutput streams are enforced.
  */
-//TODO remove
 public class ResourceContentFactory implements ContentFactory
 {
     private final ResourceFactory _factory;

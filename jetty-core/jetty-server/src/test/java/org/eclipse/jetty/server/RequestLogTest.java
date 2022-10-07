@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,8 +143,9 @@ public class RequestLogTest
      * Test an unread HTTP/1.1 POST, it has valid body content, the dispatched Handler on the server doesn't read the POST body content.
      * The RequestLog accidentally attempts to read the Request body content due to the use of Request.getParameterNames() API.
      */
-    @Test
-    public void testNormalPostFormRequest() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"/hello", "/hello?a=b"})
+    public void testNormalPostFormRequest(String requestPath) throws Exception
     {
         Server server = null;
         try
@@ -175,7 +178,7 @@ public class RequestLogTest
                 byte[] bufForm = form.toString().getBytes(UTF_8);
 
                 StringBuilder req = new StringBuilder();
-                req.append("POST /hello HTTP/1.1\r\n");
+                req.append("POST ").append(requestPath).append(" HTTP/1.1\r\n");
                 req.append("Host: ").append(baseURI.getRawAuthority()).append("\r\n");
                 req.append("Content-Type: ").append(MimeTypes.Type.FORM_ENCODED).append("\r\n");
                 req.append("Content-Length: ").append(bufForm.length).append("\r\n");
@@ -209,7 +212,10 @@ public class RequestLogTest
                 assertThat("Body Content", bodyContent, containsString("Got POST to /hello"));
 
                 String reqlog = requestLogLines.poll(5, TimeUnit.SECONDS);
-                assertThat("RequestLog", reqlog, containsString("method:POST|uri:/hello|paramNames.size:0|status:200"));
+                int querySize = 0;
+                if (requestPath.contains("?"))
+                    querySize = 1; // assuming that parameterized version only has 1 query value
+                assertThat("RequestLog", reqlog, containsString("method:POST|uri:/hello|paramNames.size:" + querySize + "|status:200"));
             }
         }
         finally

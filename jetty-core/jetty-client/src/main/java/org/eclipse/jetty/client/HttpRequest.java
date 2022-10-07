@@ -771,15 +771,17 @@ public class HttpRequest implements Request
     {
         if (listener != null)
             responseListeners.add(listener);
-        sent();
         sender.accept(this, responseListeners);
     }
 
     void sent()
     {
-        long timeout = getTimeout();
-        if (timeout > 0)
-            timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
+        if (timeoutNanoTime == Long.MAX_VALUE)
+        {
+            long timeout = getTimeout();
+            if (timeout > 0)
+                timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
+        }
     }
 
     /**

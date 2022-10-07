@@ -14,9 +14,9 @@
 package org.eclipse.jetty.websocket.core.server.internal;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
@@ -30,9 +30,9 @@ public class RFC8441Negotiation extends WebSocketNegotiation
     @Override
     public boolean validateHeaders()
     {
-        MetaData.Request metaData = null; // TODO: getRequest().getMetaData();
-        if (metaData == null)
+        TunnelSupport tunnelSupport = getRequest().getTunnelSupport();
+        if (tunnelSupport == null)
             return false;
-        return "websocket".equals(metaData.getProtocol());
+        return "websocket".equals(tunnelSupport.getProtocol());
     }
 }

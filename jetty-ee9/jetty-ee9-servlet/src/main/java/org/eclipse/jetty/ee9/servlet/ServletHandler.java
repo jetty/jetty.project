@@ -1287,6 +1287,7 @@ public class ServletHandler extends ScopedHandler
 
     protected PathSpec asPathSpec(String pathSpec)
     {
+        // By default only allow servlet path specs
         return new ServletPathSpec(pathSpec);
     }
 
