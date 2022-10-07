@@ -32,7 +32,7 @@ public class StreamCancellationInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(6, _streamId) + 1;
+        int size = NBitIntegerEncoder.octetsNeeded(6, _streamId) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
         buffer.put((byte)0x40);
         NBitIntegerEncoder.encode(buffer, 6, _streamId);

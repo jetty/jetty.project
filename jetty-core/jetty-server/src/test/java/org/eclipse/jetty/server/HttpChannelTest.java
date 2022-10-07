@@ -33,7 +33,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -936,13 +935,6 @@ public class HttpChannelTest
                 {
                     history.add("push");
                     super.push(request);
-                }
-
-                @Override
-                public Connection upgrade()
-                {
-                    history.add("upgrade");
-                    return super.upgrade();
                 }
 
                 @Override

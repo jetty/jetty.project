@@ -10,6 +10,7 @@
   <artifactId>jetty-proxy</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Core :: Proxy</name>
+  <description>Jetty Core Proxy</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>

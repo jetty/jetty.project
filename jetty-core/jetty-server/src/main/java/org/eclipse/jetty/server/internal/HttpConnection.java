@@ -598,31 +598,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return handle;
     }
 
-    private boolean upgrade(HttpStream stream)
+    private boolean upgrade(HttpStreamOverHTTP1 stream)
     {
-        Connection connection = stream.upgrade();
-        if (connection == null)
-            return false;
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Upgrade from {} to {}", this, connection);
-        getEndPoint().upgrade(connection);
-        //_channel.recycle(); // TODO should something be done to the channel?
-        _parser.reset();
-        _generator.reset();
-        if (_retainableByteBuffer != null)
+        if (stream.upgrade())
         {
-            if (!_retainableByteBuffer.isRetained())
-            {
-                releaseRequestBuffer();
-            }
-            else
-            {
-                LOG.warn("{} lingering content references?!?!", this);
-                _retainableByteBuffer = null; // Not returned to pool!
-            }
+            _httpChannel.recycle();
+            _parser.close();
+            _generator.reset();
+            return true;
         }
-        return true;
+        else
+        {
+            return false;
+        }
     }
 
     @Override
@@ -647,22 +635,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     {
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
-        try
-        {
-            if (cause == null)
-                _sendCallback.close();
-            else
-                _sendCallback.failed(cause);
-        }
-        finally
-        {
-            if (cause != null)
-            {
-                Runnable todo = _httpChannel.onFailure(cause);
-                if (todo != null)
-                    todo.run();
-            }
-        }
+        if (cause == null)
+            _sendCallback.close();
+        else
+            _sendCallback.failed(cause);
         super.onClose(cause);
     }
 
@@ -970,10 +946,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     {
         private Throwable _failure;
 
-        protected RequestHandler()
-        {
-        }
-
         @Override
         public void startRequest(String method, String uri, HttpVersion version)
         {
@@ -1068,9 +1040,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _httpChannel.onRequest(new MetaData.Request(stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
-            Runnable todo = _httpChannel.onFailure(failure);
-            if (todo != null)
-                getServer().getThreadPool().execute(todo);
+            Runnable task = _httpChannel.onFailure(failure);
+            if (task != null)
+                getServer().getThreadPool().execute(task);
         }
 
         @Override
@@ -1156,7 +1128,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         private HostPortHttpField _hostField;
         private MetaData.Request _request;
         private HttpField _upgrade = null;
-        private Connection _upgradeConnection;
         private Content.Chunk _chunk;
         private boolean _connectionClose = false;
         private boolean _connectionKeepAlive = false;
@@ -1250,7 +1221,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 if (_uri.isAbsolute())
                 {
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
-                        throw new BadMessageException("Authority!=Host ");
+                        throw new BadMessageException("Authority!=Host");
                 }
                 else
                 {
@@ -1306,8 +1277,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         !_connectionClose ||
                         HttpMethod.CONNECT.is(_method);
 
-                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
-                    // if we are persistent or not.
                     _generator.setPersistent(persistent);
                     if (!persistent)
                         _connectionKeepAlive = false;
@@ -1320,33 +1289,37 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     if (_unknownExpectation)
                     {
                         _requestHandler.badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
-                        return null; // TODO Is this enough ???
+                        return null;
                     }
 
                     persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
                         !_connectionClose ||
                         HttpMethod.CONNECT.is(_method);
 
-                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
-                    // if we are persistent or not.
                     _generator.setPersistent(persistent);
 
+                    // Try to upgrade before calling the application.
+                    // In case of WebSocket, it is the application that performs the upgrade
+                    // so upgrade(stream) will return false, and the upgrade will be finished
+                    // in HttpStreamOverHTTP1.succeeded().
+                    // In case of HTTP/2, the application is not called and the upgrade
+                    // is finished here by upgrade(stream) which will return true.
                     if (_upgrade != null && HttpConnection.this.upgrade(_stream.get()))
-                        return null; // TODO do we need to return a runnable to complete the upgrade ???
+                        return null;
 
                     break;
                 }
 
                 case HTTP_2:
                 {
-                    // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2c.
+                    // Allow prior knowledge "upgrade" to HTTP/2 only if the connector supports h2c.
                     _upgrade = PREAMBLE_UPGRADE_H2C;
 
                     if (HttpMethod.PRI.is(_method) &&
                         "*".equals(_uri.getPath()) &&
                         _headerBuilder.size() == 0 &&
                         HttpConnection.this.upgrade(_stream.get()))
-                        return null; // TODO do we need to return a runnable to complete the upgrade ???
+                        return null;
 
                     // TODO is this sufficient?
                     _parser.close();
@@ -1486,40 +1459,21 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             return _stream.get() != this || _generator.isCommitted();
         }
 
-        @Override
-        public boolean isComplete()
-        {
-            return _stream.get() != this;
-        }
-
-        @Override
-        public void setUpgradeConnection(Connection connection)
-        {
-            _upgradeConnection = connection;
-            if (_httpChannel.getRequest() != null)
-                _httpChannel.getRequest().setAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE, connection);
-        }
-
-        @Override
-        public Connection upgrade()
+        private boolean upgrade()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {} {}", this, _upgrade);
 
-            // If Upgrade attribute already set then we don't need to do anything here.
-            if (_upgradeConnection != null)
-                return _upgradeConnection;
-
-            // If no upgrade headers there is nothing to do.
-            if (!_connectionUpgrade && (_upgrade == null))
-                return null;
+            // If no upgrade headers then there is nothing to do.
+            if (!_connectionUpgrade && _upgrade == null)
+                return false;
 
             @SuppressWarnings("ReferenceEquality")
-            boolean isUpgradedH2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
-            if (!isUpgradedH2C && !_connectionUpgrade)
+            boolean isPriorKnowledgeH2C = _upgrade == PREAMBLE_UPGRADE_H2C;
+            if (!isPriorKnowledgeH2C  && !_connectionUpgrade)
                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
-            // Find the upgrade factory
+            // Find the upgrade factory.
             ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
                 .filter(f -> f instanceof ConnectionFactory.Upgrading)
                 .map(ConnectionFactory.Upgrading.class::cast)
@@ -1531,27 +1485,28 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("No factory for {} in {}", _upgrade, getConnector());
-                return null;
+                return false;
             }
 
-            // Create new connection
             HttpFields.Mutable response101 = HttpFields.build();
             Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _request, response101);
             if (upgradeConnection == null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
-                return null;
+                return false;
             }
 
-            // Send 101 if needed
-            if (!isUpgradedH2C)
+            // Prior knowledge HTTP/2 does not need a 101 response (it will directly be
+            // in HTTP/2 format) while HTTP/1.1 to HTTP/2 upgrade needs a 101 response.
+            if (!isPriorKnowledgeH2C)
                 send(_request, new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), false, null, Callback.NOOP);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
-            //getHttpTransport().onCompleted(); // TODO: succeed callback instead?
-            return upgradeConnection;
+                LOG.debug("Upgrading from {} to {}", getEndPoint().getConnection(), upgradeConnection);
+            getEndPoint().upgrade(upgradeConnection);
+
+            return true;
         }
 
         @Override
@@ -1573,17 +1528,21 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (isFillInterested())
             {
                 LOG.warn("Read pending {} {}", this, getEndPoint());
-                failed(new IOException("Pending read in onCompleted"));
+                abort(new IOException("Pending read in onCompleted"));
                 return;
             }
 
-            // Save the upgrade Connection before recycling the HttpChannel which would clear the request attributes.
-            _upgradeConnection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
+            Connection upgradeConnection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
+            if (upgradeConnection != null)
+            {
+                getEndPoint().upgrade(upgradeConnection);
+                _httpChannel.recycle();
+                _parser.close();
+                _generator.reset();
+                return;
+            }
 
             _httpChannel.recycle();
-
-            if (HttpConnection.this.upgrade(stream))
-                return;
 
             if (_expects100Continue)
             {
@@ -1658,8 +1617,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     LOG.debug("ignored", x);
                 return;
             }
+            abort(x);
+        }
 
-            getEndPoint().close();
+        private void abort(Throwable failure)
+        {
+            getEndPoint().close(failure);
         }
 
         @Override

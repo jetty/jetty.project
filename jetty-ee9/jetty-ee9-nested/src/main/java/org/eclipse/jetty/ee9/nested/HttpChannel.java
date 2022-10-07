@@ -74,7 +74,6 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  */
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
-    public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final ContextHandler _contextHandler;
@@ -114,10 +113,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _response = new Response(this, newHttpOutput());
         _executor = _connector.getServer().getThreadPool();
 
-        // TODO get real listeners from somewhere
-        _combinedListener = /* (connector instanceof AbstractConnector)
-            ? ((AbstractConnector)connector).getHttpChannelListeners()
-            : */ NOOP_LISTENER;
+        _combinedListener = new HttpChannelListeners(_connector.getBeans(Listener.class));
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",

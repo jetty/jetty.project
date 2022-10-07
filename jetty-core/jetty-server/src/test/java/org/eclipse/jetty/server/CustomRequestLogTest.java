@@ -506,15 +506,17 @@ public class CustomRequestLogTest
     {
         testHandlerServerStart("%U ConnectionStatus: %s %X");
 
-        _connector.getResponse("GET /one HTTP/1.0\n\n");
+        String response = _connector.getResponse("GET /one HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/one ConnectionStatus: 200 -"));
 
-        _connector.getResponse("""
+        response = _connector.getResponse("""
             GET /two HTTP/1.1
             Host: localhost
             Connection: close
 
             """);
+        assertThat(response, containsString("200 OK"));
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/two ConnectionStatus: 200 -"));
 
         LocalConnector.LocalEndPoint connect = _connector.connect();
@@ -541,19 +543,19 @@ public class CustomRequestLogTest
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/four ConnectionStatus: 200 +"));
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/five ConnectionStatus: 200 -"));
 
-        _connector.getResponse("""
+        response = _connector.getResponse("""
             GET /no/host HTTP/1.1
 
             """);
-        connect.getResponse();
+        assertThat(response, containsString(" 400 "));
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/no/host ConnectionStatus: 400 X"));
 
-        _connector.getResponse("""
+        response = _connector.getResponse("""
             GET /abort HTTP/1.1
             Host: localhost
 
             """);
-        connect.getResponse();
+        assertThat(response, containsString("200 OK"));
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/abort ConnectionStatus: 200 X"));
     }
 

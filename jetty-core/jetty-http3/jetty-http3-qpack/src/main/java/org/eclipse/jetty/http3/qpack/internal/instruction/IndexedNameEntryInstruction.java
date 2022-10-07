@@ -54,7 +54,7 @@ public class IndexedNameEntryInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
+        int size = NBitIntegerEncoder.octetsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
         ByteBuffer buffer = lease.acquire(size, false);
 
         // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.

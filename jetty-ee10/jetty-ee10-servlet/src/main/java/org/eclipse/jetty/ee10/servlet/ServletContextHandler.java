@@ -205,7 +205,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _destroyServletContextListeners = new ArrayList<>();
-    protected final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
+    private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
