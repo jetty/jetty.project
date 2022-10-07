@@ -178,14 +178,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                             {
                                 MappedResource<E> candidate = _exactMap.getBest(path, 0, i--);
                                 if (candidate == null)
-                                    break;
+                                    continue;
 
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
                                 {
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
                                 }
-                                i--;
                             }
                             // If we reached here, there's NO optimized EXACT Match possible, skip simple match below
                             skipRestOfGroup = true;
@@ -202,12 +201,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                             {
                                 MappedResource<E> candidate = _prefixMap.getBest(path, 0, i--);
                                 if (candidate == null)
-                                    break;
+                                    continue;
 
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-                                i--;
                             }
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
                             skipRestOfGroup = true;
@@ -229,7 +227,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                             {
                                 MappedResource<E> candidate = _suffixMap.get(path, i + 1, path.length() - i - 1);
                                 if (candidate == null)
-                                    break;
+                                    continue;
 
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
@@ -259,15 +257,6 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     public Iterator<MappedResource<E>> iterator()
     {
         return _mappings.iterator();
-    }
-
-    /**
-     * @deprecated use {@link PathSpec#from(String)} instead
-     */
-    @Deprecated
-    public static PathSpec asPathSpec(String pathSpecString)
-    {
-        return PathSpec.from(pathSpecString);
     }
 
     public E get(PathSpec spec)

@@ -28,9 +28,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RegexPathSpecTest
 {
@@ -204,8 +201,8 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/aa/bb");
         assertNotMatches(spec, "/aa/bb.do/more");
 
-        assertThat(spec.getPathMatch("/a/b/c.do"), equalTo("/a/b/c.do"));
-        assertThat(spec.getPathInfo("/a/b/c.do"), nullValue());
+        assertThat(spec.getPathMatch("/a/b/c.do"), equalTo(""));
+        assertThat(spec.getPathInfo("/a/b/c.do"), equalTo("/a/b/c.do"));
     }
 
     /**
