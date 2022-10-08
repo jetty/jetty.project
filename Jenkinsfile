@@ -16,7 +16,7 @@ pipeline {
             container('jetty-build') {
               timeout( time: 180, unit: 'MINUTES' ) {
                 checkout scm
-                mavenBuild( "jdk17", "clean install -Perrorprone", "maven3")
+                mavenBuild( "jdk17", "clean install javadoc:javadoc -Perrorprone", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
