@@ -779,7 +779,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Ensure there is a webapp, and that some basic defaults are applied
      * if the user has not supplied them.
      * 
-     * @throws Exception
+     * @throws AbstractMojoExecutionException
      */
     protected void configureWebApp()
         throws AbstractMojoExecutionException
