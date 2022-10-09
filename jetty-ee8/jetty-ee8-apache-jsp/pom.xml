@@ -12,6 +12,7 @@
   <properties>
     <ee9.module>jetty-ee9-apache-jsp</ee9.module>
     <bundle-symbolic-name>${project.groupId}.apache-jsp</bundle-symbolic-name>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
 
   <build>
@@ -52,13 +53,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
       </plugin>
     </plugins>
   </build>

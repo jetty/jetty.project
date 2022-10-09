@@ -17,6 +17,7 @@
     <jetty.port.file>${project.build.directory}/jetty-start-war-distro-port.txt</jetty.port.file>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
     <jetty.deployMode>HOME</jetty.deployMode>
+    <skipTests>true</skipTests>
   </properties>
 
   <dependencies>
@@ -67,13 +68,6 @@
       </plugins>
     </pluginManagement>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
