@@ -17,7 +17,7 @@
     <jetty.port.file>${project.build.directory}/jetty-start-war-distro-port.txt</jetty.port.file>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
     <jetty.deployMode>HOME</jetty.deployMode>
-    <skipTests>true</skipTests>
+    <maven.test.skip>true</maven.test.skip>
   </properties>
 
   <dependencies>
