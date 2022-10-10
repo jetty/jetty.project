@@ -53,6 +53,11 @@ public class HttpChannelOverFCGI extends HttpChannel
         this.idle = new FCGIIdleTimeout(connection, idleTimeout);
     }
 
+    public HttpConnectionOverFCGI getHttpConnection()
+    {
+        return connection;
+    }
+
     protected int getRequest()
     {
         return request;
@@ -122,14 +127,15 @@ public class HttpChannelOverFCGI extends HttpChannel
         return exchange != null && receiver.responseHeaders(exchange);
     }
 
-    protected boolean content(Content.Chunk chunk, Callback callback)
+    protected boolean content(Content.Chunk chunk)
     {
-        // TODO Content.Chunk chunk is lost here
         idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-            return false; //receiver.responseContent(exchange, callback);
-        callback.succeeded();
+        {
+            receiver.content(chunk);
+            return false;
+        }
         return false;
     }
 
