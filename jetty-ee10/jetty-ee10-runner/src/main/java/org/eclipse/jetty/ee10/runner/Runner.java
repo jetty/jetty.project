@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
@@ -108,8 +109,7 @@ public class Runner
 
         public void addJars(Resource lib)
         {
-            if (lib == null || !lib.exists())
-                throw new IllegalStateException("No such lib: " + lib);
+            Objects.requireNonNull(lib, "Lib is null");
 
             for (Resource item: lib.list())
             {
@@ -122,8 +122,7 @@ public class Runner
 
         public void addPath(Resource path)
         {
-            if (path == null || !path.exists())
-                throw new IllegalStateException("No such path: " + path);
+            Objects.requireNonNull(path, "Path is null");
             _classpath.add(path.getURI());
         }
 
@@ -191,21 +190,21 @@ public class Runner
                 if ("--lib".equals(args[i]))
                 {
                     Resource lib = resourceFactory.newResource(args[++i]);
-                    if (!lib.exists() || !lib.isDirectory())
+                    if (lib != null || !lib.isDirectory())
                         usage("No such lib directory " + lib);
                     _classpath.addJars(lib);
                 }
                 else if ("--jar".equals(args[i]))
                 {
                     Resource jar = resourceFactory.newResource(args[++i]);
-                    if (!jar.exists() || jar.isDirectory())
+                    if (jar != null || jar.isDirectory())
                         usage("No such jar " + jar);
                     _classpath.addPath(jar);
                 }
                 else if ("--classes".equals(args[i]))
                 {
                     Resource classes = resourceFactory.newResource(args[++i]);
-                    if (!classes.exists() || !classes.isDirectory())
+                    if (classes != null || !classes.isDirectory())
                         usage("No such classes directory " + classes);
                     _classpath.addPath(classes);
                 }

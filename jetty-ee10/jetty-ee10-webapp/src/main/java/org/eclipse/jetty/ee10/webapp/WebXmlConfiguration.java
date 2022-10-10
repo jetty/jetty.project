@@ -66,7 +66,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 if (dftResource == null)
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
+            if (dftResource != null)
+                context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
         //parse, but don't process web.xml
@@ -86,7 +87,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 Resource orideResource = context.getResourceFactory().newSystemResource(overrideDescriptor);
                 if (orideResource == null)
                     orideResource = context.newResource(overrideDescriptor);
-                context.getMetaData().addOverrideDescriptor(new OverrideDescriptor(orideResource));
+                if (orideResource != null)
+                    context.getMetaData().addOverrideDescriptor(new OverrideDescriptor(orideResource));
             }
         }
     }
@@ -106,7 +108,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (descriptor != null)
         {
             Resource web = context.newResource(descriptor);
-            if (web.exists() && !web.isDirectory())
+            if (web != null && !web.isDirectory())
                 return web;
         }
 
@@ -115,7 +117,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             // do web.xml file
             Resource web = webInf.resolve("web.xml");
-            if (web.exists())
+            if (web != null)
                 return web;
             if (LOG.isDebugEnabled())
                 LOG.debug("No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());

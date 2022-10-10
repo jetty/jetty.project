@@ -226,7 +226,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         List<Path> files = new ArrayList<>();
         for (Resource resource : _monitored)
         {
-            if (resource.exists() && Files.isReadable(resource.getPath()))
+            if (resource != null && Files.isReadable(resource.getPath()))
                 files.add(resource.getPath());
             else
                 LOG.warn("Does not exist: {}", resource);
@@ -339,7 +339,11 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     public void setMonitoredResources(List<Resource> resources)
     {
         _monitored.clear();
-        _monitored.addAll(resources);
+        for (Resource resource: resources)
+        {
+            if (resource != null)
+                _monitored.addAll(resources);
+        }
     }
 
     public List<Resource> getMonitoredResources()

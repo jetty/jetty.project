@@ -632,7 +632,20 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      */
     public void setKeyStorePath(String keyStorePath)
     {
-        _keyStoreResource = ResourceFactory.of(this).newResource(keyStorePath);
+        if (StringUtil.isBlank(keyStorePath))
+        {
+            // allow user to unset variable
+            _keyStoreResource = null;
+            return;
+        }
+
+        Resource res = ResourceFactory.of(this).newResource(keyStorePath);
+        if (res == null)
+        {
+            _keyStoreResource = null;
+            throw new IllegalArgumentException("KeyStore Path does not exist: " + keyStorePath);
+        }
+        _keyStoreResource = res;
     }
 
     /**
@@ -703,7 +716,20 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      */
     public void setTrustStorePath(String trustStorePath)
     {
-        _trustStoreResource = StringUtil.isEmpty(trustStorePath) ? null : ResourceFactory.of(this).newResource(trustStorePath);
+        if (StringUtil.isBlank(trustStorePath))
+        {
+            // allow user to unset variable
+            _trustStoreResource = null;
+            return;
+        }
+
+        Resource res = ResourceFactory.of(this).newResource(trustStorePath);
+        if (res == null)
+        {
+            _trustStoreResource = null;
+            throw new IllegalArgumentException("TrustStore Path does not exist: " + trustStorePath);
+        }
+        _trustStoreResource = res;
     }
 
     /**

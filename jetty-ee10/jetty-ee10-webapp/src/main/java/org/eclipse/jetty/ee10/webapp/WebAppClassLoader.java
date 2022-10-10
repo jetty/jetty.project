@@ -302,37 +302,37 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public void addJars(Resource lib)
     {
-        if (lib.exists() && lib.isDirectory())
+        if (lib == null || !lib.isDirectory())
+            return;
+
+        Path dir = lib.getPath();
+
+        try (Stream<Path> streamEntries = Files.list(dir))
         {
-            Path dir = lib.getPath();
+            List<Path> jars = streamEntries
+                .filter(Files::isRegularFile)
+                .filter(this::isFileSupported)
+                .sorted(Comparator.naturalOrder())
+                .toList();
 
-            try (Stream<Path> streamEntries = Files.list(dir))
+            for (Path jar: jars)
             {
-                List<Path> jars = streamEntries
-                    .filter(Files::isRegularFile)
-                    .filter(this::isFileSupported)
-                    .sorted(Comparator.naturalOrder())
-                    .toList();
-
-                for (Path jar: jars)
+                try
                 {
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("addJar - {}", jar);
-                        URI jarUri = URIUtil.toJarFileUri(jar.toUri());
-                        addClassPath(jarUri.toASCIIString());
-                    }
-                    catch (Exception ex)
-                    {
-                        LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("addJar - {}", jar);
+                    URI jarUri = URIUtil.toJarFileUri(jar.toUri());
+                    addClassPath(jarUri.toASCIIString());
+                }
+                catch (Exception ex)
+                {
+                    LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
                 }
             }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
-            }
+        }
+        catch (IOException e)
+        {
+            LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
         }
     }
 

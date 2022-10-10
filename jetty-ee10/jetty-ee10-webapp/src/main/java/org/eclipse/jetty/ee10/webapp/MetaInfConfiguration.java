@@ -148,7 +148,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Consumer<URI> addContainerResource = (uri) ->
         {
             Resource resource = _resourceFactory.newResource(uri);
-            context.getMetaData().addContainerResource(resource);
+            if (resource == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Classpath URI doesn't exist: " + uri);
+            }
+            else
+                context.getMetaData().addContainerResource(resource);
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -379,6 +385,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
     {
+        // Resource target does not exist
+        if (target == null)
+            return;
+
         Resource resourcesDir = null;
         if (cache != null && cache.containsKey(target))
         {
@@ -409,7 +419,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
 
-            if (cache != null)
+            if ((resourcesDir != null) && (cache != null))
             {
                 Resource old = cache.putIfAbsent(target, resourcesDir);
                 if (old != null)
@@ -439,7 +449,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyResource(Resource resourcesDir)
     {
-        return !resourcesDir.exists() || !resourcesDir.isDirectory();
+        return resourcesDir == null || !resourcesDir.isDirectory();
     }
 
     /**
@@ -479,7 +489,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 webFrag = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
-            if (cache != null)
+            if ((webFrag != null) && (cache != null))
             {
                 //web-fragment.xml doesn't exist: put token in cache to signal we've seen the jar
                 Resource old = cache.putIfAbsent(jar, webFrag);
@@ -506,7 +516,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyFragment(Resource webFrag)
     {
-        return !webFrag.exists() || webFrag.isDirectory();
+        return webFrag == null || webFrag.isDirectory();
     }
 
     /**
@@ -691,7 +701,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists() || !webInf.isDirectory())
             return List.of();
 
-        Resource webInfLib = webInf.resolve("/lib");
+        Resource webInfLib = webInf.resolve("lib");
+
+        if (webInfLib == null || !webInfLib.isDirectory())
+            return List.of();
 
         return webInfLib.list().stream()
             .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
@@ -738,9 +751,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = webInf.resolve("classes/");
-            if (classes.exists())
-                return classes;
+            return webInf.resolve("classes/");
         }
         return null;
     }

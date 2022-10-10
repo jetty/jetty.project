@@ -395,7 +395,7 @@ public class MavenWebAppContext extends WebAppContext
                     {
                         String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                         res = this.getResourceFactory().newResource(newPath);
-                        if (!res.exists())
+                        if (res != null)
                         {
                             res = null;
                             i++;

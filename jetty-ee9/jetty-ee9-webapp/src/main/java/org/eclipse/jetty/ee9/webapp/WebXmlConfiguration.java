@@ -106,7 +106,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (descriptor != null)
         {
             Resource web = context.newResource(descriptor);
-            if (web.exists() && !web.isDirectory())
+            if (web != null && !web.isDirectory())
                 return web;
         }
 
@@ -115,7 +115,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             // do web.xml file
             Resource web = webInf.resolve("web.xml");
-            if (web.exists())
+            if (web != null)
                 return web;
             if (LOG.isDebugEnabled())
                 LOG.debug("No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());

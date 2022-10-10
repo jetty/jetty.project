@@ -66,12 +66,12 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             // Look for classes directory
             Resource classes = webInf.resolve("classes/");
-            if (classes.exists())
+            if (classes != null && classes.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
             Resource lib = webInf.resolve("lib/");
-            if (lib.exists() || lib.isDirectory())
+            if (lib != null && lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
     }
@@ -297,7 +297,9 @@ public class WebInfConfiguration extends AbstractConfiguration
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} anti-aliased to {}", webApp, targetURI);
-                webApp = context.newResource(targetURI);
+                Resource targetWebApp = context.newResource(targetURI);
+                if (targetWebApp != null)
+                    webApp = targetWebApp;
             }
 
             if (LOG.isDebugEnabled())
@@ -310,18 +312,19 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource originalWarResource = webApp;
 
             // Is the WAR usable directly?
-            if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
+            if (!webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                webApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
+                Resource jarWebApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
+                if (jarWebApp != null)
+                    webApp = jarWebApp;
             }
 
             // If we should extract or the URL is still not usable
-            if (webApp.exists() && (
-                (context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
+            if ((context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() == null) ||
-                    !originalWarResource.isDirectory())
+                    !originalWarResource.isDirectory()
             )
             {
                 // Look for sibling directory.
@@ -393,11 +396,15 @@ public class WebInfConfiguration extends AbstractConfiguration
                         }
                     }
                 }
-                webApp = context.getResourceFactory().newResource(extractedWebAppDir.normalize());
+                Resource extractedWebApp = context.getResourceFactory().newResource(extractedWebAppDir.normalize());
+                if (extractedWebApp == null)
+                    LOG.warn("Unable to use non-existent extracted war location: " + extractedWebApp);
+                else
+                    webApp = extractedWebApp;
             }
 
             // Now do we have something usable?
-            if (!webApp.exists() || !webApp.isDirectory())
+            if (!webApp.isDirectory())
             {
                 LOG.warn("Web application not found {}", war);
                 throw new java.io.FileNotFoundException(war);
@@ -422,7 +429,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             File webInfDir = new File(extractedWebInfDir, "WEB-INF");
             webInfDir.mkdir();
 
-            if (webInfLib.exists())
+            if (webInfLib != null)
             {
                 File webInfLibDir = new File(webInfDir, "lib");
                 if (webInfLibDir.exists())
@@ -435,7 +442,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
 
             Resource webInfClasses = webInf.resolve("classes/");
-            if (webInfClasses.exists())
+            if (webInfClasses != null)
             {
                 File webInfClassesDir = new File(webInfDir, "classes");
                 if (webInfClassesDir.exists())

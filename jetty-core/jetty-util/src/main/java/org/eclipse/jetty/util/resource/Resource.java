@@ -115,9 +115,9 @@ public abstract class Resource implements Iterable<Resource>
 
             // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
             if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-                return new PathResource(uri);
+                return PathResource.of(uri);
 
-            return new MountedPathResource(uri);
+            return MountedPathResource.of(uri);
         }
         catch (URISyntaxException | ProviderNotFoundException | IOException ex)
         {
@@ -292,33 +292,7 @@ public abstract class Resource implements Iterable<Resource>
      * @return a Resource representing the subUriPath
      * @throws IllegalArgumentException if subUriPath is invalid
      */
-    public Resource resolve(String subUriPath)
-    {
-        // Check that the path is within the root,
-        // but use the original path to create the
-        // resource, to preserve aliasing.
-        // TODO do a URI safe encoding?
-        if (URIUtil.isNotNormalWithinSelf(subUriPath))
-            throw new IllegalArgumentException(subUriPath);
-
-        if (URIUtil.SLASH.equals(subUriPath))
-            return this;
-
-        // Sub-paths are always resolved under the given URI,
-        // we compensate for input sub-paths like "/subdir"
-        // where default resolve behavior would be to treat
-        // that like an absolute path.
-        while (subUriPath.startsWith(URIUtil.SLASH))
-        {
-            // TODO XXX this appears entirely unnecessary and inefficient.  We already have utilities
-            //      to handle appending path strings with/without slashes.
-            subUriPath = subUriPath.substring(1);
-        }
-
-        URI uri = getURI();
-        URI resolvedUri = URIUtil.addPath(uri, subUriPath);
-        return create(resolvedUri);
-    }
+    public abstract Resource resolve(String subUriPath);
 
     /**
      * @return true if this Resource is an alias to another real Resource

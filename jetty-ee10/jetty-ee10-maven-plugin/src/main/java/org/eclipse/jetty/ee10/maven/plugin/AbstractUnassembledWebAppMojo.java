@@ -176,7 +176,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webXml != null)
             {
                 Resource r = webApp.getResourceFactory().newResource(webXml.toPath());
-                if (r.exists() && !r.isDirectory())
+                if (r != null && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
                 }
@@ -188,7 +188,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/web.xml
                 // TODO: should also never return from a META-INF/versions/#/WEB-INF/web.xml location
                 Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
-                if (r.exists() && !r.isDirectory())
+                if (r != null && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
                 }

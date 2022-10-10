@@ -58,12 +58,12 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         {
             // do jetty.xml file
             Resource jetty = webInf.resolve("jetty8-web.xml");
-            if (!jetty.exists())
+            if (jetty == null)
                 jetty = webInf.resolve(JETTY_WEB_XML);
-            if (!jetty.exists())
+            if (jetty == null)
                 jetty = webInf.resolve("web-jetty.xml");
 
-            if (jetty.exists())
+            if (jetty != null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Configure: {}", jetty);

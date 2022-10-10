@@ -167,7 +167,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webXml != null)
             {
                 Resource r = ResourceFactory.root().newResource(webXml.toPath());
-                if (r.exists() && !r.isDirectory())
+                if (r != null && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
                 }
@@ -177,7 +177,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
-                if (r.exists() && !r.isDirectory())
+                if (r != null && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
                 }

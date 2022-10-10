@@ -2928,8 +2928,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             for (Resource r: resource)
             {
-                if (r.exists())
-                    return r.getURI().toURL();
+                // return first
+                return r.getURI().toURL();
             }
 
             // A Resource was returned, but did not exist

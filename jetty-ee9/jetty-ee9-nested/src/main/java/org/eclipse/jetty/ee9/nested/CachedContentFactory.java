@@ -231,7 +231,9 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.newResource(compressedPathInContext);
-                        if (compressedResource.exists() && ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
+                        if (compressedResource != null &&
+                            compressedResource.exists() &&
+                            ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
                             compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);

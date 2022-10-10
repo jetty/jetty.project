@@ -233,8 +233,8 @@ public class WebAppContextTest
         server.start();
 
         ServletContext ctx = context.getServletContext();
-        assertNotNull(ctx.getRealPath("/doesnotexist"));
-        assertNotNull(ctx.getRealPath("/doesnotexist/"));
+        assertNull(ctx.getRealPath("/doesnotexist"));
+        assertNull(ctx.getRealPath("/doesnotexist/"));
     }
 
     /**
