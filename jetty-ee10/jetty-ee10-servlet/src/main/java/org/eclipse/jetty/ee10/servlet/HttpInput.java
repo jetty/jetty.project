@@ -138,12 +138,32 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private int get(Content.Chunk content, byte[] bytes, int offset, int length)
+    private int get(Content.Chunk chunk, byte[] bytes, int offset, int length)
     {
-        length = Math.min(content.remaining(), length);
-        content.getByteBuffer().get(bytes, offset, length);
+        length = Math.min(chunk.remaining(), length);
+        chunk.getByteBuffer().get(bytes, offset, length);
         _contentConsumed.add(length);
         return length;
+    }
+
+    private int get(Content.Chunk chunk, ByteBuffer des)
+    {
+        var capacity = des.remaining();
+        var src = chunk.getByteBuffer();
+        if (src.remaining() > capacity)
+        {
+            int limit = src.limit();
+            src.limit(src.position() + capacity);
+            des.put(src);
+            src.limit(limit);
+        }
+        else
+        {
+            des.put(src);
+        }
+        var consumed = capacity - des.remaining();
+        _contentConsumed.add(consumed);
+        return consumed;
     }
 
     public long getContentConsumed()
@@ -258,6 +278,16 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
+        return read(null, b, off, len);
+    }
+
+    public int read(ByteBuffer buffer) throws IOException
+    {
+        return read(buffer, null, -1, -1);
+    }
+
+    private int read(ByteBuffer buffer, byte[] b, int off, int len) throws IOException
+    {
         try (AutoLock lock = _contentProducer.lock())
         {
             // Don't try to get content if no bytes were requested to be read.
@@ -272,7 +302,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IllegalStateException("read on unready input");
             if (!chunk.isTerminal())
             {
-                int read = get(chunk, b, off, len);
+                int read = buffer == null ? get(chunk, b, off, len) : get(chunk, buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("read produced {} byte(s) {}", read, this);
                 if (!chunk.hasRemaining())
