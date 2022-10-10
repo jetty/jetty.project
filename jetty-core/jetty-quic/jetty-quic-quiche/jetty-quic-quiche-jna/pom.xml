@@ -12,20 +12,8 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quic-quiche-jna</bundle-symbolic-name>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${maven.checkstyle.plugin.version}</version>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>

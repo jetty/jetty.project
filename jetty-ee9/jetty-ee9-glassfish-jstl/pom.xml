@@ -11,6 +11,7 @@
   <packaging>jar</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.glassfish.jstl</bundle-symbolic-name>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
 
   <build>
@@ -23,13 +24,6 @@
           <systemPropertyVariables>
             <org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar</org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern>
           </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
