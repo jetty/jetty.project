@@ -357,7 +357,6 @@ public abstract class HttpReceiver
      *
      * @param exchange the HTTP exchange
      * @param runnable the action to execute while in CONTENT state
-     * @return whether the processing should continue
      */
     // TODO this method should go away, make sure state changes aren't needed anymore (they should not be, they're about checking there was no concurrent failure triggered by the app)
     protected void withinContentState(HttpExchange exchange, Runnable runnable) throws IllegalStateException
