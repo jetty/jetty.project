@@ -168,7 +168,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         return chunk;
     }
 
-
     @Override
     protected void reset()
     {
