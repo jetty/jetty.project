@@ -40,7 +40,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         super.reset();
     }
 
-    public void content(Content.Chunk chunk)
+    void content(Content.Chunk chunk)
     {
         if (contentGenerated != null)
             throw new IllegalStateException();
@@ -162,10 +162,10 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         Content.Chunk chunk = consumeContentGenerated();
         if (chunk != null)
             return chunk;
-        boolean contentGenerated = getHttpChannel().getHttpConnection().parseAndFill();
+        HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+        boolean contentGenerated = httpConnection.parseAndFill();
         if (!contentGenerated && fillInterestIfNeeded)
         {
-            HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
             if (!httpConnection.isFillInterested())
                 httpConnection.fillInterested();
         }
