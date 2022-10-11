@@ -1402,7 +1402,7 @@ public class ResourceHandlerTest
             assertThat(response2.getContent(), endsWith("   400\tThis is a big file\n"));
         }
 
-        assertThat(contentFactory.getCachedFiles(), is(1));
+        assertThat(contentFactory.getCachedFiles(), is(2));
         assertThat(contentFactory.getCachedSize(), is(expectedSize));
 
         contentFactory.flushCache();
@@ -1484,7 +1484,7 @@ public class ResourceHandlerTest
             assertThat(response4.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         }
 
-        assertThat(contentFactory.getCachedFiles(), is(1));
+        assertThat(contentFactory.getCachedFiles(), is(2));
         assertThat(contentFactory.getCachedSize(), is(expectedSize));
 
         contentFactory.flushCache();

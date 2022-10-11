@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HashMap;
@@ -98,6 +100,12 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
+    public Instant getLastModifiedInstant()
+    {
+        return _resource.lastModified();
+    }
+
+    @Override
     public HttpField getLastModified()
     {
         Instant lm = _resource.lastModified();
@@ -159,7 +167,25 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public ByteBuffer getBuffer()
     {
-        return null;
+        try
+        {
+            // TODO use pool?
+            long contentLengthValue = getContentLengthValue();
+            ByteBuffer byteBuffer = ByteBuffer.allocateDirect((int)contentLengthValue);
+            try (SeekableByteChannel channel = Files.newByteChannel(getResource().getPath()))
+            {
+                // fill buffer
+                int read = 0;
+                while (read != contentLengthValue)
+                    read += channel.read(byteBuffer);
+            }
+            byteBuffer.flip();
+            return byteBuffer;
+        }
+        catch (Throwable t)
+        {
+            return null;
+        }
     }
 
     @Override

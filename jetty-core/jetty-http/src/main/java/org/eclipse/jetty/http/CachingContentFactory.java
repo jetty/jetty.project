@@ -15,18 +15,14 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -44,7 +40,6 @@ import org.eclipse.jetty.util.StringUtil;
 public class CachingContentFactory implements HttpContent.ContentFactory
 {
     private final HttpContent.ContentFactory _authority;
-    private final boolean _useFileMappedBuffer;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
     private int _maxCachedFileSize = 128 * 1024 * 1024;
@@ -53,13 +48,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
     public CachingContentFactory(HttpContent.ContentFactory authority)
     {
-        this(authority, false);
-    }
-
-    public CachingContentFactory(HttpContent.ContentFactory authority, boolean useFileMappedBuffer)
-    {
         _authority = authority;
-        _useFileMappedBuffer = useFileMappedBuffer;
     }
 
     public long getCachedSize()
@@ -111,11 +100,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         shrinkCache();
     }
 
-    public boolean isUseFileMappedBuffer()
-    {
-        return _useFileMappedBuffer;
-    }
-
     private void shrinkCache()
     {
         // While we need to shrink
@@ -151,7 +135,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         if (content == _cache.remove(content._cacheKey))
         {
             content.release();
-            _cachedSize.addAndGet(-content.calculateSize());
+            _cachedSize.addAndGet(-content.getContentLengthValue());
         }
     }
 
@@ -184,16 +168,15 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         long len = httpContent.getContentLengthValue();
         if (len <= 0)
             return false;
-        if (isUseFileMappedBuffer())
-            return true;
+        // TODO: do we need this?
+        // if (isUseFileMappedBuffer())
+        //     return true;
         return ((len <= _maxCachedFileSize) && (len + getCachedSize() <= _maxCacheSize));
     }
 
     @Override
     public HttpContent getContent(String path) throws IOException
     {
-        // TODO load precompressed otherwise it is never served from cache
-        // TODO: Consider _cache.computeIfAbsent()?
         CachingHttpContent cachingHttpContent = _cache.get(path);
         if (cachingHttpContent != null)
         {
@@ -206,23 +189,30 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         HttpContent httpContent = _authority.getContent(path);
         if (isCacheable(httpContent))
         {
-            httpContent = cachingHttpContent = new CachingHttpContent(path, httpContent);
-            _cache.put(path, cachingHttpContent);
-            _cachedSize.addAndGet(cachingHttpContent.calculateSize());
-            shrinkCache();
+            cachingHttpContent = new CachingHttpContent(path, httpContent);
+            httpContent = _cache.putIfAbsent(path, cachingHttpContent);
+            if (httpContent != null)
+            {
+                cachingHttpContent.release();
+            }
+            else
+            {
+                httpContent = cachingHttpContent;
+                _cachedSize.addAndGet(cachingHttpContent.getContentLengthValue());
+                shrinkCache();
+            }
         }
-
         return httpContent;
     }
 
-    private class CachingHttpContent extends HttpContentWrapper
+    private static class CachingHttpContent extends HttpContentWrapper
     {
         private final ByteBuffer _buffer;
         private final Instant _lastModifiedValue;
         private final String _cacheKey;
         private final HttpField _etagField;
         private final long _contentLengthValue;
-        private final Map<CompressedContentFormat, CachingHttpContent> _precompressedContents;
+        private final Set<CompressedContentFormat> _precompressedContents;
         private volatile long _lastAccessed;
 
         private CachingHttpContent(String key, HttpContent httpContent) throws IOException
@@ -257,59 +247,12 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _etagField = etagField;
             _contentLengthValue = resourceSize;
 
-            // map the content into memory if possible
-            ByteBuffer byteBuffer = _useFileMappedBuffer ? BufferUtil.toMappedBuffer(_delegate.getResource(), 0, _contentLengthValue) : null;
-
-            if (byteBuffer == null)
-            {
-                // TODO use pool?
-                // load the content into memory
-                byteBuffer = ByteBuffer.allocateDirect((int)_contentLengthValue);
-                try (SeekableByteChannel channel = Files.newByteChannel(_delegate.getResource().getPath()))
-                {
-                    // fill buffer
-                    int read = 0;
-                    while (read != _contentLengthValue)
-                        read += channel.read(byteBuffer);
-                }
-                byteBuffer.flip();
-            }
-
-            // Load precompressed contents into memory.
-            Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = _delegate.getPrecompressedContents();
-            if (precompressedContents != null)
-            {
-                _precompressedContents = new HashMap<>();
-                for (Map.Entry<CompressedContentFormat, ? extends HttpContent> entry : precompressedContents.entrySet())
-                {
-                    CompressedContentFormat format = entry.getKey();
-                    String precompressedEtag = EtagUtils.rewriteWithSuffix(_delegate.getETagValue(), format.getEtagSuffix());
-                    // The etag of the precompressed content must be the one of the non-compressed content, with the etag suffix appended.
-                    _precompressedContents.put(format, new CachingHttpContent(key, entry.getValue(), precompressedEtag));
-                }
-            }
-            else
-            {
-                _precompressedContents = null;
-            }
-
+            // Map the content into memory if possible.
+            _buffer = httpContent.getBuffer();
             _cacheKey = key;
-            _buffer = byteBuffer;
             _lastModifiedValue = _delegate.getResource().lastModified();
             _lastAccessed = NanoTime.now();
-        }
-
-        long calculateSize()
-        {
-            long totalSize = _contentLengthValue;
-            if (_precompressedContents != null)
-            {
-                for (CachingHttpContent cachingHttpContent : _precompressedContents.values())
-                {
-                    totalSize += cachingHttpContent.calculateSize();
-                }
-            }
-            return totalSize;
+            _precompressedContents = _delegate.getPreCompressedContentFormats();
         }
 
         @Override
@@ -362,7 +305,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         }
 
         @Override
-        public Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents()
+        public Set<CompressedContentFormat> getPreCompressedContentFormats()
         {
             return _precompressedContents;
         }

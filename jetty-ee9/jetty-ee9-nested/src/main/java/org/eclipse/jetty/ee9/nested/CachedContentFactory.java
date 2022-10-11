@@ -182,12 +182,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
         // Is the content in the parent cache?
         if (_parent != null)
-        {
-            HttpContent httpContent = _parent.getContent(pathInContext);
-            if (httpContent != null)
-                return httpContent;
-        }
-
+            return _parent.getContent(pathInContext);
         return null;
     }
 
@@ -473,6 +468,12 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 _cachedSize.addAndGet(-BufferUtil.length(buffer));
 
             _cachedFiles.decrementAndGet();
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return _lastModifiedValue;
         }
 
         @Override

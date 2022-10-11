@@ -14,7 +14,9 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -38,7 +40,7 @@ public class PrecompressedHttpContent implements HttpContent
         _content = content;
         _precompressedContent = precompressedContent;
         _format = format;
-        _etag = EtagUtils.createWeakEtagField(_content.getResource(), _format.getEtagSuffix());
+        _etag = new HttpField(HttpHeader.ETAG, EtagUtils.rewriteWithSuffix(_content.getETagValue(), _format.getEtagSuffix()));
     }
 
     @Override
@@ -57,6 +59,12 @@ public class PrecompressedHttpContent implements HttpContent
     public String getETagValue()
     {
         return getETag().getValue();
+    }
+
+    @Override
+    public Instant getLastModifiedInstant()
+    {
+        return _precompressedContent.getLastModifiedInstant();
     }
 
     @Override
@@ -134,6 +142,12 @@ public class PrecompressedHttpContent implements HttpContent
     public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {
         return null;
+    }
+
+    @Override
+    public Set<CompressedContentFormat> getPreCompressedContentFormats()
+    {
+        return Set.of();
     }
 
     @Override

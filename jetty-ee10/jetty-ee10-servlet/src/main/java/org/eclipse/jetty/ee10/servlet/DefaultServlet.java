@@ -61,6 +61,7 @@ import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.MappedFileContentFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
@@ -89,7 +90,6 @@ public class DefaultServlet extends HttpServlet
 
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-    private boolean _useFileMappedBuffer = false;
 
     private boolean _isPathInfoOnly = false;
 
@@ -121,13 +121,14 @@ public class DefaultServlet extends HttpServlet
             }
         }
 
-        // TODO: should this come from context?
-        MimeTypes mimeTypes = new MimeTypes();
-        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
+        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
+            getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
 
-        _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
+        MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
         ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
-        CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
+        CachingContentFactory cached = getInitBoolean("useFileMappedBuffer", false)
+            ? new CachingContentFactory(new MappedFileContentFactory(resourceContentFactory))
+            : new CachingContentFactory(resourceContentFactory);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
         int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);

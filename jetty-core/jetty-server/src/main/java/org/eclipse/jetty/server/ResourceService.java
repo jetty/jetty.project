@@ -20,10 +20,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.ByteRange;
@@ -39,6 +42,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.ResourceHttpContent;
@@ -65,15 +69,15 @@ public class ResourceService
     // TODO: see if we can set this to private eventually
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
-    private List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
-    private WelcomeFactory _welcomeFactory;
+    private final List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
+    private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
+    private final List<String> _preferredEncodingOrder = new ArrayList<>();
 
+    private WelcomeFactory _welcomeFactory;
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
     private HttpContent.ContentFactory _contentFactory;
-    private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
-    private List<String> _preferredEncodingOrder = new ArrayList<>();
     private int _encodingCacheSize = 100;
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
@@ -102,20 +106,40 @@ public class ResourceService
 
     public HttpContent getContent(String path, Request request) throws IOException
     {
-        ContextHandler contextHandler = ContextHandler.getContextHandler(request);
-        return getContent(path, contextHandler);
-    }
-
-    public HttpContent getContent(String path, AliasCheck aliasCheck) throws IOException
-    {
         HttpContent content = _contentFactory.getContent(path == null ? "" : path);
         if (content != null)
         {
+            Set<CompressedContentFormat> preCompressedContentFormats = content.getPreCompressedContentFormats();
+            if (!preCompressedContentFormats.isEmpty())
+            {
+                HashSet<CompressedContentFormat> availableFormats = new HashSet<>(preCompressedContentFormats);
+                availableFormats.retainAll(_precompressedFormats);
+
+                for (String encoding : getPreferredEncodingOrder(request))
+                {
+                    CompressedContentFormat contentFormat = isEncodingAvailable(encoding, availableFormats);
+                    if (contentFormat == null)
+                        continue;
+
+                    HttpContent preCompressedContent = _contentFactory.getContent(path + contentFormat.getExtension());
+                    if (preCompressedContent == null)
+                        continue;
+
+                    AliasCheck aliasCheck = ContextHandler.getContextHandler(request);
+                    if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
+                        return null;
+
+                    return new PrecompressedHttpContent(content, preCompressedContent, contentFormat);
+                }
+            }
+
+            AliasCheck aliasCheck = ContextHandler.getContextHandler(request);
             if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
                 return null;
         }
         else
         {
+            // TODO: can this go in a "StaticContentFactory" that goes after ResourceContentFactory?
             if ((_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
                 content = new ResourceHttpContent(_stylesheet, "text/css");
         }
@@ -157,7 +181,6 @@ public class ResourceService
         List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());
 
         boolean endsWithSlash = pathInContext.endsWith(URIUtil.SLASH);
-        boolean checkPrecompressedVariants = _precompressedFormats.size() > 0 && !endsWithSlash && reqRanges.isEmpty();
 
         try
         {
@@ -184,27 +207,13 @@ public class ResourceService
             if (passConditionalHeaders(request, response, content, callback))
                 return;
 
-            // Precompressed variant available?
-            Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = checkPrecompressedVariants ? content.getPrecompressedContents() : null;
-            if (precompressedContents != null && precompressedContents.size() > 0)
-            {
-                // Tell caches that response may vary by accept-encoding
+            if (!content.getPreCompressedContentFormats().isEmpty() || content instanceof PrecompressedHttpContent)
                 response.getHeaders().put(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
-                List<String> preferredEncodings = getPreferredEncodingOrder(request);
-                CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
-                if (precompressedContentEncoding != null)
-                {
-                    HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("precompressed={}", precompressedContent);
-                    content = precompressedContent;
-                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING, precompressedContentEncoding.getEncoding());
-                }
-            }
-
-            // TODO this should be done by HttpContent#getContentEncoding?
-            if (isGzippedContent(pathInContext))
+            HttpField contentEncoding = content.getContentEncoding();
+            if (contentEncoding != null)
+                response.getHeaders().put(contentEncoding);
+            else if (isGzippedContent(pathInContext))
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
 
             // Send the data
@@ -293,7 +302,7 @@ public class ResourceService
         return false;
     }
 
-    private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, java.util.Collection<CompressedContentFormat> availableFormats)
+    private CompressedContentFormat getBestPrecompressedContent(Collection<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats)
     {
         if (availableFormats.isEmpty())
             return null;
@@ -312,6 +321,22 @@ public class ResourceService
             if (HttpHeaderValue.IDENTITY.asString().equals(encoding))
                 return null;
         }
+        return null;
+    }
+
+    private CompressedContentFormat isEncodingAvailable(String encoding, Collection<CompressedContentFormat> availableFormats)
+    {
+        if (availableFormats.isEmpty())
+            return null;
+
+        for (CompressedContentFormat format : availableFormats)
+        {
+            if (format.getEncoding().equals(encoding))
+                return format;
+        }
+
+        if ("*".equals(encoding))
+            return availableFormats.iterator().next();
         return null;
     }
 
@@ -347,9 +372,12 @@ public class ResourceService
 
             if (_etags)
             {
+
                 String etag = content.getETagValue();
                 if (etag != null)
                 {
+                    // TODO: this is a hack to get the etag of the non-preCompressed version.
+                    etag = EtagUtils.rewriteWithSuffix(content.getETagValue(), "");
                     if (ifm != null)
                     {
                         String matched = matchesEtag(etag, ifm);

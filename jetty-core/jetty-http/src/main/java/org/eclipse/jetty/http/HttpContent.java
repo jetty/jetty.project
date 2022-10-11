@@ -15,7 +15,9 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -48,6 +50,8 @@ public interface HttpContent
 
     long getContentLengthValue();
 
+    Instant getLastModifiedInstant();
+
     HttpField getLastModified();
 
     String getLastModifiedValue();
@@ -60,11 +64,12 @@ public interface HttpContent
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
-    /**
-     * TODO: get rid of this, use the Resource instead
-     * @deprecated use {@link Resource} from {@link #getResource()} to access buffers instead
-     */
-    @Deprecated
+    default Set<CompressedContentFormat> getPreCompressedContentFormats()
+    {
+        Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = getPrecompressedContents();
+        return (precompressedContents == null) ? Set.of() : precompressedContents.keySet();
+    }
+
     ByteBuffer getBuffer();
 
     void release();

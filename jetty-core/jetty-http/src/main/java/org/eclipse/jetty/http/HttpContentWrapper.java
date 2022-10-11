@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
@@ -77,6 +78,12 @@ public class HttpContentWrapper implements HttpContent
     public long getContentLengthValue()
     {
         return _delegate.getContentLengthValue();
+    }
+
+    @Override
+    public Instant getLastModifiedInstant()
+    {
+        return _delegate.getLastModifiedInstant();
     }
 
     @Override
