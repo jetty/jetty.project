@@ -21,6 +21,7 @@ import java.net.SocketException;
 import java.net.SocketOption;
 import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -500,6 +501,13 @@ public class ClientConnector extends ContainerLifeCycle
             int sendBufferSize = getSendBufferSize();
             if (sendBufferSize >= 0)
                 setSocketOption(channel, StandardSocketOptions.SO_SNDBUF, sendBufferSize);
+        }
+        if (selectable instanceof DatagramChannel)
+        {
+            // QUIC must know the local address, but it is non-null on datagram sockets only if it has been bound,
+            // so implicitly bind to 0.0.0.0:0 when no bind address has been set.
+            if (getBindAddress() == null)
+                setBindAddress(new InetSocketAddress("0.0.0.0", 0));
         }
     }
 

@@ -746,8 +746,8 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            quiche_h.quiche_conn_path_stats(quicheConn, pathStats.address());
-            return quiche_path_stats.get_cwnd(stats);
+            quiche_h.quiche_conn_path_stats(quicheConn, 0L, pathStats.address());
+            return quiche_path_stats.get_cwnd(pathStats);
         }
     }
 
