@@ -61,6 +61,43 @@
           <artifactId>quic-quiche-foreign-incubator</artifactId>
         </dependency>
       </dependencies>
+      <build>
+        <plugins>
+          <!-- Make sure to use the Foreign binding by adding and opening the jdk.incubator.foreign module. -->
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>
+                @{argLine}
+                ${jetty.surefire.argLine}
+                --add-modules=jdk.incubator.foreign
+                --add-opens jdk.incubator.foreign/jdk.incubator.foreign=ALL-UNNAMED
+                --enable-native-access ALL-UNNAMED
+              </argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- Don't use the Foreign binding if the JDK version != 17. -->
+      <id>jdk18+</id>
+      <activation>
+        <jdk>[18,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>
+                @{argLine}
+                ${jetty.surefire.argLine}
+              </argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

@@ -231,54 +231,54 @@ public interface LibQuiche extends Library
     class quiche_path_stats extends Structure
     {
         // The local address used by this path.
-        sockaddr_storage local_addr;
-        size_t local_addr_len;
+        public sockaddr_storage local_addr;
+        public size_t local_addr_len;
 
         // The peer address seen by this path.
-        sockaddr_storage peer_addr;
-        size_t peer_addr_len;
+        public sockaddr_storage peer_addr;
+        public size_t peer_addr_len;
 
         // The validation state of the path.
-        ssize_t validation_state;
+        public ssize_t validation_state;
 
         // Whether this path is active.
-        boolean active;
+        public boolean active;
 
         // The number of QUIC packets received on this path.
-        size_t recv;
+        public size_t recv;
 
         // The number of QUIC packets sent on this path.
-        size_t sent;
+        public size_t sent;
 
         // The number of QUIC packets that were lost on this path.
-        size_t lost;
+        public size_t lost;
 
         // The number of sent QUIC packets with retransmitted data on this path.
-        size_t retrans;
+        public size_t retrans;
 
         // The estimated round-trip time of the path (in nanoseconds).
-        uint64_t rtt;
+        public uint64_t rtt;
 
         // The size of the path's congestion window in bytes.
-        size_t cwnd;
+        public size_t cwnd;
 
         // The number of sent bytes on this path.
-        uint64_t sent_bytes;
+        public uint64_t sent_bytes;
 
         // The number of received bytes on this path.
-        uint64_t recv_bytes;
+        public uint64_t recv_bytes;
 
         // The number of bytes lost on this path.
-        uint64_t lost_bytes;
+        public uint64_t lost_bytes;
 
         // The number of stream bytes retransmitted on this path.
-        uint64_t stream_retrans_bytes;
+        public uint64_t stream_retrans_bytes;
 
         // The current PMTU for the path.
-        size_t pmtu;
+        public size_t pmtu;
 
         // The most recent data delivery rate estimate in bytes/s.
-        uint64_t delivery_rate;
+        public uint64_t delivery_rate;
     }
 
     interface LoggingCallback extends Callback

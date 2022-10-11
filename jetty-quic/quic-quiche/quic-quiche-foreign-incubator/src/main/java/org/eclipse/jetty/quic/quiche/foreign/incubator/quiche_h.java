@@ -760,11 +760,11 @@ public class quiche_h
         }
     }
 
-    public static int quiche_conn_path_stats(MemoryAddress conn, MemoryAddress stats)
+    public static int quiche_conn_path_stats(MemoryAddress conn, long idx, MemoryAddress stats)
     {
         try
         {
-            return (int)quiche_conn_path_stats$MH.invokeExact(conn, stats);
+            return (int)quiche_conn_path_stats$MH.invokeExact(conn, idx, stats);
         }
         catch (Throwable ex)
         {
