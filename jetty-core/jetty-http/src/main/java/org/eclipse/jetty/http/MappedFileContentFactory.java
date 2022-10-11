@@ -11,14 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpContentWrapper;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +41,7 @@ public class MappedFileContentFactory implements HttpContent.ContentFactory
         return content;
     }
 
-    private static class FileMappedContent extends HttpContentWrapper
+    public static class FileMappedContent extends HttpContentWrapper
     {
         private final HttpContent content;
 

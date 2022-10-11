@@ -21,6 +21,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.NanoTime;
@@ -108,7 +109,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             // Scan the entire cache and generate an ordered list by last accessed time.
             SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
             {
-                long delta = NanoTime.elapsed(c2._lastAccessed, c1._lastAccessed);
+                long delta = NanoTime.elapsed(c2._lastAccessed.get(), c1._lastAccessed.get());
                 if (delta != 0)
                     return delta < 0 ? -1 : 1;
 
@@ -168,9 +169,8 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         long len = httpContent.getContentLengthValue();
         if (len <= 0)
             return false;
-        // TODO: do we need this?
-        // if (isUseFileMappedBuffer())
-        //     return true;
+        if (httpContent instanceof MappedFileContentFactory.FileMappedContent)
+             return true;
         return ((len <= _maxCachedFileSize) && (len + getCachedSize() <= _maxCacheSize));
     }
 
@@ -213,7 +213,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         private final HttpField _etagField;
         private final long _contentLengthValue;
         private final Set<CompressedContentFormat> _precompressedContents;
-        private volatile long _lastAccessed;
+        private final AtomicLong _lastAccessed = new AtomicLong();
 
         private CachingHttpContent(String key, HttpContent httpContent) throws IOException
         {
@@ -251,7 +251,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _buffer = httpContent.getBuffer();
             _cacheKey = key;
             _lastModifiedValue = _delegate.getResource().lastModified();
-            _lastAccessed = NanoTime.now();
+            _lastAccessed.set(NanoTime.now());
             _precompressedContents = _delegate.getPreCompressedContentFormats();
         }
 
@@ -273,12 +273,16 @@ public class CachingContentFactory implements HttpContent.ContentFactory
 
         public boolean isValid()
         {
+            // Only check the FileSystem once per second, otherwise assume cached value is valid.
+            // TODO: should the time between checks be configurable.
+            long now = NanoTime.now();
+            if (_lastAccessed.updateAndGet(lastChecked ->
+                (NanoTime.since(lastChecked) > TimeUnit.SECONDS.toNanos(1)) ? now : lastChecked) != now)
+                return true;
+
             Instant lastModifiedTime = _delegate.getResource().lastModified();
             if (lastModifiedTime.equals(_lastModifiedValue))
-            {
-                _lastAccessed = NanoTime.now();
                 return true;
-            }
             release();
             return false;
         }
