@@ -93,7 +93,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     @Override
     public long getExpireNanoTime()
     {
-        return request.getTimeoutAt();
+        return request.getTimeoutNanoTime();
     }
 
     /**

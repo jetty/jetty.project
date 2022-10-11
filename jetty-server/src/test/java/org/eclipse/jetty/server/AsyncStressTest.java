@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -120,11 +119,9 @@ public class AsyncStressTest
                 int period = _random.nextInt(290) + 10;
                 String uri = StringUtil.replace(__paths[p][0], "<PERIOD>", Integer.toString(period));
 
-                long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 String request =
                     "GET " + uri + " HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "start: " + start + "\r\n" +
                         "result: " + __paths[p][1] + "\r\n" +
                         ((l + 1 < loops) ? "" : "Connection: close\r\n") +
                         "\r\n";

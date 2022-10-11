@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.12-SNAPSHOT</version>
+    <version>10.0.13-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-server</artifactId>
@@ -48,11 +48,11 @@
             <_nouses>true</_nouses>
             <Import-Package>
               org.osgi.framework,
-              org.osgi.service.cm;version="1.2.0",
+              org.osgi.service.cm;version="${osgi-service-cm-version}",
               org.osgi.service.packageadmin,
               org.osgi.service.startlevel;version="1.0.0",
               org.osgi.service.url;version="1.0.0",
-              org.osgi.util.tracker;version="1.3.0",
+              org.osgi.util.tracker;version="${osgi-util-tracker-version}",
               org.xml.sax,
               org.xml.sax.helpers,
               *

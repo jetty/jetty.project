@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -409,7 +410,7 @@ public class ScannerTest
         assertEquals(Notification.ADDED, event._notification);
 
         // Create a new file by writing to it.
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long now = Instant.now().toEpochMilli();
         File file = new File(_directory.toFile(), "st");
         try (OutputStream out = new FileOutputStream(file, true))
         {
@@ -468,7 +469,7 @@ public class ScannerTest
     {
         File file = new File(_directory.toFile(), string);
         if (file.exists())
-            file.setLastModified(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+            file.setLastModified(Instant.now().toEpochMilli());
         else
             file.createNewFile();
     }

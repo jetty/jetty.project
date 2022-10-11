@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>10.0.12-SNAPSHOT</version>
+    <version>10.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>test-file-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: File</name>

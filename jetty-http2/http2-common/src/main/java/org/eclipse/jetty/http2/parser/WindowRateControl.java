@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.NanoTime;
 
 /**
  * <p>An implementation of {@link RateControl} that limits the number of
@@ -65,13 +66,13 @@ public class WindowRateControl implements RateControl
     @Override
     public boolean onEvent(Object event)
     {
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         while (true)
         {
             Long time = events.peek();
             if (time == null)
                 break;
-            if (now < time)
+            if (NanoTime.isBefore(now, time))
                 break;
             if (events.remove(time))
                 size.decrementAndGet();

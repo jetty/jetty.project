@@ -18,6 +18,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -113,7 +114,7 @@ public class HttpCookie
         _secure = secure;
         _comment = comment;
         _version = version;
-        _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
+        _expiration = maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(maxAge);
         _sameSite = sameSite;
     }
 
@@ -134,7 +135,7 @@ public class HttpCookie
         _secure = cookie.getSecure();
         _comment = cookie.getComment();
         _version = cookie.getVersion();
-        _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
+        _expiration = _maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(_maxAge);
         // support for SameSite values has not yet been added to java.net.HttpCookie
         _sameSite = getSameSiteFromComment(cookie.getComment());
     }
@@ -225,7 +226,7 @@ public class HttpCookie
      */
     public boolean isExpired(long timeNanos)
     {
-        return _expiration >= 0 && timeNanos >= _expiration;
+        return _expiration != -1 && NanoTime.isBefore(_expiration, timeNanos);
     }
 
     /**

@@ -19,19 +19,27 @@ This release process will produce releases:
 - [ ] Link this issue to the target [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects).
 - [ ] Assign this issue to a "release manager".
 - [ ] Review [draft security advisories](https://github.com/eclipse/jetty.project/security/advisories). Ensure that issues are created and assigned to GitHub Projects to capture any advisories that will be announced.
-- [ ] Create the [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects) for the next releases.
-- [ ] Review dependabot status. If there has not been a recent run, run [manually](https://github.com/eclipse/jetty.project/network/updates) and review resulting PRs for inclusion.
-- [ ] Review the issues/PRs assigned to the target [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects).  Any PRs that are moved to next releases should be commented on so their authors are informed.
-- [ ] Freeze the target [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects) by editing their names to "Jetty X.Y.Z FROZEN"
+- [ ] Update [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects)
+  + [ ] Create new project for the next releases (not this release).
+  + [ ] Ensure new project is public (not private)
+  + [ ] Freeze the target [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects) by editing their names to "Jetty X.Y.Z FROZEN"
+  + [ ] Review the issues/PRs assigned to the target [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects).  Any tasks that are not-yet-started are moved to next releases.
+- [ ] Review dependabot status. [Manually](https://github.com/eclipse/jetty.project/network/updates) run dependabot if needed and review resulting PRs for inclusion.
 - [ ] Wait 24 hours from last change to the issues/PRs included in FROZEN GitHub Project(s).
 - [ ] Verify target [project(s)](https://github.com/eclipse/jetty.project/projects) are complete.
 - [ ] Verify that branch `jetty-10.0.x` is merged to branch `jetty-11.0.x`.
 - [ ] Assign issue to "build manager", who will stage the releases.
+  + [ ] Create and use branches `release/<ver>` to perform version specific release work from.
   + [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
   + [ ] Stage 9.4 release with Java 11.
   + [ ] Stage 10 release with Java 17.
   + [ ] Stage 11 release with Java 17.
+  + [ ] Push release branches `release/<ver>` to to https://github.com/eclipse/jetty.project
+  + [ ] Push release tags `jetty-<ver>` to https://github.com/eclipse/jetty.project
   + [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/eclipse/jetty.project/releases). Content is generated with the "changelog tool".
+        Be mindful of the order you create multiple release drafts.  The first one created will be the "oldest" when published. (eg: Draft is 9, then 10, then 11)
+        The last created "draft" will show up as "latest" in the github UI.
+        If you have to reroll, you'll have to delete the drafts and recreate them (especially so if 9 w/timestamp is in the mix of releases being worked on)
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
   + [ ] Test [CometD](https://github.com/cometd/cometd).
   + [ ] Test [Reactive HttpClient](https://github.com/jetty-project/jetty-reactive-httpclient).
@@ -50,7 +58,7 @@ This release process will produce releases:
 - [ ] Update Jetty versions on the web sites.
   + [ ] Update (or check) [Download](https://www.eclipse.org/jetty/download.php) page is updated.
   + [ ] Update (or check) documentation page(s) are updated.
-- [ ] Publish GitHub Releases.
+- [ ] Publish GitHub Releases in the order of oldest (eg: 9) to newest (eg: 11) (to ensure that "latest" in github is truly the latest)
 - [ ] Prepare release announcement for mailing lists.
 - [ ] Publish any [security advisories](https://github.com/eclipse/jetty.project/security/advisories).
   + [ ] Edit `VERSION.txt` to include any actual CVE number next to correspondent issue.

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.12-SNAPSHOT</version>
+    <version>10.0.13-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -426,13 +426,6 @@
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
       <scope>provided</scope>
-      <exclusions>
-        <!-- this is depending on an old log4j version which have this issue https://issues.apache.org/jira/browse/LOG4J2-3241 -->
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <!-- to make infinispan-common source sane -->
     <dependency>

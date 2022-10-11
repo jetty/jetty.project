@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.BlockingQueue;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -56,24 +57,24 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
     public void execute(final Runnable job)
     {
         queueStats.increment();
-        long begin = System.nanoTime();
+        long begin = NanoTime.now();
         super.execute(new Runnable()
         {
             @Override
             public void run()
             {
-                long queueLatency = System.nanoTime() - begin;
+                long queueLatency = NanoTime.since(begin);
                 queueStats.decrement();
                 threadStats.increment();
                 queueLatencyStats.record(queueLatency);
-                long start = System.nanoTime();
+                long start = NanoTime.now();
                 try
                 {
                     job.run();
                 }
                 finally
                 {
-                    long taskLatency = System.nanoTime() - start;
+                    long taskLatency = NanoTime.since(start);
                     threadStats.decrement();
                     taskLatencyStats.record(taskLatency);
                 }

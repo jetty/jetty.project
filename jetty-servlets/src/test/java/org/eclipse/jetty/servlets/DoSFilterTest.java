@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -173,7 +174,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         for (int i = 0; i < 5; i++)
         {
             Thread.sleep(sleep);
-            if (rateTracker.isRateExceeded(System.nanoTime()) != null)
+            if (rateTracker.isRateExceeded(NanoTime.now()) != null)
                 exceeded = true;
         }
         return exceeded;

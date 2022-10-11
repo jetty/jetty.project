@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -232,11 +233,10 @@ public class ReservedThreadExecutorTest
 
     protected void waitForAvailable(int size) throws InterruptedException
     {
-        long started = System.nanoTime();
+        long started = NanoTime.now();
         while (_reservedExecutor.getAvailable() < size)
         {
-            long elapsed = System.nanoTime() - started;
-            if (elapsed > TimeUnit.SECONDS.toNanos(10))
+            if (NanoTime.secondsSince(started) > 10)
                 fail("Took too long");
             Thread.sleep(10);
         }

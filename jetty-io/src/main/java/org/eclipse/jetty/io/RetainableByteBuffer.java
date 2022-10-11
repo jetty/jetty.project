@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Retainable;
 
 /**
@@ -38,7 +39,7 @@ public class RetainableByteBuffer implements Retainable
     private final ByteBuffer buffer;
     private final AtomicInteger references = new AtomicInteger();
     private final Consumer<RetainableByteBuffer> releaser;
-    private final AtomicLong lastUpdate = new AtomicLong(System.nanoTime());
+    private final AtomicLong lastUpdate = new AtomicLong(NanoTime.now());
 
     RetainableByteBuffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
     {
@@ -111,7 +112,7 @@ public class RetainableByteBuffer implements Retainable
         });
         if (ref == 0)
         {
-            lastUpdate.setOpaque(System.nanoTime());
+            lastUpdate.setOpaque(NanoTime.now());
             releaser.accept(this);
             return true;
         }

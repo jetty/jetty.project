@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +55,7 @@ public class LifeCycleListenerTest
         assertTrue(listener.started, "The started event didn't occur");
 
         // check that the starting event occurs before the started event
-        assertTrue(listener.startingTime <= listener.startedTime, "The starting event must occur before the started event");
+        assertTrue(NanoTime.isBeforeOrSame(listener.startingNanoTime, listener.startedNanoTime), "The starting event must occur before the started event");
 
         // check that the lifecycle's state is started
         assertTrue(lifecycle.isStarted(), "The lifecycle state is not started");
@@ -98,7 +97,7 @@ public class LifeCycleListenerTest
         assertTrue(listener.stopped, "The stopped event didn't occur");
 
         // check that the stopping event occurs before the stopped event
-        assertTrue(listener.stoppingTime <= listener.stoppedTime, "The stopping event must occur before the stopped event");
+        assertTrue(NanoTime.isBeforeOrSame(listener.stoppingNanoTime, listener.stoppedNanoTime), "The stopping event must occur before the stopped event");
         // System.out.println("STOPING TIME : " + listener.stoppingTime + " : " + listener.stoppedTime);
 
         // check that the lifecycle's state is stopped
@@ -150,7 +149,7 @@ public class LifeCycleListenerTest
         }
     }
 
-    private class TestListener extends AbstractLifeCycle.AbstractLifeCycleListener
+    private static class TestListener extends AbstractLifeCycle.AbstractLifeCycleListener
     {
         @SuppressWarnings("unused")
         private boolean failure = false;
@@ -159,10 +158,10 @@ public class LifeCycleListenerTest
         private boolean stopped = false;
         private boolean stopping = false;
 
-        private long startedTime;
-        private long startingTime;
-        private long stoppedTime;
-        private long stoppingTime;
+        private long startedNanoTime;
+        private long startingNanoTime;
+        private long stoppedNanoTime;
+        private long stoppingNanoTime;
 
         private Throwable cause = null;
 
@@ -180,13 +179,13 @@ public class LifeCycleListenerTest
         public void lifeCycleStarted(LifeCycle event)
         {
             started = true;
-            startedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            startedNanoTime = NanoTime.now();
         }
 
         public void lifeCycleStarting(LifeCycle event)
         {
             starting = true;
-            startingTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            startingNanoTime = NanoTime.now();
 
             // need to sleep to make sure the starting and started times are not
             // the same
@@ -203,13 +202,13 @@ public class LifeCycleListenerTest
         public void lifeCycleStopped(LifeCycle event)
         {
             stopped = true;
-            stoppedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            stoppedNanoTime = NanoTime.now();
         }
 
         public void lifeCycleStopping(LifeCycle event)
         {
             stopping = true;
-            stoppingTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            stoppingNanoTime = NanoTime.now();
 
             // need to sleep to make sure the stopping and stopped times are not
             // the same
