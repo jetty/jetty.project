@@ -171,7 +171,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             return false;
         if (httpContent instanceof MappedFileContentFactory.FileMappedContent)
              return true;
-        return (len <= _maxCachedFileSize);
+        return (len <= _maxCachedFileSize && len <= _maxCacheSize);
     }
 
     @Override

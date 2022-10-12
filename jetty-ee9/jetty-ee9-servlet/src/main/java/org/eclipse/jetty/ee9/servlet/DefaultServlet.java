@@ -256,7 +256,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (_cache == null && (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2))
             {
-                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags(), _resourceService.getPrecompressedFormats());
+                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags());
                 if (maxCacheSize >= 0)
                     _cache.setMaxCacheSize(maxCacheSize);
                 if (maxCachedFileSize >= -1)

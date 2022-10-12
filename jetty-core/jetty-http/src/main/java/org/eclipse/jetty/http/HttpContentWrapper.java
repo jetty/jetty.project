@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -114,12 +113,6 @@ public class HttpContentWrapper implements HttpContent
     public Resource getResource()
     {
         return _delegate.getResource();
-    }
-
-    @Override
-    public Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents()
-    {
-        return _delegate.getPrecompressedContents();
     }
 
     @Override

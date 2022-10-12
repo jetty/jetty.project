@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.WriterOutputStream;
@@ -60,7 +62,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
-import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 /**
  * Abstract resource service, used by DefaultServlet and ResourceHandler
@@ -76,7 +77,7 @@ public class ResourceService
     private boolean _acceptRanges = true;
     private boolean _dirAllowed = true;
     private boolean _redirectWelcome = false;
-    private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
+    private CompressedContentFormat[] _precompressedFormats = CompressedContentFormat.NONE;
     private String[] _preferredEncodingOrder = new String[0];
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
     private int _encodingCacheSize = 100;
@@ -143,7 +144,7 @@ public class ResourceService
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
-        _preferredEncodingOrder = stream(_precompressedFormats).map(f -> f.getEncoding()).toArray(String[]::new);
+        _preferredEncodingOrder = stream(_precompressedFormats).map(CompressedContentFormat::getEncoding).toArray(String[]::new);
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -184,12 +185,17 @@ public class ResourceService
     public void setCacheControl(HttpField cacheControl)
     {
         if (cacheControl == null)
+        {
             _cacheControl = null;
-        if (cacheControl.getHeader() != HttpHeader.CACHE_CONTROL)
-            throw new IllegalArgumentException("!Cache-Control");
-        _cacheControl = cacheControl instanceof PreEncodedHttpField
-            ? cacheControl
-            : new PreEncodedHttpField(cacheControl.getHeader(), cacheControl.getValue());
+        }
+        else
+        {
+            if (cacheControl.getHeader() != HttpHeader.CACHE_CONTROL)
+                throw new IllegalArgumentException("!Cache-Control");
+            _cacheControl = cacheControl instanceof PreEncodedHttpField
+                ? cacheControl
+                : new PreEncodedHttpField(cacheControl.getHeader(), cacheControl.getValue());
+        }
     }
 
     public List<String> getGzipEquivalentFileExtensions()
@@ -233,7 +239,6 @@ public class ResourceService
         String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
 
         boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith(URIUtil.SLASH);
-        boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges == null;
 
         HttpContent content = null;
         boolean releaseContent = true;
@@ -275,27 +280,35 @@ public class ResourceService
             if (!included && !passConditionalHeaders(request, response, content))
                 return true;
 
-            // Precompressed variant available?
-            Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = checkPrecompressedVariants ? content.getPrecompressedContents() : null;
-            if (precompressedContents != null && precompressedContents.size() > 0)
+            // Get pre-compressed content.
+            if (_precompressedFormats.length > 0)
             {
-                // Tell caches that response may vary by accept-encoding
-                response.addHeader(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
-
-                List<String> preferredEncodings = getPreferredEncodingOrder(request);
-                CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
-                if (precompressedContentEncoding != null)
+                List<String> preferredEncodingOrder = getPreferredEncodingOrder(request);
+                if (!preferredEncodingOrder.isEmpty())
                 {
-                    HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("precompressed={}", precompressedContent);
-                    content = precompressedContent;
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding.getEncoding());
+                    for (String encoding : preferredEncodingOrder)
+                    {
+                        CompressedContentFormat contentFormat = isEncodingAvailable(encoding, Arrays.asList(_precompressedFormats));
+                        if (contentFormat == null)
+                            continue;
+
+                        HttpContent preCompressedContent = _contentFactory.getContent(pathInContext + contentFormat.getExtension());
+                        if (preCompressedContent == null)
+                            continue;
+
+                        content = new PrecompressedHttpContent(content, preCompressedContent, contentFormat);
+                        break;
+                    }
                 }
             }
 
-            // TODO this should be done by HttpContent#getContentEncoding
-            if (isGzippedContent(pathInContext))
+            // Set content encoding related headers.
+            if (_precompressedFormats.length > 0)
+                response.setHeader(HttpHeader.VARY.asString(), HttpHeader.ACCEPT_ENCODING.asString());
+            HttpField contentEncoding = content.getContentEncoding();
+            if (contentEncoding != null)
+                response.setHeader(contentEncoding.getName(), contentEncoding.getValue());
+            else if (isGzippedContent(pathInContext))
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
 
             // Send the data
@@ -364,25 +377,19 @@ public class ResourceService
         return values;
     }
 
-    private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats)
+    private CompressedContentFormat isEncodingAvailable(String encoding, Collection<CompressedContentFormat> availableFormats)
     {
         if (availableFormats.isEmpty())
             return null;
 
-        for (String encoding : preferredEncodings)
+        for (CompressedContentFormat format : availableFormats)
         {
-            for (CompressedContentFormat format : availableFormats)
-            {
-                if (format.getEncoding().equals(encoding))
-                    return format;
-            }
-
-            if ("*".equals(encoding))
-                return availableFormats.iterator().next();
-
-            if (IDENTITY.asString().equals(encoding))
-                return null;
+            if (format.getEncoding().equals(encoding))
+                return format;
         }
+
+        if ("*".equals(encoding))
+            return availableFormats.iterator().next();
         return null;
     }
 
@@ -869,9 +876,8 @@ public class ResourceService
 
     protected void putHeaders(HttpServletResponse response, HttpContent content, long contentLength)
     {
-        if (response instanceof Response)
+        if (response instanceof Response r)
         {
-            Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
             HttpFields.Mutable fields = r.getHttpFields();
             if (_acceptRanges && !fields.contains(HttpHeader.ACCEPT_RANGES))

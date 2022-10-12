@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -60,8 +59,6 @@ public interface HttpContent
     String getETagValue();
 
     Resource getResource();
-
-    Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
     ByteBuffer getBuffer();
 

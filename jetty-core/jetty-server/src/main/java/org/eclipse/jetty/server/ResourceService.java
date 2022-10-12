@@ -34,7 +34,6 @@ import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MultiPart;
@@ -297,28 +296,6 @@ public class ResourceService
                 return true;
         }
         return false;
-    }
-
-    private CompressedContentFormat getBestPrecompressedContent(Collection<String> preferredEncodings, Collection<CompressedContentFormat> availableFormats)
-    {
-        if (availableFormats.isEmpty())
-            return null;
-
-        for (String encoding : preferredEncodings)
-        {
-            for (CompressedContentFormat format : availableFormats)
-            {
-                if (format.getEncoding().equals(encoding))
-                    return format;
-            }
-
-            if ("*".equals(encoding))
-                return availableFormats.iterator().next();
-
-            if (HttpHeaderValue.IDENTITY.asString().equals(encoding))
-                return null;
-        }
-        return null;
     }
 
     private CompressedContentFormat isEncodingAvailable(String encoding, Collection<CompressedContentFormat> availableFormats)
