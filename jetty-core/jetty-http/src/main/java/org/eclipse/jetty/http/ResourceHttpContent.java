@@ -155,7 +155,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,ct=%s,c=%b}", this.getClass().getSimpleName(), hashCode(), _resource, _contentType, _precompressedContents != null);
+        return String.format("%s@%x{r=%s,ct=%s}", this.getClass().getSimpleName(), hashCode(), _resource, _contentType);
     }
 
     @Override

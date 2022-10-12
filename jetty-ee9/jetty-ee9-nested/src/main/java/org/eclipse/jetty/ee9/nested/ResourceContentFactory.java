@@ -15,8 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
@@ -69,7 +67,6 @@ public class ResourceContentFactory implements ContentFactory
     }
 
     private HttpContent load(String pathInContext, Resource resource)
-        throws IOException
     {
         if (resource == null || !resource.exists())
             return null;
@@ -77,25 +74,7 @@ public class ResourceContentFactory implements ContentFactory
         if (resource.isDirectory())
             return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()));
 
-        // Look for a precompressed resource or content
-        String mt = _mimeTypes.getMimeByExtension(pathInContext);
-        if (_precompressedFormats.length > 0)
-        {
-            // Is there a compressed resource?
-            Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>(_precompressedFormats.length);
-            for (CompressedContentFormat format : _precompressedFormats)
-            {
-                String compressedPathInContext = pathInContext + format.getExtension();
-                Resource compressedResource = _factory.newResource(compressedPathInContext);
-                if (compressedResource != null && compressedResource.exists() && ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
-                    compressedResource.length() < resource.length())
-                    compressedContents.put(format,
-                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext)));
-            }
-            if (!compressedContents.isEmpty())
-                return new ResourceHttpContent(resource, mt, compressedContents);
-        }
-        return new ResourceHttpContent(resource, mt);
+        return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(pathInContext));
     }
 
     /**

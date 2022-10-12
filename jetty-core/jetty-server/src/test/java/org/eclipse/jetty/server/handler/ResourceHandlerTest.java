@@ -1526,6 +1526,9 @@ public class ResourceHandlerTest
         while (Files.getLastModifiedTime(tempPath).equals(before));
         long newExpectedSize = Files.size(tempPath);
 
+        // The cached Resource will only go to fileSystem for expiryTime once per second.
+        Thread.sleep(1100);
+
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
@@ -1940,6 +1943,9 @@ public class ResourceHandlerTest
             Files.writeString(testFile, "some different content\n");
         }
         while (Files.getLastModifiedTime(testFile).equals(before));
+
+        // The cached Resource will only go to fileSystem for expiryTime once per second.
+        Thread.sleep(1100);
 
         response = HttpTester.parseResponse(
             _local.getResponse("""

@@ -16,12 +16,12 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.NanoTime;
@@ -171,7 +171,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             return false;
         if (httpContent instanceof MappedFileContentFactory.FileMappedContent)
              return true;
-        return ((len <= _maxCachedFileSize) && (len + getCachedSize() <= _maxCacheSize));
+        return (len <= _maxCachedFileSize);
     }
 
     @Override
@@ -186,21 +186,21 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 removeFromCache(cachingHttpContent);
         }
 
+        // TODO: record cache misses.
         HttpContent httpContent = _authority.getContent(path);
         if (isCacheable(httpContent))
         {
-            cachingHttpContent = new CachingHttpContent(path, httpContent);
-            httpContent = _cache.putIfAbsent(path, cachingHttpContent);
-            if (httpContent != null)
+            AtomicBoolean wasAdded = new AtomicBoolean(false);
+            cachingHttpContent = _cache.computeIfAbsent(path, p ->
             {
-                cachingHttpContent.release();
-            }
-            else
-            {
-                httpContent = cachingHttpContent;
-                _cachedSize.addAndGet(cachingHttpContent.getContentLengthValue());
+                wasAdded.set(true);
+                _cachedSize.addAndGet(httpContent.getContentLengthValue());
+                return new CachingHttpContent(p, httpContent);
+            });
+
+            if (wasAdded.get())
                 shrinkCache();
-            }
+            return cachingHttpContent;
         }
         return httpContent;
     }
@@ -212,15 +212,14 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         private final String _cacheKey;
         private final HttpField _etagField;
         private final long _contentLengthValue;
-        private final Set<CompressedContentFormat> _precompressedContents;
         private final AtomicLong _lastAccessed = new AtomicLong();
 
-        private CachingHttpContent(String key, HttpContent httpContent) throws IOException
+        private CachingHttpContent(String key, HttpContent httpContent)
         {
             this(key, httpContent, httpContent.getETagValue());
         }
 
-        private CachingHttpContent(String key, HttpContent httpContent, String etagValue) throws IOException
+        private CachingHttpContent(String key, HttpContent httpContent, String etagValue)
         {
             super(httpContent);
 
@@ -239,6 +238,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             if (resourceSize < 0)
                 throw new IllegalArgumentException("Resource with negative size: " + _delegate.getResource());
 
+            // TODO: do all the following lazily and asynchronously.
             HttpField etagField = _delegate.getETag();
             if (StringUtil.isNotBlank(etagValue))
             {
@@ -252,7 +252,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _cacheKey = key;
             _lastModifiedValue = _delegate.getResource().lastModified();
             _lastAccessed.set(NanoTime.now());
-            _precompressedContents = _delegate.getPreCompressedContentFormats();
         }
 
         @Override
@@ -306,12 +305,6 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             if (etag == null)
                 return null;
             return etag.getValue();
-        }
-
-        @Override
-        public Set<CompressedContentFormat> getPreCompressedContentFormats()
-        {
-            return _precompressedContents;
         }
     }
 }

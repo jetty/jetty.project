@@ -23,10 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.ByteRange;
@@ -109,33 +107,32 @@ public class ResourceService
         HttpContent content = _contentFactory.getContent(path == null ? "" : path);
         if (content != null)
         {
-            Set<CompressedContentFormat> preCompressedContentFormats = content.getPreCompressedContentFormats();
-            if (!preCompressedContentFormats.isEmpty())
-            {
-                HashSet<CompressedContentFormat> availableFormats = new HashSet<>(preCompressedContentFormats);
-                availableFormats.retainAll(_precompressedFormats);
-
-                for (String encoding : getPreferredEncodingOrder(request))
-                {
-                    CompressedContentFormat contentFormat = isEncodingAvailable(encoding, availableFormats);
-                    if (contentFormat == null)
-                        continue;
-
-                    HttpContent preCompressedContent = _contentFactory.getContent(path + contentFormat.getExtension());
-                    if (preCompressedContent == null)
-                        continue;
-
-                    AliasCheck aliasCheck = ContextHandler.getContextHandler(request);
-                    if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
-                        return null;
-
-                    return new PrecompressedHttpContent(content, preCompressedContent, contentFormat);
-                }
-            }
-
             AliasCheck aliasCheck = ContextHandler.getContextHandler(request);
             if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
                 return null;
+
+            if (!_precompressedFormats.isEmpty())
+            {
+                List<String> preferredEncodingOrder = getPreferredEncodingOrder(request);
+                if (!preferredEncodingOrder.isEmpty())
+                {
+                    for (String encoding : preferredEncodingOrder)
+                    {
+                        CompressedContentFormat contentFormat = isEncodingAvailable(encoding, _precompressedFormats);
+                        if (contentFormat == null)
+                            continue;
+
+                        HttpContent preCompressedContent = _contentFactory.getContent(path + contentFormat.getExtension());
+                        if (preCompressedContent == null)
+                            continue;
+
+                        if (aliasCheck != null && !aliasCheck.checkAlias(path, preCompressedContent.getResource()))
+                            return null;
+
+                        return new PrecompressedHttpContent(content, preCompressedContent, contentFormat);
+                    }
+                }
+            }
         }
         else
         {
