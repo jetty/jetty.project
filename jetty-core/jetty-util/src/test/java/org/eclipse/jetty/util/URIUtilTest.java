@@ -1130,12 +1130,35 @@ public class URIUtilTest
 
     public static Stream<Arguments> unwrapContainerCases()
     {
-        return Stream.of(
-            Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"),
-            Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"),
-            Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"),
-            Arguments.of("jar:file:///path/to/bar.jar!/internal.txt", "file:///path/to/bar.jar")
-        );
+        List<Arguments> args = new ArrayList<>();
+
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // Windows format (absolute and relative)
+            args.add(Arguments.of("C:\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:\\path\\to\\bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("\\path\\to\\bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // unix format (relative)
+            args.add(Arguments.of("C:/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:/path/to/bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // URI format (absolute)
+            args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
+            args.add(Arguments.of("jar:file:///E:/path/to/bar.jar!/internal.txt", "file:///E:/path/to/bar.jar"));
+        }
+        else
+        {
+            // URI (and unix) format (relative)
+            args.add(Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"));
+        }
+        // URI format (absolute)
+        args.add(Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"));
+        args.add(Arguments.of("jar:file:///path/to/bar.jar!/internal.txt", "file:///path/to/bar.jar"));
+
+        return args.stream();
     }
 
     @ParameterizedTest
@@ -1162,8 +1185,9 @@ public class URIUtilTest
     public void testSplitSinglePath()
     {
         String input = "/home/user/lib/acme.jar";
+        Path path = Path.of(input);
         List<URI> uris = URIUtil.split(input);
-        String expected = String.format("jar:file://%s!/", input);
+        String expected = String.format("jar:%s!/", path.toUri().toASCIIString());
         assertThat(uris.get(0).toString(), is(expected));
     }
 
