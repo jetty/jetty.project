@@ -29,8 +29,8 @@ import java.util.function.Consumer;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
+import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -781,13 +782,26 @@ public class ServletChannel implements Runnable
 
     public void onCompleted()
     {
-        HttpServletRequest httpServletRequest = _request.getHttpServletRequest();
+        ServletContextRequest.ServletApiRequest apiRequest = _request.getServletApiRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written={}", httpServletRequest.getRequestURI(), getBytesWritten());
+            LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
 
         long idleTO = _configuration.getIdleTimeout();
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
+
+        if (getServer().getRequestLog() != null)
+        {
+            Authentication authentication = apiRequest.getAuthentication();
+            if (authentication instanceof Authentication.User userAuthentication)
+                _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
+
+            String realPath = apiRequest.getServletContext().getRealPath(_request.getPathInContext());
+            _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
+
+            String servletName = _request.getServletName();
+            _request.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+        }
 
         // Callback will either be succeeded here or failed in abort().
         if (_state.completeResponse())

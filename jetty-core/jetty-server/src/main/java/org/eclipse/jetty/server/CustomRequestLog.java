@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -318,11 +319,13 @@ import static java.lang.invoke.MethodType.methodType;
 @ManagedObject("Custom format request log")
 public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(CustomRequestLog.class);
-
     public static final String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
     public static final String NCSA_FORMAT = "%{client}a - %u %t \"%r\" %s %O";
     public static final String EXTENDED_NCSA_FORMAT = NCSA_FORMAT + " \"%{Referer}i\" \"%{User-Agent}i\"";
+    public static final String HANDLER_NAME = CustomRequestLog.class.getName() + ".handlerName";
+    public static final String REAL_PATH = CustomRequestLog.class.getName() + ".realPath";
+    public static final String USER_NAME = CustomRequestLog.class.getName() + ".userPrincipal";
+    private static final Logger LOG = LoggerFactory.getLogger(CustomRequestLog.class);
     private static final ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
 
     private final RequestLog.Writer _requestLogWriter;
@@ -379,11 +382,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         return _requestLogWriter;
     }
 
-    /**
-     * Writes the request and response information to the output stream.
-     *
-     * @see org.eclipse.jetty.server.RequestLog#log(Request, Response)
-     */
     @Override
     public void log(Request request, Response response)
     {
@@ -407,27 +405,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             LOG.warn("Unable to log request", e);
         }
-    }
-
-    /**
-     * Extract the user authentication
-     *
-     * @param request The request to extract from
-     * @param checkDeferred Whether to check for deferred authentication
-     * @return The string to log for authenticated user.
-     */
-    protected static String getAuthentication(Request request, boolean checkDeferred)
-    {
-        // TODO
-//        Authentication authentication = request.getAuthentication();
-//        if (checkDeferred && authentication instanceof Authentication.Deferred)
-//            authentication = ((Authentication.Deferred)authentication).authenticate(request);
-
-        String name = null;
-//        if (authentication instanceof Authentication.User)
-//            name = ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
-//
-        return name;
     }
 
     /**
@@ -1046,8 +1023,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logResponseSize(StringBuilder b, Request request, Response response)
     {
-        long written = Response.getContentBytesWritten(response);
-        b.append(written);
+        b.append(Response.getContentBytesWritten(response));
     }
 
     @SuppressWarnings("unused")
@@ -1123,7 +1099,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 }
             }
         }
-
         b.append('-');
     }
 
@@ -1132,7 +1107,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         List<HttpCookie> cookies = Request.getCookies(request);
         if (cookies == null || cookies.size() == 0)
+        {
             b.append('-');
+        }
         else
         {
             for (int i = 0; i < cookies.size(); i++)
@@ -1155,17 +1132,25 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logFilename(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO UserIdentity.Scope scope = request.getUserIdentityScope();
-//        if (scope == null || scope.getContextHandler() == null)
-//            b.append('-');
-//        else
-//        {
-//            ContextHandler context = scope.getContextHandler();
-//            int lengthToStrip = scope.getContextPath().length() > 1 ? scope.getContextPath().length() : 0;
-//            String filename = context.getServletContext().getRealPath(request.getPathInfo().substring(lengthToStrip));
-//            append(b, filename);
-//        }
+        String realPath = (String)request.getAttribute(REAL_PATH);
+        if (realPath == null)
+        {
+            Context context = request.getContext();
+            Resource baseResource = context.getBaseResource();
+            if (baseResource != null)
+            {
+                String fileName = baseResource.resolve(request.getPathInContext()).getName();
+                append(b, fileName);
+            }
+            else
+            {
+                b.append("-");
+            }
+        }
+        else
+        {
+            b.append(realPath);
+        }
     }
 
     @SuppressWarnings("unused")
@@ -1221,8 +1206,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestHandler(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO append(b, request.getServletName());
+        append(b, (String)request.getAttribute(HANDLER_NAME));
     }
 
     @SuppressWarnings("unused")
@@ -1242,39 +1226,38 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logLatencyMicroseconds(StringBuilder b, Request request, Response response)
     {
-        long currentTime = System.currentTimeMillis();
-        long requestTime = request.getTimeStamp();
-
-        long latencyMs = currentTime - requestTime;
-        long latencyUs = TimeUnit.MILLISECONDS.toMicros(latencyMs);
-
-        b.append(latencyUs);
+        logLatency(b, request, TimeUnit.MICROSECONDS);
     }
 
     @SuppressWarnings("unused")
     private static void logLatencyMilliseconds(StringBuilder b, Request request, Response response)
     {
-        long latency = System.currentTimeMillis() - request.getTimeStamp();
-        b.append(latency);
+        logLatency(b, request, TimeUnit.MILLISECONDS);
     }
 
     @SuppressWarnings("unused")
     private static void logLatencySeconds(StringBuilder b, Request request, Response response)
     {
+        logLatency(b, request, TimeUnit.SECONDS);
+    }
+
+    private static void logLatency(StringBuilder b, Request request, TimeUnit unit)
+    {
         long latency = System.currentTimeMillis() - request.getTimeStamp();
-        b.append(TimeUnit.MILLISECONDS.toSeconds(latency));
+        b.append(unit.convert(latency, TimeUnit.MILLISECONDS));
     }
 
     @SuppressWarnings("unused")
     private static void logRequestAuthentication(StringBuilder b, Request request, Response response)
     {
-        append(b, getAuthentication(request, false));
+        append(b, (String)request.getAttribute(USER_NAME));
     }
 
     @SuppressWarnings("unused")
     private static void logRequestAuthenticationWithDeferred(StringBuilder b, Request request, Response response)
     {
-        append(b, getAuthentication(request, true));
+        // TODO: deferred to be implemented.
+        logRequestAuthentication(b, request, response);
     }
 
     @SuppressWarnings("unused")
