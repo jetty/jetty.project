@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -63,12 +62,6 @@ public interface HttpContent
     Resource getResource();
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
-
-    default Set<CompressedContentFormat> getPreCompressedContentFormats()
-    {
-        Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = getPrecompressedContents();
-        return (precompressedContents == null) ? Set.of() : precompressedContents.keySet();
-    }
 
     ByteBuffer getBuffer();
 

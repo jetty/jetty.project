@@ -204,7 +204,7 @@ public class ResourceService
             if (passConditionalHeaders(request, response, content, callback))
                 return;
 
-            if (!content.getPreCompressedContentFormats().isEmpty() || content instanceof PrecompressedHttpContent)
+            if (!_precompressedFormats.isEmpty())
                 response.getHeaders().put(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
             HttpField contentEncoding = content.getContentEncoding();
