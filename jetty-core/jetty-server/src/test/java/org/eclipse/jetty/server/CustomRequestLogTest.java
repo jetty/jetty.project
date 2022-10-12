@@ -93,6 +93,9 @@ public class CustomRequestLogTest
     {
         try (Socket socket = new Socket("localhost", _serverConnector.getLocalPort()))
         {
+            socket.setSoTimeout(10000);
+            socket.setTcpNoDelay(true);
+
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
