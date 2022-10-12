@@ -150,7 +150,7 @@ public class MountedPathResourceTest
             System.out.println(dump);
             assertThat(dump, containsString("FileSystemPool"));
             assertThat(dump, containsString("buckets size=1"));
-            assertThat(dump, containsString("/test.zip#1"));
+            assertThat(dump, containsString(testZip + "#1"));
 
             Files.delete(testZip);
             FileSystemPool.INSTANCE.sweep();

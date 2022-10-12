@@ -387,7 +387,7 @@ public class BufferUtilTest
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         Path testTxt = MavenTestingUtils.getTestResourcePathFile("TestData/alphabet.txt");
 
-        Resource fileResource = ResourceFactory.root().newResource("file:" + testTxt.toAbsolutePath());
+        Resource fileResource = ResourceFactory.root().newResource(testTxt.toUri());
         ByteBuffer fileBuffer = BufferUtil.toMappedBuffer(fileResource);
         assertThat(fileBuffer, not(nullValue()));
         assertThat((long)fileBuffer.remaining(), is(fileResource.length()));
