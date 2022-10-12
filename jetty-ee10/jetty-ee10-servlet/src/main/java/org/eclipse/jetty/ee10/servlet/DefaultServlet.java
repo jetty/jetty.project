@@ -121,11 +121,8 @@ public class DefaultServlet extends HttpServlet
             }
         }
 
-        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
-            getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
-
         MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
+        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
         CachingContentFactory cached = getInitBoolean("useFileMappedBuffer", false)
             ? new CachingContentFactory(new MappedFileContentFactory(resourceContentFactory))
             : new CachingContentFactory(resourceContentFactory);
@@ -162,6 +159,8 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
+        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
+            getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
         _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 

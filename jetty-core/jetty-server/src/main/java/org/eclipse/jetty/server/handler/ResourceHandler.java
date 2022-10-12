@@ -82,7 +82,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     private void setupContentFactory()
     {
-        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes, _resourceService.getPrecompressedFormats()));
+        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes));
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(request ->
         {
