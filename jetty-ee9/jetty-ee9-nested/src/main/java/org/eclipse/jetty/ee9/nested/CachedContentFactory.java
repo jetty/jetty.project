@@ -517,7 +517,18 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         public boolean isValid()
         {
             return _precompressedContent.isValid() && _content.isValid() &&
-                ResourceContentFactory.newerThanOrEqual(_precompressedContent.getResource(), _content.getResource());
+                newerThanOrEqual(_precompressedContent.getResource(), _content.getResource());
+        }
+
+        /**
+         * <p>Utility to compare {@link Resource#lastModified()} of two resources.</p>
+         * @param resource1 the first resource to test.
+         * @param resource2 the second resource to test.
+         * @return true if modified time of resource1 is newer or equal to that of resource2.
+         */
+        private static boolean newerThanOrEqual(Resource resource1, Resource resource2)
+        {
+            return !resource2.lastModified().isAfter(resource1.lastModified());
         }
 
         @Override

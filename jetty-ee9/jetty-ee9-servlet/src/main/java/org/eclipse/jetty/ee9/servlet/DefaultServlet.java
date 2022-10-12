@@ -28,7 +28,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.CachedContentFactory;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
-import org.eclipse.jetty.ee9.nested.ResourceContentFactory;
 import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -275,7 +275,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         HttpContent.ContentFactory contentFactory = _cache;
         if (contentFactory == null)
         {
-            contentFactory = new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats());
+            contentFactory = new ResourceContentFactory(this, _mimeTypes);
             if (resourceCache != null)
                 _servletContext.setAttribute(resourceCache, contentFactory);
         }
