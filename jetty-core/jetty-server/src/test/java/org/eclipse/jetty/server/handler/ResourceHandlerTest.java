@@ -839,7 +839,6 @@ public class ResourceHandlerTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -858,7 +857,6 @@ public class ResourceHandlerTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -976,7 +974,6 @@ public class ResourceHandlerTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -1097,7 +1094,6 @@ public class ResourceHandlerTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2176,7 +2172,6 @@ public class ResourceHandlerTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2195,7 +2190,6 @@ public class ResourceHandlerTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));

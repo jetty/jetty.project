@@ -16,8 +16,6 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -69,7 +67,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             {
             }
         });
-        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[]{".svgz"})));
+        _resourceService.setGzipEquivalentFileExtensions(List.of(".svgz"));
     }
 
     @Override
@@ -78,9 +76,9 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_welcomes == null)
             return null;
 
-        for (int i = 0; i < _welcomes.length; i++)
+        for (String s : _welcomes)
         {
-            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
+            String welcomeInContext = URIUtil.addPaths(pathInContext, s);
             Resource welcome = newResource(welcomeInContext);
             if (welcome.exists())
                 return welcomeInContext;

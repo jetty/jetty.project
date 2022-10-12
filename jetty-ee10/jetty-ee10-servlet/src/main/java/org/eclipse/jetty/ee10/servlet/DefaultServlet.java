@@ -130,23 +130,14 @@ public class DefaultServlet extends HttpServlet
         int maxCacheSize = getInitInt("maxCacheSize", -2);
         int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
         int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-
-        try
+        if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
         {
-            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
-            {
-                if (maxCacheSize >= 0)
-                    cached.setMaxCacheSize(maxCacheSize);
-                if (maxCachedFileSize >= -1)
-                    cached.setMaxCachedFileSize(maxCachedFileSize);
-                if (maxCachedFiles >= -1)
-                    cached.setMaxCachedFiles(maxCachedFiles);
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to setup CachedContentFactory", e);
-            throw new UnavailableException(e.toString());
+            if (maxCacheSize >= 0)
+                cached.setMaxCacheSize(maxCacheSize);
+            if (maxCachedFileSize >= -1)
+                cached.setMaxCachedFileSize(maxCachedFileSize);
+            if (maxCachedFiles >= -1)
+                cached.setMaxCachedFiles(maxCachedFiles);
         }
 
         String resourceCache = getInitParameter("resourceCache");

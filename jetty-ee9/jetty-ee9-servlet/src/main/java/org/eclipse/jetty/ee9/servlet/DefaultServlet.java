@@ -26,13 +26,14 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.CachedContentFactory;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
+import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MappedFileContentFactory;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.ResourceContentFactory;
@@ -135,10 +136,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
-
     private Resource _baseResource;
-    private CachedContentFactory _cache;
-
+    private CachingContentFactory _cachingContentFactory;
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
     private ResourceFactory.Closeable _resourceFactory;
@@ -239,47 +238,25 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (cc != null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
 
-        String resourceCache = getInitParameter("resourceCache");
+        HttpContent.ContentFactory contentFactory = new ResourceContentFactory(this, _mimeTypes);
+        _cachingContentFactory = _useFileMappedBuffer
+            ? new CachingContentFactory(new MappedFileContentFactory(contentFactory))
+            : new CachingContentFactory(contentFactory);
+
         int maxCacheSize = getInitInt("maxCacheSize", -2);
         int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
         int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-        if (resourceCache != null)
+        if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
         {
-            if (maxCacheSize != -1 || maxCachedFileSize != -2 || maxCachedFiles != -2)
-                LOG.debug("ignoring resource cache configuration, using resourceCache attribute");
-            if (_relativeBaseResource != null || _baseResource != null)
-                throw new UnavailableException("resourceCache specified with resource bases");
-            _cache = (CachedContentFactory)_servletContext.getAttribute(resourceCache);
+            if (maxCacheSize >= 0)
+                _cachingContentFactory.setMaxCacheSize(maxCacheSize);
+            if (maxCachedFileSize >= -1)
+                _cachingContentFactory.setMaxCachedFileSize(maxCachedFileSize);
+            if (maxCachedFiles >= -1)
+                _cachingContentFactory.setMaxCachedFiles(maxCachedFiles);
         }
 
-        try
-        {
-            if (_cache == null && (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2))
-            {
-                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags());
-                if (maxCacheSize >= 0)
-                    _cache.setMaxCacheSize(maxCacheSize);
-                if (maxCachedFileSize >= -1)
-                    _cache.setMaxCachedFileSize(maxCachedFileSize);
-                if (maxCachedFiles >= -1)
-                    _cache.setMaxCachedFiles(maxCachedFiles);
-                _servletContext.setAttribute(resourceCache == null ? "resourceCache" : resourceCache, _cache);
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to setup CachedContentFactory", e);
-            throw new UnavailableException(e.toString());
-        }
-
-        HttpContent.ContentFactory contentFactory = _cache;
-        if (contentFactory == null)
-        {
-            contentFactory = new ResourceContentFactory(this, _mimeTypes);
-            if (resourceCache != null)
-                _servletContext.setAttribute(resourceCache, contentFactory);
-        }
-        _resourceService.setContentFactory(contentFactory);
+        _resourceService.setContentFactory(_cachingContentFactory);
         _resourceService.setWelcomeFactory(this);
 
         List<String> gzipEquivalentFileExtensions = new ArrayList<>();
@@ -522,8 +499,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     @Override
     public void destroy()
     {
-        if (_cache != null)
-            _cache.flushCache();
+        if (_cachingContentFactory != null)
+            _cachingContentFactory.flushCache();
         super.destroy();
         IO.close(_resourceFactory);
     }
