@@ -386,7 +386,7 @@ public class ResourceTest
         assertNotNull(dot);
         assertTrue(dot.exists());
         assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
-        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getTargetURI())));
+        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getCanonicalURI())));
     }
 
     @Test
@@ -413,7 +413,7 @@ public class ResourceTest
         assertNotNull(dot);
         assertTrue(dot.exists());
         assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
-        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getTargetURI())));
+        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getCanonicalURI())));
     }
 
     @Test

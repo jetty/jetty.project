@@ -1081,7 +1081,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             Resource baseResource = getBaseResource();
             if (baseResource != null && baseResource.isAlias())
                 LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
-                    baseResource, baseResource.getTargetURI(), this);
+                    baseResource, baseResource.getCanonicalURI(), this);
 
             if (_logger == null)
                 _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());

@@ -50,7 +50,7 @@ public class PathResource extends Resource
     private final Path path;
     private final URI uri;
     private boolean alias = false;
-    private Path targetPath;
+    private Path canonicalPath;
 
     /**
      * Test if the paths are the same name.
@@ -173,7 +173,7 @@ public class PathResource extends Resource
         if (Files.exists(path))
             return true;
         if (isAlias())
-            return Files.exists(targetPath);
+            return Files.exists(canonicalPath);
         return false;
     }
 
@@ -196,12 +196,22 @@ public class PathResource extends Resource
         return Objects.equals(path, other.path);
     }
 
-    /**
-     * @return the {@link Path} of the resource
-     */
+    @Override
     public Path getPath()
     {
         return path;
+    }
+
+    public Path getCanonicalPath()
+    {
+        checkAlias();
+        return canonicalPath;
+    }
+
+    @Override
+    public URI getCanonicalURI()
+    {
+        return getCanonicalPath().toUri();
     }
 
     public List<Resource> list()
@@ -264,48 +274,31 @@ public class PathResource extends Resource
         return r.getClass() == PathResource.class && path.startsWith(r.getPath());
     }
 
-    @Override
-    public URI getTargetURI()
-    {
-        checkAlias();
-        return targetPath.toUri();
-    }
-
     private void checkAlias()
     {
-        if (targetPath == null)
+        if (canonicalPath == null)
         {
-            targetPath = resolveTargetPath();
-            if (Files.exists(targetPath))
-            {
-                if (!isSameName(path, targetPath))
-                    alias = true;
-                else if (!URIUtil.equalsIgnoreEncodings(uri, toUri(path)))
-                {
-                    /* Catch situation where the Path class has already normalized
-                     * the URI e.g. input path "aa./foo.txt"
-                     * from an #resolve(String) is normalized away during
-                     * the creation of a Path object reference.
-                     * If the URI is different from the Path.toUri() then
-                     * we will just use the original URI to construct the
-                     * alias reference Path.
-                     *
-                     * We use the method `toUri(Path)` here, instead of
-                     * Path.toUri() to ensure that the path contains
-                     * a trailing slash if it's a directory, (something
-                     * not all FileSystems seem to support)
-                     */
-                    alias = true;
-                }
-            }
+            canonicalPath = resolveTargetPath();
+
+            /* If the path and canonicalPath are the same also check
+             * the Path class has already normalized in the constructor
+             * from the URI e.g. input path "aa./foo.txt"
+             * from an #resolve(String) is normalized away during
+             * the creation of a Path object reference.
+             * If the URI is different from the Path.toUri() then
+             * we will just use the original URI to construct the
+             * alias reference Path.
+             */
+            alias = !isSameName(path, canonicalPath) || !URIUtil.equalsIgnoreEncodings(uri, toUri(path));
         }
     }
 
     private Path resolveTargetPath()
     {
+        Path normalized = path.normalize();
         try
         {
-            return path.normalize().toRealPath();
+            return normalized.toRealPath();
         }
         catch (IOException e)
         {
@@ -316,7 +309,7 @@ public class PathResource extends Resource
             LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
         }
 
-        return path.normalize();
+        return normalized;
     }
 
     @Override
