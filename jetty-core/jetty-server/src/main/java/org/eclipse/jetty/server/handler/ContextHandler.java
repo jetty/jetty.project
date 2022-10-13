@@ -720,7 +720,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     public void setBaseResource(Path path)
     {
-        setBaseResource(path == null ? null : ResourceFactory.root().newResource(path));
+        if (path == null)
+        {
+            // allow user to unset variable
+            setBaseResource((Resource)null);
+            return;
+        }
+
+        Resource resource = ResourceFactory.of(this).newResource(path);
+        setBaseResource(resource);
     }
 
     /**
