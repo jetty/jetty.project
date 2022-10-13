@@ -329,12 +329,12 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * The canonical URI of the resource. If this Resource is an alias pointing to a different location,
+     * The target URI of the resource. If this Resource is an alias pointing to a different location,
      * this will resolve the alias to return the true target URI of the resource.
      *
-     * @return The canonical URI location of this resource, with any aliases resolved.
+     * @return The target URI location of this resource, with any aliases resolved.
      */
-    public URI getCanonicalURI()
+    public URI getTargetURI()
     {
         return getURI();
     }

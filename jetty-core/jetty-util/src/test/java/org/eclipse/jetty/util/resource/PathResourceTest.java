@@ -405,9 +405,9 @@ public class PathResourceTest
             assertThat("resource.uri.alias", resourceFactory.newResource(resFoo.getURI()).isAlias(), is(false));
             assertThat("resource.file.alias", resourceFactory.newResource(resFoo.getPath()).isAlias(), is(false));
 
-            assertThat("targetURI", resBar.getCanonicalURI(), is(resFoo.getURI()));
-            assertThat("uri.targetURI", resourceFactory.newResource(resBar.getURI()).getCanonicalURI(), is(resFoo.getURI()));
-            assertThat("file.targetURI", resourceFactory.newResource(resBar.getPath()).getCanonicalURI(), is(resFoo.getURI()));
+            assertThat("targetURI", resBar.getTargetURI(), is(resFoo.getURI()));
+            assertThat("uri.targetURI", resourceFactory.newResource(resBar.getURI()).getTargetURI(), is(resFoo.getURI()));
+            assertThat("file.targetURI", resourceFactory.newResource(resBar.getPath()).getTargetURI(), is(resFoo.getURI()));
         }
         catch (InvalidPathException e)
         {
@@ -431,7 +431,7 @@ public class PathResourceTest
 
         // Their paths are not equal but not their canonical paths are.
         assertThat(fileResource.getPath(), not(equalTo(symlinkResource.getPath())));
-        assertThat(fileResource.getPath(), equalTo(symlinkResource.getCanonicalPath()));
+        assertThat(fileResource.getPath(), equalTo(symlinkResource.getTargetPath()));
         assertFalse(fileResource.isAlias());
         assertTrue(symlinkResource.isAlias());
         assertTrue(fileResource.exists());
@@ -446,11 +446,11 @@ public class PathResourceTest
         // Re-create and test the resources now that the file has been deleted.
         fileResource = new PathResource(resourcePath);
         assertFalse(fileResource.exists());
-        assertNull(fileResource.getCanonicalPath());
+        assertNull(fileResource.getTargetPath());
         assertTrue(symlinkResource.isAlias());
         symlinkResource = new PathResource(symlinkPath);
         assertFalse(symlinkResource.exists());
-        assertNull(symlinkResource.getCanonicalPath());
+        assertNull(symlinkResource.getTargetPath());
         assertTrue(symlinkResource.isAlias());
     }
 

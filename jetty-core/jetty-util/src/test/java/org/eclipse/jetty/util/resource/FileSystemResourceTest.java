@@ -101,7 +101,7 @@ public class FileSystemResourceTest
             @Override
             public void describeMismatch(Object item, Description description)
             {
-                description.appendText("was ").appendValue(((Resource)item).getCanonicalURI());
+                description.appendText("was ").appendValue(((Resource)item).getTargetURI());
             }
         };
     }
@@ -114,7 +114,7 @@ public class FileSystemResourceTest
             public boolean matches(Object item)
             {
                 final Resource ritem = (Resource)item;
-                return ritem.getCanonicalURI().equals(resource.getCanonicalURI());
+                return ritem.getTargetURI().equals(resource.getTargetURI());
             }
 
             @Override
@@ -126,7 +126,7 @@ public class FileSystemResourceTest
             @Override
             public void describeMismatch(Object item, Description description)
             {
-                description.appendText("was ").appendValue(((Resource)item).getCanonicalURI());
+                description.appendText("was ").appendValue(((Resource)item).getTargetURI());
             }
         };
     }
@@ -1142,8 +1142,8 @@ public class FileSystemResourceTest
                 assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
 
                 assertThat("isAlias()", r.isAlias(), is(true));
-                assertThat("getTargetURI()", r.getCanonicalURI(), notNullValue());
-                assertThat("getTargetURI()", r.getCanonicalURI().toASCIIString(), containsString("aa/foo.txt"));
+                assertThat("getTargetURI()", r.getTargetURI(), notNullValue());
+                assertThat("getTargetURI()", r.getTargetURI().toASCIIString(), containsString("aa/foo.txt"));
                 assertThat("Exists: " + r, r.exists(), is(true));
             }
             else
@@ -1187,8 +1187,8 @@ public class FileSystemResourceTest
             if (WINDOWS.isCurrentOs())
             {
                 assertThat("isAlias()", r.isAlias(), is(true));
-                assertThat("getTargetURI()", r.getCanonicalURI(), notNullValue());
-                assertThat("getTargetURI()", r.getCanonicalURI().toASCIIString(), containsString("aa/foo.txt"));
+                assertThat("getTargetURI()", r.getTargetURI(), notNullValue());
+                assertThat("getTargetURI()", r.getTargetURI().toASCIIString(), containsString("aa/foo.txt"));
                 assertThat("Exists: " + r, r.exists(), is(true));
             }
             else

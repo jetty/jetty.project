@@ -51,7 +51,7 @@ public class PathResource extends Resource
     private final URI uri;
     private boolean alias = false;
     private boolean aliasResolved = false;
-    private Path canonicalPath;
+    private Path targetPath;
 
     /**
      * Test if the paths are the same name.
@@ -176,17 +176,17 @@ public class PathResource extends Resource
     {
         if (aliasResolved)
         {
-            if (canonicalPath == null)
+            if (targetPath == null)
                 return false;
-            return Files.exists(canonicalPath);
+            return Files.exists(targetPath);
         }
         else
         {
             // Avoid resolving alias unless necessary to determine existence.
             if (Files.exists(path))
                 return true;
-            if (isAlias() && canonicalPath != null)
-                return Files.exists(canonicalPath);
+            if (isAlias() && targetPath != null)
+                return Files.exists(targetPath);
         }
 
         return false;
@@ -198,17 +198,17 @@ public class PathResource extends Resource
         return path;
     }
 
-    public Path getCanonicalPath()
+    public Path getTargetPath()
     {
         checkAlias();
-        return canonicalPath;
+        return targetPath;
     }
 
     @Override
-    public URI getCanonicalURI()
+    public URI getTargetURI()
     {
-        Path canonicalPath = getCanonicalPath();
-        return (canonicalPath == null) ? null : canonicalPath.toUri();
+        Path targetPath = getTargetPath();
+        return (targetPath == null) ? null : targetPath.toUri();
     }
 
     public List<Resource> list()
@@ -270,14 +270,14 @@ public class PathResource extends Resource
         if (!aliasResolved)
         {
             aliasResolved = true;
-            canonicalPath = resolveCanonicalPath();
-            if (canonicalPath == null)
+            targetPath = resolveTargetPath();
+            if (targetPath == null)
             {
                 alias = true;
             }
             else
             {
-                /* If the path and canonicalPath are the same also check
+                /* If the path and targetPath are the same also check
                  * the Path class has already normalized in the constructor
                  * from the URI e.g. input path "aa./foo.txt"
                  * from an #resolve(String) is normalized away during
@@ -293,14 +293,14 @@ public class PathResource extends Resource
                  *  child.isAlias()               == true
                  *  child.toUri()                 == "file:///C:/temp/aa./foo.txt"
                  *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
-                 *  child.getCanonicalURI()       == "file:///C:/temp/aa/foo.txt"
+                 *  child.getTargetURI()          == "file:///C:/temp/aa/foo.txt"
                  */
-                alias = !isSameName(path, canonicalPath) || !URIUtil.equalsIgnoreEncodings(uri, toUri(path));
+                alias = !isSameName(path, targetPath) || !URIUtil.equalsIgnoreEncodings(uri, toUri(path));
             }
         }
     }
 
-    private Path resolveCanonicalPath()
+    private Path resolveTargetPath()
     {
         try
         {

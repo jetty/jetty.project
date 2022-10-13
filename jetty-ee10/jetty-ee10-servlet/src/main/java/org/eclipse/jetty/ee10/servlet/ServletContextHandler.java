@@ -74,7 +74,6 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -1081,7 +1080,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         Resource baseResource = getBaseResource();
         if (baseResource != null && baseResource.isAlias())
             LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
-                baseResource, baseResource.getCanonicalURI(), this);
+                baseResource, baseResource.getTargetURI(), this);
 
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
