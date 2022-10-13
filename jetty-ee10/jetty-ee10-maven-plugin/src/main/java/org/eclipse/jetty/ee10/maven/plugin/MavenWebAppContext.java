@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -391,11 +392,11 @@ public class MavenWebAppContext extends WebAppContext
                     // try matching
                     Resource res = null;
                     int i = 0;
-                    while (res == null && (i < _webInfClasses.size()))
+                    while (Resources.missing(res) && (i < _webInfClasses.size()))
                     {
                         String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                         res = this.getResourceFactory().newResource(newPath);
-                        if (res != null)
+                        if (Resources.missing(res))
                         {
                             res = null;
                             i++;

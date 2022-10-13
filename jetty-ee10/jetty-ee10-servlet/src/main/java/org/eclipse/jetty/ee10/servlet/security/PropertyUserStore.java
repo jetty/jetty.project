@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,6 +159,9 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
         if (LOG.isDebugEnabled())
             LOG.debug("Loading {} from {}", this, config);
+
+        if (Resources.missing(config))
+            throw new IllegalStateException("Config does not exist: " + config);
 
         Properties properties = new Properties();
         try (InputStream inputStream = config.newInputStream())

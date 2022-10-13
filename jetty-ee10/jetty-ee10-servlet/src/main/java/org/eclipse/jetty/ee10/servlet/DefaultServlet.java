@@ -183,7 +183,7 @@ public class DefaultServlet extends HttpServlet
             try
             {
                 Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
-                if (stylesheet != null)
+                if (Resources.isReadable(stylesheet))
                 {
                     _resourceService.setStylesheet(stylesheet);
                 }
@@ -348,7 +348,7 @@ public class DefaultServlet extends HttpServlet
         try
         {
             HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getServletContextRequest(req));
-            if (content == null || content.getResource() == null)
+            if (content == null || Resources.missing(content.getResource()))
             {
                 if (included)
                 {
@@ -973,7 +973,7 @@ public class DefaultServlet extends HttpServlet
                     Resource welcomePath = base.resolve(welcome);
                     String welcomeInContext = URIUtil.addPaths(coreRequest.getPathInContext(), welcome);
 
-                    if (Resources.isNotDirectory(welcomePath))
+                    if (Resources.isReadable(welcomePath))
                         return welcomeInContext;
 
                     if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)

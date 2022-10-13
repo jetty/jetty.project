@@ -149,7 +149,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Consumer<URI> addContainerResource = (uri) ->
         {
             Resource resource = _resourceFactory.newResource(uri);
-            if (resource == null)
+            if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Classpath URI doesn't exist: " + uri);
@@ -387,7 +387,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
     {
         // Resource target does not exist
-        if (target == null)
+        if (Resources.missing(target))
             return;
 
         Resource resourcesDir = null;
@@ -450,7 +450,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyResource(Resource resourcesDir)
     {
-        return resourcesDir == null || !resourcesDir.isDirectory();
+        return !Resources.isDirectory(resourcesDir);
     }
 
     /**
@@ -490,7 +490,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 webFrag = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
-            if ((webFrag != null) && (cache != null))
+            if (Resources.isReadable(webFrag) && (cache != null))
             {
                 //web-fragment.xml doesn't exist: put token in cache to signal we've seen the jar
                 Resource old = cache.putIfAbsent(jar, webFrag);
@@ -517,7 +517,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyFragment(Resource webFrag)
     {
-        return webFrag == null || webFrag.isDirectory();
+        return !Resources.isReadable(webFrag);
     }
 
     /**

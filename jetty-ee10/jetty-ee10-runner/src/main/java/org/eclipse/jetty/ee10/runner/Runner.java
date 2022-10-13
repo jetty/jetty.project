@@ -56,6 +56,7 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
@@ -109,7 +110,8 @@ public class Runner
 
         public void addJars(Resource lib)
         {
-            Objects.requireNonNull(lib, "Lib is null");
+            if (!Resources.isDirectory(lib))
+                throw new IllegalArgumentException("lib is invalid");
 
             for (Resource item: lib.list())
             {
@@ -123,7 +125,11 @@ public class Runner
         public void addPath(Resource path)
         {
             Objects.requireNonNull(path, "Path is null");
-            _classpath.add(path.getURI());
+            for (Resource r: path)
+            {
+                if (FileID.isLibArchive(r.getFileName()))
+                    _classpath.add(r.getURI());
+            }
         }
 
         public URI[] asArray()
@@ -190,23 +196,27 @@ public class Runner
                 if ("--lib".equals(args[i]))
                 {
                     Resource lib = resourceFactory.newResource(args[++i]);
-                    if (lib != null || !lib.isDirectory())
+                    if (Resources.isDirectory(lib))
+                        _classpath.addJars(lib);
+                    else
                         usage("No such lib directory " + lib);
-                    _classpath.addJars(lib);
                 }
                 else if ("--jar".equals(args[i]))
                 {
                     Resource jar = resourceFactory.newResource(args[++i]);
-                    if (jar != null || jar.isDirectory())
+                    if (Resources.isReadable(jar))
+                        _classpath.addPath(jar);
+                    else
                         usage("No such jar " + jar);
-                    _classpath.addPath(jar);
+
                 }
                 else if ("--classes".equals(args[i]))
                 {
                     Resource classes = resourceFactory.newResource(args[++i]);
-                    if (classes != null || !classes.isDirectory())
+                    if (Resources.isDirectory(classes))
+                        _classpath.addPath(classes);
+                    else
                         usage("No such classes directory " + classes);
-                    _classpath.addPath(classes);
                 }
                 else if (args[i].startsWith("--"))
                     i++;

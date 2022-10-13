@@ -198,7 +198,6 @@ public class QuickStartTest
 
         URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        assertEquals(200, connection.getResponseCode());
         String content = IO.toString((InputStream)connection.getContent());
         assertEquals(200, connection.getResponseCode());
         assertThat(content, Matchers.containsString("JNDI Demo WebApp"));

@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,10 +227,26 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         List<Path> files = new ArrayList<>();
         for (Resource resource : _monitored)
         {
-            if (resource != null && Files.isReadable(resource.getPath()))
-                files.add(resource.getPath());
-            else
+            if (Resources.missing(resource))
+            {
                 LOG.warn("Does not exist: {}", resource);
+                continue; // skip
+            }
+
+            // handle resource smartly
+            for (Resource r: resource)
+            {
+                Path path = r.getPath();
+                if (path == null)
+                {
+                    LOG.warn("Not based on FileSystem Path: {}", r);
+                    continue; // skip
+                }
+                if (Files.isDirectory(path) || Files.isReadable(path))
+                    files.add(resource.getPath());
+                else
+                    LOG.warn("Unsupported Path (not a directory and/or not readable): {}", r);
+            }
         }
 
         _scanner = new Scanner(null, _useRealPaths);

@@ -213,7 +213,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if (stylesheet != null)
             {
                 _stylesheet = _resourceFactory.newResource(stylesheet);
-                if (!_stylesheet.exists())
+                if (Resources.missing(_stylesheet))
                 {
                     LOG.warn("Stylesheet {} does not exist", stylesheet);
                     _stylesheet = null;

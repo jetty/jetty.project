@@ -256,6 +256,7 @@ public class SslContextFactoryTest
             IllegalArgumentException x = assertThrows(IllegalArgumentException.class, () ->
             {
                 cf.setTrustStorePath("/foo");
+                cf.start();
             });
             assertThat(x.getMessage(), containsString("TrustStore Path does not exist: /foo"));
         }

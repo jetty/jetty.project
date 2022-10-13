@@ -167,10 +167,10 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Has an explicit web.xml file been configured to use?
             if (webXml != null)
             {
-                Resource r = ResourceFactory.root().newResource(webXml.toPath());
-                if (r != null && !r.isDirectory())
+                Resource r = webApp.getResourceFactory().newResource(webXml.toPath());
+                if (Resources.isReadable(r))
                 {
-                    webApp.setDescriptor(r.toString());
+                    webApp.setDescriptor(r.getURI().toASCIIString());
                 }
             }
 

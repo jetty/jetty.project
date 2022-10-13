@@ -389,7 +389,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             try
             {
                 resource = super.getResource(pathInContext);
-                if (resource != null)
+                if (Resources.exists(resource))
                     return resource;
 
                 pathInContext = getResourceAlias(pathInContext);

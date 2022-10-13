@@ -148,7 +148,7 @@ public class FileSystemResourceTest
     {
         // Doesn't exist.
         Resource resource = ResourceFactory.root().newResource(new URI("path/to/resource"));
-        assertThat(resource, nullValue());
+        assertTrue(Resources.missing(resource));
 
         // Create a directory
         Path testdir = workDir.getEmptyPathDir().resolve("path/to/resource");
@@ -197,10 +197,10 @@ public class FileSystemResourceTest
         Path dir = workDir.getPath().normalize().toRealPath();
 
         Path baseDir = dir.resolve("base with spaces");
-        FS.ensureDirExists(baseDir.toFile());
+        FS.ensureDirExists(baseDir);
 
         Path subdir = baseDir.resolve("sub");
-        FS.ensureDirExists(subdir.toFile());
+        FS.ensureDirExists(subdir);
 
         URL baseUrl = baseDir.toUri().toURL();
 
@@ -211,7 +211,7 @@ public class FileSystemResourceTest
         assertThat("sub/.isDirectory", sub.isDirectory(), is(true));
 
         Resource tmp = sub.resolve("/tmp");
-        assertThat("No root", tmp, is(nullValue()));
+        assertTrue(Resources.missing(tmp), "Reference to root not allowed");
     }
 
     @Test
@@ -220,14 +220,14 @@ public class FileSystemResourceTest
         Path dir = workDir.getEmptyPathDir();
 
         Path subdir = dir.resolve("sub");
-        FS.ensureDirExists(subdir.toFile());
+        FS.ensureDirExists(subdir);
 
         Resource base = ResourceFactory.root().newResource(dir);
         Resource sub = base.resolve("sub");
         assertThat("sub.isDirectory", sub.isDirectory(), is(true));
 
         Resource tmp = sub.resolve("/tmp");
-        assertThat("No root", tmp, is(nullValue()));
+        assertTrue(Resources.missing(tmp), "Reference to root not allowed");
     }
 
     @Test
@@ -247,12 +247,12 @@ public class FileSystemResourceTest
         try
         {
             Resource rrd = sub.resolve(readableRootDir);
-            // valid path for unix and OSX
-            assertThat("Readable Root Dir", rrd, is(nullValue()));
+            // we are executing on unix and OSX
+            assertTrue(Resources.missing(rrd), "Readable Root Dir");
         }
         catch (InvalidPathException e)
         {
-            // valid path on Windows
+            // we are executing on Windows
         }
     }
 
@@ -593,8 +593,8 @@ public class FileSystemResourceTest
         Resource resFoo = base.resolve("foo");
         Resource resBar = base.resolve("bar");
 
-        assertThat("resFoo", resFoo, is(nullValue()));
-        assertThat("resBar", resBar, is(nullValue()));
+        assertTrue(Resources.missing(resFoo), "resFoo");
+        assertTrue(Resources.missing(resBar), "resBar");
     }
 
     @Test
@@ -616,7 +616,7 @@ public class FileSystemResourceTest
         // On some case-insensitive file systems, lets see if an alternate
         // case for the filename results in an alias reference
         Resource alias = base.resolve("FILE");
-        if (alias != null)
+        if (Resources.exists(alias))
         {
             // If it exists, it must be an alias
             assertThat("targetURI", alias, isTargetFor(resource));
@@ -1123,7 +1123,7 @@ public class FileSystemResourceTest
             }
             else
             {
-                assertThat("Backslash resource", r, is(nullValue()));
+                assertTrue(Resources.missing(r), "Backslash resource");
             }
         }
         catch (IllegalArgumentException e)
@@ -1164,7 +1164,7 @@ public class FileSystemResourceTest
             }
             else
             {
-                assertThat("extension-less directory reference", r, is(nullValue()));
+                assertTrue(Resources.missing(r), "extension-less directory reference");
             }
         }
         catch (IllegalArgumentException e)

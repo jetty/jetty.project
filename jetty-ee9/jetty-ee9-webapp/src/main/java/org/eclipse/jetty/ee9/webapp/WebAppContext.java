@@ -398,7 +398,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             try
             {
                 resource = super.getResource(pathInContext);
-                if (resource != null && resource.exists())
+                if (Resources.exists(resource))
                     return resource;
 
                 pathInContext = getResourceAlias(pathInContext);
@@ -1444,7 +1444,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             for (Resource r: resource)
             {
-                if (r.exists())
+                // return first entry
+                if (Resources.exists(r))
                     return r.getURI().toURL();
             }
 
