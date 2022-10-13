@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,16 +40,16 @@ import org.eclipse.jetty.util.resource.Resource;
  *  Consider if caching should rather be done at a layer above using a CachingHandler that would intercept Response.write()
  *  of a configured URI set, save that in a cache and serve that again.
  */
-public class CachingContentFactory implements HttpContent.ContentFactory
+public class CachingContentFactory implements HttpContent.Factory
 {
-    private final HttpContent.ContentFactory _authority;
+    private final HttpContent.Factory _authority;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
     private int _maxCachedFileSize = 128 * 1024 * 1024;
     private int _maxCachedFiles = 2048;
     private int _maxCacheSize = 256 * 1024 * 1024;
 
-    public CachingContentFactory(HttpContent.ContentFactory authority)
+    public CachingContentFactory(HttpContent.Factory authority)
     {
         _authority = authority;
     }
@@ -180,12 +181,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     {
         CachingHttpContent cachingHttpContent = _cache.get(path);
         if (cachingHttpContent != null)
-        {
-            if (cachingHttpContent.isValid())
-                return cachingHttpContent;
-            else
-                removeFromCache(cachingHttpContent);
-        }
+            return cachingHttpContent;
 
         // TODO: record cache misses.
         HttpContent httpContent = _authority.getContent(path);
@@ -214,6 +210,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         private final HttpField _etagField;
         private final long _contentLengthValue;
         private final AtomicLong _lastAccessed = new AtomicLong();
+        private final Set<CompressedContentFormat> _compressedFormats;
 
         private CachingHttpContent(String key, HttpContent httpContent)
         {
@@ -254,6 +251,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             _cacheKey = key;
             _lastModifiedValue = resource.lastModified();
             _lastAccessed.set(NanoTime.now());
+            _compressedFormats = httpContent.getPreCompressedContentFormats();
         }
 
         @Override
@@ -288,6 +286,12 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         public void release()
         {
             // TODO re-pool buffer and release precompressed contents
+        }
+
+        @Override
+        public Set<CompressedContentFormat> getPreCompressedContentFormats()
+        {
+            return _compressedFormats;
         }
 
         @Override

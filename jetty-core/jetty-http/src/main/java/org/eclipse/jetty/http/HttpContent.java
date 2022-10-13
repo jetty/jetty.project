@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -62,9 +63,11 @@ public interface HttpContent
 
     ByteBuffer getBuffer();
 
+    Set<CompressedContentFormat> getPreCompressedContentFormats();
+
     void release();
 
-    interface ContentFactory
+    interface Factory
     {
         /**
          * @param path The path within the context to the resource

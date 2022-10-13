@@ -23,12 +23,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
+import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.server.ResourceContentFactory;
+import org.eclipse.jetty.http.ResourceContentFactory;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -95,8 +98,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
-        // TODO: SHOULD BE CACHING AND EXTENSIBLE.
-        _resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes));
+        HttpContent.Factory contentFactory = new ResourceContentFactory(this, _mimeTypes);
+        contentFactory = new PreCompressedContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new CachingContentFactory(contentFactory);
+        _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
         super.doStart();

@@ -56,6 +56,8 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MappedFileContentFactory;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedContentFactory;
+import org.eclipse.jetty.http.ResourceContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Components;
@@ -63,7 +65,6 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
@@ -121,11 +122,15 @@ public class DefaultServlet extends HttpServlet
             }
         }
 
+        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
+            getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
+
         MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
+        HttpContent.Factory contentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
+        contentFactory = new PreCompressedContentFactory(contentFactory, precompressedFormats);
         CachingContentFactory cached = getInitBoolean("useFileMappedBuffer", false)
-            ? new CachingContentFactory(new MappedFileContentFactory(resourceContentFactory))
-            : new CachingContentFactory(resourceContentFactory);
+            ? new CachingContentFactory(new MappedFileContentFactory(contentFactory))
+            : new CachingContentFactory(contentFactory);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
         int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
@@ -150,8 +155,6 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
-        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
-            getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
         _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 

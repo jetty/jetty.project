@@ -18,6 +18,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -160,6 +161,12 @@ public class ResourceHttpContent implements HttpContent
         {
             return null;
         }
+    }
+
+    @Override
+    public Set<CompressedContentFormat> getPreCompressedContentFormats()
+    {
+        return null;
     }
 
     @Override

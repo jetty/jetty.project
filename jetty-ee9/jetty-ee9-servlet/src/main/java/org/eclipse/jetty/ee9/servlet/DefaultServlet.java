@@ -35,8 +35,9 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MappedFileContentFactory;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.server.ResourceContentFactory;
+import org.eclipse.jetty.http.ResourceContentFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -238,7 +239,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (cc != null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
 
-        HttpContent.ContentFactory contentFactory = new ResourceContentFactory(this, _mimeTypes);
+        HttpContent.Factory contentFactory = new ResourceContentFactory(this, _mimeTypes);
+        contentFactory = new PreCompressedContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         _cachingContentFactory = _useFileMappedBuffer
             ? new CachingContentFactory(new MappedFileContentFactory(contentFactory))
             : new CachingContentFactory(contentFactory);

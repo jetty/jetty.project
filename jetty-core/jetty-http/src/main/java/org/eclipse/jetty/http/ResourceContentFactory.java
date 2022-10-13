@@ -11,16 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.Objects;
 
-import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpContent.ContentFactory;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -29,7 +25,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  * this factory are not intended to be cached, so memory limits for individual
  * HttpOutput streams are enforced.
  */
-public class ResourceContentFactory implements ContentFactory
+public class ResourceContentFactory implements HttpContent.Factory
 {
     private final ResourceFactory _factory;
     private final MimeTypes _mimeTypes;

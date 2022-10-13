@@ -74,7 +74,7 @@ public class ResourceService
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
-    private HttpContent.ContentFactory _contentFactory;
+    private HttpContent.Factory _contentFactory;
     private int _encodingCacheSize = 100;
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
@@ -110,14 +110,16 @@ public class ResourceService
             if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
                 return null;
 
-            if (!_precompressedFormats.isEmpty())
+            Collection<CompressedContentFormat> compressedContentFormats = (content.getPreCompressedContentFormats() == null)
+                ? _precompressedFormats : content.getPreCompressedContentFormats();
+            if (!compressedContentFormats.isEmpty())
             {
                 List<String> preferredEncodingOrder = getPreferredEncodingOrder(request);
                 if (!preferredEncodingOrder.isEmpty())
                 {
                     for (String encoding : preferredEncodingOrder)
                     {
-                        CompressedContentFormat contentFormat = isEncodingAvailable(encoding, _precompressedFormats);
+                        CompressedContentFormat contentFormat = isEncodingAvailable(encoding, compressedContentFormats);
                         if (contentFormat == null)
                             continue;
 
@@ -143,12 +145,12 @@ public class ResourceService
         return content;
     }
 
-    public HttpContent.ContentFactory getContentFactory()
+    public HttpContent.Factory getContentFactory()
     {
         return _contentFactory;
     }
 
-    public void setContentFactory(HttpContent.ContentFactory contentFactory)
+    public void setContentFactory(HttpContent.Factory contentFactory)
     {
         _contentFactory = contentFactory;
     }
@@ -203,7 +205,7 @@ public class ResourceService
             if (passConditionalHeaders(request, response, content, callback))
                 return;
 
-            if (!_precompressedFormats.isEmpty())
+            if (!content.getPreCompressedContentFormats().isEmpty())
                 response.getHeaders().put(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
             HttpField contentEncoding = content.getContentEncoding();

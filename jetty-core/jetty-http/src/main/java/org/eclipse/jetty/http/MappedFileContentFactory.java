@@ -21,13 +21,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MappedFileContentFactory implements HttpContent.ContentFactory
+public class MappedFileContentFactory implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(MappedFileContentFactory.class);
 
-    private final HttpContent.ContentFactory _factory;
+    private final HttpContent.Factory _factory;
 
-    public MappedFileContentFactory(HttpContent.ContentFactory factory)
+    public MappedFileContentFactory(HttpContent.Factory factory)
     {
         _factory = Objects.requireNonNull(factory);
     }

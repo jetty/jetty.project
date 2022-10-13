@@ -72,7 +72,7 @@ public class ResourceService
 
     private static final PreEncodedHttpField ACCEPT_RANGES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
 
-    private HttpContent.ContentFactory _contentFactory;
+    private HttpContent.Factory _contentFactory;
     private WelcomeFactory _welcomeFactory;
     private boolean _acceptRanges = true;
     private boolean _dirAllowed = true;
@@ -86,12 +86,12 @@ public class ResourceService
     private HttpField _cacheControl;
     private List<String> _gzipEquivalentFileExtensions;
 
-    public HttpContent.ContentFactory getContentFactory()
+    public HttpContent.Factory getContentFactory()
     {
         return _contentFactory;
     }
 
-    public void setContentFactory(HttpContent.ContentFactory contentFactory)
+    public void setContentFactory(HttpContent.Factory contentFactory)
     {
         _contentFactory = contentFactory;
     }

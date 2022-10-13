@@ -20,10 +20,11 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedContentFactory;
+import org.eclipse.jetty.http.ResourceContentFactory;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -82,7 +83,9 @@ public class ResourceHandler extends Handler.Wrapper
 
     private void setupContentFactory()
     {
-        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes));
+        HttpContent.Factory contentFactory = new ResourceContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
+        contentFactory = new PreCompressedContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new CachingContentFactory(contentFactory);
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(request ->
         {
@@ -118,7 +121,7 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     // for testing only
-    HttpContent.ContentFactory getContentFactory()
+    HttpContent.Factory getContentFactory()
     {
         return _resourceService.getContentFactory();
     }
