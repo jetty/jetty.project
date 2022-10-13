@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * A matcher for classes based on package and/or location and/or module/
@@ -131,10 +131,11 @@ public class ClassMatcher extends AbstractSet<String>
         protected LocationEntry(String name, boolean inclusive)
         {
             super(name, inclusive);
-            if (!getName().startsWith("file:"))
-                throw new IllegalArgumentException(name);
+            URI uri = URI.create(name);
+            if (!uri.isAbsolute() && !"file".equalsIgnoreCase(uri.getScheme()))
+                throw new IllegalArgumentException("Not a valid file URI: " + name);
 
-            _path = ResourceFactory.root().newResource(getName()).getPath();
+            _path = Paths.get(uri);
         }
 
         public Path getPath()
@@ -356,9 +357,21 @@ public class ClassMatcher extends AbstractSet<String>
                 }
                 else
                 {
-                    if (path.equals(entryPath))
+                    try
                     {
-                        return true;
+                        if (Files.isSameFile(path, entryPath))
+                        {
+                            return true;
+                        }
+                    }
+                    catch (IOException ignore)
+                    {
+                        // this means there is a FileSystem issue preventing comparison.
+                        // Use old technique
+                        if (path.equals(entryPath))
+                        {
+                            return true;
+                        }
                     }
                 }
             }
