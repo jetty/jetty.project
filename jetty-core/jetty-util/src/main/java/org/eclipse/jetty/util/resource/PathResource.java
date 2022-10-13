@@ -174,10 +174,21 @@ public class PathResource extends Resource
     @Override
     public boolean exists()
     {
-        if (Files.exists(path))
-            return true;
-        if (isAlias() && canonicalPath != null)
+        if (aliasResolved)
+        {
+            if (canonicalPath == null)
+                return false;
             return Files.exists(canonicalPath);
+        }
+        else
+        {
+            // Avoid resolving alias unless necessary to determine existence.
+            if (Files.exists(path))
+                return true;
+            if (isAlias() && canonicalPath != null)
+                return Files.exists(canonicalPath);
+        }
+
         return false;
     }
 
@@ -274,6 +285,15 @@ public class PathResource extends Resource
                  * If the URI is different from the Path.toUri() then
                  * we will just use the original URI to construct the
                  * alias reference Path.
+                 *
+                 * // On Windows
+                 *  PathResource resource         = PathResource("C:/temp");
+                 *  PathResource child            = resource.resolve("aa./foo.txt");
+                 *  child.exists()                == true
+                 *  child.isAlias()               == true
+                 *  child.toUri()                 == "file:///C:/temp/aa./foo.txt"
+                 *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
+                 *  child.getCanonicalURI()       == "file:///C:/temp/aa/foo.txt"
                  */
                 alias = !isSameName(path, canonicalPath) || !URIUtil.equalsIgnoreEncodings(uri, toUri(path));
             }
