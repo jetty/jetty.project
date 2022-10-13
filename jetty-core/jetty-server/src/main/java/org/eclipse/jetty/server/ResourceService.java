@@ -209,7 +209,7 @@ public class ResourceService
             HttpField contentEncoding = content.getContentEncoding();
             if (contentEncoding != null)
                 response.getHeaders().put(contentEncoding);
-            else if (isGzippedContent(pathInContext))
+            else if (isImplicitlyGzippedContent(pathInContext))
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
 
             // Send the data
@@ -285,7 +285,7 @@ public class ResourceService
         return values;
     }
 
-    private boolean isGzippedContent(String path)
+    private boolean isImplicitlyGzippedContent(String path)
     {
         if (path == null || _gzipEquivalentFileExtensions == null)
             return false;

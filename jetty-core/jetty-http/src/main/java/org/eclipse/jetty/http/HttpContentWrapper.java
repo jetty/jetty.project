@@ -24,11 +24,16 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class HttpContentWrapper implements HttpContent
 {
-    protected final HttpContent _delegate;
+    private final HttpContent _delegate;
 
     public HttpContentWrapper(HttpContent content)
     {
         _delegate = content;
+    }
+
+    public HttpContent getWrapped()
+    {
+        return _delegate;
     }
 
     @Override

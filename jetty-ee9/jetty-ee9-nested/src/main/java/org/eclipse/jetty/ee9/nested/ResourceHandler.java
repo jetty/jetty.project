@@ -95,6 +95,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
+        // TODO: SHOULD BE CACHING AND EXTENSIBLE.
         _resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes));
         _resourceService.setWelcomeFactory(this);
 

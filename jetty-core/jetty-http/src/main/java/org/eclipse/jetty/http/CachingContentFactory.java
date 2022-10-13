@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * HttpContent.ContentFactory implementation that wraps any other HttpContent.ContentFactory instance
@@ -223,23 +224,24 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         {
             super(httpContent);
 
-            if (_delegate.getResource() == null)
+            Resource resource = getResource();
+            if (resource == null)
                 throw new IllegalArgumentException("Null Resource");
-            if (!_delegate.getResource().exists())
-                throw new IllegalArgumentException("Resource doesn't exist: " + _delegate.getResource());
-            if (_delegate.getResource().isDirectory())
-                throw new IllegalArgumentException("Directory Resources not supported: " + _delegate.getResource());
-            if (_delegate.getResource().getPath() == null) // only required because we need the Path to access the mapped ByteBuffer or SeekableByteChannel.
-                throw new IllegalArgumentException("Resource not backed by Path not supported: " + _delegate.getResource());
+            if (!resource.exists())
+                throw new IllegalArgumentException("Resource doesn't exist: " + resource);
+            if (resource.isDirectory())
+                throw new IllegalArgumentException("Directory Resources not supported: " + resource);
+            if (resource.getPath() == null) // only required because we need the Path to access the mapped ByteBuffer or SeekableByteChannel.
+                throw new IllegalArgumentException("Resource not backed by Path not supported: " + resource);
 
             // Resources with negative length cannot be cached.
             // But allow resources with zero length.
-            long resourceSize = _delegate.getResource().length();
+            long resourceSize = resource.length();
             if (resourceSize < 0)
-                throw new IllegalArgumentException("Resource with negative size: " + _delegate.getResource());
+                throw new IllegalArgumentException("Resource with negative size: " + resource);
 
             // TODO: do all the following lazily and asynchronously.
-            HttpField etagField = _delegate.getETag();
+            HttpField etagField = httpContent.getETag();
             if (StringUtil.isNotBlank(etagValue))
             {
                 etagField = new PreEncodedHttpField(HttpHeader.ETAG, etagValue);
@@ -250,7 +252,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             // Map the content into memory if possible.
             _buffer = httpContent.getBuffer();
             _cacheKey = key;
-            _lastModifiedValue = _delegate.getResource().lastModified();
+            _lastModifiedValue = resource.lastModified();
             _lastAccessed.set(NanoTime.now());
         }
 
@@ -279,11 +281,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
                 (NanoTime.since(lastChecked) > TimeUnit.SECONDS.toNanos(1)) ? now : lastChecked) != now)
                 return true;
 
-            Instant lastModifiedTime = _delegate.getResource().lastModified();
-            if (lastModifiedTime.equals(_lastModifiedValue))
-                return true;
-            release();
-            return false;
+            return getLastModifiedInstant().equals(_lastModifiedValue);
         }
 
         @Override
