@@ -231,10 +231,10 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Resolve a new Resource from an encoded subUriPath.
+     * Resolve an existing Resource.
      *
      * @param subUriPath the encoded subUriPath
-     * @return a Resource representing the subUriPath
+     * @return an existing Resource representing the requested subUriPath, or null if resource does not exist.
      * @throws IllegalArgumentException if subUriPath is invalid
      */
     public abstract Resource resolve(String subUriPath);
