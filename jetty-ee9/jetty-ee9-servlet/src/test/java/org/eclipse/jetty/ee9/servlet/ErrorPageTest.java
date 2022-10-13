@@ -63,7 +63,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // TODO
+//@Disabled // TODO
 public class ErrorPageTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ErrorPageTest.class);
@@ -91,6 +91,7 @@ public class ErrorPageTest
         _context.addFilter(SingleDispatchFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
         _context.addServlet(DefaultServlet.class, "/");
         _context.addServlet(FailServlet.class, "/fail/*");
+        _context.addServlet(FailServletDoubleWrap.class, "/fail-double-wrap/*");
         _context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         _context.addServlet(ErrorServlet.class, "/error/*");
         _context.addServlet(AppServlet.class, "/app/*");
@@ -167,7 +168,7 @@ public class ErrorPageTest
         assertThat(body, containsString("ERROR_CODE: 595"));
         assertThat(body, containsString("ERROR_EXCEPTION: null"));
         assertThat(body, containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(body, containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$ErrorContentTypeCharsetWriterInitializedServlet-"));
+        assertThat(body, containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$ErrorContentTypeCharsetWriterInitializedServlet-"));
         assertThat(body, containsString("ERROR_REQUEST_URI: /error-mime-charset-writer/"));
     }
 
@@ -181,7 +182,7 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 594"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$ErrorAndStatusServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$ErrorAndStatusServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /error-and-status/anything"));
     }
 
@@ -276,7 +277,7 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailClosedServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailClosedServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-closed/"));
 
         assertThat(response, not(containsString("This shouldn't be seen")));
@@ -291,7 +292,7 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/code"));
     }
 
@@ -307,8 +308,16 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
+            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
 
         _errorPageErrorHandler.setUnwrapServletException(true);
@@ -320,8 +329,16 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
+            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
     }
 
@@ -334,7 +351,7 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 598"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
     }
 
@@ -349,7 +366,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.NumberFormatException: For input string: \"NAN\""));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.NumberFormatException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
         }
     }
@@ -366,7 +383,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query encoding"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AppServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AppServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
             assertThat(response, Matchers.containsString("getParameterMap()= {}"));
         }
@@ -383,7 +400,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
             assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
@@ -400,7 +417,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
             assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
@@ -417,7 +434,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
             assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
@@ -433,7 +450,7 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 404"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.DefaultServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.DefaultServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /noop/info"));
     }
 
@@ -447,7 +464,7 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$NotEnoughServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$NotEnoughServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /notenough/info"));
     }
 
@@ -636,6 +653,19 @@ public class ErrorPageTest
                 response.sendError(Integer.parseInt(code));
             else
                 throw new ServletException(new IllegalStateException("Test Exception"));
+        }
+    }
+
+    public static class FailServletDoubleWrap extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            String code = request.getParameter("code");
+            if (code != null)
+                response.sendError(Integer.parseInt(code));
+            else
+                throw new ServletException(new ServletException(new IllegalStateException("Test Exception")));
         }
     }
 

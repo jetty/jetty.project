@@ -47,7 +47,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1155,7 +1154,7 @@ public class FileSystemResourceTest
 
             Resource r = base.resolve("aa./foo.txt");
 
-            if (OS.WINDOWS.isCurrentOs())
+            if (WINDOWS.isCurrentOs())
             {
                 assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa./foo.txt"));
                 assertThat("isAlias()", r.isAlias(), is(true));
