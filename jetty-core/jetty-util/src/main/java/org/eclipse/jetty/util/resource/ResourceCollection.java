@@ -166,88 +166,48 @@ public class ResourceCollection extends Resource
     @Override
     public Path getPath()
     {
-        for (Resource r : _resources)
-        {
-            Path p = r.getPath();
-            if (p != null)
-                return p;
-        }
         return null;
     }
 
     @Override
     public InputStream newInputStream() throws IOException
     {
-        for (Resource r : _resources)
-        {
-            if (!r.exists())
-            {
-                // Skip, cannot open anyway
-                continue;
-            }
-            InputStream is = r.newInputStream();
-            if (is != null)
-            {
-                return is;
-            }
-        }
-
-        throw new FileNotFoundException("Resource does not exist");
+        throw new FileNotFoundException("Unsupported operation");
     }
 
     @Override
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
-        for (Resource r : _resources)
-        {
-            ReadableByteChannel channel = r.newReadableByteChannel();
-            if (channel != null)
-            {
-                return channel;
-            }
-        }
         return null;
     }
 
     @Override
     public String getName()
     {
-        for (Resource r : _resources)
-        {
-            String name = r.getName();
-            if (name != null)
-            {
-                return name;
-            }
-        }
         return null;
     }
 
     @Override
     public String getFileName()
     {
+        String filename = null;
+        // return a non-null filename only if all resources agree on the same name.
         for (Resource r : _resources)
         {
-            String filename = r.getFileName();
-            if (filename != null)
-            {
-                return filename;
-            }
+            String fn = r.getFileName();
+            if (fn == null)
+                return null;
+            if (filename == null)
+                filename = fn;
+            else if (!filename.equals(fn))
+                return null;
         }
-        return null;
+        return filename;
     }
 
     @Override
     public URI getURI()
     {
-        for (Resource r : _resources)
-        {
-            URI uri = r.getURI();
-            if (uri != null)
-            {
-                return uri;
-            }
-        }
         return null;
     }
 

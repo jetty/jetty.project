@@ -230,7 +230,10 @@ public abstract class Resource implements Iterable<Resource>
      */
     public InputStream newInputStream() throws IOException
     {
-        return Files.newInputStream(getPath(), StandardOpenOption.READ);
+        Path path = getPath();
+        if (path == null)
+            return null;
+        return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
     /**
@@ -241,6 +244,9 @@ public abstract class Resource implements Iterable<Resource>
      */
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
+        Path path = getPath();
+        if (path == null)
+            return null;
         return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
 
