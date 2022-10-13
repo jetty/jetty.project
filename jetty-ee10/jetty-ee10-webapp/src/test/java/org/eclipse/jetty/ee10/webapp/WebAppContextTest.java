@@ -49,7 +49,6 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -513,7 +512,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(Resource.combine(
+        context.setBaseResource(ResourceFactory.combine(
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
         server.setHandler(context);
@@ -531,7 +530,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        context.setBaseResource(Resource.combine(
+        context.setBaseResource(ResourceFactory.combine(
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
         server.setHandler(context);
