@@ -57,7 +57,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -1805,7 +1804,7 @@ public class ResourceHandlerTest
     {
         copySimpleTestResource(docRoot);
         _rootResourceHandler.stop();
-        _rootResourceHandler.setBaseResource(Resource.combine(
+        _rootResourceHandler.setBaseResource(ResourceFactory.combine(
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
             _rootResourceHandler.getBaseResource()));
         _rootResourceHandler.start();
@@ -1864,7 +1863,7 @@ public class ResourceHandlerTest
     {
         copySimpleTestResource(docRoot);
         _rootResourceHandler.stop();
-        _rootResourceHandler.setBaseResource(Resource.combine(
+        _rootResourceHandler.setBaseResource(ResourceFactory.combine(
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer1/")),
             _rootResourceHandler.getBaseResource()));

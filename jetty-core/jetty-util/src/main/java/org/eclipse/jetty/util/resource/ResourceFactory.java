@@ -33,6 +33,32 @@ import org.eclipse.jetty.util.component.Dumpable;
 public interface ResourceFactory
 {
     /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    static ResourceCollection combine(List<Resource> resources)
+    {
+        if (resources == null || resources.isEmpty())
+            throw new IllegalArgumentException("No resources");
+        return new ResourceCollection(resources);
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see ResourceCollection
+     */
+    static ResourceCollection combine(Resource... resources)
+    {
+        if (resources == null || resources.length == 0)
+            throw new IllegalArgumentException("No resources");
+        return new ResourceCollection(List.of(resources));
+    }
+
+    /**
      * Construct a resource from a uri.
      *
      * @param uri A URI.
@@ -187,7 +213,7 @@ public interface ResourceFactory
         if ((uris == null) || (uris.isEmpty()))
             throw new IllegalArgumentException("List of URIs is invalid");
 
-        return Resource.combine(uris.stream().map(this::newResource).toList());
+        return combine(uris.stream().map(this::newResource).toList());
     }
 
     default Resource newResource(URL url)

@@ -265,7 +265,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getBaseResource());
             collection.addAll(resources);
-            context.setBaseResource(Resource.combine(collection));
+            context.setBaseResource(ResourceFactory.combine(collection));
         }
     }
 

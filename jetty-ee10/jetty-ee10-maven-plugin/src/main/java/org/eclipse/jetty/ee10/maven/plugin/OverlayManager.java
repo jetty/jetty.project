@@ -63,7 +63,7 @@ public class OverlayManager
                 resourceBases.add(webApp.getBaseResource());
         }
 
-        webApp.setBaseResource(Resource.combine(resourceBases));
+        webApp.setBaseResource(ResourceFactory.combine(resourceBases));
     }
     
     /**

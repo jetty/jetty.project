@@ -448,7 +448,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             webInf = context.getResourceFactory().newResource(extractedWebInfDir.getCanonicalPath());
 
-            Resource rc = Resource.combine(webInf, webApp);
+            Resource rc = ResourceFactory.combine(webInf, webApp);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context.baseResource={}", rc);
