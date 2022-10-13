@@ -176,7 +176,7 @@ public class PathResource extends Resource
     {
         if (Files.exists(path))
             return true;
-        if (isAlias())
+        if (isAlias() && canonicalPath != null)
             return Files.exists(canonicalPath);
         return false;
     }

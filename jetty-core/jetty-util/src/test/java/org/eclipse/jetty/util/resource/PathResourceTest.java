@@ -23,12 +23,14 @@ import java.nio.file.FileSystemException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -45,6 +48,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -410,6 +414,44 @@ public class PathResourceTest
             // this file system does allow null char ending filenames
             LOG.trace("IGNORED", e);
         }
+    }
+
+    @Test
+    public void testBrokenSymlink(WorkDir workDir) throws Exception
+    {
+        Path testDir = workDir.getEmptyPathDir();
+        Path resourcePath = testDir.resolve("resource.txt");
+        IO.copy(MavenTestingUtils.getTestResourcePathFile("resource.txt").toFile(), resourcePath.toFile());
+        Path symlinkPath = Files.createSymbolicLink(testDir.resolve("symlink.txt"), resourcePath);
+
+        PathResource fileResource = new PathResource(resourcePath);
+        assertTrue(fileResource.exists());
+        PathResource symlinkResource = new PathResource(symlinkPath);
+        assertTrue(symlinkResource.exists());
+
+        // Their paths are not equal but not their canonical paths are.
+        assertThat(fileResource.getPath(), not(equalTo(symlinkResource.getPath())));
+        assertThat(fileResource.getPath(), equalTo(symlinkResource.getCanonicalPath()));
+        assertFalse(fileResource.isAlias());
+        assertTrue(symlinkResource.isAlias());
+        assertTrue(fileResource.exists());
+        assertTrue(symlinkResource.exists());
+
+        // After deleting file the Resources do not exist even though symlink file exists.
+        Files.delete(resourcePath);
+        assertFalse(fileResource.exists());
+        assertFalse(symlinkResource.exists());
+        assertTrue(Files.exists(symlinkPath, LinkOption.NOFOLLOW_LINKS));
+
+        // Re-create and test the resources now that the file has been deleted.
+        fileResource = new PathResource(resourcePath);
+        assertFalse(fileResource.exists());
+        assertNull(fileResource.getCanonicalPath());
+        assertTrue(symlinkResource.isAlias());
+        symlinkResource = new PathResource(symlinkPath);
+        assertFalse(symlinkResource.exists());
+        assertNull(symlinkResource.getCanonicalPath());
+        assertTrue(symlinkResource.isAlias());
     }
 
     @Test
