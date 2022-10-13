@@ -50,6 +50,7 @@ public class PathResource extends Resource
     private final Path path;
     private final URI uri;
     private boolean alias = false;
+    private boolean aliasResolved = false;
     private Path canonicalPath;
 
     /**
@@ -159,9 +160,12 @@ public class PathResource extends Resource
         if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
-        String uriString = uri.toASCIIString();
-        if (Files.isDirectory(path) && !uriString.endsWith(URIUtil.SLASH))
-            uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
+        if (Files.isDirectory(path))
+        {
+            String uriString = uri.toASCIIString();
+            if (!uriString.endsWith(URIUtil.SLASH))
+                uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
+        }
 
         this.path = path;
         this.uri = uri;
@@ -175,25 +179,6 @@ public class PathResource extends Resource
         if (isAlias())
             return Files.exists(canonicalPath);
         return false;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-        {
-            return true;
-        }
-        if (obj == null)
-        {
-            return false;
-        }
-        if (getClass() != obj.getClass())
-        {
-            return false;
-        }
-        PathResource other = (PathResource)obj;
-        return Objects.equals(path, other.path);
     }
 
     @Override
@@ -211,7 +196,8 @@ public class PathResource extends Resource
     @Override
     public URI getCanonicalURI()
     {
-        return getCanonicalPath().toUri();
+        Path canonicalPath = getCanonicalPath();
+        return (canonicalPath == null) ? null : canonicalPath.toUri();
     }
 
     public List<Resource> list()
@@ -263,12 +249,6 @@ public class PathResource extends Resource
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hashCode(path);
-    }
-
-    @Override
     public boolean isContainedIn(Resource r)
     {
         return r.getClass() == PathResource.class && path.startsWith(r.getPath());
@@ -276,29 +256,35 @@ public class PathResource extends Resource
 
     private void checkAlias()
     {
-        if (canonicalPath == null)
+        if (!aliasResolved)
         {
-            canonicalPath = resolveTargetPath();
-
-            /* If the path and canonicalPath are the same also check
-             * the Path class has already normalized in the constructor
-             * from the URI e.g. input path "aa./foo.txt"
-             * from an #resolve(String) is normalized away during
-             * the creation of a Path object reference.
-             * If the URI is different from the Path.toUri() then
-             * we will just use the original URI to construct the
-             * alias reference Path.
-             */
-            alias = !isSameName(path, canonicalPath) || !URIUtil.equalsIgnoreEncodings(uri, toUri(path));
+            aliasResolved = true;
+            canonicalPath = resolveCanonicalPath();
+            if (canonicalPath == null)
+            {
+                alias = true;
+            }
+            else
+            {
+                /* If the path and canonicalPath are the same also check
+                 * the Path class has already normalized in the constructor
+                 * from the URI e.g. input path "aa./foo.txt"
+                 * from an #resolve(String) is normalized away during
+                 * the creation of a Path object reference.
+                 * If the URI is different from the Path.toUri() then
+                 * we will just use the original URI to construct the
+                 * alias reference Path.
+                 */
+                alias = !isSameName(path, canonicalPath) || !URIUtil.equalsIgnoreEncodings(uri, toUri(path));
+            }
         }
     }
 
-    private Path resolveTargetPath()
+    private Path resolveCanonicalPath()
     {
-        Path normalized = path.normalize();
         try
         {
-            return normalized.toRealPath();
+            return path.normalize().toRealPath();
         }
         catch (IOException e)
         {
@@ -309,7 +295,7 @@ public class PathResource extends Resource
             LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
         }
 
-        return normalized;
+        return null;
     }
 
     @Override
@@ -344,6 +330,25 @@ public class PathResource extends Resource
             return URI.create(rawUri + '/');
         }
         return pathUri;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PathResource other = (PathResource)obj;
+        return Objects.equals(path, other.path) && Objects.equals(uri, other.uri);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(path, uri);
     }
 
     @Override
