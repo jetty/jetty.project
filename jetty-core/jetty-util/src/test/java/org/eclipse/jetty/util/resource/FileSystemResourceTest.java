@@ -1112,7 +1112,7 @@ public class FileSystemResourceTest
 
             Resource r = base.resolve("aa%5C/foo.txt");
 
-            if (OS.WINDOWS.isCurrentOs())
+            if (WINDOWS.isCurrentOs())
             {
                 assertThat("getURI()", r.getPath().toString(), containsString("aa\\/foo.txt"));
                 assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));

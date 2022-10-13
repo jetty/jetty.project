@@ -30,8 +30,6 @@ import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,7 +196,6 @@ public class JettyForkedChild extends ContainerLifeCycle
         //touch file to signify start of jetty
         Path tokenPath = tokenFile.toPath();
         Files.createFile(tokenPath);
-        Resource r = ResourceFactory.of(this).newResource(tokenPath);
 
         //Start a watcher on a file that will change if the
         //webapp is regenerated; stop the webapp, apply the

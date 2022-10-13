@@ -51,7 +51,7 @@ public interface ResourceFactory
     default Resource newSystemResource(String resource)
     {
         if (StringUtil.isBlank(resource))
-            return null;
+            throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
         URL url = null;
         // Try to format as a URL?
@@ -115,7 +115,7 @@ public interface ResourceFactory
     default Resource newClassPathResource(String resource)
     {
         if (StringUtil.isBlank(resource))
-            return null;
+            throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
         URL url = ResourceFactory.class.getResource(resource);
 
@@ -143,7 +143,7 @@ public interface ResourceFactory
     default Resource newMemoryResource(URL url)
     {
         if (url == null)
-            return null;
+            throw new IllegalArgumentException("URL is null");
 
         return new MemoryResource(url);
     }
@@ -157,7 +157,7 @@ public interface ResourceFactory
     default Resource newResource(String resource)
     {
         if (StringUtil.isBlank(resource))
-            return null;
+            throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
         return newResource(URIUtil.toURI(resource));
     }
@@ -171,7 +171,7 @@ public interface ResourceFactory
     default Resource newResource(Path path)
     {
         if (path == null)
-            return null;
+            throw new IllegalArgumentException("Path is null");
 
         return newResource(path.toUri());
     }
@@ -185,7 +185,7 @@ public interface ResourceFactory
     default ResourceCollection newResource(List<URI> uris)
     {
         if ((uris == null) || (uris.isEmpty()))
-            return null;
+            throw new IllegalArgumentException("List of URIs is invalid");
 
         return Resource.combine(uris.stream().map(this::newResource).toList());
     }
@@ -193,7 +193,7 @@ public interface ResourceFactory
     default Resource newResource(URL url)
     {
         if (url == null)
-            return null;
+            throw new IllegalArgumentException("URL is null");
 
         try
         {

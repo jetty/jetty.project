@@ -339,11 +339,9 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     public void setMonitoredResources(List<Resource> resources)
     {
         _monitored.clear();
-        for (Resource resource: resources)
-        {
-            if (resource != null)
-                _monitored.addAll(resources);
-        }
+        if (resources == null)
+            return;
+        resources.stream().filter(Objects::nonNull).forEach(_monitored::add);
     }
 
     public List<Resource> getMonitoredResources()

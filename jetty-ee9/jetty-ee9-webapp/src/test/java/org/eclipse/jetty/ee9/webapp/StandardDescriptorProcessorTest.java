@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
@@ -52,12 +51,12 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testVisitSessionConfig(WorkDir workDir) throws Exception
     {
-        File webXml = MavenTestingUtils.getTargetFile("test-classes/web-session-config.xml");
+        Path webXml = MavenPaths.findTestResourceFile("web-session-config.xml");
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
         Path docroot = workDir.getEmptyPathDir();
         wac.setBaseResource(docroot);
-        wac.setDescriptor(webXml.toURI().toURL().toString());
+        wac.setDescriptor(webXml.toUri().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));
         

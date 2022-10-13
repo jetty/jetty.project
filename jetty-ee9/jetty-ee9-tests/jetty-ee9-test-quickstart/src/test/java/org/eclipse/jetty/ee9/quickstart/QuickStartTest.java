@@ -26,6 +26,7 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
@@ -168,7 +169,7 @@ public class QuickStartTest
         //Generate the quickstart
         PreconfigureJNDIWar.main(new String[]{});
 
-        Path workDir = MavenTestingUtils.getTargetTestingPath(PreconfigureJNDIWar.class.getSimpleName());
+        Path workDir = MavenPaths.targetTestDir(PreconfigureJNDIWar.class.getSimpleName());
         Path targetDir = workDir.resolve("test-jndi-preconfigured");
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
@@ -209,7 +210,6 @@ public class QuickStartTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         assertEquals(200, connection.getResponseCode());
         String content = IO.toString((InputStream)connection.getContent());
-        assertEquals(200, connection.getResponseCode());
         assertThat(content, Matchers.containsString("JNDI Demo WebApp"));
 
         server.stop();
