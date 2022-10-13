@@ -93,6 +93,11 @@ public class DefaultServlet extends HttpServlet
 
     private boolean _isPathInfoOnly = false;
 
+    public ResourceService getResourceService()
+    {
+        return _resourceService;
+    }
+
     @Override
     public void init() throws ServletException
     {
@@ -118,8 +123,7 @@ public class DefaultServlet extends HttpServlet
 
         // TODO: should this come from context?
         MimeTypes mimeTypes = new MimeTypes();
-        // TODO: this is configured further down below - see _resourceService.setPrecompressedFormats
-        List<CompressedContentFormat> precompressedFormats = List.of();
+        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
 
         _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
         ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
@@ -157,7 +161,7 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
-        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
+        _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
         _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
@@ -342,7 +346,7 @@ public class DefaultServlet extends HttpServlet
         boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         try
         {
-            HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getBaseRequest(req));
+            HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getServletContextRequest(req));
             if (content == null || !content.getResource().exists())
             {
                 if (included)
@@ -367,7 +371,7 @@ public class DefaultServlet extends HttpServlet
                 if (coreResponse.isCommitted())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Response already committed for {}", coreRequest._coreRequest.getHttpURI());
+                        LOG.debug("Response already committed for {}", coreRequest._request.getHttpURI());
                     return;
                 }
 
@@ -419,14 +423,14 @@ public class DefaultServlet extends HttpServlet
         // TODO fully implement this class and move it to the top level
         // TODO Some methods are directed to core that probably should be intercepted
 
-        private final HttpServletRequest _request;
-        private final Request _coreRequest;
+        private final HttpServletRequest _servletRequest;
+        private final Request _request;
         private final HttpFields _httpFields;
 
         ServletCoreRequest(HttpServletRequest request)
         {
-            _request = request;
-            _coreRequest = ServletContextRequest.getBaseRequest(request);
+            _servletRequest = request;
+            _request = ServletContextRequest.getServletContextRequest(request);
 
             HttpFields.Mutable fields = HttpFields.build();
 
@@ -453,91 +457,91 @@ public class DefaultServlet extends HttpServlet
         @Override
         public HttpFields getTrailers()
         {
-            return _coreRequest.getTrailers();
+            return _request.getTrailers();
         }
 
         @Override
         public HttpURI getHttpURI()
         {
-            return _coreRequest.getHttpURI();
+            return _request.getHttpURI();
         }
 
         @Override
         public String getPathInContext()
         {
-            return URIUtil.addPaths(_request.getServletPath(), _request.getPathInfo());
+            return URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo());
         }
 
         @Override
         public void demand(Runnable demandCallback)
         {
-            _coreRequest.demand(demandCallback);
+            _request.demand(demandCallback);
         }
 
         @Override
         public void fail(Throwable failure)
         {
-            _coreRequest.fail(failure);
+            _request.fail(failure);
         }
 
         @Override
         public String getId()
         {
-            return _request.getRequestId();
+            return _servletRequest.getRequestId();
         }
 
         @Override
         public Components getComponents()
         {
-            return _coreRequest.getComponents();
+            return _request.getComponents();
         }
 
         @Override
         public ConnectionMetaData getConnectionMetaData()
         {
-            return _coreRequest.getConnectionMetaData();
+            return _request.getConnectionMetaData();
         }
 
         @Override
         public String getMethod()
         {
-            return _request.getMethod();
+            return _servletRequest.getMethod();
         }
 
         @Override
         public Context getContext()
         {
-            return _coreRequest.getContext();
+            return _request.getContext();
         }
 
         @Override
         public long getTimeStamp()
         {
-            return _coreRequest.getTimeStamp();
+            return _request.getTimeStamp();
         }
 
         @Override
         public boolean isSecure()
         {
-            return _request.isSecure();
+            return _servletRequest.isSecure();
         }
 
         @Override
         public Content.Chunk read()
         {
-            return _coreRequest.read();
+            return _request.read();
         }
 
         @Override
         public boolean isPushSupported()
         {
-            return _coreRequest.isPushSupported();
+            return _request.isPushSupported();
         }
 
         @Override
         public void push(MetaData.Request request)
         {
-            _coreRequest.push(request);
+            this._request.push(request);
         }
 
         @Override
@@ -549,7 +553,7 @@ public class DefaultServlet extends HttpServlet
         @Override
         public TunnelSupport getTunnelSupport()
         {
-            return _coreRequest.getTunnelSupport();
+            return _request.getTunnelSupport();
         }
 
         @Override
@@ -560,30 +564,30 @@ public class DefaultServlet extends HttpServlet
         @Override
         public Object removeAttribute(String name)
         {
-            Object value = _request.getAttribute(name);
-            _request.removeAttribute(name);
+            Object value = _servletRequest.getAttribute(name);
+            _servletRequest.removeAttribute(name);
             return value;
         }
 
         @Override
         public Object setAttribute(String name, Object attribute)
         {
-            Object value = _request.getAttribute(name);
-            _request.setAttribute(name, attribute);
+            Object value = _servletRequest.getAttribute(name);
+            _servletRequest.setAttribute(name, attribute);
             return value;
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            return _request.getAttribute(name);
+            return _servletRequest.getAttribute(name);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
             Set<String> set = new HashSet<>();
-            Enumeration<String> e = _request.getAttributeNames();
+            Enumeration<String> e = _servletRequest.getAttributeNames();
             while (e.hasMoreElements())
                 set.add(e.nextElement());
             return set;
@@ -592,9 +596,9 @@ public class DefaultServlet extends HttpServlet
         @Override
         public void clearAttributes()
         {
-            Enumeration<String> e = _request.getAttributeNames();
+            Enumeration<String> e = _servletRequest.getAttributeNames();
             while (e.hasMoreElements())
-                _request.removeAttribute(e.nextElement());
+                _servletRequest.removeAttribute(e.nextElement());
         }
     }
 
@@ -1089,7 +1093,7 @@ public class DefaultServlet extends HttpServlet
         private HttpServletRequest getServletRequest(Request request)
         {
             // TODO, this unwrapping is fragile
-            return ((ServletCoreRequest)request)._request;
+            return ((ServletCoreRequest)request)._servletRequest;
         }
 
         private HttpServletResponse getServletResponse(Response response)

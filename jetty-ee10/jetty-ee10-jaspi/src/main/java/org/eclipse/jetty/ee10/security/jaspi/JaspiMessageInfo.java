@@ -90,7 +90,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         if (!(request instanceof ServletRequest))
             throw new IllegalStateException("Not a ServletRequest");
-        _request = ServletContextRequest.getBaseRequest((ServletRequest)request);
+        _request = ServletContextRequest.getServletContextRequest((ServletRequest)request);
     }
 
     @Override

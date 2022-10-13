@@ -46,7 +46,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1137,7 +1136,7 @@ public class FileSystemResourceTest
             assertThat("Is Not Alias: " + basePath, base, isNotAlias());
 
             Resource r = base.resolve("aa%5C/foo.txt");
-            if (org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
+            if (WINDOWS.isCurrentOs())
             {
                 assertThat("getURI()", r.getPath().toString(), containsString("aa\\foo.txt"));
                 assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
@@ -1185,7 +1184,7 @@ public class FileSystemResourceTest
             Resource r = base.resolve("aa./foo.txt");
             assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa./foo.txt"));
 
-            if (OS.WINDOWS.isCurrentOs())
+            if (WINDOWS.isCurrentOs())
             {
                 assertThat("isAlias()", r.isAlias(), is(true));
                 assertThat("getTargetURI()", r.getCanonicalURI(), notNullValue());

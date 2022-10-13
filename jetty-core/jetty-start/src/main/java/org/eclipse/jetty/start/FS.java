@@ -208,7 +208,14 @@ public class FS
                     continue;
                 }
 
-                Path destFile = destination.resolve(entry.getName());
+                String entryName = entry.getName();
+                Path destFile = destination.resolve(entryName).normalize().toAbsolutePath();
+                // make sure extracted path does not escape the destination directory
+                if (!destFile.startsWith(destination))
+                {
+                    throw new IOException(String.format("Malicious Archive %s found with bad entry \"%s\"",
+                        archive, entryName));
+                }
                 if (!Files.exists(destFile))
                 {
                     FS.ensureDirectoryExists(destFile.getParent());

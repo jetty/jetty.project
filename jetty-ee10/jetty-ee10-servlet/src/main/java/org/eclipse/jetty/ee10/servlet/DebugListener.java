@@ -224,8 +224,8 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             String cname = findContextName(ace.getServletContext());
             String rname = findRequestName(ace.getAsyncContext().getRequest());
 
-            ServletContextRequest br = ServletContextRequest.getBaseRequest(ace.getAsyncContext().getRequest());
-            Response response = br.getResponse();
+            ServletContextRequest request = ServletContextRequest.getServletContextRequest(ace.getAsyncContext().getRequest());
+            Response response = request.getResponse();
             String headers = _showHeaders ? ("\n" + response.getHeaders().toString()) : "";
 
             log("!  ctx=%s r=%s onComplete %s %d%s", cname, rname, ace.getServletRequestState(), response.getStatus(), headers);
@@ -244,10 +244,8 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             DispatcherType d = r.getDispatcherType();
             if (d == DispatcherType.REQUEST)
             {
-                ServletContextRequest br = ServletContextRequest.getBaseRequest(r);
-
-                String headers = _showHeaders ? ("\n" + br.getHeaders().toString()) : "";
-
+                ServletContextRequest request = ServletContextRequest.getServletContextRequest(r);
+                String headers = _showHeaders ? ("\n" + request.getHeaders().toString()) : "";
                 StringBuffer url = r.getRequestURL();
                 if (r.getQueryString() != null)
                     url.append('?').append(r.getQueryString());
@@ -258,11 +256,13 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                     r.getMethod(),
                     url.toString(),
                     r.getProtocol(),
-                    br.getConnectionMetaData(),
+                    request.getConnectionMetaData(),
                     headers);
             }
             else
+            {
                 log(">> %s ctx=%s r=%s", d, cname, rname);
+            }
         }
 
         @Override
@@ -279,9 +279,9 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             }
             else
             {
-                ServletContextRequest br = ServletContextRequest.getBaseRequest(r);
-                String headers = _showHeaders ? ("\n" + br.getResponse().getHeaders().toString()) : "";
-                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, ServletContextRequest.getBaseRequest(r).getResponse().getStatus(), headers);
+                ServletContextRequest request = ServletContextRequest.getServletContextRequest(r);
+                String headers = _showHeaders ? ("\n" + request.getResponse().getHeaders().toString()) : "";
+                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, request.getResponse().getStatus(), headers);
             }
         }
     };

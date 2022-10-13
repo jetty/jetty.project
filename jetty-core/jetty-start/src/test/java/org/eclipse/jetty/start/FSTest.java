@@ -14,12 +14,18 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FSTest
@@ -43,6 +49,17 @@ public class FSTest
     {
         File pom = MavenTestingUtils.getProjectFile("pom.xml");
         assertTrue(FS.canReadFile(pom.toPath()), "Can read file: " + pom);
+    }
+
+    @Test
+    public void testExtractEscaperZip(WorkDir workDir) throws IOException
+    {
+        Path archive = MavenPaths.findTestResourceFile("bad-libs/escaper.zip");
+        Path dest = workDir.getEmptyPathDir();
+        Path bad = Path.of("/tmp/evil.txt");
+        Files.deleteIfExists(bad);
+        assertThrows(IOException.class, () -> FS.extractZip(archive, dest));
+        assertFalse(Files.exists(bad), "The escaper prevention didn't work, you should not have a /tmp/evil.txt file, but you do.");
     }
 
     /**

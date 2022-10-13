@@ -34,6 +34,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -71,8 +72,9 @@ public class Dispatcher implements RequestDispatcher
         _named = null;
 
         _servletHandler = _contextHandler.getServletHandler();
-        _mappedServlet = _servletHandler.getMappedServlet(pathInContext);
-        _servletPathMapping = _mappedServlet.getServletPathMapping(_pathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(pathInContext);
+        _mappedServlet = matchedServlet.getResource();
+        _servletPathMapping = _mappedServlet.getServletPathMapping(_pathInContext, matchedServlet.getMatchedPath());
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
@@ -101,12 +103,12 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        ServletContextRequest baseRequest = Objects.requireNonNull(ServletContextRequest.getBaseRequest(request));
-        baseRequest.getResponse().resetForForward();
+        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+        servletContextRequest.getResponse().resetForForward();
         _mappedServlet.handle(_servletHandler, _pathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
-        if (!baseRequest.getState().isAsync() && !baseRequest.getHttpOutput().isClosed())
+        if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getHttpOutput().isClosed())
         {
             try
             {
@@ -148,24 +150,20 @@ public class Dispatcher implements RequestDispatcher
     {
         private final MultiMap<String> _params = new MultiMap<>();
         private boolean decodedParams = false;
-        private final HttpServletRequest _httpServletRequest;
-        private final ServletContextRequest _baseRequest;
+        private final ServletContextRequest _request;
 
         public ParameterRequestWrapper(HttpServletRequest request)
         {
             super(request);
-            _httpServletRequest = request;
 
             // Have to assume ENCODING because we can't know otherwise.
             String targetQuery = (_uri == null) ? null : _uri.getQuery();
             if (targetQuery != null)
                 UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
 
-            _baseRequest = ServletContextRequest.getBaseRequest(_httpServletRequest);
-            if (_baseRequest == null)
-                throw new IllegalStateException();
+            _request = ServletContextRequest.getServletContextRequest(request);
 
-            Fields queryParams = _baseRequest.getServletApiRequest().getQueryParams();
+            Fields queryParams = _request.getServletApiRequest().getQueryParams();
             for (Fields.Field field : queryParams)
             {
                 _params.addValues(field.getName(), field.getValues());
@@ -178,7 +176,7 @@ public class Dispatcher implements RequestDispatcher
                 return _params;
             decodedParams = true;
 
-            Fields contentParams = _baseRequest.getServletApiRequest().getContentParams();
+            Fields contentParams = _request.getServletApiRequest().getContentParams();
             for (Fields.Field field : contentParams)
             {
                 _params.addValues(field.getName(), field.getValues());
@@ -338,11 +336,11 @@ public class Dispatcher implements RequestDispatcher
             switch (name)
             {
                 case RequestDispatcher.INCLUDE_MAPPING:
-                    return _mappedServlet.getServletPathMapping(_pathInContext);
+                    return _servletPathMapping;
                 case RequestDispatcher.INCLUDE_SERVLET_PATH:
-                    return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+                    return _servletPathMapping.getServletPath();
                 case RequestDispatcher.INCLUDE_PATH_INFO:
-                    return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+                    return _servletPathMapping.getPathInfo();
                 case RequestDispatcher.INCLUDE_REQUEST_URI:
                     return (_uri == null) ? null : _uri.getPath();
                 case RequestDispatcher.INCLUDE_CONTEXT_PATH:
@@ -595,13 +593,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+            return _servletPathMapping.getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+            return _servletPathMapping.getServletPath();
         }
 
         @Override

@@ -224,7 +224,7 @@ public interface Stream
 
     /**
      * <p>Demands more {@code DATA} frames for this stream.</p>
-     * Calling this method causes {@link Listener#onDataAvailable(Stream)}
+     * <p>Calling this method causes {@link Listener#onDataAvailable(Stream)}
      * to be invoked, possibly at a later time, when the stream has data
      * to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an

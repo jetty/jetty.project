@@ -1212,7 +1212,6 @@ public class ResourceHandlerTest
     public void testCachingMaxCacheSizeRespected() throws Exception
     {
         copySimpleTestResource(docRoot);
-        // TODO explicitly turn on caching
         long expectedSize = Files.size(docRoot.resolve("simple.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
         contentFactory.setMaxCacheSize((int)expectedSize);
@@ -1363,6 +1362,7 @@ public class ResourceHandlerTest
     public void testCachingPrecompressedFilesCached() throws Exception
     {
         setupBigFiles(docRoot);
+
         long expectedSize = Files.size(docRoot.resolve("big.txt")) +
             Files.size(docRoot.resolve("big.txt.gz"));
 

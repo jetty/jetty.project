@@ -74,7 +74,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                 MetaData metaData = _context.getMetaData();
                 if (metaData.getOrigin(clazz.getName() + ".listener") == Origin.NotSet)
                 {
-                    ListenerHolder h = _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz.getName()));
+                    ListenerHolder h = _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz));
                     h.setHeldClass(clazz);
                     _context.getServletHandler().addListener(h);
                     metaData.setOrigin(clazz.getName() + ".listener", clazz.getAnnotation(WebListener.class), clazz);

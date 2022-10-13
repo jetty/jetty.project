@@ -20,6 +20,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -518,7 +519,7 @@ public abstract class ProxyHandler extends Handler.Processor
 
         public Reverse(Function<Request, HttpURI> httpURIRewriter)
         {
-            this.httpURIRewriter = httpURIRewriter;
+            this.httpURIRewriter = Objects.requireNonNull(httpURIRewriter);
         }
 
         public Function<Request, HttpURI> getHttpURIRewriter()

@@ -32,8 +32,8 @@
         }
         function send(user, message, handler, join)
         {
-            if (message) message = message.replace('%', '%25').replace('&', '%26').replace('=', '%3D');
-            if (user) user = user.replace('%', '%25').replace('&', '%26').replace('=', '%3D');
+            if (message) message = message.replaceAll('%', '%25').replaceAll('&', '%26').replaceAll('=', '%3D');
+            if (user) user = user.replaceAll('%', '%25').replaceAll('&', '%26').replaceAll('=', '%3D');
             var requestBody = 'user=' + user + (message ? '&message=' + message : '') + (join ? '&join=true' : '');
             xhr('POST', 'chat', requestBody , handler);
         }

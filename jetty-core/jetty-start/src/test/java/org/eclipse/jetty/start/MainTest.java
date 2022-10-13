@@ -17,9 +17,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,6 +92,54 @@ public class MainTest
             .findFirst().orElseThrow();
         assertThat("A source of 'null' is pointless", userDirLine, not(containsString("(null)")));
         assertThat("user.dir should indicate that it was specified on the command line", userDirLine, containsString("(<command-line>)"));
+    }
+
+    @Test
+    public void testUnknownDistroCommand() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
+        Path testJettyBase = MavenTestingUtils.getTargetTestingPath("base-example-unknown");
+        FS.ensureDirectoryExists(testJettyBase);
+        Path zedIni = testJettyBase.resolve("start.d/zed.ini");
+        FS.ensureDirectoryExists(zedIni.getParent());
+        Files.writeString(zedIni, "--zed-0-zed");
+        cmdLineArgs.add("jetty.home=" + testJettyHome);
+        cmdLineArgs.add("jetty.base=" + testJettyBase);
+        cmdLineArgs.add("main.class=" + PropertyDump.class.getName());
+        cmdLineArgs.add("--module=base");
+        cmdLineArgs.add("--foople");
+        cmdLineArgs.add("-Dzed.key=0.value");
+
+        List<String> output;
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             PrintStream out = new PrintStream(baos, true, StandardCharsets.UTF_8))
+        {
+            PrintStream originalStream = StartLog.setStream(new PrintStream(out));
+            try
+            {
+                Main main = new Main();
+                StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
+                main.start(args);
+                out.flush();
+                output = List.of(baos.toString(StandardCharsets.UTF_8).split(System.lineSeparator()));
+            }
+            finally
+            {
+                StartLog.setStream(originalStream);
+            }
+        }
+
+        // Test a System Property that comes from JVM
+        List<String> warnings = output.stream().filter((line) -> line.startsWith("WARN")).collect(Collectors.toList());
+        // warnings.forEach(System.out::println);
+        Iterator<String> warningIter = warnings.iterator();
+
+        assertThat("Announcement", warningIter.next(), containsString("Unknown Arguments detected."));
+        assertThat("System Prop on command line detail", warningIter.next(), containsString("Argument: -Dzed.key=0.value (interpreted as a System property, from <command-line>"));
+        assertThat("JVM Arg in ini detail", warningIter.next(), containsString("Argument: --zed-0-zed (interpreted as a JVM argument, from " + zedIni));
+        assertThat("JVM Arg on command line detail", warningIter.next(), containsString("Argument: --foople (interpreted as a JVM argument, from <command-line>"));
     }
 
     @Test

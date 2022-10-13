@@ -29,6 +29,7 @@ import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRe
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -181,9 +182,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        ServletContextRequest request = ServletContextRequest.getBaseRequest(req);
-        if (request == null)
-            throw new IllegalStateException("Base Request not available");
+        ServletContextRequest request = ServletContextRequest.getServletContextRequest(req);
         ServletContextResponse response = request.getResponse();
 
         // Do preliminary check before proceeding to attempt an upgrade.
@@ -295,17 +294,27 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Object createWebSocket(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
+        public Object createWebSocket(ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback)
         {
+            DelegatedServerUpgradeRequest request = new DelegatedServerUpgradeRequest(upgradeRequest);
+            DelegatedServerUpgradeResponse response = new DelegatedServerUpgradeResponse(upgradeResponse);
             try
             {
-                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(request), new DelegatedServerUpgradeResponse(response));
+                Object webSocket = creator.createWebSocket(request, response);
                 callback.succeeded();
                 return webSocket;
             }
             catch (Throwable t)
             {
-                callback.failed(t);
+                try
+                {
+                    response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, "Could not create WebSocket endpoint");
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
                 return null;
             }
         }
