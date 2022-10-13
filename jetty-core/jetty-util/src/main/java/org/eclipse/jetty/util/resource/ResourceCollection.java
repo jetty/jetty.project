@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -165,18 +162,6 @@ public class ResourceCollection extends Resource
 
     @Override
     public Path getPath()
-    {
-        return null;
-    }
-
-    @Override
-    public InputStream newInputStream() throws IOException
-    {
-        throw new FileNotFoundException("Unsupported operation");
-    }
-
-    @Override
-    public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         return null;
     }
