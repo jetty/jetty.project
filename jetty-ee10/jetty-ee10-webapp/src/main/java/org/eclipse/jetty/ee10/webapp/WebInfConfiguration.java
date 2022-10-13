@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,12 +67,12 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             // Look for classes directory
             Resource classes = webInf.resolve("classes/");
-            if (classes != null && classes.isDirectory())
+            if (Resources.isDirectory(classes))
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
             Resource lib = webInf.resolve("lib/");
-            if (lib != null && lib.isDirectory())
+            if (Resources.isDirectory(lib))
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
     }
@@ -421,39 +422,41 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             Resource webInf = webApp.resolve("WEB-INF/");
 
-            File extractedWebInfDir = new File(context.getTempDirectory(), "webinf");
-            if (extractedWebInfDir.exists())
-                IO.delete(extractedWebInfDir);
-            extractedWebInfDir.mkdir();
-            Resource webInfLib = webInf.resolve("lib/");
-            File webInfDir = new File(extractedWebInfDir, "WEB-INF");
-            webInfDir.mkdir();
-
-            if (webInfLib != null)
+            if (Resources.isDirectory(webInf))
             {
-                File webInfLibDir = new File(webInfDir, "lib");
-                if (webInfLibDir.exists())
-                    IO.delete(webInfLibDir);
-                webInfLibDir.mkdir();
+                File extractedWebInfDir = new File(context.getTempDirectory(), "webinf");
+                if (extractedWebInfDir.exists())
+                    IO.delete(extractedWebInfDir);
+                extractedWebInfDir.mkdir();
+                Resource webInfLib = webInf.resolve("lib/");
+                File webInfDir = new File(extractedWebInfDir, "WEB-INF");
+                webInfDir.mkdir();
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
-                webInfLib.copyTo(webInfLibDir.toPath());
+                if (Resources.isDirectory(webInfLib))
+                {
+                    File webInfLibDir = new File(webInfDir, "lib");
+                    if (webInfLibDir.exists())
+                        IO.delete(webInfLibDir);
+                    webInfLibDir.mkdir();
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
+                    webInfLib.copyTo(webInfLibDir.toPath());
+                }
+
+                Resource webInfClasses = webInf.resolve("classes/");
+                if (Resources.isDirectory(webInfClasses))
+                {
+                    File webInfClassesDir = new File(webInfDir, "classes");
+                    if (webInfClassesDir.exists())
+                        IO.delete(webInfClassesDir);
+                    webInfClassesDir.mkdir();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Copying WEB-INF/classes from {} to {}", webInfClasses, webInfClassesDir.getAbsolutePath());
+                    webInfClasses.copyTo(webInfClassesDir.toPath());
+                }
+                webInf = context.getResourceFactory().newResource(extractedWebInfDir.getCanonicalPath());
             }
-
-            Resource webInfClasses = webInf.resolve("classes/");
-            if (webInfClasses != null)
-            {
-                File webInfClassesDir = new File(webInfDir, "classes");
-                if (webInfClassesDir.exists())
-                    IO.delete(webInfClassesDir);
-                webInfClassesDir.mkdir();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Copying WEB-INF/classes from {} to {}", webInfClasses, webInfClassesDir.getAbsolutePath());
-                webInfClasses.copyTo(webInfClassesDir.toPath());
-            }
-
-            webInf = context.getResourceFactory().newResource(extractedWebInfDir.getCanonicalPath());
 
             Resource rc = ResourceFactory.combine(webInf, webApp);
 

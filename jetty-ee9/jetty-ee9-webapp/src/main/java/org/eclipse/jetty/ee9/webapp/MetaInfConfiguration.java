@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.ResourceUriPatternPredicate;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -419,7 +420,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
 
-            if ((resourcesDir != null) && (cache != null))
+            if (Resources.isDirectory(resourcesDir) && (cache != null))
             {
                 Resource old = cache.putIfAbsent(target, resourcesDir);
                 if (old != null)
@@ -698,18 +699,20 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return List.of();
 
         Resource webInf = context.getWebInf();
-        if (webInf == null || !webInf.exists() || !webInf.isDirectory())
-            return List.of();
+        if (Resources.isDirectory(webInf))
+        {
+            Resource webInfLib = webInf.resolve("lib");
 
-        Resource webInfLib = webInf.resolve("lib");
+            if (Resources.isDirectory(webInfLib))
+            {
+                return webInfLib.list().stream()
+                    .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
+                    .sorted(ResourceCollators.byName(true))
+                    .collect(Collectors.toList());
+            }
+        }
 
-        if (webInfLib == null || !webInfLib.isDirectory())
-            return List.of();
-
-        return webInfLib.list().stream()
-            .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
-            .sorted(ResourceCollators.byName(true))
-            .collect(Collectors.toList());
+        return List.of();
     }
 
     /**
@@ -748,10 +751,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
 
         // Find WEB-INF/classes
-        if (webInf != null && webInf.isDirectory())
+        if (Resources.isDirectory(webInf))
         {
             // Look for classes directory
-            return webInf.resolve("classes/");
+            Resource classesDir = webInf.resolve("classes/");
+            if (Resources.isDirectory(classesDir))
+                return classesDir;
         }
         return null;
     }

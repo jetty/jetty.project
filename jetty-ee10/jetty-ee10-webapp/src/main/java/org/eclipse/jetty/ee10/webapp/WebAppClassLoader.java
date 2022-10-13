@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -223,38 +224,20 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
-     * @param resource Comma or semicolon separated path of filenames or URLs
-     * pointing to directories or jar files. Directories should end
-     * with '/'.
+     * @param resources The resources to add to the classpath
      * @throws IOException if unable to add classpath from resource
      */
-    public void addClassPath(Resource resource)
+    public void addClassPath(Resource resources)
         throws IOException
     {
-        if (resource instanceof ResourceCollection)
+        for (Resource resource: resources)
         {
-            for (Resource r : ((ResourceCollection)resource).getResources())
-            {
-                addClassPath(r);
-            }
-        }
-        else
-        {
-            // Resolve file path if possible
-            Path path = resource.getPath();
-            if (path != null)
-            {
-                URL url = resource.getURI().toURL();
-                addURL(url);
-            }
-            else if (resource.isDirectory())
-            {
+            if (Resources.exists(resource))
                 addURL(resource.getURI().toURL());
-            }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Check file exists and is not nested jar: {}", resource);
+                    LOG.debug("Check resource exists and is not a nested jar: {}", resource);
                 throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
             }
         }
@@ -273,11 +256,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             return;
 
         List<URI> uris = URIUtil.split(classPath);
-        ResourceCollection rc = _resourceFactory.newResource(uris);
-        for (Resource resource : rc.getResources())
-        {
-            addClassPath(resource);
-        }
+        addClassPath(_resourceFactory.newResource(uris));
     }
 
     /**
@@ -298,41 +277,44 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * Add elements to the class path for the context from the jar and zip files found
      * in the specified resource.
      *
-     * @param lib the resource that contains the jar and/or zip files.
+     * @param libs the directory resource that contains the jar and/or zip files.
      */
-    public void addJars(Resource lib)
+    public void addJars(Resource libs)
     {
-        if (lib == null || !lib.isDirectory())
+        if (!Resources.isDirectory(libs))
             return;
 
-        Path dir = lib.getPath();
-
-        try (Stream<Path> streamEntries = Files.list(dir))
+        for (Resource libDir: libs)
         {
-            List<Path> jars = streamEntries
-                .filter(Files::isRegularFile)
-                .filter(this::isFileSupported)
-                .sorted(Comparator.naturalOrder())
-                .toList();
+            Path dir = libDir.getPath();
 
-            for (Path jar: jars)
+            try (Stream<Path> streamEntries = Files.list(dir))
             {
-                try
+                List<Path> jars = streamEntries
+                    .filter(Files::isRegularFile)
+                    .filter(this::isFileSupported)
+                    .sorted(Comparator.naturalOrder())
+                    .toList();
+
+                for (Path jar : jars)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("addJar - {}", jar);
-                    URI jarUri = URIUtil.toJarFileUri(jar.toUri());
-                    addClassPath(jarUri.toASCIIString());
-                }
-                catch (Exception ex)
-                {
-                    LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
+                    try
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("addJar - {}", jar);
+                        URI jarUri = URIUtil.toJarFileUri(jar.toUri());
+                        addClassPath(jarUri.toASCIIString());
+                    }
+                    catch (Exception ex)
+                    {
+                        LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
+                    }
                 }
             }
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
+            catch (IOException e)
+            {
+                LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
+            }
         }
     }
 

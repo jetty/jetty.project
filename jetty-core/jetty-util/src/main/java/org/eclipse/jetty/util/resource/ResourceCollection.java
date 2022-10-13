@@ -258,6 +258,13 @@ public class ResourceCollection extends Resource
     }
 
     @Override
+    public boolean isReadable()
+    {
+        // always a directory, never readable
+        return false;
+    }
+
+    @Override
     public Instant lastModified()
     {
         Instant instant = null;

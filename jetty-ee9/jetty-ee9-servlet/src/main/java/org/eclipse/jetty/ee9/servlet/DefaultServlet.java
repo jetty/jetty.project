@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -457,7 +458,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if (_baseResource != null)
             {
                 r = _baseResource.resolve(subUriPath);
-                if (r != null && !_contextHandler.checkAlias(subUriPath, r))
+                if (Resources.isReadable(r) && !_contextHandler.checkAlias(subUriPath, r))
                     r = null;
             }
             else if (_servletContext instanceof ContextHandler.APIContext)
@@ -477,7 +478,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             LOG.trace("IGNORED", e);
         }
 
-        if ((r == null || !r.exists()) && subUriPath.endsWith("/jetty-dir.css"))
+        if (Resources.missing(r) && subUriPath.endsWith("/jetty-dir.css"))
             r = _stylesheet;
 
         return r;

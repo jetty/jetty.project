@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -140,69 +139,43 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Equivalent to {@link Files#isDirectory(Path, LinkOption...)} with the following parameter:
-     * {@link #getPath()}.
+     * Return true if resource represents a directory of potential resources.
      *
      * @return true if the represented resource is a container/directory.
      */
-    public boolean isDirectory()
-    {
-        return Files.isDirectory(getPath(), FOLLOW_LINKS);
-    }
+    public abstract boolean isDirectory();
+
+    /**
+     * True if the resource is readable.
+     *
+     * @return true if the represented resource exists, and is notcontainer/directory.
+     */
+    public abstract boolean isReadable();
 
     /**
      * The time the resource was last modified.
-     *
-     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
-     * {@link #getPath()} then returning {@link FileTime#toInstant()}.
      *
      * @return the last modified time instant, or {@link Instant#EPOCH} if unable to obtain last modified.
      */
     public Instant lastModified()
     {
-        Path path = getPath();
-        if (path == null)
-            return Instant.EPOCH;
-
-        if (!Files.exists(path))
-            return Instant.EPOCH;
-
-        try
-        {
-            FileTime ft = Files.getLastModifiedTime(path, FOLLOW_LINKS);
-            return ft.toInstant();
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return Instant.EPOCH;
-        }
+        return Instant.EPOCH;
     }
 
     /**
      * Length of the resource.
-     * Equivalent to {@link Files#size(Path)} with the following parameter:
-     * {@link #getPath()}.
      *
-     * @return the length of the resource or 0 if {@link Files#size(Path)} throws {@link IOException}.
+     * @return the length of the resource in bytes, or -1L if unable to provide a size (such as a directory resource).
      */
     public long length()
     {
-        try
-        {
-            return Files.size(getPath());
-        }
-        catch (IOException e)
-        {
-            // in case of error, use File.length logic of 0L
-            return 0L;
-        }
+        return -1L;
     }
 
     /**
      * URI representing the resource.
      *
-     * @return an URI representing the given resource
+     * @return a URI representing the given resource
      */
     public abstract URI getURI();
 

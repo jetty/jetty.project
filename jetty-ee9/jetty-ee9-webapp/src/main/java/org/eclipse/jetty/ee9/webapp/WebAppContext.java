@@ -65,6 +65,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -817,10 +818,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Can return from WEB-INF/lib/foo.jar!/WEB-INF
         // Can also never return from a META-INF/versions/#/WEB-INF location
         Resource webInf = super.getBaseResource().resolve("WEB-INF/");
-        if (webInf == null || !webInf.isDirectory())
-            return null;
+        if (Resources.isDirectory(webInf))
+            return webInf;
 
-        return webInf;
+        return null;
     }
 
     /**

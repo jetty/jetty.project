@@ -89,6 +89,7 @@ import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1401,7 +1402,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public boolean checkAlias(String path, Resource resource)
     {
         // Is the resource aliased?
-        if (resource != null && resource.isAlias())
+        if (Resources.isReadable(resource) && resource.isAlias())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Alias resource {} for {}", resource, resource.getTargetURI());

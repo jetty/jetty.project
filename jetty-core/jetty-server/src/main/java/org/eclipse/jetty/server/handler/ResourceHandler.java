@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 
 /**
  * Resource Handler.
@@ -93,7 +94,7 @@ public class ResourceHandler extends Handler.Wrapper
             {
                 String welcomeInContext = URIUtil.addPaths(request.getPathInContext(), welcome);
                 Resource welcomePath = _resourceBase.resolve(request.getPathInContext()).resolve(welcome);
-                if (welcomePath != null && welcomePath.exists())
+                if (Resources.isReadable(welcomePath))
                     return welcomeInContext;
             }
             // not found
