@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * HttpContent.ContentFactory implementation that wraps any other HttpContent.ContentFactory instance
@@ -205,53 +204,44 @@ public class CachingContentFactory implements HttpContent.Factory
     private static class CachingHttpContent extends HttpContentWrapper
     {
         private final ByteBuffer _buffer;
-        private final Instant _lastModifiedValue;
         private final String _cacheKey;
         private final HttpField _etagField;
         private final long _contentLengthValue;
         private final AtomicLong _lastAccessed = new AtomicLong();
         private final Set<CompressedContentFormat> _compressedFormats;
+        private final String _lastModifiedValue;
+
+        private final String _characterEncoding;
+        private final MimeTypes.Type _mimeType;
+        private final HttpField _contentLength;
+        private final Instant _lastModifiedInstant;
+        private final HttpField _lastModified;
 
         private CachingHttpContent(String key, HttpContent httpContent)
         {
-            this(key, httpContent, httpContent.getETagValue());
-        }
-
-        private CachingHttpContent(String key, HttpContent httpContent, String etagValue)
-        {
             super(httpContent);
-
-            Resource resource = getResource();
-            if (resource == null)
-                throw new IllegalArgumentException("Null Resource");
-            if (!resource.exists())
-                throw new IllegalArgumentException("Resource doesn't exist: " + resource);
-            if (resource.isDirectory())
-                throw new IllegalArgumentException("Directory Resources not supported: " + resource);
-            if (resource.getPath() == null) // only required because we need the Path to access the mapped ByteBuffer or SeekableByteChannel.
-                throw new IllegalArgumentException("Resource not backed by Path not supported: " + resource);
-
-            // Resources with negative length cannot be cached.
-            // But allow resources with zero length.
-            long resourceSize = resource.length();
-            if (resourceSize < 0)
-                throw new IllegalArgumentException("Resource with negative size: " + resource);
 
             // TODO: do all the following lazily and asynchronously.
             HttpField etagField = httpContent.getETag();
-            if (StringUtil.isNotBlank(etagValue))
+            String eTagValue = httpContent.getETagValue();
+            if (StringUtil.isNotBlank(eTagValue))
             {
-                etagField = new PreEncodedHttpField(HttpHeader.ETAG, etagValue);
+                etagField = new PreEncodedHttpField(HttpHeader.ETAG, eTagValue);
             }
             _etagField = etagField;
-            _contentLengthValue = resourceSize;
 
             // Map the content into memory if possible.
             _buffer = httpContent.getBuffer();
             _cacheKey = key;
-            _lastModifiedValue = resource.lastModified();
-            _lastAccessed.set(NanoTime.now());
+            _contentLengthValue = httpContent.getContentLengthValue();
+            _lastModifiedValue = httpContent.getLastModifiedValue();
+            _characterEncoding = httpContent.getCharacterEncoding();
             _compressedFormats = httpContent.getPreCompressedContentFormats();
+            _mimeType = httpContent.getMimeType();
+            _contentLength = httpContent.getContentLength();
+            _lastModifiedInstant = httpContent.getLastModifiedInstant();
+            _lastModified = httpContent.getLastModified();
+            _lastAccessed.set(NanoTime.now());
         }
 
         @Override
@@ -303,10 +293,43 @@ public class CachingContentFactory implements HttpContent.Factory
         @Override
         public String getETagValue()
         {
-            HttpField etag = getETag();
-            if (etag == null)
-                return null;
-            return etag.getValue();
+            return _etagField == null ? null : _etagField.getValue();
+        }
+
+        @Override
+        public String getCharacterEncoding()
+        {
+            return _characterEncoding;
+        }
+
+        @Override
+        public MimeTypes.Type getMimeType()
+        {
+            return _mimeType;
+        }
+
+        @Override
+        public HttpField getContentLength()
+        {
+            return _contentLength;
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return _lastModifiedInstant;
+        }
+
+        @Override
+        public HttpField getLastModified()
+        {
+            return _lastModified;
+        }
+
+        @Override
+        public String getLastModifiedValue()
+        {
+            return _lastModifiedValue;
         }
     }
 }
