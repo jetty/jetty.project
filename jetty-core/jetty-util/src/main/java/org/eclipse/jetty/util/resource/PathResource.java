@@ -362,13 +362,13 @@ public class PathResource extends Resource
         if (getClass() != obj.getClass())
             return false;
         PathResource other = (PathResource)obj;
-        return Objects.equals(path, other.path) && Objects.equals(uri, other.uri);
+        return Objects.equals(path, other.path);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(path, uri);
+        return Objects.hashCode(path);
     }
 
     @Override

@@ -1158,8 +1158,8 @@ public class FileSystemResourceTest
                 assertThat("getURI()", r.getPath().toString(), containsString("aa\\/foo.txt"));
                 assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
 
-                assertThat("isAlias()", r.isAlias(), is(false));
                 assertThat("Exists: " + r, r.exists(), is(false));
+                assertThat("isAlias()", r.isAlias(), is(true));
             }
         }
         catch (IllegalArgumentException e)
@@ -1200,8 +1200,8 @@ public class FileSystemResourceTest
             }
             else
             {
-                assertThat("isAlias()", r.isAlias(), is(false));
                 assertThat("Exists: " + r, r.exists(), is(false));
+                assertThat("isAlias()", r.isAlias(), is(true));
             }
         }
         catch (IllegalArgumentException e)
