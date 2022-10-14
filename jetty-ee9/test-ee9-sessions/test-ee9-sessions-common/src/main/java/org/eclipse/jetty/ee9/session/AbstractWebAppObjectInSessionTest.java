@@ -74,14 +74,14 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
         w.close();
         File classesDir = new File(webInfDir, "classes");
         classesDir.mkdir();
-        String packageName = WebAppObjectInSessionServlet.class.getPackage().getName();
-        File packageDirs = new File(classesDir, packageName.replace('.', File.separatorChar));
+        String packageName = File.separator + WebAppObjectInSessionServlet.class.getPackage().getName().replace('.', File.separatorChar) + File.separator;
+        File packageDirs = new File(classesDir, packageName);
         packageDirs.mkdirs();
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             String resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + ".class";
-            Resource resource = resourceFactory.newResource(getClass().getResource(resourceName));
+            Resource resource = resourceFactory.newResource(getClass().getResource(packageName + resourceName));
 
             //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
             File targetFile = new File(packageDirs, resourceName);
@@ -89,7 +89,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
             IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
 
             resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
-            resource = resourceFactory.newResource(getClass().getResource(resourceName));
+            resource = resourceFactory.newResource(getClass().getResource(packageName + resourceName));
             //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
             targetFile = new File(packageDirs, resourceName);
             //copy(sourceFile, targetFile);
