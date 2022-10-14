@@ -87,6 +87,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -783,8 +785,16 @@ public class RequestTest
         assertThat(responses, startsWith("HTTP/1.1 200"));
     }
 
-    @Test
-    public void testInvalidHostHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Host: whatever.com:xxxx\r\n",
+        "Host: myhost:testBadPort\r\n",
+        "Host: a b c d\r\n",
+        "Host: hosta, hostb, hostc\r\n",
+        "Host: hosta,hostb,hostc\r\n",
+        "Host: hosta\r\nHost: hostb\r\nHost: hostc\r\n"
+    })
+    public void testInvalidHostHeader(String hostline) throws Exception
     {
         // Use a contextHandler with vhosts to force call to Request.getServerName()
         ContextHandler context = new ContextHandler();
@@ -795,7 +805,7 @@ public class RequestTest
 
         // Request with illegal Host header
         String request = "GET / HTTP/1.1\n" +
-            "Host: whatever.com:xxxx\n" +
+            hostline +
             "Content-Type: text/html;charset=utf8\n" +
             "Connection: close\n" +
             "\n";

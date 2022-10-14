@@ -2040,12 +2040,20 @@ public class HttpParserTest
         assertEquals(8888, _port);
     }
 
-    @Test
-    public void testHostBadPort()
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Host: whatever.com:xxxx\r\n",
+        "Host: myhost:testBadPort\r\n",
+        "Host: a b c d\r\n",
+        "Host: hosta, hostb, hostc\r\n",
+        "Host: hosta,hostb,hostc\r\n",
+        "Host: hosta\r\nHost: hostb\r\nHost: hostc\r\n"
+    })
+    public void testBadHost(String hostline)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.1\r\n" +
-                "Host: myhost:testBadPort\r\n" +
+                hostline +
                 "Connection: close\r\n" +
                 "\r\n");
 
