@@ -54,6 +54,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -1042,7 +1043,7 @@ public class FileSystemResourceTest
 
         fileres = ResourceFactory.root().newResource(refEncoded);
         assertThat("Exists: " + refEncoded, fileres.exists(), is(true));
-        assertThat("Is Not Alias: " + refEncoded, fileres, isNotAlias());
+        assertTrue(fileres.isAlias());
 
         URI refQuoteSpace = dir.toUri().resolve("f%20o's.txt");
 
@@ -1054,7 +1055,7 @@ public class FileSystemResourceTest
 
         fileres = ResourceFactory.root().newResource(refEncodedSpace);
         assertThat("Exists: " + refEncodedSpace, fileres.exists(), is(true));
-        assertThat("Is Not Alias: " + refEncodedSpace, fileres, isNotAlias());
+        assertTrue(fileres.isAlias());
 
         URI refA = dir.toUri().resolve("foo's.txt");
         URI refB = dir.toUri().resolve("foo%27s.txt");
@@ -1065,10 +1066,14 @@ public class FileSystemResourceTest
             "URI[b] = " + refB;
         assertThat(msg, refA.equals(refB), is(false));
 
-        // now show that Resource.equals() does work
+        // These resources are not equal because they have different URIs.
         Resource a = ResourceFactory.root().newResource(refA);
         Resource b = ResourceFactory.root().newResource(refB);
-        assertThat("A.equals(B)", a.equals(b), is(true));
+        assertThat("A.equals(B)", a.equals(b), is(false));
+        assertThat(a.getPath(), equalTo(b.getPath()));
+        assertThat(a.getTargetURI(), equalTo(b.getTargetURI()));
+        assertFalse(a.isAlias());
+        assertTrue(b.isAlias());
     }
 
     @Test

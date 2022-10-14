@@ -295,7 +295,7 @@ public class PathResource extends Resource
                  *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
                  *  child.getTargetURI()          == "file:///C:/temp/aa/foo.txt"
                  */
-                alias = !isSameName(path, targetPath) || !URIUtil.equalsIgnoreEncodings(uri, toUri(path));
+                alias = !isSameName(path, targetPath) || !Objects.equals(uri, toUri(targetPath));
             }
         }
     }
@@ -362,13 +362,13 @@ public class PathResource extends Resource
         if (getClass() != obj.getClass())
             return false;
         PathResource other = (PathResource)obj;
-        return Objects.equals(path, other.path);
+        return Objects.equals(path, other.path) && Objects.equals(uri, other.uri);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hashCode(path);
+        return Objects.hash(path, uri);
     }
 
     @Override
