@@ -51,7 +51,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
             Resource dftResource = context.getResourceFactory().newSystemResource(defaultsDescriptor);
-            if (dftResource == null)
+            if (Resources.missing(dftResource))
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
                 if (defaultsDescriptor.startsWith(pkg))
@@ -60,14 +60,14 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     if (url != null)
                     {
                         URI uri = url.toURI();
-                        _resourceFactory = ResourceFactory.closeable();
-                        dftResource = _resourceFactory.newResource(uri);
+                        dftResource = context.getResourceFactory().newResource(uri);
                     }
                 }
-                if (dftResource == null)
+                if (Resources.missing(dftResource))
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
+            if (Resources.isReadable(dftResource))
+                context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
         //parse, but don't process web.xml
