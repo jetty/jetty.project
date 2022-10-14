@@ -350,7 +350,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     context.setAttribute(TEMPORARY_RESOURCE_BASE, extractedWebAppDir);
                 }
 
-                if (webApp.getPath() != null && webApp.isDirectory())
+                if (Resources.isDirectory(webApp))
                 {
                     // Copy directory
                     if (LOG.isDebugEnabled())
@@ -372,7 +372,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                         {
-                            Resource jarWebApp = resourceFactory.newResource(webApp.getPath());
+                            Resource jarWebApp = resourceFactory.newJarFileResource(webApp.getURI());
                             jarWebApp.copyTo(extractedWebAppDir);
                         }
                         extractionLock.delete();
@@ -390,7 +390,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                             try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                             {
-                                Resource jarWebApp = resourceFactory.newResource(webApp.getPath());
+                                Resource jarWebApp = resourceFactory.newJarFileResource(webApp.getURI());
                                 jarWebApp.copyTo(extractedWebAppDir);
                             }
                             extractionLock.delete();
@@ -405,7 +405,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
 
             // Now do we have something usable?
-            if (!webApp.isDirectory())
+            if (Resources.missing(webApp))
             {
                 LOG.warn("Web application not found {}", war);
                 throw new java.io.FileNotFoundException(war);
