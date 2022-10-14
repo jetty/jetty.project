@@ -1153,6 +1153,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             setBaseResource(newResource(resourceBase));
         }
+        catch (IllegalArgumentException e)
+        {
+            throw e;
+        }
         catch (Exception e)
         {
             if (LOG.isDebugEnabled())
