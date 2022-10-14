@@ -18,11 +18,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -309,10 +309,13 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource originalWarResource = webApp;
 
             // Is the WAR usable directly?
-            if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
+            if (Resources.isReadable(webApp) && FileID.isJavaArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
             {
                 // No - then lets see if it can be turned into a jar URL.
-                webApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
+                // Turned this into a jar URL.
+                Resource jarWebApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
+                if (Resources.isReadable(jarWebApp)) // but only if it is readable
+                    webApp = jarWebApp;
             }
 
             // If we should extract or the URL is still not usable
@@ -328,11 +331,11 @@ public class WebInfConfiguration extends AbstractConfiguration
 
                 if (war != null)
                 {
+                    Path warPath = Path.of(war);
                     // look for a sibling like "foo/" to a "foo.war"
-                    Path warfile = context.getResourceFactory().newResource(war).getPath();
-                    if (warfile != null && warfile.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
+                    if (FileID.isWebArchive(warPath) && Files.exists(warPath))
                     {
-                        Path sibling = warfile.getParent().resolve(warfile.getFileName().toString().substring(0, warfile.getFileName().toString().length() - 4));
+                        Path sibling = warPath.getParent().resolve(FileID.getBasename(warPath));
                         if (Files.exists(sibling) && Files.isDirectory(sibling) && Files.isWritable(sibling))
                             extractedWebAppDir = sibling;
                     }

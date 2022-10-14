@@ -313,11 +313,11 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource originalWarResource = webApp;
 
             // Is the WAR usable directly?
-            if (Resources.isReadable(webApp) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
+            if (Resources.isReadable(webApp) && FileID.isJavaArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
             {
-                // No - then lets see if it can be turned into a jar URL.
+                // Turned this into a jar URL.
                 Resource jarWebApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
-                if (Resources.isReadable(jarWebApp))
+                if (Resources.isReadable(jarWebApp)) // but only if it is readable
                     webApp = jarWebApp;
             }
 

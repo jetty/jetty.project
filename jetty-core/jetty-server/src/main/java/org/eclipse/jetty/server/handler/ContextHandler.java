@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -728,8 +729,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         Resource resource = ResourceFactory.of(this).newResource(path);
-        if (resource == null)
-            throw new IllegalArgumentException("Base Resource does not exist: " + path);
+        if (!Resources.isDirectory(resource))
+            throw new IllegalArgumentException("Base Resource is not valid: " + path);
         setBaseResource(resource);
     }
 
