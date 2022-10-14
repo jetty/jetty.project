@@ -242,7 +242,7 @@ public class PathResourceTest
             // Resolve file using extension-less directory
             testText = archiveResource.resolve("/dir./test.txt");
             assertFalse(testText.exists());
-            assertFalse(testText.isAlias());
+            assertTrue(testText.isAlias());
 
             // Resolve directory to name, no slash
             Resource dirResource = archiveResource.resolve("/dir");

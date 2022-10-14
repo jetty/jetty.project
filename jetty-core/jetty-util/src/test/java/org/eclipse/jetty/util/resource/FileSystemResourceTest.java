@@ -30,6 +30,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -58,6 +59,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -612,14 +615,18 @@ public class FileSystemResourceTest
         // Access to the same resource, but via a symlink means that they are not equivalent
         assertThat("foo.equals(bar)", resFoo.equals(resBar), is(false));
 
-        assertThat("resource.targetURI", resFoo, isNotAlias());
-        assertThat("resource.uri.targetURI", ResourceFactory.root().newResource(resFoo.getURI()), isNotAlias());
-        assertThat("resource.file.targetURI", ResourceFactory.root().newResource(resFoo.getPath()), isNotAlias());
+        // This is an alias because the file does not exist.
+        assertFalse(resFoo.exists());
+        assertTrue(resFoo.isAlias());
+        assertNotNull(resFoo.getURI());
+        assertNull(resFoo.getTargetURI());
 
-        // Even though resBar contains symlink it is not an alias because the file does not exist.
-        assertThat("targetURI", resBar, isNotAlias());
-        assertThat("uri.targetURI", ResourceFactory.root().newResource(resBar.getURI()), isNotAlias());
-        assertThat("file.targetURI", ResourceFactory.root().newResource(resBar.getPath()), isNotAlias());
+        // This is alias because the target file does not exist even though the symlink file does exist.
+        assertFalse(resBar.exists());
+        assertTrue(Files.exists(resBar.getPath(), LinkOption.NOFOLLOW_LINKS));
+        assertTrue(resBar.isAlias());
+        assertNotNull(resBar.getURI());
+        assertNull(resBar.getTargetURI());
     }
 
     @Test

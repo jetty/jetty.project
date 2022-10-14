@@ -398,7 +398,7 @@ public class ResourceTest
         Resource dot = resource.resolve(".");
         assertNotNull(dot);
         assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as directory doesn't exist");
+        assertTrue(dot.isAlias(), "Reference to '.' is an alias as directory doesn't exist");
     }
 
     @Test
@@ -428,7 +428,7 @@ public class ResourceTest
         Resource dot = resource.resolve(".");
         assertNotNull(dot);
         assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as file doesn't exist");
+        assertTrue(dot.isAlias(), "Reference to '.' is an alias as file doesn't exist");
     }
 
     @Test
