@@ -157,6 +157,7 @@ public class HttpTester
         r.setMethod(HttpMethod.GET.asString());
         r.setURI("/");
         r.setVersion(HttpVersion.HTTP_1_1);
+        r.setHeader("Host", "localhost");
         return r;
     }
 
@@ -223,6 +224,11 @@ public class HttpTester
         Response r = new Response();
         HttpParser parser = new HttpParser(r);
         return parseMessage(responseStream, parser) ? r : null;
+    }
+
+    public static Response parseResponse(ReadableByteChannel channel) throws IOException
+    {
+        return parseResponse(from(channel));
     }
 
     public static Response parseResponse(Input in) throws IOException
@@ -502,6 +508,14 @@ public class HttpTester
             {
                 throw new RuntimeException(e);
             }
+        }
+
+        public byte[] generateBytes()
+        {
+            ByteBuffer byteBuffer = generate();
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bytes);
+            return bytes;
         }
 
         public abstract MetaData getInfo();
