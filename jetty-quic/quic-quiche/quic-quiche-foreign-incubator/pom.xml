@@ -77,7 +77,7 @@
        changed both its API (18) and its name (19), so tests are disabled on JDKs over 17.
        Eventually, new Foreign modules for JDKs 18 and 19 should be added.
        -->
-      <id>jdk18+</id>
+      <id>jdk18</id>
       <activation>
         <jdk>[18,)</jdk>
       </activation>
