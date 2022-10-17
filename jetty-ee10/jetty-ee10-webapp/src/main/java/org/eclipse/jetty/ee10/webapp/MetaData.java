@@ -718,6 +718,7 @@ public class MetaData
 
     public void addContainerResource(Resource jar)
     {
+        Objects.requireNonNull(jar);
         _orderedContainerResources.add(jar);
     }
 
