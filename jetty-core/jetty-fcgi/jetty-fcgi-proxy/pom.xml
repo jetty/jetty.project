@@ -14,6 +14,22 @@
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
   </properties>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            ${jetty.surefire.argLine}
+            --add-exports org.eclipse.jetty.fcgi.client/org.eclipse.jetty.fcgi.generator=ALL-UNNAMED
+            --add-exports org.eclipse.jetty.fcgi.client/org.eclipse.jetty.fcgi.parser=ALL-UNNAMED
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
