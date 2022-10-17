@@ -1184,7 +1184,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        List<String> args1 = List.of("--add-modules=resources,http,fcgi-proxy,core-deploy");
+        List<String> args1 = List.of("--add-modules=resources,http,fcgi,fcgi-proxy,core-deploy");
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
@@ -1223,7 +1223,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 """.replace("$P", String.valueOf(fcgiPort)), StandardOpenOption.CREATE);
 
             // Deploy a Jetty context XML file that is only necessary for the test,
-            // as it simulates what the php-fpm server would return.
+            // as it simulates, for example, what the php-fpm server would return.
             Path jettyBaseWork = jettyBase.resolve("work");
             Path phpXML = jettyBase.resolve("webapps").resolve("php.xml");
             Files.writeString(phpXML, """

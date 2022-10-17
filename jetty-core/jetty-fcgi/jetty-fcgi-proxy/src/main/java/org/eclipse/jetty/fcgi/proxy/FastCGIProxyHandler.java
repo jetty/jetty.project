@@ -70,30 +70,19 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     private Path unixDomainPath;
 
     /**
-     * <p>Creates a new instance that rewrites the {@code HttpURI} with the
-     * given pattern and replacement strings, using
+     * <p>Creates a new instance that rewrites the {@code HttpURI}
+     * with the given pattern and replacement strings, using
      * {@link String#replaceAll(String, String)}.</p>
-     * <p>This constructor in typically used in XML files.</p>
-     * <p>As a simple example, given the URI pattern of:</p>
-     * <p>{@code (https?)://([a-z]+):([0-9]+)/([^/]+)/(.*)}</p>
-     * <p>and given a replacement string of:</p>
-     * <p>{@code $1://$2:9000/proxy/$5}</p>
-     * <p>an incoming {@code HttpURI} of:</p>
-     * <p>{@code http://host:8080/ctx/path}</p>
-     * <p>will be rewritten as:</p>
-     * <p>{@code http://host:9000/proxy/path}</p>
      *
      * @param uriPattern the regex pattern to use to match the incoming URI
      * @param uriReplacement the replacement string to use to rewrite the incoming URI
      * @param scriptRoot the root directory path of the FastCGI files
+     * @see ProxyHandler.Reverse#Reverse(String, String)
      */
     public FastCGIProxyHandler(String uriPattern, String uriReplacement, String scriptRoot)
     {
-        this(request ->
-        {
-            String uri = request.getHttpURI().toString();
-            return HttpURI.build(uri.replaceAll(uriPattern, uriReplacement));
-        }, scriptRoot);
+        super(uriPattern, uriReplacement);
+        this.scriptRoot = Objects.requireNonNull(scriptRoot);
     }
 
     /**
