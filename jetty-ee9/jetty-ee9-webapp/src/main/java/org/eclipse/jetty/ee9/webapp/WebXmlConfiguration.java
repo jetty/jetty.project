@@ -65,7 +65,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 if (dftResource == null)
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            if (dftResource != null && dftResource.exists() &&!dftResource.isDirectory())
+            if (dftResource != null && dftResource.exists() && !dftResource.isDirectory())
                 context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
