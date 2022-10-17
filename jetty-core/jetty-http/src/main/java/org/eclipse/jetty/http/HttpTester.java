@@ -510,14 +510,6 @@ public class HttpTester
             }
         }
 
-        public byte[] generateBytes()
-        {
-            ByteBuffer byteBuffer = generate();
-            byte[] bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get(bytes);
-            return bytes;
-        }
-
         public abstract MetaData getInfo();
     }
 

@@ -68,13 +68,6 @@ public class TryPathsHandler extends Handler.Wrapper
         return result.wrapProcessor(super.handle(result));
     }
 
-    // maint.html, $path, /ancient/$path, index.php?p=$path
-
-    // ctxh // rb = /srv/www/cometd.org/static
-    //  `tryh
-    //    `resh
-    //      `phph
-
     private Request.Processor fallback(Request request) throws Exception
     {
         String fallback = paths.isEmpty() ? "$path" : paths.get(paths.size() - 1);

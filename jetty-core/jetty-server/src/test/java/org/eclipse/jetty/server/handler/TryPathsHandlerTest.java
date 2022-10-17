@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -166,7 +167,7 @@ public class TryPathsHandlerTest
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(contextPath + path);
             OutputStream output = sslSocket.getOutputStream();
-            output.write(request.generateBytes());
+            output.write(BufferUtil.toArray(request.generate()));
             output.flush();
 
             HttpTester.Response response = HttpTester.parseResponse(sslSocket.getInputStream());
