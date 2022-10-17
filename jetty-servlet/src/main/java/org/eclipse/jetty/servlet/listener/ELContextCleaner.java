@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
  * See http://java.net/jira/browse/GLASSFISH-1649
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=353095
  */
+@Deprecated
 public class ELContextCleaner implements ServletContextListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(ELContextCleaner.class);
