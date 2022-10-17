@@ -53,8 +53,12 @@
     <profile>
       <id>jdk17</id>
       <activation>
-        <jdk>[17,)</jdk>
+        <jdk>17</jdk>
       </activation>
+      <!--
+      This profile makes sure the Foreign binding is used for tests when running exactly on JDK 17.
+      Older and newer JDKs will revert to the JNA binding.
+      -->
       <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty.quic</groupId>
@@ -73,26 +77,6 @@
                 --add-modules=jdk.incubator.foreign
                 --add-opens jdk.incubator.foreign/jdk.incubator.foreign=ALL-UNNAMED
                 --enable-native-access ALL-UNNAMED
-              </argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <!-- Don't use the Foreign binding if the JDK version != 17. -->
-      <id>jdk18+</id>
-      <activation>
-        <jdk>[18,)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <argLine>
-                @{argLine}
-                ${jetty.surefire.argLine}
               </argLine>
             </configuration>
           </plugin>
