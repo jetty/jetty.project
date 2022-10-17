@@ -83,7 +83,7 @@
     <jboss-threads.version>3.5.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
-    <jetty-quiche-native.version>0.15.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.16.0</jetty-quiche-native.version>
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>6.0</jetty.test.version>
