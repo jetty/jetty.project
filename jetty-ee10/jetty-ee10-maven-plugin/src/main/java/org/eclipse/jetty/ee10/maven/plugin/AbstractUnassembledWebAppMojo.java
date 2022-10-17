@@ -178,7 +178,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 Resource r = webApp.getResourceFactory().newResource(webXml.toPath());
                 if (r.exists() && !r.isDirectory())
                 {
-                    webApp.setDescriptor(r.toString());
+                    webApp.setDescriptor(r.getURI().toASCIIString());
                 }
             }
 
@@ -190,7 +190,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
                 if (r.exists() && !r.isDirectory())
                 {
-                    webApp.setDescriptor(r.toString());
+                    webApp.setDescriptor(r.getURI().toASCIIString());
                 }
             }
 
