@@ -302,6 +302,9 @@ public interface Response
 
     interface ContentSourceListener extends ResponseListener
     {
+        /**
+         * This does not get called for interim statuses.
+         */
         void onContentSource(Response response, Content.Source contentSource);
     }
 
