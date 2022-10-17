@@ -963,22 +963,25 @@ public class DefaultServlet extends HttpServlet
 
             String requestTarget = isPathInfoOnly() ? request.getPathInfo() : coreRequest.getPathInContext();
 
-            Resource base = _baseResource.resolve(requestTarget);
             String welcomeServlet = null;
-            for (String welcome : welcomes)
+            Resource base = _baseResource.resolve(requestTarget);
+            if (base != null && base.exists())
             {
-                Resource welcomePath = base.resolve(welcome);
-                String welcomeInContext = URIUtil.addPaths(coreRequest.getPathInContext(), welcome);
-
-                if (welcomePath != null && welcomePath.exists())
-                    return welcomeInContext;
-
-                if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
+                for (String welcome : welcomes)
                 {
-                    ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
-                    if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this &&
-                        (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
-                        welcomeServlet = welcomeInContext;
+                    Resource welcomePath = base.resolve(welcome);
+                    String welcomeInContext = URIUtil.addPaths(coreRequest.getPathInContext(), welcome);
+
+                    if (welcomePath != null && welcomePath.exists())
+                        return welcomeInContext;
+
+                    if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
+                    {
+                        ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
+                        if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this &&
+                            (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
+                            welcomeServlet = welcomeInContext;
+                    }
                 }
             }
             return welcomeServlet;
