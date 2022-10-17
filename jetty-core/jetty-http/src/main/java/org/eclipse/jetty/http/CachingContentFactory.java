@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -27,6 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HttpContent.ContentFactory implementation that wraps any other HttpContent.ContentFactory instance
@@ -41,6 +45,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class CachingContentFactory implements HttpContent.Factory
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CachingContentFactory.class);
+
     private final HttpContent.Factory _authority;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
@@ -51,6 +57,11 @@ public class CachingContentFactory implements HttpContent.Factory
     public CachingContentFactory(HttpContent.Factory authority)
     {
         _authority = authority;
+    }
+
+    protected ConcurrentMap<String, CachingHttpContent> getCache()
+    {
+        return _cache;
     }
 
     public long getCachedSize()
@@ -110,15 +121,15 @@ public class CachingContentFactory implements HttpContent.Factory
             // Scan the entire cache and generate an ordered list by last accessed time.
             SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
             {
-                long delta = NanoTime.elapsed(c2._lastAccessed.get(), c1._lastAccessed.get());
+                long delta = NanoTime.elapsed(c2.getLastAccessed().get(), c1.getLastAccessed().get());
                 if (delta != 0)
                     return delta < 0 ? -1 : 1;
 
-                delta = c1._contentLengthValue - c2._contentLengthValue;
+                delta = c1.getContentLengthValue() - c2.getContentLengthValue();
                 if (delta != 0)
                     return delta < 0 ? -1 : 1;
 
-                return c1._cacheKey.compareTo(c2._cacheKey);
+                return c1.getKey().compareTo(c2.getKey());
             });
             sorted.addAll(_cache.values());
 
@@ -132,12 +143,13 @@ public class CachingContentFactory implements HttpContent.Factory
         }
     }
 
-    private void removeFromCache(CachingHttpContent content)
+    protected void removeFromCache(CachingHttpContent content)
     {
-        if (content == _cache.remove(content._cacheKey))
+        CachingHttpContent removed = _cache.remove(content.getKey());
+        if (removed != null)
         {
-            content.release();
-            _cachedSize.addAndGet(-content.getContentLengthValue());
+            removed.release();
+            _cachedSize.addAndGet(-removed.getContentLengthValue());
         }
     }
 
@@ -158,7 +170,7 @@ public class CachingContentFactory implements HttpContent.Factory
     protected boolean isCacheable(HttpContent httpContent)
     {
         if (httpContent == null)
-            return false;
+            return true;
 
         if (httpContent.getResource().isDirectory())
             return false;
@@ -175,14 +187,48 @@ public class CachingContentFactory implements HttpContent.Factory
         return (len <= _maxCachedFileSize && len <= _maxCacheSize);
     }
 
+    protected boolean isValid(CachingHttpContent content)
+    {
+        // Only check the FileSystem once per second, otherwise assume cached value is valid.
+        // TODO: should the time between checks be configurable.
+        long now = NanoTime.now();
+        if (content.getLastAccessed().updateAndGet(lastChecked ->
+            (NanoTime.since(lastChecked) > TimeUnit.SECONDS.toNanos(1)) ? now : lastChecked) != now)
+            return true;
+
+        if (content instanceof CachedContent cachedContent)
+            return Objects.equals(cachedContent.getWrapped().getLastModifiedInstant(), cachedContent.getLastModifiedInstant());
+
+        // TODO:
+
+        if (content instanceof NotFoundContent notFoundContent)
+        {
+            try
+            {
+                return _authority.getContent(notFoundContent.getKey()) != null;
+            }
+            catch (IOException e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("", e);
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public HttpContent getContent(String path) throws IOException
     {
         CachingHttpContent cachingHttpContent = _cache.get(path);
         if (cachingHttpContent != null)
-            return cachingHttpContent;
+        {
+            if (isValid(cachingHttpContent))
+                return (cachingHttpContent instanceof NotFoundContent) ? null : cachingHttpContent;
+            else
+                removeFromCache(cachingHttpContent);
+        }
 
-        // TODO: record cache misses.
         HttpContent httpContent = _authority.getContent(path);
         if (isCacheable(httpContent))
         {
@@ -190,8 +236,9 @@ public class CachingContentFactory implements HttpContent.Factory
             cachingHttpContent = _cache.computeIfAbsent(path, p ->
             {
                 wasAdded.set(true);
-                _cachedSize.addAndGet(httpContent.getContentLengthValue());
-                return new CachingHttpContent(p, httpContent);
+                CachingHttpContent cachingContent = (httpContent == null) ? new NotFoundContent(p) : new CachedContent(p, httpContent);
+                _cachedSize.addAndGet(cachingContent.getContentLengthValue());
+                return cachingContent;
             });
 
             if (wasAdded.get())
@@ -201,7 +248,13 @@ public class CachingContentFactory implements HttpContent.Factory
         return httpContent;
     }
 
-    private static class CachingHttpContent extends HttpContentWrapper
+    protected interface CachingHttpContent extends HttpContent
+    {
+        AtomicLong getLastAccessed();
+        String getKey();
+    }
+
+    private static class CachedContent extends HttpContentWrapper implements CachingHttpContent
     {
         private final ByteBuffer _buffer;
         private final String _cacheKey;
@@ -210,16 +263,16 @@ public class CachingContentFactory implements HttpContent.Factory
         private final AtomicLong _lastAccessed = new AtomicLong();
         private final Set<CompressedContentFormat> _compressedFormats;
         private final String _lastModifiedValue;
-
         private final String _characterEncoding;
         private final MimeTypes.Type _mimeType;
         private final HttpField _contentLength;
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
 
-        private CachingHttpContent(String key, HttpContent httpContent)
+        private CachedContent(String key, HttpContent httpContent)
         {
             super(httpContent);
+            _cacheKey = key;
 
             // TODO: do all the following lazily and asynchronously.
             HttpField etagField = httpContent.getETag();
@@ -232,7 +285,6 @@ public class CachingContentFactory implements HttpContent.Factory
 
             // Map the content into memory if possible.
             _buffer = httpContent.getBuffer();
-            _cacheKey = key;
             _contentLengthValue = httpContent.getContentLengthValue();
             _lastModifiedValue = httpContent.getLastModifiedValue();
             _characterEncoding = httpContent.getCharacterEncoding();
@@ -260,16 +312,16 @@ public class CachingContentFactory implements HttpContent.Factory
             return _buffer.slice();
         }
 
-        public boolean isValid()
+        @Override
+        public AtomicLong getLastAccessed()
         {
-            // Only check the FileSystem once per second, otherwise assume cached value is valid.
-            // TODO: should the time between checks be configurable.
-            long now = NanoTime.now();
-            if (_lastAccessed.updateAndGet(lastChecked ->
-                (NanoTime.since(lastChecked) > TimeUnit.SECONDS.toNanos(1)) ? now : lastChecked) != now)
-                return true;
+            return _lastAccessed;
+        }
 
-            return getLastModifiedInstant().equals(_lastModifiedValue);
+        @Override
+        public String getKey()
+        {
+            return _cacheKey;
         }
 
         @Override
@@ -330,6 +382,131 @@ public class CachingContentFactory implements HttpContent.Factory
         public String getLastModifiedValue()
         {
             return _lastModifiedValue;
+        }
+    }
+
+    private static class NotFoundContent implements CachingHttpContent
+    {
+        private final AtomicLong _lastAccessed = new AtomicLong(NanoTime.now());
+
+        private final String _key;
+
+        public NotFoundContent(String key)
+        {
+            _key = key;
+        }
+
+        @Override
+        public String getKey()
+        {
+            return _key;
+        }
+
+        @Override
+        public AtomicLong getLastAccessed()
+        {
+            return _lastAccessed;
+        }
+
+        @Override
+        public HttpField getContentType()
+        {
+            return null;
+        }
+
+        @Override
+        public String getContentTypeValue()
+        {
+            return null;
+        }
+
+        @Override
+        public String getCharacterEncoding()
+        {
+            return null;
+        }
+
+        @Override
+        public MimeTypes.Type getMimeType()
+        {
+            return null;
+        }
+
+        @Override
+        public HttpField getContentEncoding()
+        {
+            return null;
+        }
+
+        @Override
+        public String getContentEncodingValue()
+        {
+            return null;
+        }
+
+        @Override
+        public HttpField getContentLength()
+        {
+            return null;
+        }
+
+        @Override
+        public long getContentLengthValue()
+        {
+            return 0;
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return null;
+        }
+
+        @Override
+        public HttpField getLastModified()
+        {
+            return null;
+        }
+
+        @Override
+        public String getLastModifiedValue()
+        {
+            return null;
+        }
+
+        @Override
+        public HttpField getETag()
+        {
+            return null;
+        }
+
+        @Override
+        public String getETagValue()
+        {
+            return null;
+        }
+
+        @Override
+        public Resource getResource()
+        {
+            return null;
+        }
+
+        @Override
+        public ByteBuffer getBuffer()
+        {
+            return null;
+        }
+
+        @Override
+        public Set<CompressedContentFormat> getPreCompressedContentFormats()
+        {
+            return null;
+        }
+
+        @Override
+        public void release()
+        {
         }
     }
 }
