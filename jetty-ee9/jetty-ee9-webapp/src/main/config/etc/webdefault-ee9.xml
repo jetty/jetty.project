@@ -30,14 +30,6 @@
   </description>
 
   <!-- ==================================================================== -->
-  <!-- Removes static references to beans from javax.el.BeanELResolver to   -->
-  <!-- ensure webapp classloader can be released on undeploy                -->
-  <!-- ==================================================================== -->
-  <listener>
-   <listener-class>org.eclipse.jetty.ee9.servlet.listener.ELContextCleaner</listener-class>
-  </listener>
-  
-  <!-- ==================================================================== -->
   <!-- Removes static cache of Methods from java.beans.Introspector to      -->
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->  
