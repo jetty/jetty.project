@@ -728,7 +728,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         Resource resource = ResourceFactory.of(this).newResource(path);
-        setBaseResource(resource);
+        if (resource != null && resource.exists())
+            setBaseResource(resource);
+        else
+            throw new IllegalArgumentException("Base Resource is not valid: " + path);
+
     }
 
     /**
