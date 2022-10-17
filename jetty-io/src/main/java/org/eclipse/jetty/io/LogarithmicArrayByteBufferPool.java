@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.io;
 
+import org.eclipse.jetty.util.NanoTime;
+
 /**
  * Extension of the {@link ArrayByteBufferPool} whose bucket sizes increase exponentially instead of linearly.
  * Each bucket will be double the size of the previous bucket, this decreases the amounts of buckets required
@@ -111,10 +113,10 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
             Bucket bucket = buckets[i];
             if (bucket.isEmpty())
                 continue;
-            long lastUpdate = bucket.getLastUpdate();
-            if (lastUpdate < oldest)
+            long lastUpdateNanoTime = bucket.getLastUpdate();
+            if (oldest == Long.MAX_VALUE || NanoTime.isBefore(lastUpdateNanoTime, oldest))
             {
-                oldest = lastUpdate;
+                oldest = lastUpdateNanoTime;
                 index = i;
             }
         }

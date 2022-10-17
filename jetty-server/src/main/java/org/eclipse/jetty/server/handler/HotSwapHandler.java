@@ -65,10 +65,20 @@ public class HotSwapHandler extends AbstractHandlerContainer
         try
         {
             Server server = getServer();
+            if (handler == _handler)
+                return;
+
+            Handler oldHandler = _handler;
             if (handler != null)
+            {
                 handler.setServer(server);
-            updateBean(_handler, handler, true);
+                addBean(handler, true);
+                if (oldHandler != null && oldHandler.isStarted())
+                    handler.start();
+            }
             _handler = handler;
+            if (oldHandler != null)
+                removeBean(oldHandler);
         }
         catch (Exception e)
         {

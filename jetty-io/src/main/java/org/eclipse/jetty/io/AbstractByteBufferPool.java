@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -176,7 +177,7 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         private final int _capacity;
         private final int _maxSize;
         private final AtomicInteger _size;
-        private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
+        private final AtomicLong _lastUpdate = new AtomicLong(NanoTime.now());
         private final IntConsumer _memoryFunction;
 
         @Deprecated
@@ -223,7 +224,7 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
 
         void resetUpdateTime()
         {
-            _lastUpdate.lazySet(System.nanoTime());
+            _lastUpdate.lazySet(NanoTime.now());
         }
 
         public void clear()

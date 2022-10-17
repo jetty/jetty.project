@@ -19,7 +19,6 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.plus.security.DataSourceLoginService;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -138,7 +138,7 @@ public class DataSourceLoginServiceTest
 
             stopClient();
 
-            String newpwd = String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+            String newpwd = String.valueOf(NanoTime.now());
 
             changePassword("dstest", newpwd);
 

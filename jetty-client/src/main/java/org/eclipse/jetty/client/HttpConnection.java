@@ -19,7 +19,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Authentication;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -48,13 +48,13 @@ public abstract class HttpConnection implements IConnection, Attachable
     private final RequestTimeouts requestTimeouts;
     private Object attachment;
     private int idleTimeoutGuard;
-    private long idleTimeoutStamp;
+    private long idleTimeoutNanoTime;
 
     protected HttpConnection(HttpDestination destination)
     {
         this.destination = destination;
         this.requestTimeouts = new RequestTimeouts(destination.getHttpClient().getScheduler());
-        this.idleTimeoutStamp = System.nanoTime();
+        this.idleTimeoutNanoTime = NanoTime.now();
     }
 
     public HttpClient getHttpClient()
@@ -106,6 +106,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             SendFailure result;
             if (channel.associate(exchange))
             {
+                request.sent();
                 requestTimeouts.schedule(channel);
                 channel.send();
                 result = null;
@@ -121,7 +122,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             try (AutoLock l = lock.lock())
             {
                 --idleTimeoutGuard;
-                idleTimeoutStamp = System.nanoTime();
+                idleTimeoutNanoTime = NanoTime.now();
             }
 
             return result;
@@ -267,7 +268,7 @@ public abstract class HttpConnection implements IConnection, Attachable
         {
             if (idleTimeoutGuard == 0)
             {
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTimeoutStamp);
+                long elapsed = NanoTime.millisSince(idleTimeoutNanoTime);
                 boolean idle = elapsed > idleTimeout / 2;
                 if (idle)
                     idleTimeoutGuard = -1;

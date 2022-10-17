@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -226,10 +227,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                 }
 
                 // OWP has exited, but we have a delay, so let's wait for thread to return to the pool to ensure we are async.
-                long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+                long start = NanoTime.now();
                 while (delay != null && _threadPool.getBusyThreads() > base)
                 {
-                    if (System.nanoTime() > end)
+                    if (NanoTime.secondsSince(start) > WAIT)
                         throw new TimeoutException();
                     Thread.sleep(POLL);
                 }
@@ -246,10 +247,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             }
 
             // Wait for full completion
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            long start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion
@@ -487,10 +488,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             handler.wait4handle();
 
             // Wait for full completion
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            long start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion
@@ -648,19 +649,19 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             handler.wait4handle();
 
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            long start = NanoTime.now();
             while (_threadPool.getBusyThreads() != base)
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
                 Thread.sleep(POLL);
             }
 
             // Wait for full completion
-            end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion

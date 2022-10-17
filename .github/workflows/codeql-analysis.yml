@@ -9,6 +9,9 @@ on:
   schedule:
     - cron: '22 1 * * 2'
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze
@@ -73,7 +76,7 @@ jobs:
           maven-version: 3.8.6   
 
       - name: Clean install dependencies and build
-        run: mvn clean install -DskipTests        
+        run: mvn clean install -DskipTests -B
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun

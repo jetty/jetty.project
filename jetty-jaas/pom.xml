@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.12-SNAPSHOT</version>
+    <version>10.0.13-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,7 +13,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
     <apacheds.version>2.0.0.AM26</apacheds.version>
-    <apache.directory.api.version>2.1.0</apache.directory.api.version>
+    <apache.directory.api.version>2.1.2</apache.directory.api.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>
   </properties>
 

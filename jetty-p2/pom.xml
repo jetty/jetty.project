@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.12-SNAPSHOT</version>
+    <version>10.0.13-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-p2</artifactId>
@@ -12,7 +12,7 @@
   <description>Generates a (maven based) P2 Updatesite</description>
   <packaging>pom</packaging>
   <properties>
-    <tycho-version>2.7.4</tycho-version>
+    <tycho-version>3.0.0</tycho-version>
   </properties>
   <build>
     <plugins>

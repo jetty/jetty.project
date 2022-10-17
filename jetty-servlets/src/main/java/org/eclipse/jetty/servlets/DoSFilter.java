@@ -51,6 +51,7 @@ import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -322,7 +323,7 @@ public class DoSFilter implements Filter
         tracker = getRateTracker(request);
 
         // Calculate the rate and check if it is over the allowed limit
-        final OverLimit overLimit = tracker.isRateExceeded(System.nanoTime());
+        final OverLimit overLimit = tracker.isRateExceeded(NanoTime.now());
 
         // Pass it through if we are not currently over the rate limit.
         if (overLimit == null)
@@ -1196,11 +1197,9 @@ public class DoSFilter implements Filter
             }
 
             if (last == 0)
-            {
                 return null;
-            }
 
-            long rate = (now - last);
+            long rate = NanoTime.elapsed(last, now);
             if (TimeUnit.NANOSECONDS.toSeconds(rate) < 1L)
             {
                 return new Overage(Duration.ofNanos(rate), _maxRequestsPerSecond);
@@ -1292,7 +1291,7 @@ public class DoSFilter implements Filter
 
             int latestIndex = _next == 0 ? (_timestamps.length - 1) : (_next - 1);
             long last = _timestamps[latestIndex];
-            boolean hasRecentRequest = last != 0 && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - last) < 1L;
+            boolean hasRecentRequest = last != 0 && NanoTime.secondsSince(last) < 1L;
 
             DoSFilter filter = (DoSFilter)_context.getAttribute(_filterName);
 

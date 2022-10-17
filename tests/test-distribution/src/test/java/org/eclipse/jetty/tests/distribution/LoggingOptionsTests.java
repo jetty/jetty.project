@@ -83,7 +83,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
             Arguments.of("logging-log4j2",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-slf4j18-impl-.*\\.jar",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-slf4j2-impl-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-api-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-core-.*\\.jar"
                 ),

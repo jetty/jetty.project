@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -256,7 +257,7 @@ public class WebSocketDocs
                 remote.sendBytes(bytes);
 
                 // Send a PING frame to the remote peer.
-                remote.sendPing(ByteBuffer.allocate(8).putLong(System.nanoTime()).flip());
+                remote.sendPing(ByteBuffer.allocate(8).putLong(NanoTime.now()).flip());
             }
             catch (IOException x)
             {
@@ -425,7 +426,7 @@ public class WebSocketDocs
         public void onWebSocketConnect(Session session)
         {
             // Send to the remote peer the local nanoTime.
-            ByteBuffer buffer = ByteBuffer.allocate(8).putLong(System.nanoTime()).flip();
+            ByteBuffer buffer = ByteBuffer.allocate(8).putLong(NanoTime.now()).flip();
             session.getRemote().sendPing(buffer, WriteCallback.NOOP);
         }
 
@@ -436,7 +437,7 @@ public class WebSocketDocs
             long start = payload.getLong();
 
             // Calculate the round-trip time.
-            long roundTrip = System.nanoTime() - start;
+            long roundTrip = NanoTime.since(start);
         }
     }
     // end::pingPongListener[]

@@ -186,7 +186,14 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public void onData(Stream stream, DataFrame frame, Callback callback)
+        public void onBeforeData(Stream stream)
+        {
+            // Don't demand here, as the initial demand is controlled by
+            // the application via DemandedContentListener.onBeforeContent().
+        }
+
+        @Override
+        public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
             channel.onData(frame, callback);

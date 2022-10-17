@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +100,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
         StringBuilder builder = new StringBuilder("JettyHttpClientBoundary");
         builder.append(Long.toString(System.identityHashCode(builder), 36));
         builder.append(Long.toString(System.identityHashCode(Thread.currentThread()), 36));
-        builder.append(Long.toString(System.nanoTime(), 36));
+        builder.append(Long.toString(NanoTime.now(), 36));
         return builder.toString();
     }
 
