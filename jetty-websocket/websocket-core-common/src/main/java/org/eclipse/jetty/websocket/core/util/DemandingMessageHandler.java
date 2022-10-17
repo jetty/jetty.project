@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.util;
 
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -39,61 +38,17 @@ import org.eclipse.jetty.websocket.core.internal.AbstractMessageHandler;
  */
 public class DemandingMessageHandler extends AbstractMessageHandler
 {
-    public static DemandingMessageHandler from(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
-    {
-        return new DemandingMessageHandler()
-        {
-            @Override
-            protected void onText(String message, Callback callback)
-            {
-                if (onText == null)
-                {
-                    super.onText(message, callback);
-                    return;
-                }
-
-                try
-                {
-                    onText.accept(message);
-                    callback.succeeded();
-                }
-                catch (Throwable th)
-                {
-                    callback.failed(th);
-                }
-            }
-
-            @Override
-            protected void onBinary(ByteBuffer message, Callback callback)
-            {
-                if (onBinary == null)
-                {
-                    super.onBinary(message, callback);
-                    return;
-                }
-
-                try
-                {
-                    onBinary.accept(message);
-                    callback.succeeded();
-                }
-                catch (Throwable th)
-                {
-                    callback.failed(th);
-                }
-            }
-        };
-    }
-
     private Utf8StringBuilder _textMessageBuffer;
     private ByteBufferCallbackAccumulator _binaryMessageBuffer;
 
+    @Override
     protected void onPingFrame(Frame frame, Callback callback)
     {
         super.onPingFrame(frame, callback);
         getCoreSession().demand(1);
     }
 
+    @Override
     protected void onPongFrame(Frame frame, Callback callback)
     {
         super.onPongFrame(frame, callback);
