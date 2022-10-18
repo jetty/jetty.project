@@ -14,11 +14,11 @@
 package org.eclipse.jetty.client;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.HostPort;
@@ -37,16 +37,45 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class ProxyConfiguration
 {
-    private final List<Proxy> proxies = new ArrayList<>();
+    private final List<Proxy> proxies = new CopyOnWriteArrayList<>();
 
+    /**
+     * @deprecated use {@link #addProxy(Proxy)} and {@link #removeProxy(Proxy)} instead
+     * @return the forward proxies to use
+     */
+    @Deprecated(since = "10", forRemoval = true)
     public List<Proxy> getProxies()
     {
         return proxies;
     }
 
+    /**
+     * Adds a proxy.
+     *
+     * @param proxy a proxy
+     * @throws NullPointerException if {@code proxy} is null
+     */
+    public void addProxy(Proxy proxy)
+    {
+        if (proxy == null)
+            throw new NullPointerException("proxy may not be null");
+        proxies.add(proxy);
+    }
+
+    /**
+     * Removes a proxy.
+     *
+     * @param proxy a proxy
+     * @return true if a match is found
+     */
+    public boolean removeProxy(Proxy proxy)
+    {
+        return proxies.remove(proxy);
+    }
+
     public Proxy match(Origin origin)
     {
-        for (Proxy proxy : getProxies())
+        for (Proxy proxy : proxies)
         {
             if (proxy.matches(origin))
                 return proxy;
