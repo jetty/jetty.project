@@ -146,9 +146,11 @@ public abstract class Resource implements Iterable<Resource>
     public abstract boolean isDirectory();
 
     /**
-     * True if the resource is readable.
+     * True if the resource is readable, and can be opened to be read from.
      *
-     * @return true if the represented resource exists, and is notcontainer/directory.
+     * @return true if the represented resource exists, and can be opened to be read content from.
+     * @see #newInputStream()
+     * @see #newReadableByteChannel()
      */
     public abstract boolean isReadable();
 
