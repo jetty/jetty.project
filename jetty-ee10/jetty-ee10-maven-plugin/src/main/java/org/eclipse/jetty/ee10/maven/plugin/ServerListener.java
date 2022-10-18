@@ -14,10 +14,9 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * ServerListener
@@ -47,8 +46,9 @@ public class ServerListener implements LifeCycle.Listener
         {
             try
             {
-                Resource r = ResourceFactory.root().newResource(_tokenFile); // TODO leak
-                Files.createFile(r.getPath());
+                // Using Path, as we need to reliably create/write a file.
+                Path path = Path.of(_tokenFile);
+                Files.createFile(path);
             }
             catch (Exception e)
             {

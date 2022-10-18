@@ -52,34 +52,6 @@ public abstract class Resource implements Iterable<Resource>
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
-    /**
-     * <p>Make a Resource containing a collection of other resources</p>
-     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources.
-     * @see ResourceCollection
-     */
-    // TODO this should be moved to ResourceFactory
-    public static ResourceCollection combine(List<Resource> resources)
-    {
-        if (resources == null || resources.isEmpty())
-            throw new IllegalArgumentException("No resources");
-        return new ResourceCollection(resources);
-    }
-
-    /**
-     * <p>Make a Resource containing a collection of other resources</p>
-     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources.
-     * @see ResourceCollection
-     */
-    // TODO this should be moved to ResourceFactory
-    public static ResourceCollection combine(Resource... resources)
-    {
-        if (resources == null || resources.length == 0)
-            throw new IllegalArgumentException("No resources");
-        return new ResourceCollection(List.of(resources));
-    }
-
     public static String dump(Resource resource)
     {
         if (resource == null)

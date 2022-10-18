@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -142,7 +141,6 @@ public class TestForkedChild
         }
     }
 
-    @Disabled //Needs DefaultServlet
     @Test
     public void test() throws Exception
     {      

@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
@@ -32,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 
@@ -57,6 +59,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -136,16 +139,27 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNonAbsoluteURI() throws Exception
+    public void testNonAbsoluteURI(WorkDir workDir) throws Exception
     {
+        // Doesn't exist.
         Resource resource = ResourceFactory.root().newResource(new URI("path/to/resource"));
-        assertThat(resource, notNullValue());
-        assertThat(resource.getURI().toString(), startsWith("file:"));
-        assertThat(resource.getURI().toString(), endsWith("/path/to/resource"));
+        assertFalse(resource.exists());
 
-        resource =  ResourceFactory.root().newResource(new URI("/path/to/resource"));
-        assertThat(resource, notNullValue());
-        assertThat(resource.getURI().toString(), is("file:///path/to/resource"));
+        // Create a directory
+        Path testdir = workDir.getEmptyPathDir().resolve("path/to/resource");
+        Files.createDirectories(testdir);
+
+        Path pwd = Paths.get(System.getProperty("user.dir"));
+        Path relativePath = pwd.relativize(testdir);
+
+        // Get a path relative name using unix/uri "/" (not windows "\")
+        String relativeName = FS.separators(relativePath.toString());
+        assertThat("Should not have path navigation entries", relativeName, not(containsString("..")));
+
+        resource = ResourceFactory.root().newResource(new URI(relativeName));
+        assertThat("Relative newResource: " + relativeName, resource, notNullValue());
+        assertThat(resource.getURI().toString(), startsWith("file:"));
+        assertThat(resource.getURI().toString(), endsWith("/path/to/resource/"));
     }
 
     @Test
@@ -178,10 +192,10 @@ public class FileSystemResourceTest
         Path dir = workDir.getPath().normalize().toRealPath();
 
         Path baseDir = dir.resolve("base with spaces");
-        FS.ensureDirExists(baseDir.toFile());
+        FS.ensureDirExists(baseDir);
 
         Path subdir = baseDir.resolve("sub");
-        FS.ensureDirExists(subdir.toFile());
+        FS.ensureDirExists(subdir);
 
         URL baseUrl = baseDir.toUri().toURL();
 
@@ -196,12 +210,12 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testResolvePathClass() throws Exception
+    public void testResolvePathClass()
     {
         Path dir = workDir.getEmptyPathDir();
 
         Path subdir = dir.resolve("sub");
-        FS.ensureDirExists(subdir.toFile());
+        FS.ensureDirExists(subdir);
 
         Resource base = ResourceFactory.root().newResource(dir);
         Resource sub = base.resolve("sub");
@@ -228,12 +242,12 @@ public class FileSystemResourceTest
         try
         {
             Resource rrd = sub.resolve(readableRootDir);
-            // valid path for unix and OSX
+            // we are executing on unix and OSX
             assertThat("Readable Root Dir", rrd.exists(), is(false));
         }
         catch (InvalidPathException e)
         {
-            // valid path on Windows
+            // we are executing on Windows
         }
     }
 
@@ -646,7 +660,7 @@ public class FileSystemResourceTest
         assertThat("resource.uri.targetURI", ResourceFactory.root().newResource(resource.getURI()), isNotAlias());
         assertThat("resource.file.targetURI", ResourceFactory.root().newResource(resource.getPath()), isNotAlias());
 
-        // On some case insensitive file systems, lets see if an alternate
+        // On some case-insensitive file systems, lets see if an alternate
         // case for the filename results in an alias reference
         Resource alias = base.resolve("FILE");
         if (alias.exists())
@@ -662,7 +676,7 @@ public class FileSystemResourceTest
      * Test for Windows feature that exposes 8.3 filename references
      * for long filenames.
      * <p>
-     * See: http://support.microsoft.com/kb/142982
+     * See: <a href="http://support.microsoft.com/kb/142982">Microsoft KB 142982</a>
      *
      * @throws Exception failed test
      */
@@ -699,7 +713,7 @@ public class FileSystemResourceTest
     /**
      * NTFS Alternative Data / File Streams.
      * <p>
-     * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     * See: <a href="http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx">Microsoft: Win32 / Desktop Technologies / Data Access and Storage / Local File Systems / File Streams (Local File Systems)</a>
      *
      * @throws Exception failed test
      */
@@ -741,7 +755,7 @@ public class FileSystemResourceTest
     /**
      * NTFS Alternative Data / File Streams.
      * <p>
-     * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     * See: <a href="http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx">Microsoft: Win32 / Desktop Technologies / Data Access and Storage / Local File Systems / File Streams (Local File Systems)</a>
      *
      * @throws Exception failed test
      */
@@ -785,7 +799,7 @@ public class FileSystemResourceTest
     /**
      * NTFS Alternative Data / File Streams.
      * <p>
-     * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     * See: <a href="http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx">Microsoft: Win32 / Desktop Technologies / Data Access and Storage / Local File Systems / File Streams (Local File Systems)</a>
      *
      * @throws Exception failed test
      */
@@ -1356,7 +1370,7 @@ public class FileSystemResourceTest
 
     @Test
     @EnabledOnOs(WINDOWS)
-    public void testUncPath() throws Exception
+    public void testUncPath()
     {
         Resource base = ResourceFactory.root().newResource(URI.create("file:////127.0.0.1/path"));
         Resource resource = base.resolve("WEB-INF/");
@@ -1371,7 +1385,7 @@ public class FileSystemResourceTest
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
         {
             IO.copy(inputStream, outputStream);
-            return outputStream.toString("utf-8");
+            return outputStream.toString(StandardCharsets.UTF_8);
         }
     }
 

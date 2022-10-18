@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,9 +45,9 @@ public class JettyForkedChild extends ContainerLifeCycle
     private static final Logger LOG = LoggerFactory.getLogger(JettyForkedChild.class);
     
     protected JettyEmbedder jetty;
-    protected File tokenFile;
+    protected File tokenFile; // TODO: convert to Path
     protected PathWatcher scanner;
-    protected File webAppPropsFile;
+    protected File webAppPropsFile; // TODO: convert to Path
 
     /**
      * @param args arguments that were passed to main
@@ -193,8 +194,9 @@ public class JettyForkedChild extends ContainerLifeCycle
         jetty.start();
 
         //touch file to signify start of jetty
-        Resource r = ResourceFactory.of(this).newResource(tokenFile.toPath());
-        Files.createFile(r.getPath());
+        Path tokenPath = tokenFile.toPath();
+        Files.createFile(tokenPath);
+        Resource r = ResourceFactory.of(this).newResource(tokenPath);
 
         //Start a watcher on a file that will change if the
         //webapp is regenerated; stop the webapp, apply the

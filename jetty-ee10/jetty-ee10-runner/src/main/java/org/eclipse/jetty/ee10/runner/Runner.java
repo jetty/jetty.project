@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
@@ -108,8 +109,8 @@ public class Runner
 
         public void addJars(Resource lib)
         {
-            if (lib == null || !lib.exists())
-                throw new IllegalStateException("No such lib: " + lib);
+            if (lib == null || !lib.exists() || lib.isDirectory())
+                throw new IllegalStateException("lib is invalid: " + lib);
 
             for (Resource item: lib.list())
             {
@@ -122,9 +123,12 @@ public class Runner
 
         public void addPath(Resource path)
         {
-            if (path == null || !path.exists())
-                throw new IllegalStateException("No such path: " + path);
-            _classpath.add(path.getURI());
+            Objects.requireNonNull(path, "Path is null");
+            for (Resource r: path)
+            {
+                if (FileID.isLibArchive(r.getFileName()))
+                    _classpath.add(r.getURI());
+            }
         }
 
         public URI[] asArray()

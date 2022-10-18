@@ -40,7 +40,7 @@
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
-            <additionalClasspathElement>${basedir}/src/test/resources/module/foo-bar-janb.jar</additionalClasspathElement>
+            <additionalClasspathElement>${basedir}/src/test/resources/mods/foo-bar-janb.jar</additionalClasspathElement>
           </additionalClasspathElements>
           <excludes>
             <exclude>org.eclipse.jetty.ee10.webapp.WebAppClassLoaderUrlStreamTest</exclude>

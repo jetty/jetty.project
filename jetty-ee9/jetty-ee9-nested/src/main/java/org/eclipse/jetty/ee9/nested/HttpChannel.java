@@ -50,6 +50,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
@@ -945,11 +946,24 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written={}", getRequest().getRequestURI(), getBytesWritten());
+            LOG.debug("onCompleted for {} written={}", _request.getRequestURI(), getBytesWritten());
 
         long idleTO = _configuration.getIdleTimeout();
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
+
+        if (getServer().getRequestLog() != null)
+        {
+            Authentication authentication = _request.getAuthentication();
+            if (authentication instanceof Authentication.User userAuthentication)
+                _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
+
+            String realPath = _request.getServletContext().getRealPath(_request.getPathInContext());
+            _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
+
+            String servletName = _request.getServletName();
+            _request.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+        }
 
         _request.onCompleted();
         _combinedListener.onComplete(_request);

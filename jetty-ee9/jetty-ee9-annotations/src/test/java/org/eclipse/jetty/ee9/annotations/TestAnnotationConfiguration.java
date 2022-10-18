@@ -25,6 +25,7 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.resource.FileSystemPool;
@@ -101,7 +102,7 @@ public class TestAnnotationConfiguration
             testContainerSciJar.toUri().toURL()
         }, Thread.currentThread().getContextClassLoader());
 
-        targetClasses = ResourceFactory.root().newResource(MavenTestingUtils.getTargetDir().toURI()).resolve("/test-classes");
+        targetClasses = ResourceFactory.root().newResource(MavenPaths.targetDir().resolve("test-classes"));
 
         classes = List.of(webInfClasses, targetClasses);
 

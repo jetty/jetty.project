@@ -13,128 +13,150 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.HashLoginService;
+import org.eclipse.jetty.ee9.security.UserStore;
+import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@Disabled // TODO
 public class CustomRequestLogTest
 {
-    RequestLog _log;
-    Server _server;
-    LocalConnector _connector;
-    BlockingQueue<String> _entries = new BlockingArrayQueue<>();
-    String _tmpDir;
+    private final BlockingQueue<String> _logs = new BlockingArrayQueue<>();
+    public WorkDir workDir;
+    private Server _server;
+    private LocalConnector _connector;
+    private Path _baseDir;
 
-    @BeforeEach
-    public void before() throws Exception
+    private void start(String formatString, HttpServlet servlet) throws Exception
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        _tmpDir = new File(System.getProperty("java.io.tmpdir")).getCanonicalPath();
-    }
-
-    void testHandlerServerStart(String formatString) throws Exception
-    {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/context");
-        context.setResourceBase(_tmpDir);
-        context.addServlet(TestServlet.class, "/servlet/*");
 
         TestRequestLogWriter writer = new TestRequestLogWriter();
-        _log = new CustomRequestLog(writer, formatString);
-        _server.setRequestLog(_log);
+        RequestLog requestLog = new CustomRequestLog(writer, formatString);
+        _server.setRequestLog(requestLog);
+
+        _baseDir = workDir.getEmptyPathDir();
+        Files.createDirectory(_baseDir.resolve("servlet"));
+        Files.createFile(_baseDir.resolve("servlet/info"));
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setBaseResource(_baseDir);
+        context.setContextPath("/context");
+        context.addServlet(new ServletHolder(servlet), "/servlet/*");
+
+        HashLoginService loginService = new HashLoginService();
+        UserStore userStore = new UserStore();
+        userStore.addUser("username", Credential.getCredential("password"), new String[]{"user"});
+        loginService.setUserStore(userStore);
+        loginService.setName("realm");
+
+        Constraint constraint = new Constraint();
+        constraint.setName("auth");
+        constraint.setAuthenticate(true);
+        constraint.setRoles(new String[]{"**"});
+
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec("/secure/*");
+        mapping.setConstraint(constraint);
+
+        ConstraintSecurityHandler security = new ConstraintSecurityHandler();
+        security.addConstraintMapping(mapping);
+        security.setAuthenticator(new BasicAuthenticator());
+        security.setLoginService(loginService);
+
+        context.setSecurityHandler(security);
+
         _server.setHandler(context);
+
         _server.start();
     }
 
     @AfterEach
-    public void after() throws Exception
+    public void after()
     {
-        _server.stop();
+        LifeCycle.stop(_server);
     }
 
     @Test
     public void testLogFilename() throws Exception
     {
-        testHandlerServerStart("Filename: %f");
+        start("Filename: %f", new SimpleServlet());
 
         _connector.getResponse("GET /context/servlet/info HTTP/1.0\n\n");
-        String log = _entries.poll(5, TimeUnit.SECONDS);
-        String expected = new File(_tmpDir + File.separator + "servlet" + File.separator + "info").getCanonicalPath();
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        String expected = workDir.getPath().resolve("servlet/info").toString();
         assertThat(log, is("Filename: " + expected));
     }
 
     @Test
     public void testLogRequestHandler() throws Exception
     {
-        testHandlerServerStart("RequestHandler: %R");
+        start("RequestHandler: %R", new SimpleServlet());
 
         _connector.getResponse("GET /context/servlet/ HTTP/1.0\n\n");
-        String log = _entries.poll(5, TimeUnit.SECONDS);
-        assertThat(log, Matchers.containsString("TestServlet"));
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, Matchers.containsString(SimpleServlet.class.getSimpleName()));
     }
 
-    class TestRequestLogWriter implements RequestLog.Writer
+    @Test
+    public void testLogRemoteUser() throws Exception
+    {
+        String authHeader = HttpHeader.AUTHORIZATION + ": Basic " + Base64.getEncoder().encodeToString("username:password".getBytes());
+        start("%u", new SimpleServlet());
+
+        _connector.getResponse("GET /context/servlet/unsecure HTTP/1.0\n\n");
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("-"));
+
+        _connector.getResponse("GET /context/servlet/secure HTTP/1.0\n" + authHeader + "\n\n");
+        log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("username"));
+    }
+
+    private class TestRequestLogWriter implements RequestLog.Writer
     {
         @Override
         public void write(String requestEntry)
         {
-            try
-            {
-                _entries.add(requestEntry);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
+            _logs.add(requestEntry);
         }
     }
 
-    public static class TestServlet extends HttpServlet
+    private static class SimpleServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            if (request.getRequestURI().contains("error404"))
-            {
-                response.setStatus(404);
-            }
-            else if (request.getRequestURI().contains("error301"))
-            {
-                response.setStatus(301);
-            }
-            else if (request.getHeader("echo") != null)
-            {
-                ServletOutputStream outputStream = response.getOutputStream();
-                outputStream.print(request.getHeader("echo"));
-            }
-            else if (request.getRequestURI().contains("responseHeaders"))
-            {
-                response.addHeader("Header1", "value1");
-                response.addHeader("Header2", "value2");
-            }
+            // Trigger the authentication.
+            request.getRemoteUser();
         }
     }
 }

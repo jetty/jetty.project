@@ -11,9 +11,11 @@
 // ========================================================================
 //
 
-module jetty.ee9.fcgi.server.proxy {
-    requires transitive org.eclipse.jetty.ee9.proxy;
-    requires transitive org.eclipse.jetty.fcgi.server;
+module org.eclipse.jetty.fcgi.proxy
+{
+    requires org.slf4j;
+    requires transitive org.eclipse.jetty.fcgi.client;
+    requires transitive org.eclipse.jetty.proxy;
 
-    exports org.eclipse.jetty.ee9.fcgi.server.proxy;
+    exports org.eclipse.jetty.fcgi.proxy;
 }

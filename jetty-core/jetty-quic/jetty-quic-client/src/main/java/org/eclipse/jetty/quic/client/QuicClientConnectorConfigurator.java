@@ -75,6 +75,11 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     {
         context.put(QuicConfiguration.CONTEXT_KEY, configuration);
         DatagramChannel channel = DatagramChannel.open();
+        if (clientConnector.getBindAddress() == null)
+        {
+            // QUIC must know the local address for connection migration, so we must always bind early.
+            channel.bind(null);
+        }
         return new ChannelWithAddress(channel, address);
     }
 
