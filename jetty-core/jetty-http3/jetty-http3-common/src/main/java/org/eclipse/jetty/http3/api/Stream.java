@@ -22,6 +22,7 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data within a {@link Session}.</p>
@@ -222,13 +223,14 @@ public interface Stream
             /**
              * <p>Callback method invoked when the stream idle timeout elapses.</p>
              *
-             * @param stream the stream
+             * @param stream  the stream
              * @param failure the timeout failure
+             * @param promise
              * @return true to reset the stream, false to ignore the idle timeout
              */
-            public default boolean onIdleTimeout(Stream.Client stream, Throwable failure)
+            public default void onIdleTimeout(Client stream, Throwable failure, Promise<Boolean> promise)
             {
-                return true;
+                promise.succeeded(true);
             }
 
             /**
@@ -337,13 +339,14 @@ public interface Stream
             /**
              * <p>Callback method invoked when the stream idle timeout elapses.</p>
              *
-             * @param stream the stream
+             * @param stream  the stream
              * @param failure the timeout failure
+             * @param promise
              * @return true to reset the stream, false to ignore the idle timeout
              */
-            public default boolean onIdleTimeout(Stream.Server stream, Throwable failure)
+            public default void onIdleTimeout(Server stream, Throwable failure, Promise<Boolean> promise)
             {
-                return true;
+                promise.succeeded(true);
             }
 
             /**

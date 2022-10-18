@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -440,7 +441,13 @@ public abstract class HttpReceiver
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
         if (exchange.responseComplete(failure))
-            return abort(exchange, failure);
+        {
+            // We can use a Promise.Completable and join it here only
+            // because the implementation of abort() is synchronous.
+            Promise.Completable<Boolean> promise = new Promise.Completable<>();
+            abort(exchange, failure, promise);
+            return promise.join();
+        }
 
         return false;
     }
@@ -509,7 +516,7 @@ public abstract class HttpReceiver
         stalled = false;
     }
 
-    public boolean abort(HttpExchange exchange, Throwable failure)
+    public void abort(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
     {
         // Update the state to avoid more response processing.
         boolean terminate;
@@ -517,7 +524,10 @@ public abstract class HttpReceiver
         {
             ResponseState current = responseState.get();
             if (current == ResponseState.FAILURE)
-                return false;
+            {
+                promise.succeeded(false);
+                return;
+            }
             if (updateResponseState(current, ResponseState.FAILURE))
             {
                 terminate = current != ResponseState.TRANSIENT;
@@ -545,13 +555,13 @@ public abstract class HttpReceiver
             // Mark atomically the response as terminated, with
             // respect to concurrency between request and response.
             terminateResponse(exchange);
-            return true;
+            promise.succeeded(true);
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Concurrent failure: response termination skipped, performed by helpers");
-            return false;
+            promise.succeeded(false);
         }
     }
 

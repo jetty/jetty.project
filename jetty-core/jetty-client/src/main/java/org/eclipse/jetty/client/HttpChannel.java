@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,22 +132,26 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         getHttpSender().proceed(exchange, failure);
     }
 
-    public boolean abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure)
+    public void abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure, Promise<Boolean> promise)
     {
-        boolean requestAborted = false;
+        Promise.Completable<Boolean> requestPromise = new Promise.Completable<>();
         if (requestFailure != null)
-            requestAborted = getHttpSender().abort(exchange, requestFailure);
+            getHttpSender().abort(exchange, requestFailure, requestPromise);
+        else
+            requestPromise.succeeded(false);
 
-        boolean responseAborted = false;
+        Promise.Completable<Boolean> responsePromise = new Promise.Completable<>();
         if (responseFailure != null)
-            responseAborted = abortResponse(exchange, responseFailure);
+            abortResponse(exchange, responseFailure, responsePromise);
+        else
+            requestPromise.succeeded(false);
 
-        return requestAborted || responseAborted;
+        requestPromise.thenAcceptBoth(responsePromise, (requestAborted, responseAborted) -> promise.succeeded(requestAborted || responseAborted));
     }
 
-    public boolean abortResponse(HttpExchange exchange, Throwable failure)
+    public void abortResponse(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
     {
-        return getHttpReceiver().abort(exchange, failure);
+        getHttpReceiver().abort(exchange, failure, promise);
     }
 
     public Result exchangeTerminating(HttpExchange exchange, Result result)

@@ -40,6 +40,7 @@ import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -252,12 +253,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
-    public boolean onTimeout(Throwable failure)
+    public void onTimeout(Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-        return !exchange.abort(failure);
+        if (exchange != null)
+            exchange.abort(failure, Promise.from(b -> promise.succeeded(!b), promise::failed));
+        else
+            promise.succeeded(false);
     }
 
     @Override

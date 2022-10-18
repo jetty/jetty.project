@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,10 +154,13 @@ public class HttpConversation extends AttributesMap
         return firstExchange == null ? 0 : firstExchange.getRequest().getTimeout();
     }
 
-    public boolean abort(Throwable cause)
+    public void abort(Throwable cause, Promise<Boolean> promise)
     {
         HttpExchange exchange = exchanges.peekLast();
-        return exchange != null && exchange.abort(cause);
+        if (exchange != null)
+            exchange.abort(cause, promise);
+        else
+            promise.succeeded(false);
     }
 
     @Override

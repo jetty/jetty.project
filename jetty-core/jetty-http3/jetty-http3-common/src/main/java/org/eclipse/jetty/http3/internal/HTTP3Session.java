@@ -42,6 +42,7 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -926,8 +927,11 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         protected boolean onExpired(HTTP3Stream stream)
         {
             TimeoutException timeout = new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed");
-            if (stream.onIdleTimeout(timeout))
-                removeStream(stream, timeout);
+            stream.onIdleTimeout(timeout, Promise.from(timedOut ->
+            {
+                if (timedOut)
+                    removeStream(stream, timeout);
+            }, x -> removeStream(stream, timeout)));
             // The iterator returned from the method above does not support removal.
             return false;
         }

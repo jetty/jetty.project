@@ -26,6 +26,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,13 +160,13 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     }
 
     @Override
-    public boolean onIdleTimeout(Stream.Client stream, Throwable failure)
+    public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-
-        return !exchange.abort(failure);
+        if (exchange != null)
+            exchange.abort(failure, Promise.from(b -> promise.succeeded(!b), promise::failed));
+        else
+            promise.succeeded(false);
     }
 
     @Override

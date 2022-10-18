@@ -18,6 +18,7 @@ import java.nio.channels.AsynchronousCloseException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -234,7 +235,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         if (closed.compareAndSet(false, true))
         {
             getHttpDestination().remove(this);
-            abort(failure);
+            abort(failure, Promise.noop());
             channel.destroy();
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
@@ -245,10 +246,13 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         }
     }
 
-    protected boolean abort(Throwable failure)
+    protected void abort(Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = channel.getHttpExchange();
-        return exchange != null && exchange.getRequest().abort(failure);
+        if (exchange != null)
+            promise.completeWith(exchange.getRequest().abort(failure));
+        else
+            promise.succeeded(false);
     }
 
     @Override

@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.slf4j.Logger;
@@ -167,9 +168,9 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public boolean onIdleTimeout(Stream stream, Throwable x)
+        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
         {
-            return getConnection().onStreamTimeout(stream, x);
+            getConnection().onStreamTimeout(stream, x, promise);
         }
 
         private void close(Stream stream, String reason)
