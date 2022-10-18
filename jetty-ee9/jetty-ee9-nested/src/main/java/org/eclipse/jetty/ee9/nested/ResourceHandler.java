@@ -411,14 +411,23 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     @Deprecated
     public void setResourceBase(String resourceBase)
     {
+        setBaseResource(resourceBase);
+    }
+
+    /**
+     * @param baseResource The base resource as a string.
+     * @deprecated use {@link #setBaseResource(Resource)}
+     */
+    public void setBaseResource(String baseResource)
+    {
         try
         {
-            setBaseResource(ResourceFactory.of(this).newResource(resourceBase));
+            setBaseResource(ResourceFactory.of(this).newResource(baseResource));
         }
         catch (Exception e)
         {
-            LOG.warn("Invalid Base Resource reference: {}", resourceBase, e);
-            throw new IllegalArgumentException(resourceBase);
+            LOG.warn("Invalid Base Resource reference: {}", baseResource, e);
+            throw new IllegalArgumentException(baseResource);
         }
     }
 

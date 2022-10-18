@@ -225,6 +225,17 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
+     * @param base The resourceBase to server content from. If null the
+     * context resource base is used.  If non-null the {@link Resource} is created
+     * from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)} for
+     * this context.
+     */
+    public void setBaseResource(String base)
+    {
+        setBaseResource(base == null ? null : ResourceFactory.of(this).newResource(base));
+    }
+
+    /**
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
