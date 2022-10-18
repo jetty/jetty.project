@@ -134,7 +134,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _persistTmpDir = false;
 
     private String _war;
-    private ResourceCollection _extraClasspath;
+    private Resource _extraClasspath;
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
@@ -1232,7 +1232,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public ResourceCollection getExtraClasspath()
+    public Resource getExtraClasspath()
     {
         return _extraClasspath;
     }
@@ -1255,7 +1255,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setExtraClasspath(this.getResourceFactory().newResource(uris));
     }
 
-    public void setExtraClasspath(ResourceCollection extraClasspath)
+    public void setExtraClasspath(Resource extraClasspath)
     {
         _extraClasspath = extraClasspath;
     }

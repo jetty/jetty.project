@@ -214,6 +214,8 @@ public class AttributeNormalizer
         if (baseResource == null)
             throw new IllegalArgumentException("No base resource!");
 
+        System.err.println(baseResource);
+
         warURI = toCanonicalURI(baseResource.getURI());
         if (!warURI.isAbsolute())
             throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);

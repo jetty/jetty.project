@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UriPatternPredicate;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.ResourceUriPatternPredicate;
 import org.slf4j.Logger;
@@ -729,9 +730,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (context == null || context.getExtraClasspath() == null)
             return null;
 
-        return context.getExtraClasspath()
-            .getResources()
-            .stream()
+        return ResourceCollection.stream(context.getExtraClasspath())
             .filter(this::isFileSupported)
             .collect(Collectors.toList());
     }
@@ -772,9 +771,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (context == null || context.getExtraClasspath() == null)
             return List.of();
 
-        return context.getExtraClasspath()
-            .getResources()
-            .stream()
+        return ResourceCollection.stream(context.getExtraClasspath())
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
     }

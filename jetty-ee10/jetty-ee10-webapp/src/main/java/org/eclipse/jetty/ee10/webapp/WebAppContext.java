@@ -59,7 +59,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,7 +130,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _persistTmpDir = false;
 
     private String _war;
-    private ResourceCollection _extraClasspath;
+    private Resource _extraClasspath;
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
@@ -1234,7 +1233,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public ResourceCollection getExtraClasspath()
+    public Resource getExtraClasspath()
     {
         return _extraClasspath;
     }
@@ -1242,13 +1241,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the Extra ClassPath via delimited String.
      * <p>
-     * This is a convenience method for {@link #setExtraClasspath(ResourceCollection)}
+     * This is a convenience method for {@link #setExtraClasspath(Resource)}
      * </p>
      *
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
-     * @see #setExtraClasspath(ResourceCollection)
+     * @see #setExtraClasspath(Resource)
      */
     public void setExtraClasspath(String extraClasspath)
     {
@@ -1256,7 +1255,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setExtraClasspath(this.getResourceFactory().newResource(uris));
     }
 
-    public void setExtraClasspath(ResourceCollection extraClasspath)
+    public void setExtraClasspath(Resource extraClasspath)
     {
         _extraClasspath = extraClasspath;
     }

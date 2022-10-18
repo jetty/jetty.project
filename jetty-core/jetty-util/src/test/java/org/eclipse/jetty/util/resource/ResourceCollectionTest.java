@@ -173,7 +173,7 @@ public class ResourceCollectionTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path twoDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        ResourceCollection rc1 = ResourceFactory.combine(
+        Resource rc1 = ResourceFactory.combine(
             List.of(
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
@@ -181,7 +181,7 @@ public class ResourceCollectionTest
             )
         );
 
-        ResourceCollection rc2 = ResourceFactory.combine(
+        Resource rc2 = ResourceFactory.combine(
             List.of(
                 // the original ResourceCollection
                 rc1,
@@ -200,9 +200,11 @@ public class ResourceCollectionTest
         };
 
         List<URI> actual = new ArrayList<>();
-        for (Resource res: rc2.getResources())
+        assertThat(rc2, instanceOf(ResourceCollection.class));
+        if (rc2 instanceof ResourceCollection resourceCollection)
         {
-            actual.add(res.getURI());
+            for (Resource res : resourceCollection.getResources())
+                actual.add(res.getURI());
         }
         assertThat(actual, contains(expected));
     }
@@ -305,7 +307,7 @@ public class ResourceCollectionTest
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        ResourceCollection rc = resourceFactory.newResource(uris);
+        Resource rc = resourceFactory.newResource(uris);
         assertThat(getContent(rc, "test.txt"), is("Test"));
     }
 
@@ -331,7 +333,7 @@ public class ResourceCollectionTest
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        ResourceCollection rc = resourceFactory.newResource(uris);
+        Resource rc = resourceFactory.newResource(uris);
         assertThat(getContent(rc, "test.txt"), is("Test inside lib-foo.jar"));
         assertThat(getContent(rc, "testZed.txt"), is("TestZed inside lib-zed.jar"));
     }

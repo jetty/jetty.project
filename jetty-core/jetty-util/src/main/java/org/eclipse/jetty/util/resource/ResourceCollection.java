@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.URIUtil;
 
@@ -35,6 +36,19 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ResourceCollection extends Resource
 {
+    /**
+     * Stream a resource to its component resources (if any).
+     * @param resource The resource to stream
+     * @return If the passed resource is a ResourceCollection, then it's contained
+     *         resources are streamed, otherwise the passed resource itself if streamed
+     */
+    public static Stream<Resource> stream(Resource resource)
+    {
+        if (resource instanceof ResourceCollection rc)
+            return rc.getResources().stream();
+        return Stream.of(resource);
+    }
+
     private final List<Resource> _resources;
 
     /**

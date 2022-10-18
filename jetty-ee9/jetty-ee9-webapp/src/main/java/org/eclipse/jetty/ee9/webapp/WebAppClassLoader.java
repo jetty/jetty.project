@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -112,7 +113,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        ResourceCollection getExtraClasspath();
+        Resource getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -193,12 +194,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
 
         if (context.getExtraClasspath() != null)
-        {
-            for (Resource resource : context.getExtraClasspath().getResources())
-            {
-                addClassPath(resource);
-            }
-        }
+            addClassPath(context.getExtraClasspath());
     }
 
     /**
@@ -223,23 +219,30 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
-     * @param resources The resources to add to the classpath
-     * @throws IOException if unable to add classpath from resource
+     * @param resource The resources to add to the classpath
      */
-    public void addClassPath(Resource resources)
-        throws IOException
+    public void addClassPath(Resource resource)
     {
-        for (Resource resource: resources)
+        ResourceCollection.stream(resource).forEach(r ->
         {
             if (resource.exists())
-                addURL(resource.getURI().toURL());
+            {
+                try
+                {
+                    addURL(resource.getURI().toURL());
+                }
+                catch (MalformedURLException e)
+                {
+                    throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
+                }
+            }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Check resource exists and is not a nested jar: {}", resource);
                 throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
             }
-        }
+        });
     }
 
     /**

@@ -35,13 +35,15 @@ public interface ResourceFactory
     /**
      * <p>Make a Resource containing a collection of other resources</p>
      * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources.
+     * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
      * @see ResourceCollection
      */
-    static ResourceCollection combine(List<Resource> resources)
+    static Resource combine(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
-            throw new IllegalArgumentException("No resources");
+            return null;
+        if (resources.size() == 1)
+            return resources.get(0);
         return new ResourceCollection(resources);
     }
 
@@ -208,7 +210,7 @@ public interface ResourceFactory
      * @param uris the URIs
      * @return the Resource for the provided path
      */
-    default ResourceCollection newResource(List<URI> uris)
+    default Resource newResource(List<URI> uris)
     {
         if ((uris == null) || (uris.isEmpty()))
             throw new IllegalArgumentException("List of URIs is invalid");
