@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.Loader;
  * See http://java.net/jira/browse/GLASSFISH-1649
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=353095
  */
+@Deprecated
 public class ELContextCleaner implements ServletContextListener
 {
     // IMPORTANT: This class cannot have a slf4j Logger
@@ -51,35 +52,21 @@ public class ELContextCleaner implements ServletContextListener
             Class<?> beanELResolver = Loader.loadClass("jakarta.el.BeanELResolver");
 
             //Get a reference via reflection to the properties field which is holding class references
-            Field field = getField(beanELResolver);
+            Field field = beanELResolver.getDeclaredField("properties");
 
             field.setAccessible(true);
 
             //Get rid of references
             purgeEntries(sce.getServletContext(), field);
         }
-
-        catch (ClassNotFoundException e)
+        catch (ClassNotFoundException | NoSuchFieldException e)
         {
-            //BeanELResolver not on classpath, ignore
+            //BeanELResolver not on classpath,or has no .properties field, ignore
         }
         catch (SecurityException | IllegalArgumentException | IllegalAccessException e)
         {
-            sce.getServletContext().log("Cannot purge classes from javax.el.BeanELResolver", e);
+            sce.getServletContext().log("Cannot purge classes from jakarta.el.BeanELResolver", e);
         }
-        catch (NoSuchFieldException e)
-        {
-            sce.getServletContext().log("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
-        }
-    }
-
-    protected Field getField(Class<?> beanELResolver)
-        throws SecurityException, NoSuchFieldException
-    {
-        if (beanELResolver == null)
-            return null;
-
-        return beanELResolver.getDeclaredField("properties");
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

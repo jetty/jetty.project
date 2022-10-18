@@ -59,14 +59,14 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     if (url != null)
                     {
                         URI uri = url.toURI();
-                        _resourceFactory = ResourceFactory.closeable();
-                        dftResource = _resourceFactory.newResource(uri);
+                        dftResource = context.getResourceFactory().newResource(uri);
                     }
                 }
                 if (dftResource == null)
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
+            if (dftResource != null && dftResource.exists() && !dftResource.isDirectory())
+                context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
         //parse, but don't process web.xml
