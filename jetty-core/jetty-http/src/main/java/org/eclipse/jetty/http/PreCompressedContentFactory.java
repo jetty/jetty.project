@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +24,7 @@ import org.eclipse.jetty.http.HttpContent.Factory;
 public class PreCompressedContentFactory implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
-    private final List<CompressedContentFormat> _preCompressedFormats = new ArrayList<>();
+    private final List<CompressedContentFormat> _preCompressedFormats;
 
     public PreCompressedContentFactory(Factory factory, CompressedContentFormat[] preCompressedFormats)
     {
@@ -35,7 +34,7 @@ public class PreCompressedContentFactory implements HttpContent.Factory
     public PreCompressedContentFactory(HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
     {
         _factory = factory;
-        _preCompressedFormats.addAll(preCompressedFormats);
+        _preCompressedFormats = preCompressedFormats;
     }
 
     @Override

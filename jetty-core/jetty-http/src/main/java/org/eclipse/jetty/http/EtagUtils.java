@@ -234,8 +234,10 @@ public final class EtagUtils
             end--;
         }
         // find suffix (if present)
-        int suffixIdx = etag.lastIndexOf('-', end) - 1;
-        if (suffixIdx >= 0 && suffixIdx >= start)
+        int suffixIdx = etag.lastIndexOf('-', end);
+        if ((suffixIdx - 1) >= 0 && (suffixIdx - 1 >= start) && etag.charAt(suffixIdx - 1) == '-')
+            end = suffixIdx - 1;
+        else if (suffixIdx >= 0 && suffixIdx >= start)
             end = suffixIdx;
 
         // build new etag
