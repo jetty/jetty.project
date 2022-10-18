@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpExchange;
@@ -297,14 +298,20 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         responseSuccess(exchange);
     }
 
+    private final AtomicBoolean timeout = new AtomicBoolean(false);
+
     @Override
     public boolean onIdleTimeout(Stream.Client stream, Throwable failure)
     {
-        HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-
-        return !exchange.abort(failure);
+        boolean timedout = timeout.compareAndSet(false, true);
+        if (timedout)
+        {
+            HttpExchange exchange = getHttpExchange();
+            if (exchange == null)
+                return false;
+            exchange.abort(failure);
+        }
+        return timedout;
     }
 
     @Override
@@ -315,8 +322,10 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
     private void failAndClose(Throwable failure)
     {
-        responseFailure(failure);
-        HttpChannelOverHTTP3 httpChannel = getHttpChannel();
-        httpChannel.getHttpConnection().close(failure);
+        responseFailure(failure, (failed) ->
+        {
+            HttpChannelOverHTTP3 httpChannel = getHttpChannel();
+            httpChannel.getHttpConnection().close(failure);
+        });
     }
 }

@@ -79,9 +79,8 @@ public interface Response
      * Attempts to abort the receive of this response.
      *
      * @param cause the abort cause, must not be null
-     * @return whether the abort succeeded
      */
-    boolean abort(Throwable cause); // TODO return void
+    void abort(Throwable cause);
 
     /**
      * Common, empty, super-interface for response listeners

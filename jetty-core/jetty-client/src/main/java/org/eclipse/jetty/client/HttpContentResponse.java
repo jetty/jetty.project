@@ -82,9 +82,9 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public boolean abort(Throwable cause)
+    public void abort(Throwable cause)
     {
-        return response.abort(cause);
+        response.abort(cause);
     }
 
     @Override

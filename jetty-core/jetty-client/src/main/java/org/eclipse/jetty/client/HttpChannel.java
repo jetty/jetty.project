@@ -131,23 +131,18 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         getHttpSender().proceed(exchange, failure);
     }
 
-    public boolean abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure)
+    public void abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure)
     {
-        boolean requestAborted = false;
         if (requestFailure != null)
-            requestAborted = getHttpSender().abort(exchange, requestFailure);
+            getHttpSender().abort(exchange, requestFailure);
 
-        boolean responseAborted = false;
         if (responseFailure != null)
-            responseAborted = abortResponse(exchange, responseFailure);
-
-        return requestAborted || responseAborted;
+            abortResponse(exchange, responseFailure);
     }
 
-    public boolean abortResponse(HttpExchange exchange, Throwable failure) // TODO return void
+    public void abortResponse(HttpExchange exchange, Throwable failure)
     {
         getHttpReceiver().abort(exchange, failure);
-        return false;
     }
 
     public Result exchangeTerminating(HttpExchange exchange, Result result)

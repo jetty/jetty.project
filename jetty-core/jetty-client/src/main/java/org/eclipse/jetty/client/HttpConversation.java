@@ -153,10 +153,11 @@ public class HttpConversation extends AttributesMap
         return firstExchange == null ? 0 : firstExchange.getRequest().getTimeout();
     }
 
-    public boolean abort(Throwable cause)
+    public void abort(Throwable cause)
     {
         HttpExchange exchange = exchanges.peekLast();
-        return exchange != null && exchange.abort(cause);
+        if (exchange != null)
+            exchange.abort(cause);
     }
 
     @Override

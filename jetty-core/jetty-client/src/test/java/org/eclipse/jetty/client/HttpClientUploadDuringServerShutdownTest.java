@@ -189,17 +189,16 @@ public class HttpClientUploadDuringServerShutdownTest
                     }
 
                     @Override
-                    protected boolean abort(Throwable failure)
+                    protected void abort(Throwable failure)
                     {
                         try
                         {
                             associateLatch.await(5, TimeUnit.SECONDS);
-                            return super.abort(failure);
+                            super.abort(failure);
                         }
                         catch (InterruptedException x)
                         {
                             x.printStackTrace();
-                            return false;
                         }
                     }
                 };

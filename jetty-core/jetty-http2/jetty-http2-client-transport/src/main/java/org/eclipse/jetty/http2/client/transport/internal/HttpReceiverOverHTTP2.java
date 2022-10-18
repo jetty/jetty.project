@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
@@ -312,19 +313,29 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         exchange.getRequest().abort(new IOException(ErrorCode.toString(error, "reset_code_" + error)));
     }
 
+    private final AtomicBoolean timeout = new AtomicBoolean();
+
     @Override
     public boolean onTimeout(Throwable failure)
     {
-        HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-        return !exchange.abort(failure);
+        boolean timedout = timeout.compareAndSet(false, true);
+        if (timedout)
+        {
+            HttpExchange exchange = getHttpExchange();
+            if (exchange == null)
+                return false;
+            exchange.abort(failure);
+        }
+        return timedout;
     }
 
     @Override
     public void onFailure(Throwable failure, Callback callback)
     {
-        responseFailure(failure);
-        callback.succeeded();
+        responseFailure(failure, (failed) ->
+        {
+            if (failed)
+                callback.succeeded();
+        });
     }
 }

@@ -821,11 +821,10 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public boolean abort(Throwable cause)
+    public void abort(Throwable cause)
     {
         if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
-            return conversation.abort(cause);
-        return false;
+            conversation.abort(cause);
     }
 
     @Override

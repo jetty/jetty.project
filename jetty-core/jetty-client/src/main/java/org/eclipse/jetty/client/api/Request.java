@@ -466,9 +466,8 @@ public interface Request
      * Attempts to abort the send of this request.
      *
      * @param cause the abort cause, must not be null
-     * @return whether the abort succeeded
      */
-    boolean abort(Throwable cause);
+    void abort(Throwable cause);
 
     /**
      * @return the abort cause passed to {@link #abort(Throwable)},

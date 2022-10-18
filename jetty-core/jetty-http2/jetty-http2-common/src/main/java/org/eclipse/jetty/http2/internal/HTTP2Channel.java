@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.internal;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -33,7 +34,7 @@ public interface HTTP2Channel
     {
         public void onDataAvailable();
 
-        public boolean onTimeout(Throwable failure);
+        public boolean onTimeout(Throwable failure); // TODO does the boolean return value still make sense?
 
         public void onFailure(Throwable failure, Callback callback);
     }

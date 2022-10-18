@@ -106,6 +106,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         @Override
         public Content.Chunk read()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("read");
             Content.Chunk chunk = consumeCurrentChunk();
             if (chunk != null)
                 return chunk;
@@ -115,12 +117,16 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         public void onDataAvailable()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onDataAvailable");
             if (demandCallback != null)
                 invoker.run(this::invokeDemandCallback);
         }
 
         private Content.Chunk consumeCurrentChunk()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("consumeCurrentChunk");
             if (currentChunk != null)
             {
                 Content.Chunk rc = currentChunk;
@@ -134,6 +140,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         @Override
         public void demand(Runnable demandCallback)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand");
             if (demandCallback == null)
                 throw new IllegalArgumentException();
             if (this.demandCallback != null)
@@ -145,6 +153,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         private void meetDemand()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("meetDemand");
             while (true)
             {
                 if (currentChunk != null)
@@ -163,6 +173,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         private void invokeDemandCallback()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("invokeDemandCallback");
+
             Runnable demandCallback = this.demandCallback;
             this.demandCallback = null;
             if (demandCallback != null)
@@ -234,6 +247,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private Content.Chunk read(boolean fillInterestIfNeeded)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("read f={} c={}", fillInterestIfNeeded, contentGenerated);
+
         Content.Chunk chunk = consumeContentGenerated();
         if (chunk != null)
             return chunk;
@@ -392,7 +408,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             {
                 Runnable action = actionRef.getAndSet(null);
                 if (action != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("executing action after parser returned: {}", action);
                     action.run();
+                }
                 return parser.isClose();
             }
 
@@ -507,6 +527,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public boolean content(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parser generated content {}", BufferUtil.toDetailString(buffer));
         HttpExchange exchange = getHttpExchange();
         unsolicited |= exchange == null;
         if (unsolicited)
@@ -594,9 +616,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void failAndClose(Throwable failure)
     {
-        responseFailure(failure);
-        if (isFailed()) // TODO this is racy, responseFailure may return before it changed the state to FAILED
-            getHttpConnection().close(failure);
+        responseFailure(failure, (failed) ->
+        {
+            if (failed)
+                getHttpConnection().close(failure);
+        });
     }
 
     long getMessagesIn()

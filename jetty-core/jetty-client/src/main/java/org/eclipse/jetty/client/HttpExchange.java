@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.Request;
@@ -250,7 +249,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         return result;
     }
 
-    public boolean abort(Throwable failure)
+    public void abort(Throwable failure)
     {
         // Atomically change the state of this exchange to be completed.
         // This will avoid that this exchange can be associated to a channel.
@@ -266,7 +265,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             LOG.debug("Failed {}: req={}/rsp={} {}", this, abortRequest, abortResponse, failure);
 
         if (!abortRequest && !abortResponse)
-            return false;
+            return;
 
         // We failed this exchange, deal with it.
 
@@ -282,7 +281,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborting while queued {}: {}", this, failure);
             notifyFailureComplete(failure);
-            return true;
+            return;
         }
 
         HttpChannel channel = getHttpChannel();
@@ -294,14 +293,13 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborted before association {}: {}", this, failure);
             notifyFailureComplete(failure);
-            return true;
+            return;
         }
 
         // Case #3: exchange was already associated.
-        boolean aborted = channel.abort(this, abortRequest ? failure : null, abortResponse ? failure : null);
+        channel.abort(this, abortRequest ? failure : null, abortResponse ? failure : null);
         if (LOG.isDebugEnabled())
-            LOG.debug("Aborted ({}) while active {}: {}", aborted, this, failure);
-        return aborted;
+            LOG.debug("Aborted while active {}: {}", this, failure);
     }
 
     private void notifyFailureComplete(Throwable failure)

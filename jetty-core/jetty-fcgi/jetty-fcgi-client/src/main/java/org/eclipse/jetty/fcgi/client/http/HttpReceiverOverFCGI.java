@@ -14,6 +14,7 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -220,6 +221,12 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         super.responseFailure(failure);
     }
 
+    @Override
+    protected void responseFailure(Throwable failure, Consumer<Boolean> cb)
+    {
+        super.responseFailure(failure, cb);
+    }
+
     protected void receive()
     {
         getHttpChannel().receive();
@@ -227,8 +234,13 @@ public class HttpReceiverOverFCGI extends HttpReceiver
 
     private void failAndClose(Throwable failure)
     {
-        responseFailure(failure);
-        HttpChannelOverFCGI httpChannel = getHttpChannel();
-        httpChannel.getHttpConnection().close(failure);
+        responseFailure(failure, (failed) ->
+        {
+            if (failed)
+            {
+                HttpChannelOverFCGI httpChannel = getHttpChannel();
+                httpChannel.getHttpConnection().close(failure);
+            }
+        });
     }
 }

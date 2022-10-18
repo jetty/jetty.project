@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -48,9 +49,9 @@ import org.slf4j.LoggerFactory;
  * <li>{@link #responseHeaders(HttpExchange)}, when all HTTP headers are available</li>
  * <li>{@link #responseSuccess(HttpExchange)}, when the response is successful</li>
  * </ol>
- * At any time, subclasses may invoke {@link #responseFailure(Throwable)} to indicate that the response has failed
+ * At any time, subclasses may invoke {@link #responseFailure(Throwable, Consumer)} to indicate that the response has failed
  * (for example, because of I/O exceptions).
- * At any time, user threads may abort the response which will cause {@link #responseFailure(Throwable)} to be
+ * At any time, user threads may abort the response which will cause {@link #responseFailure(Throwable, Consumer)} to be
  * invoked.
  * <p>
  * The state machine maintained by this class ensures that the response steps are not executed by an I/O thread
@@ -227,7 +228,11 @@ public abstract class HttpReceiver
     {
         invoker.run(() ->
         {
-            if (exchange.isResponseComplete()) return;
+            if (LOG.isDebugEnabled())
+                LOG.debug("responseBegin");
+
+            if (exchange.isResponseComplete())
+                return;
             responseState = ResponseState.BEGIN;
             HttpConversation conversation = exchange.getConversation();
             HttpResponse response = exchange.getResponse();
@@ -264,6 +269,9 @@ public abstract class HttpReceiver
     {
         invoker.run(() ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("responseHeader");
+
             if (exchange.isResponseComplete())
                 return;
             responseState = ResponseState.HEADER;
@@ -319,6 +327,9 @@ public abstract class HttpReceiver
     {
         invoker.run(() ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("responseHeaders");
+
             if (exchange.isResponseComplete())
                 return;
             responseState = ResponseState.HEADERS;
@@ -380,9 +391,13 @@ public abstract class HttpReceiver
     {
         invoker.run(() ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("responseSuccess");
+
             // Mark atomically the response as completed, with respect
             // to concurrency between response success and response failure.
-            if (!exchange.responseComplete(null)) return;
+            if (!exchange.responseComplete(null))
+                return;
 
             responseState = ResponseState.IDLE;
 
@@ -412,8 +427,18 @@ public abstract class HttpReceiver
      */
     protected void responseFailure(Throwable failure)
     {
+        responseFailure(failure, (failed) ->
+        {
+        });
+    }
+
+    protected void responseFailure(Throwable failure, Consumer<Boolean> cb)
+    {
         invoker.run(() ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("responseFailure");
+
             HttpExchange exchange = getHttpExchange();
             // In case of a response error, the failure has already been notified
             // and it is possible that a further attempt to read in the receive
@@ -428,7 +453,7 @@ public abstract class HttpReceiver
             // Mark atomically the response as completed, with respect
             // to concurrency between response success and response failure.
             if (exchange.responseComplete(failure))
-                abort(exchange, failure);
+                abort(exchange, failure, cb);
         });
     }
 
@@ -498,30 +523,48 @@ public abstract class HttpReceiver
             contentSource.fail(x);
         contentSource = null;
         failure = null;
+        responseState = ResponseState.IDLE;
     }
 
     public void abort(HttpExchange exchange, Throwable failure)
     {
+        abort(exchange, failure, (f) ->
+        {
+        });
+    }
+
+    public void abort(HttpExchange exchange, Throwable failure, Consumer<Boolean> cb)
+    {
         invoker.run(() ->
         {
-            if (responseState == ResponseState.IDLE || responseState == ResponseState.FAILURE) return;
+            boolean failed = false;
+            try
+            {
+                if (responseState == ResponseState.IDLE || responseState == ResponseState.FAILURE)
+                    return;
 
-            responseState = ResponseState.FAILURE;
+                responseState = ResponseState.FAILURE;
+                failed = true;
 
-            this.failure = failure;
+                this.failure = failure;
 
-            dispose(failure);
+                dispose(failure);
 
-            HttpResponse response = exchange.getResponse();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response abort {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
-            List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-            notifier.notifyFailure(listeners, response, failure);
+                HttpResponse response = exchange.getResponse();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response abort {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
+                List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+                ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
+                notifier.notifyFailure(listeners, response, failure);
 
-            // Mark atomically the response as terminated, with
-            // respect to concurrency between request and response.
-            terminateResponse(exchange);
+                // Mark atomically the response as terminated, with
+                // respect to concurrency between request and response.
+                terminateResponse(exchange);
+            }
+            finally
+            {
+                cb.accept(failed);
+            }
         });
     }
 

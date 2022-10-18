@@ -46,7 +46,7 @@ public class WebSocketCoreJPMSTest
 
         WebSocketUpgradeHandler webSocketUpgradeHandler = new WebSocketUpgradeHandler();
         FrameHandler myFrameHandler = new TestFrameHandler("Server");
-        webSocketUpgradeHandler.addMapping("/ws", WebSocketNegotiator.from(negotiation -> myFrameHandler));
+        //webSocketUpgradeHandler.addMapping("/ws", WebSocketNegotiator.from(negotiation -> myFrameHandler)); // TODO restore
 
         _server.setHandler(webSocketUpgradeHandler);
         _server.start();

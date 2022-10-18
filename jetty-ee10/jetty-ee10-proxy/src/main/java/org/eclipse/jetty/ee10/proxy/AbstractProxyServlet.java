@@ -638,12 +638,15 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void onClientRequestFailure(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, Throwable failure)
     {
-        boolean aborted = proxyRequest.abort(failure);
-        if (!aborted)
-        {
-            int status = clientRequestStatus(failure);
-            sendProxyResponseError(clientRequest, proxyResponse, status);
-        }
+        // TODO figure out how to replace the aborted flag.
+        proxyRequest.abort(failure);
+
+//        boolean aborted = proxyRequest.abort(failure);
+//        if (!aborted)
+//        {
+//            int status = clientRequestStatus(failure);
+//            sendProxyResponseError(clientRequest, proxyResponse, status);
+//        }
     }
 
     protected int clientRequestStatus(Throwable failure)

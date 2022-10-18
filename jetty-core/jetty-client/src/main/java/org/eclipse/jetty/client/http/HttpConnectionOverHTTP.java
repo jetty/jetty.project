@@ -230,10 +230,11 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         }
     }
 
-    protected boolean abort(Throwable failure)
+    protected void abort(Throwable failure)
     {
         HttpExchange exchange = channel.getHttpExchange();
-        return exchange != null && exchange.getRequest().abort(failure);
+        if (exchange != null)
+            exchange.getRequest().abort(failure);
     }
 
     @Override
