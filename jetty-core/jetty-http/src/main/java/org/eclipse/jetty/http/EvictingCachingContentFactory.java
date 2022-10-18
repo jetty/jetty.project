@@ -23,30 +23,18 @@ public class EvictingCachingContentFactory extends CachingContentFactory impleme
 {
     private final Scheduler _scheduler;
     private final long _delay;
-    private final TimeUnit _timeUnit;
 
-    public EvictingCachingContentFactory(HttpContent.Factory authority, Scheduler scheduler)
-    {
-        this(authority, scheduler, 1, TimeUnit.MINUTES);
-    }
-
-    public EvictingCachingContentFactory(HttpContent.Factory authority, Scheduler scheduler, long delay, TimeUnit timeUnit)
+    public EvictingCachingContentFactory(HttpContent.Factory authority, Scheduler scheduler, long delay)
     {
         super(authority);
         _scheduler = scheduler;
         _delay = delay;
-        _timeUnit = timeUnit;
+        setEvictionTime(0);
     }
 
     private void schedule()
     {
-        _scheduler.schedule(this, _delay, _timeUnit);
-    }
-
-    @Override
-    protected boolean isValid(CachingHttpContent content)
-    {
-        return false;
+        _scheduler.schedule(this, _delay, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -55,9 +43,73 @@ public class EvictingCachingContentFactory extends CachingContentFactory impleme
         ConcurrentMap<String, CachingHttpContent> cache = getCache();
         for (Map.Entry<String, CachingHttpContent> entry : cache.entrySet())
         {
-            if (!super.isValid(entry.getValue()))
-                removeFromCache(entry.getValue());
+            CachingHttpContent value = entry.getValue();
+            if (value instanceof EvictingCachedContent content)
+            {
+                if (!content.checkValid())
+                    removeFromCache(content);
+            }
+            else if (value instanceof EvictingNotFoundContent content)
+            {
+                if (!content.checkValid())
+                    removeFromCache(content);
+            }
+            else
+            {
+                if (!value.isValid())
+                    removeFromCache(value);
+            }
         }
         schedule();
+    }
+
+    @Override
+    protected CachingHttpContent newCachedContent(String p, HttpContent httpContent, long evictionTime)
+    {
+        return new EvictingCachedContent(p, httpContent, evictionTime);
+    }
+
+    @Override
+    protected CachingHttpContent newNotFoundContent(String p, long evictionTime)
+    {
+        return new NotFoundContent(p, evictionTime);
+    }
+
+    protected static class EvictingCachedContent extends CachedContent
+    {
+        public EvictingCachedContent(String key, HttpContent httpContent, long evictionTime)
+        {
+            super(key, httpContent, evictionTime);
+        }
+
+        @Override
+        public boolean isValid()
+        {
+            return true;
+        }
+
+        public boolean checkValid()
+        {
+            return super.isValid();
+        }
+    }
+
+    protected static class EvictingNotFoundContent extends NotFoundContent
+    {
+        public EvictingNotFoundContent(String key, long evictionTime)
+        {
+            super(key, evictionTime);
+        }
+
+        @Override
+        public boolean isValid()
+        {
+            return true;
+        }
+
+        public boolean checkValid()
+        {
+            return super.isValid();
+        }
     }
 }

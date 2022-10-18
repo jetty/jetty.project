@@ -37,11 +37,6 @@ import org.slf4j.LoggerFactory;
  * using it as a caching authority.
  * Only HttpContent instances whose path is not a directory are cached.
  * HttpContent instances returned by getContent() implement HttpContent.InMemory when a cached instance is found.
- *
- * TODO should directories (generated HTML) and not-found contents be cached?
- * TODO this form of caching is done at a layer below the request processor (i.e.: done in the guts of the ResourceHandler)
- *  Consider if caching should rather be done at a layer above using a CachingHandler that would intercept Response.write()
- *  of a configured URI set, save that in a cache and serve that again.
  */
 public class CachingContentFactory implements HttpContent.Factory
 {
@@ -53,6 +48,7 @@ public class CachingContentFactory implements HttpContent.Factory
     private int _maxCachedFileSize = 128 * 1024 * 1024;
     private int _maxCachedFiles = 2048;
     private int _maxCacheSize = 256 * 1024 * 1024;
+    private long _evictionTime = 0;
 
     public CachingContentFactory(HttpContent.Factory authority)
     {
@@ -113,6 +109,16 @@ public class CachingContentFactory implements HttpContent.Factory
         shrinkCache();
     }
 
+    public long getEvictionTime()
+    {
+        return _evictionTime;
+    }
+
+    public void setEvictionTime(int evictionTime)
+    {
+        _evictionTime = evictionTime;
+    }
+
     private void shrinkCache()
     {
         // While we need to shrink
@@ -170,7 +176,7 @@ public class CachingContentFactory implements HttpContent.Factory
     protected boolean isCacheable(HttpContent httpContent)
     {
         if (httpContent == null)
-            return true;
+            return (_evictionTime != 0);
 
         if (httpContent.getResource().isDirectory())
             return false;
@@ -187,43 +193,14 @@ public class CachingContentFactory implements HttpContent.Factory
         return (len <= _maxCachedFileSize && len <= _maxCacheSize);
     }
 
-    protected boolean isValid(CachingHttpContent content)
-    {
-        // Only check the FileSystem once per second, otherwise assume cached value is valid.
-        // TODO: should the time between checks be configurable.
-        long now = NanoTime.now();
-        if (content.getLastAccessed().updateAndGet(lastChecked ->
-            (NanoTime.since(lastChecked) > TimeUnit.SECONDS.toNanos(1)) ? now : lastChecked) != now)
-            return true;
-
-        if (content instanceof CachedContent cachedContent)
-            return Objects.equals(cachedContent.getWrapped().getLastModifiedInstant(), cachedContent.getLastModifiedInstant());
-
-        // TODO:
-
-        if (content instanceof NotFoundContent notFoundContent)
-        {
-            try
-            {
-                return _authority.getContent(notFoundContent.getKey()) != null;
-            }
-            catch (IOException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("", e);
-            }
-        }
-
-        return true;
-    }
-
     @Override
     public HttpContent getContent(String path) throws IOException
     {
         CachingHttpContent cachingHttpContent = _cache.get(path);
         if (cachingHttpContent != null)
         {
-            if (isValid(cachingHttpContent))
+            cachingHttpContent.getLastAccessed().set(NanoTime.now());
+            if (cachingHttpContent.isValid())
                 return (cachingHttpContent instanceof NotFoundContent) ? null : cachingHttpContent;
             else
                 removeFromCache(cachingHttpContent);
@@ -236,7 +213,8 @@ public class CachingContentFactory implements HttpContent.Factory
             cachingHttpContent = _cache.computeIfAbsent(path, p ->
             {
                 wasAdded.set(true);
-                CachingHttpContent cachingContent = (httpContent == null) ? new NotFoundContent(p) : new CachedContent(p, httpContent);
+                CachingHttpContent cachingContent = (httpContent == null)
+                    ? newNotFoundContent(p, _evictionTime) : newCachedContent(p, httpContent, _evictionTime);
                 _cachedSize.addAndGet(cachingContent.getContentLengthValue());
                 return cachingContent;
             });
@@ -248,19 +226,34 @@ public class CachingContentFactory implements HttpContent.Factory
         return httpContent;
     }
 
+    protected CachingHttpContent newCachedContent(String p, HttpContent httpContent, long evictionTime)
+    {
+        return new CachedContent(p, httpContent, evictionTime);
+    }
+
+    protected CachingHttpContent newNotFoundContent(String p, long evictionTime)
+    {
+        return new NotFoundContent(p, evictionTime);
+    }
+
     protected interface CachingHttpContent extends HttpContent
     {
         AtomicLong getLastAccessed();
+
         String getKey();
+
+        boolean isValid();
     }
 
-    private static class CachedContent extends HttpContentWrapper implements CachingHttpContent
+    protected static class CachedContent extends HttpContentWrapper implements CachingHttpContent
     {
         private final ByteBuffer _buffer;
         private final String _cacheKey;
+        private final long _evictionTime;
         private final HttpField _etagField;
         private final long _contentLengthValue;
         private final AtomicLong _lastAccessed = new AtomicLong();
+        private final AtomicLong _lastValidated = new AtomicLong();
         private final Set<CompressedContentFormat> _compressedFormats;
         private final String _lastModifiedValue;
         private final String _characterEncoding;
@@ -269,10 +262,11 @@ public class CachingContentFactory implements HttpContent.Factory
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
 
-        private CachedContent(String key, HttpContent httpContent)
+        public CachedContent(String key, HttpContent httpContent, long evictionTime)
         {
             super(httpContent);
             _cacheKey = key;
+            _evictionTime = evictionTime;
 
             // TODO: do all the following lazily and asynchronously.
             HttpField etagField = httpContent.getETag();
@@ -293,7 +287,10 @@ public class CachingContentFactory implements HttpContent.Factory
             _contentLength = httpContent.getContentLength();
             _lastModifiedInstant = httpContent.getLastModifiedInstant();
             _lastModified = httpContent.getLastModified();
-            _lastAccessed.set(NanoTime.now());
+
+            long now = NanoTime.now();
+            _lastAccessed.set(now);
+            _lastValidated.set(now);
         }
 
         @Override
@@ -383,17 +380,48 @@ public class CachingContentFactory implements HttpContent.Factory
         {
             return _lastModifiedValue;
         }
+
+        @Override
+        public boolean isValid()
+        {
+            if (_evictionTime < 0)
+            {
+                _lastValidated.set(NanoTime.now());
+                return true;
+            }
+            if (_evictionTime > 0)
+            {
+                long now = NanoTime.now();
+                if (_lastValidated.updateAndGet(lastChecked ->
+                    (NanoTime.elapsed(lastChecked, now) > TimeUnit.MILLISECONDS.toNanos(_evictionTime)) ? now : lastChecked) != now)
+                    return true;
+            }
+
+            return Objects.equals(getLastModifiedInstant(), getWrapped().getLastModifiedInstant());
+        }
     }
 
-    private static class NotFoundContent implements CachingHttpContent
+    protected static class NotFoundContent implements CachingHttpContent
     {
-        private final AtomicLong _lastAccessed = new AtomicLong(NanoTime.now());
+        private final AtomicLong _lastAccessed = new AtomicLong();
+        private final AtomicLong _lastValidated = new AtomicLong();
 
         private final String _key;
+        private final long _evictionTime;
 
         public NotFoundContent(String key)
         {
+            this(key, -1);
+        }
+
+        public NotFoundContent(String key, long evictionTime)
+        {
             _key = key;
+            _evictionTime = evictionTime;
+
+            long now = NanoTime.now();
+            _lastAccessed.set(now);
+            _lastValidated.set(now);
         }
 
         @Override
@@ -507,6 +535,17 @@ public class CachingContentFactory implements HttpContent.Factory
         @Override
         public void release()
         {
+        }
+
+        @Override
+        public boolean isValid()
+        {
+            // TODO: Do we want to use the _authority to recheck the filesystem to see if it now exists.
+            if (_evictionTime < 0)
+                return true;
+            if (_evictionTime > 0)
+                return NanoTime.since(_lastValidated.get()) < TimeUnit.MILLISECONDS.toNanos(_evictionTime);
+            return false;
         }
     }
 }
