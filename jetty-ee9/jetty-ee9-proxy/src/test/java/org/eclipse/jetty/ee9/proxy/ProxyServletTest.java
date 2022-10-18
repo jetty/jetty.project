@@ -206,7 +206,7 @@ public class ProxyServletTest
         clientPool.setName("client");
         HttpClient result = new HttpClient();
         result.setExecutor(clientPool);
-        result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        result.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         if (consumer != null)
             consumer.accept(result);
         result.start();

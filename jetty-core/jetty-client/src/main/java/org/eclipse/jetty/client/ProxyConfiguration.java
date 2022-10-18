@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * Applications add subclasses of {@link Proxy} to this configuration via:
  * <pre>
  * ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
- * proxyConfig.getProxies().add(new HttpProxy(proxyHost, 8080));
+ * proxyConfig.addProxy(new HttpProxy(proxyHost, 8080));
  * </pre>
  *
  * @see HttpClient#getProxyConfiguration()
