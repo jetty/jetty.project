@@ -238,7 +238,7 @@ public class PathResource extends Resource
     public boolean isAlias()
     {
         resolveAlias();
-        return alias;
+        return alias != null && alias;
     }
 
     @Override
@@ -382,7 +382,6 @@ public class PathResource extends Resource
                 //  - Unable to read the file or directory.
                 //  - Navigation segments (eg: "foo/../test.txt") would go through something that doesn't exist, or not accessible.
                 //  - FileSystem doesn't support toRealPath.
-                alias = false;
                 return;
             }
 
