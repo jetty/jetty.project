@@ -294,12 +294,12 @@ public class WebInfConfiguration extends AbstractConfiguration
             // Use real location (if different) for WAR file, so that change/modification monitoring can work.
             if (webApp.isAlias())
             {
-                URI targetURI = webApp.getTargetURI();
+                URI realURI = webApp.getRealURI();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} anti-aliased to {}", webApp, targetURI);
-                Resource targetWebApp = context.newResource(targetURI);
-                if (targetWebApp != null && targetWebApp.exists())
-                    webApp = targetWebApp;
+                    LOG.debug("{} anti-aliased to {}", webApp, realURI);
+                Resource realWebApp = context.newResource(realURI);
+                if (realWebApp != null && realWebApp.exists())
+                    webApp = realWebApp;
             }
 
             if (LOG.isDebugEnabled())

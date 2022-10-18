@@ -301,12 +301,14 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * The target URI of the resource. If this Resource is an alias pointing to a different location,
-     * this will resolve the alias to return the true target URI of the resource.
+     * <p>The real URI of the resource.</p>
+     * <p>If this Resource is an alias, ({@link #isAlias()}), this
+     * URI will be different from {@link #getURI()}, and will point to the real name/location
+     * of the Resource.</p>
      *
-     * @return The target URI location of this resource, with any aliases resolved.
+     * @return The real URI location of this resource.
      */
-    public URI getTargetURI()
+    public URI getRealURI()
     {
         return getURI();
     }

@@ -55,8 +55,8 @@ public class PathResource extends Resource
     private boolean alias = false;
     // True to indicate that the alias resolution has been performed
     private boolean aliasResolved = false;
-    // The targetPath of the alias, representing the real-path of this PathResource instance.
-    private Path targetPath;
+    // The Path representing the real-path of this PathResource instance. (populated during alias checking)
+    private Path realPath;
 
     /**
      * Test if the paths are the same name.
@@ -186,17 +186,17 @@ public class PathResource extends Resource
     {
         if (aliasResolved)
         {
-            if (targetPath == null)
+            if (realPath == null)
                 return false;
-            return Files.exists(targetPath);
+            return Files.exists(realPath);
         }
         else
         {
             // Avoid resolving alias unless necessary to determine existence.
             if (Files.exists(path))
                 return true;
-            if (isAlias() && targetPath != null)
-                return Files.exists(targetPath);
+            if (isAlias() && realPath != null)
+                return Files.exists(realPath);
         }
 
         return false;
@@ -208,17 +208,17 @@ public class PathResource extends Resource
         return path;
     }
 
-    public Path getTargetPath()
+    public Path getRealPath()
     {
         resolveAlias();
-        return targetPath;
+        return realPath;
     }
 
     @Override
-    public URI getTargetURI()
+    public URI getRealURI()
     {
-        Path targetPath = getTargetPath();
-        return (targetPath == null) ? null : targetPath.toUri();
+        Path realPath = getRealPath();
+        return (realPath == null) ? null : realPath.toUri();
     }
 
     public List<Resource> list()
@@ -294,7 +294,7 @@ public class PathResource extends Resource
                 // alternate names, etc)
                 // We also don't want to use Path.normalize() here as that eliminates
                 // the knowledge of what directories are being navigated through.
-                targetPath = path.toRealPath();
+                realPath = path.toRealPath();
             }
             catch (Exception e)
             {
@@ -312,14 +312,14 @@ public class PathResource extends Resource
                 return;
             }
 
-            /* If the path and targetPath are the same, also check
+            /* If the path and realPath are the same, also check
              * The as-requested URI as it will represent what was
              * URI created this PathResource.
              * e.g. the input of `resolve("aa./foo.txt")
              * on windows would resolve the path, but the Path.toUri() would
              * not always show this extension-less access.
              * The as-requested URI will retain this extra '.' and be used
-             * to evaluate if the targetPath.toUri() is the same as the as-requested URI.
+             * to evaluate if the realPath.toUri() is the same as the as-requested URI.
              *
              * // On Windows
              *  PathResource resource         = PathResource("C:/temp");
@@ -328,9 +328,9 @@ public class PathResource extends Resource
              *  child.isAlias()               == true
              *  child.toUri()                 == "file:///C:/temp/aa./foo.txt"
              *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
-             *  child.getTargetURI()          == "file:///C:/temp/aa/foo.txt"
+             *  child.getRealURI()          == "file:///C:/temp/aa/foo.txt"
              */
-            alias = !isSameName(path, targetPath) || !Objects.equals(uri, toUri(targetPath));
+            alias = !isSameName(path, realPath) || !Objects.equals(uri, toUri(realPath));
         }
     }
 
