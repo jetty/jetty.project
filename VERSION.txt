@@ -1,4 +1,29 @@
-jetty-12.0.0-SNAPSHOT
+jetty-12.0.0.alpha2 - 18 October 2022
+ + 5681 Unrecognized jetty-home/start.jar command line option not reported
+   clearly
+ + 5965 Option --write-module-graph produces wrong .dot file
+ + 7182 jetty.sh start process should remove jetty_state whenever deleting the
+   pid
+ + 7286 WebSocket write can time out even if the frame / callback has not been
+   failed.
+ + 7657 Remove unused test imports in jetty-nosql
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+ + 7863 Default servlet drops first accept-encoding header if there is more
+   than one.
+ + 7891 Better Servlet PathMappings for Regex
+ + 7993 HttpClient idleTimeout configuration being ignored/overridden
+ + 8448 incomplete Blocking.Callback and write errors
+ + 8536 [jetty-server] HotSwapHandler race condition
+ + 8558 Idle timeout occured sometimes on HTTP/2 client with
+   `InputStreamResponseListener`
+ + 8576 Use jackson-bom
+ + 8584 org.eclipse.jetty.client.HttpRequest.send() never returns
+ + 8606 Jetty 12: restore scope listeners functionality
+ + 8613 Update build for Java 19
+ + 8623 Use AutoLock in InputStreamResponseListener
+ + 8628 Non backwards compatible change in minor release
+ + 8712 ELContextCleaner no longer needed.
 
 jetty-12.0.0.alpha1 - 15 September 2022
  + 8474 Jetty 12 : Resource API Review
@@ -40,7 +65,7 @@ jetty-11.0.12 - 14 September 2022
    and `org.eclipse.jetty/infinispan-remote`
  + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
    an authority-form request-target
-   
+
 jetty-10.0.12 - 14 September 2022
  + 7970 Maven Plugin - the option to set extraClasspath in the plugin
    configuration isn't working
@@ -75,8 +100,7 @@ jetty-9.4.49.v20220914 - 14 September 2022
  + 8414 BlockingArrayQueue drops all contents on drain
  + 8493 Review HTTP client feature `setRemoveIdleDestinations`
  + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
-   an authority-form request-target   
-
+   an authority-form request-target
 
 jetty-12.0.0.alpha0 - 22 August 2022
  + First alpha release of Jetty 12. A lot changes but very good changes!
