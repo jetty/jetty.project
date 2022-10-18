@@ -27,10 +27,7 @@ public final class Resources
      */
     public static boolean exists(Resource resource)
     {
-        if (resource == null)
-            return false;
-
-        return resource.exists();
+        return resource != null && resource.exists();
     }
 
     /**
@@ -42,10 +39,7 @@ public final class Resources
      */
     public static boolean missing(Resource resource)
     {
-        if (resource == null)
-            return true;
-
-        return !resource.exists();
+        return resource == null || !resource.exists();
     }
 
     /**
@@ -58,10 +52,7 @@ public final class Resources
      */
     public static boolean isDirectory(Resource resource)
     {
-        if (resource == null)
-            return false;
-
-        return resource.exists() && resource.isDirectory();
+        return resource != null && resource.isDirectory();
     }
 
     /**
@@ -74,9 +65,6 @@ public final class Resources
      */
     public static boolean isReadable(Resource resource)
     {
-        if (resource == null)
-            return false;
-
-        return resource.exists() && resource.isReadable();
+        return resource != null && resource.isReadable();
     }
 }
