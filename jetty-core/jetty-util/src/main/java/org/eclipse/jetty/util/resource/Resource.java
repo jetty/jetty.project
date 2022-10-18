@@ -225,8 +225,8 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Creates a new input stream to the resource.
      *
-     * @return an input stream to the resource
-     * @throws IOException if unable to open the input stream
+     * @return an input stream to the resource or null if one is not available.
+     * @throws IOException if there is a problem opening the input stream
      */
     public InputStream newInputStream() throws IOException
     {
@@ -239,7 +239,7 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Readable ByteChannel for the resource.
      *
-     * @return an readable bytechannel to the resource or null if one is not available.
+     * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
      */
     public ReadableByteChannel newReadableByteChannel() throws IOException

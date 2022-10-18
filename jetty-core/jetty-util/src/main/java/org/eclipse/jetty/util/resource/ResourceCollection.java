@@ -44,7 +44,7 @@ public class ResourceCollection extends Resource
      */
     ResourceCollection(List<Resource> resources)
     {
-        List<Resource> res = new ArrayList<>();
+        List<Resource> res = new ArrayList<>(resources.size());
         gatherUniqueFlatResourceList(res, resources);
         _resources = Collections.unmodifiableList(res);
     }
@@ -124,21 +124,21 @@ public class ResourceCollection extends Resource
         ArrayList<Resource> resources = null;
 
         // Attempt a simple (single) Resource lookup that exists
-        Resource addedResource = null;
+        Resource resolved = null;
         for (Resource res : _resources)
         {
-            addedResource = res.resolve(subUriPath);
-            if (!addedResource.exists())
+            resolved = res.resolve(subUriPath);
+            if (!resolved.exists())
                 continue;
-            if (!addedResource.isDirectory())
-                return addedResource; // Return simple (non-directory) Resource
+            if (!resolved.isDirectory())
+                return resolved; // Return simple (non-directory) Resource
             if (resources == null)
                 resources = new ArrayList<>();
-            resources.add(addedResource);
+            resources.add(resolved);
         }
 
         if (resources == null)
-            return addedResource; // This will not exist
+            return resolved; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);
@@ -149,15 +149,7 @@ public class ResourceCollection extends Resource
     @Override
     public boolean exists()
     {
-        for (Resource r : _resources)
-        {
-            if (r.exists())
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return _resources.stream().anyMatch(Resource::exists);
     }
 
     @Override
