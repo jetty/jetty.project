@@ -306,7 +306,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         int remaining = cipherBufferIn.remaining();
         if (LOG.isDebugEnabled())
             LOG.debug("feeding {} cipher bytes to {}", remaining, this);
-        int accepted = quicheConnection.feedCipherBytes(cipherBufferIn, remoteAddress);
+        int accepted = quicheConnection.feedCipherBytes(cipherBufferIn, getLocalAddress(), remoteAddress);
         if (accepted != remaining)
             throw new IllegalStateException();
 

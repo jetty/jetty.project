@@ -191,7 +191,7 @@ public class LowLevelQuicheTest
         int drained = serverQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(expectedSize));
         buffer.flip();
-        int fed = clientQuicheConnection.feedCipherBytes(buffer, serverSocketAddress);
+        int fed = clientQuicheConnection.feedCipherBytes(buffer, clientSocketAddress, serverSocketAddress);
         assertThat(fed, is(expectedSize));
     }
 
@@ -204,7 +204,7 @@ public class LowLevelQuicheTest
         int drained = clientQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(expectedSize));
         buffer.flip();
-        int fed = serverQuicheConnection.feedCipherBytes(buffer, clientSocketAddress);
+        int fed = serverQuicheConnection.feedCipherBytes(buffer, serverSocketAddress, clientSocketAddress);
         assertThat(fed, is(expectedSize));
     }
 
@@ -213,20 +213,20 @@ public class LowLevelQuicheTest
         ByteBuffer buffer = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
         ByteBuffer buffer2 = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
 
-        JnaQuicheConnection clientQuicheConnection = JnaQuicheConnection.connect(clientQuicheConfig, serverSocketAddress);
+        JnaQuicheConnection clientQuicheConnection = JnaQuicheConnection.connect(clientQuicheConfig, clientSocketAddress, serverSocketAddress);
         connectionsToDisposeOf.add(clientQuicheConnection);
 
         int drained = clientQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(1200));
         buffer.flip();
 
-        JnaQuicheConnection serverQuicheConnection = JnaQuicheConnection.tryAccept(serverQuicheConfig, tokenValidator, buffer, clientSocketAddress);
+        JnaQuicheConnection serverQuicheConnection = JnaQuicheConnection.tryAccept(serverQuicheConfig, tokenValidator, buffer, serverSocketAddress, clientSocketAddress);
         assertThat(serverQuicheConnection, is(nullValue()));
         boolean negotiated = JnaQuicheConnection.negotiate(tokenMinter, buffer, buffer2);
         assertThat(negotiated, is(true));
         buffer2.flip();
 
-        int fed = clientQuicheConnection.feedCipherBytes(buffer2, serverSocketAddress);
+        int fed = clientQuicheConnection.feedCipherBytes(buffer2, clientSocketAddress, serverSocketAddress);
         assertThat(fed, is(79));
 
         buffer.clear();
@@ -234,7 +234,7 @@ public class LowLevelQuicheTest
         assertThat(drained, is(1200));
         buffer.flip();
 
-        serverQuicheConnection = JnaQuicheConnection.tryAccept(serverQuicheConfig, tokenValidator, buffer, clientSocketAddress);
+        serverQuicheConnection = JnaQuicheConnection.tryAccept(serverQuicheConfig, tokenValidator, buffer, serverSocketAddress, clientSocketAddress);
         assertThat(serverQuicheConnection, is(not(nullValue())));
         connectionsToDisposeOf.add(serverQuicheConnection);
 
@@ -243,7 +243,7 @@ public class LowLevelQuicheTest
         assertThat(drained, is(1200));
         buffer.flip();
 
-        fed = clientQuicheConnection.feedCipherBytes(buffer, serverSocketAddress);
+        fed = clientQuicheConnection.feedCipherBytes(buffer, clientSocketAddress, serverSocketAddress);
         assertThat(fed, is(1200));
 
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
