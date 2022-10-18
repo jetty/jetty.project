@@ -79,6 +79,10 @@ public class ResourceAliasTest
             assertFalse(fileResViaBar.exists(), "Should not exist");
             assertFalse(fileResViaBar.isAlias(), "Should not be an alias");
 
+            Files.createDirectory(docroot.resolve("bar"));
+            assertTrue(fileResViaBar.exists(), "Should exist");
+            assertTrue(fileResViaBar.isAlias(), "Should be an alias");
+
             // Test navigation through a directory that does exist
             Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");
             assertTrue(fileResViaFoo.exists(), "Should exist");
