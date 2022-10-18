@@ -99,12 +99,12 @@ public class JnaQuicheConnection extends QuicheConnection
         return sizedBuffer;
     }
 
-    public static JnaQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer) throws IOException
+    public static JnaQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer) throws IOException
     {
-        return connect(quicheConfig, peer, QUICHE_MAX_CONN_ID_LEN);
+        return connect(quicheConfig, local, peer, QUICHE_MAX_CONN_ID_LEN);
     }
 
-    public static JnaQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer, int connectionIdLength) throws IOException
+    public static JnaQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
     {
         if (connectionIdLength > QUICHE_MAX_CONN_ID_LEN)
             throw new IOException("Connection ID length is too large: " + connectionIdLength + " > " + QUICHE_MAX_CONN_ID_LEN);
@@ -112,8 +112,9 @@ public class JnaQuicheConnection extends QuicheConnection
         SECURE_RANDOM.nextBytes(scid);
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
-        SizedStructure<sockaddr> s = sockaddr.convert(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), s.getStructure(), s.getSize(), libQuicheConfig);
+        SizedStructure<sockaddr> localSockaddr = sockaddr.convert(local);
+        SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), localSockaddr.getStructure(), localSockaddr.getSize(), peerSockaddr.getStructure(), peerSockaddr.getSize(), libQuicheConfig);
         return new JnaQuicheConnection(quicheConn, libQuicheConfig);
     }
 
@@ -184,6 +185,18 @@ public class JnaQuicheConnection extends QuicheConnection
         Boolean disableActiveMigration = config.getDisableActiveMigration();
         if (disableActiveMigration != null)
             LibQuiche.INSTANCE.quiche_config_set_disable_active_migration(quicheConfig, disableActiveMigration);
+
+        Long maxConnectionWindow = config.getMaxConnectionWindow();
+        if (maxConnectionWindow != null)
+            LibQuiche.INSTANCE.quiche_config_set_max_connection_window(quicheConfig, new uint64_t(maxConnectionWindow));
+
+        Long maxStreamWindow = config.getMaxStreamWindow();
+        if (maxStreamWindow != null)
+            LibQuiche.INSTANCE.quiche_config_set_max_stream_window(quicheConfig, new uint64_t(maxStreamWindow));
+
+        Long activeConnectionIdLimit = config.getActiveConnectionIdLimit();
+        if (activeConnectionIdLimit != null)
+            LibQuiche.INSTANCE.quiche_config_set_active_connection_id_limit(quicheConfig, new uint64_t(activeConnectionIdLimit));
 
         return quicheConfig;
     }
@@ -297,7 +310,7 @@ public class JnaQuicheConnection extends QuicheConnection
      * Fully consumes the {@code packetRead} buffer if the connection was accepted.
      * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
      */
-    public static JnaQuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress peer) throws IOException
+    public static JnaQuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
     {
         uint8_t_pointer type = new uint8_t_pointer();
         uint32_t_pointer version = new uint32_t_pointer();
@@ -350,8 +363,9 @@ public class JnaQuicheConnection extends QuicheConnection
         LOG.debug("connection creation...");
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
-        SizedStructure<sockaddr> s = sockaddr.convert(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), s.getStructure(), s.getSize(), libQuicheConfig);
+        SizedStructure<sockaddr> localSockaddr = sockaddr.convert(local);
+        SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), localSockaddr.getStructure(), localSockaddr.getSize(), peerSockaddr.getStructure(), peerSockaddr.getSize(), libQuicheConfig);
 
         if (quicheConn == null)
         {
@@ -364,7 +378,7 @@ public class JnaQuicheConnection extends QuicheConnection
         LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
         while (packetRead.hasRemaining())
         {
-            quicheConnection.feedCipherBytes(packetRead, peer);
+            quicheConnection.feedCipherBytes(packetRead, local, peer);
         }
         return quicheConnection;
     }
@@ -400,15 +414,8 @@ public class JnaQuicheConnection extends QuicheConnection
         }
     }
 
-    /**
-     * Read the buffer of cipher text coming from the network.
-     * @param buffer the buffer to read.
-     * @param peer the address of the peer from which the buffer was received.
-     * @return how many bytes were consumed.
-     * @throws IOException
-     */
     @Override
-    public int feedCipherBytes(ByteBuffer buffer, SocketAddress peer) throws IOException
+    public int feedCipherBytes(ByteBuffer buffer, SocketAddress local, SocketAddress peer) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -416,9 +423,12 @@ public class JnaQuicheConnection extends QuicheConnection
                 throw new IOException("Cannot receive when not connected");
 
             LibQuiche.quiche_recv_info info = new LibQuiche.quiche_recv_info();
-            SizedStructure<sockaddr> s = sockaddr.convert(peer);
-            info.from = s.getStructure().byReference();
-            info.from_len = s.getSize();
+            SizedStructure<sockaddr> localSockaddr = sockaddr.convert(local);
+            info.to = localSockaddr.getStructure().byReference();
+            info.to_len = localSockaddr.getSize();
+            SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
+            info.from = peerSockaddr.getStructure().byReference();
+            info.from_len = peerSockaddr.getSize();
             int received = LibQuiche.INSTANCE.quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
             if (received < 0)
                 throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));
@@ -442,6 +452,8 @@ public class JnaQuicheConnection extends QuicheConnection
                 throw new IOException("Cannot send when not connected");
 
             LibQuiche.quiche_send_info quiche_send_info = new LibQuiche.quiche_send_info();
+            quiche_send_info.from = new sockaddr_storage();
+            quiche_send_info.from_len = new size_t(quiche_send_info.to.size());
             quiche_send_info.to = new sockaddr_storage();
             quiche_send_info.to_len = new size_t(quiche_send_info.to.size());
             int written = LibQuiche.INSTANCE.quiche_conn_send(quicheConn, buffer, new size_t(buffer.remaining()), quiche_send_info).intValue();
@@ -591,8 +603,8 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
-            LibQuiche.INSTANCE.quiche_conn_stats(quicheConn, stats);
+            LibQuiche.quiche_path_stats stats = new LibQuiche.quiche_path_stats();
+            LibQuiche.INSTANCE.quiche_conn_path_stats(quicheConn, new size_t(0L), stats);
             return stats.cwnd.longValue();
         }
     }

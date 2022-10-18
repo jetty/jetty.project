@@ -845,7 +845,7 @@ public class ResourceService
 //            FileChannel fileChannel = (FileChannel) source;
 //            fileChannel.transferTo(0, contentLength, c);
 
-            this.source = Files.newByteChannel(content.getResource().getPath());
+            this.source = content.getResource().newReadableByteChannel();
             this.sink = target;
             this.callback = callback;
             int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();

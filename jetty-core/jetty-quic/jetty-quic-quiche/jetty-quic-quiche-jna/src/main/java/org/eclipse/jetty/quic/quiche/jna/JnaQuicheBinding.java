@@ -57,9 +57,9 @@ public class JnaQuicheBinding implements QuicheBinding
     }
 
     @Override
-    public QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer, int connectionIdLength) throws IOException
+    public QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
     {
-        return JnaQuicheConnection.connect(quicheConfig, peer, connectionIdLength);
+        return JnaQuicheConnection.connect(quicheConfig, local, peer, connectionIdLength);
     }
 
     @Override
@@ -69,9 +69,9 @@ public class JnaQuicheBinding implements QuicheBinding
     }
 
     @Override
-    public QuicheConnection tryAccept(QuicheConfig quicheConfig, QuicheConnection.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress peer) throws IOException
+    public QuicheConnection tryAccept(QuicheConfig quicheConfig, QuicheConnection.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
     {
-        return JnaQuicheConnection.tryAccept(quicheConfig, tokenValidator, packetRead, peer);
+        return JnaQuicheConnection.tryAccept(quicheConfig, tokenValidator, packetRead, local, peer);
     }
 
     @Override
