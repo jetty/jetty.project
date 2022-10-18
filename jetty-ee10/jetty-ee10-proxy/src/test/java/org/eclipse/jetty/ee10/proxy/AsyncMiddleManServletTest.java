@@ -153,7 +153,7 @@ public class AsyncMiddleManServletTest
         clientPool.setName("client");
         client = new HttpClient();
         client.setExecutor(clientPool);
-        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        client.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         client.start();
     }
 
