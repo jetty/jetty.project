@@ -49,24 +49,30 @@ public class ResourceCollection extends Resource
         return Stream.of(resource);
     }
 
-    private final List<Resource> _resources;
-
     /**
-     * Instantiates a new resource collection.
-     *
-     * @param resources the resources to be added to collection
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
+     * @see ResourceCollection
      */
-    ResourceCollection(List<Resource> resources)
+    static Resource combine(List<Resource> resources)
     {
-        List<Resource> res = new ArrayList<>(resources.size());
-        gatherUniqueFlatResourceList(res, resources);
-        _resources = Collections.unmodifiableList(res);
+        resources = ResourceCollection.gatherUniqueFlatResourceList(resources);
+
+        if (resources == null || resources.isEmpty())
+            return null;
+        if (resources.size() == 1)
+            return resources.get(0);
+
+        return new ResourceCollection(resources);
     }
 
-    private static void gatherUniqueFlatResourceList(List<Resource> unique, List<Resource> resources)
+    static List<Resource> gatherUniqueFlatResourceList(List<Resource> resources)
     {
         if (resources == null || resources.isEmpty())
-            throw new IllegalArgumentException("Empty Resource collection");
+            return null;
+
+        List<Resource> unique = new ArrayList<>(resources.size());
 
         for (Resource r : resources)
         {
@@ -77,7 +83,7 @@ public class ResourceCollection extends Resource
 
             if (r instanceof ResourceCollection resourceCollection)
             {
-                gatherUniqueFlatResourceList(unique, resourceCollection.getResources());
+                unique.addAll(gatherUniqueFlatResourceList(resourceCollection.getResources()));
             }
             else
             {
@@ -100,6 +106,19 @@ public class ResourceCollection extends Resource
                 unique.add(r);
             }
         }
+        return unique;
+    }
+
+    private final List<Resource> _resources;
+
+    /**
+     * Instantiates a new resource collection.
+     *
+     * @param resources the resources to be added to collection
+     */
+    ResourceCollection(List<Resource> resources)
+    {
+        _resources = Collections.unmodifiableList(resources);
     }
 
     /**

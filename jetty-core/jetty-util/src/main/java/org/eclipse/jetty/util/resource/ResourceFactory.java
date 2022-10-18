@@ -40,11 +40,7 @@ public interface ResourceFactory
      */
     static Resource combine(List<Resource> resources)
     {
-        if (resources == null || resources.isEmpty())
-            return null;
-        if (resources.size() == 1)
-            return resources.get(0);
-        return new ResourceCollection(resources);
+        return ResourceCollection.combine(resources);
     }
 
     /**
@@ -53,11 +49,9 @@ public interface ResourceFactory
      * @return A Resource of multiple resources.
      * @see ResourceCollection
      */
-    static ResourceCollection combine(Resource... resources)
+    static Resource combine(Resource... resources)
     {
-        if (resources == null || resources.length == 0)
-            throw new IllegalArgumentException("No resources");
-        return new ResourceCollection(List.of(resources));
+        return ResourceCollection.combine(List.of(resources));
     }
 
     /**

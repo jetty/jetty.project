@@ -77,7 +77,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = ResourceFactory.combine(
+        Resource rc = ResourceFactory.combine(
             resourceFactory.newResource(one),
             resourceFactory.newResource(two),
             resourceFactory.newResource(three)
@@ -125,7 +125,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = ResourceFactory.combine(
+        Resource rc = ResourceFactory.combine(
             resourceFactory.newResource(one),
             resourceFactory.newResource(two),
             resourceFactory.newResource(three)
@@ -147,7 +147,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = ResourceFactory.combine(
+        Resource rc = ResourceFactory.combine(
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
                 resourceFactory.newResource(three)
