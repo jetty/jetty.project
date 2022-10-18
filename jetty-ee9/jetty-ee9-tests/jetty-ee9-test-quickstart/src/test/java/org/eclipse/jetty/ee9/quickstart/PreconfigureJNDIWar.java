@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.ee9.quickstart;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,15 +31,23 @@ public class PreconfigureJNDIWar
 
     public static void main(String[] args) throws Exception
     {
-        String target = "target/test-jndi-preconfigured";
-        File file = new File(target);
-        if (file.exists())
-            IO.delete(file);
+        Path workdir = MavenPaths.targetTestDir(PreconfigureJNDIWar.class.getSimpleName());
+        FS.ensureEmpty(workdir);
 
-        PreconfigureQuickStartWar.main("target/test-jndi.war", target, "src/test/resources/test-jndi.xml");
+        Path target = workdir.resolve("test-jndi-preconfigured");
+        FS.ensureEmpty(target);
+
+        PreconfigureQuickStartWar.main(
+            MavenTestingUtils.getTargetFile("test-jndi.war").toString(),
+            target.toString(),
+            MavenTestingUtils.getTestResourceFile("test-jndi.xml").toString());
 
         LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 
-        // IO.copy(new FileInputStream("target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
+        if (LOG.isDebugEnabled())
+        {
+            Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
+            System.out.println(Files.readString(quickStartXml));
+        }
     }
 }

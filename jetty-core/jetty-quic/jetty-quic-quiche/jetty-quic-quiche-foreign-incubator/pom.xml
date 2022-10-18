@@ -12,18 +12,11 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quic-quiche-foreign-incubator</bundle-symbolic-name>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${maven.checkstyle.plugin.version}</version>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
@@ -70,4 +63,27 @@
     </dependency>
   </dependencies>
 
+  <profiles>
+    <profile>
+      <!--
+       This module can be built with JDK 17+ but can only be tested on JDK 17 as the Foreign module
+       changed both its API (18) and its name (19), so tests are disabled on JDKs over 17.
+       Eventually, new Foreign modules for JDKs 18 and 19 should be added.
+       -->
+      <id>jdk18</id>
+      <activation>
+        <jdk>[18,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

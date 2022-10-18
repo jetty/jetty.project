@@ -81,6 +81,11 @@ public class ResourceCollection extends Resource
                     throw new IllegalArgumentException("Does not exist: " + r);
                 }
 
+                if (!r.isDirectory())
+                {
+                    throw new IllegalArgumentException("Non-Directory not allowed: " + r);
+                }
+
                 unique.add(r);
             }
         }

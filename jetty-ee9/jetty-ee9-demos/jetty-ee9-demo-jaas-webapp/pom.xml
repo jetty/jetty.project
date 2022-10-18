@@ -13,32 +13,30 @@
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
   </properties>
   <build>
-    <pluginManagement>
+    <!-- pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.ee9</groupId>
           <artifactId>jetty-maven-plugin</artifactId>
           <version>${project.version}</version>
           <configuration>
             <scan>10</scan>
             <systemProperties>
-              <!-- This is for convenience so that the src/etc/login.conf file can stay unmodified when copied to $jetty.home/etc directory -->
                 <jetty.base>${basedir}/src/main/config/modules/demo.d</jetty.base>
-              <!-- Mandatory. This system property tells JAAS where to find the login module configuration file -->
-                <java.security.auth.login.config>${basedir}/src/main/config/modules/demo.d/ee9-demo-login.conf</java.security.auth.login.config>
+                <java.security.auth.login.config>${basedir}/src/main/etc/ee9-demo-login.conf</java.security.auth.login.config>
             </systemProperties>
             <webApp>
               <contextPath>/test-jaas</contextPath>
               <securityHandler implementation="org.eclipse.jetty.security.ConstraintSecurityHandler">
-                <loginService implementation="org.eclipse.jetty.jaas.JAASLoginService">
+                <loginService implementation="org.eclipse.jetty.ee9.jaas.JAASLoginService">
                   <name>Test JAAS Realm</name>
-                  <loginModuleName>xyz</loginModuleName>
+                  <loginModuleName>ee9-xyz</loginModuleName>
                 </loginService>
               </securityHandler>
             </webApp>
           </configuration>
         </plugin>
       </plugins>
-    </pluginManagement>
+    </pluginManagement -->
   </build>
 </project>

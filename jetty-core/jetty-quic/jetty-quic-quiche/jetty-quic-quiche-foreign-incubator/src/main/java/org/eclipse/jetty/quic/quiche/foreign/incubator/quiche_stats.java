@@ -29,14 +29,11 @@ public class quiche_stats
         C_LONG.withName("sent"),
         C_LONG.withName("lost"),
         C_LONG.withName("retrans"),
-        C_LONG.withName("rtt"),
-        C_LONG.withName("cwnd"),
         C_LONG.withName("sent_bytes"),
         C_LONG.withName("recv_bytes"),
         C_LONG.withName("lost_bytes"),
         C_LONG.withName("stream_retrans_bytes"),
-        C_LONG.withName("pmtu"),
-        C_LONG.withName("delivery_rate"),
+        C_LONG.withName("paths_count"),
         C_LONG.withName("peer_max_idle_timeout"),
         C_LONG.withName("peer_max_udp_payload_size"),
         C_LONG.withName("peer_initial_max_data"),
@@ -58,13 +55,7 @@ public class quiche_stats
         return MemorySegment.allocateNative(LAYOUT, scope);
     }
 
-    private static final VarHandle cwnd = LAYOUT.varHandle(long.class, MemoryLayout.PathElement.groupElement("cwnd"));
     private static final VarHandle peer_initial_max_streams_bidi = LAYOUT.varHandle(long.class, MemoryLayout.PathElement.groupElement("peer_initial_max_streams_bidi"));
-
-    public static long get_cwnd(MemorySegment stats)
-    {
-        return (long)cwnd.get(stats);
-    }
 
     public static long get_peer_initial_max_streams_bidi(MemorySegment stats)
     {

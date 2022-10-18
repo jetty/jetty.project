@@ -125,12 +125,6 @@ public class ServletPathMapping implements HttpServletMapping
                 break;
 
             case MIDDLE_GLOB:
-                _mappingMatch = null;
-                _matchValue = "";
-                _servletPath = pathInContext;
-                _pathInfo = null;
-                break;
-
             default:
                 throw new IllegalStateException("ServletPathSpec of type MIDDLE_GLOB");
         }

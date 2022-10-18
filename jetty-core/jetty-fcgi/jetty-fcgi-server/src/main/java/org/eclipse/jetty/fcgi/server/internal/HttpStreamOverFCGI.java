@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -46,6 +45,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverFCGI.class);
 
     private final Callback _demandCallback = new DemandCallback();
+    private final HttpFields.Mutable _allHeaders = HttpFields.build();
     private final HttpFields.Mutable _headers = HttpFields.build();
     private final ServerFCGIConnection _connection;
     private final ServerGenerator _generator;
@@ -92,6 +92,7 @@ public class HttpStreamOverFCGI implements HttpStream
     {
         String name = field.getName();
         String value = field.getValue();
+        _allHeaders.put(field);
         if (FCGI.Headers.REQUEST_METHOD.equalsIgnoreCase(name))
             _method = value;
         else if (FCGI.Headers.DOCUMENT_URI.equalsIgnoreCase(name))
@@ -110,7 +111,7 @@ public class HttpStreamOverFCGI implements HttpStream
         // TODO https?
         MetaData.Request request = new MetaData.Request(_method, HttpScheme.HTTP.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, Long.MIN_VALUE);
         Runnable task = _httpChannel.onRequest(request);
-        _headers.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
+        _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
         // TODO: here we just execute the task.
         //  However, we should really return all the way back to onFillable()
         //  and feed the Runnable to an ExecutionStrategy.
@@ -322,25 +323,6 @@ public class HttpStreamOverFCGI implements HttpStream
         // TODO: should we do more?
         _aborted = true;
         _connection.onCompleted(x);
-    }
-
-    @Override
-    public boolean isComplete()
-    {
-        // TODO
-        return false;
-    }
-
-    @Override
-    public void setUpgradeConnection(Connection connection)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Connection upgrade()
-    {
-        return null;
     }
 
     public boolean onIdleTimeout(Throwable timeout)

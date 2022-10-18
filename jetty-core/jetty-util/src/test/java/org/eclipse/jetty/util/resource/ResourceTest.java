@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -23,14 +22,15 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ public class ResourceTest
 
     static class Scenario
     {
-        Resource resource;
+        private Supplier<Resource> resourceSupplier;
         String test;
         boolean exists;
         boolean dir;
@@ -78,16 +78,16 @@ public class ResourceTest
 
         Scenario(Scenario data, String path, boolean exists, boolean dir)
         {
-            this.test = data.resource + "+" + path;
-            resource = data.resource.resolve(path);
+            this.test = data.getResource() + "+" + path;
+            this.resourceSupplier = () -> data.getResource().resolve(path);
             this.exists = exists;
             this.dir = dir;
         }
 
         Scenario(Scenario data, String path, boolean exists, boolean dir, String content)
         {
-            this.test = data.resource + "+" + path;
-            resource = data.resource.resolve(path);
+            this.test = data.getResource() + "+" + path;
+            this.resourceSupplier = () -> data.getResource().resolve(path);
             this.exists = exists;
             this.dir = dir;
             this.content = content;
@@ -98,7 +98,7 @@ public class ResourceTest
             this.test = url.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(url);
+            this.resourceSupplier = () -> resourceFactory.newResource(url);
         }
 
         Scenario(String url, boolean exists, boolean dir)
@@ -106,7 +106,7 @@ public class ResourceTest
             this.test = url;
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(url);
+            this.resourceSupplier = () -> resourceFactory.newResource(url);
         }
 
         Scenario(URI uri, boolean exists, boolean dir)
@@ -114,15 +114,20 @@ public class ResourceTest
             this.test = uri.toASCIIString();
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(uri);
+            this.resourceSupplier = () -> resourceFactory.newResource(uri);
         }
 
-        Scenario(File file, boolean exists, boolean dir)
+        Scenario(Path file, boolean exists, boolean dir)
         {
             this.test = file.toString();
             this.exists = exists;
             this.dir = dir;
-            resource = resourceFactory.newResource(file.toPath());
+            this.resourceSupplier = () -> resourceFactory.newResource(file);
+        }
+
+        public Resource getResource()
+        {
+            return resourceSupplier.get();
         }
 
         @Override
@@ -134,7 +139,7 @@ public class ResourceTest
 
     static class Scenarios extends ArrayList<Arguments>
     {
-        final File fileRef;
+        final Path fileRef;
         final URI uriRef;
         final String relRef;
 
@@ -145,9 +150,9 @@ public class ResourceTest
             // relative directory reference
             this.relRef = FS.separators(ref);
             // File object reference
-            this.fileRef = MavenTestingUtils.getProjectDir(relRef);
+            this.fileRef = MavenPaths.projectBase().resolve(relRef);
             // URI reference
-            this.uriRef = fileRef.toURI();
+            this.uriRef = fileRef.toUri();
 
             // create baseline cases
             baseCases = new Scenario[]{
@@ -173,7 +178,7 @@ public class ResourceTest
         {
             addCase(new Scenario(FS.separators(relRef + subpath), exists, dir));
             addCase(new Scenario(uriRef.resolve(subpath).toURL(), exists, dir));
-            addCase(new Scenario(new File(fileRef, subpath), exists, dir));
+            addCase(new Scenario(fileRef.resolve(subpath), exists, dir));
         }
 
         public Scenario addAllAddPathCases(String subpath, boolean exists, boolean dir)
@@ -190,13 +195,13 @@ public class ResourceTest
         }
     }
 
-    public static Stream<Arguments> scenarios() throws Exception
+    public static Stream<Arguments> scenarios(WorkDir workDir) throws Exception
     {
         Scenarios cases = new Scenarios("src/test/resources/");
 
-        File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
+        Path testDir = workDir.getEmptyPathDir();
         FS.ensureEmpty(testDir);
-        File tmpFile = new File(testDir, "test.tmp");
+        Path tmpFile = testDir.resolve("test.tmp");
         FS.touch(tmpFile);
 
         cases.addCase(new Scenario(tmpFile.toString(), EXISTS, !DIR));
@@ -256,26 +261,17 @@ public class ResourceTest
     @MethodSource("scenarios")
     public void testResourceExists(Scenario data)
     {
-        assertThat("Exists: " + data.resource.getName(), data.resource.exists(), equalTo(data.exists));
+        Resource res = data.getResource();
+        assertThat("Exists: " + res.getName(), res.exists(), equalTo(data.exists));
     }
 
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResourceDir(Scenario data)
     {
-        assertThat("Is Directory: " + data.test, data.resource.isDirectory(), equalTo(data.dir));
-    }
-
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testEncodeAddPath(Scenario data)
-    {
-        if (data.dir)
-        {
-            Resource r = data.resource.resolve("foo%25/b%20r");
-            assertThat(r.getPath().toString(), Matchers.anyOf(Matchers.endsWith("foo%/b r"), Matchers.endsWith("foo%\\b r")));
-            assertThat(r.getURI().toString(), Matchers.endsWith("/foo%25/b%20r"));
-        }
+        Resource res = data.getResource();
+        assumeTrue(res != null);
+        assertThat("Is Directory: " + data.test, res.isDirectory(), equalTo(data.dir));
     }
 
     @ParameterizedTest
@@ -285,7 +281,7 @@ public class ResourceTest
     {
         Assumptions.assumeTrue(data.content != null);
 
-        InputStream in = data.resource.newInputStream();
+        InputStream in = data.getResource().newInputStream();
         String c = IO.toString(in);
         assertThat("Content: " + data.test, c, startsWith(data.content));
     }
@@ -298,11 +294,13 @@ public class ResourceTest
 
         try
         {
-            String globReference = testDir.toAbsolutePath() + File.separator + '*';
-            Resource globResource = resourceFactory.newResource(globReference);
+            Path globFile = testDir.resolve("*");
+            Files.createFile(globFile);
+            assumeTrue(Files.exists(globFile)); // skip test if file wasn't created
+            Resource globResource = resourceFactory.newResource(globFile.toAbsolutePath().toString());
             assertNotNull(globResource, "Should have produced a Resource");
         }
-        catch (InvalidPathException e)
+        catch (InvalidPathException | IOException e)
         {
             // if unable to reference the glob file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
@@ -337,21 +335,17 @@ public class ResourceTest
     }
 
     @Test
-    public void testResourceExtraSlashStripping()
+    public void testResourceExtraSlashStripping(WorkDir workDir) throws IOException
     {
-        Resource ra = resourceFactory.newResource("file:/a/b/c");
+        Path docRoot = workDir.getEmptyPathDir();
+        Files.createDirectories(docRoot.resolve("d/e/f"));
+
+        Resource ra = resourceFactory.newResource(docRoot);
         Resource rb = ra.resolve("///");
         Resource rc = ra.resolve("///d/e///f");
 
         assertEquals(ra, rb);
-        assertEquals(rc.getURI().getPath(), "/a/b/c/d/e/f");
-
-        Resource rd = resourceFactory.newResource("file:///a/b/c");
-        Resource re = rd.resolve("///");
-        Resource rf = rd.resolve("///d/e///f");
-
-        assertEquals(rd, re);
-        assertEquals(rf.getURI().getPath(), "/a/b/c/d/e/f");
+        assertEquals(rc.getURI().getPath(), docRoot.toUri().getPath() + "d/e/f/");
     }
 
     @Test

@@ -352,6 +352,7 @@ public class ResourceService
         if (headers.hasMoreElements())
         {
             StringBuilder sb = new StringBuilder(key.length() * 2);
+            sb.append(key);
             do
             {
                 sb.append(',').append(headers.nextElement());

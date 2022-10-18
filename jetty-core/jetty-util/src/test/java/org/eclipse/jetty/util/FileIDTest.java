@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -350,8 +352,18 @@ public class FileIDTest
     })
     public void testIsClassFileFalse(String input) throws IOException
     {
-        Path testPath = touchTestPath(input);
-        assertFalse(FileID.isClassFile(testPath), "isClassFile(" + testPath + ")");
+        try
+        {
+            Path testPath = touchTestPath(input);
+            assertFalse(FileID.isClassFile(testPath), "isClassFile(" + testPath + ")");
+        }
+        catch (InvalidPathException e)
+        {
+            // Some filesystems don't like things like tab "\t" character.
+            // Windows NTFS and Fat will throw and InvalidPathException.
+            // While jarfs, linux ext4, linux zfs, etc won't
+            Assumptions.assumeFalse(true);
+        }
     }
 
     @ParameterizedTest

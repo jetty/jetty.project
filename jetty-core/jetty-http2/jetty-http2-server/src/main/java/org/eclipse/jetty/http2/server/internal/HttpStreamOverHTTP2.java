@@ -37,8 +37,10 @@ import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
@@ -58,6 +60,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final long _nanoTime;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
+    private TunnelSupport tunnelSupport;
     private Content.Chunk _chunk;
     private boolean committed;
     private boolean _demand;
@@ -102,6 +105,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             HttpFields fields = _requestMetaData.getFields();
 
             _expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+
+            if (_requestMetaData instanceof MetaData.ConnectRequest)
+                tunnelSupport = new TunnelSupportOverHTTP2(_requestMetaData.getProtocol());
 
             if (LOG.isDebugEnabled())
             {
@@ -518,19 +524,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public boolean isComplete()
-    {
-        // TODO
-        return false;
-    }
-
-    @Override
-    public void setUpgradeConnection(Connection connection)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean isIdle()
     {
         // TODO: is this necessary?
@@ -538,10 +531,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public Connection upgrade()
+    public TunnelSupport getTunnelSupport()
     {
-        // TODO
-        throw new UnsupportedOperationException();
+        return tunnelSupport;
+    }
+
+    @Override
+    public Throwable consumeAvailable()
+    {
+        if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+            return null;
+        return HttpStream.super.consumeAvailable();
     }
 
     @Override
@@ -568,16 +568,34 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void succeeded()
     {
-        _httpChannel.recycle();
-
-        // If the stream is not closed, it is still reading the request content.
-        // Send a reset to the other end so that it stops sending data.
         if (!_stream.isClosed())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-            _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            if (isTunnel(_requestMetaData, _responseMetaData))
+            {
+                Connection connection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
+                if (connection == null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 response #{}/{}: no upgrade connection, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                    _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                }
+                else
+                {
+                    EndPoint endPoint = tunnelSupport.getEndPoint();
+                    _stream.setAttachment(endPoint);
+                    endPoint.upgrade(connection);
+                }
+            }
+            else
+            {
+                // If the stream is not closed, it is still reading the request content.
+                // Send a reset to the other end so that it stops sending data.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            }
         }
+        _httpChannel.recycle();
     }
 
     @Override
@@ -602,6 +620,29 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         public void succeeded()
         {
             sendTrailersFrame(new MetaData(HttpVersion.HTTP_2, trailers), getCallback());
+        }
+    }
+
+    private class TunnelSupportOverHTTP2 implements TunnelSupport
+    {
+        private final String protocol;
+        private final EndPoint endPoint = new ServerHTTP2StreamEndPoint(_stream);
+
+        private TunnelSupportOverHTTP2(String protocol)
+        {
+            this.protocol = protocol;
+        }
+
+        @Override
+        public String getProtocol()
+        {
+            return protocol;
+        }
+
+        @Override
+        public EndPoint getEndPoint()
+        {
+            return endPoint;
         }
     }
 }

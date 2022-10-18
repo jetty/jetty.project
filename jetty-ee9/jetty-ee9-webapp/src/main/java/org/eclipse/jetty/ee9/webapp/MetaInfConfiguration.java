@@ -148,7 +148,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Consumer<URI> addContainerResource = (uri) ->
         {
             Resource resource = _resourceFactory.newResource(uri);
-            context.getMetaData().addContainerResource(resource);
+            if (resource == null || !resource.exists())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Classpath URI doesn't exist: " + uri);
+            }
+            else
+                context.getMetaData().addContainerResource(resource);
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -265,7 +271,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getBaseResource());
             collection.addAll(resources);
-            context.setBaseResource(Resource.combine(collection));
+            context.setBaseResource(ResourceFactory.combine(collection));
         }
     }
 

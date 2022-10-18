@@ -148,7 +148,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Consumer<URI> addContainerResource = (uri) ->
         {
             Resource resource = _resourceFactory.newResource(uri);
-            context.getMetaData().addContainerResource(resource);
+            if (resource == null || !resource.exists())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Classpath URI doesn't exist: " + uri);
+            }
+            else
+                context.getMetaData().addContainerResource(resource);
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -265,7 +271,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Resource> collection = new ArrayList<>();
             collection.add(context.getBaseResource());
             collection.addAll(resources);
-            context.setBaseResource(Resource.combine(collection));
+            context.setBaseResource(ResourceFactory.combine(collection));
         }
     }
 
@@ -379,6 +385,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
     {
+        // Resource target does not exist
+        if (target == null || !target.exists())
+            return;
+
         Resource resourcesDir = null;
         if (cache != null && cache.containsKey(target))
         {
@@ -691,12 +701,19 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists() || !webInf.isDirectory())
             return List.of();
 
-        Resource webInfLib = webInf.resolve("/lib");
+        Resource webInfLib = webInf.resolve("lib");
 
-        return webInfLib.list().stream()
-            .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
-            .sorted(ResourceCollators.byName(true))
-            .collect(Collectors.toList());
+        if (webInfLib != null && webInfLib.exists() && webInfLib.isDirectory())
+        {
+            return webInfLib.list().stream()
+                .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
+                .sorted(ResourceCollators.byName(true))
+                .collect(Collectors.toList());
+        }
+        else
+        {
+            return List.of();
+        }
     }
 
     /**
@@ -733,14 +750,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         Resource webInf = context.getWebInf();
-
         // Find WEB-INF/classes
         if (webInf != null && webInf.isDirectory())
         {
             // Look for classes directory
-            Resource classes = webInf.resolve("classes/");
-            if (classes.exists())
-                return classes;
+            Resource webInfClassesDir = webInf.resolve("classes/");
+            if (webInfClassesDir != null && webInfClassesDir.exists() && webInfClassesDir.isDirectory())
+                return webInfClassesDir;
         }
         return null;
     }

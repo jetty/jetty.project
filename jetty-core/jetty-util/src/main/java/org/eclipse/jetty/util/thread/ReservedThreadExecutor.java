@@ -414,6 +414,11 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     {
                         LOG.warn("Unable to run task", e);
                     }
+                    finally
+                    {
+                        // Clear any interrupted status.
+                        Thread.interrupted();
+                    }
                 }
             }
             finally

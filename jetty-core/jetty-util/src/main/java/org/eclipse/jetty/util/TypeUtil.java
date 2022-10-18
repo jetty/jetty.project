@@ -695,17 +695,7 @@ public class TypeUtil
                 if (url != null)
                 {
                     URI uri = url.toURI();
-                    String uriStr = uri.toASCIIString();
-                    if (uriStr.startsWith("jar:file:"))
-                    {
-                        uriStr = uriStr.substring(4);
-                        int idx = uriStr.indexOf("!/");
-                        if (idx > 0)
-                        {
-                            return URI.create(uriStr.substring(0, idx));
-                        }
-                    }
-                    return uri;
+                    return URIUtil.unwrapContainer(uri);
                 }
             }
         }

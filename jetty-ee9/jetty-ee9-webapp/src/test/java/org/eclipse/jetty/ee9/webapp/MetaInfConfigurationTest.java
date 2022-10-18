@@ -143,7 +143,7 @@ public class MetaInfConfigurationTest
      * jetty-9.4.x to jetty-10.0.x (where we use module-info):  in jetty-9.4.x,
      * we can use the --add-module argument to put the foo-bar-janb.jar onto the
      * module path, but this doesn't seem to work in jetty-10.0.x.  So this test
-     * will find foo-bar.janb.jar on the classpath, and jetty-util from the module path.
+     * will find foo-bar-janb.jar on the classpath, and servlet-api from the module path.
      *
      * @throws Exception if the test fails
      */

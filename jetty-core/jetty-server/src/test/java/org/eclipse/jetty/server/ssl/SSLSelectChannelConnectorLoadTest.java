@@ -247,7 +247,7 @@ public class SSLSelectChannelConnectorLoadTest
                     out.write("POST / HTTP/1.1\r\n".getBytes());
                     out.write("Host: localhost\r\n".getBytes());
                     out.write(("Content-Length: " + contentSize + "\r\n").getBytes());
-                    out.write("Content-Type: application/octect-stream\r\n".getBytes());
+                    out.write("Content-Type: application/octet-stream\r\n".getBytes());
                     if (closeConnection)
                         out.write("Connection: close\r\n".getBytes());
                     out.write("\r\n".getBytes());
