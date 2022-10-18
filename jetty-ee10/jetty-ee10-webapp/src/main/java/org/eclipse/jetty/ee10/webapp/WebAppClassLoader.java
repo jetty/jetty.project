@@ -229,7 +229,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             {
                 try
                 {
-                    addURL(resource.getURI().toURL());
+                    addURL(r.getURI().toURL());
                 }
                 catch (MalformedURLException e)
                 {
