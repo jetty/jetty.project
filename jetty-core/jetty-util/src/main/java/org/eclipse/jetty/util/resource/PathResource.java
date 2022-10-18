@@ -47,10 +47,15 @@ public class PathResource extends Resource
         .with("jrt")
         .build();
 
+    // The path object represented by this instance
     private final Path path;
+    // The as-requested URI for this path object
     private final URI uri;
+    // True if this instance is an alias
     private boolean alias = false;
+    // True to indicate that the alias resolution has been performed
     private boolean aliasResolved = false;
+    // The targetPath of the alias, representing the real-path of this PathResource instance.
     private Path targetPath;
 
     /**
@@ -143,9 +148,7 @@ public class PathResource extends Resource
 
     PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
-        // Normalize to referenced location, Paths.get() doesn't like "/bar/../foo/text.txt" style references
-        // and will return a Path that will not be found with `Files.exists()` or `Files.isDirectory()`.
-        this(Paths.get(uri.normalize()), uri, bypassAllowedSchemeCheck);
+        this(Paths.get(uri), uri, bypassAllowedSchemeCheck);
     }
 
     PathResource(Path path)
@@ -153,6 +156,13 @@ public class PathResource extends Resource
         this(path, path.toUri(), true);
     }
 
+    /**
+     * Create a PathResource.
+     *
+     * @param path the Path object
+     * @param uri the as-requested URI for the resource
+     * @param bypassAllowedSchemeCheck true to bypass the allowed schemes check
+     */
     PathResource(Path path, URI uri, boolean bypassAllowedSchemeCheck)
     {
         if (!uri.isAbsolute())
@@ -272,52 +282,56 @@ public class PathResource extends Resource
         if (!aliasResolved)
         {
             aliasResolved = true;
-            targetPath = resolveTargetPath();
-            if (targetPath == null)
-            {
-                alias = true;
-            }
-            else
-            {
-                /* If the path and targetPath are the same also check
-                 * the Path class has already normalized in the constructor
-                 * from the URI e.g. input path "aa./foo.txt"
-                 * from an #resolve(String) is normalized away during
-                 * the creation of a Path object reference.
-                 * If the URI is different from the Path.toUri() then
-                 * we will just use the original URI to construct the
-                 * alias reference Path.
-                 *
-                 * // On Windows
-                 *  PathResource resource         = PathResource("C:/temp");
-                 *  PathResource child            = resource.resolve("aa./foo.txt");
-                 *  child.exists()                == true
-                 *  child.isAlias()               == true
-                 *  child.toUri()                 == "file:///C:/temp/aa./foo.txt"
-                 *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
-                 *  child.getTargetURI()          == "file:///C:/temp/aa/foo.txt"
-                 */
-                alias = !isSameName(path, targetPath) || !Objects.equals(uri, toUri(targetPath));
-            }
-        }
-    }
 
-    private Path resolveTargetPath()
-    {
-        try
-        {
-            return path.normalize().toRealPath();
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-        catch (Exception e)
-        {
-            LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
-        }
+            try
+            {
+                // Default behavior is to follow symlinks.
+                // We don't want to use the NO_FOLLOW_LINKS parameter as that takes this call from
+                // being filesystem aware, and using FileSystem specific techniques to find
+                // the real file, to being done in-API (which doesn't work reliably on
+                // filesystems that have different names for the same file.
+                // eg: case-insensitive file systems, unicode name normalization,
+                // alternate names, etc)
+                // We also don't want to use Path.normalize() here as that eliminates
+                // the knowledge of what directories are being navigated through.
+                targetPath = path.toRealPath();
+            }
+            catch (Exception e)
+            {
+                if (e instanceof IOException)
+                    LOG.trace("IGNORED", e);
+                else
+                    LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
+                // Not possible to serve this resource.
+                //  - This resource doesn't exist.
+                //  - No access rights to this resource.
+                //  - Unable to read the file or directory.
+                //  - Navigation segments (eg: "foo/../test.txt") would go through something that doesn't exist, or not accessible.
+                //  - FileSystem doesn't support toRealPath.
+                alias = false;
+                return;
+            }
 
-        return null;
+            /* If the path and targetPath are the same, also check
+             * The as-requested URI as it will represent what was
+             * URI created this PathResource.
+             * e.g. the input of `resolve("aa./foo.txt")
+             * on windows would resolve the path, but the Path.toUri() would
+             * not always show this extension-less access.
+             * The as-requested URI will retain this extra '.' and be used
+             * to evaluate if the targetPath.toUri() is the same as the as-requested URI.
+             *
+             * // On Windows
+             *  PathResource resource         = PathResource("C:/temp");
+             *  PathResource child            = resource.resolve("aa./foo.txt");
+             *  child.exists()                == true
+             *  child.isAlias()               == true
+             *  child.toUri()                 == "file:///C:/temp/aa./foo.txt"
+             *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
+             *  child.getTargetURI()          == "file:///C:/temp/aa/foo.txt"
+             */
+            alias = !isSameName(path, targetPath) || !Objects.equals(uri, toUri(targetPath));
+        }
     }
 
     @Override

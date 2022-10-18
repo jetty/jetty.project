@@ -31,7 +31,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -87,6 +86,30 @@ public class FileSystemResourceTest
     public void afterEach()
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    private Matcher<Resource> isAlias()
+    {
+        return new BaseMatcher<>()
+        {
+            @Override
+            public boolean matches(Object item)
+            {
+                return ((Resource)item).isAlias();
+            }
+
+            @Override
+            public void describeTo(Description description)
+            {
+                description.appendText("isAlias() should return true");
+            }
+
+            @Override
+            public void describeMismatch(Object item, Description description)
+            {
+                description.appendText("was ").appendValue(((Resource)item).getTargetURI());
+            }
+        };
     }
 
     private Matcher<Resource> isNotAlias()
@@ -612,6 +635,7 @@ public class FileSystemResourceTest
         try
         {
             Files.createSymbolicLink(bar, foo);
+            // Now a "bar" symlink exists, pointing to a "foo" that doesn't exist
             symlinkSupported = true;
         }
         catch (UnsupportedOperationException | FileSystemException e)
@@ -630,16 +654,18 @@ public class FileSystemResourceTest
         // Access to the same resource, but via a symlink means that they are not equivalent
         assertThat("foo.equals(bar)", resFoo.equals(resBar), is(false));
 
-        // This is an alias because the file does not exist.
+        // This is not an alias because the file does not exist.
         assertFalse(resFoo.exists());
-        assertTrue(resFoo.isAlias());
+        assertFalse(Files.exists(resFoo.getPath()));
+        assertFalse(resFoo.isAlias());
         assertNotNull(resFoo.getURI());
         assertNull(resFoo.getTargetURI());
 
         // This is alias because the target file does not exist even though the symlink file does exist.
+        // This resource cannot be served, so it should not exist, nor have an alias
         assertFalse(resBar.exists());
-        assertTrue(Files.exists(resBar.getPath(), LinkOption.NOFOLLOW_LINKS));
-        assertTrue(resBar.isAlias());
+        assertFalse(Files.exists(resBar.getPath()));
+        assertFalse(resBar.isAlias());
         assertNotNull(resBar.getURI());
         assertNull(resBar.getTargetURI());
     }
@@ -1057,7 +1083,7 @@ public class FileSystemResourceTest
 
         fileres = ResourceFactory.root().newResource(refEncoded);
         assertThat("Exists: " + refEncoded, fileres.exists(), is(true));
-        assertTrue(fileres.isAlias());
+        assertThat("Is Alias: " + refEncoded, fileres, isAlias());
 
         URI refQuoteSpace = dir.toUri().resolve("f%20o's.txt");
 
@@ -1069,7 +1095,7 @@ public class FileSystemResourceTest
 
         fileres = ResourceFactory.root().newResource(refEncodedSpace);
         assertThat("Exists: " + refEncodedSpace, fileres.exists(), is(true));
-        assertTrue(fileres.isAlias());
+        assertThat("Is Alias: " + refEncodedSpace, fileres, isAlias());
 
         URI refA = dir.toUri().resolve("foo's.txt");
         URI refB = dir.toUri().resolve("foo%27s.txt");
@@ -1080,7 +1106,7 @@ public class FileSystemResourceTest
             "URI[b] = " + refB;
         assertThat(msg, refA.equals(refB), is(false));
 
-        // These resources are not equal because they have different URIs.
+        // These resources are not equal because they have different request URIs.
         Resource a = ResourceFactory.root().newResource(refA);
         Resource b = ResourceFactory.root().newResource(refB);
         assertThat("A.equals(B)", a.equals(b), is(false));
@@ -1159,14 +1185,14 @@ public class FileSystemResourceTest
         try
         {
             assertThat("Exists: " + basePath, base.exists(), is(true));
-            assertThat("Is Not Alias: " + basePath, base, isNotAlias());
+            assertThat("Target URI: " + basePath, base, isNotAlias());
 
             Resource r = base.resolve("aa%5C/foo.txt");
+            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
+
             if (WINDOWS.isCurrentOs())
             {
-                assertThat("getURI()", r.getPath().toString(), containsString("aa\\foo.txt"));
-                assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
-
+                assertThat("getPath().toString()", r.getPath().toString(), containsString("aa\\foo.txt"));
                 assertThat("isAlias()", r.isAlias(), is(true));
                 assertThat("getTargetURI()", r.getTargetURI(), notNullValue());
                 assertThat("getTargetURI()", r.getTargetURI().toASCIIString(), containsString("aa/foo.txt"));
@@ -1174,11 +1200,9 @@ public class FileSystemResourceTest
             }
             else
             {
-                assertThat("getURI()", r.getPath().toString(), containsString("aa\\/foo.txt"));
-                assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
-
+                assertThat("getPath().toString()", r.getPath().toString(), containsString("aa\\/foo.txt"));
+                assertThat("isAlias()", r.isAlias(), is(false));
                 assertThat("Exists: " + r, r.exists(), is(false));
-                assertThat("isAlias()", r.isAlias(), is(true));
             }
         }
         catch (IllegalArgumentException e)
@@ -1219,8 +1243,8 @@ public class FileSystemResourceTest
             }
             else
             {
+                assertThat("isAlias()", r.isAlias(), is(false));
                 assertThat("Exists: " + r, r.exists(), is(false));
-                assertThat("isAlias()", r.isAlias(), is(true));
             }
         }
         catch (IllegalArgumentException e)

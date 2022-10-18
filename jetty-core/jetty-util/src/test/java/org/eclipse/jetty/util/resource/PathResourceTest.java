@@ -23,7 +23,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -242,7 +241,7 @@ public class PathResourceTest
             // Resolve file using extension-less directory
             testText = archiveResource.resolve("/dir./test.txt");
             assertFalse(testText.exists());
-            assertTrue(testText.isAlias());
+            assertFalse(testText.isAlias());
 
             // Resolve directory to name, no slash
             Resource dirResource = archiveResource.resolve("/dir");
@@ -438,10 +437,9 @@ public class PathResourceTest
         assertTrue(symlinkResource.exists());
 
         // After deleting file the Resources do not exist even though symlink file exists.
-        Files.delete(resourcePath);
+        assumeTrue(Files.deleteIfExists(resourcePath));
         assertFalse(fileResource.exists());
         assertFalse(symlinkResource.exists());
-        assertTrue(Files.exists(symlinkPath, LinkOption.NOFOLLOW_LINKS));
 
         // Re-create and test the resources now that the file has been deleted.
         fileResource = new PathResource(resourcePath);
@@ -451,7 +449,7 @@ public class PathResourceTest
         symlinkResource = new PathResource(symlinkPath);
         assertFalse(symlinkResource.exists());
         assertNull(symlinkResource.getTargetPath());
-        assertTrue(symlinkResource.isAlias());
+        assertFalse(symlinkResource.isAlias());
     }
 
     @Test
@@ -462,15 +460,22 @@ public class PathResourceTest
         Path dir = docroot.resolve("dir");
         Files.createDirectory(dir);
 
+        Path foo = docroot.resolve("foo");
+        Files.createDirectory(foo);
+
         Path testText = dir.resolve("test.txt");
         Files.createFile(testText);
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource rootRes = resourceFactory.newResource(docroot);
-            // This is the heart of the test, we should support this
-            Resource fileRes = rootRes.resolve("bar/../dir/test.txt");
-            assertTrue(fileRes.exists());
+            // Test navigation through a directory that doesn't exist
+            Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
+            assertFalse(fileResViaBar.exists());
+
+            // Test navigation through a directory that does exist
+            Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");
+            assertTrue(fileResViaFoo.exists());
         }
     }
 
