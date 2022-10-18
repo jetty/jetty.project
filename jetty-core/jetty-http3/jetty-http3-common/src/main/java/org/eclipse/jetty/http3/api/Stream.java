@@ -226,7 +226,6 @@ public interface Stream
              * @param stream  the stream
              * @param failure the timeout failure
              * @param promise
-             * @return true to reset the stream, false to ignore the idle timeout
              */
             public default void onIdleTimeout(Client stream, Throwable failure, Promise<Boolean> promise)
             {
@@ -342,7 +341,6 @@ public interface Stream
              * @param stream  the stream
              * @param failure the timeout failure
              * @param promise
-             * @return true to reset the stream, false to ignore the idle timeout
              */
             public default void onIdleTimeout(Server stream, Throwable failure, Promise<Boolean> promise)
             {
