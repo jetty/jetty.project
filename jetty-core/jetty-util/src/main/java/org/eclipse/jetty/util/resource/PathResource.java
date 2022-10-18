@@ -51,10 +51,8 @@ public class PathResource extends Resource
     private final Path path;
     // The as-requested URI for this path object
     private final URI uri;
-    // True if this instance is an alias
-    private boolean alias = false;
-    // True to indicate that the alias resolution has been performed
-    private boolean aliasResolved = false;
+    // True / False to indicate if this is an alias of something else, or null if the alias hasn't been resolved
+    private Boolean alias;
     // The Path representing the real-path of this PathResource instance. (populated during alias checking)
     private Path realPath;
 
@@ -184,22 +182,17 @@ public class PathResource extends Resource
     @Override
     public boolean exists()
     {
-        if (aliasResolved)
+        if (alias == null)
+        {
+            // no alias check performed
+            return Files.exists(path);
+        }
+        else
         {
             if (realPath == null)
                 return false;
             return Files.exists(realPath);
         }
-        else
-        {
-            // Avoid resolving alias unless necessary to determine existence.
-            if (Files.exists(path))
-                return true;
-            if (isAlias() && realPath != null)
-                return Files.exists(realPath);
-        }
-
-        return false;
     }
 
     @Override
@@ -277,12 +270,93 @@ public class PathResource extends Resource
         return r.getClass() == PathResource.class && path.startsWith(r.getPath());
     }
 
+    /**
+     * <p>
+     * Perform a check of the original Path and as-requested URI to determine
+     * if this resource is an alias to another name/location.
+     * </p>
+     *
+     * <table>
+     * <thead>
+     * <tr>
+     * <th>path</th>
+     * <th>realPath</th>
+     * <th>uri-as-requested</th>
+     * <th>uri-from-realPath</th>
+     * <th>alias</th>
+     * </tr>
+     * </thead>
+     * <tbody>
+     * <tr>
+     * <td><code>C:/temp/aa./foo.txt</code></td>
+     * <td><code>C:/temp/aa/foo.txt</code></td>
+     * <td><code>file:///C:/temp/aa./foo.txt</code></td>
+     * <td><code>file:///C:/temp/aa./foo.txt</code></td>
+     * <td>true</td>
+     * </tr>
+     * <tr>
+     * <td><code>/tmp/foo-symlink</code></td>
+     * <td><code>/tmp/bar.txt</code></td>
+     * <td><code>file:///tmp/foo-symlink</code></td>
+     * <td><code>file:///tmp/bar.txt</code></td>
+     * <td>true</td>
+     * </tr>
+     * <tr>
+     * <td><code>C:/temp/aa.txt</code></td>
+     * <td><code>C:/temp/AA.txt</code></td>
+     * <td><code>file:///C:/temp/aa.txt</code></td>
+     * <td><code>file:///C:/temp/AA.txt</code></td>
+     * <td>true</td>
+     * </tr>
+     * <tr>
+     * <td><code>/tmp/bar-exists/../foo.txt</code></td>
+     * <td><code>/tmp/foo.txt</code></td>
+     * <td><code>file:///tmp/bar-exists/../foo.txt</code></td>
+     * <td><code>file:///tmp/foo.txt</code></td>
+     * <td>true</td>
+     * </tr>
+     * <tr>
+     * <td><code>/tmp/doesnt-exist.txt</code></td>
+     * <td>null (does not exist)</td>
+     * <td><code>file:///tmp/doesnt-exist.txt</code></td>
+     * <td>null (does not exist)</td>
+     * <td>false</td>
+     * </tr>
+     * <tr>
+     * <td><code>/tmp/doesnt-exist/../foo.txt</code></td>
+     * <td>null (intermediate does not exist)</td>
+     * <td><code>file:///tmp/doesnt-exist/../foo.txt</code></td>
+     * <td>null (intermediate does not exist)</td>
+     * <td>false</td>
+     * </tr>
+     * <tr>
+     * <td><code>/var/protected/config.xml</code></td>
+     * <td>null (no permissions)</td>
+     * <td><code>file:///var/protected/config.xml</code></td>
+     * <td>null (no permission)</td>
+     * <td>false</td>
+     * </tr>
+     * <tr>
+     * <td><code>/tmp/foo-symlink</code></td>
+     * <td>null (broken symlink, doesn't point to anything)</td>
+     * <td><code>file:///tmp/foo-symlink</code></td>
+     * <td>null (broken symlink, doesn't point to anything)</td>
+     * <td>false</td>
+     * </tr>
+     * <tr>
+     * <td><code>C:/temp/cannot:be:referenced</code></td>
+     * <td>null (illegal filename)</td>
+     * <td><code>file:///C:/temp/cannot:be:referenced</code></td>
+     * <td>null (illegal filename)</td>
+     * <td>false</td>
+     * </tr>
+     * </tbody>
+     * </table>
+     */
     private void resolveAlias()
     {
-        if (!aliasResolved)
+        if (alias == null)
         {
-            aliasResolved = true;
-
             try
             {
                 // Default behavior is to follow symlinks.
@@ -328,7 +402,7 @@ public class PathResource extends Resource
              *  child.isAlias()               == true
              *  child.toUri()                 == "file:///C:/temp/aa./foo.txt"
              *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
-             *  child.getRealURI()          == "file:///C:/temp/aa/foo.txt"
+             *  child.getRealURI()            == "file:///C:/temp/aa/foo.txt"
              */
             alias = !isSameName(path, realPath) || !Objects.equals(uri, toUri(realPath));
         }
