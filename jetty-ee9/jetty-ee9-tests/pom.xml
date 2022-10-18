@@ -27,9 +27,9 @@
     <module>jetty-ee9-test-jndi</module>
     <!-- <module>jetty-ee9-test-loginservice</module> -->
     <module>jetty-ee9-test-quickstart</module>
-    <!-- <module>jetty-ee9-test-websocket-client-provided-webapp</module> -->
-    <!-- <module>jetty-ee9-test-websocket-client-webapp</module> -->
-    <!-- <module>jetty-ee9-test-websocket-webapp</module> -->
+    <module>jetty-ee9-test-websocket-client-provided-webapp</module>
+    <module>jetty-ee9-test-websocket-client-webapp</module>
+    <module>jetty-ee9-test-websocket-webapp</module>
     <module>jetty-ee9-test-cdi-common-webapp</module>
     <module>jetty-ee9-test-felix-webapp</module>
     <module>jetty-ee9-test-openid-webapp</module>

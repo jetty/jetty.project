@@ -33,7 +33,7 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
       <scope>provided</scope>
     </dependency>

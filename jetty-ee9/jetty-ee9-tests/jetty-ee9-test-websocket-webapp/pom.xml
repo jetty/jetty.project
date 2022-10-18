@@ -28,7 +28,7 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>
       <scope>provided</scope>
     </dependency>
