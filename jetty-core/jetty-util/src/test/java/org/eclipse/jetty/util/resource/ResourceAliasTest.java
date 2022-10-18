@@ -60,16 +60,30 @@ public class ResourceAliasTest
     @Test
     public void testAliasNavigation() throws IOException
     {
-        Path baseDir = workDir.getEmptyPathDir();
+        Path docroot = workDir.getEmptyPathDir();
 
-        Path foo = baseDir.resolve("foo");
-        Files.createDirectories(foo);
-        Files.writeString(foo.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+        Path dir = docroot.resolve("dir");
+        Files.createDirectory(dir);
 
-        Resource resource = ResourceFactory.root().newResource(baseDir);
-        Resource test = resource.resolve("/bar/../foo/test.txt");
-        assertTrue(test.exists(), "Should exist");
-        assertTrue(test.isAlias(), "Should be an alias");
+        Path foo = docroot.resolve("foo");
+        Files.createDirectory(foo);
+
+        Path testText = dir.resolve("test.txt");
+        Files.writeString(testText, "Contents of test.txt", StandardCharsets.UTF_8);
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource rootRes = resourceFactory.newResource(docroot);
+            // Test navigation through a directory that doesn't exist
+            Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
+            assertFalse(fileResViaBar.exists(), "Should not exist");
+            assertFalse(fileResViaBar.isAlias(), "Should not be an alias");
+
+            // Test navigation through a directory that does exist
+            Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");
+            assertTrue(fileResViaFoo.exists(), "Should exist");
+            assertTrue(fileResViaFoo.isAlias(), "Should be an alias");
+        }
     }
 
     @Test
