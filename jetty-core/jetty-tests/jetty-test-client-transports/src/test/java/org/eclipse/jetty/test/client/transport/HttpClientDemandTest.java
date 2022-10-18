@@ -349,7 +349,6 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testGZippedResponseContentWithAsyncDemand(Transport transport) throws Exception
     {
         int chunks = 64;
@@ -396,7 +395,6 @@ public class HttpClientDemandTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Disabled("This test has two listeners, that's not supported anymore, API needs to be reworked to avoid this")
     public void testDelayedBeforeContentDemand(Transport transport) throws Exception
     {
         byte[] content = new byte[1024];

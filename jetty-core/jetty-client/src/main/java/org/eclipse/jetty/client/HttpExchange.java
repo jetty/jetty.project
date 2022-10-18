@@ -189,6 +189,14 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         return false;
     }
 
+    public boolean isResponseComplete()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            return responseState == State.COMPLETED;
+        }
+    }
+
     public boolean responseComplete(Throwable failure)
     {
         try (AutoLock l = lock.lock())

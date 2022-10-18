@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
@@ -30,7 +29,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -50,7 +48,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
 
-    private final AtomicBoolean firstContent = new AtomicBoolean(true);
+    private final AtomicReference<Runnable> contentActionRef = new AtomicReference<>();
     private ContentSource contentSource;
 
     public HttpReceiverOverHTTP2(HttpChannel channel)
@@ -68,7 +66,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     @Override
     protected void reset()
     {
-        firstContent.set(true);
+        contentSource = null;
+        contentActionRef.set(null);
         super.reset();
     }
 
@@ -176,12 +175,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         return (HttpChannelOverHTTP2)super.getHttpChannel();
     }
 
-    @Override
-    protected void receive()
-    {
-        throw new UnsupportedOperationException("receive should not be called under HTTP/2");
-    }
-
     void onHeaders(Stream stream, HeadersFrame frame)
     {
         MetaData metaData = frame.getMetaData();
@@ -201,46 +194,31 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpResponse httpResponse = exchange.getResponse();
         httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
-        if (responseBegin(exchange))
+        responseBegin(exchange);
+        HttpFields headers = response.getFields();
+        for (HttpField header : headers)
         {
-            HttpFields headers = response.getFields();
-            for (HttpField header : headers)
-            {
-                if (!responseHeader(exchange, header))
-                    return;
-            }
-
-            HttpRequest httpRequest = exchange.getRequest();
-            if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
-            {
-                ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((HTTP2Stream)stream);
-                long idleTimeout = httpRequest.getIdleTimeout();
-                if (idleTimeout > 0)
-                    endPoint.setIdleTimeout(idleTimeout);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
-                ((HTTP2Stream)stream).setAttachment(endPoint);
-                HttpConversation conversation = httpRequest.getConversation();
-                conversation.setAttribute(EndPoint.class.getName(), endPoint);
-                HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
-                if (upgrader != null)
-                    upgrade(upgrader, httpResponse, endPoint);
-            }
-
-            if (responseHeaders(exchange))
-            {
-                int status = response.getStatus();
-                if (frame.isEndStream() || HttpStatus.isInterim(status))
-                    responseSuccess(exchange);
-                else
-                    stream.demand();
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Stalling response processing, no demand after headers on {}", this);
-            }
+            responseHeader(exchange, header);
         }
+
+        HttpRequest httpRequest = exchange.getRequest();
+        if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
+        {
+            ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((HTTP2Stream)stream);
+            long idleTimeout = httpRequest.getIdleTimeout();
+            if (idleTimeout > 0)
+                endPoint.setIdleTimeout(idleTimeout);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
+            ((HTTP2Stream)stream).setAttachment(endPoint);
+            HttpConversation conversation = httpRequest.getConversation();
+            conversation.setAttribute(EndPoint.class.getName(), endPoint);
+            HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
+            if (upgrader != null)
+                upgrade(upgrader, httpResponse, endPoint);
+        }
+
+        responseHeaders(exchange);
     }
 
     private void onTrailer(HeadersFrame frame)
@@ -300,42 +278,29 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     @Override
     public void onDataAvailable()
     {
-        // TODO these two variables should be given to the contentSource's ctor
+        if (contentSource == null)
+        {
+            Runnable r = contentActionRef.getAndSet(null);
+            if (r != null)
+                r.run();
+        }
+
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return;
-        Stream stream = getHttpChannel().getStream();
-        if (stream == null)
-            return;
 
-        // TODO we could check for contentSource == null and instantiate it here if it was not instantiated by the HttpReceiver ctor
-        Runnable contentAction;
-        if (firstContent.compareAndSet(true, false))
-            contentAction = firstResponseContent(exchange); // This action starts the onContentSource loop.
-        else
-            contentAction = () -> contentSource.onDataAvailable(); // This action calls the demand callback of the onContentSource loop.
-
-        try
-        {
-            withinContentState(exchange, contentAction);
-            if (contentSource.hasReadEof())
-                responseSuccess(exchange);
-        }
-        catch (IllegalStateException e)
-        {
-            failAndClose(e);
-        }
+        contentSource.onDataAvailable(); // This action calls the demand callback of the onContentSource loop.
+        if (contentSource.hasReadEof())
+            responseSuccess(exchange);
     }
 
     private void failAndClose(Throwable failure)
     {
         // TODO cancel or close or both? rework failure handling.
         Stream stream = getHttpChannel().getStream();
-        if (responseFailure(failure))
-        {
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            getHttpChannel().getHttpConnection().close(failure);
-        }
+        responseFailure(failure);
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        getHttpChannel().getHttpConnection().close(failure);
     }
 
     void onReset(ResetFrame frame)

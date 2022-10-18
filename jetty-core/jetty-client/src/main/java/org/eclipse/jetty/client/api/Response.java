@@ -81,7 +81,7 @@ public interface Response
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
      */
-    boolean abort(Throwable cause);
+    boolean abort(Throwable cause); // TODO return void
 
     /**
      * Common, empty, super-interface for response listeners

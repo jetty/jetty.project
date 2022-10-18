@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -44,8 +43,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP.class);
 
-    private final AtomicBoolean firstContent = new AtomicBoolean(true);
-    private final AtomicReference<Runnable> contentActionRef = new AtomicReference<>();
+    private final AtomicReference<Runnable> actionRef = new AtomicReference<>();
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
     private final RetainableByteBufferPool retainableByteBufferPool;
@@ -58,9 +56,43 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private Content.Chunk contentGenerated;
     private ContentSource contentSource;
 
+    public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
+    {
+        super(channel);
+        HttpClient httpClient = channel.getHttpDestination().getHttpClient();
+        parser = new HttpParser(this, -1, httpClient.getHttpCompliance());
+        HttpClientTransport transport = httpClient.getTransport();
+        if (transport instanceof HttpClientTransportOverHTTP httpTransport)
+        {
+            parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
+            parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
+        }
+        retainableByteBufferPool = httpClient.getByteBufferPool().asRetainableByteBufferPool();
+    }
+
+    @Override
+    protected void reset()
+    {
+        super.reset();
+        parser.reset();
+        contentGenerated = null;
+        contentSource = null;
+    }
+
+    @Override
+    protected void dispose(Throwable x)
+    {
+        super.dispose(x);
+        parser.close();
+        contentGenerated = null;
+        contentSource = null;
+    }
+
     @Override
     protected Content.Source newContentSource()
     {
+        if (contentSource != null)
+            throw new IllegalStateException();
         contentSource = new ContentSource();
         return contentSource;
     }
@@ -122,13 +154,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 }
                 else
                 {
-                    currentChunk = HttpReceiverOverHTTP.this.read(false);
+                    currentChunk = HttpReceiverOverHTTP.this.read(true);
                     if (currentChunk == null)
-                    {
-                        currentChunk = HttpReceiverOverHTTP.this.read(true);
-                        if (currentChunk == null)
-                            return;
-                    }
+                        return;
                 }
             }
         }
@@ -162,22 +190,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
     }
 
-    public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
-    {
-        super(channel);
-        HttpClient httpClient = channel.getHttpDestination().getHttpClient();
-        parser = new HttpParser(this, -1, httpClient.getHttpCompliance());
-        HttpClientTransport transport = httpClient.getTransport();
-        if (transport instanceof HttpClientTransportOverHTTP)
-        {
-            HttpClientTransportOverHTTP httpTransport = (HttpClientTransportOverHTTP)transport;
-            parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
-            parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
-        }
-
-        this.retainableByteBufferPool = httpClient.getByteBufferPool().asRetainableByteBufferPool();
-    }
-
     @Override
     public HttpChannelOverHTTP getHttpChannel()
     {
@@ -194,7 +206,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return networkBuffer == null ? null : networkBuffer.getBuffer();
     }
 
-    @Override
     public void receive()
     {
         // This method is the callback of fill interest.
@@ -203,15 +214,15 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         // until onContentSource() gets called.
         // Once onContentSource() gets called, firstContent is true and it must just notify that content may be generated.
 
-        if (firstContent.get()) // TODO replace this atomic boolean with Content.Source field & check == null
+        if (contentSource == null)
         {
             if (networkBuffer == null)
                 acquireNetworkBuffer();
             parseAndFill();
-            Runnable contentAction = contentActionRef.getAndSet(null);
-            if (contentAction != null)
-                contentAction.run(); // This starts the onContentSource loop.
-            if (firstContent.get() && networkBuffer == null)
+            Runnable r = actionRef.getAndSet(null);
+            if (r != null)
+                r.run(); // This starts the onContentSource loop.
+            if (contentSource == null && networkBuffer == null)
                 fillInterestedIfNeeded();
         }
         else
@@ -377,12 +388,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             boolean failed = isFailed();
             if (LOG.isDebugEnabled())
                 LOG.debug("Parse result={}, failed={}", handle, failed);
-            // When failed, it's safe to close the parser because there
-            // will be no races with other threads demanding more content.
-            if (failed)
-                parser.close();
             if (handle)
-                return !failed;
+            {
+                Runnable action = actionRef.getAndSet(null);
+                if (action != null)
+                    action.run();
+                return parser.isClose();
+            }
 
             boolean complete = this.complete;
             this.complete = false;
@@ -488,7 +500,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         // Store the EndPoint is case of upgrades, tunnels, etc.
         exchange.getRequest().getConversation().setAttribute(EndPoint.class.getName(), getHttpConnection().getEndPoint());
-        return !responseHeaders(exchange);
+        actionRef.set(() -> responseHeaders(exchange));
+        return true;
     }
 
     @Override
@@ -506,24 +519,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             throw new IllegalStateException("Content generated with unconsumed content left");
 
         contentGenerated = Content.Chunk.from(buffer, false, networkBuffer);
-        if (firstContent.compareAndSet(true, false))
-        {
-            Runnable r = firstResponseContent(exchange);
-            contentActionRef.set(r);
-            return true; // stop parsing
-        }
-        else
-        {
-            try
-            {
-                withinContentState(exchange, () -> contentSource.onDataAvailable());
-            }
-            catch (IllegalStateException e)
-            {
-                failAndClose(e);
-            }
-            return true;
-        }
+        actionRef.set(contentSource::onDataAvailable);
+        return true;
     }
 
     @Override
@@ -561,11 +558,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             complete = true;
         }
 
+        if (contentGenerated != null)
+            throw new IllegalStateException();
         contentGenerated = Content.Chunk.EOF;
-        boolean stopParsing = !responseSuccess(exchange);
-        if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
-            stopParsing = true;
-        return stopParsing;
+        responseSuccess(exchange);
+        return status == HttpStatus.SWITCHING_PROTOCOLS_101;
     }
 
     @Override
@@ -595,22 +592,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
     }
 
-    @Override
-    protected void reset()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("resetting {}", this);
-        parser.reset();
-        firstContent.set(true);
-        contentActionRef.set(null);
-        contentGenerated = null;
-        contentSource = null;
-        super.reset();
-    }
-
     private void failAndClose(Throwable failure)
     {
-        if (responseFailure(failure))
+        responseFailure(failure);
+        if (isFailed()) // TODO this is racy, responseFailure may return before it changed the state to FAILED
             getHttpConnection().close(failure);
     }
 

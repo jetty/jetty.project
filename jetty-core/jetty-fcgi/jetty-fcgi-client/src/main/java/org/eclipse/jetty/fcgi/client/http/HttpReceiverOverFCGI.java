@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -24,9 +24,9 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 public class HttpReceiverOverFCGI extends HttpReceiver
 {
+    private final AtomicReference<Runnable> contentActionRef = new AtomicReference<>();
     private ContentSource contentSource;
     private Content.Chunk contentGenerated;
-    private final AtomicBoolean firstContent = new AtomicBoolean(true);
 
     public HttpReceiverOverFCGI(HttpChannel channel)
     {
@@ -36,7 +36,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     @Override
     protected void reset()
     {
-        firstContent.set(true);
+        contentActionRef.set(null);
+        contentSource = null;
+        contentGenerated = null;
         super.reset();
     }
 
@@ -46,15 +48,14 @@ public class HttpReceiverOverFCGI extends HttpReceiver
             throw new IllegalStateException();
         contentGenerated = chunk;
 
-        if (firstContent.compareAndSet(true, false))
+        if (contentSource == null)
         {
-            Runnable r = firstResponseContent(getHttpExchange());
+            Runnable r = contentActionRef.getAndSet(null);
             r.run();
+            return;
         }
-        else
-        {
-            contentSource.onDataAvailable();
-        }
+
+        contentSource.onDataAvailable();
     }
 
     @Override
@@ -186,46 +187,39 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
-    protected boolean responseBegin(HttpExchange exchange)
+    protected void responseBegin(HttpExchange exchange)
     {
-        return super.responseBegin(exchange);
+        super.responseBegin(exchange);
     }
 
     @Override
-    protected boolean responseHeader(HttpExchange exchange, HttpField field)
+    protected void responseHeader(HttpExchange exchange, HttpField field)
     {
-        return super.responseHeader(exchange, field);
+        super.responseHeader(exchange, field);
     }
 
     @Override
-    protected boolean responseHeaders(HttpExchange exchange)
+    protected void responseHeaders(HttpExchange exchange)
     {
-        return super.responseHeaders(exchange);
+        super.responseHeaders(exchange);
     }
 
     @Override
-    protected void withinContentState(HttpExchange exchange, Runnable runnable) throws IllegalStateException
-    {
-        super.withinContentState(exchange, runnable);
-    }
-
-    @Override
-    protected boolean responseSuccess(HttpExchange exchange)
+    protected void responseSuccess(HttpExchange exchange)
     {
         if (contentGenerated != null)
             throw new IllegalStateException();
         contentGenerated = Content.Chunk.EOF;
         contentSource.onDataAvailable();
-        return super.responseSuccess(exchange);
+        super.responseSuccess(exchange);
     }
 
     @Override
-    protected boolean responseFailure(Throwable failure)
+    protected void responseFailure(Throwable failure)
     {
-        return super.responseFailure(failure);
+        super.responseFailure(failure);
     }
 
-    @Override
     protected void receive()
     {
         getHttpChannel().receive();
@@ -233,10 +227,8 @@ public class HttpReceiverOverFCGI extends HttpReceiver
 
     private void failAndClose(Throwable failure)
     {
-        if (responseFailure(failure))
-        {
-            HttpChannelOverFCGI httpChannel = getHttpChannel();
-            httpChannel.getHttpConnection().close(failure);
-        }
+        responseFailure(failure);
+        HttpChannelOverFCGI httpChannel = getHttpChannel();
+        httpChannel.getHttpConnection().close(failure);
     }
 }

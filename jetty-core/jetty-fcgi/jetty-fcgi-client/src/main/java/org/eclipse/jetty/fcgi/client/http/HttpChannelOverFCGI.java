@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IdleTimeout;
-import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,20 +110,26 @@ public class HttpChannelOverFCGI extends HttpChannel
         if (exchange == null)
             return false;
         exchange.getResponse().version(version).status(code).reason(reason);
-        return receiver.responseBegin(exchange);
+        receiver.responseBegin(exchange);
+        return true;
     }
 
     protected boolean responseHeader(HttpField field)
     {
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseHeader(exchange, field);
+        if (exchange != null)
+            receiver.responseHeader(exchange, field);
+        return true;
     }
 
     protected boolean responseHeaders()
     {
         idle.notIdle();
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseHeaders(exchange);
+        if (exchange == null)
+            return false;
+        receiver.responseHeaders(exchange);
+        return true;
     }
 
     protected boolean content(Content.Chunk chunk)
@@ -142,13 +147,17 @@ public class HttpChannelOverFCGI extends HttpChannel
     protected boolean responseSuccess()
     {
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseSuccess(exchange);
+        if (exchange != null)
+            receiver.responseSuccess(exchange);
+        return true;
     }
 
     protected boolean responseFailure(Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseFailure(failure);
+        if (exchange != null)
+            receiver.responseFailure(failure);
+        return true;
     }
 
     @Override

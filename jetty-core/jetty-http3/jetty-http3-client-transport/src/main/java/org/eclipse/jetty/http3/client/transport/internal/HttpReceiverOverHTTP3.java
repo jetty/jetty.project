@@ -14,14 +14,13 @@
 package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -37,13 +36,21 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
 
+    private final AtomicReference<Runnable> contentActionRef = new AtomicReference<>();
     private ContentSource contentSource;
     private Content.Chunk contentGenerated;
-    private final AtomicBoolean firstContent = new AtomicBoolean(true);
 
     protected HttpReceiverOverHTTP3(HttpChannelOverHTTP3 channel)
     {
         super(channel);
+    }
+
+    @Override
+    protected void reset()
+    {
+        contentActionRef.set(null);
+        contentSource = null;
+        super.reset();
     }
 
     @Override
@@ -168,23 +175,17 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         return chunk;
     }
 
-    @Override
-    protected void reset()
-    {
-        firstContent.set(true);
-        super.reset();
-    }
-
     void content(Content.Chunk chunk)
     {
         if (contentGenerated != null)
             throw new IllegalStateException();
         contentGenerated = chunk;
 
-        if (firstContent.compareAndSet(true, false))
+        if (contentSource == null)
         {
-            Runnable r = firstResponseContent(getHttpExchange());
-            r.run();
+            Runnable r = contentActionRef.getAndSet(null);
+            if (r != null)
+                r.run();
         }
         else
         {
@@ -198,7 +199,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         return (HttpChannelOverHTTP3)super.getHttpChannel();
     }
 
-    @Override
     protected void receive()
     {
         // Called when the application resumes demand of content.
@@ -223,31 +223,16 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
         httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
-        if (responseBegin(exchange))
+        responseBegin(exchange);
+        HttpFields headers = response.getFields();
+        for (HttpField header : headers)
         {
-            HttpFields headers = response.getFields();
-            for (HttpField header : headers)
-            {
-                if (!responseHeader(exchange, header))
-                    return;
-            }
-
-            // TODO: add support for HttpMethod.CONNECT.
-
-            if (responseHeaders(exchange))
-            {
-                int status = response.getStatus();
-                if (frame.isLast() || HttpStatus.isInterim(status))
-                    responseSuccess(exchange);
-                else
-                    stream.demand();
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("stalling response processing, no demand after headers on {}", this);
-            }
+            responseHeader(exchange, header);
         }
+
+        // TODO: add support for HttpMethod.CONNECT.
+
+        responseHeaders(exchange);
     }
 
     @Override
@@ -265,8 +250,8 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             {
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
-                    if (responseFailure(x))
-                        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                    responseFailure(x);
+                    stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
                 });
 
                 // TODO Stream.Data data is lost here
@@ -330,10 +315,8 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
     private void failAndClose(Throwable failure)
     {
-        if (responseFailure(failure))
-        {
-            HttpChannelOverHTTP3 httpChannel = getHttpChannel();
-            httpChannel.getHttpConnection().close(failure);
-        }
+        responseFailure(failure);
+        HttpChannelOverHTTP3 httpChannel = getHttpChannel();
+        httpChannel.getHttpConnection().close(failure);
     }
 }
