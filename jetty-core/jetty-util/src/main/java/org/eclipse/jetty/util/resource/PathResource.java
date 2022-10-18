@@ -200,7 +200,7 @@ public class PathResource extends Resource
 
     public Path getTargetPath()
     {
-        checkAlias();
+        resolveAlias();
         return targetPath;
     }
 
@@ -234,7 +234,7 @@ public class PathResource extends Resource
     @Override
     public boolean isAlias()
     {
-        checkAlias();
+        resolveAlias();
         return alias;
     }
 
@@ -267,7 +267,7 @@ public class PathResource extends Resource
         return r.getClass() == PathResource.class && path.startsWith(r.getPath());
     }
 
-    private void checkAlias()
+    private void resolveAlias()
     {
         if (!aliasResolved)
         {
