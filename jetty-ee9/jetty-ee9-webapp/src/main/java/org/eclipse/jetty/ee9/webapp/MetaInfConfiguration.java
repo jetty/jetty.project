@@ -149,7 +149,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Consumer<URI> addContainerResource = (uri) ->
         {
             Resource resource = _resourceFactory.newResource(uri);
-            if (resource == null)
+            if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Classpath URI doesn't exist: " + uri);

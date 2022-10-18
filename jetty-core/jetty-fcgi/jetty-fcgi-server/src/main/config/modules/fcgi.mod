@@ -1,16 +1,13 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Adds the FastCGI implementation to the classpath.
+Enables support for the FastCGI protocol.
+
+[tags]
+fcgi
 
 [depend]
-servlet
 client
+server
 
 [lib]
-lib/jetty-proxy-${jetty.version}.jar
-lib/fcgi/*.jar
-
-[ini-template]
-## For configuration of FastCGI contexts, see
-## https://www.eclipse.org/jetty/documentation/current/fastcgi.html
+lib/fcgi/jetty-fcgi-client-${jetty.version}.jar
+lib/fcgi/jetty-fcgi-server-${jetty.version}.jar

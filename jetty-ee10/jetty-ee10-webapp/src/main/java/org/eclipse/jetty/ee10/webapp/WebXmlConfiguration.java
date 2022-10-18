@@ -51,7 +51,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
             Resource dftResource = context.getResourceFactory().newSystemResource(defaultsDescriptor);
-            if (dftResource == null)
+            if (Resources.missing(dftResource))
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
                 if (defaultsDescriptor.startsWith(pkg))
@@ -60,14 +60,13 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     if (url != null)
                     {
                         URI uri = url.toURI();
-                        _resourceFactory = ResourceFactory.closeable();
-                        dftResource = _resourceFactory.newResource(uri);
+                        dftResource = context.getResourceFactory().newResource(uri);
                     }
                 }
-                if (dftResource == null)
+                if (Resources.missing(dftResource))
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            if (dftResource != null)
+            if (Resources.isReadable(dftResource))
                 context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
@@ -86,9 +85,9 @@ public class WebXmlConfiguration extends AbstractConfiguration
             if (overrideDescriptor != null && overrideDescriptor.length() > 0)
             {
                 Resource orideResource = context.getResourceFactory().newSystemResource(overrideDescriptor);
-                if (orideResource == null)
+                if (Resources.missing(orideResource))
                     orideResource = context.newResource(overrideDescriptor);
-                if (orideResource != null)
+                if (Resources.isReadable(orideResource))
                     context.getMetaData().addOverrideDescriptor(new OverrideDescriptor(orideResource));
             }
         }

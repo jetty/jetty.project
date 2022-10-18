@@ -111,7 +111,7 @@ public class Runner
         public void addJars(Resource lib)
         {
             if (!Resources.isDirectory(lib))
-                throw new IllegalArgumentException("lib is invalid");
+                throw new IllegalStateException("lib is invalid: " + lib);
 
             for (Resource item: lib.list())
             {

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -27,6 +26,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -119,12 +119,12 @@ public class ResourceTest
             this.resourceSupplier = () -> resourceFactory.newResource(uri);
         }
 
-        Scenario(File file, boolean exists, boolean dir)
+        Scenario(Path file, boolean exists, boolean dir)
         {
             this.test = file.toString();
             this.exists = exists;
             this.dir = dir;
-            this.resourceSupplier = () -> resourceFactory.newResource(file.toPath());
+            this.resourceSupplier = () -> resourceFactory.newResource(file);
         }
 
         public Resource getResource()
@@ -141,7 +141,7 @@ public class ResourceTest
 
     static class Scenarios extends ArrayList<Arguments>
     {
-        final File fileRef;
+        final Path fileRef;
         final URI uriRef;
         final String relRef;
 
@@ -152,9 +152,9 @@ public class ResourceTest
             // relative directory reference
             this.relRef = FS.separators(ref);
             // File object reference
-            this.fileRef = MavenTestingUtils.getProjectDir(relRef);
+            this.fileRef = MavenPaths.projectBase().resolve(relRef);
             // URI reference
-            this.uriRef = fileRef.toURI();
+            this.uriRef = fileRef.toUri();
 
             // create baseline cases
             baseCases = new Scenario[]{
@@ -180,7 +180,7 @@ public class ResourceTest
         {
             addCase(new Scenario(FS.separators(relRef + subpath), exists, dir));
             addCase(new Scenario(uriRef.resolve(subpath).toURL(), exists, dir));
-            addCase(new Scenario(new File(fileRef, subpath), exists, dir));
+            addCase(new Scenario(fileRef.resolve(subpath), exists, dir));
         }
 
         public Scenario addAllAddPathCases(String subpath, boolean exists, boolean dir)
@@ -197,13 +197,13 @@ public class ResourceTest
         }
     }
 
-    public static Stream<Arguments> scenarios() throws Exception
+    public static Stream<Arguments> scenarios(WorkDir workDir) throws Exception
     {
         Scenarios cases = new Scenarios("src/test/resources/");
 
-        File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
+        Path testDir = workDir.getEmptyPathDir();
         FS.ensureEmpty(testDir);
-        File tmpFile = new File(testDir, "test.tmp");
+        Path tmpFile = testDir.resolve("test.tmp");
         FS.touch(tmpFile);
 
         cases.addCase(new Scenario(tmpFile.toString(), EXISTS, !DIR));
