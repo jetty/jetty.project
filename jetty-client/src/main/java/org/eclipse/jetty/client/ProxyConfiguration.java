@@ -17,8 +17,8 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.HostPort;
