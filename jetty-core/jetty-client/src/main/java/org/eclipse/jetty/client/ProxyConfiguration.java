@@ -19,6 +19,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.HostPort;
@@ -37,16 +39,35 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class ProxyConfiguration
 {
-    private final List<Proxy> proxies = new ArrayList<>();
+    private final BlockingQueue<Proxy> proxies = new LinkedBlockingQueue<>();
 
-    public List<Proxy> getProxies()
+    /**
+     * Adds a proxy.
+     *
+     * @param proxy a proxy
+     * @throws NullPointerException if {@code proxy} is null
+     */
+    public void addProxy(Proxy proxy)
     {
-        return proxies;
+        if (proxy == null)
+            throw new NullPointerException("proxy may not be null");
+        proxies.add(proxy);
+    }
+
+    /**
+     * Removes a proxy.
+     *
+     * @param proxy a proxy
+     * @return true if a match is found
+     */
+    public boolean removeProxy(Proxy proxy)
+    {
+        return proxies.remove(proxy);
     }
 
     public Proxy match(Origin origin)
     {
-        for (Proxy proxy : getProxies())
+        for (Proxy proxy : proxies)
         {
             if (proxy.matches(origin))
                 return proxy;
