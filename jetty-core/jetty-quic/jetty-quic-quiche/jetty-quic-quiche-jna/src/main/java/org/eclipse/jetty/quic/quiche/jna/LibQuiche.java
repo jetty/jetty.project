@@ -31,7 +31,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.12.0";
+    String EXPECTED_QUICHE_VERSION = "0.16.0";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -122,6 +122,18 @@ public interface LibQuiche extends Library
     // Sets the `disable_active_migration` transport parameter.
     void quiche_config_set_disable_active_migration(quiche_config config, boolean v);
 
+    // Sets the maximum connection window.
+    void quiche_config_set_max_connection_window(quiche_config config, uint64_t v);
+
+    // Sets the maximum stream window.
+    void quiche_config_set_max_stream_window(quiche_config config, uint64_t v);
+
+    // Sets the limit of active connection IDs.
+    void quiche_config_set_active_connection_id_limit(quiche_config config, uint64_t v);
+
+    // Sets the initial stateless reset token. |v| must contain 16 bytes, otherwise the behaviour is undefined.
+    void quiche_config_set_stateless_reset_token(quiche_config config, byte[] v);
+
     // Frees the config object.
     void quiche_config_free(quiche_config config);
 
@@ -133,8 +145,8 @@ public interface LibQuiche extends Library
     }
 
     @Structure.FieldOrder({
-        "recv", "sent", "lost", "retrans", "rtt", "cwnd", "sent_bytes", "recv_bytes", "lost_bytes",
-        "stream_retrans_bytes", "pmtu", "delivery_rate", "peer_max_idle_timeout",
+        "recv", "sent", "lost", "retrans", "sent_bytes", "recv_bytes", "lost_bytes",
+        "stream_retrans_bytes", "paths_count", "peer_max_idle_timeout",
         "peer_max_udp_payload_size", "peer_initial_max_data", "peer_initial_max_stream_data_bidi_local",
         "peer_initial_max_stream_data_bidi_remote", "peer_initial_max_stream_data_uni",
         "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni", "peer_ack_delay_exponent",
@@ -155,16 +167,10 @@ public interface LibQuiche extends Library
         // The number of sent QUIC packets with retranmitted data.
         public size_t retrans;
 
-        // The estimated round-trip time of the connection (in nanoseconds).
-        public uint64_t rtt;
-
-        // The size of the connection's congestion window in bytes.
-        public size_t cwnd;
-
         // The number of sent bytes.
         public uint64_t sent_bytes;
 
-        // The number of recevied bytes.
+        // The number of received bytes.
         public uint64_t recv_bytes;
 
         // The number of bytes lost.
@@ -173,11 +179,8 @@ public interface LibQuiche extends Library
         // The number of stream bytes retransmitted.
         public uint64_t stream_retrans_bytes;
 
-        // The current PMTU for the connection.
-        public size_t pmtu;
-
-        // The most recent data delivery rate estimate in bytes/s.
-        public uint64_t delivery_rate;
+        // The number of known paths for the connection.
+        public size_t paths_count;
 
         // The maximum idle timeout.
         public uint64_t peer_max_idle_timeout;
@@ -219,6 +222,65 @@ public interface LibQuiche extends Library
         public ssize_t peer_max_datagram_frame_size;
     }
 
+    @Structure.FieldOrder({
+        "local_addr", "local_addr_len", "peer_addr", "peer_addr_len",
+        "validation_state", "active", "recv", "sent", "lost", "retrans",
+        "rtt", "cwnd", "sent_bytes", "recv_bytes", "lost_bytes",
+        "stream_retrans_bytes", "pmtu", "delivery_rate"
+    })
+    class quiche_path_stats extends Structure
+    {
+        // The local address used by this path.
+        public sockaddr_storage local_addr;
+        public size_t local_addr_len;
+
+        // The peer address seen by this path.
+        public sockaddr_storage peer_addr;
+        public size_t peer_addr_len;
+
+        // The validation state of the path.
+        public ssize_t validation_state;
+
+        // Whether this path is active.
+        public boolean active;
+
+        // The number of QUIC packets received on this path.
+        public size_t recv;
+
+        // The number of QUIC packets sent on this path.
+        public size_t sent;
+
+        // The number of QUIC packets that were lost on this path.
+        public size_t lost;
+
+        // The number of sent QUIC packets with retransmitted data on this path.
+        public size_t retrans;
+
+        // The estimated round-trip time of the path (in nanoseconds).
+        public uint64_t rtt;
+
+        // The size of the path's congestion window in bytes.
+        public size_t cwnd;
+
+        // The number of sent bytes on this path.
+        public uint64_t sent_bytes;
+
+        // The number of received bytes on this path.
+        public uint64_t recv_bytes;
+
+        // The number of bytes lost on this path.
+        public uint64_t lost_bytes;
+
+        // The number of stream bytes retransmitted on this path.
+        public uint64_t stream_retrans_bytes;
+
+        // The current PMTU for the path.
+        public size_t pmtu;
+
+        // The most recent data delivery rate estimate in bytes/s.
+        public uint64_t delivery_rate;
+    }
+
     interface LoggingCallback extends Callback
     {
         void log(String msg, Pointer argp);
@@ -228,7 +290,10 @@ public interface LibQuiche extends Library
     int quiche_enable_debug_logging(LoggingCallback cb, Pointer argp);
 
     // Creates a new client-side connection.
-    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len, sockaddr to, size_t to_len, quiche_config config);
+    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len,
+                               sockaddr local, size_t local_len,
+                               sockaddr peer, size_t peer_len,
+                               quiche_config config);
 
     interface packet_type
     {
@@ -285,7 +350,10 @@ public interface LibQuiche extends Library
                          uint32_t version, ByteBuffer out, size_t out_len);
 
     // Creates a new server-side connection.
-    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len, sockaddr from, size_t from_len, quiche_config config);
+    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len,
+                              sockaddr local, size_t local_len,
+                              sockaddr peer, size_t peer_len,
+                              quiche_config config);
 
     // Returns the amount of time until the next timeout event, in milliseconds.
     uint64_t quiche_conn_timeout_as_millis(quiche_conn conn);
@@ -296,22 +364,43 @@ public interface LibQuiche extends Library
     // Collects and returns statistics about the connection.
     void quiche_conn_stats(quiche_conn conn, quiche_stats out);
 
-    @Structure.FieldOrder({"to", "to_len", "at"})
+    // Collects and returns statistics about the specified path for the connection.
+    //
+    // The `idx` argument represent the path's index (also see the `paths_count`
+    // field of `quiche_stats`).
+    int quiche_conn_path_stats(quiche_conn conn, size_t idx, quiche_path_stats out);
+
+    @Structure.FieldOrder({"from", "from_len", "to", "to_len", "at"})
     class quiche_send_info extends Structure
     {
+        // The local address the packet should be sent from.
+        public sockaddr_storage from;
+        public size_t from_len;
+
+        // The remote address the packet should be sent to.
         public sockaddr_storage to;
         public size_t to_len;
+
+        // The time to send the packet out.
         public timespec at;
     }
 
     // Writes a single QUIC packet to be sent to the peer.
     ssize_t quiche_conn_send(quiche_conn conn, ByteBuffer out, size_t out_len, quiche_send_info out_info);
 
-    @Structure.FieldOrder({"from", "from_len"})
+    // Returns the size of the send quantum, in bytes.
+    size_t quiche_conn_send_quantum(quiche_conn conn);
+
+    @Structure.FieldOrder({"from", "from_len", "to", "to_len"})
     class quiche_recv_info extends Structure
     {
+        // The remote address the packet was received from.
         public sockaddr.ByReference from;
         public size_t from_len;
+
+        // The local address the packet was received on.
+        public sockaddr.ByReference to;
+        public size_t to_len;
     }
 
     // Processes QUIC packets received from the peer.

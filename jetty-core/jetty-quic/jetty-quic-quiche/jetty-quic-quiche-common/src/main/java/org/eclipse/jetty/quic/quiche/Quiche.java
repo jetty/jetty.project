@@ -25,7 +25,8 @@ public interface Quiche
     interface quiche_cc_algorithm
     {
         int QUICHE_CC_RENO = 0,
-            QUICHE_CC_CUBIC = 1;
+            QUICHE_CC_CUBIC = 1,
+            QUICHE_CC_BBR = 2;
     }
 
     interface quiche_error

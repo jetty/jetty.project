@@ -18,7 +18,8 @@ public class QuicheConfig
     public enum CongestionControl
     {
         RENO(Quiche.quiche_cc_algorithm.QUICHE_CC_RENO),
-        CUBIC(Quiche.quiche_cc_algorithm.QUICHE_CC_CUBIC);
+        CUBIC(Quiche.quiche_cc_algorithm.QUICHE_CC_CUBIC),
+        BBR(Quiche.quiche_cc_algorithm.QUICHE_CC_BBR);
 
         private final int value;
         CongestionControl(int value)
@@ -46,6 +47,9 @@ public class QuicheConfig
     private Long initialMaxStreamsBidi;
     private Long initialMaxStreamsUni;
     private Boolean disableActiveMigration;
+    private Long maxConnectionWindow;
+    private Long maxStreamWindow;
+    private Long activeConnectionIdLimit;
 
     public QuicheConfig()
     {
@@ -121,6 +125,21 @@ public class QuicheConfig
         return disableActiveMigration;
     }
 
+    public Long getMaxConnectionWindow()
+    {
+        return maxConnectionWindow;
+    }
+
+    public Long getMaxStreamWindow()
+    {
+        return maxStreamWindow;
+    }
+
+    public Long getActiveConnectionIdLimit()
+    {
+        return activeConnectionIdLimit;
+    }
+
     public void setVersion(int version)
     {
         this.version = version;
@@ -191,4 +210,18 @@ public class QuicheConfig
         this.disableActiveMigration = disable;
     }
 
+    public void setMaxConnectionWindow(Long sizeInBytes)
+    {
+        this.maxConnectionWindow = sizeInBytes;
+    }
+
+    public void setMaxStreamWindow(Long maxStreamWindow)
+    {
+        this.maxStreamWindow = maxStreamWindow;
+    }
+
+    public void setActiveConnectionIdLimit(Long activeConnectionIdLimit)
+    {
+        this.activeConnectionIdLimit = activeConnectionIdLimit;
+    }
 }
