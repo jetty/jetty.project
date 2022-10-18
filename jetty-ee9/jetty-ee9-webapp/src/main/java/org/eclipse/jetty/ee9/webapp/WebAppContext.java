@@ -63,7 +63,6 @@ import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1240,14 +1239,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the Extra ClassPath via delimited String.
      * <p>
-     * This is a convenience method for {@link #setExtraClasspath(ResourceCollection)}
+     * This is a convenience method for {@link #setExtraClasspath(Resource)}
      * </p>
      *
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
      * @throws IOException if unable to resolve the resources referenced
-     * @see #setExtraClasspath(ResourceCollection)
+     * @see #setExtraClasspath(Resource)
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {

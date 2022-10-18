@@ -283,7 +283,7 @@ public class ResourceCollection extends Resource
     public String toString()
     {
         return _resources.stream()
-            .map(Resource::getName)
+            .map(Resource::toString)
             .collect(Collectors.joining(", ", "[", "]"));
     }
 

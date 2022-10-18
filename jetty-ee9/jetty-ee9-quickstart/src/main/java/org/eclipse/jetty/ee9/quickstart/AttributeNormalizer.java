@@ -22,18 +22,19 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,10 +166,7 @@ public class AttributeNormalizer
         }
     }
 
-    private static Comparator<Attribute> attrComparator = new Comparator<Attribute>()
-    {
-        @Override
-        public int compare(Attribute o1, Attribute o2)
+    private static final Comparator<Attribute> attrComparator = (o1, o2) ->
         {
             if ((o1.value == null) && (o2.value != null))
             {
@@ -180,7 +178,7 @@ public class AttributeNormalizer
                 return 1;
             }
 
-            if ((o1.value == null) && (o2.value == null))
+        if (o1.value == null)
             {
                 return 0;
             }
@@ -201,45 +199,46 @@ public class AttributeNormalizer
 
             // The paths are the same, base now on weight
             return o2.weight - o1.weight;
-        }
     };
 
-    private URI warURI;
-    private Map<String, Attribute> attributes = new HashMap<>();
-    private List<PathAttribute> paths = new ArrayList<>();
-    private List<URIAttribute> uris = new ArrayList<>();
+    private final List<PathAttribute> paths = new ArrayList<>();
+    private final List<URIAttribute> uris = new ArrayList<>();
 
     public AttributeNormalizer(Resource baseResource)
     {
         if (baseResource == null)
             throw new IllegalArgumentException("No base resource!");
 
-        warURI = toCanonicalURI(baseResource.getURI());
-        if (!warURI.isAbsolute())
-            throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
-
         addSystemProperty("jetty.base", 9);
         addSystemProperty("jetty.home", 8);
         addSystemProperty("user.home", 7);
         addSystemProperty("user.dir", 6);
 
-        if (warURI.getScheme().equalsIgnoreCase("file"))
-            paths.add(new PathAttribute("WAR.path", toCanonicalPath(new File(warURI).toString()), 10));
+        Set<Path> rootPaths = new HashSet<>();
+        ResourceCollection.stream(baseResource).forEach(r ->
+        {
+            if (r instanceof MountedPathResource mpr && rootPaths.contains(mpr.getContainerPath()))
+                return;
+
+            URI warURI = toCanonicalURI(r.getURI());
+            if (!warURI.isAbsolute())
+                throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
+
+            Path path = r.getPath();
+            if (path != null)
+            {
+                rootPaths.add(path);
+                paths.add(new PathAttribute("WAR.path", toCanonicalPath(path), 10));
+            }
         uris.add(new URIAttribute("WAR.uri", warURI, 9)); // preferred encoding
         uris.add(new URIAttribute("WAR", warURI, 8)); // legacy encoding
+        });
 
-        Collections.sort(paths, attrComparator);
-        Collections.sort(uris, attrComparator);
-
-        Stream.concat(paths.stream(), uris.stream()).forEach(a -> attributes.put(a.key, a));
+        paths.sort(attrComparator);
+        uris.sort(attrComparator);
 
         if (LOG.isDebugEnabled())
-        {
-            for (Attribute attr : attributes.values())
-            {
-                LOG.debug(attr.toString());
-            }
-        }
+            Stream.concat(paths.stream(), uris.stream()).map(Object::toString).forEach(LOG::debug);
     }
 
     private void addSystemProperty(String key, int weight)
@@ -352,7 +351,7 @@ public class AttributeNormalizer
                 return String.format("${%s}", a.key);
 
             String s = uPath.substring(aPath.length());
-            if (s.length() > 0 && s.charAt(0) != '/')
+            if (s.charAt(0) != '/')
                 continue;
 
             return String.format("${%s}%s", a.key, s);
@@ -375,7 +374,7 @@ public class AttributeNormalizer
             }
 
             if (path.startsWith(a.path))
-                return String.format("${%s}%c%s", a.key, File.separatorChar, a.path.relativize(path).toString());
+                return String.format("${%s}%c%s", a.key, File.separatorChar, a.path.relativize(path));
         }
 
         return path.toString();
@@ -383,87 +382,71 @@ public class AttributeNormalizer
 
     public String expand(String str)
     {
-        return expand(str, new Stack<String>());
-    }
-
-    public String expand(String str, Stack<String> seenStack)
-    {
         if (str == null)
         {
             return str;
         }
 
-        if (str.indexOf("${") < 0)
+        if (!str.contains("${"))
         {
             // Contains no potential expressions.
             return str;
         }
 
         Matcher mat = __propertyPattern.matcher(str);
-        StringBuilder expanded = new StringBuilder();
-        int offset = 0;
-        String property;
-        String value;
 
-        while (mat.find(offset))
-        {
-            property = mat.group(1);
-
-            // Loop detection
-            if (seenStack.contains(property))
+        if (mat.find(0))
             {
-                StringBuilder err = new StringBuilder();
-                err.append("Property expansion loop detected: ");
-                int idx = seenStack.lastIndexOf(property);
-                for (int i = idx; i < seenStack.size(); i++)
-                {
-                    err.append(seenStack.get(i));
-                    err.append(" -> ");
-                }
-                err.append(property);
-                throw new RuntimeException(err.toString());
-            }
-
-            seenStack.push(property);
-
-            // find property name
-            expanded.append(str.subSequence(offset, mat.start()));
-            // get property value
-            value = getString(property);
-            if (value == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to expand: {}", property);
-                expanded.append(mat.group());
-            }
-            else
-            {
-                // recursively expand
-                value = expand(value, seenStack);
-                expanded.append(value);
-            }
-            // update offset
-            offset = mat.end();
+            String prefix = str.substring(0, mat.start());
+            String property = mat.group(1);
+            String suffix = str.substring(mat.end());
+            str = expand(prefix, property, suffix);
         }
 
-        // leftover
-        expanded.append(str.substring(offset));
-
-        return StringUtil.replace(expanded.toString(), "$$", "$");
+        return StringUtil.replace(str, "$$", "$");
     }
 
-    private String getString(String property)
+    private String expand(String prefix, String property, String suffix)
     {
         if (property == null)
-        {
             return null;
+
+        for (URIAttribute attr : uris)
+        {
+            if (property.equals(attr.key))
+            {
+                try
+                {
+                    String uri = prefix + attr.value + suffix;
+                    Resource resource = ResourceFactory.root().newResource(uri);
+                    if (resource.exists())
+                        return uri;
+                }
+                catch (Exception ex)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.trace("ignored", ex);
+                }
+            }
         }
 
-        Attribute a = attributes.get(property);
-        if (a != null)
-            return a.value;
+        for (PathAttribute attr : paths)
+        {
+            if (property.equals(attr.key))
+            {
+                String path = prefix + attr.value + suffix;
+                if (Files.exists(Path.of(path)))
+                    return path;
+            }
+        }
 
         // Use system properties next
-        return System.getProperty(property);
+        String system = System.getProperty(property);
+        if (system != null)
+            return prefix + system + suffix;
+
+        String unexpanded = prefix + "${" + property + "}" + suffix;
+        LOG.warn("Cannot expand: {}", unexpanded);
+        return unexpanded;
     }
 }

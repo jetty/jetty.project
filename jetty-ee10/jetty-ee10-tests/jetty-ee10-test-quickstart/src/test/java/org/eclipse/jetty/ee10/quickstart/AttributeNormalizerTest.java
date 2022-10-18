@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,9 +29,11 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AttributeNormalizerTest
 {
-    public static Stream<Arguments> scenarios()
+    public static Stream<Arguments> scenarios() throws IOException
     {
         final List<Arguments> data = new ArrayList<>();
         final String arch = String.format("%s/%s", System.getProperty("os.name"), System.getProperty("os.arch"));
@@ -55,18 +58,22 @@ public class AttributeNormalizerTest
 
         // ------
         title = "Typical Setup";
-        jettyHome = asTargetPath(title, "jetty-distro");
-        jettyBase = asTargetPath(title, "jetty-distro/demo.base");
-        war = asTargetPath(title, "jetty-distro/demo.base/webapps/FOO");
-        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
+        jettyHome = asTargetPath(title, "jetty-typical");
+        jettyBase = asTargetPath(title, "jetty-typical/demo.base");
+        war = asTargetPath(title, "jetty-typical/demo.base/webapps/FOO");
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, resourceFactory.newResource(war))));
 
         // ------
         title = "Old Setup";
-        jettyHome = asTargetPath(title, "jetty-distro");
-        jettyBase = asTargetPath(title, "jetty-distro");
-        war = asTargetPath(title, "jetty-distro/webapps/FOO");
-
-        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
+        jettyHome = asTargetPath(title, "jetty-old");
+        jettyBase = asTargetPath(title, "jetty-old");
+        war = asTargetPath(title, "jetty-old/webapps/FOO");
+        if (!Files.exists(war.resolve("index.html")))
+        {
+            Files.createFile(war.resolve("index.html"));
+            Files.createFile(war.resolve("favicon.ico"));
+        }
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, resourceFactory.newResource(war))));
 
         // ------
         // This puts the jetty.home inside the jetty.base
@@ -74,8 +81,7 @@ public class AttributeNormalizerTest
         jettyHome = asTargetPath(title, "app/dist");
         jettyBase = asTargetPath(title, "app");
         war = asTargetPath(title, "app/webapps/FOO");
-
-        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, resourceFactory.newResource(war))));
 
         // ------
         // This tests a path scenario often seen on various automatic deployments tooling
@@ -84,8 +90,16 @@ public class AttributeNormalizerTest
         jettyHome = asTargetPath(title, "app%2Fnasty/dist");
         jettyBase = asTargetPath(title, "app%2Fnasty/base");
         war = asTargetPath(title, "app%2Fnasty/base/webapps/FOO");
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, resourceFactory.newResource(war))));
 
-        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase, war)));
+        // ------
+        title = "ResourceCollection Setup";
+        jettyHome = asTargetPath(title, "jetty-collection");
+        jettyBase = asTargetPath(title, "jetty-collection/demo.base");
+        Path warA = asTargetPath(title, "jetty-collection/demo.base/webapps/WarA");
+        Path warB = asTargetPath(title, "jetty-collection/demo.base/webapps/WarB");
+        data.add(Arguments.of(new Scenario(arch, title, jettyHome, jettyBase,
+            ResourceFactory.combine(resourceFactory.newResource(warA), resourceFactory.newResource(warB)))));
 
         return data.stream();
     }
@@ -166,7 +180,9 @@ public class AttributeNormalizerTest
     public void testNormalizeWarAsString(final Scenario scenario)
     {
         // Normalize WAR as String path
-        assertNormalize(scenario, scenario.war.toString(), scenario.war.toString());
+        Path path = scenario.war.getPath();
+        Assumptions.assumeTrue(path != null);
+        assertNormalize(scenario, path.toString(), path.toString());
     }
 
     @ParameterizedTest
@@ -261,10 +277,20 @@ public class AttributeNormalizerTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
+    public void testExpandWebInfAsURI(final Scenario scenario)
+    {
+        // Expand
+        assertExpandURI(scenario, "${WAR.uri}/WEB-INF/web.xml", scenario.webXml.toUri());
+        assertExpandURI(scenario, "${WAR.uri}/WEB-INF/test.tld", scenario.testTld.toUri());
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
     public void testNormalizeWarAsURI(final Scenario scenario)
     {
         // Normalize WAR as URI
-        URI testWarURI = scenario.war.toUri();
+        URI testWarURI = scenario.war.getURI();
+        Assumptions.assumeTrue(testWarURI != null);
         assertNormalize(scenario, testWarURI, "${WAR.uri}");
     }
 
@@ -273,7 +299,7 @@ public class AttributeNormalizerTest
     public void testNormalizeWarDeepAsPath(final Scenario scenario)
     {
         // Normalize WAR deep path as File
-        Path testWarDeep = scenario.war.resolve("deep/ref");
+        Path testWarDeep = scenario.war.resolve("deep/ref").getPath();
         assertNormalize(scenario, testWarDeep, "${WAR.path}" + FS.separators("/deep/ref"));
     }
 
@@ -282,7 +308,7 @@ public class AttributeNormalizerTest
     public void testNormalizeWarDeepAsString(final Scenario scenario)
     {
         // Normalize WAR deep path as String
-        Path testWarDeep = scenario.war.resolve("deep/ref");
+        Path testWarDeep = scenario.war.resolve("deep/ref").getPath();
         assertNormalize(scenario, testWarDeep.toString(), testWarDeep.toString());
     }
 
@@ -291,30 +317,22 @@ public class AttributeNormalizerTest
     public void testNormalizeWarDeepAsURI(final Scenario scenario)
     {
         // Normalize WAR deep path as URI
-        Path testWarDeep = scenario.war.resolve("deep/ref");
+        Path testWarDeep = scenario.war.resolve("deep/ref").getPath();
         assertNormalize(scenario, testWarDeep.toUri(), "${WAR.uri}/deep/ref");
-    }
-
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testExpandWarDeep(final Scenario scenario)
-    {
-        // Expand WAR deep path
-        Path testWarDeep = scenario.war.resolve("deep/ref");
-        URI uri = URI.create("jar:" + testWarDeep.toUri().toASCIIString() + "!/other/file");
-        assertExpandURI(scenario, "jar:${WAR.uri}/deep/ref!/other/file", uri);
     }
 
     public static class Scenario
     {
         private final Path jettyHome;
         private final Path jettyBase;
-        private final Path war;
+        private final Resource war;
+        private Path webXml;
+        private Path testTld;
         private final String arch;
         private final String title;
         private final AttributeNormalizer normalizer;
 
-        public Scenario(String arch, String title, Path jettyHome, Path jettyBase, Path war)
+        public Scenario(String arch, String title, Path jettyHome, Path jettyBase, Resource war)
         {
             this.arch = arch;
             this.title = title;
@@ -326,15 +344,42 @@ public class AttributeNormalizerTest
 
             assertTrue(Files.exists(this.jettyHome));
             assertTrue(Files.exists(this.jettyBase));
-            assertTrue(Files.exists(this.war));
+            assertTrue(war.exists());
 
             // Set some System Properties that AttributeNormalizer expects
             System.setProperty("jetty.home", jettyHome.toString());
             System.setProperty("jetty.base", jettyBase.toString());
 
+            ResourceCollection.stream(war).forEach(w ->
+            {
+                try
+                {
+                    Path webinf = w.getPath().resolve("WEB-INF");
+                    if (!Files.exists(webinf))
+                        Files.createDirectory(webinf);
+
+                    if (w.getFileName().equals("FOO") || w.getFileName().equals("WarA"))
+                    {
+                        webXml = webinf.resolve("web.xml");
+                        if (!Files.exists(webXml))
+                            Files.createFile(webXml);
+                    }
+
+                    if (w.getFileName().equals("FOO") || w.getFileName().equals("WarB"))
+                    {
+                        testTld = webinf.resolve("test.tld");
+                        if (!Files.exists(testTld))
+                            Files.createFile(testTld);
+                    }
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
             // Setup normalizer
-            Resource webresource = resourceFactory.newResource(war);
-            this.normalizer = new AttributeNormalizer(webresource);
+            this.normalizer = new AttributeNormalizer(war);
         }
 
         @Override
