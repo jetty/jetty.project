@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
@@ -248,7 +250,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if (_useFileMappedBuffer)
                 contentFactory = new FileMappedHttpContentFactory(contentFactory);
 
-            _cachingContentFactory = new CachingHttpContentFactory(contentFactory);
+            _cachingContentFactory = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
             int maxCachedFiles = getInitInt("maxCachedFiles", -2);

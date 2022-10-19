@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -45,6 +46,7 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContentWrapper;
@@ -136,7 +138,7 @@ public class DefaultServlet extends HttpServlet
             if (getInitBoolean("useFileMappedBuffer", false))
                 contentFactory = new FileMappedHttpContentFactory(contentFactory);
 
-            CachingHttpContentFactory cached = new CachingHttpContentFactory(contentFactory);
+            CachingHttpContentFactory cached = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
             int maxCachedFiles = getInitInt("maxCachedFiles", -2);

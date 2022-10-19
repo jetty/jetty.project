@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.time.Duration;
 import java.util.List;
 
-import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
@@ -86,7 +87,7 @@ public class ResourceHandler extends Handler.Wrapper
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         contentFactory = new FileMappedHttpContentFactory(contentFactory);
-        contentFactory = new CachingHttpContentFactory(contentFactory);
+        contentFactory = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
         return contentFactory;
     }
 

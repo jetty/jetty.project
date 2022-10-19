@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -23,8 +24,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
-import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
@@ -110,7 +111,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         contentFactory = new FileMappedHttpContentFactory(contentFactory);
-        contentFactory = new CachingHttpContentFactory(contentFactory);
+        contentFactory = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
         return contentFactory;
     }
 
