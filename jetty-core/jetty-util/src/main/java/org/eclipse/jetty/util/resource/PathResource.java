@@ -279,7 +279,6 @@ public class PathResource extends Resource
         // Check that the path is within the root,
         // but use the original path to create the
         // resource, to preserve aliasing.
-        // TODO do a URI safe encoding?
         if (URIUtil.isNotNormalWithinSelf(subUriPath))
             throw new IllegalArgumentException(subUriPath);
 
@@ -299,7 +298,7 @@ public class PathResource extends Resource
 
         URI uri = getURI();
         URI resolvedUri = URIUtil.addPath(uri, subUriPath);
-        Path path = Paths.get(resolvedUri.normalize());
+        Path path = Paths.get(resolvedUri);
         if (Files.exists(path))
             return newResource(path, resolvedUri);
 

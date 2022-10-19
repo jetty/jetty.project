@@ -468,7 +468,7 @@ public class PathResourceTest
             Resource rootRes = resourceFactory.newResource(docroot);
             // Test navigation through a directory that doesn't exist
             Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
-            assertFalse(fileResViaBar.exists());
+            assertTrue(Resources.missing(fileResViaBar));
 
             // Test navigation through a directory that does exist
             Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");

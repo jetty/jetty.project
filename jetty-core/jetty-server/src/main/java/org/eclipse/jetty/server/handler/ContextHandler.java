@@ -716,7 +716,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _baseResource = resourceBase;
+
+        // Allow resource base to be unset
+        if (resourceBase == null)
+        {
+            _baseResource = null;
+            return;
+        }
+
+        if (Resources.isReadable(resourceBase))
+            _baseResource = resourceBase;
+        else
+            throw new IllegalArgumentException("Base Resource is not valid: " + resourceBase);
     }
 
     public void setBaseResource(Path path)
@@ -729,11 +740,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         Resource resource = ResourceFactory.of(this).newResource(path);
-        if (Resources.isReadableDirectory(resource))
-            setBaseResource(resource);
-        else
+        if (!Resources.isReadable(resource))
             throw new IllegalArgumentException("Base Resource is not valid: " + path);
 
+        setBaseResource(resource);
     }
 
     /**

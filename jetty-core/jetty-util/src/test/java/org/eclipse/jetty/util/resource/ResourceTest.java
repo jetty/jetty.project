@@ -421,11 +421,9 @@ public class ResourceTest
         FS.touch(file);
         assertTrue(Files.exists(file));
         Resource resource = resourceFactory.newResource(file);
+        // Requesting a resource that would point to a location called ".../testDotAliasFileExists/foo/bar.txt/."
         Resource dot = resource.resolve(".");
-        // We are now pointing to a resource at ".../testDotAliasFileExists/foo/bar.txt/."
-        assertNotNull(dot);
-        assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' against a file is not an alias");
+        assertTrue(Resources.missing(dot), "Cannot reference file as a directory");
     }
 
     @Test
