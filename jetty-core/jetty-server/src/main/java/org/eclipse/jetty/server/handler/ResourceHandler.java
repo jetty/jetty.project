@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
@@ -68,26 +69,30 @@ public class ResourceHandler extends Handler.Wrapper
                 _resourceBase = context.getBaseResource();
         }
 
-// TODO
-//            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
+        // TODO: _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
         if (_mimeTypes == null)
             _mimeTypes = new MimeTypes();
 
-        setupContentFactory();
-
+        _resourceService.setContentFactory(setupContentFactory());
+        _resourceService.setWelcomeFactory(setupWelcomeFactory());
         if (_resourceService.getStylesheet() == null)
             _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
     }
 
-    private void setupContentFactory()
+    protected HttpContent.Factory setupContentFactory()
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new FileMappedHttpContentFactory(contentFactory);
         contentFactory = new CachingHttpContentFactory(contentFactory);
-        _resourceService.setContentFactory(contentFactory);
-        _resourceService.setWelcomeFactory(request ->
+        return contentFactory;
+    }
+
+    protected ResourceService.WelcomeFactory setupWelcomeFactory()
+    {
+        return request ->
         {
             if (_welcomes == null)
                 return null;
@@ -101,7 +106,7 @@ public class ResourceHandler extends Handler.Wrapper
             }
             // not found
             return null;
-        });
+        };
     }
 
     @Override

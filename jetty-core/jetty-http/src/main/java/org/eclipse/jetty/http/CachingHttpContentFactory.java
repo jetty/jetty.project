@@ -38,12 +38,12 @@ import org.slf4j.LoggerFactory;
  * Only HttpContent instances whose path is not a directory are cached.
  *
  * <p>
- * Eviction behaviours are configured through the {@link #setEvictionTime(int)} method. A value of -1 means that the cached
+ * Eviction behaviours are configured through the {@link #setValidationTime(int)} method. A value of -1 means that the cached
  * {@link HttpContent} will never be checked if it is still valid, a value of 0 means it is checked on every request, and a
  * positive value indicates the number of milliseconds of the minimum time between validation checks.
  * </p>
  * <p>
- * This also caches misses, and will remember a missed entry for the time set by {@link #setEvictionTime(int)}. After this has
+ * This also caches misses, and will remember a missed entry for the time set by {@link #setValidationTime(int)}. After this has
  * elapsed the entry will be invalid and will be evicted from the cache after the next access.
  * </p>
  */
@@ -57,7 +57,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private int _maxCachedFileSize = 128 * 1024 * 1024;
     private int _maxCachedFiles = 2048;
     private int _maxCacheSize = 256 * 1024 * 1024;
-    private long _evictionTime = 0;
+    private long _validationTime = 0;
 
     public CachingHttpContentFactory(HttpContent.Factory authority)
     {
@@ -118,14 +118,14 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         shrinkCache();
     }
 
-    public long getEvictionTime()
+    public long getValidationTime()
     {
-        return _evictionTime;
+        return _validationTime;
     }
 
-    public void setEvictionTime(int evictionTime)
+    public void setValidationTime(int evictionTime)
     {
-        _evictionTime = evictionTime;
+        _validationTime = evictionTime;
     }
 
     private void shrinkCache()
@@ -185,7 +185,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     protected boolean isCacheable(HttpContent httpContent)
     {
         if (httpContent == null)
-            return (_evictionTime != 0);
+            return (_validationTime != 0);
 
         if (httpContent.getResource().isDirectory())
             return false;
@@ -223,7 +223,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             {
                 wasAdded.set(true);
                 CachingHttpContent cachingContent = (httpContent == null)
-                    ? newNotFoundContent(p, _evictionTime) : newCachedContent(p, httpContent, _evictionTime);
+                    ? newNotFoundContent(p, _validationTime) : newCachedContent(p, httpContent, _validationTime);
                 _cachedSize.addAndGet(cachingContent.getContentLengthValue());
                 return cachingContent;
             });
@@ -258,7 +258,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     {
         private final ByteBuffer _buffer;
         private final String _cacheKey;
-        private final long _evictionTime;
+        private final long _validationTime;
         private final HttpField _etagField;
         private final long _contentLengthValue;
         private final AtomicLong _lastAccessed = new AtomicLong();
@@ -271,11 +271,11 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
 
-        public CachedHttpContent(String key, HttpContent httpContent, long evictionTime)
+        public CachedHttpContent(String key, HttpContent httpContent, long validationTime)
         {
             super(httpContent);
             _cacheKey = key;
-            _evictionTime = evictionTime;
+            _validationTime = validationTime;
 
             // TODO: do all the following lazily and asynchronously.
             HttpField etagField = httpContent.getETag();
@@ -393,16 +393,15 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public boolean isValid()
         {
-            if (_evictionTime < 0)
+            if (_validationTime < 0)
             {
-                _lastValidated.set(NanoTime.now());
                 return true;
             }
-            if (_evictionTime > 0)
+            else if (_validationTime > 0)
             {
                 long now = NanoTime.now();
                 if (_lastValidated.updateAndGet(lastChecked ->
-                    (NanoTime.elapsed(lastChecked, now) > TimeUnit.MILLISECONDS.toNanos(_evictionTime)) ? now : lastChecked) != now)
+                    (NanoTime.elapsed(lastChecked, now) > TimeUnit.MILLISECONDS.toNanos(_validationTime)) ? now : lastChecked) != now)
                     return true;
             }
 

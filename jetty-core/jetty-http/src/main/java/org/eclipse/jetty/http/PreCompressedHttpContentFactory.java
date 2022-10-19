@@ -56,19 +56,29 @@ public class PreCompressedHttpContentFactory implements HttpContent.Factory
                 compressedFormats.add(contentFormat);
         }
 
-        return new HttpContentWrapper(content)
-        {
-            @Override
-            public Set<CompressedContentFormat> getPreCompressedContentFormats()
-            {
-                return compressedFormats;
-            }
-        };
+        return new CompressedFormatsHttpContent(content, compressedFormats);
     }
 
     @Override
     public String toString()
     {
-        return "PreCompressedContentFactory[" + _factory + "]@" + hashCode();
+        return "%s@%x[%s,%s]".formatted(getClass().getSimpleName(), hashCode(), _factory, _preCompressedFormats);
+    }
+
+    private static class CompressedFormatsHttpContent extends HttpContentWrapper
+    {
+        private final Set<CompressedContentFormat> compressedFormats;
+
+        public CompressedFormatsHttpContent(HttpContent content, Set<CompressedContentFormat> compressedFormats)
+        {
+            super(content);
+            this.compressedFormats = compressedFormats;
+        }
+
+        @Override
+        public Set<CompressedContentFormat> getPreCompressedContentFormats()
+        {
+            return compressedFormats;
+        }
     }
 }

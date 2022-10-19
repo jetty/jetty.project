@@ -38,8 +38,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
+import org.eclipse.jetty.http.PreCompressedHttpContent;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.ResourceHttpContent;
@@ -128,9 +128,9 @@ public class ResourceService
                             continue;
 
                         if (aliasCheck != null && !aliasCheck.checkAlias(path, preCompressedContent.getResource()))
-                            return null;
+                            continue;
 
-                        return new PrecompressedHttpContent(content, preCompressedContent, contentFormat);
+                        return new PreCompressedHttpContent(content, preCompressedContent, contentFormat);
                     }
                 }
             }

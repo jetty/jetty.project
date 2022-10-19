@@ -45,8 +45,8 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreCompressedHttpContent;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.WriterOutputStream;
@@ -296,7 +296,7 @@ public class ResourceService
                         if (preCompressedContent == null)
                             continue;
 
-                        content = new PrecompressedHttpContent(content, preCompressedContent, contentFormat);
+                        content = new PreCompressedHttpContent(content, preCompressedContent, contentFormat);
                         break;
                     }
                 }

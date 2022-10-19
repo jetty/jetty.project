@@ -20,14 +20,14 @@ import java.util.Set;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
-public class PrecompressedHttpContent implements HttpContent
+public class PreCompressedHttpContent implements HttpContent
 {
     private final HttpContent _content;
     private final HttpContent _precompressedContent;
     private final CompressedContentFormat _format;
     private final HttpField _etag;
 
-    public PrecompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
+    public PreCompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
     {
         if (content == null)
             throw new IllegalArgumentException("Null HttpContent");

@@ -25,6 +25,7 @@ import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -98,13 +99,19 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-        contentFactory = new CachingHttpContentFactory(contentFactory);
-        _resourceService.setContentFactory(contentFactory);
+        _resourceService.setContentFactory(setupContentFactory());
         _resourceService.setWelcomeFactory(this);
 
         super.doStart();
+    }
+
+    protected HttpContent.Factory setupContentFactory()
+    {
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new FileMappedHttpContentFactory(contentFactory);
+        contentFactory = new CachingHttpContentFactory(contentFactory);
+        return contentFactory;
     }
 
     /**

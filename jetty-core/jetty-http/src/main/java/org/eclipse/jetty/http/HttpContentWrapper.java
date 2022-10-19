@@ -138,4 +138,10 @@ public class HttpContentWrapper implements HttpContent
     {
         _delegate.release();
     }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), _delegate);
+    }
 }

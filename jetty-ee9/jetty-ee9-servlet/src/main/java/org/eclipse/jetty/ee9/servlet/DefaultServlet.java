@@ -239,26 +239,34 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (cc != null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
 
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-        _cachingContentFactory = _useFileMappedBuffer
-            ? new CachingHttpContentFactory(new FileMappedHttpContentFactory(contentFactory))
-            : new CachingHttpContentFactory(contentFactory);
-
-        int maxCacheSize = getInitInt("maxCacheSize", -2);
-        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-        if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+        // Try to get factory from ServletContext attribute.
+        HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
+        if (contentFactory == null)
         {
-            if (maxCacheSize >= 0)
-                _cachingContentFactory.setMaxCacheSize(maxCacheSize);
-            if (maxCachedFileSize >= -1)
-                _cachingContentFactory.setMaxCachedFileSize(maxCachedFileSize);
-            if (maxCachedFiles >= -1)
-                _cachingContentFactory.setMaxCachedFiles(maxCachedFiles);
-        }
+            contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+            contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+            if (_useFileMappedBuffer)
+                contentFactory = new FileMappedHttpContentFactory(contentFactory);
 
-        _resourceService.setContentFactory(_cachingContentFactory);
+            _cachingContentFactory = new CachingHttpContentFactory(contentFactory);
+            int maxCacheSize = getInitInt("maxCacheSize", -2);
+            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+            {
+                if (maxCacheSize >= 0)
+                    _cachingContentFactory.setMaxCacheSize(maxCacheSize);
+                if (maxCachedFileSize >= -1)
+                    _cachingContentFactory.setMaxCachedFileSize(maxCachedFileSize);
+                if (maxCachedFiles >= -1)
+                    _cachingContentFactory.setMaxCachedFiles(maxCachedFiles);
+            }
+            contentFactory = _cachingContentFactory;
+
+            String resourceCache = getInitParameter("resourceCache");
+            getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, _cachingContentFactory);
+        }
+        _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
         List<String> gzipEquivalentFileExtensions = new ArrayList<>();

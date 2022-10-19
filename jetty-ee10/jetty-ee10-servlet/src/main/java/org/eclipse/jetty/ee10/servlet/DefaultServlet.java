@@ -125,29 +125,36 @@ public class DefaultServlet extends HttpServlet
         List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
             getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
 
-        MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
-        CachingHttpContentFactory cached = getInitBoolean("useFileMappedBuffer", false)
-            ? new CachingHttpContentFactory(new FileMappedHttpContentFactory(contentFactory))
-            : new CachingHttpContentFactory(contentFactory);
-
-        int maxCacheSize = getInitInt("maxCacheSize", -2);
-        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-        if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+        // Try to get factory from ServletContext attribute.
+        HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
+        if (contentFactory == null)
         {
-            if (maxCacheSize >= 0)
-                cached.setMaxCacheSize(maxCacheSize);
-            if (maxCachedFileSize >= -1)
-                cached.setMaxCachedFileSize(maxCachedFileSize);
-            if (maxCachedFiles >= -1)
-                cached.setMaxCachedFiles(maxCachedFiles);
-        }
+            MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
+            contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
+            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
-        String resourceCache = getInitParameter("resourceCache");
-        getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
-        _resourceService.setContentFactory(cached);
+            if (getInitBoolean("useFileMappedBuffer", false))
+                contentFactory = new FileMappedHttpContentFactory(contentFactory);
+
+            CachingHttpContentFactory cached = new CachingHttpContentFactory(contentFactory);
+            int maxCacheSize = getInitInt("maxCacheSize", -2);
+            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+            {
+                if (maxCacheSize >= 0)
+                    cached.setMaxCacheSize(maxCacheSize);
+                if (maxCachedFileSize >= -1)
+                    cached.setMaxCachedFileSize(maxCachedFileSize);
+                if (maxCachedFiles >= -1)
+                    cached.setMaxCachedFiles(maxCachedFiles);
+            }
+            contentFactory = cached;
+
+            String resourceCache = getInitParameter("resourceCache");
+            getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
+        }
+        _resourceService.setContentFactory(contentFactory);
 
         if (servletContextHandler.getWelcomeFiles() == null)
             servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
