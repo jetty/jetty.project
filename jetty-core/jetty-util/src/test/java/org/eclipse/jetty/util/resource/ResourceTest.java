@@ -380,7 +380,7 @@ public class ResourceTest
         assertNotNull(dot);
         assertTrue(dot.exists());
         assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
-        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getTargetURI())));
+        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getRealURI())));
     }
 
     @Test
@@ -402,12 +402,13 @@ public class ResourceTest
         FS.ensureDirExists(dir);
         Path file = dir.resolve("bar.txt");
         FS.touch(file);
+        assertTrue(Files.exists(file));
         Resource resource = resourceFactory.newResource(file);
         Resource dot = resource.resolve(".");
+        // We are now pointing to a resource at ".../testDotAliasFileExists/foo/bar.txt/."
         assertNotNull(dot);
-        assertTrue(dot.exists());
-        assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
-        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getTargetURI())));
+        assertFalse(dot.exists());
+        assertFalse(dot.isAlias(), "Reference to '.' against a file is not an alias");
     }
 
     @Test
@@ -420,9 +421,10 @@ public class ResourceTest
         assertFalse(Files.exists(file));
         Resource resource = resourceFactory.newResource(file);
         Resource dot = resource.resolve(".");
+        // We are now pointing to a resource at ".../testDotAliasFileDoesNotExists/foo/bar.txt/."
         assertNotNull(dot);
         assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as file doesn't exist");
+        assertFalse(dot.isAlias(), "Reference to '.' against a file is not an alias (the file also does not exist)");
     }
 
     @Test

@@ -253,6 +253,15 @@ public class ResourceService
                 return response.isCommitted();
             }
 
+            ContextHandler contextHandler = ContextHandler.getContextHandler(request.getServletContext());
+            if (contextHandler != null && !contextHandler.checkAlias(pathInContext, content.getResource()))
+            {
+                if (included)
+                    throw new FileNotFoundException("!" + pathInContext);
+                notFound(request, response);
+                return response.isCommitted();
+            }
+
             // Directory?
             if (content.getResource().isDirectory())
             {
@@ -289,6 +298,10 @@ public class ResourceService
                     HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
+
+                    if (contextHandler != null && !contextHandler.checkAlias(pathInContext, precompressedContent.getResource()))
+                        content = null;
+
                     content = precompressedContent;
                     response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding.getEncoding());
                 }

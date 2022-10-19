@@ -29,6 +29,10 @@ public class RewriteRegexRule extends RegexRule
 {
     private String replacement;
 
+    public RewriteRegexRule()
+    {
+    }
+
     public RewriteRegexRule(@Name("regex") String regex, @Name("replacement") String replacement)
     {
         super(regex);

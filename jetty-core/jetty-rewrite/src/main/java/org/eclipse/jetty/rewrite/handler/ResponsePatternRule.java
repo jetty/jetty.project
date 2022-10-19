@@ -30,6 +30,10 @@ public class ResponsePatternRule extends PatternRule
     private int _code;
     private String _message;
 
+    public ResponsePatternRule()
+    {
+    }
+
     public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") int code, @Name("message") String message)
     {
         super(pattern);
