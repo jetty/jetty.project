@@ -258,7 +258,7 @@ public class SslContextFactoryTest
                 cf.setTrustStorePath("/foo");
                 cf.start();
             });
-            assertThat(x.getMessage(), containsString("TrustStore Path does not exist: /foo"));
+            assertThat(x.getMessage(), containsString("TrustStore Path not accessible: /foo"));
         }
     }
 

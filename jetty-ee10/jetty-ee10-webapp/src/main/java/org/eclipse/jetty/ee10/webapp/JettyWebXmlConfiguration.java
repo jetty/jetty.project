@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,14 +57,14 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         // handle any WEB-INF descriptors
         if (webInf != null && webInf.isDirectory())
         {
-            // do jetty.xml file
+            // Attempt to load ancient jetty8-web.xml file
             Resource jetty = webInf.resolve("jetty8-web.xml");
-            if (!jetty.exists())
+            if (Resources.missing(jetty))
                 jetty = webInf.resolve(JETTY_WEB_XML);
-            if (!jetty.exists())
+            if (Resources.missing(jetty))
                 jetty = webInf.resolve("web-jetty.xml");
 
-            if (jetty.exists())
+            if (Resources.isReadableFile(jetty))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Configure: {}", jetty);

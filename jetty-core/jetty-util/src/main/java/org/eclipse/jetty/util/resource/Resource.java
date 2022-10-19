@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -87,9 +86,9 @@ public abstract class Resource implements Iterable<Resource>
 
             // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
             if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-                return new PathResource(uri);
+                return PathResource.of(uri);
 
-            return new MountedPathResource(uri);
+            return MountedPathResource.of(uri);
         }
         catch (URISyntaxException | ProviderNotFoundException | IOException ex)
         {
@@ -140,69 +139,43 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Equivalent to {@link Files#isDirectory(Path, LinkOption...)} with the following parameter:
-     * {@link #getPath()}.
+     * Return true if resource represents a directory of potential resources.
      *
      * @return true if the represented resource is a container/directory.
      */
-    public boolean isDirectory()
-    {
-        return Files.isDirectory(getPath(), FOLLOW_LINKS);
-    }
+    public abstract boolean isDirectory();
+
+    /**
+     * True if the resource is readable.
+     *
+     * @return true if the represented resource exists, and can read from.
+     */
+    public abstract boolean isReadable();
 
     /**
      * The time the resource was last modified.
-     *
-     * Equivalent to {@link Files#getLastModifiedTime(Path, LinkOption...)} with the following parameter:
-     * {@link #getPath()} then returning {@link FileTime#toInstant()}.
      *
      * @return the last modified time instant, or {@link Instant#EPOCH} if unable to obtain last modified.
      */
     public Instant lastModified()
     {
-        Path path = getPath();
-        if (path == null)
-            return Instant.EPOCH;
-
-        if (!Files.exists(path))
-            return Instant.EPOCH;
-
-        try
-        {
-            FileTime ft = Files.getLastModifiedTime(path, FOLLOW_LINKS);
-            return ft.toInstant();
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            return Instant.EPOCH;
-        }
+        return Instant.EPOCH;
     }
 
     /**
      * Length of the resource.
-     * Equivalent to {@link Files#size(Path)} with the following parameter:
-     * {@link #getPath()}.
      *
-     * @return the length of the resource or 0 if {@link Files#size(Path)} throws {@link IOException}.
+     * @return the length of the resource in bytes, or -1L if unable to provide a size (such as a directory resource).
      */
     public long length()
     {
-        try
-        {
-            return Files.size(getPath());
-        }
-        catch (IOException e)
-        {
-            // in case of error, use File.length logic of 0L
-            return 0L;
-        }
+        return -1L;
     }
 
     /**
      * URI representing the resource.
      *
-     * @return an URI representing the given resource
+     * @return a URI representing the given resource
      */
     public abstract URI getURI();
 
@@ -258,58 +231,33 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Resolve a new Resource from an encoded subUriPath.
+     * Resolve an existing Resource.
      *
      * @param subUriPath the encoded subUriPath
-     * @return a Resource representing the subUriPath
+     * @return an existing Resource representing the requested subUriPath, or null if resource does not exist.
      * @throws IllegalArgumentException if subUriPath is invalid
      */
-    public Resource resolve(String subUriPath)
-    {
-        // Check that the path is within the root,
-        // but use the original path to create the
-        // resource, to preserve aliasing.
-        // TODO do a URI safe encoding?
-        if (URIUtil.isNotNormalWithinSelf(subUriPath))
-            throw new IllegalArgumentException(subUriPath);
-
-        if (URIUtil.SLASH.equals(subUriPath))
-            return this;
-
-        // Sub-paths are always resolved under the given URI,
-        // we compensate for input sub-paths like "/subdir"
-        // where default resolve behavior would be to treat
-        // that like an absolute path.
-        while (subUriPath.startsWith(URIUtil.SLASH))
-        {
-            // TODO XXX this appears entirely unnecessary and inefficient.  We already have utilities
-            //      to handle appending path strings with/without slashes.
-            subUriPath = subUriPath.substring(1);
-        }
-
-        URI uri = getURI();
-        URI resolvedUri = URIUtil.addPath(uri, subUriPath);
-        return create(resolvedUri);
-    }
+    public abstract Resource resolve(String subUriPath);
 
     /**
      * @return true if this Resource is an alias to another real Resource
      */
     public boolean isAlias()
     {
-        return getTargetURI() != null;
+        return false;
     }
 
     /**
-     * If this Resource is an alias pointing to a different location,
-     * return the target location as URI.
+     * <p>The real URI of the resource.</p>
+     * <p>If this Resource is an alias, ({@link #isAlias()}), this
+     * URI will be different from {@link #getURI()}, and will point to the real name/location
+     * of the Resource.</p>
      *
-     * @return The target URI location of this resource,
-     *      or null if there is no target URI location (eg: not an alias, or a symlink)
+     * @return The real URI location of this resource.
      */
-    public URI getTargetURI()
+    public URI getRealURI()
     {
-        return null;
+        return getURI();
     }
 
     /**

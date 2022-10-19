@@ -89,6 +89,7 @@ import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1383,11 +1384,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.resolve(pathInContext);
-
-            if (checkAlias(pathInContext, resource))
-                return resource;
-            return null;
+            return baseResource.resolve(pathInContext);
         }
         catch (Exception e)
         {
@@ -1405,10 +1402,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public boolean checkAlias(String path, Resource resource)
     {
         // Is the resource aliased?
-        if (resource.isAlias())
+        if (Resources.isReadable(resource) && resource.isAlias())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Alias resource {} for {}", resource, resource.getTargetURI());
+                LOG.debug("Alias resource {} for {}", resource, resource.getRealURI());
 
             // alias checks
             for (AliasCheck check : getAliasChecks())

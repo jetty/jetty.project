@@ -104,13 +104,13 @@ public class ResourceCollection extends Resource
     /**
      * Resolves a path against the resource collection.
      *
-     * @param subUriPath The path segment to add
-     * @return The resulting resource(s) :
+     * @param subUriPath The path segment to resolve
+     * @return The resulting resource :
      * <ul>
      *   <li>is a file that exists in at least one of the collection, then the first one found is returned</li>
-     *   <li>is a directory that exists in at exactly one of the collection, then that directory resource is returned </li>
+     *   <li>is a directory that exists in at exactly one of the collection, then that simple directory resource is returned</li>
      *   <li>is a directory that exists in several of the collection, then a ResourceCollection of those directories is returned</li>
-     *   <li>do not exist in any of the collection, then a new non existent resource relative to the first in the collection is returned.</li>
+     *   <li>is null if not found in any entry in this collection</li>
      * </ul>
      */
     @Override
@@ -131,8 +131,8 @@ public class ResourceCollection extends Resource
         for (Resource res : _resources)
         {
             addedResource = res.resolve(subUriPath);
-            if (!addedResource.exists())
-                continue;
+            if (Resources.missing(addedResource))
+                continue; // skip, doesn't exist
             if (!addedResource.isDirectory())
                 return addedResource; // Return simple (non-directory) Resource
             if (resources == null)
@@ -255,6 +255,17 @@ public class ResourceCollection extends Resource
     public boolean isDirectory()
     {
         return true;
+    }
+
+    @Override
+    public boolean isReadable()
+    {
+        for (Resource r : _resources)
+        {
+            if (r.isReadable())
+                return true;
+        }
+        return false;
     }
 
     @Override

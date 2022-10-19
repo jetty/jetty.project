@@ -33,6 +33,10 @@ public class RewritePatternRule extends PatternRule
     private String _path;
     private String _query;
 
+    public RewritePatternRule()
+    {
+    }
+
     public RewritePatternRule(@Name("pattern") String pattern, @Name("replacement") String replacement)
     {
         super(pattern);

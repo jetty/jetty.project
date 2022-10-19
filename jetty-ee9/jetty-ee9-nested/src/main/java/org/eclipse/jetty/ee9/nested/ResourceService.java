@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -245,7 +246,16 @@ public class ResourceService
                 LOG.debug("content={}", content);
 
             // Not found?
-            if (content == null || !content.getResource().exists())
+            if (content == null || Resources.missing(content.getResource()))
+            {
+                if (included)
+                    throw new FileNotFoundException("!" + pathInContext);
+                notFound(request, response);
+                return response.isCommitted();
+            }
+
+            ContextHandler contextHandler = ContextHandler.getContextHandler(request.getServletContext());
+            if (contextHandler != null && !contextHandler.checkAlias(pathInContext, content.getResource()))
             {
                 if (included)
                     throw new FileNotFoundException("!" + pathInContext);
@@ -289,6 +299,10 @@ public class ResourceService
                     HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
+
+                    if (contextHandler != null && !contextHandler.checkAlias(pathInContext, precompressedContent.getResource()))
+                        content = null;
+
                     content = precompressedContent;
                     response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding.getEncoding());
                 }
