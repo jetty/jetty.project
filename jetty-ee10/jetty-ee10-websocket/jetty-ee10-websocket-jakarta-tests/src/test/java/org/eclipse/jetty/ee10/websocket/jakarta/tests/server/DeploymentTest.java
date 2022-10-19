@@ -63,7 +63,6 @@ public class DeploymentTest
         server.stop();
     }
 
-    @Disabled
     @Test
     public void testBadPathParamSignature() throws Exception
     {
