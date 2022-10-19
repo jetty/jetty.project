@@ -66,7 +66,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 if (Resources.missing(dftResource))
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            if (Resources.isReadable(dftResource))
+            if (Resources.isReadableFile(dftResource))
                 context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
@@ -116,7 +116,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             // do web.xml file
             Resource web = webInf.resolve("web.xml");
-            if (Resources.isReadable(web))
+            if (Resources.isReadableFile(web))
                 return web;
             if (LOG.isDebugEnabled())
                 LOG.debug("No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());

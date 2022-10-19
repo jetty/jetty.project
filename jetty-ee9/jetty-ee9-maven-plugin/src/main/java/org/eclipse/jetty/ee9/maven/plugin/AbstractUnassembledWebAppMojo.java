@@ -168,7 +168,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webXml != null)
             {
                 Resource r = webApp.getResourceFactory().newResource(webXml.toPath());
-                if (Resources.isReadable(r))
+                if (Resources.isReadableFile(r))
                 {
                     webApp.setDescriptor(r.getURI().toASCIIString());
                 }
@@ -178,7 +178,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
-                if (Resources.isReadable(r))
+                if (Resources.isReadableFile(r))
                 {
                     webApp.setDescriptor(r.toString());
                 }

@@ -196,27 +196,27 @@ public class Runner
                 if ("--lib".equals(args[i]))
                 {
                     Resource lib = resourceFactory.newResource(args[++i]);
-                    if (Resources.isDirectory(lib))
+                    if (Resources.isReadableDirectory(lib))
                         _classpath.addJars(lib);
                     else
-                        usage("No such lib directory " + lib);
+                        usage("Invalid directory: " + lib);
                 }
                 else if ("--jar".equals(args[i]))
                 {
                     Resource jar = resourceFactory.newResource(args[++i]);
-                    if (Resources.isReadable(jar))
+                    if (Resources.isReadableFile(jar) && FileID.isJavaArchive(jar.getURI()))
                         _classpath.addPath(jar);
                     else
-                        usage("No such jar " + jar);
+                        usage("Invalid JAR: " + jar);
 
                 }
                 else if ("--classes".equals(args[i]))
                 {
                     Resource classes = resourceFactory.newResource(args[++i]);
-                    if (Resources.isDirectory(classes))
+                    if (Resources.isReadableDirectory(classes))
                         _classpath.addPath(classes);
                     else
-                        usage("No such classes directory " + classes);
+                        usage("Invalid classes directory: " + classes);
                 }
                 else if (args[i].startsWith("--"))
                     i++;

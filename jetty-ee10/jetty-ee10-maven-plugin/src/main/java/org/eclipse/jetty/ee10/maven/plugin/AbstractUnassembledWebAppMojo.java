@@ -177,7 +177,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webXml != null)
             {
                 Resource r = webApp.getResourceFactory().newResource(webXml.toPath());
-                if (Resources.isReadable(r))
+                if (Resources.isReadableFile(r))
                 {
                     webApp.setDescriptor(r.getURI().toASCIIString());
                 }

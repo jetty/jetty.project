@@ -64,7 +64,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             if (Resources.missing(jetty))
                 jetty = webInf.resolve("web-jetty.xml");
 
-            if (Resources.isReadable(jetty))
+            if (Resources.isReadableFile(jetty))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Configure: {}", jetty);

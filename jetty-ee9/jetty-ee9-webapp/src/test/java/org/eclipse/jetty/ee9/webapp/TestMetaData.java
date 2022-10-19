@@ -87,7 +87,7 @@ public class TestMetaData
         Resource fragMount = resourceFactory.newJarFileResource(fragFile.toUri());
         assertNotNull(fragMount);
         webfragxml = fragMount.resolve("/META-INF/web-fragment.xml");
-        assertTrue(Resources.isReadable(webfragxml));
+        assertTrue(Resources.isReadableFile(webfragxml));
 
         Path testContainerDir = testDir.resolve("container");
         FS.ensureDirExists(testContainerDir);

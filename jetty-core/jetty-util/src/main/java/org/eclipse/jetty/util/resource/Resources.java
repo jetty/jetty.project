@@ -67,4 +67,28 @@ public final class Resources
     {
         return resource != null && resource.isReadable();
     }
+
+    /**
+     * True if resource is a valid directory that can be read from.
+     *
+     * @param resource the resource to test
+     * @return true if resource is non-null, exists, and is a directory
+     * @see Resource#exists()
+     * @see Resource#isDirectory()
+     */
+    public static boolean isReadableDirectory(Resource resource)
+    {
+        return resource != null && resource.isDirectory() && resource.isReadable();
+    }
+
+    /**
+     * True if resource exists, is not a directory, is readable.
+     *
+     * @param resource the resource to test
+     * @return true if resource exists, is not a directory, is
+     */
+    public static boolean isReadableFile(Resource resource)
+    {
+        return resource != null && !resource.isDirectory() && resource.isReadable();
+    }
 }

@@ -517,7 +517,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyFragment(Resource webFrag)
     {
-        return !Resources.isReadable(webFrag);
+        return !Resources.isReadableFile(webFrag);
     }
 
     /**
