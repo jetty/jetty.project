@@ -73,7 +73,7 @@ public class AliasedConstraintTest
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
         context.setContextPath("/ctx");
-        context.setBaseResource(MavenTestingUtils.getTestResourcePathDir("docroot"));
+        context.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("docroot"));
 
         server.setHandler(new HandlerList(context, new DefaultHandler()));
 

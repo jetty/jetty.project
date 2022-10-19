@@ -412,14 +412,14 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     @Deprecated
     public void setResourceBase(String resourceBase)
     {
-        setBaseResource(resourceBase);
+        setBaseResourceAsString(resourceBase);
     }
 
     /**
      * @param baseResource The base resource as a string.
      * @deprecated use {@link #setBaseResource(Resource)}
      */
-    public void setBaseResource(String baseResource)
+    public void setBaseResourceAsString(String baseResource)
     {
         try
         {

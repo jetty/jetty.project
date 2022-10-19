@@ -68,7 +68,7 @@ public class CustomRequestLogTest
         Files.createDirectory(_baseDir.resolve("servlet"));
         Files.createFile(_baseDir.resolve("servlet/info"));
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setBaseResource(_baseDir);
+        context.setBaseResourceAsPath(_baseDir);
         context.setContextPath("/context");
         context.addServlet(new ServletHolder(servlet), "/servlet/*");
 

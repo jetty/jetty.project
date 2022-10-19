@@ -70,7 +70,7 @@ public class TryPathsHandlerTest
         ContextHandler context = new ContextHandler(contextPath);
         rootPath = Files.createDirectories(MavenTestingUtils.getTargetTestingPath(getClass().getSimpleName()));
         FS.cleanDirectory(rootPath);
-        context.setBaseResource(rootPath);
+        context.setBaseResourceAsPath(rootPath);
         server.setHandler(context);
 
         TryPathsHandler tryPaths = new TryPathsHandler();

@@ -231,7 +231,7 @@ public class ResourceHandler extends Handler.Wrapper
      * from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)} for
      * this context.
      */
-    public void setBaseResource(String base)
+    public void setBaseResourceAsString(String base)
     {
         setBaseResource(base == null ? null : ResourceFactory.of(this).newResource(base));
     }

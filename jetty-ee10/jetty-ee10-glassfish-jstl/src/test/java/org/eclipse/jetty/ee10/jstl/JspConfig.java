@@ -31,6 +31,6 @@ public class JspConfig
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard.*\\.jar");
         context.setWar(baseUri.toASCIIString());
-        context.setBaseResource(Path.of(baseUri));
+        context.setBaseResourceAsPath(Path.of(baseUri));
     }
 }

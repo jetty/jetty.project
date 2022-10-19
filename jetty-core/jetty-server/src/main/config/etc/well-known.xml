@@ -2,33 +2,16 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
-  <New id="WellKnownHandler" class="org.eclipse.jetty.server.handler.ContextHandler">
-    <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
-      <Arg><Ref refid="WellKnownHandler" /></Arg>
-      <Call id="baseResource" name="newResource">
-        <Arg>
-          <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
-            <Arg><Property name="jetty.base"/></Arg>
-            <Arg><Property name="jetty.wellknown.dir" default=".well-known"/></Arg>
-          </Call>
-        </Arg>
-      </Call>
-    </Call>
-
-    <Set name="contextPath">/.well-known</Set>
-    <Set name="baseResource">
-      <Ref refid="baseResource"/>
-    </Set>
-    <Set name="handler">
-      <New class="org.eclipse.jetty.server.handler.ResourceHandler">
-        <Set name="baseResource"><Ref refid="baseResource"/></Set>
-        <Set name="dirAllowed"><Property name="jetty.wellknown.listDirectories" default="false"/></Set>
-      </New>
-    </Set>
-  </New>
-
   <Call name="addHandler">
-    <Arg><Ref refid="WellKnownHandler"/></Arg>
+    <New class="org.eclipse.jetty.server.handler.ContextHandler">
+      <Set name="contextPath">/.well-known</Set>
+      <Set name="baseResourceAsString"><Property name="jetty.wellknown.dir"><Default><Property name="jetty.base"/>/.well-known</Default></Property></Set>
+      <Set name="handler">
+        <New class="org.eclipse.jetty.server.handler.ResourceHandler">
+          <Set name="dirAllowed"><Property name="jetty.wellknown.listDirectories" default="false"/></Set>
+        </New>
+      </Set>
+    </New>
   </Call>
 </Configure>
 

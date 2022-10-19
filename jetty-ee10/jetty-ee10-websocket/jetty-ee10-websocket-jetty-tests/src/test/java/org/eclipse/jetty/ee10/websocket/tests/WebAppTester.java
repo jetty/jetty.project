@@ -153,7 +153,7 @@ public class WebAppTester extends ContainerLifeCycle
             // Configure the WebAppContext.
             _context = new WebAppContext();
             _context.setContextPath(contextPath);
-            _context.setBaseResource(_context.getResourceFactory().newResource(_contextDir).getPath());
+            _context.setBaseResourceAsPath(_context.getResourceFactory().newResource(_contextDir).getPath());
 
             _context.setConfigurations(new Configuration[]
             {
