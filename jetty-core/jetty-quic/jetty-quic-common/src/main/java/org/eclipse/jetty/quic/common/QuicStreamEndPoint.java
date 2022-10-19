@@ -258,7 +258,8 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     {
         if (LOG.isDebugEnabled())
             LOG.debug("setting fill interest on {}", this);
-        super.fillInterested(callback);
+        if (!isFillInterested())
+            super.fillInterested(callback);
 
         // TODO: see above
 //        getQuicSession().setFillInterested(getStreamId(), true);
