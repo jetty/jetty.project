@@ -244,19 +244,20 @@ public abstract class Resource implements Iterable<Resource>
      */
     public boolean isAlias()
     {
-        return getTargetURI() != null;
+        return false;
     }
 
     /**
-     * If this Resource is an alias pointing to a different location,
-     * return the target location as URI.
+     * <p>The real URI of the resource.</p>
+     * <p>If this Resource is an alias, ({@link #isAlias()}), this
+     * URI will be different from {@link #getURI()}, and will point to the real name/location
+     * of the Resource.</p>
      *
-     * @return The target URI location of this resource,
-     *      or null if there is no target URI location (eg: not an alias, or a symlink)
+     * @return The real URI location of this resource.
      */
-    public URI getTargetURI()
+    public URI getRealURI()
     {
-        return null;
+        return getURI();
     }
 
     /**

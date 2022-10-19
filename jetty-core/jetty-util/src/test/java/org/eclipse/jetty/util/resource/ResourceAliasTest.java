@@ -33,8 +33,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -62,16 +60,34 @@ public class ResourceAliasTest
     @Test
     public void testAliasNavigation() throws IOException
     {
-        Path baseDir = workDir.getEmptyPathDir();
+        Path docroot = workDir.getEmptyPathDir();
 
-        Path foo = baseDir.resolve("foo");
-        Files.createDirectories(foo);
-        Files.writeString(foo.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+        Path dir = docroot.resolve("dir");
+        Files.createDirectory(dir);
 
-        Resource resource = ResourceFactory.root().newResource(baseDir);
-        Resource test = resource.resolve("/bar/../foo/test.txt");
-        assertTrue(test.exists(), "Should exist");
-        assertTrue(test.isAlias(), "Should be an alias");
+        Path foo = docroot.resolve("foo");
+        Files.createDirectory(foo);
+
+        Path testText = dir.resolve("test.txt");
+        Files.writeString(testText, "Contents of test.txt", StandardCharsets.UTF_8);
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource rootRes = resourceFactory.newResource(docroot);
+            // Test navigation through a directory that doesn't exist
+            Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
+            assertFalse(fileResViaBar.exists(), "Should not exist");
+            assertFalse(fileResViaBar.isAlias(), "Should not be an alias");
+
+            Files.createDirectory(docroot.resolve("bar"));
+            assertTrue(fileResViaBar.exists(), "Should exist");
+            assertTrue(fileResViaBar.isAlias(), "Should be an alias");
+
+            // Test navigation through a directory that does exist
+            Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");
+            assertTrue(fileResViaFoo.exists(), "Should exist");
+            assertTrue(fileResViaFoo.isAlias(), "Should be an alias");
+        }
     }
 
     @Test
@@ -132,37 +148,37 @@ public class ResourceAliasTest
             // Test not alias paths
             Resource resource = resourceFactory.newResource(file);
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = resourceFactory.newResource(file.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = resourceFactory.newResource(file.toUri());
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = resourceFactory.newResource(file.toUri().toString());
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = dir.resolve("test.txt");
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
 
             // Test alias paths
             resource = resourceFactory.newResource(file0);
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
             resource = resourceFactory.newResource(file0.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
             resource = resourceFactory.newResource(file0.toUri());
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
             resource = resourceFactory.newResource(file0.toUri().toString());
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
 
             resource = dir.resolve("test.txt\0");
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
         }
         catch (InvalidPathException e)
         {
