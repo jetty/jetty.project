@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,7 +232,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.newResource(compressedPathInContext);
-                        if (compressedResource != null && compressedResource.exists() && ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
+                        if (Resources.isReadable(compressedResource) &&
+                            ResourceContentFactory.newerThanOrEqual(compressedResource, resource) &&
                             compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);

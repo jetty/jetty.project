@@ -97,6 +97,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2927,7 +2928,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             for (Resource r: resource)
             {
-                if (r.exists())
+                // return first
+                if (Resources.exists(r))
                     return r.getURI().toURL();
             }
 

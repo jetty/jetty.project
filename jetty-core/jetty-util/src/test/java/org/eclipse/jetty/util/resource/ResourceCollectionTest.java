@@ -48,6 +48,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -111,7 +112,8 @@ public class ResourceCollectionTest
 
         assertThat(listingFilenames, containsInAnyOrder(expected));
 
-        assertThat(rc.resolve("unknown").list(), is(empty()));
+        Resource unk = rc.resolve("unknown");
+        assertNull(unk);
 
         assertEquals(getContent(rc, "1.txt"), "1 - one");
         assertEquals(getContent(rc, "2.txt"), "2 - two");

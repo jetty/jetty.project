@@ -65,6 +65,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -397,7 +398,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             try
             {
                 resource = super.getResource(pathInContext);
-                if (resource != null && resource.exists())
+                if (Resources.exists(resource))
                     return resource;
 
                 pathInContext = getResourceAlias(pathInContext);
@@ -817,10 +818,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Can return from WEB-INF/lib/foo.jar!/WEB-INF
         // Can also never return from a META-INF/versions/#/WEB-INF location
         Resource webInf = super.getBaseResource().resolve("WEB-INF/");
-        if (!webInf.exists() || !webInf.isDirectory())
-            return null;
+        if (Resources.isReadableDirectory(webInf))
+            return webInf;
 
-        return webInf;
+        return null;
     }
 
     /**
@@ -1443,7 +1444,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             for (Resource r: resource)
             {
-                if (r.exists())
+                // return first entry
+                if (Resources.exists(r))
                     return r.getURI().toURL();
             }
 

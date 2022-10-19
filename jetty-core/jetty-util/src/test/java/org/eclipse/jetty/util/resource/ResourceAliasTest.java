@@ -76,12 +76,7 @@ public class ResourceAliasTest
             Resource rootRes = resourceFactory.newResource(docroot);
             // Test navigation through a directory that doesn't exist
             Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
-            assertFalse(fileResViaBar.exists(), "Should not exist");
-            assertFalse(fileResViaBar.isAlias(), "Should not be an alias");
-
-            Files.createDirectory(docroot.resolve("bar"));
-            assertTrue(fileResViaBar.exists(), "Should exist");
-            assertTrue(fileResViaBar.isAlias(), "Should be an alias");
+            assertTrue(Resources.missing(fileResViaBar), "File doesn't exist");
 
             // Test navigation through a directory that does exist
             Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");

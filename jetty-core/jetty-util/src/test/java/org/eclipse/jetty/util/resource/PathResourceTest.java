@@ -165,9 +165,7 @@ public class PathResourceTest
 
             // Resolve to name, but different case
             testText = archiveResource.resolve("/TEST.TXT");
-            assertFalse(testText.exists());
-            assertThat("Resource.getName", testText.getName(), is("/TEST.TXT"));
-            assertThat("Resource.getFileName", testText.getFileName(), is("TEST.TXT"));
+            assertNull(testText);
 
             // Resolve using path navigation
             testText = archiveResource.resolve("/foo/../test.txt");
@@ -224,9 +222,9 @@ public class PathResourceTest
 
             // Resolve file to name, but different case
             testText = archiveResource.resolve("/dir/TEST.TXT");
-            assertFalse(testText.exists());
+            assertNull(testText);
             testText = archiveResource.resolve("/DIR/test.txt");
-            assertFalse(testText.exists());
+            assertNull(testText);
 
             // Resolve file using path navigation
             testText = archiveResource.resolve("/foo/../dir/test.txt");
@@ -240,8 +238,7 @@ public class PathResourceTest
 
             // Resolve file using extension-less directory
             testText = archiveResource.resolve("/dir./test.txt");
-            assertFalse(testText.exists());
-            assertFalse(testText.isAlias());
+            assertNull(testText);
 
             // Resolve directory to name, no slash
             Resource dirResource = archiveResource.resolve("/dir");
@@ -471,7 +468,7 @@ public class PathResourceTest
             Resource rootRes = resourceFactory.newResource(docroot);
             // Test navigation through a directory that doesn't exist
             Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
-            assertFalse(fileResViaBar.exists());
+            assertTrue(Resources.missing(fileResViaBar));
 
             // Test navigation through a directory that does exist
             Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");

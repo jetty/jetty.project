@@ -22,6 +22,7 @@ import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
             Resource dftResource = context.getResourceFactory().newSystemResource(defaultsDescriptor);
-            if (dftResource == null)
+            if (Resources.missing(dftResource))
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
                 if (defaultsDescriptor.startsWith(pkg))
@@ -62,10 +63,10 @@ public class WebXmlConfiguration extends AbstractConfiguration
                         dftResource = context.getResourceFactory().newResource(uri);
                     }
                 }
-                if (dftResource == null)
+                if (Resources.missing(dftResource))
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            if (dftResource != null && dftResource.exists() && !dftResource.isDirectory())
+            if (Resources.isReadableFile(dftResource))
                 context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
@@ -106,7 +107,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (descriptor != null)
         {
             Resource web = context.newResource(descriptor);
-            if (web.exists() && !web.isDirectory())
+            if (web != null && !web.isDirectory())
                 return web;
         }
 
@@ -115,7 +116,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             // do web.xml file
             Resource web = webInf.resolve("web.xml");
-            if (web.exists())
+            if (Resources.isReadableFile(web))
                 return web;
             if (LOG.isDebugEnabled())
                 LOG.debug("No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());

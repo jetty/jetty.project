@@ -82,6 +82,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
@@ -640,10 +641,10 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         Resource res = ResourceFactory.of(this).newResource(keyStorePath);
-        if (!res.exists())
+        if (!Resources.isReadableFile(res))
         {
             _keyStoreResource = null;
-            throw new IllegalArgumentException("KeyStore Path does not exist: " + keyStorePath);
+            throw new IllegalArgumentException("KeyStore Path not accessible: " + keyStorePath);
         }
         _keyStoreResource = res;
     }
@@ -724,10 +725,10 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         Resource res = ResourceFactory.of(this).newResource(trustStorePath);
-        if (!res.exists())
+        if (!Resources.isReadableFile(res))
         {
             _trustStoreResource = null;
-            throw new IllegalArgumentException("TrustStore Path does not exist: " + trustStorePath);
+            throw new IllegalArgumentException("TrustStore Path not accessible: " + trustStorePath);
         }
         _trustStoreResource = res;
     }

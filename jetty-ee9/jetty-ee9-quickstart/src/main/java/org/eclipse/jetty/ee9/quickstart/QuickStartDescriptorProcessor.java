@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -203,10 +204,9 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 for (URI uri : uris)
                 {
                     Resource r = _resourceFactory.newResource(uri);
-                    if (r.exists())
-                        visitMetaInfResource(context, r);
-                    else
+                    if (Resources.missing(r))
                         throw new IllegalArgumentException("Resource not found: " + r);
+                    visitMetaInfResource(context, r);
                 }
             }
             default ->

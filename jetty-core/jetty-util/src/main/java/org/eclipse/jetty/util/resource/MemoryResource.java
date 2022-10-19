@@ -58,13 +58,27 @@ public class MemoryResource extends Resource
     @Override
     public Path getPath()
     {
-        return Path.of(_uri);
+        // memory resource has no path (it would be problematic for mounting reasons as well)
+        return null;
+    }
+
+    @Override
+    public boolean isDirectory()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isReadable()
+    {
+        return true;
     }
 
     @Override
     public boolean isContainedIn(Resource r)
     {
-        return getPath().startsWith(r.getPath());
+        // memory resource can never be contained in another memory resource
+        return false;
     }
 
     @Override
@@ -76,22 +90,13 @@ public class MemoryResource extends Resource
     @Override
     public String getName()
     {
-        Path p = getPath();
-        if (p == null)
-            return _uri.toASCIIString();
-        return p.toAbsolutePath().toString();
+        return _uri.toASCIIString();
     }
 
     @Override
     public String getFileName()
     {
-        Path p = getPath();
-        if (p == null)
-            return FileID.getFileName(_uri);
-        Path fn = p.getFileName();
-        if (fn == null)
-            return ""; // no segments, so no filename
-        return fn.toString();
+        return FileID.getFileName(_uri);
     }
 
     @Override
@@ -104,6 +109,12 @@ public class MemoryResource extends Resource
     public long length()
     {
         return _bytes.length;
+    }
+
+    @Override
+    public Resource resolve(String subUriPath)
+    {
+        return null;
     }
 
     @Override
