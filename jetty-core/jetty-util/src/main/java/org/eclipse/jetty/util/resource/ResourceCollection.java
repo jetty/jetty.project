@@ -260,7 +260,11 @@ public class ResourceCollection extends Resource
     @Override
     public boolean isReadable()
     {
-        // always a directory, never readable
+        for (Resource r : _resources)
+        {
+            if (r.isReadable())
+                return true;
+        }
         return false;
     }
 

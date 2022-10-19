@@ -641,7 +641,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         Resource res = ResourceFactory.of(this).newResource(keyStorePath);
-        if (!Resources.isReadable(res))
+        if (!Resources.isReadableFile(res))
         {
             _keyStoreResource = null;
             throw new IllegalArgumentException("KeyStore Path not accessible: " + keyStorePath);
@@ -725,7 +725,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         Resource res = ResourceFactory.of(this).newResource(trustStorePath);
-        if (!Resources.isReadable(res))
+        if (!Resources.isReadableFile(res))
         {
             _trustStoreResource = null;
             throw new IllegalArgumentException("TrustStore Path not accessible: " + trustStorePath);
