@@ -25,11 +25,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ReHandlingErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -109,6 +111,17 @@ public class ErrorProcessorTest
                     String message = "Euro is &euro; and \u20AC and %E2%82%AC";
                     // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
                     throw new TestException(message);
+                }
+
+                // 200 response
+                if (request.getPathInContext().startsWith("/ok/"))
+                {
+                    Content.Sink.write(
+                        response,
+                        true,
+                        "%s Error %s : %s%n".formatted(request.getPathInContext(), request.getAttribute(ErrorProcessor.ERROR_STATUS), request.getAttribute(ErrorProcessor.ERROR_MESSAGE)),
+                        callback);
+                    return;
                 }
 
                 Response.writeError(request, response, callback, 404);
@@ -687,6 +700,25 @@ public class ErrorProcessorTest
         response = connection.getResponse();
         assertThat(response, containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, containsString("Server Error"));
+    }
+
+    @Test
+    public void testRootReHandlingErrorProcessor() throws Exception
+    {
+        ReHandlingErrorProcessor.ByCode errorProcessor = new ReHandlingErrorProcessor.ByCode(server);
+        errorProcessor.put(400, "/ok/badMessage");
+        server.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /no/host HTTP/1.1
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("/ok/badMessage Error 400 : No Host"));
     }
 
     static class TestException extends RuntimeException implements QuietException
