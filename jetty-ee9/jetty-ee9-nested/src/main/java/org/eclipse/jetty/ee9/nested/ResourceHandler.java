@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +153,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
                 r = contextBase.resolve(path);
         }
 
-        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
+        if (Resources.missing(r) && path.endsWith("/jetty-dir.css"))
             r = getStylesheet();
 
         if (r == null)

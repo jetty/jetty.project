@@ -166,7 +166,7 @@ public class FileSystemResourceTest
     {
         // Doesn't exist.
         Resource resource = ResourceFactory.root().newResource(new URI("path/to/resource"));
-        assertFalse(resource.exists());
+        assertTrue(Resources.missing(resource));
 
         // Create a directory
         Path testdir = workDir.getEmptyPathDir().resolve("path/to/resource");
@@ -229,7 +229,7 @@ public class FileSystemResourceTest
         assertThat("sub/.isDirectory", sub.isDirectory(), is(true));
 
         Resource tmp = sub.resolve("/tmp");
-        assertThat("No root", tmp.exists(), is(false));
+        assertTrue(Resources.missing(tmp), "Reference to root not allowed");
     }
 
     @Test
@@ -245,7 +245,7 @@ public class FileSystemResourceTest
         assertThat("sub.isDirectory", sub.isDirectory(), is(true));
 
         Resource tmp = sub.resolve("/tmp");
-        assertThat("No root", tmp.exists(), is(false));
+        assertTrue(Resources.missing(tmp), "Reference to root not allowed");
     }
 
     @Test
@@ -266,7 +266,7 @@ public class FileSystemResourceTest
         {
             Resource rrd = sub.resolve(readableRootDir);
             // we are executing on unix and OSX
-            assertThat("Readable Root Dir", rrd.exists(), is(false));
+            assertTrue(Resources.missing(rrd), "Readable Root Dir");
         }
         catch (InvalidPathException e)
         {
@@ -399,16 +399,6 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testLastModifiedNotExists()
-    {
-        Path dir = workDir.getEmptyPathDir();
-
-        Resource base = ResourceFactory.root().newResource(dir);
-        Resource res = base.resolve("foo");
-        assertThat("foo.lastModified", res.lastModified(), is(Instant.EPOCH));
-    }
-
-    @Test
     public void testLength() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -425,17 +415,6 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testLengthNotExists() throws Exception
-    {
-        Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
-        Resource base = ResourceFactory.root().newResource(dir);
-        Resource res = base.resolve("foo");
-        assertThat("foo.length", res.length(), is(0L));
-    }
-
-    @Test
     public void testDelete() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -449,22 +428,6 @@ public class FileSystemResourceTest
         assertThat("foo.exists", res.exists(), is(true));
         // delete it
         Files.delete(res.getPath());
-        // is it there?
-        assertThat("foo.exists", res.exists(), is(false));
-    }
-
-    @Test
-    public void testDeleteNotExists() throws Exception
-    {
-        Path dir = workDir.getEmptyPathDir();
-        Files.createDirectories(dir);
-
-        Resource base = ResourceFactory.root().newResource(dir);
-        // Is it there?
-        Resource res = base.resolve("foo");
-        assertThat("foo.exists", res.exists(), is(false));
-        // delete it
-        Files.deleteIfExists(res.getPath());
         // is it there?
         assertThat("foo.exists", res.exists(), is(false));
     }
@@ -623,13 +586,13 @@ public class FileSystemResourceTest
     }
 
     @Test
-    public void testNonExistantSymlink() throws Exception
+    public void testNonExistentSymlink() throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
 
-        Path foo = dir.resolve("foo");
-        Path bar = dir.resolve("bar");
+        Path foo = dir.resolve("foo"); // does not exist
+        Path bar = dir.resolve("bar"); // to become a link to "foo"
 
         boolean symlinkSupported;
         try
@@ -649,25 +612,8 @@ public class FileSystemResourceTest
         Resource resFoo = base.resolve("foo");
         Resource resBar = base.resolve("bar");
 
-        assertThat("resFoo.uri", resFoo.getURI(), is(foo.toUri()));
-
-        // Access to the same resource, but via a symlink means that they are not equivalent
-        assertThat("foo.equals(bar)", resFoo.equals(resBar), is(false));
-
-        // This is not an alias because the file does not exist.
-        assertFalse(resFoo.exists());
-        assertFalse(Files.exists(resFoo.getPath()));
-        assertFalse(resFoo.isAlias());
-        assertNotNull(resFoo.getURI());
-        assertNull(resFoo.getRealURI());
-
-        // This is alias because the target file does not exist even though the symlink file does exist.
-        // This resource cannot be served, so it should not exist, nor have an alias
-        assertFalse(resBar.exists());
-        assertFalse(Files.exists(resBar.getPath()));
-        assertFalse(resBar.isAlias());
-        assertNotNull(resBar.getURI());
-        assertNull(resBar.getRealURI());
+        assertTrue(Resources.missing(resFoo), "resFoo");
+        assertTrue(Resources.missing(resBar), "resBar");
     }
 
     @Test
@@ -689,7 +635,7 @@ public class FileSystemResourceTest
         // On some case-insensitive file systems, lets see if an alternate
         // case for the filename results in an alias reference
         Resource alias = base.resolve("FILE");
-        if (alias.exists())
+        if (Resources.exists(alias))
         {
             // If it exists, it must be an alias
             assertThat("targetURI", alias, isRealResourceFor(resource));
@@ -1188,11 +1134,11 @@ public class FileSystemResourceTest
             assertThat("Target URI: " + basePath, base, isNotAlias());
 
             Resource r = base.resolve("aa%5C/foo.txt");
-            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
 
             if (WINDOWS.isCurrentOs())
             {
-                assertThat("getPath().toString()", r.getPath().toString(), containsString("aa\\foo.txt"));
+                assertThat("getURI()", r.getPath().toString(), containsString("aa\\/foo.txt"));
+                assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
                 assertThat("isAlias()", r.isAlias(), is(true));
                 assertThat("getRealURI()", r.getRealURI(), notNullValue());
                 assertThat("getRealURI()", r.getRealURI().toASCIIString(), containsString("aa/foo.txt"));
@@ -1200,9 +1146,7 @@ public class FileSystemResourceTest
             }
             else
             {
-                assertThat("getPath().toString()", r.getPath().toString(), containsString("aa\\/foo.txt"));
-                assertThat("isAlias()", r.isAlias(), is(false));
-                assertThat("Exists: " + r, r.exists(), is(false));
+                assertTrue(Resources.missing(r), "Backslash resource");
             }
         }
         catch (IllegalArgumentException e)
@@ -1232,10 +1176,10 @@ public class FileSystemResourceTest
             assertThat("Is Not Alias: " + basePath, base, isNotAlias());
 
             Resource r = base.resolve("aa./foo.txt");
-            assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa./foo.txt"));
 
             if (WINDOWS.isCurrentOs())
             {
+                assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa./foo.txt"));
                 assertThat("isAlias()", r.isAlias(), is(true));
                 assertThat("getRealURI()", r.getRealURI(), notNullValue());
                 assertThat("getRealURI()", r.getRealURI().toASCIIString(), containsString("aa/foo.txt"));
@@ -1243,8 +1187,7 @@ public class FileSystemResourceTest
             }
             else
             {
-                assertThat("isAlias()", r.isAlias(), is(false));
-                assertThat("Exists: " + r, r.exists(), is(false));
+                assertTrue(Resources.missing(r), "extension-less directory reference");
             }
         }
         catch (IllegalArgumentException e)

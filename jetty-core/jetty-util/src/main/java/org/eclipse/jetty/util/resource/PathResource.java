@@ -18,11 +18,14 @@ import java.net.URI;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -46,6 +49,14 @@ public class PathResource extends Resource
         .with("file")
         .with("jrt")
         .build();
+
+    public static PathResource of(URI uri) throws IOException
+    {
+        Path path = Paths.get(uri.normalize());
+        if (!Files.exists(path))
+            return null;
+        return new PathResource(path, uri, false);
+    }
 
     // The path object represented by this instance
     private final Path path;
@@ -260,6 +271,95 @@ public class PathResource extends Resource
     public URI getURI()
     {
         return this.uri;
+    }
+
+    @Override
+    public Resource resolve(String subUriPath)
+    {
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        if (URIUtil.isNotNormalWithinSelf(subUriPath))
+            throw new IllegalArgumentException(subUriPath);
+
+        if (URIUtil.SLASH.equals(subUriPath))
+            return this;
+
+        // Sub-paths are always resolved under the given URI,
+        // we compensate for input sub-paths like "/subdir"
+        // where default resolve behavior would be to treat
+        // that like an absolute path.
+        while (subUriPath.startsWith(URIUtil.SLASH))
+        {
+            // TODO XXX this appears entirely unnecessary and inefficient.  We already have utilities
+            //      to handle appending path strings with/without slashes.
+            subUriPath = subUriPath.substring(1);
+        }
+
+        URI uri = getURI();
+        URI resolvedUri = URIUtil.addPath(uri, subUriPath);
+        Path path = Paths.get(resolvedUri);
+        if (Files.exists(path))
+            return newResource(path, resolvedUri);
+
+        return null;
+    }
+
+    /**
+     * Internal override for creating a new PathResource.
+     * Used by MountedPathResource (eg)
+     */
+    protected Resource newResource(Path path, URI uri)
+    {
+        return new PathResource(path, uri, true);
+    }
+
+    @Override
+    public boolean isDirectory()
+    {
+        return Files.isDirectory(getPath(), LinkOption.NOFOLLOW_LINKS);
+    }
+
+    @Override
+    public boolean isReadable()
+    {
+        return Files.isReadable(getPath());
+    }
+
+    @Override
+    public Instant lastModified()
+    {
+        Path path = getPath();
+        if (path == null)
+            return Instant.EPOCH;
+
+        if (!Files.exists(path))
+            return Instant.EPOCH;
+
+        try
+        {
+            FileTime ft = Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS);
+            return ft.toInstant();
+        }
+        catch (IOException e)
+        {
+            LOG.trace("IGNORED", e);
+            return Instant.EPOCH;
+        }
+    }
+
+    @Override
+    public long length()
+    {
+        try
+        {
+            return Files.size(getPath());
+        }
+        catch (IOException e)
+        {
+            // in case of error, use Files.size() logic of 0L
+            return 0L;
+        }
     }
 
     @Override
