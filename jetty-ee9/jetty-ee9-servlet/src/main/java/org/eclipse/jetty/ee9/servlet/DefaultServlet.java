@@ -29,15 +29,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
-import org.eclipse.jetty.http.CachingContentFactory;
+import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MappedFileContentFactory;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreCompressedContentFactory;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.ResourceContentFactory;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -138,7 +138,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
     private Resource _baseResource;
-    private CachingContentFactory _cachingContentFactory;
+    private CachingHttpContentFactory _cachingContentFactory;
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
     private ResourceFactory.Closeable _resourceFactory;
@@ -239,11 +239,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (cc != null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
 
-        HttpContent.Factory contentFactory = new ResourceContentFactory(this, _mimeTypes);
-        contentFactory = new PreCompressedContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         _cachingContentFactory = _useFileMappedBuffer
-            ? new CachingContentFactory(new MappedFileContentFactory(contentFactory))
-            : new CachingContentFactory(contentFactory);
+            ? new CachingHttpContentFactory(new FileMappedHttpContentFactory(contentFactory))
+            : new CachingHttpContentFactory(contentFactory);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
         int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);

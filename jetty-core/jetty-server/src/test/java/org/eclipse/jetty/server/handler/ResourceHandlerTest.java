@@ -34,7 +34,7 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.eclipse.jetty.http.CachingContentFactory;
+import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
@@ -1153,7 +1153,7 @@ public class ResourceHandlerTest
     {
         copySimpleTestResource(docRoot);
         // TODO explicitly turn on caching
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
         _rootResourceHandler.setWelcomeFiles(List.of()); // disable welcome files otherwise they get cached
 
         for (int i = 0; i < 10; i++)
@@ -1179,7 +1179,7 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         // TODO explicitly turn on caching
         long expectedSize = Files.size(docRoot.resolve("big.txt"));
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
@@ -1208,7 +1208,7 @@ public class ResourceHandlerTest
     {
         copySimpleTestResource(docRoot);
         long expectedSize = Files.size(docRoot.resolve("simple.txt"));
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
         contentFactory.setMaxCacheSize((int)expectedSize);
 
         for (int i = 0; i < 10; i++)
@@ -1251,7 +1251,7 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         // TODO explicitly turn on caching
         long expectedSize = Files.size(docRoot.resolve("simple.txt"));
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
         contentFactory.setMaxCachedFileSize((int)expectedSize);
 
         for (int i = 0; i < 10; i++)
@@ -1294,7 +1294,7 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         long expectedSizeBig = Files.size(docRoot.resolve("big.txt"));
         long expectedSizeSimple = Files.size(docRoot.resolve("simple.txt"));
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
         contentFactory.setMaxCachedFiles(1);
 
         for (int i = 0; i < 10; i++)
@@ -1334,7 +1334,7 @@ public class ResourceHandlerTest
     @Test
     public void testCachingNotFoundNotCached() throws Exception
     {
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
@@ -1362,7 +1362,7 @@ public class ResourceHandlerTest
             Files.size(docRoot.resolve("big.txt.gz"));
 
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
@@ -1414,7 +1414,7 @@ public class ResourceHandlerTest
 
         _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
         _rootResourceHandler.setEtags(true);
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
@@ -1494,7 +1494,7 @@ public class ResourceHandlerTest
         Files.writeString(tempPath, "temp file");
         long expectedSize = Files.size(tempPath);
 
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
@@ -1548,7 +1548,7 @@ public class ResourceHandlerTest
     {
         copySimpleTestResource(docRoot);
         long expectedSize = Files.size(docRoot.resolve("directory/welcome.txt"));
-        CachingContentFactory contentFactory = (CachingContentFactory)_rootResourceHandler.getContentFactory();
+        CachingHttpContentFactory contentFactory = (CachingHttpContentFactory)_rootResourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {

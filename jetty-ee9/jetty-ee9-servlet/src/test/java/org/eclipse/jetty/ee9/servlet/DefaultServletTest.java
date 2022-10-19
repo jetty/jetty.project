@@ -47,7 +47,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.ResourceContentFactory;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -1237,7 +1237,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
 
-        ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
+        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
 
         HttpContent content = factory.getContent("/index.html");
         ByteBuffer buffer = content.getBuffer();

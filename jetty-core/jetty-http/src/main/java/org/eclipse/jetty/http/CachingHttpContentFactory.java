@@ -33,14 +33,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HttpContent.ContentFactory implementation that wraps any other HttpContent.ContentFactory instance
+ * {@link HttpContent.Factory} implementation that wraps any other {@link HttpContent.Factory} instance
  * using it as a caching authority.
  * Only HttpContent instances whose path is not a directory are cached.
- * HttpContent instances returned by getContent() implement HttpContent.InMemory when a cached instance is found.
+ *
+ *  TODO:
  */
-public class CachingContentFactory implements HttpContent.Factory
+public class CachingHttpContentFactory implements HttpContent.Factory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CachingContentFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CachingHttpContentFactory.class);
 
     private final HttpContent.Factory _authority;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
@@ -50,7 +51,7 @@ public class CachingContentFactory implements HttpContent.Factory
     private int _maxCacheSize = 256 * 1024 * 1024;
     private long _evictionTime = 0;
 
-    public CachingContentFactory(HttpContent.Factory authority)
+    public CachingHttpContentFactory(HttpContent.Factory authority)
     {
         _authority = authority;
     }
@@ -188,7 +189,7 @@ public class CachingContentFactory implements HttpContent.Factory
         long len = httpContent.getContentLengthValue();
         if (len <= 0)
             return false;
-        if (httpContent instanceof MappedFileContentFactory.FileMappedContent)
+        if (httpContent instanceof FileMappedHttpContentFactory.FileMappedContent)
              return true;
         return (len <= _maxCachedFileSize && len <= _maxCacheSize);
     }

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class EvictingCachingContentFactory extends CachingContentFactory implements Runnable
+public class EvictingCachingContentFactory extends CachingHttpContentFactory implements Runnable
 {
     private final Scheduler _scheduler;
     private final long _delay;

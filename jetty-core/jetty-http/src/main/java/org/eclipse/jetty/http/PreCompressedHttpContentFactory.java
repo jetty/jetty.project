@@ -21,17 +21,17 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpContent.Factory;
 
-public class PreCompressedContentFactory implements HttpContent.Factory
+public class PreCompressedHttpContentFactory implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
     private final List<CompressedContentFormat> _preCompressedFormats;
 
-    public PreCompressedContentFactory(Factory factory, CompressedContentFormat[] preCompressedFormats)
+    public PreCompressedHttpContentFactory(Factory factory, CompressedContentFormat[] preCompressedFormats)
     {
         this(factory, Arrays.asList(preCompressedFormats));
     }
 
-    public PreCompressedContentFactory(HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
+    public PreCompressedHttpContentFactory(HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
     {
         _factory = factory;
         _preCompressedFormats = preCompressedFormats;

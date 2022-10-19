@@ -43,8 +43,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.CachingContentFactory;
+import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContentWrapper;
 import org.eclipse.jetty.http.HttpField;
@@ -53,11 +54,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MappedFileContentFactory;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreCompressedContentFactory;
-import org.eclipse.jetty.http.ResourceContentFactory;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Components;
@@ -126,11 +126,11 @@ public class DefaultServlet extends HttpServlet
             getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
 
         MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
-        HttpContent.Factory contentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
-        contentFactory = new PreCompressedContentFactory(contentFactory, precompressedFormats);
-        CachingContentFactory cached = getInitBoolean("useFileMappedBuffer", false)
-            ? new CachingContentFactory(new MappedFileContentFactory(contentFactory))
-            : new CachingContentFactory(contentFactory);
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
+        CachingHttpContentFactory cached = getInitBoolean("useFileMappedBuffer", false)
+            ? new CachingHttpContentFactory(new FileMappedHttpContentFactory(contentFactory))
+            : new CachingHttpContentFactory(contentFactory);
 
         int maxCacheSize = getInitInt("maxCacheSize", -2);
         int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);

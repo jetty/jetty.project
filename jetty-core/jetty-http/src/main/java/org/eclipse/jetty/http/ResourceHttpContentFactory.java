@@ -25,12 +25,12 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  * this factory are not intended to be cached, so memory limits for individual
  * HttpOutput streams are enforced.
  */
-public class ResourceContentFactory implements HttpContent.Factory
+public class ResourceHttpContentFactory implements HttpContent.Factory
 {
     private final ResourceFactory _factory;
     private final MimeTypes _mimeTypes;
 
-    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes)
+    public ResourceHttpContentFactory(ResourceFactory factory, MimeTypes mimeTypes)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
         _factory = factory;
