@@ -420,7 +420,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
 
-            if (Resources.isDirectory(resourcesDir) && (cache != null))
+            if (Resources.isReadableDirectory(resourcesDir) && (cache != null))
             {
                 Resource old = cache.putIfAbsent(target, resourcesDir);
                 if (old != null)
@@ -450,7 +450,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyResource(Resource resourcesDir)
     {
-        return !Resources.isDirectory(resourcesDir);
+        return !Resources.isReadableFile(resourcesDir);
     }
 
     /**
@@ -704,7 +704,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         Resource webInfLib = webInf.resolve("lib");
 
-        if (Resources.isDirectory(webInfLib))
+        if (Resources.isReadableDirectory(webInfLib))
         {
             return webInfLib.list().stream()
                 .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
@@ -752,11 +752,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         Resource webInf = context.getWebInf();
         // Find WEB-INF/classes
-        if (Resources.isDirectory(webInf))
+        if (Resources.isReadableDirectory(webInf))
         {
             // Look for classes directory
             Resource webInfClassesDir = webInf.resolve("classes/");
-            if (Resources.isDirectory(webInfClassesDir))
+            if (Resources.isReadableDirectory(webInfClassesDir))
                 return webInfClassesDir;
         }
         return null;

@@ -411,7 +411,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenPaths.findTestResourceDir("webapp");
         Resource testWebappResource = context.getResourceFactory().newResource(testWebapp);
-        assertTrue(Resources.isDirectory(testWebappResource));
+        assertTrue(Resources.isReadableDirectory(testWebappResource));
         context.setBaseResource(testWebappResource);
         context.setContextPath("/");
 

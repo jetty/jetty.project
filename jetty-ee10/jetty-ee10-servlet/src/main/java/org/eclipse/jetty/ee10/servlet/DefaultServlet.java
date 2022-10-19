@@ -966,7 +966,7 @@ public class DefaultServlet extends HttpServlet
 
             String welcomeServlet = null;
             Resource base = _baseResource.resolve(requestTarget);
-            if (Resources.isDirectory(base))
+            if (Resources.isReadableDirectory(base))
             {
                 for (String welcome : welcomes)
                 {

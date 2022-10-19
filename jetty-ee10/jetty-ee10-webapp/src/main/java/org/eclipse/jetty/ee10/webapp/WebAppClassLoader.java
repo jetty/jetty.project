@@ -281,7 +281,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public void addJars(Resource libs)
     {
-        if (!Resources.isDirectory(libs))
+        if (!Resources.isReadableDirectory(libs))
             return;
 
         for (Resource libDir: libs)

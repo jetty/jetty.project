@@ -189,7 +189,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/web.xml
                 // TODO: should also never return from a META-INF/versions/#/WEB-INF/web.xml location
                 Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
-                if (Resources.isDirectory(r))
+                if (Resources.isReadableFile(r))
                 {
                     webApp.setDescriptor(r.getURI().toASCIIString());
                 }

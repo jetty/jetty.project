@@ -95,9 +95,9 @@ public class TestMetaData
         FS.ensureDirExists(testWebInfClassesDir);
 
         containerDir = resourceFactory.newResource(testContainerDir);
-        assertTrue(Resources.isDirectory(containerDir));
+        assertTrue(Resources.isReadableDirectory(containerDir));
         webInfClassesDir = resourceFactory.newResource(testWebInfClassesDir);
-        assertTrue(Resources.isDirectory(webInfClassesDir));
+        assertTrue(Resources.isReadableDirectory(webInfClassesDir));
 
         wac = new WebAppContext();
         applications = new ArrayList<>();

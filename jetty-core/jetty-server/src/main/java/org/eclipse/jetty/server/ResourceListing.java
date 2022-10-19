@@ -57,7 +57,9 @@ public class ResourceListing
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
-        if (base == null || !Resources.isDirectory(resource))
+        if (base == null)
+            return null;
+        if (!Resources.isReadableDirectory(resource))
             return null;
 
         List<Resource> listing = resource.list().stream()

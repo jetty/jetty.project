@@ -67,12 +67,12 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             // Look for classes directory
             Resource classes = webInf.resolve("classes/");
-            if (Resources.isDirectory(classes))
+            if (Resources.isReadableDirectory(classes))
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
             Resource lib = webInf.resolve("lib/");
-            if (Resources.isDirectory(lib))
+            if (Resources.isReadableDirectory(lib))
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
     }
@@ -350,7 +350,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     context.setAttribute(TEMPORARY_RESOURCE_BASE, extractedWebAppDir);
                 }
 
-                if (Resources.isDirectory(webApp))
+                if (Resources.isReadableDirectory(webApp))
                 {
                     // Copy directory
                     if (LOG.isDebugEnabled())
@@ -422,7 +422,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             Resource webInf = webApp.resolve("WEB-INF/");
 
-            if (Resources.isDirectory(webInf))
+            if (Resources.isReadableDirectory(webInf))
             {
                 File extractedWebInfDir = new File(context.getTempDirectory(), "webinf");
                 if (extractedWebInfDir.exists())
@@ -432,7 +432,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 File webInfDir = new File(extractedWebInfDir, "WEB-INF");
                 webInfDir.mkdir();
 
-                if (Resources.isDirectory(webInfLib))
+                if (Resources.isReadableDirectory(webInfLib))
                 {
                     File webInfLibDir = new File(webInfDir, "lib");
                     if (webInfLibDir.exists())
@@ -445,7 +445,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 }
 
                 Resource webInfClasses = webInf.resolve("classes/");
-                if (Resources.isDirectory(webInfClasses))
+                if (Resources.isReadableDirectory(webInfClasses))
                 {
                     File webInfClassesDir = new File(webInfDir, "classes");
                     if (webInfClassesDir.exists())
