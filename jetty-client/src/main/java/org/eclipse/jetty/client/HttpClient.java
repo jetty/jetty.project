@@ -136,7 +136,7 @@ public class HttpClient extends ContainerLifeCycle
     private boolean followRedirects = true;
     private int maxConnectionsPerDestination = 64;
     private int maxRequestsQueuedPerDestination = 1024;
-    private int requestBufferSizeInBytes = 4096;
+    private int requestBufferSize = 4096;
     private int responseBufferSize = 16384;
     private int maxRedirects = 8;
     private long addressResolutionTimeout = 15000;
@@ -901,12 +901,12 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the size of the buffer used to write requests
+     * @return the size of the buffer (in bytes) used to write requests
      */
-    @ManagedAttribute("The request buffer size")
+    @ManagedAttribute("The request buffer size in bytes")
     public int getRequestBufferSize()
     {
-        return requestBufferSizeInBytes;
+        return requestBufferSize;
     }
 
     /**
@@ -914,7 +914,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setRequestBufferSize(int requestBufferSizeInBytes)
     {
-        this.requestBufferSizeInBytes = requestBufferSizeInBytes;
+        this.requestBufferSize = requestBufferSizeInBytes;
     }
 
     /**
