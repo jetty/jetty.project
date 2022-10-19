@@ -57,9 +57,9 @@ import org.slf4j.LoggerFactory;
  * <li>{@link #responseContent(HttpExchange, ByteBuffer, Callback)}, when HTTP content is available</li>
  * <li>{@link #responseSuccess(HttpExchange)}, when the response is successful</li>
  * </ol>
- * At any time, subclasses may invoke {@link #responseFailure(Throwable)} to indicate that the response has failed
+ * At any time, subclasses may invoke {@link #responseFailure(Throwable, Promise)} to indicate that the response has failed
  * (for example, because of I/O exceptions).
- * At any time, user threads may abort the response which will cause {@link #responseFailure(Throwable)} to be
+ * At any time, user threads may abort the response which will cause {@link #responseFailure(Throwable, Promise)} to be
  * invoked.
  * <p>
  * The state machine maintained by this class ensures that the response steps are not executed by an I/O thread
@@ -423,9 +423,9 @@ public abstract class HttpReceiver
      * This method takes care of notifying {@link org.eclipse.jetty.client.api.Response.FailureListener}s.
      *
      * @param failure the response failure
-     * @return whether the response was processed as failed
+     * @param promise the promise to complete with true if the response was processed as failed, false otherwise
      */
-    protected boolean responseFailure(Throwable failure)
+    protected void responseFailure(Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
         // In case of a response error, the failure has already been notified
@@ -433,7 +433,10 @@ public abstract class HttpReceiver
         // loop throws an exception that reenters here but without exchange;
         // or, the server could just have timed out the connection.
         if (exchange == null)
-            return false;
+        {
+            promise.succeeded(false);
+            return;
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("Response failure {}", exchange.getResponse(), failure);
@@ -444,12 +447,12 @@ public abstract class HttpReceiver
         {
             // We can use a Promise.Completable and join it here only
             // because the implementation of abort() is synchronous.
-            Promise.Completable<Boolean> promise = new Promise.Completable<>();
             abort(exchange, failure, promise);
-            return promise.join();
         }
-
-        return false;
+        else
+        {
+            promise.succeeded(false);
+        }
     }
 
     private void terminateResponse(HttpExchange exchange)

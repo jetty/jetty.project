@@ -149,11 +149,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     {
         try
         {
-            upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, this::responseFailure));
+            upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, failure -> responseFailure(failure, Promise.noop())));
         }
         catch (Throwable x)
         {
-            responseFailure(x);
+            responseFailure(x, Promise.noop());
         }
     }
 
@@ -210,8 +210,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
-                    if (responseFailure(x))
-                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                    responseFailure(x, Promise.from(failed ->
+                    {
+                        if (failed)
+                            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                    }, f -> stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
                 });
 
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
@@ -265,7 +268,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     @Override
     public void onFailure(Throwable failure, Callback callback)
     {
-        responseFailure(failure);
-        callback.succeeded();
+        responseFailure(failure, Promise.from(failed -> callback.succeeded(), callback::failed));
     }
 }

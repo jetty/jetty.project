@@ -114,8 +114,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
-                    if (responseFailure(x))
-                        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                    responseFailure(x, Promise.from(failed ->
+                    {
+                        if (failed)
+                            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                    }, f -> stream.reset(HTTP3ErrorCode.INTERNAL_ERROR.code(), x)));
                 });
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
                 if (proceed)
@@ -172,6 +175,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     @Override
     public void onFailure(Stream.Client stream, long error, Throwable failure)
     {
-        responseFailure(failure);
+        responseFailure(failure, Promise.noop());
     }
 }
