@@ -153,12 +153,16 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
-            channel.onTimeout(failure, (task, b) ->
+            channel.onTimeout(failure, (task, timedOut) ->
             {
                 if (task != null)
                     offerTask(task, true);
-                promise.succeeded(b);
+                promise.succeeded(timedOut);
             });
+        }
+        else
+        {
+            promise.succeeded(false);
         }
     }
 

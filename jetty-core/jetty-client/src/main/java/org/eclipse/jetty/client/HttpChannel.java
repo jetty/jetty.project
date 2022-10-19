@@ -144,7 +144,7 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         if (responseFailure != null)
             abortResponse(exchange, responseFailure, responsePromise);
         else
-            requestPromise.succeeded(false);
+            responsePromise.succeeded(false);
 
         requestPromise.thenAcceptBoth(responsePromise, (requestAborted, responseAborted) -> promise.succeeded(requestAborted || responseAborted));
     }

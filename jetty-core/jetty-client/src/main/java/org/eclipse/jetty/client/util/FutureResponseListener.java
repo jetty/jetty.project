@@ -41,11 +41,11 @@ import org.eclipse.jetty.client.api.Result;
  */
 public class FutureResponseListener extends BufferingResponseListener implements Future<ContentResponse>
 {
+    private final AtomicBoolean cancelled = new AtomicBoolean();
     private final CountDownLatch latch = new CountDownLatch(1);
     private final Request request;
     private ContentResponse response;
     private Throwable failure;
-    private final AtomicBoolean cancelled = new AtomicBoolean();
 
     public FutureResponseListener(Request request)
     {

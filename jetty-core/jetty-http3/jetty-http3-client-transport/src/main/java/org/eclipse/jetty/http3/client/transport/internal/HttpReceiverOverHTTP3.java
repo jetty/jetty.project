@@ -164,7 +164,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-            exchange.abort(failure, Promise.from(b -> promise.succeeded(!b), promise::failed));
+            exchange.abort(failure, Promise.from(aborted -> promise.succeeded(!aborted), promise::failed));
         else
             promise.succeeded(false);
     }
