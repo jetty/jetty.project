@@ -144,7 +144,6 @@ public class ResourceHttpContent implements HttpContent
     {
         try
         {
-            // TODO use pool?
             long contentLengthValue = getContentLengthValue();
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect((int)contentLengthValue);
             try (SeekableByteChannel channel = Files.newByteChannel(getResource().getPath()))

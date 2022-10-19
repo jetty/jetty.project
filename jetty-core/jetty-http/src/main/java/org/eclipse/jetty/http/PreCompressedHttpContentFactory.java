@@ -21,6 +21,10 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpContent.Factory;
 
+/**
+ * This {@link HttpContent.Factory} populates the {@link HttpContent#getPreCompressedContentFormats()} field for any
+ * {@link HttpContent} fetched through this factory.
+ */
 public class PreCompressedHttpContentFactory implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;

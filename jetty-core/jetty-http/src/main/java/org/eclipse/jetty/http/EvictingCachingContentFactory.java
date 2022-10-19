@@ -72,10 +72,10 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
     @Override
     protected CachingHttpContent newNotFoundContent(String p, long evictionTime)
     {
-        return new NotFoundContent(p, evictionTime);
+        return new NotFoundHttpContent(p, evictionTime);
     }
 
-    protected static class EvictingCachedContent extends CachedContent
+    protected static class EvictingCachedContent extends CachedHttpContent
     {
         public EvictingCachedContent(String key, HttpContent httpContent, long evictionTime)
         {
@@ -94,7 +94,7 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
         }
     }
 
-    protected static class EvictingNotFoundContent extends NotFoundContent
+    protected static class EvictingNotFoundContent extends NotFoundHttpContent
     {
         public EvictingNotFoundContent(String key, long evictionTime)
         {

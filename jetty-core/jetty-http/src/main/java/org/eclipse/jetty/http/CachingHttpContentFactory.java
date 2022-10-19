@@ -37,7 +37,15 @@ import org.slf4j.LoggerFactory;
  * using it as a caching authority.
  * Only HttpContent instances whose path is not a directory are cached.
  *
- *  TODO:
+ * <p>
+ * Eviction behaviours are configured through the {@link #setEvictionTime(int)} method. A value of -1 means that the cached
+ * {@link HttpContent} will never be checked if it is still valid, a value of 0 means it is checked on every request, and a
+ * positive value indicates the number of milliseconds of the minimum time between validation checks.
+ * </p>
+ * <p>
+ * This also caches misses, and will remember a missed entry for the time set by {@link #setEvictionTime(int)}. After this has
+ * elapsed the entry will be invalid and will be evicted from the cache after the next access.
+ * </p>
  */
 public class CachingHttpContentFactory implements HttpContent.Factory
 {
@@ -202,7 +210,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         {
             cachingHttpContent.getLastAccessed().set(NanoTime.now());
             if (cachingHttpContent.isValid())
-                return (cachingHttpContent instanceof NotFoundContent) ? null : cachingHttpContent;
+                return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
             else
                 removeFromCache(cachingHttpContent);
         }
@@ -229,12 +237,12 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
     protected CachingHttpContent newCachedContent(String p, HttpContent httpContent, long evictionTime)
     {
-        return new CachedContent(p, httpContent, evictionTime);
+        return new CachedHttpContent(p, httpContent, evictionTime);
     }
 
     protected CachingHttpContent newNotFoundContent(String p, long evictionTime)
     {
-        return new NotFoundContent(p, evictionTime);
+        return new NotFoundHttpContent(p, evictionTime);
     }
 
     protected interface CachingHttpContent extends HttpContent
@@ -246,7 +254,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         boolean isValid();
     }
 
-    protected static class CachedContent extends HttpContentWrapper implements CachingHttpContent
+    protected static class CachedHttpContent extends HttpContentWrapper implements CachingHttpContent
     {
         private final ByteBuffer _buffer;
         private final String _cacheKey;
@@ -263,7 +271,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
 
-        public CachedContent(String key, HttpContent httpContent, long evictionTime)
+        public CachedHttpContent(String key, HttpContent httpContent, long evictionTime)
         {
             super(httpContent);
             _cacheKey = key;
@@ -402,7 +410,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
     }
 
-    protected static class NotFoundContent implements CachingHttpContent
+    protected static class NotFoundHttpContent implements CachingHttpContent
     {
         private final AtomicLong _lastAccessed = new AtomicLong();
         private final AtomicLong _lastValidated = new AtomicLong();
@@ -410,12 +418,12 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final String _key;
         private final long _evictionTime;
 
-        public NotFoundContent(String key)
+        public NotFoundHttpContent(String key)
         {
             this(key, -1);
         }
 
-        public NotFoundContent(String key, long evictionTime)
+        public NotFoundHttpContent(String key, long evictionTime)
         {
             _key = key;
             _evictionTime = evictionTime;
@@ -541,7 +549,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public boolean isValid()
         {
-            // TODO: Do we want to use the _authority to recheck the filesystem to see if it now exists.
             if (_evictionTime < 0)
                 return true;
             if (_evictionTime > 0)

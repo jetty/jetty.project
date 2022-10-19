@@ -63,6 +63,9 @@ public interface HttpContent
 
     ByteBuffer getBuffer();
 
+    /**
+     * @return Set of available pre-compressed formats for this content, or null if this has not been checked.
+     */
     Set<CompressedContentFormat> getPreCompressedContentFormats();
 
     void release();
