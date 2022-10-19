@@ -32,7 +32,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -88,7 +87,6 @@ public class JakartaClientShutdownWithServerEmbeddedTest
         server.stop();
     }
 
-    @Disabled
     @Test
     public void testShutdownWithContextHandler() throws Exception
     {
@@ -101,7 +99,7 @@ public class JakartaClientShutdownWithServerEmbeddedTest
         assertThat(clientContainer.isRunning(), is(true));
 
         // The container should be a bean on the ContextHandler.
-        Collection<WebSocketContainer> containedBeans = contextHandler.getBeans(WebSocketContainer.class);
+        Collection<WebSocketContainer> containedBeans = contextHandler.getCoreContextHandler().getBeans(WebSocketContainer.class);
         assertThat(containedBeans.size(), is(1));
         assertThat(containedBeans.toArray()[0], is(container));
 
