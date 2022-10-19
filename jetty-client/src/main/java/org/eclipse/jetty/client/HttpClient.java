@@ -910,11 +910,11 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param requestBufferSizeInBytes the size of the buffer (in bytes) used to write requests
+     * @param requestBufferSize the size of the buffer (in bytes) used to write requests
      */
-    public void setRequestBufferSize(int requestBufferSizeInBytes)
+    public void setRequestBufferSize(int requestBufferSize)
     {
-        this.requestBufferSize = requestBufferSizeInBytes;
+        this.requestBufferSize = requestBufferSize;
     }
 
     /**
