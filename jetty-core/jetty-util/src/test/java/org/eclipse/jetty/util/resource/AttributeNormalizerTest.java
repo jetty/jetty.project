@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.quickstart;
+package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,10 +27,6 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -357,6 +353,12 @@ public class AttributeNormalizerTest
                     Path webinf = w.getPath().resolve("WEB-INF");
                     if (!Files.exists(webinf))
                         Files.createDirectory(webinf);
+                    Path deep = w.getPath().resolve("deep");
+                    if (!Files.exists(deep))
+                        Files.createDirectory(deep);
+                    Path ref = deep.resolve("ref");
+                    if (!Files.exists(ref))
+                        Files.createFile(ref);
 
                     if (w.getFileName().equals("FOO") || w.getFileName().equals("WarA"))
                     {

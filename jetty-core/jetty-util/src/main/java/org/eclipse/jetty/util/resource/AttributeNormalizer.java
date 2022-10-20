@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.quickstart;
+package org.eclipse.jetty.util.resource;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,10 +31,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.MountedPathResource;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
