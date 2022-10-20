@@ -50,32 +50,36 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
     @Override
     protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
     {
-        String pathInContext = getReHandlePathInContext(request, code, cause);
-
-        if (pathInContext != null)
+        if (request.getAttribute(ReHandlingErrorProcessor.class.getName()) == null)
         {
-            HttpURI uri = HttpURI.build(request.getHttpURI()).path(URIUtil.addPaths(request.getContext().getContextPath(), pathInContext)).asImmutable();
-            Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri, pathInContext);
+            String pathInContext = getReHandlePathInContext(request, code, cause);
 
-            try
+            if (pathInContext != null)
             {
-                Request.Processor processor = _handler.handle(wrapper);
-                if (processor != null)
+                request.setAttribute(ReHandlingErrorProcessor.class.getName(), pathInContext);
+                HttpURI uri = HttpURI.build(request.getHttpURI()).path(URIUtil.addPaths(request.getContext().getContextPath(), pathInContext)).asImmutable();
+                Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri, pathInContext);
+
+                try
                 {
-                    response.setStatus(200);
-                    processor.process(wrapper, response, callback);
-                    return;
+                    Request.Processor processor = _handler.handle(wrapper);
+                    if (processor != null)
+                    {
+                        response.setStatus(200);
+                        processor.process(wrapper, response, callback);
+                        return;
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to process error {}", wrapper, e);
+                    if (cause != null && ExceptionUtil.areNotAssociated(cause, e))
+                        cause.addSuppressed(e);
+                    response.setStatus(code);
                 }
             }
-            catch (Exception e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to process error {}", wrapper, e);
-                if (cause != null && ExceptionUtil.areNotAssociated(cause, e))
-                    cause.addSuppressed(e);
-            }
         }
-
         super.generateResponse(request, response, code, message, cause, callback);
     }
 
@@ -84,11 +88,11 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
     /**
      * An ErrorPageErrorProcessor that uses a map of error codes to select a page.
      */
-    public static class ByCode extends ReHandlingErrorProcessor
+    public static class ByHttpStatus extends ReHandlingErrorProcessor
     {
-        private final Map<Integer, String> _pageMap = new ConcurrentHashMap<>();
+        private final Map<Integer, String> _statusMap = new ConcurrentHashMap<>();
 
-        public ByCode(Handler handler)
+        public ByHttpStatus(Handler handler)
         {
             super(handler);
         }
@@ -96,22 +100,22 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
         @Override
         protected String getReHandlePathInContext(Request request, int code, Throwable cause)
         {
-            return _pageMap.get(code);
+            return _statusMap.get(code);
         }
 
         public String put(int code, String pathInContext)
         {
-            return _pageMap.put(code, pathInContext);
+            return _statusMap.put(code, pathInContext);
         }
 
         public String get(int code)
         {
-            return _pageMap.get(code);
+            return _statusMap.get(code);
         }
 
         public String remove(int code)
         {
-            return _pageMap.remove(code);
+            return _statusMap.remove(code);
         }
     }
 

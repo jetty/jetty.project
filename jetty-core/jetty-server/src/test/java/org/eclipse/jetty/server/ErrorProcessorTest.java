@@ -705,7 +705,7 @@ public class ErrorProcessorTest
     @Test
     public void testRootReHandlingErrorProcessor() throws Exception
     {
-        ReHandlingErrorProcessor.ByCode errorProcessor = new ReHandlingErrorProcessor.ByCode(server);
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
         errorProcessor.put(400, "/ok/badMessage");
         server.setErrorProcessor(errorProcessor);
 
@@ -719,6 +719,46 @@ public class ErrorProcessorTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), containsString("/ok/badMessage Error 400 : No Host"));
+    }
+
+    @Test
+    public void testRootReHandlingErrorProcessorLoop() throws Exception
+    {
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
+        errorProcessor.put(404, "/not/found");
+        server.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /not/found HTTP/1.1
+                Host: localhost
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(404));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<title>Error 404 Not Found</title>"));
+    }
+
+    @Test
+    public void testRootReHandlingErrorProcessorExceptionLoop() throws Exception
+    {
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
+        errorProcessor.put(444, "/badmessage/444");
+        server.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /badmessage/444 HTTP/1.1
+                Host: localhost
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(444));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<title>Error 444</title>"));
     }
 
     static class TestException extends RuntimeException implements QuietException
