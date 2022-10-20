@@ -14,6 +14,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContextHandlerDeepTest
@@ -55,7 +57,17 @@ public class ContextHandlerDeepTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                String msg = "contextPath=" + request.getContext().getContextPath();
+                String msg = """
+                    contextPath=%s
+                    pathInContext=%s
+                    httpURI.getPath=%s
+                    """
+                    .formatted(
+                        request.getContext().getContextPath(),
+                        request.getPathInContext(),
+                        request.getHttpURI().getPath()
+                    );
+
                 response.write(true, BufferUtil.toBuffer(msg), callback);
             }
         });
@@ -70,6 +82,8 @@ public class ContextHandlerDeepTest
             """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("contextPath=/a/b/c", response.getContent());
+        assertThat(response.getContent(), containsString("contextPath=/a/b/c\n"));
+        assertThat(response.getContent(), containsString("pathInContext=/d\n"));
+        assertThat(response.getContent(), containsString("httpURI.getPath=/a/b/c/d\n"));
     }
 }
