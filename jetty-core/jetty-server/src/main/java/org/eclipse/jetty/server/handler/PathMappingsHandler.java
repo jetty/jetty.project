@@ -26,7 +26,8 @@ import org.slf4j.LoggerFactory;
  */
 public class PathMappingsHandler extends Handler.Wrapper
 {
-    private final static Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
+
     private final PathMappings<Handler> mappings = new PathMappings<>();
 
     public void addMapping(PathSpec pathSpec, Handler handler)
