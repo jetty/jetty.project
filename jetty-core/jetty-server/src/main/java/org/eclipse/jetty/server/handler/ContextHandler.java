@@ -730,7 +730,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             throw new IllegalArgumentException("Base Resource is not valid: " + resourceBase);
     }
 
-    public void setBaseResource(Path path)
+    public void setBaseResourceAsPath(Path path)
     {
         if (path == null)
         {
@@ -744,6 +744,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             throw new IllegalArgumentException("Base Resource is not valid: " + path);
 
         setBaseResource(resource);
+    }
+
+    /**
+     * @param base The resourceBase to server content from. If null the
+     * context resource base is used.  If non-null the {@link Resource} is created
+     * from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)} for
+     * this context.
+     */
+    public void setBaseResourceAsString(String base)
+    {
+        setBaseResource((Resource)(base == null ? null : ResourceFactory.of(this).newResource(base)));
     }
 
     /**
