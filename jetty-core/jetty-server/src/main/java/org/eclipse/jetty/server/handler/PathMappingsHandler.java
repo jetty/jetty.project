@@ -18,12 +18,15 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Handler that delegates to other handlers through a configured {@link PathMappings}.
  */
 public class PathMappingsHandler extends Handler.Wrapper
 {
+    private final static Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
     private final PathMappings<Handler> mappings = new PathMappings<>();
 
     public void addMapping(PathSpec pathSpec, Handler handler)
@@ -54,7 +57,13 @@ public class PathMappingsHandler extends Handler.Wrapper
         String pathInContext = request.getPathInContext();
         MatchedResource<Handler> matchedResource = mappings.getMatched(pathInContext);
         if (matchedResource == null)
+        {
+            if  (LOG.isDebugEnabled())
+                LOG.debug("No match on pathInContext of {}", pathInContext);
             return super.handle(request);
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Matched pathInContext of {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), matchedResource.getResource());
         return matchedResource.getResource().handle(request);
     }
 }
