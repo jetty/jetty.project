@@ -172,18 +172,18 @@ public class TryPathsHandler extends Handler.Wrapper
 
     private static class TryPathsRequest extends Request.Wrapper
     {
-        private final HttpURI _uri;
+        private final HttpURI httpURI;
 
         public TryPathsRequest(Request wrapped, String pathInContext)
         {
             super(wrapped);
-            _uri = Request.newHttpURIFrom(wrapped, URIUtil.canonicalPath(pathInContext));
+            httpURI = Request.newHttpURIFrom(wrapped, URIUtil.canonicalPath(pathInContext));
         }
 
         @Override
         public HttpURI getHttpURI()
         {
-            return _uri;
+            return httpURI;
         }
     }
 }
