@@ -911,16 +911,16 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the size of the buffer used to write requests
+     * @return the size of the buffer (in bytes) used to write requests
      */
-    @ManagedAttribute("The request buffer size")
+    @ManagedAttribute("The request buffer size in bytes")
     public int getRequestBufferSize()
     {
         return requestBufferSize;
     }
 
     /**
-     * @param requestBufferSize the size of the buffer used to write requests
+     * @param requestBufferSize the size of the buffer (in bytes) used to write requests
      */
     public void setRequestBufferSize(int requestBufferSize)
     {
@@ -928,9 +928,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the size of the buffer used to read responses
+     * @return the size of the buffer (in bytes) used to read responses
      */
-    @ManagedAttribute("The response buffer size")
+    @ManagedAttribute("The response buffer size in bytes")
     public int getResponseBufferSize()
     {
         return responseBufferSize;

@@ -22,10 +22,13 @@ import org.eclipse.jetty.server.Request;
 /**
  * <p>Abstract rule that uses the regular expression syntax for path pattern matching.</p>
  */
-// TODO: add boolean useCanonical and use canonicalPath?query instead of pathQuery()
 public abstract class RegexRule extends Rule
 {
     private Pattern _regex;
+
+    public RegexRule()
+    {
+    }
 
     public RegexRule(String pattern)
     {

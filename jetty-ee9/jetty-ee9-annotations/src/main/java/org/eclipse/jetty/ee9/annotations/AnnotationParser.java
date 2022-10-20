@@ -547,9 +547,6 @@ public class AnnotationParser
         if (r == null)
             return;
 
-        if (!r.exists())
-            return;
-
         if (FileID.isJavaArchive(r.getPath()))
         {
             parseJar(handlers, r);

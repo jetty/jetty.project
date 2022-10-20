@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -163,9 +165,7 @@ public class PathResourceTest
 
             // Resolve to name, but different case
             testText = archiveResource.resolve("/TEST.TXT");
-            assertFalse(testText.exists());
-            assertThat("Resource.getName", testText.getName(), is("/TEST.TXT"));
-            assertThat("Resource.getFileName", testText.getFileName(), is("TEST.TXT"));
+            assertNull(testText);
 
             // Resolve using path navigation
             testText = archiveResource.resolve("/foo/../test.txt");
@@ -222,9 +222,9 @@ public class PathResourceTest
 
             // Resolve file to name, but different case
             testText = archiveResource.resolve("/dir/TEST.TXT");
-            assertFalse(testText.exists());
+            assertNull(testText);
             testText = archiveResource.resolve("/DIR/test.txt");
-            assertFalse(testText.exists());
+            assertNull(testText);
 
             // Resolve file using path navigation
             testText = archiveResource.resolve("/foo/../dir/test.txt");
@@ -238,8 +238,7 @@ public class PathResourceTest
 
             // Resolve file using extension-less directory
             testText = archiveResource.resolve("/dir./test.txt");
-            assertFalse(testText.exists());
-            assertFalse(testText.isAlias());
+            assertNull(testText);
 
             // Resolve directory to name, no slash
             Resource dirResource = archiveResource.resolve("/dir");
@@ -303,37 +302,37 @@ public class PathResourceTest
             // Test not alias paths
             Resource resource = resourceFactory.newResource(file);
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = resourceFactory.newResource(file.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = resourceFactory.newResource(file.toUri());
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = resourceFactory.newResource(file.toUri().toString());
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
             resource = archiveResource.resolve("test.txt");
             assertTrue(resource.exists());
-            assertNull(resource.getTargetURI());
+            assertFalse(resource.isAlias());
 
             // Test alias paths
             resource = resourceFactory.newResource(file0);
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
             resource = resourceFactory.newResource(file0.toAbsolutePath());
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
             resource = resourceFactory.newResource(file0.toUri());
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
             resource = resourceFactory.newResource(file0.toUri().toString());
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
 
             resource = archiveResource.resolve("test.txt\0");
             assertTrue(resource.exists());
-            assertNotNull(resource.getTargetURI());
+            assertTrue(resource.isAlias());
         }
         catch (InvalidPathException e)
         {
@@ -402,15 +401,52 @@ public class PathResourceTest
             assertThat("resource.uri.alias", resourceFactory.newResource(resFoo.getURI()).isAlias(), is(false));
             assertThat("resource.file.alias", resourceFactory.newResource(resFoo.getPath()).isAlias(), is(false));
 
-            assertThat("targetURI", resBar.getTargetURI(), is(resFoo.getURI()));
-            assertThat("uri.targetURI", resourceFactory.newResource(resBar.getURI()).getTargetURI(), is(resFoo.getURI()));
-            assertThat("file.targetURI", resourceFactory.newResource(resBar.getPath()).getTargetURI(), is(resFoo.getURI()));
+            assertThat("targetURI", resBar.getRealURI(), is(resFoo.getURI()));
+            assertThat("uri.targetURI", resourceFactory.newResource(resBar.getURI()).getRealURI(), is(resFoo.getURI()));
+            assertThat("file.targetURI", resourceFactory.newResource(resBar.getPath()).getRealURI(), is(resFoo.getURI()));
         }
         catch (InvalidPathException e)
         {
             // this file system does allow null char ending filenames
             LOG.trace("IGNORED", e);
         }
+    }
+
+    @Test
+    public void testBrokenSymlink(WorkDir workDir) throws Exception
+    {
+        Path testDir = workDir.getEmptyPathDir();
+        Path resourcePath = testDir.resolve("resource.txt");
+        IO.copy(MavenTestingUtils.getTestResourcePathFile("resource.txt").toFile(), resourcePath.toFile());
+        Path symlinkPath = Files.createSymbolicLink(testDir.resolve("symlink.txt"), resourcePath);
+
+        PathResource fileResource = new PathResource(resourcePath);
+        assertTrue(fileResource.exists());
+        PathResource symlinkResource = new PathResource(symlinkPath);
+        assertTrue(symlinkResource.exists());
+
+        // Their paths are not equal but not their canonical paths are.
+        assertThat(fileResource.getPath(), not(equalTo(symlinkResource.getPath())));
+        assertThat(fileResource.getPath(), equalTo(symlinkResource.getRealPath()));
+        assertFalse(fileResource.isAlias());
+        assertTrue(symlinkResource.isAlias());
+        assertTrue(fileResource.exists());
+        assertTrue(symlinkResource.exists());
+
+        // After deleting file the Resources do not exist even though symlink file exists.
+        assumeTrue(Files.deleteIfExists(resourcePath));
+        assertFalse(fileResource.exists());
+        assertFalse(symlinkResource.exists());
+
+        // Re-create and test the resources now that the file has been deleted.
+        fileResource = new PathResource(resourcePath);
+        assertFalse(fileResource.exists());
+        assertNull(fileResource.getRealPath());
+        assertTrue(symlinkResource.isAlias());
+        symlinkResource = new PathResource(symlinkPath);
+        assertFalse(symlinkResource.exists());
+        assertNull(symlinkResource.getRealPath());
+        assertFalse(symlinkResource.isAlias());
     }
 
     @Test
@@ -421,15 +457,22 @@ public class PathResourceTest
         Path dir = docroot.resolve("dir");
         Files.createDirectory(dir);
 
+        Path foo = docroot.resolve("foo");
+        Files.createDirectory(foo);
+
         Path testText = dir.resolve("test.txt");
         Files.createFile(testText);
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource rootRes = resourceFactory.newResource(docroot);
-            // This is the heart of the test, we should support this
-            Resource fileRes = rootRes.resolve("bar/../dir/test.txt");
-            assertTrue(fileRes.exists());
+            // Test navigation through a directory that doesn't exist
+            Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
+            assertTrue(Resources.missing(fileResViaBar));
+
+            // Test navigation through a directory that does exist
+            Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");
+            assertTrue(fileResViaFoo.exists());
         }
     }
 

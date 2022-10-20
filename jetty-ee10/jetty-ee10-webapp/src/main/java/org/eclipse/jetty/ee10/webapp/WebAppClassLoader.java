@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,7 +284,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public void addJars(Resource libs)
     {
-        if (libs == null || !libs.exists() || !libs.isDirectory())
+        if (!Resources.isReadableDirectory(libs))
             return;
 
         for (Resource libDir: libs)

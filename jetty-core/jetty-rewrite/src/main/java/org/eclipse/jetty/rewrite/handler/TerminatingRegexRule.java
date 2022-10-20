@@ -25,6 +25,10 @@ import org.eclipse.jetty.util.annotation.Name;
  */
 public class TerminatingRegexRule extends RegexRule
 {
+    public TerminatingRegexRule()
+    {
+    }
+
     public TerminatingRegexRule(@Name("regex") String regex)
     {
         super(regex);

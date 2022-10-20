@@ -33,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -49,6 +50,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -257,12 +259,16 @@ public class ResourceTest
 
     public WorkDir workDir;
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResourceExists(Scenario data)
     {
         Resource res = data.getResource();
-        assertThat("Exists: " + res.getName(), res.exists(), equalTo(data.exists));
+        if (data.exists)
+            assertThat("Exists: " + res.getName(), res.exists(), equalTo(data.exists));
+        else
+            assertNull(res);
     }
 
     @ParameterizedTest
@@ -362,12 +368,35 @@ public class ResourceTest
     }
 
     @Test
-    public void testClimbAboveBase()
+    public void testClimbAboveBase(WorkDir workDir)
     {
-        Resource resource = resourceFactory.newResource("/foo/bar");
+        Path testdir = workDir.getEmptyPathDir().resolve("foo/bar");
+        FS.ensureDirExists(testdir);
+        Resource resource = resourceFactory.newResource(testdir);
         assertThrows(IllegalArgumentException.class, () -> resource.resolve(".."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./.."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./../bar"));
+    }
+
+    @Test
+    public void testNewResourcePathDoesNotExist(WorkDir workDir)
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
+        // at this point we have a directory reference that does not exist
+        Resource resource = resourceFactory.newResource(dir);
+        assertNull(resource);
+    }
+
+    @Test
+    public void testNewResourceFileDoesNotExists(WorkDir workDir) throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("foo");
+        FS.ensureDirExists(dir);
+        Path file = dir.resolve("bar.txt");
+        // at this point we have a file reference that does not exist
+        assertFalse(Files.exists(file));
+        Resource resource = resourceFactory.newResource(file);
+        assertNull(resource);
     }
 
     @Test
@@ -380,19 +409,7 @@ public class ResourceTest
         assertNotNull(dot);
         assertTrue(dot.exists());
         assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
-        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getTargetURI())));
-    }
-
-    @Test
-    public void testDotAliasDirDoesNotExist(WorkDir workDir)
-    {
-        Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
-        // at this point we have a directory reference that does not exist
-        Resource resource = resourceFactory.newResource(dir);
-        Resource dot = resource.resolve(".");
-        assertNotNull(dot);
-        assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as directory doesn't exist");
+        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getRealURI())));
     }
 
     @Test
@@ -402,27 +419,11 @@ public class ResourceTest
         FS.ensureDirExists(dir);
         Path file = dir.resolve("bar.txt");
         FS.touch(file);
+        assertTrue(Files.exists(file));
         Resource resource = resourceFactory.newResource(file);
+        // Requesting a resource that would point to a location called ".../testDotAliasFileExists/foo/bar.txt/."
         Resource dot = resource.resolve(".");
-        assertNotNull(dot);
-        assertTrue(dot.exists());
-        assertTrue(dot.isAlias(), "Reference to '.' is an alias to itself");
-        assertTrue(Files.isSameFile(dot.getPath(), Paths.get(dot.getTargetURI())));
-    }
-
-    @Test
-    public void testDotAliasFileDoesNotExists(WorkDir workDir) throws IOException
-    {
-        Path dir = workDir.getEmptyPathDir().resolve("foo");
-        FS.ensureDirExists(dir);
-        Path file = dir.resolve("bar.txt");
-        // at this point we have a file reference that does not exist
-        assertFalse(Files.exists(file));
-        Resource resource = resourceFactory.newResource(file);
-        Resource dot = resource.resolve(".");
-        assertNotNull(dot);
-        assertFalse(dot.exists());
-        assertFalse(dot.isAlias(), "Reference to '.' is not an alias as file doesn't exist");
+        assertTrue(Resources.missing(dot), "Cannot reference file as a directory");
     }
 
     @Test

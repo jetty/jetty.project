@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.ResourceUriPatternPredicate;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +150,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Consumer<URI> addContainerResource = (uri) ->
         {
             Resource resource = _resourceFactory.newResource(uri);
-            if (resource == null || !resource.exists())
+            if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Classpath URI doesn't exist: " + uri);
@@ -387,7 +388,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
     {
         // Resource target does not exist
-        if (target == null || !target.exists())
+        if (Resources.missing(target))
             return;
 
         Resource resourcesDir = null;
@@ -420,7 +421,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 resourcesDir = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
             }
 
-            if (cache != null)
+            if (Resources.isReadableDirectory(resourcesDir) && (cache != null))
             {
                 Resource old = cache.putIfAbsent(target, resourcesDir);
                 if (old != null)
@@ -450,7 +451,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyResource(Resource resourcesDir)
     {
-        return !resourcesDir.exists() || !resourcesDir.isDirectory();
+        return !Resources.isReadableFile(resourcesDir);
     }
 
     /**
@@ -490,7 +491,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 webFrag = _resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
             }
 
-            if (cache != null)
+            if (Resources.isReadable(webFrag) && (cache != null))
             {
                 //web-fragment.xml doesn't exist: put token in cache to signal we've seen the jar
                 Resource old = cache.putIfAbsent(jar, webFrag);
@@ -517,7 +518,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyFragment(Resource webFrag)
     {
-        return !webFrag.exists() || webFrag.isDirectory();
+        return !Resources.isReadableFile(webFrag);
     }
 
     /**
@@ -604,6 +605,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @return the list of tlds found
      * @throws IOException if unable to scan the directory
      */
+    // TODO: Needs to use resource.
     public Collection<URL> getTlds(Path dir) throws IOException
     {
         if (dir == null || !Files.isDirectory(dir))
@@ -704,7 +706,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         Resource webInfLib = webInf.resolve("lib");
 
-        if (webInfLib != null && webInfLib.exists() && webInfLib.isDirectory())
+        if (Resources.isReadableDirectory(webInfLib))
         {
             return webInfLib.list().stream()
                 .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
@@ -750,11 +752,11 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         Resource webInf = context.getWebInf();
         // Find WEB-INF/classes
-        if (webInf != null && webInf.isDirectory())
+        if (Resources.isReadableDirectory(webInf))
         {
             // Look for classes directory
             Resource webInfClassesDir = webInf.resolve("classes/");
-            if (webInfClassesDir != null && webInfClassesDir.exists() && webInfClassesDir.isDirectory())
+            if (Resources.isReadableDirectory(webInfClassesDir))
                 return webInfClassesDir;
         }
         return null;

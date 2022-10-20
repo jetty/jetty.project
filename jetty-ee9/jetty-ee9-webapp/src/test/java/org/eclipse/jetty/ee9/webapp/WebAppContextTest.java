@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -235,8 +236,8 @@ public class WebAppContextTest
         server.start();
 
         ServletContext ctx = context.getServletContext();
-        assertNotNull(ctx.getRealPath("/doesnotexist"));
-        assertNotNull(ctx.getRealPath("/doesnotexist/"));
+        assertNull(ctx.getRealPath("/doesnotexist"));
+        assertNull(ctx.getRealPath("/doesnotexist/"));
     }
 
     /**
@@ -410,7 +411,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenPaths.findTestResourceDir("webapp");
         Resource testWebappResource = context.getResourceFactory().newResource(testWebapp);
-        assertTrue(testWebappResource.isDirectory());
+        assertTrue(Resources.isReadableDirectory(testWebappResource));
         context.setBaseResource(testWebappResource);
         context.setContextPath("/");
 
