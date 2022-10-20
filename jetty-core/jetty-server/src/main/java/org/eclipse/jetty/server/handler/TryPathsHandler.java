@@ -109,6 +109,20 @@ public class TryPathsHandler extends Handler.Wrapper
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        addBean(forwardHandler);
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        removeBean(forwardHandler);
+    }
+
+    @Override
     public Request.Processor handle(Request request) throws Exception
     {
         List<String> paths = getPaths();

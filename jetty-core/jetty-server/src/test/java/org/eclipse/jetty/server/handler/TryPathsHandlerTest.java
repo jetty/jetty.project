@@ -149,6 +149,7 @@ public class TryPathsHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
+                assertTrue(isStarted());
                 assertThat(request.getPathInContext(), equalTo(path + "?p=" + path));
                 response.setStatus(HttpStatus.NO_CONTENT_204);
                 callback.succeeded();
