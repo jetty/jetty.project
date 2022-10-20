@@ -379,6 +379,19 @@ public class ResourceTest
     }
 
     @Test
+    public void testResolveStartsWithSlash(WorkDir workDir)
+    {
+        Path testdir = workDir.getEmptyPathDir();
+        Path foo = testdir.resolve("foo");
+        FS.ensureDirExists(foo);
+        Resource resourceBase = resourceFactory.newResource(testdir);
+        // test that a resolve starting with `/` works.
+        Resource resourceDir = resourceBase.resolve("/foo");
+        assertTrue(Resources.exists(resourceDir));
+        assertThat(resourceDir.getURI(), is(foo.toUri()));
+    }
+
+    @Test
     public void testNewResourcePathDoesNotExist(WorkDir workDir)
     {
         Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
