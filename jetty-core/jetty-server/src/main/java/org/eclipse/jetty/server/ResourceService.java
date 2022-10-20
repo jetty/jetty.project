@@ -44,6 +44,8 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -633,11 +635,21 @@ public class ResourceService
     {
         try
         {
-            ByteBuffer buffer = content.getBuffer();
+            RetainableByteBuffer buffer = content.getBuffer();
             if (buffer != null)
-                response.write(true, buffer, callback);
+            {
+                buffer.retain();
+                response.write(true, buffer.getBuffer(), Callback.from(callback, buffer::release));
+            }
             else
+            {
+                // TODO: is it possible to do zero-copy transfer?
+                // WritableByteChannel c = Response.asWritableByteChannel(target);
+                // FileChannel fileChannel = (FileChannel) source;
+                // fileChannel.transferTo(0, contentLength, c);
+
                 new ContentWriterIteratingCallback(content, response, callback).iterate();
+            }
         }
         catch (Throwable x)
         {
@@ -840,50 +852,49 @@ public class ResourceService
         private final ReadableByteChannel source;
         private final Content.Sink sink;
         private final Callback callback;
-        private final ByteBuffer byteBuffer;
+        private final RetainableByteBuffer byteBuffer;
 
         public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
-            // TODO: is it possible to do zero-copy transfer?
-//            WritableByteChannel c = Response.asWritableByteChannel(target);
-//            FileChannel fileChannel = (FileChannel) source;
-//            fileChannel.transferTo(0, contentLength, c);
-
+            RetainableByteBufferPool byteBufferPool = target.getRequest().getComponents().getByteBufferPool().asRetainableByteBufferPool();
             this.source = Files.newByteChannel(content.getResource().getPath());
             this.sink = target;
             this.callback = callback;
             int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
             boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-            this.byteBuffer = useOutputDirectByteBuffers ? ByteBuffer.allocateDirect(outputBufferSize) : ByteBuffer.allocate(outputBufferSize); // TODO use pool
+            this.byteBuffer = byteBufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);
         }
 
         @Override
         protected Action process() throws Throwable
         {
+            // TODO: use BufferUtil
             if (!source.isOpen())
                 return Action.SUCCEEDED;
             byteBuffer.clear();
-            int read = source.read(byteBuffer);
+            int read = source.read(byteBuffer.getBuffer());
             if (read == -1)
             {
                 IO.close(source);
                 sink.write(true, BufferUtil.EMPTY_BUFFER, this);
                 return Action.SCHEDULED;
             }
-            byteBuffer.flip();
-            sink.write(false, byteBuffer, this);
+            byteBuffer.getBuffer().flip();
+            sink.write(false, byteBuffer.getBuffer(), this);
             return Action.SCHEDULED;
         }
 
         @Override
         protected void onCompleteSuccess()
         {
+            byteBuffer.release();
             callback.succeeded();
         }
 
         @Override
         protected void onCompleteFailure(Throwable x)
         {
+            byteBuffer.release();
             callback.failed(x);
         }
     }

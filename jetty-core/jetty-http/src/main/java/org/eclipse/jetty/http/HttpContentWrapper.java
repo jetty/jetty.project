@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -122,7 +122,7 @@ public class HttpContentWrapper implements HttpContent
     }
 
     @Override
-    public ByteBuffer getBuffer()
+    public RetainableByteBuffer getBuffer()
     {
         return _delegate.getBuffer();
     }

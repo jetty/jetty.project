@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -140,26 +138,9 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public ByteBuffer getBuffer()
+    public RetainableByteBuffer getBuffer()
     {
-        try
-        {
-            long contentLengthValue = getContentLengthValue();
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect((int)contentLengthValue);
-            try (SeekableByteChannel channel = Files.newByteChannel(getResource().getPath()))
-            {
-                // fill buffer
-                int read = 0;
-                while (read != contentLengthValue)
-                    read += channel.read(byteBuffer);
-            }
-            byteBuffer.flip();
-            return byteBuffer;
-        }
-        catch (Throwable t)
-        {
-            return null;
-        }
+        return null;
     }
 
     @Override

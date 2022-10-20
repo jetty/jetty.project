@@ -43,20 +43,23 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class EvictingCachingContentFactory extends CachingHttpContentFactory implements Runnable
 {
     private final Scheduler _scheduler;
-    private final long _delay;
+    private final long _sweepDelay;
     private final long _validationTime;
+    private final long _maxCacheIdleTime;
 
     public EvictingCachingContentFactory(HttpContent.Factory authority, long validationTime)
     {
-        this(authority, validationTime, null, -1);
+        this(authority, validationTime, null, -1, -1);
     }
 
-    public EvictingCachingContentFactory(HttpContent.Factory authority, long validationTime, Scheduler scheduler, long sweepDelay)
+    // TODO: ANNOTATION @Name
+    public EvictingCachingContentFactory(HttpContent.Factory authority, long validationTime, Scheduler scheduler, long sweepDelay, long maxCacheIdleTime)
     {
         super(authority);
         _validationTime = validationTime;
         _scheduler = scheduler;
-        _delay = sweepDelay;
+        _sweepDelay = sweepDelay;
+        _maxCacheIdleTime = maxCacheIdleTime;
         if (scheduler != null && sweepDelay > 0)
             schedule();
     }
@@ -71,7 +74,7 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
 
     private void schedule()
     {
-        _scheduler.schedule(this, _delay, TimeUnit.MILLISECONDS);
+        _scheduler.schedule(this, _sweepDelay, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -81,7 +84,9 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
         for (Map.Entry<String, CachingHttpContent> entry : cache.entrySet())
         {
             CachingHttpContent value = entry.getValue();
-            if (!value.isValid())
+            if (_maxCacheIdleTime > 0 && NanoTime.since(value.getLastAccessedNanos()) > TimeUnit.MILLISECONDS.toNanos(_maxCacheIdleTime))
+                removeFromCache(value);
+            else if (!value.isValid())
                 removeFromCache(value);
         }
         schedule();
@@ -99,7 +104,7 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
         return new EvictingNotFoundContent(p, _validationTime);
     }
 
-    protected static class EvictingCachedContent extends CachedHttpContent
+    protected class EvictingCachedContent extends CachedHttpContent
     {
         private final long _validationTime;
         private final AtomicLong _lastValidated = new AtomicLong();

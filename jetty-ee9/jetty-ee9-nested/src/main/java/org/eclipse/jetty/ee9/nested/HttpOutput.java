@@ -35,6 +35,7 @@ import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -1305,11 +1306,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(http={},{})", httpContent, callback);
 
-        ByteBuffer buffer = httpContent.getBuffer();
-
+        RetainableByteBuffer buffer = httpContent.getBuffer();
         if (buffer != null)
         {
-            sendContent(buffer, callback);
+            buffer.retain();
+            sendContent(buffer.getBuffer(), Callback.from(callback, buffer::release));
             return;
         }
 

@@ -14,11 +14,11 @@
 package org.eclipse.jetty.ee9.nested.resource;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class HttpContentRangeWriter
         Objects.requireNonNull(content, "HttpContent");
 
         // Try direct buffer
-        ByteBuffer buffer = content.getBuffer();
+        RetainableByteBuffer buffer = content.getBuffer();
         if (buffer != null)
             return new ByteBufferRangeWriter(buffer);
 

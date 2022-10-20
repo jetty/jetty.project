@@ -138,12 +138,13 @@ public class DefaultServlet extends HttpServlet
             if (getInitBoolean("useFileMappedBuffer", false))
                 contentFactory = new FileMappedHttpContentFactory(contentFactory);
 
-            CachingHttpContentFactory cached = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
             int maxCachedFiles = getInitInt("maxCachedFiles", -2);
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
             {
+                CachingHttpContentFactory cached = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
+                contentFactory = cached;
                 if (maxCacheSize >= 0)
                     cached.setMaxCacheSize(maxCacheSize);
                 if (maxCachedFileSize >= -1)
@@ -151,10 +152,7 @@ public class DefaultServlet extends HttpServlet
                 if (maxCachedFiles >= -1)
                     cached.setMaxCachedFiles(maxCachedFiles);
             }
-            contentFactory = cached;
-
-            String resourceCache = getInitParameter("resourceCache");
-            getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
+            getServletContext().setAttribute(HttpContent.Factory.class.getName(), contentFactory);
         }
         _resourceService.setContentFactory(contentFactory);
 

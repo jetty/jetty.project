@@ -595,6 +595,21 @@ public class BufferUtil
         }
     }
 
+    public static void readFrom(ReadableByteChannel newReadableByteChannel, long contentLengthValue, ByteBuffer byteBuffer) throws IOException
+    {
+        int pos = BufferUtil.flipToFill(byteBuffer);
+        try (ReadableByteChannel channel = newReadableByteChannel)
+        {
+            int read = 0;
+            while (read != contentLengthValue)
+                read += channel.read(byteBuffer);
+        }
+        finally
+        {
+            BufferUtil.flipToFlush(byteBuffer, pos);
+        }
+    }
+
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
         ByteBuffer tmp = allocate(8192);

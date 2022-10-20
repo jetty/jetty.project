@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 import java.util.SortedSet;
@@ -24,6 +23,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -42,13 +45,20 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private final HttpContent.Factory _authority;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
+    private final RetainableByteBufferPool _byteBufferPool;
     private int _maxCachedFileSize = 128 * 1024 * 1024;
     private int _maxCachedFiles = 2048;
     private int _maxCacheSize = 256 * 1024 * 1024;
 
     public CachingHttpContentFactory(HttpContent.Factory authority)
     {
+        this(authority, null);
+    }
+
+    public CachingHttpContentFactory(HttpContent.Factory authority, RetainableByteBufferPool byteBufferPool)
+    {
         _authority = authority;
+        _byteBufferPool = (byteBufferPool == null) ? new NoopByteBufferPool().asRetainableByteBufferPool() : byteBufferPool;
     }
 
     protected ConcurrentMap<String, CachingHttpContent> getCache()
@@ -125,6 +135,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             });
             sorted.addAll(_cache.values());
 
+            // TODO: Can we remove the buffers from the content before evicting.
             // Invalidate least recently used first
             for (CachingHttpContent content : sorted)
             {
@@ -232,9 +243,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         boolean isValid();
     }
 
-    protected static class CachedHttpContent extends HttpContentWrapper implements CachingHttpContent
+    protected class CachedHttpContent extends HttpContentWrapper implements CachingHttpContent
     {
-        private final ByteBuffer _buffer;
+        private final RetainableByteBuffer _buffer;
         private final String _cacheKey;
         private final HttpField _etagField;
         private final long _contentLengthValue;
@@ -262,7 +273,23 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             _etagField = etagField;
 
             // Map the content into memory if possible.
-            _buffer = httpContent.getBuffer();
+            RetainableByteBuffer buffer = null;
+            try
+            {
+                long contentLengthValue = getContentLengthValue();
+                if (contentLengthValue > _maxCachedFileSize)
+                {
+                    buffer = _byteBufferPool.acquire((int)contentLengthValue, false);
+                    BufferUtil.readFrom(httpContent.getResource().newReadableByteChannel(), contentLengthValue, buffer.getBuffer());
+                }
+            }
+            catch (Throwable t)
+            {
+                buffer = null;
+                LOG.warn("Failed to read Resource", t);
+            }
+            _buffer = buffer;
+
             _contentLengthValue = httpContent.getContentLengthValue();
             _lastModifiedValue = httpContent.getLastModifiedValue();
             _characterEncoding = httpContent.getCharacterEncoding();
@@ -282,13 +309,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public ByteBuffer getBuffer()
+        public RetainableByteBuffer getBuffer()
         {
-            // TODO this should return a RetainableByteBuffer otherwise there is a race between
-            //  threads serving the buffer while another thread invalidates it. That's going to
-            //  be a lot of fun since RetainableByteBuffer is only meant to be acquired from a pool
-            //  but the byte buffer here could be coming from a mmap'ed file.
-            return _buffer.slice();
+            return _buffer;
         }
 
         @Override
@@ -312,7 +335,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void release()
         {
-            // TODO re-pool buffer and release precompressed contents
+            if (_buffer != null)
+                _buffer.release();
         }
 
         @Override
@@ -491,7 +515,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public ByteBuffer getBuffer()
+        public RetainableByteBuffer getBuffer()
         {
             return null;
         }

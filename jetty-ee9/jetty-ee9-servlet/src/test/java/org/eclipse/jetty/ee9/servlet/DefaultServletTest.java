@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -47,7 +46,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -1214,7 +1213,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testDirectFromResourceHttpContent() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1237,14 +1235,11 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
 
-        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
+        HttpContent.Factory factory = (HttpContent.Factory)context.getServletContext().getAttribute(HttpContent.Factory.class.getName());
 
         HttpContent content = factory.getContent("/index.html");
-        ByteBuffer buffer = content.getBuffer();
-        assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html");
-        buffer = content.getBuffer();
-        assertThat("Direct buffer", buffer, is(nullValue()));
+        RetainableByteBuffer buffer = content.getBuffer();
+        assertThat("Buffer is null", buffer, is(nullValue()));
     }
 
     @SuppressWarnings("Duplicates")
