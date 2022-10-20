@@ -75,12 +75,9 @@ public class TryPathsHandlerTest
 
         TryPathsHandler tryPaths = new TryPathsHandler();
         context.setHandler(tryPaths);
+        tryPaths.setHandler(new ResourceHandler());
+        tryPaths.setForwardHandler(handler);
         tryPaths.setPaths(paths);
-
-        ResourceHandler resourceHandler = new ResourceHandler();
-        tryPaths.setHandler(resourceHandler);
-
-        resourceHandler.setHandler(handler);
 
         server.start();
     }
@@ -132,7 +129,7 @@ public class TryPathsHandlerTest
             // Create the "maintenance" file, it should be served first.
             path = "maintenance.txt";
             Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
-            // Make a second request with any path, we should get the maintenance file.
+            // Make a third request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
             request.setURI(contextPath + "/whatever");
             channel.write(request.generate());
@@ -140,6 +137,37 @@ public class TryPathsHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertEquals("maintenance", response.getContent());
+        }
+    }
+
+    @Test
+    public void testForwardIsNotServedAsResource() throws Exception
+    {
+        String path = "/forward.txt";
+        start(List.of(path + "?p=$path"), new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                assertThat(request.getPathInContext(), equalTo(path + "?p=" + path));
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
+            }
+        });
+
+        try (SocketChannel channel = SocketChannel.open())
+        {
+            channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
+
+            // Create the file, but it should not be served.
+            Files.writeString(rootPath.resolve(path.substring(1)), "forward", StandardOpenOption.CREATE);
+
+            HttpTester.Request request = HttpTester.newRequest();
+            request.setURI(contextPath + path);
+            channel.write(request.generate());
+            HttpTester.Response response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
         }
     }
 
