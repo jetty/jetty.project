@@ -150,6 +150,14 @@ public interface Request extends Attributes, Content.Source
      */
     Context getContext();
 
+    /**
+     * Get the full context path.
+     * @return The full contextPath of the request. In the common case, this is equivalent to
+     *         calling {@link Context#getContextPath()} on the context returned from {@link #getContext()}.
+     *         However, in the case of nested contexts, this method will return the concatenation of nested
+     *         context paths rather than just the current context path.
+     * @see Context#getContextPath()
+     */
     default String getContextPath()
     {
         Context context = getContext();
@@ -157,8 +165,13 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * TODO see discussion in #7713, as this path should probably be canonically encoded - ie everything but %25 and %2F decoded
-     * @return The part of the decoded path of the URI after any context path prefix has been removed.
+     * <p>Get the canonically encoded path of the URI, scoped to the current context.</p>
+     * <p>The <code>pathInContext</code> represents the targeted resource within the current content for the request.
+     * In most circumstances it will be a semantic suffix of the URI returned from {@link #getHttpURI()}.
+     * However a wrapped request may alter one but not the other, and in such cases a handler should consider using
+     * {@link #getHttpURI()} when generating URIs visible outside of the current context.</p>
+     * @return The part of the canonically encoded path of the URI after any context path prefix has been removed.
+     * @see HttpURI#getCanonicalPath()
      */
     String getPathInContext();
 

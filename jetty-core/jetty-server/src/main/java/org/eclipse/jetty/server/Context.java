@@ -35,7 +35,10 @@ import org.eclipse.jetty.util.resource.Resource;
 public interface Context extends Attributes, Decorator, Executor
 {
     /**
+     * <p>Get the context path of this Context.</p>
+     * <p>This may differ from the {@link Request#getContextPath()} in the uncommon case of nested contexts.</p>
      * @return The URI path prefix of the context, which may be null for the server context, or "/" for the root context.
+     * @see Request#getContextPath()
      */
     String getContextPath();
 
