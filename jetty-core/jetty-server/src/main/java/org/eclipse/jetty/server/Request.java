@@ -150,6 +150,12 @@ public interface Request extends Attributes, Content.Source
      */
     Context getContext();
 
+    default String getContextPath()
+    {
+        Context context = getContext();
+        return context == null ? null : context.getContextPath();
+    }
+
     /**
      * TODO see discussion in #7713, as this path should probably be canonically encoded - ie everything but %25 and %2F decoded
      * @return The part of the decoded path of the URI after any context path prefix has been removed.
@@ -507,6 +513,35 @@ public interface Request extends Attributes, Content.Source
         public Context getContext()
         {
             return getWrapped().getContext();
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            Context context = getContext();
+            if (context == null)
+                return null;
+
+            Request.Wrapper wrapper = this;
+
+            String contextPath = context.getContextPath();
+
+            while (wrapper != null)
+            {
+                Request wrapped = wrapper.getWrapped();
+
+                Context outer = wrapped.getContext();
+                if (context != outer)
+                {
+                    if (outer == null || outer instanceof Server.ServerContext)
+                        return contextPath;
+                    contextPath = URIUtil.addPaths(outer.getContextPath(), contextPath);
+                    context = outer;
+                }
+
+                wrapper = wrapped instanceof Request.Wrapper w ? w : null;
+            }
+            return contextPath;
         }
 
         @Override

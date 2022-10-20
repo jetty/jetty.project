@@ -981,7 +981,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public String getContextPath()
         {
-            return _contextPath;
+            Context context = getContext();
+            Request.Wrapper wrapper = this;
+            String contextPath = context.getContextPath();
+            Context outer = wrapper.getWrapped().getContext();
+            return (outer instanceof Server.ServerContext) ? contextPath : null;
         }
 
         @Override

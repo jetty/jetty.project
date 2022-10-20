@@ -712,7 +712,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
     private static class DynamicErrorProcessor extends ErrorProcessor {}
 
-    private class ServerContext extends Attributes.Wrapper implements Context
+    public class ServerContext extends Attributes.Wrapper implements Context
     {
         private ServerContext()
         {
