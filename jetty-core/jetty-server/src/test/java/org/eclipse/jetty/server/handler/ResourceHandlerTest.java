@@ -38,10 +38,15 @@ import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
+import org.eclipse.jetty.http.EvictingCachingContentFactory;
+import org.eclipse.jetty.http.FileMappedHttpContentFactory;
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -654,7 +659,19 @@ public class ResourceHandlerTest
         _local.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
         _server.addConnector(_local);
 
-        _rootResourceHandler = new ResourceHandler();
+        _rootResourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected HttpContent.Factory setupContentFactory()
+            {
+                // For testing the cache should be configured to validate the entry on every request.
+                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+                contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
+                contentFactory = new FileMappedHttpContentFactory(contentFactory);
+                contentFactory = new EvictingCachingContentFactory(contentFactory, 0);
+                return contentFactory;
+            }
+        };
         _rootResourceHandler.setWelcomeFiles("welcome.txt");
         _rootResourceHandler.setRedirectWelcome(false);
 
