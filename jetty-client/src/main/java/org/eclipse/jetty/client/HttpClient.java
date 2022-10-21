@@ -195,6 +195,7 @@ public class HttpClient extends ContainerLifeCycle
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
             threadPool.setName(name);
+            executor = threadPool;
             setExecutor(threadPool);
         }
         int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
@@ -207,10 +208,13 @@ public class HttpClient extends ContainerLifeCycle
             addBean(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
-            setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
+        {
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
+            setScheduler(scheduler);
+        }
 
         if (resolver == null)
-            setSocketAddressResolver(new SocketAddressResolver.Async(getExecutor(), getScheduler(), getAddressResolutionTimeout()));
+            setSocketAddressResolver(new SocketAddressResolver.Async(getExecutor(), scheduler, getAddressResolutionTimeout()));
 
         handlers.put(new ContinueProtocolHandler());
         handlers.put(new RedirectProtocolHandler(this));
