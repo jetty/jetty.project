@@ -444,15 +444,9 @@ public abstract class HttpReceiver
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
         if (exchange.responseComplete(failure))
-        {
-            // We can use a Promise.Completable and join it here only
-            // because the implementation of abort() is synchronous.
             abort(exchange, failure, promise);
-        }
         else
-        {
             promise.succeeded(false);
-        }
     }
 
     private void terminateResponse(HttpExchange exchange)
