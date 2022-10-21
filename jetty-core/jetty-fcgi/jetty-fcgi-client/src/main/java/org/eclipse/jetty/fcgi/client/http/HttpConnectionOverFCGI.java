@@ -308,10 +308,16 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         HttpChannelOverFCGI channel = this.channel;
         if (channel != null)
         {
-            boolean result = channel.responseFailure(failure);
-            channel.destroy();
-            if (result)
+            channel.responseFailure(failure, Promise.from(failed ->
+            {
+                channel.destroy();
+                if (failed)
+                    close(failure);
+            }, x ->
+            {
+                channel.destroy();
                 close(failure);
+            }));
         }
     }
 
@@ -485,8 +491,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
             {
-                if (channel.responseFailure(failure))
-                    releaseRequest(request);
+                channel.responseFailure(failure, Promise.from(failed ->
+                {
+                    if (failed)
+                        releaseRequest(request);
+                }, x -> releaseRequest(request)));
             }
             else
             {

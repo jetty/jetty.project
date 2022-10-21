@@ -18,6 +18,7 @@ import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.internal.HTTP2StreamEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,14 +38,15 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     }
 
     @Override
-    public boolean onTimeout(Throwable failure)
+    public void onTimeout(Throwable failure, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout on {}: {}", this, failure);
         Connection connection = getConnection();
         if (connection != null)
-            return connection.onIdleExpired();
-        return true;
+            promise.succeeded(connection.onIdleExpired());
+        else
+            promise.succeeded(true);
     }
 
     @Override
