@@ -97,7 +97,7 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         servletContextHandler.addServlet(TestStaticMimeTypeServlet.class, "/*");
         servletContextHandler.insertHandler(gzipHandler);
 

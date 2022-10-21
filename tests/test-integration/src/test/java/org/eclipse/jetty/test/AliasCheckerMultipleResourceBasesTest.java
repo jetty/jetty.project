@@ -96,7 +96,7 @@ public class AliasCheckerMultipleResourceBasesTest
         _context = new ContextHandler();
 
         _context.setContextPath("/");
-        _context.setBaseResource(_webRootPath);
+        _context.setBaseResourceAsPath(_webRootPath);
         _server.setHandler(_context);
         _context.clearAliasChecks();
 

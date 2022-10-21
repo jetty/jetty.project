@@ -105,7 +105,7 @@ public class ThreadStarvationTest
         _server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler(_server, "/");
-        context.setBaseResource(directory.toPath());
+        context.setBaseResourceAsPath(directory.toPath());
         
         //TODO: Uses DefaultServlet, currently all commented out
         context.addServlet(DefaultServlet.class, "/*").setAsyncSupported(false);

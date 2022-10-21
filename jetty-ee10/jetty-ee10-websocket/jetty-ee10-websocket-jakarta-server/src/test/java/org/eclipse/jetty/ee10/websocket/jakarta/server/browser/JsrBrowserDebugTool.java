@@ -87,7 +87,7 @@ public class JsrBrowserDebugTool
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setBaseResource(ResourceFactory.of(server).newResource(urlBase).getPath());
+        context.setBaseResourceAsPath(ResourceFactory.of(server).newResource(urlBase).getPath());
 
         ServletHolder holder = context.addServlet(DefaultServlet.class, "/");
         holder.setInitParameter("dirAllowed", "true");
