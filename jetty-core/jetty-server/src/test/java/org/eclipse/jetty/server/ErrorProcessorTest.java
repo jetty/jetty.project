@@ -761,6 +761,45 @@ public class ErrorProcessorTest
         assertThat(response.getContent(), containsString("<title>Error 444</title>"));
     }
 
+    @Test
+    public void testContextReHandlingErrorProcessor() throws Exception
+    {
+        server.stop();
+
+        ContextHandler context = new ContextHandler("/ctx");
+        context.setHandler(server.getHandler());
+
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        contexts.addHandler(context);
+        server.setHandler(contexts);
+
+        server.setErrorProcessor(new ErrorProcessor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+               throw new UnsupportedOperationException();
+            }
+        });
+
+        server.start();
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(context);
+        errorProcessor.put(444, "/ok/badMessage");
+        context.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /ctx/badmessage/444 HTTP/1.1
+                Host: localhost
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("/ok/badMessage Error 444"));
+    }
+
     static class TestException extends RuntimeException implements QuietException
     {
         public TestException(String message)

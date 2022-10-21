@@ -58,7 +58,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
             {
                 request.setAttribute(ReHandlingErrorProcessor.class.getName(), pathInContext);
                 HttpURI uri = HttpURI.build(request.getHttpURI()).path(URIUtil.addPaths(request.getContext().getContextPath(), pathInContext)).asImmutable();
-                Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri, pathInContext);
+                Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri, uri.getCanonicalPath());
 
                 try
                 {
