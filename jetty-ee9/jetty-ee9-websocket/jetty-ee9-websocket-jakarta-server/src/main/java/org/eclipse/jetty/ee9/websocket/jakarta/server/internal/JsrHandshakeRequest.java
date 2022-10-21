@@ -22,20 +22,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.websocket.server.HandshakeRequest;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class JsrHandshakeRequest implements HandshakeRequest
 {
     private final ServerUpgradeRequest delegate;
+    private final HttpServletRequest httpServletRequest;
     private Map<String, List<String>> parameterMap;
 
     public JsrHandshakeRequest(ServerUpgradeRequest req)
     {
         this.delegate = req;
+        this.httpServletRequest = (HttpServletRequest)req
+            .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
     }
 
     @Override
@@ -49,8 +54,7 @@ public class JsrHandshakeRequest implements HandshakeRequest
     @Override
     public Object getHttpSession()
     {
-        // TODO
-        return null;
+        return httpServletRequest.getSession(false);
     }
 
     @Override
@@ -94,14 +98,12 @@ public class JsrHandshakeRequest implements HandshakeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        // TODO;
-        return null;
+        return httpServletRequest.getUserPrincipal();
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
-        // TODO;
-        return false;
+        return httpServletRequest.isUserInRole(role);
     }
 }
