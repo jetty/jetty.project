@@ -30,6 +30,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -138,7 +140,54 @@ public class ContentSourceTransformerTest
             }
         });
 
-        assertTrue(expected.isEmpty());
+        assertThat(expected, empty());
+    }
+
+    @Test
+    public void testDemandFirstWithoutLoopStallAfterTwoExpectedChunks()
+    {
+        AsyncContent source = new AsyncContent();
+        source.write(Content.Chunk.from(UTF_8.encode("ONE NOOP two"), false), Callback.NOOP);
+        WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
+
+        AtomicBoolean reEnter = new AtomicBoolean();
+        Queue<String> expected = new ArrayDeque<>(List.of("one", "two"));
+        transformer.demand(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if (!reEnter.compareAndSet(false, true))
+                    throw new IllegalStateException();
+
+                Content.Chunk chunk = transformer.read();
+                if (chunk != null)
+                    assertEquals(expected.poll(), UTF_8.decode(chunk.getByteBuffer()).toString());
+
+                if (chunk == null || !chunk.isLast())
+                    transformer.demand(this);
+
+                if (!reEnter.compareAndSet(true, false))
+                    throw new IllegalStateException();
+            }
+        });
+
+        assertThat(expected, empty());
+
+        expected.offer("three");
+        source.write(Content.Chunk.from(UTF_8.encode("three"), true), Callback.NOOP);
+        assertThat(expected, empty());
+
+        expected.offer("EOF");
+        transformer.demand(() ->
+        {
+            Content.Chunk chunk = transformer.read();
+            assertTrue(chunk.isLast());
+            assertFalse(chunk.hasRemaining());
+            expected.poll();
+        });
+
+        assertThat(expected, empty());
     }
 
     @Test

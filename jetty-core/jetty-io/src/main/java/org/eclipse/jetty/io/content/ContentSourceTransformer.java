@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.content;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 /**
  * <p>This abstract {@link Content.Source} wraps another {@link Content.Source} and implementers need only
@@ -28,11 +29,12 @@ import org.eclipse.jetty.io.Content;
  */
 public abstract class ContentSourceTransformer implements Content.Source
 {
+    private final SerializedInvoker invoker = new SerializedInvoker();
     private final Content.Source rawSource;
     private Content.Chunk rawChunk;
     private Content.Chunk transformedChunk;
-    private boolean needsRawRead;
-    private Runnable demandCallback;
+    private volatile boolean needsRawRead;
+    private volatile Runnable demandCallback;
 
     public ContentSourceTransformer(Content.Source rawSource)
     {
@@ -79,7 +81,10 @@ public abstract class ContentSourceTransformer implements Content.Source
     public void demand(Runnable demandCallback)
     {
         this.demandCallback = Objects.requireNonNull(demandCallback);
-        rawSource.demand(this::onRawAvailable);
+        if (needsRawRead)
+            rawSource.demand(() -> invoker.run(this::invokeDemandCallback));
+        else
+            invoker.run(this::invokeDemandCallback);
     }
 
     @Override
@@ -88,11 +93,12 @@ public abstract class ContentSourceTransformer implements Content.Source
         rawSource.fail(failure);
     }
 
-    private void onRawAvailable()
+    private void invokeDemandCallback()
     {
         Runnable demandCallback = this.demandCallback;
         this.demandCallback = null;
-        runDemandCallback(demandCallback);
+        if (demandCallback != null)
+            runDemandCallback(demandCallback);
     }
 
     private void runDemandCallback(Runnable demandCallback)
