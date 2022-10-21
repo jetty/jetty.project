@@ -37,7 +37,7 @@ public class FileMappedHttpContentFactory implements HttpContent.Factory
     public HttpContent getContent(String path) throws IOException
     {
         HttpContent content = _factory.getContent(path);
-        if (content.getContentLengthValue() > 16 * 1024)
+        if (content != null && content.getContentLengthValue() > 16 * 1024)
             return new FileMappedContent(content);
         return content;
     }

@@ -217,7 +217,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
             if (wasAdded.get())
                 shrinkCache();
-            return cachingHttpContent;
+            return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
         }
         return httpContent;
     }

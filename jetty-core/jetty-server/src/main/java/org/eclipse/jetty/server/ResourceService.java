@@ -868,10 +868,10 @@ public class ResourceService
         @Override
         protected Action process() throws Throwable
         {
-            // TODO: use BufferUtil
             if (!source.isOpen())
                 return Action.SUCCEEDED;
-            byteBuffer.clear();
+
+            BufferUtil.clearToFill(byteBuffer.getBuffer());
             int read = source.read(byteBuffer.getBuffer());
             if (read == -1)
             {
@@ -879,7 +879,7 @@ public class ResourceService
                 sink.write(true, BufferUtil.EMPTY_BUFFER, this);
                 return Action.SCHEDULED;
             }
-            byteBuffer.getBuffer().flip();
+            BufferUtil.flipToFlush(byteBuffer.getBuffer(), 0);
             sink.write(false, byteBuffer.getBuffer(), this);
             return Action.SCHEDULED;
         }
