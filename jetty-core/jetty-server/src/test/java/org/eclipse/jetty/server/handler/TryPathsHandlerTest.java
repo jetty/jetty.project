@@ -99,7 +99,7 @@ public class TryPathsHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                assertThat(request.getPathInContext(), equalTo("/forward?p=/last"));
+                assertThat(Request.getPathInContext(request), equalTo("/forward?p=/last"));
                 response.setStatus(HttpStatus.NO_CONTENT_204);
                 callback.succeeded();
             }
@@ -155,7 +155,7 @@ public class TryPathsHandlerTest
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals("https", httpURI.getScheme());
                 assertTrue(request.isSecure());
-                assertEquals(path, request.getPathInContext());
+                assertEquals(path, Request.getPathInContext(request));
                 callback.succeeded();
             }
         });

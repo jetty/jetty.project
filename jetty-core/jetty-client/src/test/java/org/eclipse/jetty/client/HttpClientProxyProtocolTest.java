@@ -172,7 +172,7 @@ public class HttpClientProxyProtocolTest
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                if (request.getPathInContext().equals("/tls_version"))
+                if (Request.getPathInContext(request).equals("/tls_version"))
                 {
                     assertNotNull(proxyEndPoint.getTLV(typeTLS));
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));

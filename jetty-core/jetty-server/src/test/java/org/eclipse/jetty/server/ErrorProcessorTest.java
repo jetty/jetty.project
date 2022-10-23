@@ -71,21 +71,21 @@ public class ErrorProcessorTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                if (request.getPathInContext().startsWith("/badmessage/"))
+                if (Request.getPathInContext(request).startsWith("/badmessage/"))
                 {
-                    int code = Integer.parseInt(request.getPathInContext().substring(request.getPathInContext().lastIndexOf('/') + 1));
+                    int code = Integer.parseInt(Request.getPathInContext(request).substring(Request.getPathInContext(request).lastIndexOf('/') + 1));
                     throw new BadMessageException(code);
                 }
 
                 // produce an exception with an JSON formatted cause message
-                if (request.getPathInContext().startsWith("/jsonmessage/"))
+                if (Request.getPathInContext(request).startsWith("/jsonmessage/"))
                 {
                     String message = "\"}, \"glossary\": {\n \"title\": \"example\"\n }\n {\"";
                     throw new TestException(message);
                 }
 
                 // produce an exception with an XML cause message
-                if (request.getPathInContext().startsWith("/xmlmessage/"))
+                if (Request.getPathInContext(request).startsWith("/xmlmessage/"))
                 {
                     String message =
                         "<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n" +
@@ -96,14 +96,14 @@ public class ErrorProcessorTest
                 }
 
                 // produce an exception with an HTML cause message
-                if (request.getPathInContext().startsWith("/htmlmessage/"))
+                if (Request.getPathInContext(request).startsWith("/htmlmessage/"))
                 {
                     String message = "<hr/><script>alert(42)</script>%3Cscript%3E";
                     throw new TestException(message);
                 }
 
                 // produce an exception with a UTF-8 cause message
-                if (request.getPathInContext().startsWith("/utf8message/"))
+                if (Request.getPathInContext(request).startsWith("/utf8message/"))
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
                     String message = "Euro is &euro; and \u20AC and %E2%82%AC";

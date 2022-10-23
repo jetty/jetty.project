@@ -395,7 +395,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        if (isErrorPage(baseRequest.getPathInContext()) && !DeferredAuthentication.isDeferred(res))
+        if (isErrorPage(Request.getPathInContext(baseRequest)) && !DeferredAuthentication.isDeferred(res))
             return new DeferredAuthentication(this);
 
         try

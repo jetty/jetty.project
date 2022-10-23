@@ -2294,12 +2294,6 @@ public class RequestTest
         }
 
         @Override
-        public String getPathInContext()
-        {
-            return _uri;
-        }
-
-        @Override
         public HttpFields getHeaders()
         {
             return _fields;

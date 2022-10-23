@@ -1139,7 +1139,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             Resource baseResource = context.getBaseResource();
             if (baseResource != null)
             {
-                String fileName = baseResource.resolve(request.getPathInContext()).getName();
+                String fileName = baseResource.resolve(Request.getPathInContext(request)).getName();
                 append(b, fileName);
             }
             else

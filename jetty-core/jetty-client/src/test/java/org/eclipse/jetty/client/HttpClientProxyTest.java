@@ -163,7 +163,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                String target = request.getPathInContext();
+                String target = org.eclipse.jetty.server.Request.getPathInContext(request);
                 if (target.startsWith("/proxy"))
                 {
                     String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());

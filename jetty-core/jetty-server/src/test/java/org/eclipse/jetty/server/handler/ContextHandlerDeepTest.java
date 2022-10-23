@@ -76,8 +76,8 @@ public class ContextHandlerDeepTest
                     httpURI.getPath=%s
                     """
                     .formatted(
-                        request.getContextPath(),
-                        request.getPathInContext(),
+                        Request.getContextPath(request),
+                        Request.getPathInContext(request),
                         request.getHttpURI().getPath()
                     );
 

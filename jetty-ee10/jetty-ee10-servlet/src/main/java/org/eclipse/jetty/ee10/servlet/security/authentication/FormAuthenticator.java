@@ -223,12 +223,12 @@ public class FormAuthenticator extends LoginAuthenticator
         ServletContextRequest servletContextRequest = Request.as(req, ServletContextRequest.class);
         ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
 
-        boolean jSecurityCheck = isJSecurityCheck(req.getPathInContext());
+        boolean jSecurityCheck = isJSecurityCheck(Request.getPathInContext(req));
         mandatory |= jSecurityCheck;
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        if (isLoginOrErrorPage(req.getPathInContext()) && !DeferredAuthentication.isDeferred(res))
+        if (isLoginOrErrorPage(Request.getPathInContext(req)) && !DeferredAuthentication.isDeferred(res))
             return new DeferredAuthentication(this);
 
         // Handle a request for authentication.

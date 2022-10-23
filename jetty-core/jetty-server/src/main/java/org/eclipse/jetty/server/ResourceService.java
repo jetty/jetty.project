@@ -151,7 +151,7 @@ public class ResourceService
 
     public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
     {
-        String pathInContext = request.getPathInContext();
+        String pathInContext = Request.getPathInContext(request);
 
         // Is this a Range request?
         List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());

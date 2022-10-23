@@ -15,9 +15,11 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.List;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -77,24 +79,24 @@ public class TryPathsHandler extends Handler.Wrapper
 
     private String interpolate(Request request, String value)
     {
-        String path = request.getPathInContext();
+        String path = Request.getPathInContext(request);
         return value.replace("$path", path);
     }
 
     private static class TryPathsRequest extends Request.Wrapper
     {
-        private final String pathInContext;
+        private final HttpURI uri;
 
         public TryPathsRequest(Request wrapped, String pathInContext)
         {
             super(wrapped);
-            this.pathInContext = pathInContext;
+            uri = HttpURI.build(wrapped.getHttpURI()).path(URIUtil.addPaths(Request.getContextPath(wrapped), pathInContext));
         }
 
         @Override
-        public String getPathInContext()
+        public HttpURI getHttpURI()
         {
-            return pathInContext;
+            return uri;
         }
     }
 }

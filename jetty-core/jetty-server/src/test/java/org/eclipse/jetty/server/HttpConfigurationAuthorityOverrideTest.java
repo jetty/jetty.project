@@ -654,7 +654,7 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
-            if (!request.getPathInContext().startsWith("/dump"))
+            if (!Request.getPathInContext(request).startsWith("/dump"))
                 return null;
             return (rq, rs, cb) ->
             {
@@ -679,7 +679,7 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
-            if (!request.getPathInContext().startsWith("/redirect"))
+            if (!Request.getPathInContext(request).startsWith("/redirect"))
                 return null;
 
             return (rq, rs, cb) ->
@@ -696,7 +696,7 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
-            if (!request.getPathInContext().startsWith("/error"))
+            if (!Request.getPathInContext(request).startsWith("/error"))
                 return null;
             return super.handle(request);
         }

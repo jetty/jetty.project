@@ -464,13 +464,7 @@ public class DefaultServlet extends HttpServlet
         @Override
         public HttpURI getHttpURI()
         {
-            return _request.getHttpURI();
-        }
-
-        @Override
-        public String getPathInContext()
-        {
-            return URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo());
+            return Request.updateHttpURI(_request, URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
         }
 
         @Override
@@ -962,7 +956,7 @@ public class DefaultServlet extends HttpServlet
                 return null;
             }
 
-            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : coreRequest.getPathInContext();
+            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : Request.getPathInContext(coreRequest);
 
             String welcomeServlet = null;
             Resource base = _baseResource.resolve(requestTarget);
@@ -971,7 +965,7 @@ public class DefaultServlet extends HttpServlet
                 for (String welcome : welcomes)
                 {
                     Resource welcomePath = base.resolve(welcome);
-                    String welcomeInContext = URIUtil.addPaths(coreRequest.getPathInContext(), welcome);
+                    String welcomeInContext = URIUtil.addPaths(Request.getPathInContext(coreRequest), welcome);
 
                     if (Resources.isReadableFile(welcomePath))
                         return welcomeInContext;

@@ -843,7 +843,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            String cp = request.getPathInContext();
+            String cp = Request.getPathInContext(request);
             switch (cp)
             {
                 case "/echo" ->

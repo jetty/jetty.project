@@ -1185,7 +1185,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ServletContextRequest wrap(Request request, String pathInContext)
+    protected ServletContextRequest wrap(Request request)
     {
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
         if (matchedResource == null)

@@ -605,7 +605,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (!HttpMethod.PRI.is(request.getMethod()) &&
                     !HttpMethod.CONNECT.is(request.getMethod()) &&
-                    !_request.getPathInContext().startsWith("/") &&
+                    !Request.getPathInContext(_request).startsWith("/") &&
                     !HttpMethod.OPTIONS.is(request.getMethod()))
                 {
                     _processState = ProcessState.PROCESSING;
@@ -901,12 +901,6 @@ public class HttpChannelState implements HttpChannel, Components
         public Context getContext()
         {
             return getConnectionMetaData().getConnector().getServer().getContext();
-        }
-
-        @Override
-        public String getPathInContext()
-        {
-            return _metaData.getURI().getCanonicalPath();
         }
 
         @Override

@@ -135,7 +135,7 @@ public class MultiplexedConnectionPoolTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                int req = Integer.parseInt(request.getPathInContext().substring(1));
+                int req = Integer.parseInt(Request.getPathInContext(request).substring(1));
                 reqExecutingLatches[req].countDown();
                 Thread.sleep(250);
                 reqExecutedLatches[req].countDown();
@@ -231,7 +231,7 @@ public class MultiplexedConnectionPoolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                int req = Integer.parseInt(request.getPathInContext().substring(1));
+                int req = Integer.parseInt(Request.getPathInContext(request).substring(1));
                 Content.Sink.write(response, true, "req " + req + " executed", callback);
             }
         }, 64, 1L);
@@ -380,7 +380,7 @@ public class MultiplexedConnectionPoolTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                if (request.getPathInContext().equals("/block"))
+                if (Request.getPathInContext(request).equals("/block"))
                 {
                     handlerSignalingSemaphore.release();
                     handlerWaitingSemaphore.acquire();

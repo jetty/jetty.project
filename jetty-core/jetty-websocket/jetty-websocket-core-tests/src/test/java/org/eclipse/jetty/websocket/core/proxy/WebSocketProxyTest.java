@@ -83,7 +83,7 @@ public class WebSocketProxyTest
         {
             if (request.getHeaders().get("Upgrade") != null)
             {
-                if (blockServerUpgradeRequests && request.getPathInContext().startsWith("/server"))
+                if (blockServerUpgradeRequests && Request.getPathInContext(request).startsWith("/server"))
                 {
                     return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpStatus.INTERNAL_SERVER_ERROR_500);
                 }

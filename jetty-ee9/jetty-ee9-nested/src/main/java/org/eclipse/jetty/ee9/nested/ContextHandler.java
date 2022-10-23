@@ -2456,7 +2456,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected ContextRequest wrap(org.eclipse.jetty.server.Request request, String pathInContext)
+        protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
         {
             HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().get(HttpChannel.class.getName());
             if (httpChannel == null)

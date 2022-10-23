@@ -152,16 +152,40 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * Get the full context path.
+     * @param request The request to get the context path from.
      * @return The full contextPath of the request. In the common case, this is equivalent to
      *         calling {@link Context#getContextPath()} on the context returned from {@link #getContext()}.
      *         However, in the case of nested contexts, this method will return the concatenation of nested
      *         context paths rather than just the current context path.
      * @see Context#getContextPath()
      */
-    default String getContextPath()
+    static String getContextPath(Request request)
     {
-        Context context = getContext();
-        return context == null ? null : context.getContextPath();
+        Context context = request.getContext();
+        if (context == null)
+            return null;
+
+        if (!(request instanceof Request.Wrapper wrapper))
+            return context.getContextPath();
+
+        String contextPath = context.getContextPath();
+
+        while (wrapper != null)
+        {
+            Request wrapped = wrapper.getWrapped();
+
+            Context outer = wrapped.getContext();
+            if (context != outer)
+            {
+                if (outer == null || outer instanceof Server.ServerContext)
+                    return contextPath;
+                contextPath = URIUtil.addPaths(outer.getContextPath(), contextPath);
+                context = outer;
+            }
+
+            wrapper = wrapped instanceof Request.Wrapper w ? w : null;
+        }
+        return contextPath;
     }
 
     /**
@@ -169,11 +193,27 @@ public interface Request extends Attributes, Content.Source
      * <p>The <code>pathInContext</code> represents the targeted resource within the current content for the request.
      * In most circumstances it will be a semantic suffix of the URI returned from {@link #getHttpURI()}.
      * However a wrapped request may alter one but not the other, and in such cases a handler should consider using
+     * @param request The request to get the path in the context from.
      * {@link #getHttpURI()} when generating URIs visible outside of the current context.</p>
      * @return The part of the canonically encoded path of the URI after any context path prefix has been removed.
      * @see HttpURI#getCanonicalPath()
      */
-    String getPathInContext();
+    static String getPathInContext(Request request)
+    {
+        String path = request.getHttpURI().getCanonicalPath();
+        String contextPath = Request.getContextPath(request);
+
+        if (StringUtil.isBlank(contextPath) || "/".equals(contextPath))
+            return path;
+
+        if (!path.startsWith(contextPath))
+            return null; // TODO ISE???
+        if (path.length() == contextPath.length())
+            return "";
+        if (path.charAt(contextPath.length()) != '/')
+            return null; // TODO ISE???
+        return path.substring(contextPath.length());
+    }
 
     /**
      * @return the HTTP headers of this request
@@ -529,41 +569,6 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public String getContextPath()
-        {
-            Context context = getContext();
-            if (context == null)
-                return null;
-
-            Request.Wrapper wrapper = this;
-
-            String contextPath = context.getContextPath();
-
-            while (wrapper != null)
-            {
-                Request wrapped = wrapper.getWrapped();
-
-                Context outer = wrapped.getContext();
-                if (context != outer)
-                {
-                    if (outer == null || outer instanceof Server.ServerContext)
-                        return contextPath;
-                    contextPath = URIUtil.addPaths(outer.getContextPath(), contextPath);
-                    context = outer;
-                }
-
-                wrapper = wrapped instanceof Request.Wrapper w ? w : null;
-            }
-            return contextPath;
-        }
-
-        @Override
-        public String getPathInContext()
-        {
-            return getWrapped().getPathInContext();
-        }
-
-        @Override
         public HttpFields getHeaders()
         {
             return getWrapped().getHeaders();
@@ -736,5 +741,10 @@ public interface Request extends Attributes, Content.Source
             if (processor != null)
                 processor.process(this, response, callback);
         }
+    }
+
+    static HttpURI updateHttpURI(Request request, String newPathInContext)
+    {
+        return HttpURI.build(request.getHttpURI()).path(URIUtil.addPaths(getContextPath(request), newPathInContext)).asImmutable();
     }
 }

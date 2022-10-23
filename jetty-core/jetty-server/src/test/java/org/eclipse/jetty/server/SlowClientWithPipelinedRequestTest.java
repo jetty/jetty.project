@@ -84,7 +84,7 @@ public class SlowClientWithPipelinedRequestTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                if ("/content".equals(request.getPathInContext()))
+                if ("/content".equals(Request.getPathInContext(request)))
                 {
                     // TODO is this still a valid test?
                     // We simulate what the DefaultServlet does, bypassing the blocking

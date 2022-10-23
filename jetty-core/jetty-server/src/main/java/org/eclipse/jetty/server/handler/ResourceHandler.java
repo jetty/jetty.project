@@ -92,8 +92,8 @@ public class ResourceHandler extends Handler.Wrapper
 
             for (String welcome : _welcomes)
             {
-                String welcomeInContext = URIUtil.addPaths(request.getPathInContext(), welcome);
-                Resource welcomePath = _resourceBase.resolve(request.getPathInContext()).resolve(welcome);
+                String welcomeInContext = URIUtil.addPaths(Request.getPathInContext(request), welcome);
+                Resource welcomePath = _resourceBase.resolve(Request.getPathInContext(request)).resolve(welcome);
                 if (Resources.isReadableFile(welcomePath))
                     return welcomeInContext;
             }
@@ -111,7 +111,7 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContent(request.getPathInContext(), request);
+        HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
             return super.handle(request); // no content - try other handlers
 

@@ -593,20 +593,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return false;
     }
 
-    protected String getPathInContext(Request request)
-    {
-        String path = request.getPathInContext();
-        if (!path.startsWith(_context.getContextPath()))
-            return null;
-        if ("/".equals(_context.getContextPath()))
-            return path;
-        if (path.length() == _context.getContextPath().length())
-            return "";
-        if (path.charAt(_context.getContextPath().length()) != '/')
-            return null;
-        return path.substring(_context.getContextPath().length());
-    }
-
     @Override
     public void destroy()
     {
@@ -622,18 +608,23 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (!checkVirtualHost(request))
             return null;
 
-        String pathInContext = getPathInContext(request);
-        if (pathInContext == null)
+        String path = Request.getPathInContext(request);
+        if (!path.startsWith(_contextPath))
             return null;
 
-        if (pathInContext.isEmpty() && !getAllowNullPathInContext())
-            return this::processMovedPermanently;
+        if (_contextPath.length() == path.length())
+        {
+            if (!getAllowNullPathInContext())
+                return this::processMovedPermanently;
+        }
+        else if (path.charAt(_contextPath.length()) != '/')
+            return null;
 
         // TODO check availability and maybe return a 503
         if (!isAvailable() && isStarted())
             return this::processUnavailable;
 
-        ContextRequest contextRequest = wrap(request, pathInContext);
+        ContextRequest contextRequest = wrap(request);
         // wrap might fail (eg ServletContextHandler could not match a servlet)
         if (contextRequest == null)
             return null;
@@ -665,7 +656,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     protected Request.Processor processByContextHandler(ContextRequest contextRequest)
     {
-        if (!_allowNullPathInContext && StringUtil.isEmpty(contextRequest.getPathInContext()))
+        if (!_allowNullPathInContext && StringUtil.isEmpty(Request.getPathInContext(contextRequest)))
         {
             return (request, response, callback) ->
             {
@@ -777,9 +768,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _errorProcessor = errorProcessor;
     }
 
-    protected ContextRequest wrap(Request request, String pathInContext)
+    protected ContextRequest wrap(Request request)
     {
-        return new ContextRequest(this, _context, request, pathInContext);
+        return new ContextRequest(this, _context, request);
     }
 
     @Override
