@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.api.Request;
@@ -131,7 +132,7 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public boolean abort(Throwable cause)
+    public CompletableFuture<Boolean> abort(Throwable cause)
     {
         return request.abort(cause);
     }

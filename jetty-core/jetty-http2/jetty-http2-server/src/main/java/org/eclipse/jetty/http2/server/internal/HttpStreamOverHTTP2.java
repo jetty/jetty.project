@@ -14,7 +14,7 @@
 package org.eclipse.jetty.http2.server.internal;
 
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -545,12 +545,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
+    public void onTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
     {
-        Runnable runnable = _httpChannel.onFailure(failure);
-        if (runnable != null)
-            consumer.accept(runnable);
-        return !_httpChannel.isRequestHandled();
+        Runnable task = _httpChannel.onFailure(failure);
+        boolean idle = !_httpChannel.isRequestHandled();
+        consumer.accept(task, idle);
     }
 
     @Override

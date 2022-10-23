@@ -1125,7 +1125,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/php</Set>
-                  <Set name="baseResource">
+                  <Set name="baseResourceAsPath">
                     <Call class="java.nio.file.Path" name="of">
                       <Arg>$R</Arg>
                     </Call>

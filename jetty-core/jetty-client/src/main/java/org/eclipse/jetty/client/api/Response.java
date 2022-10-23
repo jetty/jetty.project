@@ -16,6 +16,7 @@ package org.eclipse.jetty.client.api;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.LongConsumer;
 
@@ -80,7 +81,7 @@ public interface Response
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
      */
-    boolean abort(Throwable cause);
+    CompletableFuture<Boolean> abort(Throwable cause);
 
     /**
      * Common, empty, super-interface for response listeners

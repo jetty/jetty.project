@@ -121,7 +121,7 @@ public class WebAppContextTest
         assertNotNull(webXmlEmptyPath);
 
         WebAppContext wac = new WebAppContext();
-        wac.setBaseResource(MavenTestingUtils.getTargetTestingDir().getAbsoluteFile().toPath());
+        wac.setBaseResourceAsPath(MavenTestingUtils.getTargetTestingDir().getAbsoluteFile().toPath());
         server.setHandler(wac);
 
         //test that an empty default-context-path defaults to root
@@ -286,7 +286,7 @@ public class WebAppContextTest
         FS.touch(someClass);
 
         WebAppContext context = new WebAppContext();
-        context.setBaseResource(tempDir);
+        context.setBaseResourceAsPath(tempDir);
 
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
@@ -323,7 +323,7 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(testWebapp);
+        context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -366,7 +366,7 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(testWebapp);
+        context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -399,7 +399,7 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(testWebapp);
+        context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -420,7 +420,7 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(testWebapp);
+        context.setBaseResourceAsPath(testWebapp);
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -448,7 +448,7 @@ public class WebAppContextTest
         context.setContextPath("/");
 
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(testWebapp);
+        context.setBaseResourceAsPath(testWebapp);
         server.setHandler(handlers);
         handlers.addHandler(contexts);
         contexts.addHandler(context);
@@ -497,7 +497,7 @@ public class WebAppContextTest
         // On Unix / Linux this should have no issue.
         // On Windows with fully qualified paths such as "E:\mybase\webapps\dump.war" the
         // resolution of the Resource can trigger various URI issues with the "E:" portion of the provided String.
-        context.setBaseResource(warPath);
+        context.setBaseResourceAsPath(warPath);
 
         server.setHandler(context);
         server.start();
@@ -571,7 +571,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
-        context.setBaseResource(warPath);
+        context.setBaseResourceAsPath(warPath);
         context.setExtraClasspath(extraClasspathGlobReference);
 
         server.setHandler(context);
@@ -644,7 +644,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
-        context.setBaseResource(warPath);
+        context.setBaseResourceAsPath(warPath);
 
         context.setExtraClasspath(extraClassPathReference);
 

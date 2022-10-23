@@ -17,6 +17,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -82,7 +83,7 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public boolean abort(Throwable cause)
+    public CompletableFuture<Boolean> abort(Throwable cause)
     {
         return response.abort(cause);
     }

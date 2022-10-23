@@ -55,7 +55,7 @@
            <Item>
              <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/tests</Set>
-               <Set name="baseResource"><Property name="test.docroot.base"/>/default</Set>
+               <Set name="baseResourceAsString"><Property name="test.docroot.base"/>/default</Set>
                <Set name="Handler"><New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
                <Set name="DisplayName">default</Set>
              </New>
