@@ -452,9 +452,7 @@ public class ResourceService
             if (!uri.getCanonicalPath().endsWith("/"))
             {
                 // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
-                String parameter = uri.getParam();
                 uri.path(uri.getCanonicalPath() + "/");
-                uri.param(parameter);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
                 sendRedirect(request, response, callback, uri.getPathQuery());

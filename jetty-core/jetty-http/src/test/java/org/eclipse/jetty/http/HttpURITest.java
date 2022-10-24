@@ -924,5 +924,9 @@ public class HttpURITest
         HttpURI built = HttpURI.build(orig).path("/context/info").asImmutable();
         assertThat(built.getParam(), is(orig.getParam()));
         assertThat(built.toString(), is(orig.toString()));
+
+        built = HttpURI.build(orig).path("/context/info").param("param=value").asImmutable();
+        assertThat(built.getParam(), is(orig.getParam()));
+        assertThat(built.toString(), is(orig.toString()));
     }
 }

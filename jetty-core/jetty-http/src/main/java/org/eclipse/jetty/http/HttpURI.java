@@ -875,7 +875,16 @@ public interface HttpURI
         {
             _param = param;
             if (_path != null && _param != null)
+            {
+                int lastSlash = _path.lastIndexOf('/');
+                if (lastSlash >= 0)
+                {
+                    int trailingParam = _path.indexOf(';', lastSlash + 1);
+                    if (trailingParam >= 0)
+                        _path = _path.substring(0, trailingParam);
+                }
                 _path += ";" + _param;
+            }
 
             _uri = null;
             return this;
