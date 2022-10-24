@@ -12,7 +12,7 @@ pipeline {
     stage("Parallel Stage") {
       parallel {
         stage("Build / Test - JDK17") {
-          agent { node { label 'linux' } }
+          agent { node { label 'linux-new' } }
           steps {
             container('jetty-build') {
               timeout( time: 180, unit: 'MINUTES' ) {
@@ -47,7 +47,7 @@ pipeline {
         }
 
         stage("Build / Test - JDK11") {
-          agent { node { label 'linux' } }
+          agent { node { label 'linux-new' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 180, unit: 'MINUTES' ) {
@@ -110,7 +110,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -DexcludedGroups=\"external, large-disk-resource, stress, slow\" -V -B -e -Djetty.testtracker.log=true $cmdline"
+          sh "mvn -Dmaven.test.failure.ignore=true --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -DexcludedGroups=\"external, large-disk-resource, stress, slow\" -V -B -e -Djetty.testtracker.log=true $cmdline"
         }
       }
     }
