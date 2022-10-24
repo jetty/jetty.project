@@ -16,11 +16,13 @@ package org.eclipse.jetty.client;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -30,14 +32,14 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * Applications add subclasses of {@link Proxy} to this configuration via:
  * <pre>
  * ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
- * proxyConfig.getProxies().add(new HttpProxy(proxyHost, 8080));
+ * proxyConfig.addProxy(new HttpProxy(proxyHost, 8080));
  * </pre>
  *
  * @see HttpClient#getProxyConfiguration()
  */
 public class ProxyConfiguration
 {
-    private final List<Proxy> proxies = new CopyOnWriteArrayList<>();
+    private final List<Proxy> proxies = new BlockingArrayQueue<>();
 
     /**
      * @deprecated use {@link #addProxy(Proxy)} and {@link #removeProxy(Proxy)} instead
@@ -57,9 +59,7 @@ public class ProxyConfiguration
      */
     public void addProxy(Proxy proxy)
     {
-        if (proxy == null)
-            throw new NullPointerException("proxy may not be null");
-        proxies.add(proxy);
+        proxies.add(Objects.requireNonNull(proxy));
     }
 
     /**

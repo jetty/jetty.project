@@ -62,6 +62,7 @@ import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.ProxyConfiguration.Proxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -122,6 +123,7 @@ public class ProxyServletTest
     }
 
     private HttpClient client;
+    private Proxy clientProxy;
     private Server proxy;
     private ServerConnector proxyConnector;
     private ServletContextHandler proxyContext;
@@ -196,6 +198,7 @@ public class ProxyServletTest
 
     private void startClient(Consumer<HttpClient> consumer) throws Exception
     {
+        clientProxy = new HttpProxy("localhost", proxyConnector.getLocalPort());
         client = prepareClient(consumer);
     }
 
@@ -205,7 +208,7 @@ public class ProxyServletTest
         clientPool.setName("client");
         HttpClient result = new HttpClient();
         result.setExecutor(clientPool);
-        result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        result.getProxyConfiguration().addProxy(clientProxy);
         if (consumer != null)
             consumer.accept(result);
         result.start();
