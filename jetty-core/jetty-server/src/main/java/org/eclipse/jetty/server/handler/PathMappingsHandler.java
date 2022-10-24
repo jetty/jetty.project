@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * A Handler that delegates to other handlers through a configured {@link PathMappings}.
  */
 
-public class PathMappingsHandler extends Handler.Wrapper
+public class PathMappingsHandler extends Handler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
 
@@ -83,7 +83,7 @@ public class PathMappingsHandler extends Handler.Wrapper
         {
             if  (LOG.isDebugEnabled())
                 LOG.debug("No match on pathInContext of {}", pathInContext);
-            return super.handle(request);
+            return null;
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Matched pathInContext of {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), matchedResource.getResource());

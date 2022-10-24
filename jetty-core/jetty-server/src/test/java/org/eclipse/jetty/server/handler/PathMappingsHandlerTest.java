@@ -90,31 +90,6 @@ public class PathMappingsHandlerTest
     }
 
     /**
-     * Test where there are no mappings, and only a wrapper.
-     */
-    @Test
-    public void testOnlyWrapper() throws Exception
-    {
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setContextPath("/");
-
-        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
-        pathMappingsHandler.setHandler(new SimpleHandler("WrapperFoo Hit"));
-        contextHandler.setHandler(pathMappingsHandler);
-
-        startServer(contextHandler);
-
-        HttpTester.Response response = executeRequest("""
-            GET / HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-             
-            """);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("WrapperFoo Hit", response.getContent());
-    }
-
-    /**
      * Test where there is only a single mapping, and no wrapper.
      */
     @Test
@@ -136,41 +111,6 @@ public class PathMappingsHandlerTest
              
             """);
         assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
-
-        response = executeRequest("""
-            GET /hello.php HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-             
-            """);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("PhpExample Hit", response.getContent());
-    }
-
-    /**
-     * Test where there is only a single mapping, and a wrapper for fallback.
-     */
-    @Test
-    public void testOneMappingAndWrapper() throws Exception
-    {
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setContextPath("/");
-
-        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
-        pathMappingsHandler.setHandler(new SimpleHandler("WrapperFoo Hit"));
-        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new SimpleHandler("PhpExample Hit"));
-        contextHandler.setHandler(pathMappingsHandler);
-
-        startServer(contextHandler);
-
-        HttpTester.Response response = executeRequest("""
-            GET /hello HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-             
-            """);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("WrapperFoo Hit", response.getContent());
 
         response = executeRequest("""
             GET /hello.php HTTP/1.1\r
