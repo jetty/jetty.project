@@ -110,7 +110,7 @@ public class ErrorProcessor implements Request.Processor
 
             try
             {
-                generateAcceptableResponse(request, response, code, message, cause, callback);
+                generateResponse(request, response, code, message, cause, callback);
             }
             catch (Throwable x)
             {
@@ -120,7 +120,7 @@ public class ErrorProcessor implements Request.Processor
         }
     }
 
-    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
+    protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
     {
         List<String> acceptable = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
         if (acceptable.isEmpty())
