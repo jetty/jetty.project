@@ -142,6 +142,8 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * @return the HTTP URI of this request
+     * @see #getContextPath(Request)
+     * @see #getPathInContext(Request) 
      */
     HttpURI getHttpURI();
 
