@@ -34,6 +34,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -221,6 +223,26 @@ public class PathMappingsHandlerTest
         assertEquals(expectedResponseBody, response.getContent());
     }
 
+    @Test
+    public void testDump() throws Exception
+    {
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/");
+
+        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+        pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("FakeResourceHandler Hit"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("FakeSpecificStaticHandler Hit"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new SimpleHandler("PhpHandler Hit"));
+        contextHandler.setHandler(pathMappingsHandler);
+
+        startServer(contextHandler);
+
+        String dump = contextHandler.dump();
+        assertThat(dump, containsString("FakeResourceHandler"));
+        assertThat(dump, containsString("FakeSpecificStaticHandler"));
+        assertThat(dump, containsString("PhpHandler"));
+    }
+
     private static class SimpleHandler extends Handler.Processor
     {
         private final String message;
@@ -237,6 +259,12 @@ public class PathMappingsHandlerTest
             response.setStatus(HttpStatus.OK_200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
             response.write(true, BufferUtil.toBuffer(message, StandardCharsets.UTF_8), callback);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[msg=\"%s\"]", SimpleHandler.class.getSimpleName(), message);
         }
     }
 }

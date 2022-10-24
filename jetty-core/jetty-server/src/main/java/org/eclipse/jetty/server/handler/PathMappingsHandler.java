@@ -13,17 +13,23 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
+
+import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A Handler that delegates to other handlers through a configured {@link PathMappings}.
  */
+
 public class PathMappingsHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
@@ -39,9 +45,21 @@ public class PathMappingsHandler extends Handler.Wrapper
     }
 
     @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, mappings);
+    }
+
+    @Override
     protected void doStart() throws Exception
     {
-        mappings.getMappings().forEach((mapped) -> addBean(mapped.getResource()));
+        Server server = getServer();
+        for (MappedResource<Handler> matchedResource : mappings.getMappings())
+        {
+            Handler handler = matchedResource.getResource();
+            handler.setServer(server);
+            handler.start();
+        }
         super.doStart();
     }
 
@@ -49,7 +67,11 @@ public class PathMappingsHandler extends Handler.Wrapper
     protected void doStop() throws Exception
     {
         super.doStop();
-        mappings.getMappings().forEach((mapped) -> removeBean(mapped.getResource()));
+        for (MappedResource<Handler> matchedResource : mappings.getMappings())
+        {
+            Handler handler = matchedResource.getResource();
+            handler.stop();
+        }
     }
 
     @Override
