@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -30,16 +32,60 @@ import org.slf4j.LoggerFactory;
  * A Handler that delegates to other handlers through a configured {@link PathMappings}.
  */
 
-public class PathMappingsHandler extends Handler.Abstract
+public class PathMappingsHandler extends Handler.AbstractContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
 
     private final PathMappings<Handler> mappings = new PathMappings<>();
 
+    @Override
+    public void addHandler(Handler handler)
+    {
+        throw new IllegalArgumentException("Arbitrary addHandler() not supported, use addMapping() instead");
+    }
+
+    @Override
+    public List<Handler> getHandlers()
+    {
+        return mappings.streamResources().map(MappedResource::getResource).toList();
+    }
+
+    @Override
+    public List<Handler> getDescendants()
+    {
+        List<Handler> descendants = new ArrayList<>();
+        for (MappedResource<Handler> entry : mappings)
+        {
+            Handler entryHandler = entry.getResource();
+            descendants.add(entryHandler);
+
+            if (entryHandler instanceof Handler.Container container)
+            {
+                descendants.addAll(container.getDescendants());
+            }
+        }
+        return descendants;
+    }
+
     public void addMapping(PathSpec pathSpec, Handler handler)
     {
         if (isStarted())
             throw new IllegalStateException("Cannot add mapping: " + this);
+
+        // check that self isn't present
+        if (handler == this || handler instanceof Handler.Container container && container.getDescendants().contains(this))
+            throw new IllegalStateException("Unable to addHandler of self: " + handler);
+
+        // check existing mappings
+        for (MappedResource<Handler> entry : mappings)
+        {
+            Handler entryHandler = entry.getResource();
+
+            if (entryHandler == this ||
+                entryHandler == handler ||
+                (entryHandler instanceof Handler.Container container && container.getDescendants().contains(this)))
+                throw new IllegalStateException("addMapping loop detected: " + handler);
+        }
 
         mappings.put(pathSpec, handler);
     }
@@ -81,7 +127,7 @@ public class PathMappingsHandler extends Handler.Abstract
         MatchedResource<Handler> matchedResource = mappings.getMatched(pathInContext);
         if (matchedResource == null)
         {
-            if  (LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled())
                 LOG.debug("No match on pathInContext of {}", pathInContext);
             return null;
         }

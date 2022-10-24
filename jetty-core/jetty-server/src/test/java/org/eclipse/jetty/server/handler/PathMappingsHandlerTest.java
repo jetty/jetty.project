@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,8 +37,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathMappingsHandlerTest
@@ -181,6 +185,73 @@ public class PathMappingsHandlerTest
         assertThat(dump, containsString("FakeResourceHandler"));
         assertThat(dump, containsString("FakeSpecificStaticHandler"));
         assertThat(dump, containsString("PhpHandler"));
+    }
+
+    @Test
+    public void testGetDescendantsSimple()
+    {
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/");
+
+        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+        pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("default"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("specific"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new SimpleHandler("php"));
+
+        List<String> actualHandlers = pathMappingsHandler.getDescendants().stream().map(Objects::toString).toList();
+
+        String[] expectedHandlers = {
+            "SimpleHandler[msg=\"default\"]",
+            "SimpleHandler[msg=\"specific\"]",
+            "SimpleHandler[msg=\"php\"]"
+        };
+        assertThat(actualHandlers, containsInAnyOrder(expectedHandlers));
+    }
+
+    @Test
+    public void testGetDescendantsDeep()
+    {
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/");
+
+        Handler.Collection handlerCollection = new Handler.Collection();
+        handlerCollection.addHandler(new SimpleHandler("phpIndex"));
+        Handler.Wrapper handlerWrapper = new Handler.Wrapper(new SimpleHandler("other"));
+        handlerCollection.addHandler(handlerWrapper);
+
+        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+        pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("default"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("specific"));
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), handlerCollection);
+
+        List<String> actualHandlers = pathMappingsHandler.getDescendants().stream().map(Objects::toString).toList();
+
+        String[] expectedHandlers = {
+            "SimpleHandler[msg=\"default\"]",
+            "SimpleHandler[msg=\"specific\"]",
+            handlerCollection.toString(),
+            handlerWrapper.toString(),
+            "SimpleHandler[msg=\"phpIndex\"]",
+            "SimpleHandler[msg=\"other\"]"
+        };
+        assertThat(actualHandlers, containsInAnyOrder(expectedHandlers));
+    }
+
+    @Test
+    public void testAddLoopSelf()
+    {
+        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+        assertThrows(IllegalStateException.class, () -> pathMappingsHandler.addMapping(new ServletPathSpec("/self"), pathMappingsHandler));
+    }
+
+    @Test
+    public void testAddLoopContext()
+    {
+        ContextHandler contextHandler = new ContextHandler();
+        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+        contextHandler.setHandler(pathMappingsHandler);
+
+        assertThrows(IllegalStateException.class, () -> pathMappingsHandler.addMapping(new ServletPathSpec("/loop"), contextHandler));
     }
 
     private static class SimpleHandler extends Handler.Processor
