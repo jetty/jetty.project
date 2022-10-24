@@ -40,13 +40,13 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     @Override
     public void addHandler(Handler handler)
     {
-        throw new IllegalArgumentException("Arbitrary addHandler() not supported, use addMapping() instead");
+        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
     }
 
     @Override
     public void addHandler(Supplier<Handler> supplier)
     {
-        throw new IllegalArgumentException("Arbitrary addHandler() not supported, use addMapping() instead");
+        throw new UnsupportedOperationException("Arbitrary addHandler() not supported, use addMapping() instead");
     }
 
     @Override
