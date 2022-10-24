@@ -597,7 +597,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
                     getId(),
                     remote,
                     authority,
-                    getWrappedConnectionMetaData()
+                    getWrapped()
                 );
             }
         };
