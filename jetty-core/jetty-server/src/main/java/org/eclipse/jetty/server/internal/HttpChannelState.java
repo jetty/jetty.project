@@ -1005,15 +1005,9 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public boolean isPushSupported()
+        public void push(MetaData.Request resource)
         {
-            return true;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getHttpStream().push(request);
+            getHttpStream().push(resource);
         }
 
         @Override

@@ -243,7 +243,7 @@ public class Request implements HttpServletRequest
 
     public boolean isPushSupported()
     {
-        return !isPush() && getCoreRequest().isPushSupported();
+        return !isPush() && getCoreRequest().getConnectionMetaData().isPushSupported();
     }
 
     private static final EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
@@ -274,7 +274,7 @@ public class Request implements HttpServletRequest
         String id;
         try
         {
-            HttpSession session = getSession();
+            HttpSession session = getSession(false);
             if (session != null)
             {
                 session.getLastAccessedTime(); // checks if session is valid
@@ -343,8 +343,12 @@ public class Request implements HttpServletRequest
             fields.add(new HttpField(HttpHeader.COOKIE, buff.toString()));
         }
 
-        PushBuilder builder = new PushBuilderImpl(this, fields, getMethod(), getQueryString(), id);
-        builder.addHeader("referer", getRequestURL().toString());
+        String query = getQueryString();
+        PushBuilder builder = new PushBuilderImpl(this, fields, getMethod(), query, id);
+        String referrer = getRequestURL().toString();
+        if (query != null)
+            referrer += "?" + query;
+        builder.addHeader("referer", referrer);
 
         return builder;
     }

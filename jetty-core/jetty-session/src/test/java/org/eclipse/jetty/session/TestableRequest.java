@@ -160,17 +160,6 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {
-    }
-
-    @Override
     public TunnelSupport getTunnelSupport()
     {
         return null;
