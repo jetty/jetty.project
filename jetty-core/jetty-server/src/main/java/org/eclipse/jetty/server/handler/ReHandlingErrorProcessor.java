@@ -100,7 +100,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
         @Override
         protected String getReHandlePathInContext(Request request, int code, Throwable cause)
         {
-            return _statusMap.get(code);
+            return get(code);
         }
 
         public String put(int code, String pathInContext)
