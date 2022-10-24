@@ -185,6 +185,8 @@ public class PathMappingsHandlerTest
         assertThat(dump, containsString("FakeResourceHandler"));
         assertThat(dump, containsString("FakeSpecificStaticHandler"));
         assertThat(dump, containsString("PhpHandler"));
+        assertThat(dump, containsString("PathMappings[size=3]"));
+
     }
 
     @Test

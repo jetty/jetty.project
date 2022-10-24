@@ -14,8 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -23,7 +23,6 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,26 +44,15 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     }
 
     @Override
-    public List<Handler> getHandlers()
+    public void addHandler(Supplier<Handler> supplier)
     {
-        return mappings.streamResources().map(MappedResource::getResource).toList();
+        throw new IllegalArgumentException("Arbitrary addHandler() not supported, use addMapping() instead");
     }
 
     @Override
-    public List<Handler> getDescendants()
+    public List<Handler> getHandlers()
     {
-        List<Handler> descendants = new ArrayList<>();
-        for (MappedResource<Handler> entry : mappings)
-        {
-            Handler entryHandler = entry.getResource();
-            descendants.add(entryHandler);
-
-            if (entryHandler instanceof Handler.Container container)
-            {
-                descendants.addAll(container.getDescendants());
-            }
-        }
-        return descendants;
+        return mappings.streamResources().map(MappedResource::getResource).toList();
     }
 
     public void addMapping(PathSpec pathSpec, Handler handler)
@@ -88,36 +76,13 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         }
 
         mappings.put(pathSpec, handler);
+        addBean(handler);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this, mappings);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        Server server = getServer();
-        for (MappedResource<Handler> matchedResource : mappings.getMappings())
-        {
-            Handler handler = matchedResource.getResource();
-            handler.setServer(server);
-            handler.start();
-        }
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        for (MappedResource<Handler> matchedResource : mappings.getMappings())
-        {
-            Handler handler = matchedResource.getResource();
-            handler.stop();
-        }
     }
 
     @Override
