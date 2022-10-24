@@ -26,9 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -127,7 +125,7 @@ public class ProxyServletTest
     }
 
     private HttpClient client;
-    private final List<Proxy> clientProxies = new ArrayList<>();
+    private Proxy clientProxy;
     private Server proxy;
     private ServerConnector proxyConnector;
     private ServletContextHandler proxyContext;
@@ -202,18 +200,17 @@ public class ProxyServletTest
 
     private void startClient(Consumer<HttpClient> consumer) throws Exception
     {
-        clientProxies.add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
-        client = prepareClient(consumer, clientProxies);
+        clientProxy = new HttpProxy("localhost", proxyConnector.getLocalPort());
+        client = prepareClient(consumer);
     }
 
-    private HttpClient prepareClient(Consumer<HttpClient> consumer, Collection<Proxy> proxies) throws Exception
+    private HttpClient prepareClient(Consumer<HttpClient> consumer) throws Exception
     {
         QueuedThreadPool clientPool = new QueuedThreadPool();
         clientPool.setName("client");
         HttpClient result = new HttpClient();
         result.setExecutor(clientPool);
-        for (Proxy proxy: proxies)
-            result.getProxyConfiguration().addProxy(proxy);
+        result.getProxyConfiguration().addProxy(clientProxy);
         if (consumer != null)
             consumer.accept(result);
         result.start();
@@ -736,7 +733,7 @@ public class ProxyServletTest
         startProxy(proxyServletClass);
         startClient();
         int port = serverConnector.getLocalPort();
-        clientProxies.get(0).getExcludedAddresses().add("127.0.0.1:" + port);
+        clientProxy.getExcludedAddresses().add("127.0.0.1:" + port);
 
         // Try with a proxied host
         ContentResponse response = client.newRequest("localhost", port)
@@ -1171,7 +1168,7 @@ public class ProxyServletTest
         assertEquals(name, cookies.get(0).getName());
         assertEquals(value1, cookies.get(0).getValue());
 
-        HttpClient client2 = prepareClient(null, clientProxies);
+        HttpClient client2 = prepareClient(null);
         try
         {
             String value2 = "2";
