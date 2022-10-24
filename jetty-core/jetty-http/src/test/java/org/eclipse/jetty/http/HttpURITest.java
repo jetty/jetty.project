@@ -916,4 +916,13 @@ public class HttpURITest
             .path("");
         assertEquals("//host", uri.asString());
     }
+
+    @Test
+    public void testKeepParam()
+    {
+        HttpURI orig = HttpURI.from("http://localhost/context/info;param=value");
+        HttpURI built = HttpURI.build(orig).path("/context/info").asImmutable();
+        assertThat(built.getParam(), is(orig.getParam()));
+        assertThat(built.toString(), is(orig.toString()));
+    }
 }

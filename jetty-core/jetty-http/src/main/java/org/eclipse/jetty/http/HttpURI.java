@@ -894,6 +894,17 @@ public interface HttpURI
             _uri = null;
             _path = path;
             _canonicalPath = null;
+
+            // If the passed path does not have a parameter, then keep the current parameter
+            // else delete the current parameter
+            if (_param != null)
+            {
+                if (path.indexOf(';') >= 0)
+                    _param = null;
+                else
+                    _path = _path + ';' + _param;
+            }
+
             return this;
         }
 

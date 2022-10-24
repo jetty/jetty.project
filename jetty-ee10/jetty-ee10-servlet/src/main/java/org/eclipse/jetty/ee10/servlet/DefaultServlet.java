@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -426,6 +427,7 @@ public class DefaultServlet extends HttpServlet
 
         private final HttpServletRequest _servletRequest;
         private final Request _request;
+        private final HttpURI _uri;
         private final HttpFields _httpFields;
 
         ServletCoreRequest(HttpServletRequest request)
@@ -447,6 +449,10 @@ public class DefaultServlet extends HttpServlet
                 }
             }
             _httpFields = fields.asImmutable();
+
+            _uri = (request.getDispatcherType() == DispatcherType.REQUEST)
+                ? _request.getHttpURI()
+                : Request.updateHttpURI(_request, URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
         }
 
         @Override
@@ -464,7 +470,7 @@ public class DefaultServlet extends HttpServlet
         @Override
         public HttpURI getHttpURI()
         {
-            return Request.updateHttpURI(_request, URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
+            return _uri;
         }
 
         @Override

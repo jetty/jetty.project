@@ -705,6 +705,8 @@ public interface Request extends Attributes, Content.Source
 
     static HttpURI updateHttpURI(Request request, String newPathInContext)
     {
-        return HttpURI.build(request.getHttpURI()).path(URIUtil.addPaths(getContextPath(request), newPathInContext)).asImmutable();
+        return HttpURI.build(request.getHttpURI())
+            .path(URIUtil.addPaths(getContextPath(request), newPathInContext))
+            .asImmutable();
     }
 }
