@@ -36,22 +36,22 @@ public interface ResourceFactory
      * <p>Make a Resource containing a collection of other resources</p>
      * @param resources multiple resources to combine as a single resource. Typically, they are directories.
      * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
-     * @see ResourceCollection
+     * @see CombinedResource
      */
     static Resource combine(List<Resource> resources)
     {
-        return ResourceCollection.combine(resources);
+        return CombinedResource.combine(resources);
     }
 
     /**
      * <p>Make a Resource containing a collection of other resources</p>
      * @param resources multiple resources to combine as a single resource. Typically, they are directories.
      * @return A Resource of multiple resources.
-     * @see ResourceCollection
+     * @see CombinedResource
      */
     static Resource combine(Resource... resources)
     {
-        return ResourceCollection.combine(List.of(resources));
+        return CombinedResource.combine(List.of(resources));
     }
 
     /**

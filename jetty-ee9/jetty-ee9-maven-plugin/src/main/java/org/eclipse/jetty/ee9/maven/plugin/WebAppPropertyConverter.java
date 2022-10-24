@@ -29,8 +29,8 @@ import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -105,8 +105,8 @@ public class WebAppPropertyConverter
 
         //send over the calculated resource bases that includes unpacked overlays
         Resource baseResource = webApp.getBaseResource();
-        if (baseResource instanceof ResourceCollection)
-            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
+        if (baseResource instanceof CombinedResource)
+            props.put(BASE_DIRS, toCSV(((CombinedResource)webApp.getBaseResource()).getResources()));
         else if (baseResource instanceof Resource)
             props.put(BASE_DIRS, webApp.getBaseResource().toString());
         

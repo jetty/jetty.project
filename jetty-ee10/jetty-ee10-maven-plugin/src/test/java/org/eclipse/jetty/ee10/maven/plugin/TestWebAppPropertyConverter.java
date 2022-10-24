@@ -25,8 +25,8 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -152,10 +152,10 @@ public class TestWebAppPropertyConverter
         assertEquals(true, webApp.isPersistTempDirectory());
         assertEquals(war.getAbsolutePath(), webApp.getWar());
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
-        assertThat(webApp.getBaseResource(), instanceOf(ResourceCollection.class));
+        assertThat(webApp.getBaseResource(), instanceOf(CombinedResource.class));
 
-        ResourceCollection resourceCollection = (ResourceCollection)webApp.getBaseResource();
-        List<URI> actual = resourceCollection.getResources().stream().filter(Objects::nonNull).map(Resource::getURI).toList();
+        CombinedResource combinedResource = (CombinedResource)webApp.getBaseResource();
+        List<URI> actual = combinedResource.getResources().stream().filter(Objects::nonNull).map(Resource::getURI).toList();
         URI[] expected = new URI[]{base1.toURI(), base2.toURI()};
         assertThat(actual, containsInAnyOrder(expected));
     }

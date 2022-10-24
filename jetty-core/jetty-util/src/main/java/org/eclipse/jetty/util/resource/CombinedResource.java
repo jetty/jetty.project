@@ -28,13 +28,9 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * A collection of Resources.
- * Allows webapps to have multiple sources.
- * The first resource in the collection is the main resource.
- * If a resource is not found in the main resource, it looks it up in
- * the order the provided in the constructors
+ * Multiple resource directories presenteda as a single Resource.
  */
-public class ResourceCollection extends Resource
+public class CombinedResource extends Resource
 {
     /**
      * Stream a resource to its component resources (if any).
@@ -44,27 +40,27 @@ public class ResourceCollection extends Resource
      */
     public static Stream<Resource> stream(Resource resource)
     {
-        if (resource instanceof ResourceCollection rc)
+        if (resource instanceof CombinedResource rc)
             return rc.getResources().stream();
         return Stream.of(resource);
     }
 
     /**
-     * <p>Make a Resource containing a collection of other resources</p>
+     * <p>Make a Resource containing a combination of other resources</p>
      * @param resources multiple resources to combine as a single resource. Typically, they are directories.
      * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
-     * @see ResourceCollection
+     * @see CombinedResource
      */
     static Resource combine(List<Resource> resources)
     {
-        resources = ResourceCollection.gatherUniqueFlatResourceList(resources);
+        resources = CombinedResource.gatherUniqueFlatResourceList(resources);
 
         if (resources == null || resources.isEmpty())
             return null;
         if (resources.size() == 1)
             return resources.get(0);
 
-        return new ResourceCollection(resources);
+        return new CombinedResource(resources);
     }
 
     static List<Resource> gatherUniqueFlatResourceList(List<Resource> resources)
@@ -81,7 +77,7 @@ public class ResourceCollection extends Resource
                 throw new IllegalArgumentException("Null Resource entry encountered");
             }
 
-            if (r instanceof ResourceCollection resourceCollection)
+            if (r instanceof CombinedResource resourceCollection)
             {
                 unique.addAll(gatherUniqueFlatResourceList(resourceCollection.getResources()));
             }
@@ -116,7 +112,7 @@ public class ResourceCollection extends Resource
      *
      * @param resources the resources to be added to collection
      */
-    ResourceCollection(List<Resource> resources)
+    CombinedResource(List<Resource> resources)
     {
         _resources = Collections.unmodifiableList(resources);
     }
@@ -176,7 +172,7 @@ public class ResourceCollection extends Resource
         if (resources.size() == 1)
             return resources.get(0);
 
-        return new ResourceCollection(resources);
+        return new CombinedResource(resources);
     }
 
     @Override
@@ -296,7 +292,7 @@ public class ResourceCollection extends Resource
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        ResourceCollection other = (ResourceCollection)o;
+        CombinedResource other = (CombinedResource)o;
         return Objects.equals(_resources, other._resources);
     }
 

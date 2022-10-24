@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class ResourceCollectionTest
+public class CombinedResourceTest
 {
     private final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
     public WorkDir workDir;
@@ -135,8 +135,8 @@ public class ResourceCollectionTest
 
         // This should return a ResourceCollection with 3 `/dir/` sub-directories.
         Resource r = rc.resolve("dir");
-        assertTrue(r instanceof ResourceCollection);
-        rc = (ResourceCollection)r;
+        assertTrue(r instanceof CombinedResource);
+        rc = (CombinedResource)r;
         assertEquals(getContent(rc, "1.txt"), "1 - one (in dir)");
         assertEquals(getContent(rc, "2.txt"), "2 - two (in dir)");
         assertEquals(getContent(rc, "3.txt"), "3 - three (in dir)");
@@ -202,10 +202,10 @@ public class ResourceCollectionTest
         };
 
         List<URI> actual = new ArrayList<>();
-        assertThat(rc2, instanceOf(ResourceCollection.class));
-        if (rc2 instanceof ResourceCollection resourceCollection)
+        assertThat(rc2, instanceOf(CombinedResource.class));
+        if (rc2 instanceof CombinedResource combinedResource)
         {
-            for (Resource res : resourceCollection.getResources())
+            for (Resource res : combinedResource.getResources())
                 actual.add(res.getURI());
         }
         assertThat(actual, contains(expected));

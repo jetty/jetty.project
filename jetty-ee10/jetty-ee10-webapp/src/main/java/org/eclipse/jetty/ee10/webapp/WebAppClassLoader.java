@@ -43,8 +43,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
@@ -224,7 +224,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public void addClassPath(Resource resource)
     {
-        ResourceCollection.stream(resource).forEach(r ->
+        CombinedResource.stream(resource).forEach(r ->
         {
             if (resource.exists())
             {

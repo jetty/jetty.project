@@ -40,8 +40,8 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
@@ -220,7 +220,7 @@ public class MavenWebAppContext extends WebAppContext
      * configuration
      *
      * @param resourceBases Array of resources strings to set as a
-     * {@link ResourceCollection}.
+     * {@link CombinedResource}.
      */
     public void setResourceBases(String[] resourceBases)
     {
