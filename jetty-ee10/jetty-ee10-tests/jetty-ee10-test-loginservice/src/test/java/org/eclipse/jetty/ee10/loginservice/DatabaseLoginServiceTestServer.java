@@ -244,7 +244,7 @@ public class DatabaseLoginServiceTestServer
         ServletContextHandler root = new ServletContextHandler();
         root.setSecurityHandler(security);
         root.setContextPath("/");
-        root.setBaseResource(_resourceBase);
+        root.setBaseResourceAsPath(_resourceBase);
         ServletHolder servletHolder = new ServletHolder(new ExtendedDefaultServlet());
         servletHolder.setInitParameter("gzip", "true");
         root.addServlet(servletHolder, "/*");

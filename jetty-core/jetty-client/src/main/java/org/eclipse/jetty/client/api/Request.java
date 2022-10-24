@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -463,7 +464,7 @@ public interface Request
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
      */
-    boolean abort(Throwable cause);
+    CompletableFuture<Boolean> abort(Throwable cause);
 
     /**
      * @return the abort cause passed to {@link #abort(Throwable)},

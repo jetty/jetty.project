@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpContentResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -40,11 +41,11 @@ import org.eclipse.jetty.client.api.Result;
  */
 public class FutureResponseListener extends BufferingResponseListener implements Future<ContentResponse>
 {
+    private final AtomicBoolean cancelled = new AtomicBoolean();
     private final CountDownLatch latch = new CountDownLatch(1);
     private final Request request;
     private ContentResponse response;
     private Throwable failure;
-    private volatile boolean cancelled;
 
     public FutureResponseListener(Request request)
     {
@@ -73,14 +74,18 @@ public class FutureResponseListener extends BufferingResponseListener implements
     @Override
     public boolean cancel(boolean mayInterruptIfRunning)
     {
-        cancelled = true;
-        return request.abort(new CancellationException());
+        if (cancelled.compareAndSet(false, true))
+        {
+            request.abort(new CancellationException());
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean isCancelled()
     {
-        return cancelled;
+        return cancelled.get();
     }
 
     @Override

@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -425,8 +426,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void failAndClose(Throwable failure)
     {
-        if (responseFailure(failure))
-            getHttpConnection().close(failure);
+        responseFailure(failure, Promise.from(failed ->
+        {
+            if (failed)
+                getHttpConnection().close(failure);
+        }, f -> getHttpConnection().close(failure)));
     }
 
     long getMessagesIn()

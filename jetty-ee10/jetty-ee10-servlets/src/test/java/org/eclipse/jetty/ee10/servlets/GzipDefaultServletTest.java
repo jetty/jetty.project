@@ -84,7 +84,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", WibbleDefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -166,7 +166,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -229,7 +229,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -286,7 +286,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -346,7 +346,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -405,7 +405,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -472,7 +472,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -529,7 +529,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -586,7 +586,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -644,7 +644,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -702,7 +702,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         servletContextHandler.getMimeTypes().addMimeMapping("txt", "text/plain;charset=UTF-8");
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
@@ -761,7 +761,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         servletContextHandler.addServlet(holder, "/");
         servletContextHandler.insertHandler(gzipHandler);
@@ -819,7 +819,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         servletContextHandler.addServlet(holder, "/");
         servletContextHandler.insertHandler(gzipHandler);
@@ -899,7 +899,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         servletContextHandler.addServlet(holder, "/");
         servletContextHandler.insertHandler(gzipHandler);
@@ -956,7 +956,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(contextDir);
+        servletContextHandler.setBaseResourceAsPath(contextDir);
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");

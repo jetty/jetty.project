@@ -28,6 +28,7 @@ import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,10 +201,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public boolean onIdleTimeout(Stream stream, Throwable x)
+        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            return channel.onTimeout(x);
+            channel.onTimeout(x, promise);
         }
 
         @Override

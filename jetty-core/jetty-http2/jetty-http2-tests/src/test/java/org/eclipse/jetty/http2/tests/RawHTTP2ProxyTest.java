@@ -521,12 +521,12 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        public boolean onIdleTimeout(Stream stream, Throwable x)
+        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS idle timeout for {}", stream);
             // TODO: drain the queue for that stream, reset stream, and notify server.
-            return true;
+            promise.succeeded(true);
         }
     }
 
@@ -684,12 +684,12 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        public boolean onIdleTimeout(Stream stream, Throwable x)
+        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC idle timeout for {}", stream);
             // TODO:
-            return true;
+            promise.succeeded(true);
         }
 
         private void link(Stream proxyToServerStream, Stream clientToProxyStream)

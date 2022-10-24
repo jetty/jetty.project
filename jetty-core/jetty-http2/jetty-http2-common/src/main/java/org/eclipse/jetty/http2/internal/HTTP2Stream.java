@@ -297,11 +297,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             LOG.debug("Idle timeout {}ms expired on {}", getIdleTimeout(), this);
 
         // Notify the application.
-        if (notifyIdleTimeout(this, timeout))
+        notifyIdleTimeout(this, timeout, Promise.from(timedOut ->
         {
-            // Tell the other peer that we timed out.
-            reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        }
+            if (timedOut)
+            {
+                // Tell the other peer that we timed out.
+                reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            }
+        }, x -> reset(new ResetFrame(getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
     }
 
     private ConcurrentMap<String, Object> attributes()
@@ -814,19 +817,24 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private boolean notifyIdleTimeout(Stream stream, Throwable failure)
+    private void notifyIdleTimeout(Stream stream, Throwable failure, Promise<Boolean> promise)
     {
         Listener listener = this.listener;
-        if (listener == null)
-            return true;
-        try
+        if (listener != null)
         {
-            return listener.onIdleTimeout(stream, failure);
+            try
+            {
+                listener.onIdleTimeout(stream, failure, promise);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener {}", listener, x);
+                promise.failed(x);
+            }
         }
-        catch (Throwable x)
+        else
         {
-            LOG.info("Failure while notifying listener {}", listener, x);
-            return true;
+            promise.succeeded(true);
         }
     }
 
