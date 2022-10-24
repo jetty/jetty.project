@@ -54,19 +54,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferInputStream;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.Components;
-import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -373,7 +367,7 @@ public class DefaultServlet extends HttpServlet
                 if (coreResponse.isCommitted())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Response already committed for {}", coreRequest._request.getHttpURI());
+                        LOG.debug("Response already committed for {}", coreRequest.getHttpURI());
                     return;
                 }
 
@@ -420,20 +414,19 @@ public class DefaultServlet extends HttpServlet
         doGet(req, resp);
     }
 
-    private static class ServletCoreRequest implements Request
+    private static class ServletCoreRequest extends Request.Wrapper
     {
         // TODO fully implement this class and move it to the top level
         // TODO Some methods are directed to core that probably should be intercepted
 
         private final HttpServletRequest _servletRequest;
-        private final Request _request;
-        private final HttpURI _uri;
         private final HttpFields _httpFields;
+        private final HttpURI _uri;
 
         ServletCoreRequest(HttpServletRequest request)
         {
+            super(ServletContextRequest.getServletContextRequest(request));
             _servletRequest = request;
-            _request = ServletContextRequest.getServletContextRequest(request);
 
             HttpFields.Mutable fields = HttpFields.build();
 
@@ -449,10 +442,9 @@ public class DefaultServlet extends HttpServlet
                 }
             }
             _httpFields = fields.asImmutable();
-
             _uri = (request.getDispatcherType() == DispatcherType.REQUEST)
-                ? _request.getHttpURI()
-                : Request.updateHttpURI(_request, URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
+                ? getWrapped().getHttpURI()
+                : Request.updateHttpURI(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
         }
 
         @Override
@@ -462,27 +454,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public HttpFields getTrailers()
-        {
-            return _request.getTrailers();
-        }
-
-        @Override
         public HttpURI getHttpURI()
         {
             return _uri;
-        }
-
-        @Override
-        public void demand(Runnable demandCallback)
-        {
-            _request.demand(demandCallback);
-        }
-
-        @Override
-        public void fail(Throwable failure)
-        {
-            _request.fail(failure);
         }
 
         @Override
@@ -492,33 +466,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public Components getComponents()
-        {
-            return _request.getComponents();
-        }
-
-        @Override
-        public ConnectionMetaData getConnectionMetaData()
-        {
-            return _request.getConnectionMetaData();
-        }
-
-        @Override
         public String getMethod()
         {
             return _servletRequest.getMethod();
-        }
-
-        @Override
-        public Context getContext()
-        {
-            return _request.getContext();
-        }
-
-        @Override
-        public long getTimeStamp()
-        {
-            return _request.getTimeStamp();
         }
 
         @Override
@@ -528,33 +478,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public Content.Chunk read()
-        {
-            return _request.read();
-        }
-
-        @Override
-        public boolean isPushSupported()
-        {
-            return _request.isPushSupported();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            this._request.push(request);
-        }
-
-        @Override
         public boolean addErrorListener(Predicate<Throwable> onError)
         {
             return false;
-        }
-
-        @Override
-        public TunnelSupport getTunnelSupport()
-        {
-            return _request.getTunnelSupport();
         }
 
         @Override
@@ -962,7 +888,8 @@ public class DefaultServlet extends HttpServlet
                 return null;
             }
 
-            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : Request.getPathInContext(coreRequest);
+            String pathInContext = Request.getPathInContext(coreRequest);
+            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
 
             String welcomeServlet = null;
             Resource base = _baseResource.resolve(requestTarget);
@@ -971,7 +898,7 @@ public class DefaultServlet extends HttpServlet
                 for (String welcome : welcomes)
                 {
                     Resource welcomePath = base.resolve(welcome);
-                    String welcomeInContext = URIUtil.addPaths(Request.getPathInContext(coreRequest), welcome);
+                    String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
 
                     if (Resources.isReadableFile(welcomePath))
                         return welcomeInContext;

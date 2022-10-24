@@ -838,8 +838,6 @@ public class ServletChannel implements Runnable
     /**
      * If a write or similar operation to this channel fails,
      * then this method should be called.
-     * <p>
-     * The standard implementation calls {@code HttpTransport#abort(Throwable)}.
      *
      * @param failure the failure that caused the abort.
      */

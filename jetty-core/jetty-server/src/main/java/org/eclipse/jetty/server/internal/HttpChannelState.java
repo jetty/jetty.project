@@ -796,7 +796,7 @@ public class HttpChannelState implements HttpChannel, Components
             return _loggedRequest == null ? this : _loggedRequest;
         }
 
-        HttpStream getStream()
+        HttpStream getHttpStream()
         {
             return getHttpChannel()._stream;
         }
@@ -1007,7 +1007,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void push(MetaData.Request request)
         {
-            getStream().push(request);
+            getHttpStream().push(request);
         }
 
         @Override
@@ -1041,7 +1041,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public TunnelSupport getTunnelSupport()
         {
-            return getStream().getTunnelSupport();
+            return getHttpStream().getTunnelSupport();
         }
 
         @Override
@@ -1462,7 +1462,7 @@ public class HttpChannelState implements HttpChannel, Components
         public InvocationType getInvocationType()
         {
             // TODO review this as it is probably not correct
-            return _request.getStream().getInvocationType();
+            return _request.getHttpStream().getInvocationType();
         }
     }
 
