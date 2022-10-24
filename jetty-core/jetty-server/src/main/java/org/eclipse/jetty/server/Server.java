@@ -785,6 +785,12 @@ public class Server extends Handler.Wrapper implements Attributes
             if (factory != null)
                 factory.destroy(o);
         }
+
+        @Override
+        public String pathInContext(String path)
+        {
+            return path;
+        }
     }
 
     private class ServerEnvironment extends Attributes.Wrapper implements Environment

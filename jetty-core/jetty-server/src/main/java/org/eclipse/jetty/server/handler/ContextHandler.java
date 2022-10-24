@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -94,6 +95,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     private String _displayName;
     private String _contextPath = "/";
+    private boolean _rootContext;
     private Resource _baseResource;
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
@@ -608,17 +610,26 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (!checkVirtualHost(request))
             return null;
 
-        String path = Request.getPathInContext(request);
-        if (!path.startsWith(_contextPath))
-            return null;
-
-        if (_contextPath.length() == path.length())
+        // Root context accepts all requests
+        if (!_rootContext)
         {
-            if (!getAllowNullPathInContext())
-                return this::processMovedPermanently;
+            // Otherwise check the path
+
+            String path = request.getHttpURI().getCanonicalPath();
+            if (path == null || !path.startsWith(_contextPath))
+                return null;
+
+            if (path.length() == _contextPath.length())
+            {
+                if (!getAllowNullPathInContext())
+                    return this::processMovedPermanently;
+            }
+            else
+            {
+                if (path.charAt(_contextPath.length()) != '/')
+                    return null;
+            }
         }
-        else if (path.charAt(_contextPath.length()) != '/')
-            return null;
 
         // TODO check availability and maybe return a 503
         if (!isAvailable() && isStarted())
@@ -678,7 +689,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _contextPath = URIUtil.canonicalPath(contextPath);
+        _contextPath = URIUtil.canonicalPath(Objects.requireNonNull(contextPath));
+        _rootContext = "/".equals(contextPath);
     }
 
     /**
@@ -1153,6 +1165,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             DecoratedObjectFactory factory = getDecoratedObjectFactory();
             if (factory != null)
                 factory.destroy(o);
+        }
+
+        @Override
+        public String pathInContext(String path)
+        {
+            if (_rootContext)
+                return path;
+            if (!path.startsWith(_contextPath))
+                return null;
+            if (path.length() == _contextPath.length())
+                return "";
+            if (path.charAt(_contextPath.length()) != '/')
+                return null;
+            return path.substring(_contextPath.length());
         }
     }
 

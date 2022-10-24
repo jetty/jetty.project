@@ -889,6 +889,8 @@ public interface HttpURI
         {
             if (hasAuthority() && !isPathValidForAuthority(path))
                 throw new IllegalArgumentException("Relative path with authority");
+            if (!URIUtil.isLegalPath(path))
+                throw new IllegalArgumentException("Path not correctly encoded: " + path);
             _uri = null;
             _path = path;
             _canonicalPath = null;

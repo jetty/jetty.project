@@ -170,60 +170,60 @@ public interface Attributes
      */
     class Wrapper implements Attributes
     {
-        protected final Attributes _attributes;
+        private final Attributes _wrapped;
 
-        public Wrapper(Attributes attributes)
+        public Wrapper(Attributes wrapped)
         {
-            _attributes = attributes;
+            _wrapped = wrapped;
         }
 
         public Attributes getWrapped()
         {
-            return _attributes;
+            return _wrapped;
         }
 
         @Override
         public Object removeAttribute(String name)
         {
-            return _attributes.removeAttribute(name);
+            return _wrapped.removeAttribute(name);
         }
 
         @Override
         public Object setAttribute(String name, Object attribute)
         {
-            return _attributes.setAttribute(name, attribute);
+            return _wrapped.setAttribute(name, attribute);
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            return _attributes.getAttribute(name);
+            return _wrapped.getAttribute(name);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
-            return _attributes.getAttributeNameSet();
+            return _wrapped.getAttributeNameSet();
         }
 
         @Override
         public void clearAttributes()
         {
-            _attributes.clearAttributes();
+            _wrapped.clearAttributes();
         }
 
         // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
-            return _attributes.hashCode();
+            return _wrapped.hashCode();
         }
 
         // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public boolean equals(Object obj)
         {
-            return _attributes.equals(obj);
+            return _wrapped.equals(obj);
         }
     }
 

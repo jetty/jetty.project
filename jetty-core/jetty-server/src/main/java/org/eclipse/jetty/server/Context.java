@@ -36,9 +36,6 @@ public interface Context extends Attributes, Decorator, Executor
 {
     /**
      * <p>Get the context path of this Context.</p>
-     * <p>This may differ from the {@link Request#getContextPath()} in the case of nested contexts.</p>
-     * @return The URI path prefix of the context, which may be null for the server context, or "/" for the root context.
-     * @see Request#getContextPath()
      */
     String getContextPath();
 
@@ -59,4 +56,7 @@ public interface Context extends Attributes, Decorator, Executor
     
     /** scope the calling thread to the context and request and run the runnable. */
     void run(Runnable runnable, Request request);
+
+    /** Return a URI path scoped to this context **/
+    String pathInContext(String path);
 }

@@ -138,7 +138,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         PathSpec pathSpec,
         MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request, pathInContext);
+        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -146,6 +146,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
+    }
+
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override
@@ -237,8 +242,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         {
             case "o.e.j.s.s.ServletScopedRequest.request" -> _httpServletRequest;
             case "o.e.j.s.s.ServletScopedRequest.response" -> _response.getHttpServletResponse();
-            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(getPathInContext()).getServletName();
-            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getPathInContext()).getPattern();
+            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(_pathInContext).getServletName();
+            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(_pathInContext).getPattern();
             default -> super.getAttribute(name);
         };
     }

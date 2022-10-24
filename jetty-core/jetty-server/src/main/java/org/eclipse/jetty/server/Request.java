@@ -151,68 +151,26 @@ public interface Request extends Attributes, Content.Source
     Context getContext();
 
     /**
-     * Get the full context path.
+     * <p>Get the context pat. this is equivalent to <code>request.getContext().getContextPath()</code>
+     *
      * @param request The request to get the context path from.
-     * @return The full contextPath of the request. In the common case, this is equivalent to
-     *         calling {@link Context#getContextPath()} on the context returned from {@link #getContext()}.
-     *         However, in the case of nested contexts, this method will return the concatenation of nested
-     *         context paths rather than just the current context path.
+     * @return The contextPath of the request. .
      * @see Context#getContextPath()
      */
     static String getContextPath(Request request)
     {
-        Context context = request.getContext();
-        if (context == null)
-            return null;
-
-        if (!(request instanceof Request.Wrapper wrapper))
-            return context.getContextPath();
-
-        String contextPath = context.getContextPath();
-
-        while (wrapper != null)
-        {
-            Request wrapped = wrapper.getWrapped();
-
-            Context outer = wrapped.getContext();
-            if (context != outer)
-            {
-                if (outer == null || outer instanceof Server.ServerContext)
-                    return contextPath;
-                contextPath = URIUtil.addPaths(outer.getContextPath(), contextPath);
-                context = outer;
-            }
-
-            wrapper = wrapped instanceof Request.Wrapper w ? w : null;
-        }
-        return contextPath;
+        return request.getContext().getContextPath();
     }
 
     /**
      * <p>Get the canonically encoded path of the URI, scoped to the current context.</p>
-     * <p>The <code>pathInContext</code> represents the targeted resource within the current content for the request.
-     * In most circumstances it will be a semantic suffix of the URI returned from {@link #getHttpURI()}.
-     * However a wrapped request may alter one but not the other, and in such cases a handler should consider using
-     * @param request The request to get the path in the context from.
-     * {@link #getHttpURI()} when generating URIs visible outside of the current context.</p>
+     * <p>The <code>pathInContext</code> represents the targeted resource within the current content for the request.</p>
      * @return The part of the canonically encoded path of the URI after any context path prefix has been removed.
      * @see HttpURI#getCanonicalPath()
      */
     static String getPathInContext(Request request)
     {
-        String path = request.getHttpURI().getCanonicalPath();
-        String contextPath = Request.getContextPath(request);
-
-        if (StringUtil.isBlank(contextPath) || "/".equals(contextPath))
-            return path;
-
-        if (!path.startsWith(contextPath))
-            return null; // TODO ISE???
-        if (path.length() == contextPath.length())
-            return "";
-        if (path.charAt(contextPath.length()) != '/')
-            return null; // TODO ISE???
-        return path.substring(contextPath.length());
+        return request.getContext().pathInContext(request.getHttpURI().getCanonicalPath());
     }
 
     /**

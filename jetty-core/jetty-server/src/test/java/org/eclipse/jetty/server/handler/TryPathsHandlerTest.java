@@ -99,7 +99,7 @@ public class TryPathsHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                assertThat(Request.getPathInContext(request), equalTo("/forward?p=/last"));
+                assertThat(Request.getPathInContext(request), equalTo("/forward%3Fp=/last"));
                 response.setStatus(HttpStatus.NO_CONTENT_204);
                 callback.succeeded();
             }

@@ -58,9 +58,9 @@ public class ContextHandlerDeepTest
         ContextHandler contextHandlerA = new ContextHandler();
         contextHandlerA.setContextPath("/a");
         ContextHandler contextHandlerB = new ContextHandler();
-        contextHandlerB.setContextPath("/b");
+        contextHandlerB.setContextPath("/a/b");
         ContextHandler contextHandlerC = new ContextHandler();
-        contextHandlerC.setContextPath("/c");
+        contextHandlerC.setContextPath("/a/b/c");
 
         contextHandlerA.setHandler(contextHandlerB);
         contextHandlerB.setHandler(contextHandlerC);
