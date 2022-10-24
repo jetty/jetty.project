@@ -95,7 +95,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     private String _displayName;
     private String _contextPath = "/";
-    private boolean _rootContext;
+    private boolean _rootContext = true;
     private Resource _baseResource;
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;

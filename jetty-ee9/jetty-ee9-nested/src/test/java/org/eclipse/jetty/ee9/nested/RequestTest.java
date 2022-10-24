@@ -2246,6 +2246,7 @@ public class RequestTest
 
     private static class TestCoreRequest implements org.eclipse.jetty.server.Request
     {
+        private final Server _server = new Server();
         private final ConnectionMetaData _connectionMetaData;
         private final String _uri;
         private final HttpFields.Mutable _fields;
@@ -2290,7 +2291,7 @@ public class RequestTest
         @Override
         public Context getContext()
         {
-            return null;
+            return _server.getContext();
         }
 
         @Override
