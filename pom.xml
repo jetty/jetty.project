@@ -21,6 +21,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
+    <maven.test.failure.ignore>false</maven.test.failure.ignore>
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
@@ -592,8 +593,10 @@
             <timeoutInSeconds>300</timeoutInSeconds>
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
-            <settingsFile>${settingsPath}</settingsFile>
-            <ignoreFailures>true</ignoreFailures>
+<!--            <settingsFile>${settingsPath}</settingsFile>-->
+            <settingsFile>src/it/settings.xml</settingsFile>
+            <ignoreFailures>${maven.test.failure.ignore}</ignoreFailures>
+            <addTestClassPath>true</addTestClassPath>
             <skipInvocation>${skipTests}</skipInvocation>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>

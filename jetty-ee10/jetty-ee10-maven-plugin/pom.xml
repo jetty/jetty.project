@@ -100,8 +100,6 @@
         <configuration>
           <junitPackageName>org.eclipse.jetty.maven.its.ee10</junitPackageName>
           <streamLogsOnFailures>true</streamLogsOnFailures>
-          <addTestClassPath>true</addTestClassPath>
-          <ignoreFailures>true</ignoreFailures>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
@@ -118,7 +116,6 @@
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
           </scriptVariables>
-          <settingsFile>src/it/settings.xml</settingsFile>
           <goals>
             <goal>clean</goal>
           </goals>

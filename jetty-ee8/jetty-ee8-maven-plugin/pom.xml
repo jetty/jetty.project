@@ -98,18 +98,15 @@
         </executions>
         <configuration>
           <junitPackageName>org.eclipse.jetty.maven.its.ee8</junitPackageName>
-          <addTestClassPath>true</addTestClassPath>
-          <ignoreFailures>true</ignoreFailures>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
-<!--            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>-->
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
             <servletApiVersion>${jetty.servlet.api.version}</servletApiVersion>
           </scriptVariables>
-          <settingsFile>src/it/settings.xml</settingsFile>
           <goals>
             <goal>clean</goal>
           </goals>
