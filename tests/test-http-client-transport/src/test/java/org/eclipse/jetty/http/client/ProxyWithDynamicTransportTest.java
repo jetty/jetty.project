@@ -260,7 +260,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxySecure ? proxyTLSConnector.getLocalPort() : proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
-        client.getProxyConfiguration().getProxies().add(proxy);
+        client.getProxyConfiguration().addProxy(proxy);
 
         String scheme = serverSecure ? "https" : "http";
         int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
@@ -296,7 +296,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy proxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
-        client.getProxyConfiguration().getProxies().add(proxy);
+        client.getProxyConfiguration().addProxy(proxy);
 
         long idleTimeout = 1000;
         http2Client.setStreamIdleTimeout(idleTimeout);
@@ -337,7 +337,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
-        client.getProxyConfiguration().getProxies().add(httpProxy);
+        client.getProxyConfiguration().addProxy(httpProxy);
         proxy.stop();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -372,7 +372,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
-        client.getProxyConfiguration().getProxies().add(httpProxy);
+        client.getProxyConfiguration().addProxy(httpProxy);
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
