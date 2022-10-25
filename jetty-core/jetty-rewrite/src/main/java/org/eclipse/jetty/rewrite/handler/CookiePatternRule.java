@@ -34,7 +34,6 @@ public class CookiePatternRule extends PatternRule
 
     public CookiePatternRule()
     {
-        this(null, null, null);
     }
 
     public CookiePatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)

@@ -857,7 +857,7 @@ public class ResourceService
         public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
             RetainableByteBufferPool byteBufferPool = target.getRequest().getComponents().getByteBufferPool().asRetainableByteBufferPool();
-            this.source = Files.newByteChannel(content.getResource().getPath());
+            this.source = content.getResource().newReadableByteChannel();
             this.sink = target;
             this.callback = callback;
             int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();

@@ -23,6 +23,10 @@ import org.eclipse.jetty.server.Request;
  */
 public class TerminatingPatternRule extends PatternRule
 {
+    public TerminatingPatternRule()
+    {
+    }
+
     public TerminatingPatternRule(String pattern)
     {
         super(pattern);

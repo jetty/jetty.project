@@ -20,6 +20,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 
 public class HttpReceiverOverFCGI extends HttpReceiver
 {
@@ -65,9 +66,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
-    protected boolean responseFailure(Throwable failure)
+    protected void responseFailure(Throwable failure, Promise<Boolean> promise)
     {
-        return super.responseFailure(failure);
+        super.responseFailure(failure, promise);
     }
 
     @Override

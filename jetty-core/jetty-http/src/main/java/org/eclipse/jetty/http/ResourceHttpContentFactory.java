@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 
 /**
  * An HttpContent.Factory for transient content (not cached).  The HttpContent's created by
@@ -44,6 +45,8 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
         {
             // try loading the content from our factory.
             Resource resource = this._factory.newResource(pathInContext);
+            if (Resources.missing(resource))
+                return null;
             return load(pathInContext, resource);
         }
         catch (Throwable t)

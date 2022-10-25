@@ -104,7 +104,7 @@ public class BrowserDebugTool
 
         context.setContextPath("/");
         Resource staticResourceBase = findStaticResources();
-        context.setBaseResource(staticResourceBase.getPath());
+        context.setBaseResourceAsPath(staticResourceBase.getPath());
         context.addServlet(BrowserSocketServlet.class, "/*");
         ServletHolder defHolder = new ServletHolder("default", DefaultServlet.class);
         context.addServlet(defHolder, "/");

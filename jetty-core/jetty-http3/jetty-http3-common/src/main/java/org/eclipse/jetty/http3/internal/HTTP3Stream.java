@@ -121,14 +121,16 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
     }
 
-    boolean onIdleTimeout(TimeoutException timeout)
+    void onIdleTimeout(TimeoutException timeout, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout {} ms expired on {}", getIdleTimeout(), this);
-        boolean close = notifyIdleTimeout(timeout);
-        if (close)
-            endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
-        return close;
+        notifyIdleTimeout(timeout, Promise.from(timedOut ->
+        {
+            if (timedOut)
+                endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+            promise.succeeded(timedOut);
+        }, promise::failed));
     }
 
     @Override
@@ -362,7 +364,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     protected abstract void notifyTrailer(HeadersFrame frame);
 
-    protected abstract boolean notifyIdleTimeout(TimeoutException timeout);
+    protected abstract void notifyIdleTimeout(TimeoutException timeout, Promise<Boolean> promise);
 
     public void onFailure(long error, Throwable failure)
     {

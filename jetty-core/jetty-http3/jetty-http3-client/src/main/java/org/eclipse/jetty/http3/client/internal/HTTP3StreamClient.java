@@ -23,6 +23,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,19 +111,20 @@ public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
     }
 
     @Override
-    protected boolean notifyIdleTimeout(TimeoutException timeout)
+    protected void notifyIdleTimeout(TimeoutException timeout, Promise<Boolean> promise)
     {
         Listener listener = getListener();
         try
         {
             if (listener != null)
-                return listener.onIdleTimeout(this, timeout);
-            return true;
+                listener.onIdleTimeout(this, timeout, promise);
+            else
+                promise.succeeded(true);
         }
         catch (Throwable x)
         {
             LOG.info("failure notifying listener {}", listener, x);
-            return true;
+            promise.failed(x);
         }
     }
 

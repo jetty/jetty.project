@@ -181,7 +181,7 @@ public class LifeCycleCallbackCollectionTest
         WebAppContext context = new WebAppContext();
         Path predestroyTestDir = testDir.resolve("predestroy-test");
         FS.ensureDirExists(predestroyTestDir);
-        context.setBaseResource(predestroyTestDir);
+        context.setBaseResourceAsPath(predestroyTestDir);
         context.setContextPath("/");
         server.setHandler(context);
 

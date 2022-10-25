@@ -26,6 +26,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,8 +114,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
-                    if (responseFailure(x))
-                        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                    responseFailure(x, Promise.from(failed ->
+                    {
+                        if (failed)
+                            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                    }, f -> stream.reset(HTTP3ErrorCode.INTERNAL_ERROR.code(), x)));
                 });
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
                 if (proceed)
@@ -159,18 +163,18 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     }
 
     @Override
-    public boolean onIdleTimeout(Stream.Client stream, Throwable failure)
+    public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-
-        return !exchange.abort(failure);
+        if (exchange != null)
+            exchange.abort(failure, Promise.from(aborted -> promise.succeeded(!aborted), promise::failed));
+        else
+            promise.succeeded(false);
     }
 
     @Override
     public void onFailure(Stream.Client stream, long error, Throwable failure)
     {
-        responseFailure(failure);
+        responseFailure(failure, Promise.noop());
     }
 }

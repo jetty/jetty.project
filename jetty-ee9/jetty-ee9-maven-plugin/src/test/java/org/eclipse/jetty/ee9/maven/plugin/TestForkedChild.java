@@ -81,7 +81,7 @@ public class TestForkedChild
                 MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
-                webapp.setBaseResource(baseDir.toPath());
+                webapp.setBaseResourceAsPath(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[0]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing

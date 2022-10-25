@@ -77,6 +77,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,7 +184,7 @@ public class DefaultServlet extends HttpServlet
             try
             {
                 Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
-                if (stylesheet.exists())
+                if (Resources.isReadableFile(stylesheet))
                 {
                     _resourceService.setStylesheet(stylesheet);
                 }
@@ -348,7 +349,7 @@ public class DefaultServlet extends HttpServlet
         try
         {
             HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getServletContextRequest(req));
-            if (content == null || !content.getResource().exists())
+            if (content == null || Resources.missing(content.getResource()))
             {
                 if (included)
                 {
@@ -966,14 +967,14 @@ public class DefaultServlet extends HttpServlet
 
             String welcomeServlet = null;
             Resource base = _baseResource.resolve(requestTarget);
-            if (base != null && base.exists())
+            if (Resources.isReadableDirectory(base))
             {
                 for (String welcome : welcomes)
                 {
                     Resource welcomePath = base.resolve(welcome);
                     String welcomeInContext = URIUtil.addPaths(coreRequest.getPathInContext(), welcome);
 
-                    if (welcomePath != null && welcomePath.exists())
+                    if (Resources.isReadableFile(welcomePath))
                         return welcomeInContext;
 
                     if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)

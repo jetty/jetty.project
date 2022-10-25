@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -1821,7 +1822,7 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         _rootResourceHandler.stop();
         _rootResourceHandler.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer0")),
             _rootResourceHandler.getBaseResource()));
         _rootResourceHandler.start();
 
@@ -1880,8 +1881,8 @@ public class ResourceHandlerTest
         copySimpleTestResource(docRoot);
         _rootResourceHandler.stop();
         _rootResourceHandler.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("layer1/")),
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer0")),
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("layer1")),
             _rootResourceHandler.getBaseResource()));
         _rootResourceHandler.start();
 

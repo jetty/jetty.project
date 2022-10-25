@@ -22,10 +22,13 @@ import org.eclipse.jetty.server.Request;
  * <p>Abstract rule that uses the Servlet pattern syntax via
  * {@link ServletPathSpec} for path pattern matching.</p>
  */
-// TODO: add boolean useCanonical and use canonicalPath?query instead of pathQuery()
 public abstract class PatternRule extends Rule
 {
     private String _pattern;
+
+    protected PatternRule()
+    {
+    }
 
     protected PatternRule(String pattern)
     {

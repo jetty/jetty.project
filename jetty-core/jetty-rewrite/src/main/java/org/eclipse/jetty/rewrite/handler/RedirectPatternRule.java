@@ -32,6 +32,10 @@ public class RedirectPatternRule extends PatternRule
     private String _location;
     private int _statusCode = HttpStatus.FOUND_302;
 
+    public RedirectPatternRule()
+    {
+    }
+
     public RedirectPatternRule(@Name("pattern") String pattern, @Name("location") String location)
     {
         super(pattern);

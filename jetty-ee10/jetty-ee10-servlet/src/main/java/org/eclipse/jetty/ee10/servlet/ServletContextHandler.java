@@ -74,7 +74,6 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -98,6 +97,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1081,7 +1081,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         Resource baseResource = getBaseResource();
         if (baseResource != null && baseResource.isAlias())
             LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
-                baseResource, baseResource.getTargetURI(), this);
+                baseResource, baseResource.getRealURI(), this);
 
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
@@ -2928,7 +2928,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             for (Resource r: resource)
             {
-                if (r.exists())
+                // return first
+                if (Resources.exists(r))
                     return r.getURI().toURL();
             }
 

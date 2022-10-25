@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -715,10 +716,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _baseResource = resourceBase;
+
+        // Allow resource base to be unset
+        if (resourceBase == null)
+        {
+            _baseResource = null;
+            return;
+        }
+
+        if (Resources.isReadable(resourceBase))
+            _baseResource = resourceBase;
+        else
+            throw new IllegalArgumentException("Base Resource is not valid: " + resourceBase);
     }
 
-    public void setBaseResource(Path path)
+    public void setBaseResourceAsPath(Path path)
     {
         if (path == null)
         {
@@ -728,11 +740,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         Resource resource = ResourceFactory.of(this).newResource(path);
-        if (resource != null && resource.exists())
-            setBaseResource(resource);
-        else
+        if (!Resources.isReadable(resource))
             throw new IllegalArgumentException("Base Resource is not valid: " + path);
 
+        setBaseResource(resource);
+    }
+
+    /**
+     * @param base The resourceBase to server content from. If null the
+     * context resource base is used.  If non-null the {@link Resource} is created
+     * from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)} for
+     * this context.
+     */
+    public void setBaseResourceAsString(String base)
+    {
+        setBaseResource((Resource)(base == null ? null : ResourceFactory.of(this).newResource(base)));
     }
 
     /**
@@ -867,7 +889,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (resource.isAlias())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aliased resource: {} -> {}", resource, resource.getTargetURI());
+                LOG.debug("Aliased resource: {} -> {}", resource, resource.getRealURI());
 
             // alias checks
             for (AliasCheck check : _aliasChecks)

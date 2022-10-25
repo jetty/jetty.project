@@ -30,7 +30,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,7 +113,6 @@ public class ReaderEchoTest
         }
     }
 
-    @Disabled
     @Test
     public void testReaderParamSocket() throws Exception
     {
@@ -125,7 +123,7 @@ public class ReaderEchoTest
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload("Hello World|Every Person"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("Hello World|Every%20Person"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))

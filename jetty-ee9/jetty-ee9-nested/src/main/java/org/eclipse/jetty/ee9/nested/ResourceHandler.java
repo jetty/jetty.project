@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +166,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
                 r = contextBase.resolve(path);
         }
 
-        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
+        if (Resources.missing(r) && path.endsWith("/jetty-dir.css"))
             r = getStylesheet();
 
         if (r == null)
@@ -424,14 +425,23 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     @Deprecated
     public void setResourceBase(String resourceBase)
     {
+        setBaseResourceAsString(resourceBase);
+    }
+
+    /**
+     * @param baseResource The base resource as a string.
+     * @deprecated use {@link #setBaseResource(Resource)}
+     */
+    public void setBaseResourceAsString(String baseResource)
+    {
         try
         {
-            setBaseResource(ResourceFactory.of(this).newResource(resourceBase));
+            setBaseResource(ResourceFactory.of(this).newResource(baseResource));
         }
         catch (Exception e)
         {
-            LOG.warn("Invalid Base Resource reference: {}", resourceBase, e);
-            throw new IllegalArgumentException(resourceBase);
+            LOG.warn("Invalid Base Resource reference: {}", baseResource, e);
+            throw new IllegalArgumentException(baseResource);
         }
     }
 
