@@ -40,6 +40,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -2042,25 +2043,26 @@ public class HttpParserTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "Host: whatever.com:xxxx\r\n",
-        "Host: myhost:testBadPort\r\n",
-        "Host: a b c d\r\n",
-        "Host: hosta, hostb, hostc\r\n",
-        "Host: hosta,hostb,hostc\r\n",
-        "Host: hosta\r\nHost: hostb\r\nHost: hostc\r\n"
+        "Host: whatever.com:xxxx",
+        "Host: myhost:testBadPort",
+        "Host: a b c d",
+        "Host: a\to\tz",
+        "Host: hosta, hostb, hostc",
+        "Host: hosta,hostb,hostc",
+        "Host: hosta\nHost: hostb\nHost: hostc" // multi-line
     })
     public void testBadHost(String hostline)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n" +
-                hostline +
-                "Connection: close\r\n" +
-                "\r\n");
+            "GET / HTTP/1.1\n" +
+                hostline + "\n" +
+                "Connection: close\n" +
+                "\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
-        assertThat(_bad, containsString("Bad Host"));
+        assertThat(_bad, startsWith("Bad"));
     }
 
     @Test

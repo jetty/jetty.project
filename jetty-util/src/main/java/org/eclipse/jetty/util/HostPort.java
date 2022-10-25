@@ -81,10 +81,8 @@ public class HostPort
                 }
                 else
                 {
-                    if (!isValidAuthority(authority))
-                    {
+                    if (!isAuthorityValid(authority))
                         throw new IllegalArgumentException("Bad Authority");
-                    }
                     _host = authority;
                     _port = 0;
                 }
@@ -106,15 +104,13 @@ public class HostPort
      * @param authority the authority to test
      * @return true if the authority passes as valid
      */
-    private boolean isValidAuthority(String authority)
+    private boolean isAuthorityValid(String authority)
     {
         if (authority == null)
             return false;
         for (int i = 0; i < authority.length(); i++)
         {
             int codepoint = authority.codePointAt(i);
-            if (codepoint == ',')
-                return false;
             if (Character.isISOControl(codepoint))
                 return false;
             if (Character.isWhitespace(codepoint))

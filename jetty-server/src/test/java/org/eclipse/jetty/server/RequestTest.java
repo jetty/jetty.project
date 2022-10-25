@@ -787,12 +787,13 @@ public class RequestTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "Host: whatever.com:xxxx\r\n",
-        "Host: myhost:testBadPort\r\n",
-        "Host: a b c d\r\n",
-        "Host: hosta, hostb, hostc\r\n",
-        "Host: hosta,hostb,hostc\r\n",
-        "Host: hosta\r\nHost: hostb\r\nHost: hostc\r\n"
+        "Host: whatever.com:xxxx",
+        "Host: myhost:testBadPort",
+        "Host: a b c d",
+        "Host: a\to\tz",
+        "Host: hosta, hostb, hostc",
+        "Host: hosta,hostb,hostc",
+        "Host: hosta\nHost: hostb\nHost: hostc" // multi-line
     })
     public void testInvalidHostHeader(String hostline) throws Exception
     {
@@ -805,7 +806,7 @@ public class RequestTest
 
         // Request with illegal Host header
         String request = "GET / HTTP/1.1\n" +
-            hostline +
+            hostline + "\n" +
             "Content-Type: text/html;charset=utf8\n" +
             "Connection: close\n" +
             "\n";

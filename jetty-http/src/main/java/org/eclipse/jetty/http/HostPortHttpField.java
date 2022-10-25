@@ -32,6 +32,19 @@ public class HostPortHttpField extends HttpField
     protected HostPortHttpField(HttpHeader header, String name, String authority)
     {
         super(header, name, authority);
+
+        // only perform http field value split if a comma is present.
+        // this should skip 99% of authorities.
+        // It should catch bad Host fields with multiple values
+        // and allow things (like IDN's with a comma)
+        if (authority.contains(","))
+        {
+            QuotedCSV csv = new QuotedCSV(authority);
+            // TODO: should we allow multiple entries if all but 1 entry is blank/null?
+            if (csv.size() > 1)
+                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Authority");
+        }
+
         try
         {
             _hostPort = new HostPort(authority);
