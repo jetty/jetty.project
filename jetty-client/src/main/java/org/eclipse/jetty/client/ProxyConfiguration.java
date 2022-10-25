@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -45,7 +44,7 @@ public class ProxyConfiguration
      * @deprecated use {@link #addProxy(Proxy)} and {@link #removeProxy(Proxy)} instead
      * @return the forward proxies to use
      */
-    @Deprecated(since = "10", forRemoval = true)
+    @Deprecated(forRemoval = true)
     public List<Proxy> getProxies()
     {
         return proxies;
