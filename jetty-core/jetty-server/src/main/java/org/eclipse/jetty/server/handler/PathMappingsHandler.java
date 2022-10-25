@@ -88,7 +88,7 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        String pathInContext = request.getPathInContext();
+        String pathInContext = Request.getPathInContext(request);
         MatchedResource<Handler> matchedResource = mappings.getMatched(pathInContext);
         if (matchedResource == null)
         {
