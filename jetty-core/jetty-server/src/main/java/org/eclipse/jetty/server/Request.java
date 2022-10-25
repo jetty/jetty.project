@@ -121,6 +121,7 @@ public interface Request extends Attributes, Content.Source
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
+     *
      * @see HttpStream#getId()
      */
     String getId();
@@ -143,7 +144,7 @@ public interface Request extends Attributes, Content.Source
     /**
      * @return the HTTP URI of this request
      * @see #getContextPath(Request)
-     * @see #getPathInContext(Request) 
+     * @see #getPathInContext(Request)
      */
     HttpURI getHttpURI();
 
@@ -153,7 +154,8 @@ public interface Request extends Attributes, Content.Source
     Context getContext();
 
     /**
-     * <p>Get the context path. This is equivalent to {@code request.getContext().getContextPath()}.
+     * <p>Returns the context path of this Request.</p>
+     * <p>This is equivalent to {@code request.getContext().getContextPath()}.</p>
      *
      * @param request The request to get the context path from.
      * @return The contextPath of the request.
@@ -165,9 +167,10 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * <p>Get the canonically encoded path of the URI, scoped to the current context.</p>
-     * <p>For example, when the request has a {@link Context} with {@code contextPath=/ctx} and the requests
-     * {@link HttpURI} has{@code canonicalPath=/ctx/foo}, then the path in context is {@code /foo}.</p>
+     * <p>Returns the canonically encoded path of the URI, scoped to the current context.</p>
+     * <p>For example, when the request has a {@link Context} with {@code contextPath=/ctx} and the request's
+     * {@link HttpURI} canonical path is {@code canonicalPath=/ctx/foo}, then {@code pathInContext=/foo}.</p>
+     *
      * @return The part of the canonically encoded path of the URI after any context path prefix has been removed.
      * @see HttpURI#getCanonicalPath()
      * @see Context#getContextPath()
@@ -706,10 +709,14 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * <p>Create a new {@link HttpURI} for a request by replacing the path in context</p>
-     * @param request The request to base the HttpURI on.
-     * @param newPathInContext The new path in context for the URI
-     * @return A new immutable HttpURI for the request with the path replaced (but parameters and query string retained).
+     * <p>Creates a new {@link HttpURI} from the given Request's HttpURI and the given path in context.</p>
+     * <p>For example, for {@code contextPath=/ctx}, {@code request.httpURI=http://host/ctx/path?a=b}, and
+     * {@code newPathInContext=/newPath}, the returned HttpURI is {@code http://host/ctx/newPath?a=b}.</p>
+     *
+     * @param request The request to base the new HttpURI on.
+     * @param newPathInContext The new path in context for the new HttpURI
+     * @return A new immutable HttpURI with the path in context replaced, but query string and path
+     * parameters retained.
      */
     static HttpURI newHttpURIFrom(Request request, String newPathInContext)
     {

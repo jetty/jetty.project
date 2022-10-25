@@ -610,11 +610,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (!checkVirtualHost(request))
             return null;
 
-        // Root context accepts all requests
+        // The root context handles all requests.
         if (!_rootContext)
         {
-            // Otherwise check the path
-
+            // Otherwise match the path.
             String path = request.getHttpURI().getCanonicalPath();
             if (path == null || !path.startsWith(_contextPath))
                 return null;

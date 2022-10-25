@@ -701,7 +701,7 @@ public final class URIUtil
      * @param path The path to check for validity
      * @return True if the path does not contain any invalid path characters
      */
-    public static boolean isValidPath(String path)
+    public static boolean isPathValid(String path)
     {
         if (path == null)
             return true;

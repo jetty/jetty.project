@@ -1187,8 +1187,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     protected ServletContextRequest wrap(Request request)
     {
-        // we need to directly ask the context for the pathInContext rather than use the utility static method, as
-        // we have not yet wrapped the request in this context.
+        // Need to ask directly to the Context for the pathInContext, rather than using
+        // Request.getPathInContext(), as the request is not yet wrapped in this Context.
         String pathInContext = getContext().getPathInContext(request.getHttpURI().getCanonicalPath());
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
         if (matchedResource == null)

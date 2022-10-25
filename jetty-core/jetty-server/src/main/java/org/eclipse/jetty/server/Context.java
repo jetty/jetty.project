@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public interface Context extends Attributes, Decorator, Executor
 {
     /**
-     * <p>Get the context path of this Context.</p>
+     * @return the context path of this Context
      */
     String getContextPath();
 
@@ -58,11 +58,13 @@ public interface Context extends Attributes, Decorator, Executor
     void run(Runnable runnable, Request request);
 
     /**
-     * <p>Get a URI path scoped to a context. For example if the context path is "/ctx" then a
-     * full path of "/ctx/foo/bar" will return "/foo/bar".</p>
+     * <p>Returns a URI path scoped to this Context.</p>
+     * <p>For example, if the context path is {@code /ctx} then a
+     * full path of {@code /ctx/foo/bar} will return {@code /foo/bar}.</p>
+     *
      * @param fullPath A full URI path
-     * @return The URI path scoped to the context, or null if the fullPath is not in the context.
-     *         The empty string is returned if the fullPath is exactly the context path.
+     * @return The URI path scoped to this Context, or {@code null} if the full path does not match this Context.
+     *         The empty string is returned if the full path is exactly the context path.
      */
     String getPathInContext(String fullPath);
 }
