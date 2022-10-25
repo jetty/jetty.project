@@ -50,6 +50,10 @@
     <hazelcast.version>4.2.5</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
+    <!-- from 10.xx it has changed to jboss/infinispan -->
+    <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
+    <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
+    <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
     <jackson.version>2.13.4</jackson.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
@@ -1515,6 +1519,12 @@
         <version>${infinispan.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-server-testdriver-core</artifactId>
+        <!-- not in the infinispan bom -->
+        <version>${infinispan.version}</version>
       </dependency>
       <dependency>
         <groupId>org.infinispan.protostream</groupId>

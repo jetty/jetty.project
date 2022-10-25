@@ -56,7 +56,7 @@ public class RemoteInfinispanTestSupport
             LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
-            ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+            ":" + System.getProperty("infinispan.docker.image.version", "11.0.14.Final");
 
     private static final GenericContainer INFINISPAN = new GenericContainer(IMAGE_NAME)
             .withEnv("USER", "theuser")

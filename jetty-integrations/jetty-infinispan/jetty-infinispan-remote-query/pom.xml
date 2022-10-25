@@ -9,7 +9,6 @@
   <name>Jetty :: Infinispan Session Manager Remote with Querying</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
-    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
   </properties>
   <build>
     <plugins>

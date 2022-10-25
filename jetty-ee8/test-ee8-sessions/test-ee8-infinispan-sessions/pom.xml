@@ -11,10 +11,6 @@
   <properties>
     <ee9.module>test-ee9-sessions/test-ee9-infinispan-sessions</ee9.module>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
-    <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
-    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
-    <!-- from 10.xx it has changed to jboss/infinispan -->
-    <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
   </properties>
   <build>
     <plugins>
