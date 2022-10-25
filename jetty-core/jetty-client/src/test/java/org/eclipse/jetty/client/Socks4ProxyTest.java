@@ -77,7 +77,7 @@ public class Socks4ProxyTest
     public void testSocks4Proxy() throws Exception
     {
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new Socks4Proxy("localhost", proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("localhost", proxyPort));
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -139,7 +139,7 @@ public class Socks4ProxyTest
     public void testSocks4ProxyWithSplitResponse() throws Exception
     {
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new Socks4Proxy("localhost", proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("localhost", proxyPort));
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -215,7 +215,7 @@ public class Socks4ProxyTest
             // The hostname must be that of the server, not of the proxy.
             ssl.setHostnameVerifier((hostname, session) -> serverHost.equals(hostname));
         });
-        client.getProxyConfiguration().getProxies().add(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(serverHost, serverPort)
@@ -283,7 +283,7 @@ public class Socks4ProxyTest
     {
         String proxyHost = "localhost";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
 
         long timeout = 1000;
         Request request = client.newRequest("localhost", proxyPort + 1)
@@ -305,7 +305,7 @@ public class Socks4ProxyTest
     {
         String proxyHost = "localhost";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
         long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 
@@ -327,7 +327,7 @@ public class Socks4ProxyTest
     {
         String proxyHost = "localhost";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
 
         Request request = client.newRequest("localhost", proxyPort + 1);
         FutureResponseListener listener = new FutureResponseListener(request);

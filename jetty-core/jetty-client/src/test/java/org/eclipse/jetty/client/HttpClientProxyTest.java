@@ -57,7 +57,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
 
         int proxyPort = connector.getLocalPort();
         int serverPort = proxyPort + 1; // Any port will do for these tests - just not the same as the proxy
-        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
+        client.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyPort));
 
         ContentResponse response = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -104,7 +104,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         String proxyHost = "localhost";
         int proxyPort = connector.getLocalPort();
         int serverPort = proxyPort + 1; // Any port will do for these tests - just not the same as the proxy
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -202,7 +202,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         });
 
         int proxyPort = connector.getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
@@ -289,7 +289,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
         URI serverURI = URI.create(scenario.getScheme() + "://" + serverHost + ":" + serverPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(serverURI, serverRealm, "serverUser", "serverPassword"));
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
         client.getRequestListeners().add(new Request.Listener.Adapter()
         {
@@ -359,7 +359,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         int serverPort = proxyPort + 1;
         URI proxyURI = URI.create(scenario.getScheme() + "://" + proxyHost + ":" + proxyPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
         client.getRequestListeners().add(new Request.Listener.Adapter()
         {
