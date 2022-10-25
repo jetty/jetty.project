@@ -41,16 +41,6 @@ public class ProxyConfiguration
     private final List<Proxy> proxies = new BlockingArrayQueue<>();
 
     /**
-     * @deprecated use {@link #addProxy(Proxy)} and {@link #removeProxy(Proxy)} instead
-     * @return the forward proxies to use
-     */
-    @Deprecated(forRemoval = true)
-    public List<Proxy> getProxies()
-    {
-        return proxies;
-    }
-
-    /**
      * Adds a proxy.
      *
      * @param proxy a proxy
