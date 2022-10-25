@@ -787,9 +787,9 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public String pathInContext(String path)
+        public String getPathInContext(String fullPath)
         {
-            return path;
+            return fullPath;
         }
     }
 

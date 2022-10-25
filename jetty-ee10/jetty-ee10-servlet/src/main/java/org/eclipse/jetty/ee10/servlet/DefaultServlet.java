@@ -444,7 +444,7 @@ public class DefaultServlet extends HttpServlet
             _httpFields = fields.asImmutable();
             _uri = (request.getDispatcherType() == DispatcherType.REQUEST)
                 ? getWrapped().getHttpURI()
-                : Request.updateHttpURI(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
+                : Request.newHttpURIFrom(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
         }
 
         @Override

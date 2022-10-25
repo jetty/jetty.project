@@ -698,10 +698,10 @@ public final class URIUtil
     }
 
     /**
-     * @param path The path to check for legality
-     * @return True if the path does not contain any illegal path characters
+     * @param path The path to check for validity
+     * @return True if the path does not contain any invalid path characters
      */
-    public static boolean isLegalPath(String path)
+    public static boolean isValidPath(String path)
     {
         if (path == null)
             return true;

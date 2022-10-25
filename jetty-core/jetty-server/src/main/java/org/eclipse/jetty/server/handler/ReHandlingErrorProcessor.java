@@ -56,7 +56,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
             if (pathInContext != null)
             {
                 request.setAttribute(ReHandlingErrorProcessor.class.getName(), pathInContext);
-                HttpURI uri = Request.updateHttpURI(request, pathInContext);
+                HttpURI uri = Request.newHttpURIFrom(request, pathInContext);
                 Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri);
 
                 try

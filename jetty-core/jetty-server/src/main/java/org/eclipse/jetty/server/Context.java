@@ -57,6 +57,12 @@ public interface Context extends Attributes, Decorator, Executor
     /** scope the calling thread to the context and request and run the runnable. */
     void run(Runnable runnable, Request request);
 
-    /** Return a URI path scoped to this context **/
-    String pathInContext(String path);
+    /**
+     * <p>Get a URI path scoped to a context. For example if the context path is "/ctx" then a
+     * full path of "/ctx/foo/bar" will return "/foo/bar".</p>
+     * @param fullPath A full URI path
+     * @return The URI path scoped to the context, or null if the fullPath is not in the context.
+     *         The empty string is returned if the fullPath is exactly the context path.
+     */
+    String getPathInContext(String fullPath);
 }

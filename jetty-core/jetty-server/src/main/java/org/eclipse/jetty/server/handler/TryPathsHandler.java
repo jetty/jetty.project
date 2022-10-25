@@ -90,7 +90,7 @@ public class TryPathsHandler extends Handler.Wrapper
         public TryPathsRequest(Request wrapped, String pathInContext)
         {
             super(wrapped);
-            _uri = Request.updateHttpURI(wrapped, URIUtil.canonicalPath(pathInContext));
+            _uri = Request.newHttpURIFrom(wrapped, URIUtil.canonicalPath(pathInContext));
         }
 
         @Override

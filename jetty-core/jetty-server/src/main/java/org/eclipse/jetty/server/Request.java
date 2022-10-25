@@ -166,13 +166,15 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * <p>Get the canonically encoded path of the URI, scoped to the current context.</p>
-     * <p>The <code>pathInContext</code> represents the targeted resource within the current content for the request.</p>
+     * <p>For example, when the request has a {@link Context} with {@code contextPath=/ctx} and the requests
+     * {@link HttpURI} has{@code canonicalPath=/ctx/foo}, then the path in context is {@code /foo}.</p>
      * @return The part of the canonically encoded path of the URI after any context path prefix has been removed.
      * @see HttpURI#getCanonicalPath()
+     * @see Context#getContextPath()
      */
     static String getPathInContext(Request request)
     {
-        return request.getContext().pathInContext(request.getHttpURI().getCanonicalPath());
+        return request.getContext().getPathInContext(request.getHttpURI().getCanonicalPath());
     }
 
     /**
@@ -703,7 +705,13 @@ public interface Request extends Attributes, Content.Source
         }
     }
 
-    static HttpURI updateHttpURI(Request request, String newPathInContext)
+    /**
+     * <p>Create a new {@link HttpURI} for a request by replacing the path in context</p>
+     * @param request The request to base the HttpURI on.
+     * @param newPathInContext The new path in context for the URI
+     * @return A new immutable HttpURI for the request with the path replaced (but parameters and query string retained).
+     */
+    static HttpURI newHttpURIFrom(Request request, String newPathInContext)
     {
         return HttpURI.build(request.getHttpURI())
             .path(URIUtil.addPaths(getContextPath(request), newPathInContext))

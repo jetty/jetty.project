@@ -242,8 +242,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         {
             case "o.e.j.s.s.ServletScopedRequest.request" -> _httpServletRequest;
             case "o.e.j.s.s.ServletScopedRequest.response" -> _response.getHttpServletResponse();
-            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(_pathInContext).getServletName();
-            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(_pathInContext).getPattern();
+            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(getPathInContext()).getServletName();
+            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getPathInContext()).getPattern();
             default -> super.getAttribute(name);
         };
     }

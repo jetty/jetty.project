@@ -73,21 +73,22 @@ public class ErrorProcessorTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                if (Request.getPathInContext(request).startsWith("/badmessage/"))
+                String pathInContext = Request.getPathInContext(request);
+                if (pathInContext.startsWith("/badmessage/"))
                 {
-                    int code = Integer.parseInt(Request.getPathInContext(request).substring(Request.getPathInContext(request).lastIndexOf('/') + 1));
+                    int code = Integer.parseInt(pathInContext.substring(pathInContext.lastIndexOf('/') + 1));
                     throw new BadMessageException(code);
                 }
 
                 // produce an exception with an JSON formatted cause message
-                if (Request.getPathInContext(request).startsWith("/jsonmessage/"))
+                if (pathInContext.startsWith("/jsonmessage/"))
                 {
                     String message = "\"}, \"glossary\": {\n \"title\": \"example\"\n }\n {\"";
                     throw new TestException(message);
                 }
 
                 // produce an exception with an XML cause message
-                if (Request.getPathInContext(request).startsWith("/xmlmessage/"))
+                if (pathInContext.startsWith("/xmlmessage/"))
                 {
                     String message =
                         "<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n" +
@@ -98,14 +99,14 @@ public class ErrorProcessorTest
                 }
 
                 // produce an exception with an HTML cause message
-                if (Request.getPathInContext(request).startsWith("/htmlmessage/"))
+                if (pathInContext.startsWith("/htmlmessage/"))
                 {
                     String message = "<hr/><script>alert(42)</script>%3Cscript%3E";
                     throw new TestException(message);
                 }
 
                 // produce an exception with a UTF-8 cause message
-                if (Request.getPathInContext(request).startsWith("/utf8message/"))
+                if (pathInContext.startsWith("/utf8message/"))
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
                     String message = "Euro is &euro; and \u20AC and %E2%82%AC";
@@ -114,12 +115,12 @@ public class ErrorProcessorTest
                 }
 
                 // 200 response
-                if (Request.getPathInContext(request).startsWith("/ok/"))
+                if (pathInContext.startsWith("/ok/"))
                 {
                     Content.Sink.write(
                         response,
                         true,
-                        "%s Error %s : %s%n".formatted(Request.getPathInContext(request), request.getAttribute(ErrorProcessor.ERROR_STATUS), request.getAttribute(ErrorProcessor.ERROR_MESSAGE)),
+                        "%s Error %s : %s%n".formatted(pathInContext, request.getAttribute(ErrorProcessor.ERROR_STATUS), request.getAttribute(ErrorProcessor.ERROR_MESSAGE)),
                         callback);
                     return;
                 }

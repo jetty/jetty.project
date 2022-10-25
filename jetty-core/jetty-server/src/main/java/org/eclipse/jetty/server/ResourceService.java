@@ -536,7 +536,6 @@ public class ResourceService
         {
             // Redirect to the index
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-            // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
             HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
             uri.path(URIUtil.addPaths(contextPath, welcomeTarget));
             return new WelcomeAction(WelcomeActionType.REDIRECT, uri.getPathQuery());

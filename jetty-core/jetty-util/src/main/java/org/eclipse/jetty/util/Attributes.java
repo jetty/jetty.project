@@ -185,45 +185,45 @@ public interface Attributes
         @Override
         public Object removeAttribute(String name)
         {
-            return _wrapped.removeAttribute(name);
+            return getWrapped().removeAttribute(name);
         }
 
         @Override
         public Object setAttribute(String name, Object attribute)
         {
-            return _wrapped.setAttribute(name, attribute);
+            return getWrapped().setAttribute(name, attribute);
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            return _wrapped.getAttribute(name);
+            return getWrapped().getAttribute(name);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
-            return _wrapped.getAttributeNameSet();
+            return getWrapped().getAttributeNameSet();
         }
 
         @Override
         public void clearAttributes()
         {
-            _wrapped.clearAttributes();
+            getWrapped().clearAttributes();
         }
 
         // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
-            return _wrapped.hashCode();
+            return getWrapped().hashCode();
         }
 
         // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public boolean equals(Object obj)
         {
-            return _wrapped.equals(obj);
+            return getWrapped().equals(obj);
         }
     }
 

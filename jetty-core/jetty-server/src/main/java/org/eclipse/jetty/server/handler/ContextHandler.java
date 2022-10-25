@@ -1168,17 +1168,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public String pathInContext(String path)
+        public String getPathInContext(String fullPath)
         {
             if (_rootContext)
-                return path;
-            if (!path.startsWith(_contextPath))
+                return fullPath;
+            if (!fullPath.startsWith(_contextPath))
                 return null;
-            if (path.length() == _contextPath.length())
+            if (fullPath.length() == _contextPath.length())
                 return "";
-            if (path.charAt(_contextPath.length()) != '/')
+            if (fullPath.charAt(_contextPath.length()) != '/')
                 return null;
-            return path.substring(_contextPath.length());
+            return fullPath.substring(_contextPath.length());
         }
     }
 
