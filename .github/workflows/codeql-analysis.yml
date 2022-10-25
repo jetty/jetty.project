@@ -71,7 +71,7 @@ jobs:
           # queries: security-extended,security-and-quality
           
       - name: Set up Maven
-        uses: stCarolas/setup-maven@v4
+        uses: stCarolas/setup-maven@v4.5
         with:
           maven-version: 3.8.6   
 
