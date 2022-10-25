@@ -153,10 +153,10 @@ public interface Request extends Attributes, Content.Source
     Context getContext();
 
     /**
-     * <p>Get the context pat. this is equivalent to <code>request.getContext().getContextPath()</code>
+     * <p>Get the context path. This is equivalent to {@code request.getContext().getContextPath()}.
      *
      * @param request The request to get the context path from.
-     * @return The contextPath of the request. .
+     * @return The contextPath of the request.
      * @see Context#getContextPath()
      */
     static String getContextPath(Request request)
