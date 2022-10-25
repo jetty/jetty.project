@@ -73,7 +73,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Throwable
             {
-                if (request.getPathInContext().endsWith("/redirect"))
+                if (org.eclipse.jetty.server.Request.getPathInContext(request).endsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);

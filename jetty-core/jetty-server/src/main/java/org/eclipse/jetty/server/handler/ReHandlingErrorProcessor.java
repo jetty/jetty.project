@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +56,8 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
             if (pathInContext != null)
             {
                 request.setAttribute(ReHandlingErrorProcessor.class.getName(), pathInContext);
-                HttpURI uri = HttpURI.build(request.getHttpURI()).path(URIUtil.addPaths(request.getContext().getContextPath(), pathInContext)).asImmutable();
-                Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri, uri.getCanonicalPath());
+                HttpURI uri = Request.newHttpURIFrom(request, pathInContext);
+                Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri);
 
                 try
                 {
@@ -122,13 +121,11 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
     private static class ReHandleRequestWrapper extends Request.Wrapper
     {
         private final HttpURI _uri;
-        private final String _pathInContext;
 
-        public ReHandleRequestWrapper(Request request, HttpURI uri, String pathInContext)
+        public ReHandleRequestWrapper(Request request, HttpURI uri)
         {
             super(request);
             _uri = uri;
-            _pathInContext = pathInContext;
         }
 
         @Override
@@ -137,10 +134,5 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
             return _uri;
         }
 
-        @Override
-        public String getPathInContext()
-        {
-            return _pathInContext;
-        }
     }
 }

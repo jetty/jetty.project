@@ -1009,7 +1009,7 @@ public class ForwardProxyTLSServerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            String uri = request.getPathInContext();
+            String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))
             {
                 if (request.getHttpURI().getQuery() != null)

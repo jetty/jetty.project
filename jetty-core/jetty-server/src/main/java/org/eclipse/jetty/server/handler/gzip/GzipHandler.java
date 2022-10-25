@@ -523,7 +523,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        final String path = request.getPathInContext();
+        final String path = Request.getPathInContext(request);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle {}", this, request);

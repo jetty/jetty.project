@@ -205,7 +205,7 @@ public class UnixDomainTest
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
                 assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if ("/v1".equals(target))
                 {
                     // As PROXYv1 does not support UNIX, the wrapped EndPoint data is used.

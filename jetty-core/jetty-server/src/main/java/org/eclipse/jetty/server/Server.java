@@ -712,7 +712,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
     private static class DynamicErrorProcessor extends ErrorProcessor {}
 
-    private class ServerContext extends Attributes.Wrapper implements Context
+    class ServerContext extends Attributes.Wrapper implements Context
     {
         private ServerContext()
         {
@@ -784,6 +784,12 @@ public class Server extends Handler.Wrapper implements Attributes
             DecoratedObjectFactory factory = Server.this.getBean(DecoratedObjectFactory.class);
             if (factory != null)
                 factory.destroy(o);
+        }
+
+        @Override
+        public String getPathInContext(String fullPath)
+        {
+            return fullPath;
         }
     }
 

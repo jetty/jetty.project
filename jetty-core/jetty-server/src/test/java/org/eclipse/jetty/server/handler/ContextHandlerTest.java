@@ -188,7 +188,7 @@ public class ContextHandlerTest
         {
             if (request != null)
             {
-                assertThat(request.getPathInContext(), equalTo("/path"));
+                assertThat(Request.getPathInContext(request), equalTo("/path"));
                 assertThat(request.getContext(), sameInstance(_context));
             }
             assertThat(ContextHandler.getCurrentContext(), sameInstance(_context));
