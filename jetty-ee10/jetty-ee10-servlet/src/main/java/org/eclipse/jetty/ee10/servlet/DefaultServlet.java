@@ -44,7 +44,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
@@ -141,9 +140,11 @@ public class DefaultServlet extends HttpServlet
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
             int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+            long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
+            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                CachingHttpContentFactory cached = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
+                EvictingCachingContentFactory cached = new EvictingCachingContentFactory(contentFactory,
+                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis());
                 contentFactory = cached;
                 if (maxCacheSize >= 0)
                     cached.setMaxCacheSize(maxCacheSize);
@@ -152,7 +153,6 @@ public class DefaultServlet extends HttpServlet
                 if (maxCachedFiles >= -1)
                     cached.setMaxCachedFiles(maxCachedFiles);
             }
-            getServletContext().setAttribute(HttpContent.Factory.class.getName(), contentFactory);
         }
         _resourceService.setContentFactory(contentFactory);
 

@@ -2823,6 +2823,7 @@ public class DefaultServletTest
         defholder.setInitParameter("maxCacheSize", "4096");
         defholder.setInitParameter("maxCachedFileSize", "25");
         defholder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("cacheValidationTime", "0");
 
         String rawResponse;
         HttpTester.Response response;
