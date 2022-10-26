@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -256,7 +255,16 @@ public class InputStreamResponseListener extends Listener.Adapter
         InputStream result = new Input();
         if (stream.compareAndSet(null, result))
             return result;
-        return IO.getClosedStream();
+        result = InputStream.nullInputStream();
+        try
+        {
+            result.close();
+        }
+        catch (IOException ignore)
+        {
+            // not possible with InputStream.nullInputStream()
+        }
+        return result;
     }
 
     private List<Callback> drain()
