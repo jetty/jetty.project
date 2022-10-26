@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -47,13 +48,17 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
     private final long _validationTime;
     private final long _maxCacheIdleTime;
 
-    public EvictingCachingContentFactory(HttpContent.Factory authority, long validationTime)
+    public EvictingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
+                                         @Name("validationTime") long validationTime)
     {
         this(authority, validationTime, null, -1, -1);
     }
 
-    // TODO: ANNOTATION @Name
-    public EvictingCachingContentFactory(HttpContent.Factory authority, long validationTime, Scheduler scheduler, long sweepDelay, long maxCacheIdleTime)
+    public EvictingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
+                                         @Name("validationTime") long validationTime,
+                                         @Name("scheduler") Scheduler scheduler,
+                                         @Name("sweepDelay") long sweepDelay,
+                                         @Name("maxCacheIdleTime") long maxCacheIdleTime)
     {
         super(authority);
         _validationTime = validationTime;
