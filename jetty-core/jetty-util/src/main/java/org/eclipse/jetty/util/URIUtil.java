@@ -698,6 +698,29 @@ public final class URIUtil
     }
 
     /**
+     * @param path The path to check for validity
+     * @return True if the path does not contain any invalid path characters
+     */
+    public static boolean isPathValid(String path)
+    {
+        if (path == null)
+            return true;
+
+        int end = path.length();
+        for (int i = 0; i < end; i++)
+        {
+            char c = path.charAt(i);
+            switch (c)
+            {
+                case '?' :
+                case '#' :
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Test if codepoint is safe and unambiguous to pass as input to {@link URI}
      *
      * @param code the codepoint code to test

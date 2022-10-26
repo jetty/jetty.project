@@ -2306,12 +2306,6 @@ public class ResponseTest
         }
 
         @Override
-        public String getPathInContext()
-        {
-            return _reqMeta.getURI().getCanonicalPath();
-        }
-
-        @Override
         public HttpFields getHeaders()
         {
             return _reqMeta.getFields();

@@ -445,7 +445,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getPathInContext().startsWith("/redirect"))
+                if (Request.getPathInContext(request).startsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
@@ -537,7 +537,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if ("/one".equals(target))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
@@ -588,7 +588,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 String serverURI = scenario.getScheme() + "://localhost:" + connector.getLocalPort();
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if ("/one".equals(target))
                 {
                     Thread.sleep(timeout);
@@ -676,7 +676,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             {
                 Fields fields = Request.extractQueryParameters(request);
 
-                String[] paths = request.getPathInContext().split("/", 4);
+                String[] paths = Request.getPathInContext(request).split("/", 4);
 
                 int status = Integer.parseInt(paths[1]);
                 response.setStatus(status);

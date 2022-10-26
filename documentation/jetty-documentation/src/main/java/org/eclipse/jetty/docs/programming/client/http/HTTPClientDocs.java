@@ -659,7 +659,7 @@ public class HTTPClientDocs
 
         // Add the new proxy to the list of proxies already registered.
         ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
-        proxyConfig.getProxies().add(proxy);
+        proxyConfig.addProxy(proxy);
 
         ContentResponse response = httpClient.GET("http://domain.com/path");
         // end::proxy[]
@@ -684,7 +684,7 @@ public class HTTPClientDocs
         // Proxy configuration.
         ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
         HttpProxy proxy = new HttpProxy("proxy.net", 8080);
-        proxyConfig.getProxies().add(proxy);
+        proxyConfig.addProxy(proxy);
 
         ContentResponse response = httpClient.newRequest(serverURI).send();
         // end::proxyAuthentication[]

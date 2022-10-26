@@ -875,7 +875,16 @@ public interface HttpURI
         {
             _param = param;
             if (_path != null && _param != null)
+            {
+                int lastSlash = _path.lastIndexOf('/');
+                if (lastSlash >= 0)
+                {
+                    int trailingParam = _path.indexOf(';', lastSlash + 1);
+                    if (trailingParam >= 0)
+                        _path = _path.substring(0, trailingParam);
+                }
                 _path += ";" + _param;
+            }
 
             _uri = null;
             return this;
@@ -889,9 +898,22 @@ public interface HttpURI
         {
             if (hasAuthority() && !isPathValidForAuthority(path))
                 throw new IllegalArgumentException("Relative path with authority");
+            if (!URIUtil.isPathValid(path))
+                throw new IllegalArgumentException("Path not correctly encoded: " + path);
             _uri = null;
             _path = path;
             _canonicalPath = null;
+
+            // If the passed path does not have a parameter, then keep the current parameter
+            // else delete the current parameter
+            if (_param != null)
+            {
+                if (path.indexOf(';') >= 0)
+                    _param = null;
+                else
+                    _path = _path + ';' + _param;
+            }
+
             return this;
         }
 

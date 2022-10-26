@@ -165,7 +165,7 @@ public class HandlerDocs
         public Request.Processor handle(Request request) throws Exception
         {
             if (HttpMethod.GET.is(request.getMethod()) &&
-                "greeting".equals(request.getPathInContext()))
+                "greeting".equals(Request.getPathInContext(request)))
                 return this;
             return null;
         }
@@ -207,7 +207,7 @@ public class HandlerDocs
             {
                 String name = handler.getClass().getSimpleName().replace("Handler", "");
                 String path = "/" + name;
-                if (request.getPathInContext().equals(name))
+                if (Request.getPathInContext(request).equals(name))
                 {
                     Request.Processor processor = handler.handle(request);
                     if (processor != null)

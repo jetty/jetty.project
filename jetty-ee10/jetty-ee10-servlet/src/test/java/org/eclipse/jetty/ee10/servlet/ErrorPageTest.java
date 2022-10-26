@@ -106,7 +106,7 @@ public class ErrorPageTest
             @Override
             public Request.Processor handle(Request request) throws Exception
             {
-                if (request.getPathInContext().startsWith("/noop"))
+                if (Request.getPathInContext(request).startsWith("/noop"))
                     return null;
                 else
                     return super.handle(request);

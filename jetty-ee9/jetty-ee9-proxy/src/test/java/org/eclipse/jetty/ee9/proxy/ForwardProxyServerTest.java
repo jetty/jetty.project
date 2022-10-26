@@ -205,7 +205,7 @@ public class ForwardProxyServerTest
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(clientTLS);
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         try
@@ -253,7 +253,7 @@ public class ForwardProxyServerTest
         });
 
         HttpClient httpClient = new HttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         ContentResponse response = httpClient.newRequest("[::1]", serverConnector.getLocalPort())
@@ -291,7 +291,7 @@ public class ForwardProxyServerTest
         });
 
         HttpClient httpClient = new HttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         ContentResponse response = httpClient.newRequest("[::1]", serverConnector.getLocalPort())

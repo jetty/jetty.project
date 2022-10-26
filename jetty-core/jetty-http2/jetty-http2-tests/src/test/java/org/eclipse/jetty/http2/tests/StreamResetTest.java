@@ -928,7 +928,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if (target.equals("/1"))
                     service1(request, response, callback);
                 else if (target.equals("/2"))

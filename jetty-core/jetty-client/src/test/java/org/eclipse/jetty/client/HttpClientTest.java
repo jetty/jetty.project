@@ -484,7 +484,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
-                if (request.getPathInContext().endsWith("/one"))
+                if (org.eclipse.jetty.server.Request.getPathInContext(request).endsWith("/one"))
                     request.getConnectionMetaData().getConnection().getEndPoint().close();
             }
         });
@@ -904,7 +904,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
                 List<String> userAgents = request.getHeaders().getValuesList(HttpHeader.USER_AGENT);
-                if ("/ua".equals(request.getPathInContext()))
+                if ("/ua".equals(org.eclipse.jetty.server.Request.getPathInContext(request)))
                     assertEquals(1, userAgents.size());
                 else
                     assertEquals(0, userAgents.size());

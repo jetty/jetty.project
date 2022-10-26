@@ -138,7 +138,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         PathSpec pathSpec,
         MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request, pathInContext);
+        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -146,6 +146,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
+    }
+
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override

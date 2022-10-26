@@ -25,8 +25,6 @@ import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectTimeoutTest extends AbstractTest
@@ -49,7 +47,6 @@ public class ConnectTimeoutTest extends AbstractTest
             @Override
             public void failed(Throwable x)
             {
-                assertThat(x, instanceOf(SocketTimeoutException.class));
                 latch.countDown();
             }
         });

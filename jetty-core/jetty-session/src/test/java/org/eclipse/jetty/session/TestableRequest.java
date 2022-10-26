@@ -97,12 +97,6 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public String getPathInContext()
-    {
-        return null;
-    }
-
-    @Override
     public HttpFields getHeaders()
     {
         return null;

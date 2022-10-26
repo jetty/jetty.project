@@ -68,7 +68,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         if (processor == null)
             return null;
 
-        String target = request.getPathInContext();
+        String target = Request.getPathInContext(request);
         WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
         {
             // Store PathSpec resource mapping as request attribute,
