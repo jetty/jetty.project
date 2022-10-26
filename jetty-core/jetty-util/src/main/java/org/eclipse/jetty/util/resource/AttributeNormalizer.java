@@ -211,7 +211,7 @@ public class AttributeNormalizer
         addSystemProperty("user.dir", 6);
 
         Set<Path> rootPaths = new HashSet<>();
-        CombinedResource.stream(baseResource).forEach(r ->
+        Resource.stream(baseResource).forEach(r ->
         {
             if (r instanceof MountedPathResource mpr && rootPaths.contains(mpr.getContainerPath()))
                 return;

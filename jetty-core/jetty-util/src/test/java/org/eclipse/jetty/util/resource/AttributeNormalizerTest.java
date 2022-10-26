@@ -346,7 +346,7 @@ public class AttributeNormalizerTest
             System.setProperty("jetty.home", jettyHome.toString());
             System.setProperty("jetty.base", jettyBase.toString());
 
-            CombinedResource.stream(war).forEach(w ->
+            Resource.stream(war).forEach(w ->
             {
                 try
                 {

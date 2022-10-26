@@ -23,28 +23,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Multiple resource directories presenteda as a single Resource.
+ * Multiple resource directories presented as a single Resource.
  */
 public class CombinedResource extends Resource
 {
-    /**
-     * Stream a resource to its component resources (if any).
-     * @param resource The resource to stream
-     * @return If the passed resource is a ResourceCollection, then it's contained
-     *         resources are streamed, otherwise the passed resource itself if streamed
-     */
-    public static Stream<Resource> stream(Resource resource)
-    {
-        if (resource instanceof CombinedResource rc)
-            return rc.getResources().stream();
-        return Stream.of(resource);
-    }
-
     /**
      * <p>Make a Resource containing a combination of other resources</p>
      * @param resources multiple resources to combine as a single resource. Typically, they are directories.

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -97,6 +98,20 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
+     * Stream a resource to its component resources (if any).
+     * @param resource The resource to stream
+     * @return If the passed resource is a ResourceCollection, then it's contained
+     *         resources are streamed, otherwise the passed resource itself if streamed
+     * @see Resource#iterator()
+     */
+    public static Stream<Resource> stream(Resource resource)
+    {
+        if (resource instanceof CombinedResource rc)
+            return rc.getResources().stream();
+        return Stream.of(resource);
+    }
+
+    /**
      * Return the Path corresponding to this resource.
      *
      * @return the path.
@@ -120,6 +135,7 @@ public abstract class Resource implements Iterable<Resource>
      * </p>
      *
      * @return the iterator of Resources.
+     * @see Resource#stream(Resource)
      */
     @Override
     public Iterator<Resource> iterator()
