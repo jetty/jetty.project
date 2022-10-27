@@ -20,7 +20,6 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * <p>Inspired by nginx's {@code try_files} functionality.</p>
@@ -54,20 +53,15 @@ public class TryPathsHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        String interpolated = interpolate(request, "$path");
-        Resource rootResource = request.getContext().getBaseResource();
-        if (rootResource != null)
+        for (String path : paths)
         {
-            for (String path : paths)
-            {
-                interpolated = interpolate(request, path);
-                Resource resource = rootResource.resolve(interpolated);
-                if (resource != null && resource.exists())
-                    break;
-            }
+            String interpolated = interpolate(request, path);
+            Request.WrapperProcessor result = new Request.WrapperProcessor(new TryPathsRequest(request, interpolated));
+            Request.Processor childProcessor = super.handle(result);
+            if (childProcessor != null)
+                return result.wrapProcessor(childProcessor);
         }
-        Request.WrapperProcessor result = new Request.WrapperProcessor(new TryPathsRequest(request, interpolated));
-        return result.wrapProcessor(super.handle(result));
+        return null;
     }
 
     private String interpolate(Request request, String value)

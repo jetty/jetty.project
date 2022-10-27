@@ -51,12 +51,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TryPathsHandlerTest
 {
     public WorkDir workDir;
+    private static final String CONTEXT_PATH = "/ctx";
     private Server server;
     private SslContextFactory.Server sslContextFactory;
     private ServerConnector connector;
     private ServerConnector sslConnector;
     private Path rootPath;
-    private String contextPath;
 
     private void start(List<String> paths, Handler handler) throws Exception
     {
@@ -70,8 +70,7 @@ public class TryPathsHandlerTest
         sslConnector = new ServerConnector(server, 1, 1, sslContextFactory);
         server.addConnector(sslConnector);
 
-        contextPath = "/ctx";
-        ContextHandler context = new ContextHandler(contextPath);
+        ContextHandler context = new ContextHandler(CONTEXT_PATH);
         rootPath = workDir.getEmptyPathDir();
         context.setBaseResourceAsPath(rootPath);
         server.setHandler(context);
@@ -82,6 +81,7 @@ public class TryPathsHandlerTest
         tryPaths.setPaths(paths);
         tryPaths.setHandler(handler);
 
+        server.setDumpAfterStart(true);
         server.start();
     }
 
@@ -95,7 +95,27 @@ public class TryPathsHandlerTest
     public void testTryPaths() throws Exception
     {
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setHandler(new NoContentHandler());
+        resourceHandler.setDirAllowed(false);
+        resourceHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request)
+            {
+                if (!Request.getPathInContext(request).startsWith("/forward"))
+                    return null;
+
+                return new Handler.Processor()
+                {
+                    public void process(Request request, Response response, Callback callback)
+                    {
+                        assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                        assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                        response.setStatus(HttpStatus.NO_CONTENT_204);
+                        callback.succeeded();
+                    }
+                };
+            }
+        });
 
         start(List.of("/maintenance.txt", "$path", "/forward?p=$path"), resourceHandler);
 
@@ -105,7 +125,7 @@ public class TryPathsHandlerTest
 
             // Make a first request without existing file paths.
             HttpTester.Request request = HttpTester.newRequest();
-            request.setURI(contextPath + "/last");
+            request.setURI(CONTEXT_PATH + "/last");
             channel.write(request.generate());
             HttpTester.Response response = HttpTester.parseResponse(channel);
             assertNotNull(response);
@@ -116,7 +136,7 @@ public class TryPathsHandlerTest
             Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
             // Make a second request with the specific file.
             request = HttpTester.newRequest();
-            request.setURI(contextPath + "/" + path);
+            request.setURI(CONTEXT_PATH + "/" + path);
             channel.write(request.generate());
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
@@ -128,7 +148,7 @@ public class TryPathsHandlerTest
             Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
             // Make a second request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
-            request.setURI(contextPath + "/whatever");
+            request.setURI(CONTEXT_PATH + "/whatever");
             channel.write(request.generate());
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
@@ -141,11 +161,28 @@ public class TryPathsHandlerTest
     public void testTryPathsPhpPathMappingsHandler() throws Exception
     {
         ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setDirAllowed(false);
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), resourceHandler);
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new ExamplePhpHandler());
-        pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new NoContentHandler());
+        pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request)
+            {
+                return new Handler.Processor()
+                {
+                    public void process(Request request, Response response, Callback callback)
+                    {
+                        assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                        assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                        response.setStatus(HttpStatus.NO_CONTENT_204);
+                        callback.succeeded();
+                    }
+                };
+            }
+        });
 
         start(List.of("/maintenance.txt", "$path", "/forward?p=$path"), pathMappingsHandler);
 
@@ -155,7 +192,7 @@ public class TryPathsHandlerTest
 
             // Request something that doesn't exist
             HttpTester.Request request = HttpTester.newRequest();
-            request.setURI(contextPath + "/last");
+            request.setURI(CONTEXT_PATH + "/last");
             channel.write(request.generate());
             HttpTester.Response response = HttpTester.parseResponse(channel);
             assertNotNull(response);
@@ -166,7 +203,7 @@ public class TryPathsHandlerTest
             Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
             // Make a second request with the specific file.
             request = HttpTester.newRequest();
-            request.setURI(contextPath + "/" + path);
+            request.setURI(CONTEXT_PATH + "/" + path);
             channel.write(request.generate());
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
@@ -176,7 +213,7 @@ public class TryPathsHandlerTest
             // Request a php resource
             Files.writeString(rootPath.resolve("index.php"), "raw-php-contents", StandardOpenOption.CREATE);
             request = HttpTester.newRequest();
-            request.setURI(contextPath + "/index.php");
+            request.setURI(CONTEXT_PATH + "/index.php");
             channel.write(request.generate());
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
@@ -188,7 +225,7 @@ public class TryPathsHandlerTest
             Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
             // Make a second request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
-            request.setURI(contextPath + "/whatever");
+            request.setURI(CONTEXT_PATH + "/whatever");
             channel.write(request.generate());
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
@@ -219,7 +256,7 @@ public class TryPathsHandlerTest
             sslSocket.connect(new InetSocketAddress("localhost", sslConnector.getLocalPort()));
 
             HttpTester.Request request = HttpTester.newRequest();
-            request.setURI(contextPath + path);
+            request.setURI(CONTEXT_PATH + path);
             OutputStream output = sslSocket.getOutputStream();
             output.write(BufferUtil.toArray(request.generate()));
             output.flush();
@@ -246,24 +283,6 @@ public class TryPathsHandlerTest
                     String message = "Example PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
 
                     response.write(true, BufferUtil.toBuffer(message, StandardCharsets.UTF_8), callback);
-                }
-            };
-        }
-    }
-
-    public static class NoContentHandler extends Handler.Abstract
-    {
-        @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            return new Handler.Processor()
-            {
-                public void process(Request request, Response response, Callback callback)
-                {
-                    assertThat(Request.getPathInContext(request), equalTo("/forward"));
-                    assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
-                    response.setStatus(HttpStatus.NO_CONTENT_204);
-                    callback.succeeded();
                 }
             };
         }
