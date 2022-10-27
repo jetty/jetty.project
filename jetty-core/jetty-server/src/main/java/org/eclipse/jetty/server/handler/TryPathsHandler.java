@@ -70,13 +70,6 @@ public class TryPathsHandler extends Handler.Wrapper
         return result.wrapProcessor(super.handle(result));
     }
 
-    private Request.Processor fallback(Request request) throws Exception
-    {
-        String fallback = paths.isEmpty() ? "$path" : paths.get(paths.size() - 1);
-        String interpolated = interpolate(request, fallback);
-        return super.handle(new TryPathsRequest(request, interpolated));
-    }
-
     private String interpolate(Request request, String value)
     {
         String path = Request.getPathInContext(request);
