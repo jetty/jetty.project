@@ -93,7 +93,6 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testIPv6(RequestProcessor p) throws Exception
     {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         String request = "PROXY TCP6 eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\n" +
             "GET /path HTTP/1.1\n" +
             "Host: server:80\n" +
@@ -112,7 +111,6 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testIPv6V2(RequestProcessor p) throws Exception
     {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
 
         String proxy =
             // Preamble

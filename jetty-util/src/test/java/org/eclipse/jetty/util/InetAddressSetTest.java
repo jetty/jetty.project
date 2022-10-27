@@ -42,14 +42,13 @@ public class InetAddressSetTest
         loopbacks.add("127.0.0.1");
         loopbacks.add("127.0.0.2");
 
-        if (Net.isIpv6InterfaceAvailable())
-        {
-            loopbacks.add("::1");
-            loopbacks.add("::0.0.0.1");
-            loopbacks.add("[::1]");
-            loopbacks.add("[::0.0.0.1]");
-            loopbacks.add("[::ffff:127.0.0.1]");
-        }
+
+        loopbacks.add("::1");
+        loopbacks.add("::0.0.0.1");
+        loopbacks.add("[::1]");
+        loopbacks.add("[::0.0.0.1]");
+        loopbacks.add("[::ffff:127.0.0.1]");
+
 
         return loopbacks.stream();
     }
@@ -183,11 +182,7 @@ public class InetAddressSetTest
         bad.add("1.2.3.4/33");
         bad.add("255.255.8.0/16");
         bad.add("255.255.8.1/17");
-
-        if (Net.isIpv6InterfaceAvailable())
-        {
-            bad.add("[::1]/129");
-        }
+        bad.add("[::1]/129");
 
         return bad.stream();
     }
@@ -211,10 +206,7 @@ public class InetAddressSetTest
         set.add("10.0.0.4-10.0.0.6");
         set.add("10.1.0.254-10.1.1.1");
 
-        if (Net.isIpv6InterfaceAvailable())
-        {
-            set.add("[abcd:ef::fffe]-[abcd:ef::1:1]");
-        }
+        set.add("[abcd:ef::fffe]-[abcd:ef::1:1]");
 
         assertFalse(set.test(InetAddress.getByName("10.0.0.3")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.4")));
@@ -229,15 +221,12 @@ public class InetAddressSetTest
         assertTrue(set.test(InetAddress.getByName("10.1.1.1")));
         assertFalse(set.test(InetAddress.getByName("10.1.1.2")));
 
-        if (Net.isIpv6InterfaceAvailable())
-        {
-            assertFalse(set.test(InetAddress.getByName("ABCD:EF::FFFD")));
-            assertTrue(set.test(InetAddress.getByName("ABCD:EF::FFFE")));
-            assertTrue(set.test(InetAddress.getByName("ABCD:EF::FFFF")));
-            assertTrue(set.test(InetAddress.getByName("ABCD:EF::1:0")));
-            assertTrue(set.test(InetAddress.getByName("ABCD:EF::1:1")));
-            assertFalse(set.test(InetAddress.getByName("ABCD:EF::1:2")));
-        }
+        assertFalse(set.test(InetAddress.getByName("ABCD:EF::FFFD")));
+        assertTrue(set.test(InetAddress.getByName("ABCD:EF::FFFE")));
+        assertTrue(set.test(InetAddress.getByName("ABCD:EF::FFFF")));
+        assertTrue(set.test(InetAddress.getByName("ABCD:EF::1:0")));
+        assertTrue(set.test(InetAddress.getByName("ABCD:EF::1:1")));
+        assertFalse(set.test(InetAddress.getByName("ABCD:EF::1:2")));
     }
 
     @ParameterizedTest
@@ -308,13 +297,10 @@ public class InetAddressSetTest
         assertTrue(set.test(InetAddress.getByName("1.2.3.4")));
         assertTrue(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
         assertTrue(set.test(InetAddress.getByAddress("hostname", new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
-        if (Net.isIpv6InterfaceAvailable())
-        {
-            assertTrue(set.test(InetAddress.getByName("::0:0:abcd")));
-            assertTrue(set.test(InetAddress.getByName("::abcd")));
-            assertTrue(set.test(InetAddress.getByName("[::abcd]")));
-            assertTrue(set.test(InetAddress.getByName("::ffff:1.2.3.4")));
-        }
+        assertTrue(set.test(InetAddress.getByName("::0:0:abcd")));
+        assertTrue(set.test(InetAddress.getByName("::abcd")));
+        assertTrue(set.test(InetAddress.getByName("[::abcd]")));
+        assertTrue(set.test(InetAddress.getByName("::ffff:1.2.3.4")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.4")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.5")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.6")));
@@ -325,13 +311,12 @@ public class InetAddressSetTest
         assertFalse(set.test(InetAddress.getByName("1.2.3.4")));
         assertFalse(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
         assertFalse(set.test(InetAddress.getByAddress("hostname", new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
-        if (Net.isIpv6InterfaceAvailable())
-        {
-            assertTrue(set.test(InetAddress.getByName("::0:0:abcd")));
-            assertTrue(set.test(InetAddress.getByName("::abcd")));
-            assertTrue(set.test(InetAddress.getByName("[::abcd]")));
-            assertFalse(set.test(InetAddress.getByName("::ffff:1.2.3.4")));
-        }
+
+        assertTrue(set.test(InetAddress.getByName("::0:0:abcd")));
+        assertTrue(set.test(InetAddress.getByName("::abcd")));
+        assertTrue(set.test(InetAddress.getByName("[::abcd]")));
+        assertFalse(set.test(InetAddress.getByName("::ffff:1.2.3.4")));
+
         assertTrue(set.test(InetAddress.getByName("10.0.0.4")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.5")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.6")));
@@ -343,13 +328,12 @@ public class InetAddressSetTest
         assertFalse(set.test(InetAddress.getByName("1.2.3.4")));
         assertFalse(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
         assertFalse(set.test(InetAddress.getByAddress("hostname", new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
-        if (Net.isIpv6InterfaceAvailable())
-        {
-            assertFalse(set.test(InetAddress.getByName("::0:0:abcd")));
-            assertFalse(set.test(InetAddress.getByName("::abcd")));
-            assertFalse(set.test(InetAddress.getByName("[::abcd]")));
-            assertFalse(set.test(InetAddress.getByName("::ffff:1.2.3.4")));
-        }
+
+        assertFalse(set.test(InetAddress.getByName("::0:0:abcd")));
+        assertFalse(set.test(InetAddress.getByName("::abcd")));
+        assertFalse(set.test(InetAddress.getByName("[::abcd]")));
+        assertFalse(set.test(InetAddress.getByName("::ffff:1.2.3.4")));
+
         assertTrue(set.test(InetAddress.getByName("10.0.0.4")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.5")));
         assertTrue(set.test(InetAddress.getByName("10.0.0.6")));

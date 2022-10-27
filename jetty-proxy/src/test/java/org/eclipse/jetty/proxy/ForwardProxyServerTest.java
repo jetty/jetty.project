@@ -227,8 +227,6 @@ public class ForwardProxyServerTest
     @ValueSource(strings = {"::2", "[::3]"})
     public void testIPv6WithXForwardedForHeader(String ipv6) throws Exception
     {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
@@ -266,8 +264,6 @@ public class ForwardProxyServerTest
     @Test
     public void testIPv6WithForwardedHeader() throws Exception
     {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);

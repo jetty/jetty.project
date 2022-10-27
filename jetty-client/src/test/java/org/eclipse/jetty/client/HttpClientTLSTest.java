@@ -1377,8 +1377,6 @@ public class HttpClientTLSTest
     @EnabledForJreRange(max = JRE.JAVA_16, disabledReason = "Since Java 17, SNI host names can only have letter|digit|hyphen characters.")
     public void testForcedNonDomainSNIWithIPv6() throws Exception
     {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
         serverTLS.setKeyStorePath("src/test/resources/keystore_sni_non_domain.p12");
         serverTLS.setKeyStorePassword("storepwd");

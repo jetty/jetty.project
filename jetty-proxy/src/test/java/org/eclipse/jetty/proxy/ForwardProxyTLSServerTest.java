@@ -479,8 +479,6 @@ public class ForwardProxyTLSServerTest
     @MethodSource("proxyTLS")
     public void testIPv6(SslContextFactory.Server proxyTLS) throws Exception
     {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-
         startTLSServer(new ServerHandler());
         startProxy(proxyTLS);
 
