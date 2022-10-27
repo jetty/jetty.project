@@ -35,7 +35,7 @@ public class CompactPathRule extends Rule implements Rule.ApplyURI
     @Override
     public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
-        String uri = request.getRequestURI();
+        String uri = oldURI;
         if (uri.startsWith("/"))
             uri = URIUtil.compactPath(uri);
         request.setHttpURI(HttpURI.build(request.getHttpURI(), uri));
