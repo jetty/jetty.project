@@ -82,6 +82,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     public void testIterative(Transport transport) throws Exception
     {
         // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
+        // of course we can!
 //        if ("ci".equals(System.getProperty("env")))
 //            Assumptions.assumeTrue(transport != Transport.H3);
 
@@ -119,7 +120,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     public void testConcurrent(Transport transport) throws Exception
     {
         // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
-        Assumptions.assumeTrue(transport != Transport.H3);
+        // of course we can!
+        //Assumptions.assumeTrue(transport != Transport.H3);
 
         init(transport);
         scenario.start(new LoadHandler(), client ->
