@@ -89,7 +89,7 @@ public class TryPathsHandler extends Handler.Wrapper
                 String path = interpolated.substring(0, queryIdx);
                 _uri = HttpURI.build(wrapped.getHttpURI())
                     .path(URIUtil.addPaths(Request.getContextPath(wrapped), path))
-                    .query(interpolated.substring(queryIdx+1))
+                    .query(interpolated.substring(queryIdx + 1))
                     .asImmutable();
             }
             else
