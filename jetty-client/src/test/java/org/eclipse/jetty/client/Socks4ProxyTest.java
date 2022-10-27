@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -322,7 +323,8 @@ public class Socks4ProxyTest
             // Accept the connection, but do not reply and don't close.
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(2 * idleTimeout, TimeUnit.MILLISECONDS));
-            assertThat(x.getCause(), instanceOf(TimeoutException.class));
+            Class<?> expectedException = "ci".equals(System.getProperty("env")) ? ConnectException.class : TimeoutException.class;
+            assertThat(x.getCause(), instanceOf(expectedException));
         }
     }
 

@@ -911,7 +911,7 @@ public class ForwardProxyTLSServerTest
     @MethodSource("proxyTLS")
     public void testProxyLongProcessing(SslContextFactory.Server proxyTLS) throws Exception
     {
-        long timeout = 500;
+        long timeout = "ci".equals(System.getProperty("env")) ? 2000 : 500;
         startTLSServer(new AbstractHandler()
         {
             @Override
