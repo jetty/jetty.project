@@ -39,6 +39,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -50,6 +52,8 @@ public class Socks4ProxyTest
 {
     private ServerSocketChannel proxy;
     private HttpClient client;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Socks4ProxyTest.class);
 
     @BeforeEach
     public void prepare() throws Exception
@@ -324,6 +328,7 @@ public class Socks4ProxyTest
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(2 * idleTimeout, TimeUnit.MILLISECONDS));
             Class<?> expectedException = "ci".equals(System.getProperty("env")) ? ConnectException.class : TimeoutException.class;
+            LOGGER.debug("exception during the request", x);
             assertThat(x.getCause(), instanceOf(expectedException));
         }
     }
