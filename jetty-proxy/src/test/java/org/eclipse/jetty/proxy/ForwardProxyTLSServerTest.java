@@ -68,6 +68,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -907,9 +908,10 @@ public class ForwardProxyTLSServerTest
 
     @ParameterizedTest
     @MethodSource("proxyTLS")
+    @DisabledIfSystemProperty(named = "env", matches = "ci")
     public void testProxyLongProcessing(SslContextFactory.Server proxyTLS) throws Exception
     {
-        long timeout = "ci".equals(System.getProperty("env")) ? 2000 : 500;
+        long timeout = 500;
         startTLSServer(new AbstractHandler()
         {
             @Override
