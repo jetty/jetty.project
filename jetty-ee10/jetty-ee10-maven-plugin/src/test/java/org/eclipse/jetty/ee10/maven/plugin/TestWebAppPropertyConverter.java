@@ -154,8 +154,8 @@ public class TestWebAppPropertyConverter
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
         assertThat(webApp.getBaseResource(), instanceOf(CombinedResource.class));
 
-        CombinedResource combinedResource = (CombinedResource)webApp.getBaseResource();
-        List<URI> actual = combinedResource.getResources().stream().filter(Objects::nonNull).map(Resource::getURI).toList();
+        Resource combinedResource = webApp.getBaseResource();
+        List<URI> actual = Resource.stream(combinedResource).filter(Objects::nonNull).map(Resource::getURI).toList();
         URI[] expected = new URI[]{base1.toURI(), base2.toURI()};
         assertThat(actual, containsInAnyOrder(expected));
     }
