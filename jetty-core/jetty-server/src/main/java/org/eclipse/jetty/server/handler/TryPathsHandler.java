@@ -83,19 +83,21 @@ public class TryPathsHandler extends Handler.Wrapper
         public TryPathsRequest(Request wrapped, String interpolated)
         {
             super(wrapped);
+
+            HttpURI.Mutable rewrittenUri = HttpURI.build(wrapped.getHttpURI());
+
             int queryIdx = interpolated.indexOf('?');
             if (queryIdx >= 0)
             {
                 String path = interpolated.substring(0, queryIdx);
-                _uri = HttpURI.build(wrapped.getHttpURI())
-                    .path(URIUtil.addPaths(Request.getContextPath(wrapped), path))
-                    .query(interpolated.substring(queryIdx + 1))
-                    .asImmutable();
+                rewrittenUri.path(URIUtil.addPaths(Request.getContextPath(wrapped), path));
+                rewrittenUri.query(interpolated.substring(queryIdx + 1));
             }
             else
             {
-                _uri = Request.newHttpURIFrom(wrapped, URIUtil.canonicalPath(interpolated));
+                rewrittenUri.path(URIUtil.addPaths(Request.getContextPath(wrapped), interpolated));
             }
+            _uri = rewrittenUri.asImmutable();
         }
 
         @Override
