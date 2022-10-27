@@ -14,17 +14,6 @@
   <modules>
     <module>jetty-quic-quiche-common</module>
     <module>jetty-quic-quiche-jna</module>
+    <module>jetty-quic-quiche-foreign-incubator</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>jdk17</id>
-      <activation>
-        <jdk>17</jdk>
-      </activation>
-      <modules>
-        <module>jetty-quic-quiche-foreign-incubator</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>
