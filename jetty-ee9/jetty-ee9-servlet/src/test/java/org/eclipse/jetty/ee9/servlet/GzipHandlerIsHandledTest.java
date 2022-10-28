@@ -19,6 +19,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -83,7 +84,7 @@ public class GzipHandlerIsHandledTest
 
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setBaseResource(ResourceFactory.root().newResource(workDir.getPath()));
-        resourceHandler.setDirAllowed(true);
+        resourceHandler.setDirectoryBehavior(ResourceService.DirectoryBehavior.LISTING);
         resourceHandler.setHandler(new EventHandler(events, "ResourceHandler"));
 
         GzipHandler gzipHandler = new GzipHandler();

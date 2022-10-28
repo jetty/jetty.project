@@ -192,6 +192,7 @@
     <module>tests</module>
     <!-- <module>jetty-p2</module> -->
      <module>documentation</module>
+    <module>jetty-core/jetty-tests/jetty-test-core-integration</module>
   </modules>
 
   <build>

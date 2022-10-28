@@ -66,6 +66,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -155,10 +156,22 @@ public class DefaultServlet extends HttpServlet
             servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
 
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
-        _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
         _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
+
+        if (getInitParameter("dirAllowed") != null)
+            LOG.warn("init-param 'dirAllowed' has been replaced by 'dirBehavior'");
+
+        String directoryMode = getInitParameter("dirBehavior", _resourceService.getDirectoryBehavior().name());
+        ResourceService.DirectoryBehavior mode = switch (StringUtil.toLowerCase(directoryMode))
+        {
+            case "skip" -> ResourceService.DirectoryBehavior.SKIP;
+            case "listing" -> ResourceService.DirectoryBehavior.LISTING;
+            default -> ResourceService.DirectoryBehavior.SERVE;
+        };
+
+        _resourceService.setDirectoryBehavior(mode);
 
         _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
 

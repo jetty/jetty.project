@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.demos;
 
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -49,7 +50,7 @@ public class SplitFileServer
         // directory, you needn't use these, you simply need to supply the paths
         // you are looking to serve content from.
         ResourceHandler rh0 = new ResourceHandler();
-        rh0.setDirAllowed(false);
+        rh0.setDirectoryBehavior(ResourceService.DirectoryBehavior.SERVE);
 
         ContextHandler context0 = new ContextHandler();
         context0.setContextPath("/");
@@ -59,7 +60,7 @@ public class SplitFileServer
         // Rinse and repeat the previous item, only specifying a different
         // resource base.
         ResourceHandler rh1 = new ResourceHandler();
-        rh1.setDirAllowed(false);
+        rh1.setDirectoryBehavior(ResourceService.DirectoryBehavior.SERVE);
 
         ContextHandler context1 = new ContextHandler();
         context1.setContextPath("/");

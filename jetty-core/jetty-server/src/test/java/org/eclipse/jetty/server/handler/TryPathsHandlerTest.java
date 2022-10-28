@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -81,7 +82,6 @@ public class TryPathsHandlerTest
         tryPaths.setPaths(paths);
         tryPaths.setHandler(handler);
 
-        server.setDumpAfterStart(true);
         server.start();
     }
 
@@ -95,7 +95,7 @@ public class TryPathsHandlerTest
     public void testTryPaths() throws Exception
     {
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setDirAllowed(false);
+        resourceHandler.setDirectoryBehavior(ResourceService.DirectoryBehavior.SKIP);
         resourceHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -161,7 +161,7 @@ public class TryPathsHandlerTest
     public void testTryPathsWithPathMappings() throws Exception
     {
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setDirAllowed(false);
+        resourceHandler.setDirectoryBehavior(ResourceService.DirectoryBehavior.SKIP);
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), resourceHandler);

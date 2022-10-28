@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,29 @@ public class ResourceService
     // TODO: see if we can set this to private eventually
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
+    /**
+     * The Directory Behavior Mode
+     */
+    public enum DirectoryBehavior
+    {
+        /**
+         * Serve the directory, as a welcome file, if available.
+         * Produce no directory listing.
+         * Produce forbidden if unable to serve welcome file or directory listing.
+         */
+        SERVE,
+        /**
+         * Serve the directory, as a directory listing, produce forbidden if unable to serve directory listing.
+         */
+        LISTING,
+        /**
+         * If unable to serve directory, no welcome file is available, do not serve directory listing, and don't produce forbidden,
+         * skip the ResourceService handling of the directory entirely.
+         * This allows other Handlers to process the directory request if wanted.
+         */
+        SKIP
+    }
+
     private List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private WelcomeFactory _welcomeFactory;
 
@@ -75,7 +99,7 @@ public class ResourceService
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
     private List<String> _preferredEncodingOrder = new ArrayList<>();
     private int _encodingCacheSize = 100;
-    private boolean _dirAllowed = true;
+    private DirectoryBehavior _directoryBehavior = DirectoryBehavior.LISTING;
     private boolean _acceptRanges = true;
     private HttpField _cacheControl;
     private Resource _stylesheet;
@@ -103,7 +127,12 @@ public class ResourceService
     public HttpContent getContent(String path, Request request) throws IOException
     {
         ContextHandler contextHandler = ContextHandler.getContextHandler(request);
-        return getContent(path, contextHandler);
+        HttpContent content = getContent(path, contextHandler);
+        if ((content != null) && Resources.isDirectory(content.getResource()) && _directoryBehavior == DirectoryBehavior.SKIP)
+        {
+            return null;
+        }
+        return content;
     }
 
     public HttpContent getContent(String path, AliasCheck aliasCheck) throws IOException
@@ -522,6 +551,9 @@ public class ResourceService
 
     private WelcomeAction processWelcome(Request request, Response response) throws IOException
     {
+        if (_directoryBehavior != DirectoryBehavior.SERVE)
+            return null;
+
         String welcomeTarget = _welcomeFactory.getWelcomeTarget(request);
         if (welcomeTarget == null)
             return null;
@@ -544,9 +576,12 @@ public class ResourceService
         return new WelcomeAction(WelcomeActionType.SERVE, welcomeTarget);
     }
 
+    /**
+     * Send the Directory Listing
+     */
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
     {
-        if (!_dirAllowed)
+        if (_directoryBehavior != DirectoryBehavior.LISTING)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
@@ -697,11 +732,13 @@ public class ResourceService
     }
 
     /**
-     * @return If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * Get the directory behavior mode
+     *
+     * @return the directory behavior mode
      */
-    public boolean isDirAllowed()
+    public DirectoryBehavior getDirectoryBehavior()
     {
-        return _dirAllowed;
+        return _directoryBehavior;
     }
 
     /**
@@ -750,11 +787,13 @@ public class ResourceService
     }
 
     /**
-     * @param dirAllowed If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * Set the Directory handling behavior.
+     *
+     * @param mode the mode to operate in
      */
-    public void setDirAllowed(boolean dirAllowed)
+    public void setDirectoryBehavior(DirectoryBehavior mode)
     {
-        _dirAllowed = dirAllowed;
+        _directoryBehavior = mode;
     }
 
     /**

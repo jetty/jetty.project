@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
@@ -942,6 +943,20 @@ public class StringUtil
         if (started)
             return minus ? (-val) : val;
         throw new NumberFormatException(string);
+    }
+
+    /**
+     * Return the lowercase version of the input.
+     *
+     * @param input the input String (can be null or blank)
+     * @return the lowercase version of the input string, or empty string if input is blank.
+     * @see #isBlank(String)
+     */
+    public static String toLowerCase(String input)
+    {
+        if (isBlank(input))
+            return "";
+        return input.toLowerCase(Locale.ENGLISH);
     }
 
     /**

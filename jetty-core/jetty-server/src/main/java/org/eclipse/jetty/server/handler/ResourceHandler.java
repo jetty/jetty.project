@@ -176,11 +176,13 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
-     * @return If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * Get the Directory Behavior mode.
+     *
+     * @return the mode of operation for handling requests for directories
      */
-    public boolean isDirAllowed()
+    public ResourceService.DirectoryBehavior getDirectoryBehavior()
     {
-        return _resourceService.isDirAllowed();
+        return _resourceService.getDirectoryBehavior();
     }
 
     /**
@@ -246,11 +248,13 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
-     * @param dirAllowed If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * Set the Directory serving behavior mode
+     *
+     * @param mode the behavior of ResourceHandler when being asked to serve a directory.
      */
-    public void setDirAllowed(boolean dirAllowed)
+    public void setDirectoryBehavior(ResourceService.DirectoryBehavior mode)
     {
-        _resourceService.setDirAllowed(dirAllowed);
+        _resourceService.setDirectoryBehavior(mode);
     }
 
     /**

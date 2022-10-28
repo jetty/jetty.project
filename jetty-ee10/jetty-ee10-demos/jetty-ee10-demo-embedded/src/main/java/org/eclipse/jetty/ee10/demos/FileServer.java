@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -43,7 +44,7 @@ public class FileServer
 
         // Configure the ResourceHandler. Setting the resource base indicates where the files should be served out of.
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.
-        resourceHandler.setDirAllowed(true);
+        resourceHandler.setDirectoryBehavior(ResourceService.DirectoryBehavior.LISTING);
         resourceHandler.setWelcomeFiles(List.of("index.html"));
         resourceHandler.setBaseResource(baseResource);
 

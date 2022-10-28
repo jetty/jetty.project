@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -169,7 +170,7 @@ public class AllowSymLinkAliasCheckerTest
         server.addConnector(localConnector);
 
         ResourceHandler fileResourceHandler = new ResourceHandler();
-        fileResourceHandler.setDirAllowed(true);
+        fileResourceHandler.setDirectoryBehavior(ResourceService.DirectoryBehavior.LISTING);
         fileResourceHandler.setWelcomeFiles(List.of("index.html"));
         fileResourceHandler.setEtags(true);
 
