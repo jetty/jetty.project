@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.URIUtil;
 /**
  * <p>Inspired by nginx's {@code try_files} functionality.</p>
  *
- * <p> This handler can be configured with a list of rewrite URI paths.
+ * <p>This handler can be configured with a list of rewrite URI paths.
  * The special token {@code $path} represents the current request
  * {@code pathInContext} (the portion after the context path).</p>
  *
@@ -115,7 +115,7 @@ public class TryPathsHandler extends Handler.Wrapper
 
     /**
      * <p>Sets a list of rewrite URI paths.</p>
-     * The special token {@code $path} represents the current request
+     * <p>The special token {@code $path} represents the current request
      * {@code pathInContext} (the portion after the context path).</p>
      *
      * @param paths the rewrite URI paths
