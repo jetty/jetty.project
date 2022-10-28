@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -131,7 +131,7 @@ public class TryPathsHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
 
-            // Create the specific file that is requested.
+            // Create the specific static file that is requested.
             String path = "idx.txt";
             Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
             // Make a second request with the specific file.
@@ -146,7 +146,7 @@ public class TryPathsHandlerTest
             // Create the "maintenance" file, it should be served first.
             path = "maintenance.txt";
             Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
-            // Make a second request with any path, we should get the maintenance file.
+            // Make a third request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/whatever");
             channel.write(request.generate());
@@ -158,14 +158,31 @@ public class TryPathsHandlerTest
     }
 
     @Test
-    public void testTryPathsPhpPathMappingsHandler() throws Exception
+    public void testTryPathsWithPathMappings() throws Exception
     {
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(false);
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), resourceHandler);
-        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new ExamplePhpHandler());
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request)
+            {
+                return new Processor()
+                {
+                    @Override
+                    public void process(Request request, Response response, Callback callback)
+                    {
+                        response.setStatus(HttpStatus.OK_200);
+                        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+                        String message = "PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
+                        Content.Sink.write(response, true, message, callback);
+                    }
+                };
+            }
+        });
         pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
         {
             @Override
@@ -190,7 +207,7 @@ public class TryPathsHandlerTest
         {
             channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
-            // Request something that doesn't exist
+            // Make a first request without existing file paths.
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/last");
             channel.write(request.generate());
@@ -210,7 +227,7 @@ public class TryPathsHandlerTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertEquals("hello", response.getContent());
 
-            // Request a php resource
+            // Request an existing PHP file.
             Files.writeString(rootPath.resolve("index.php"), "raw-php-contents", StandardOpenOption.CREATE);
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/index.php");
@@ -218,7 +235,7 @@ public class TryPathsHandlerTest
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertThat(response.getContent(), startsWith("Example PHP: pathInContext=/index.php"));
+            assertThat(response.getContent(), startsWith("PHP: pathInContext=/index.php"));
 
             // Create the "maintenance" file, it should be served first.
             path = "maintenance.txt";
@@ -264,27 +281,6 @@ public class TryPathsHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(sslSocket.getInputStream());
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
-    }
-
-    public static class ExamplePhpHandler extends Handler.Abstract
-    {
-        @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            return new Handler.Processor()
-            {
-                @Override
-                public void process(Request request, Response response, Callback callback)
-                {
-                    response.setStatus(HttpStatus.OK_200);
-                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-
-                    String message = "Example PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
-
-                    response.write(true, BufferUtil.toBuffer(message, StandardCharsets.UTF_8), callback);
-                }
-            };
         }
     }
 }
