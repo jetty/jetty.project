@@ -66,10 +66,8 @@ public class SizeLimitHandler extends HandlerWrapper
         if (_requestLimit >= 0)
         {
             long contentLength = baseRequest.getContentLengthLong();
-            if (contentLength < 0)
-                contentLength = baseRequest.getHttpFields().getLongField("X-Content-Encoding");
             if (contentLength > _requestLimit)
-                throw new BadMessageException(413, "Request Body too large");
+                throw new BadMessageException(413, "Request Body too large: " + contentLength + ">" + _requestLimit);
             else if (contentLength < 0)
             {
                 baseRequest.getHttpInput().addInterceptor(new HttpInput.Interceptor()
@@ -110,6 +108,7 @@ public class SizeLimitHandler extends HandlerWrapper
                             throw new BadMessageException(413, "Response body too large: " +
                                 _written + ">" + _responseLimit);
                     }
+                    getNextInterceptor().write(content, last, callback);
                 }
 
                 @Override
