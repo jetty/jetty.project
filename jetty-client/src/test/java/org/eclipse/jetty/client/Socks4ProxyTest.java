@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -39,8 +38,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -52,8 +49,6 @@ public class Socks4ProxyTest
 {
     private ServerSocketChannel proxy;
     private HttpClient client;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(Socks4ProxyTest.class);
 
     @BeforeEach
     public void prepare() throws Exception
