@@ -327,9 +327,7 @@ public class Socks4ProxyTest
             // Accept the connection, but do not reply and don't close.
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(2 * idleTimeout, TimeUnit.MILLISECONDS));
-            Class<?> expectedException = "ci".equals(System.getProperty("env")) ? ConnectException.class : TimeoutException.class;
-            LOGGER.debug("exception during the request", x);
-            assertThat(x.getCause(), instanceOf(expectedException));
+            assertThat(x.getCause(), instanceOf(TimeoutException.class));
         }
     }
 

@@ -908,7 +908,6 @@ public class ForwardProxyTLSServerTest
 
     @ParameterizedTest
     @MethodSource("proxyTLS")
-    @DisabledIfSystemProperty(named = "env", matches = "ci")
     public void testProxyLongProcessing(SslContextFactory.Server proxyTLS) throws Exception
     {
         long timeout = 500;
