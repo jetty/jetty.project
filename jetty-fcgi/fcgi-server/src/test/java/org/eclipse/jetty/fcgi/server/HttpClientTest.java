@@ -452,6 +452,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testSendToIPv6Address() throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())

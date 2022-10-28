@@ -727,6 +727,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testSendToIPv6Address(Scenario scenario) throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(scenario, new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())
@@ -1605,6 +1606,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testIPv6HostWithHTTP10(Scenario scenario) throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(scenario, new EmptyServerHandler()
         {
             @Override

@@ -699,6 +699,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testIPv6Host(Transport transport) throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
 
         init(transport);
