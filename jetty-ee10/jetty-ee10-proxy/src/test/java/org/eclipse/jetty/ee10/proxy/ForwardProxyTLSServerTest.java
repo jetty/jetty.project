@@ -131,7 +131,8 @@ public class ForwardProxyTLSServerTest
 
     protected HttpProxy newHttpProxy()
     {
-        return new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxySslContextFactory != null);
+        // Use an address to avoid resolution of "localhost" to multiple addresses.
+        return new HttpProxy(new Origin.Address("127.0.0.1", proxyConnector.getLocalPort()), proxySslContextFactory != null);
     }
 
     private HttpClient newHttpClient()
@@ -620,7 +621,7 @@ public class ForwardProxyTLSServerTest
         if (includeAddress)
             httpProxy.getIncludedAddresses().add("localhost:" + serverConnector.getLocalPort());
         httpClient.getProxyConfiguration().addProxy(httpProxy);
-        URI uri = URI.create((proxySslContextFactory == null ? "http" : "https") + "://localhost:" + proxyConnector.getLocalPort());
+        URI uri = URI.create((proxySslContextFactory == null ? "http" : "https") + "://127.0.0.1:" + proxyConnector.getLocalPort());
         httpClient.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "proxyUser", "proxyPassword"));
         httpClient.start();
 

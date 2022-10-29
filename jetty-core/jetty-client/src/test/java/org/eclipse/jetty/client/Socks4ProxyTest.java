@@ -54,7 +54,7 @@ public class Socks4ProxyTest
     public void prepare() throws Exception
     {
         proxy = ServerSocketChannel.open();
-        proxy.bind(new InetSocketAddress("localhost", 0));
+        proxy.bind(new InetSocketAddress("127.0.0.1", 0));
 
         ClientConnector connector = new ClientConnector();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
@@ -77,7 +77,7 @@ public class Socks4ProxyTest
     public void testSocks4Proxy() throws Exception
     {
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks4Proxy("localhost", proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("127.0.0.1", proxyPort));
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -139,7 +139,7 @@ public class Socks4ProxyTest
     public void testSocks4ProxyWithSplitResponse() throws Exception
     {
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks4Proxy("localhost", proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("127.0.0.1", proxyPort));
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -196,7 +196,6 @@ public class Socks4ProxyTest
     @Test
     public void testSocks4ProxyWithTLSServer() throws Exception
     {
-        String proxyHost = "localhost";
         int proxyPort = proxy.socket().getLocalPort();
 
         String serverHost = "127.0.0.13"; // Server host different from proxy host.
@@ -215,7 +214,7 @@ public class Socks4ProxyTest
             // The hostname must be that of the server, not of the proxy.
             ssl.setHostnameVerifier((hostname, session) -> serverHost.equals(hostname));
         });
-        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("127.0.0.1", proxyPort));
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(serverHost, serverPort)
@@ -281,12 +280,15 @@ public class Socks4ProxyTest
     @Test
     public void testRequestTimeoutWhenSocksProxyDoesNotRespond() throws Exception
     {
-        String proxyHost = "localhost";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("127.0.0.1", proxyPort));
 
         long timeout = 1000;
-        Request request = client.newRequest("localhost", proxyPort + 1)
+
+        // Use an address to avoid resolution of "localhost" to multiple addresses.
+        String serverHost = "127.0.0.13";
+        int serverPort = proxyPort + 1; // Any port will do
+        Request request = client.newRequest(serverHost, serverPort)
             .timeout(timeout, TimeUnit.MILLISECONDS);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
@@ -303,13 +305,15 @@ public class Socks4ProxyTest
     @Test
     public void testIdleTimeoutWhenSocksProxyDoesNotRespond() throws Exception
     {
-        String proxyHost = "localhost";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("127.0.0.1", proxyPort));
         long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 
-        Request request = client.newRequest("localhost", proxyPort + 1);
+        // Use an address to avoid resolution of "localhost" to multiple addresses.
+        String serverHost = "127.0.0.13";
+        int serverPort = proxyPort + 1; // Any port will do
+        Request request = client.newRequest(serverHost, serverPort);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
@@ -325,11 +329,13 @@ public class Socks4ProxyTest
     @Test
     public void testSocksProxyClosesConnectionImmediately() throws Exception
     {
-        String proxyHost = "localhost";
         int proxyPort = proxy.socket().getLocalPort();
-        client.getProxyConfiguration().addProxy(new Socks4Proxy(proxyHost, proxyPort));
+        client.getProxyConfiguration().addProxy(new Socks4Proxy("127.0.0.1", proxyPort));
 
-        Request request = client.newRequest("localhost", proxyPort + 1);
+        // Use an address to avoid resolution of "localhost" to multiple addresses.
+        String serverHost = "127.0.0.13";
+        int serverPort = proxyPort + 1; // Any port will do
+        Request request = client.newRequest(serverHost, serverPort);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
