@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -51,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SizeLimitHandlerTest
 {
     private Server _server;
-    private HttpConfiguration _config;
     private LocalConnector _local;
     private ContextHandler _contextHandler;
 
@@ -59,9 +57,9 @@ public class SizeLimitHandlerTest
     public void setUp() throws Exception
     {
         _server = new Server();
-        _config = new HttpConfiguration();
-        _config.setOutputBufferSize(1024);
-        _local = new LocalConnector(_server, new HttpConnectionFactory(_config));
+        HttpConfiguration config = new HttpConfiguration();
+        config.setOutputBufferSize(1024);
+        _local = new LocalConnector(_server, new HttpConnectionFactory(config));
         _server.setConnectors(new Connector[]{_local});
         SizeLimitHandler sizeLimitHandler = new SizeLimitHandler(8192, 8192);
         _contextHandler = new ContextHandler("/ctx");
@@ -81,7 +79,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.getOutputStream().println("Hello World");
@@ -100,7 +98,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 baseRequest.getResponse().getHttpOutput().sendContent(ByteBuffer.wrap(new byte[8 * 1024 + 1]));
@@ -113,7 +111,6 @@ public class SizeLimitHandlerTest
         assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
 
-
     @Test
     public void testLargeGETManyWrites() throws Exception
     {
@@ -121,7 +118,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 byte[] data = new byte[1024];
@@ -139,7 +136,7 @@ public class SizeLimitHandlerTest
                         out.flush();
                     }
                 }
-                catch(BadMessageException e)
+                catch (BadMessageException e)
                 {
                     error.set(true);
                     throw e;
@@ -164,7 +161,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 String content = IO.toString(request.getInputStream());
@@ -187,7 +184,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 String content = IO.toString(request.getInputStream());
@@ -210,7 +207,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 String content = IO.toString(request.getInputStream());
@@ -219,23 +216,24 @@ public class SizeLimitHandlerTest
         });
         _server.start();
 
-        LocalConnector.LocalEndPoint endp = _local.executeRequest(
+        try (LocalConnector.LocalEndPoint endp = _local.executeRequest(
             "POST /ctx/hello HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
-                "\r\n");
+                "\r\n"))
+        {
+            byte[] data = new byte[1024];
+            Arrays.fill(data, (byte)'X');
+            data[1023] = (byte)'\n';
+            String text = new String(data, 0, 1024, Charset.defaultCharset());
 
-        byte[] data = new byte[1024];
-        Arrays.fill(data, (byte)'X');
-        data[1023] = (byte)'\n';
-        String text = new String(data, 0, 1024, Charset.defaultCharset());
+            for (int i = 0; i < 9; i++)
+                endp.addInput("400\r\n" + text + "\r\n");
 
-        for (int i = 0 ; i < 9 ; i++)
-            endp.addInput("400\r\n" + text + "\r\n");
+            HttpTester.Response response = HttpTester.parseResponse(endp.getResponse());
 
-        HttpTester.Response response = HttpTester.parseResponse(endp.getResponse());
-
-        assertThat(response.getStatus(), equalTo(413));
-        assertThat(response.getContent(), containsString("&gt;8192"));
+            assertThat(response.getStatus(), equalTo(413));
+            assertThat(response.getContent(), containsString("&gt;8192"));
+        }
     }
 }
