@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SizeLimitHandlerTest
 {
@@ -90,6 +91,26 @@ public class SizeLimitHandlerTest
             _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("Hello World"));
+    }
+
+    @Test
+    public void testLargeGETContentLengthKnown() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(8 * 1024 + 1);
+                fail();
+            }
+        });
+        _server.start();
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(413));
+        assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
 
     @Test
