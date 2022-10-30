@@ -6,6 +6,7 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
+    buildDiscarder logRotator( numToKeepStr: '60' )
   }
   stages {
     stage("Parallel Stage") {
