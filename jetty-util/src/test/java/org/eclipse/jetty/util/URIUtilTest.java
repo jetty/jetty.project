@@ -40,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -750,5 +751,40 @@ public class URIUtilTest
         // check decode to original
         String decoded = URIUtil.decodePath(encoded);
         assertEquals(path, decoded);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "a",
+        "deadbeef",
+        "321zzz123",
+        "pct%25encoded",
+        "a,b,c",
+        "*",
+        "_-_-_",
+        "192.168.1.22",
+        "192.168.1.com"
+    })
+    public void testIsRegNameTrue(String token)
+    {
+        assertTrue(URIUtil.isRegName(token), "Token [" + token + "] should be a valid reg-name");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " ",
+        "tab\tchar",
+        "a long name with spaces",
+        "пример.рф", // unicode - raw IDN (not normalized to punycode)
+        // Invalid pct-encoding
+        "%XX",
+        "%%",
+        "abc%d",
+        "100%",
+        "[brackets]"
+    })
+    public void testIsRegNameFalse(String token)
+    {
+        assertFalse(URIUtil.isRegName(token), "Token [" + token + "] should be an invalid reg-name");
     }
 }

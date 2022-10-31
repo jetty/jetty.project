@@ -1123,6 +1123,56 @@ public class URIUtil
     }
 
     /**
+     * True if token is a <a href="https://www.rfc-editor.org/rfc/rfc3986">RFC3986</a> {@code reg-name}
+     *
+     * @param token the to test
+     * @return true if the token passes as a valid reg-name
+     */
+    public static boolean isRegName(String token)
+    {
+        /* reg-name ABNF is defined as :
+         *   reg-name      = *( unreserved / pct-encoded / sub-delims )
+         *   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+         *   pct-encoded   = "%" HEXDIG HEXDIG
+         *   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+         *                   / "*" / "+" / "," / ";" / "="
+         */
+
+        if (token == null)
+            return true; // null token is considered valid
+
+        int length = token.length();
+        for (int i = 0; i < length; i++)
+        {
+            char c = token.charAt(i);
+            // unreserved
+            if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+                continue;
+            if (c == '-' || c == '.' || c == '_' || c == '~')
+                continue;
+            // pct-encoded
+            if (c == '%')
+            {
+                if (StringUtil.isHex(token, i + 1, 2))
+                {
+                    i += 2;
+                    continue;
+                }
+                else
+                    return false;
+            }
+            // sub-delims
+            if (c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')' ||
+                c == '*' || c == '+' || c == ',' || c == ';' || c == '=')
+            {
+                continue;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Create a new URI from the arguments, handling IPv6 host encoding and default ports
      *
      * @param scheme the URI scheme

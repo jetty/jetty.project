@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.Inet6Address;
+import java.net.UnknownHostException;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -112,5 +115,11 @@ public class HostPortTest
         {
             new HostPort(authority);
         });
+    }
+
+    @Test
+    public void testIsIPV6() throws UnknownHostException
+    {
+        Inet6Address.getByName("[webtide.com]");
     }
 }

@@ -2045,10 +2045,10 @@ public class HttpParserTest
     @ValueSource(strings = {
         "Host: whatever.com:xxxx",
         "Host: myhost:testBadPort",
-        "Host: a b c d",
-        "Host: a\to\tz",
-        "Host: hosta, hostb, hostc",
-        "Host: hosta,hostb,hostc",
+        "Host: a b c d", // whitespace in reg-name
+        "Host: a\to\tz", // tabs in reg-name
+        "Host: hosta, hostb, hostc", // spaces in reg-name
+        "Host: [sd ajklf;d sajklf;d sajfkl;d]", // not a valid IPv6 address
         "Host: hosta\nHost: hostb\nHost: hostc" // multi-line
     })
     public void testBadHost(String hostline)
@@ -2063,6 +2063,30 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertThat(_bad, startsWith("Bad"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Host: whatever.com:123",
+        "Host: myhost.com",
+        "Host: ::", // fake, no value, IPv6 (allowed)
+        "Host: a-b-c-d",
+        "Host: hosta,hostb,hostc", // commas are allowed
+        "Host: [fde3:827b:ea49:0:893:8016:e3ac:9778]:444", // IPv6 with port
+        "Host: [fde3:827b:ea49:0:893:8016:e3ac:9778]", // IPv6 without port
+    })
+    public void testGoodHost(String hostline)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1\n" +
+                hostline + "\n" +
+                "Connection: close\n" +
+                "\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertNull(_bad);
     }
 
     @Test
