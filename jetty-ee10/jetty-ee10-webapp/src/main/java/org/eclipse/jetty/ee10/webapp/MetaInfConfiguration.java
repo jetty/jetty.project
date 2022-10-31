@@ -723,7 +723,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to find extra classpath jars in
      * @return the list of Resources with the extra classpath, or null if not found
-     * @throws Exception if unable to resolve the extra classpath jars
      */
     protected List<Resource> findExtraClasspathJars(WebAppContext context)
     {
