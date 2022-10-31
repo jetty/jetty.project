@@ -14,7 +14,7 @@ pipeline {
         stage("Build / Test - JDK8") {
           agent { node { label 'linux' } }
           steps {
-            container('jetty-build') {
+            //container('jetty-build') {
               timeout( time: 240, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk8", "clean install", "maven3")
@@ -38,33 +38,33 @@ pipeline {
                        sourcePattern: '**/src/main/java'
                 recordIssues id: "jdk8", name: "Static Analysis jdk8", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
-            }
+            //}
           }
         }
 
         stage("Build / Test - JDK11") {
           agent { node { label 'linux' } }
           steps {
-            container( 'jetty-build' ) {
+            //container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk11", "clean install -Djacoco.skip=true -Perrorprone", "maven3")
                 recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
               }
-            }
+            //}
           }
         }
 
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
-            container( 'jetty-build' ) {
+            //container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk17", "clean install -Djacoco.skip=true", "maven3")
                 recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
-            }
+            //}
           }
         }
 
@@ -86,12 +86,12 @@ pipeline {
         stage("Build Compact3") {
           agent { node { label 'linux' } }
           steps {
-            container( 'jetty-build' ) {
+            //container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk8", "-Pcompact3 clean install -DskipTests", "maven3")
               }
-            }
+            //}
           }
         }
       }
