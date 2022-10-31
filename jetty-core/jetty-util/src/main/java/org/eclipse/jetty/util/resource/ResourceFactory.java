@@ -199,7 +199,7 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a ResourceCollection from a list of URIs
+     * Construct a possible {@link CombinedResource} from a list of URIs
      *
      * @param uris the URIs
      * @return the Resource for the provided path

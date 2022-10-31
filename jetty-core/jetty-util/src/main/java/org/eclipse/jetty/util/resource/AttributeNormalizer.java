@@ -211,7 +211,7 @@ public class AttributeNormalizer
         addSystemProperty("user.dir", 6);
 
         Set<Path> rootPaths = new HashSet<>();
-        Resource.stream(baseResource).forEach(r ->
+        for (Resource r : baseResource)
         {
             if (r instanceof MountedPathResource mpr && rootPaths.contains(mpr.getContainerPath()))
                 return;
@@ -228,7 +228,7 @@ public class AttributeNormalizer
             }
             uris.add(new URIAttribute("WAR.uri", warURI, 9)); // preferred encoding
             uris.add(new URIAttribute("WAR", warURI, 8)); // legacy encoding
-        });
+        }
 
         paths.sort(attrComparator);
         uris.sort(attrComparator);

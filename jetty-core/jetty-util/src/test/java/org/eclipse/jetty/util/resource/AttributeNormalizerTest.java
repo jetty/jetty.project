@@ -346,7 +346,7 @@ public class AttributeNormalizerTest
             System.setProperty("jetty.home", jettyHome.toString());
             System.setProperty("jetty.base", jettyBase.toString());
 
-            Resource.stream(war).forEach(w ->
+            for (Resource w : war)
             {
                 try
                 {
@@ -378,7 +378,7 @@ public class AttributeNormalizerTest
                 {
                     throw new RuntimeException(e);
                 }
-            });
+            }
 
             // Setup normalizer
             this.normalizer = new AttributeNormalizer(war);

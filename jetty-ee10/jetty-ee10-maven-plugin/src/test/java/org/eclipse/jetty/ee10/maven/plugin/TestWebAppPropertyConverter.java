@@ -16,9 +16,9 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -155,7 +155,10 @@ public class TestWebAppPropertyConverter
         assertThat(webApp.getBaseResource(), instanceOf(CombinedResource.class));
 
         Resource combinedResource = webApp.getBaseResource();
-        List<URI> actual = Resource.stream(combinedResource).filter(Objects::nonNull).map(Resource::getURI).toList();
+        List<URI> actual = new ArrayList<>();
+        for (Resource r : combinedResource)
+            if (r != null)
+                actual.add(r.getURI());
         URI[] expected = new URI[]{base1.toURI(), base2.toURI()};
         assertThat(actual, containsInAnyOrder(expected));
     }

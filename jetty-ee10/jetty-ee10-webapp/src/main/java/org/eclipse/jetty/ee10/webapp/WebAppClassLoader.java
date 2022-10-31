@@ -113,7 +113,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        Resource getExtraClasspath();
+        List<Resource> getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -193,8 +193,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             }
         }
 
-        if (context.getExtraClasspath() != null)
-            addClassPath(context.getExtraClasspath());
+        for (Resource extra : context.getExtraClasspath())
+            addClassPath(extra);
     }
 
     /**
@@ -223,7 +223,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public void addClassPath(Resource resource)
     {
-        Resource.stream(resource).forEach(r ->
+        for (Resource r : resource)
         {
             if (resource.exists())
             {
@@ -242,7 +242,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     LOG.debug("Check resource exists and is not a nested jar: {}", resource);
                 throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
             }
-        });
+        }
     }
 
     /**
