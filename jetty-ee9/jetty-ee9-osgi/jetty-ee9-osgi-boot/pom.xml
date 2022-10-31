@@ -25,7 +25,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-deploy</artifactId>
+      <artifactId>jetty-osgi</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

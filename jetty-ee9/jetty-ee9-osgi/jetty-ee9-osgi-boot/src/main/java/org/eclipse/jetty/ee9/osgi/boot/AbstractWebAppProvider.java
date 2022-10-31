@@ -23,14 +23,15 @@ import java.util.HashMap;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.ee9.osgi.boot.internal.webapp.OSGiWebappClassLoader;
-import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.osgi.OSGiServerConstants;
+import org.eclipse.jetty.osgi.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -60,7 +61,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
     private DeploymentManager _deploymentManager;
 
-    private ServerInstanceWrapper _serverWrapper;
+    private Server _server;
 
     /**
      * OSGiApp
@@ -73,14 +74,14 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         private String _webAppPath;
         private WebAppContext _webApp;
 
-        public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
+        public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Path path)
         {
-            super(manager, provider, bundle, originId);
+            super(manager, provider, bundle, path);
         }
 
-        public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String originId)
+        public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, Path path)
         {
-            super(manager, provider, bundle, properties, originId);
+            super(manager, provider, bundle, properties, path);
         }
 
         public void setWebAppContext(WebAppContext webApp)
@@ -380,7 +381,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                             if (filenames != null && filenames.length > 0)
                             {
                                 String filename = filenames[0]; //should only be 1 filename in this usage
-                                String jettyHome = (String)getServerInstanceWrapper().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+                                String jettyHome = (String)getServer().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
                                 if (jettyHome == null)
                                     jettyHome = System.getProperty(OSGiServerConstants.JETTY_HOME);
                                 Resource res = findFile(filename, jettyHome, overrideBundleInstallLocation, _bundle);
@@ -439,9 +440,10 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         }
     }
 
-    public AbstractWebAppProvider(ServerInstanceWrapper wrapper)
+    public AbstractWebAppProvider(Server server, ContextFactory contextFactory)
     {
-        _serverWrapper = wrapper;
+        _server = server;
+        _contextFactory = contextFactory;
     }
 
     /**
@@ -512,14 +514,14 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _tldBundles;
     }
 
-    public void setServerInstanceWrapper(ServerInstanceWrapper wrapper)
+    public void setServer(Server server)
     {
-        _serverWrapper = wrapper;
+        _server = server;
     }
 
-    public ServerInstanceWrapper getServerInstanceWrapper()
+    public Server getServer()
     {
-        return _serverWrapper;
+        return _server;
     }
 
     public DeploymentManager getDeploymentManager()
@@ -542,12 +544,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             throw new IllegalStateException(app + " is not a BundleApp");
 
         //Create a WebAppContext suitable to deploy in OSGi
-        ContextHandler ch = ((OSGiApp)app).createContextHandler();
+        ContextHandler ch = _contextFactory.createContextHandler(app);
         return ch;
-    }
-
-    public static String getOriginId(Bundle contributor, String path)
-    {
-        return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() + (path.startsWith("/") ? path : "/" + path);
     }
 }

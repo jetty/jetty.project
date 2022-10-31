@@ -101,11 +101,11 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     @Override
     protected void doStart() throws Exception
     {
-        _webappTracker = new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServerInstanceWrapper().getManagedServerName());
+        _webappTracker = new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServer().getManagedServerName());
         _webappTracker.open();
         //register as an osgi service for deploying bundles, advertising the name of the jetty Server instance we are related to
         Dictionary<String, String> properties = new Hashtable<>();
-        properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
+        properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServer().getManagedServerName());
         _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(BundleProvider.class.getName(), this, properties);
         super.doStart();
     }
@@ -143,7 +143,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             return false;
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(getServerInstanceWrapper().getParentClassLoaderForWebapps());
+        Thread.currentThread().setContextClassLoader(getServer().getParentClassLoaderForWebapps());
         String contextPath = null;
         try
         {
