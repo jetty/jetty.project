@@ -61,13 +61,13 @@ public class SizeLimitHandler extends HandlerWrapper
         _responseLimit = responseLimit;
     }
 
-    private void checkRequestLimit(long size)
+    protected void checkRequestLimit(long size)
     {
         if (_requestLimit >= 0 && size > _requestLimit)
             throw new BadMessageException(413, "Request body is too large: " + size + ">" + _requestLimit);
     }
 
-    private void checkResponseLimit(long size)
+    protected void checkResponseLimit(long size)
     {
         if (_responseLimit >= 0 && size > _responseLimit)
             throw new BadMessageException(413, "Response body is too large: " + size + ">" + _responseLimit);
