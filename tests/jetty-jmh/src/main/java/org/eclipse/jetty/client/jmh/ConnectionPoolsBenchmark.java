@@ -13,41 +13,13 @@
 
 package org.eclipse.jetty.client.jmh;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.concurrent.ThreadLocalRandom;
-
-import org.eclipse.jetty.client.ConnectionPool;
-import org.eclipse.jetty.client.DuplexConnectionPool;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpConversation;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.MultiplexConnectionPool;
-import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.RoundRobinConnectionPool;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.util.Attachable;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
 public class ConnectionPoolsBenchmark
 {
+    /** TODO
     private ConnectionPool pool;
 
     @Param({"round-robin", "cached/multiplex", "uncached/multiplex", "cached/duplex", "uncached/duplex"})
@@ -166,4 +138,5 @@ public class ConnectionPoolsBenchmark
             return attachment;
         }
     }
+        **/
 }
