@@ -1237,7 +1237,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
     public List<Resource> getExtraClasspath()
     {
-        return _extraClasspath;
+        return _extraClasspath == null ? Collections.emptyList() : _extraClasspath;
     }
 
     /**
