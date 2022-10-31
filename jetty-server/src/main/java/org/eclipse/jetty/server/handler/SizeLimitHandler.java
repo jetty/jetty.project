@@ -70,7 +70,7 @@ public class SizeLimitHandler extends HandlerWrapper
     protected void checkResponseLimit(long size)
     {
         if (_responseLimit >= 0 && size > _responseLimit)
-            throw new BadMessageException(413, "Response body is too large: " + size + ">" + _responseLimit);
+            throw new BadMessageException(500, "Response body is too large: " + size + ">" + _responseLimit);
     }
 
     @Override
