@@ -88,6 +88,11 @@ public class KeyStoreScannerTest
 
     public void start(Configuration configuration) throws Exception
     {
+        start(configuration, true);
+    }
+
+    public void start(Configuration configuration, boolean resolveAlias) throws Exception
+    {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         configuration.configure(sslContextFactory);
 
@@ -100,7 +105,7 @@ public class KeyStoreScannerTest
         server.addConnector(connector);
 
         // Configure Keystore Reload.
-        keystoreScanner = new KeyStoreScanner(sslContextFactory);
+        keystoreScanner = new KeyStoreScanner(sslContextFactory, resolveAlias);
         keystoreScanner.setScanInterval(0);
         server.addBean(keystoreScanner);
 
@@ -182,22 +187,25 @@ public class KeyStoreScannerTest
     public void testReloadChangingSymbolicLink() throws Exception
     {
         assumeFileSystemSupportsSymlink();
-        Path keystorePath = keystoreDir.resolve("symlinkKeystore");
+        Path newKeystore = useKeystore("newKeystore", "newKeystore");
+        Path oldKeystore = useKeystore("oldKeystore", "oldKeystore");
+
+        Path symlinkKeystorePath = keystoreDir.resolve("symlinkKeystore");
         start(sslContextFactory ->
         {
-            Files.createSymbolicLink(keystorePath, useKeystore("oldKeystore"));
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            Files.createSymbolicLink(symlinkKeystorePath, oldKeystore);
+            sslContextFactory.setKeyStorePath(symlinkKeystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
-        });
+        }, false);
 
         // Check the original certificate expiry.
         X509Certificate cert1 = getCertificateFromServer();
         assertThat(getExpiryYear(cert1), is(2015));
 
         // Change the symlink to point to the newKeystore file location which has a later expiry date.
-        Files.delete(keystorePath);
-        Files.createSymbolicLink(keystorePath, useKeystore("newKeystore"));
+        Files.delete(symlinkKeystorePath);
+        Files.createSymbolicLink(symlinkKeystorePath, newKeystore);
         keystoreScanner.scan(5000);
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
@@ -235,6 +243,24 @@ public class KeyStoreScannerTest
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
         assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    public Path useKeystore(String keystoreToUse, String keystorePath) throws Exception
+    {
+        return useKeystore(MavenTestingUtils.getTestResourcePath(keystoreToUse), keystoreDir.resolve(keystorePath));
+    }
+
+    public Path useKeystore(Path keystoreToUse, Path keystorePath) throws Exception
+    {
+        if (Files.exists(keystorePath))
+            Files.delete(keystorePath);
+
+        Files.copy(keystoreToUse, keystorePath);
+
+        if (!Files.exists(keystorePath))
+            throw new IllegalStateException("keystore file was not created");
+
+        return keystorePath.toAbsolutePath();
     }
 
     public Path useKeystore(String keystore) throws Exception
