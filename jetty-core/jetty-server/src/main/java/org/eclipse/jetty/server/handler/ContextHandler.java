@@ -639,11 +639,16 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (contextRequest == null)
             return null;
 
+        // Does this handler want to process the request itself?
         Request.Processor processor = processByContextHandler(contextRequest);
         if (processor != null)
             return processor;
 
-        return contextRequest.wrapProcessor(_context.get(contextRequest, contextRequest));
+        // The contextRequest is-a Supplier<Processor> that calls effectively calls getHandler().handle(request).
+        // Call this supplier in the scope of the context.
+        Request.Processor contextScopedProcessor = _context.get(contextRequest, contextRequest);
+        // Wrap the contextScopedProcessor with a wrapper that uses the wrapped request
+        return contextRequest.wrapProcessor(contextScopedProcessor);
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
