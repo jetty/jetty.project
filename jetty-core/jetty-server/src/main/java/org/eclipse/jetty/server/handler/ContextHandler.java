@@ -644,11 +644,29 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (processor != null)
             return processor;
 
-        // The contextRequest is-a Supplier<Processor> that calls effectively calls getHandler().handle(request).
-        // Call this supplier in the scope of the context.
-        Request.Processor contextScopedProcessor = _context.get(contextRequest, contextRequest);
-        // Wrap the contextScopedProcessor with a wrapper that uses the wrapped request
-        return contextRequest.wrapProcessor(contextScopedProcessor);
+        Context lastContext = __context.get();
+        ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+        ClassLoader loader = _context.getClassLoader();
+        try
+        {
+            __context.set(_context);
+            if (loader != null)
+                Thread.currentThread().setContextClassLoader(loader);
+            enterScope(contextRequest);
+            processor = getHandler().handle(contextRequest);
+        }
+        finally
+        {
+            exitScope(contextRequest);
+            __context.set(lastContext);
+            if (loader != null)
+                Thread.currentThread().setContextClassLoader(lastLoader);
+        }
+
+        if (processor == null)
+            return null;
+
+        return new ContextProcessor(processor);
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -1238,6 +1256,56 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 ", _wild=" + _wild +
                 ", _vConnector='" + _vConnector + '\'' +
                 '}';
+        }
+    }
+
+    public class ContextProcessor implements Request.Processor
+    {
+        private final Request.Processor _processor;
+
+        public ContextProcessor(Request.Processor processor)
+        {
+            _processor = processor;
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            Request contextRequest = wrap(request); // TODO reuse any previous wrapper
+            Response contextResponse = new ContextResponse(_context, contextRequest, response);
+            Context lastContext = __context.get();
+            if (lastContext == _context)
+                _processor.process(contextRequest, contextResponse, callback);
+            else
+            {
+                ClassLoader loader = _context.getClassLoader();
+                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                try
+                {
+                    __context.set(_context);
+                    if (loader != null)
+                        Thread.currentThread().setContextClassLoader(loader);
+                    enterScope(contextRequest);
+                    _processor.process(contextRequest, contextResponse, callback);
+                }
+                catch (Throwable th)
+                {
+                    Response.writeError(contextRequest, contextResponse, callback, th);
+                }
+                finally
+                {
+                    exitScope(contextRequest);
+                    __context.set(lastContext);
+                    if (loader != null)
+                        Thread.currentThread().setContextClassLoader(lastLoader);
+                }
+            }
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _processor.getInvocationType();
         }
     }
 }
