@@ -723,16 +723,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to find extra classpath jars in
      * @return the list of Resources with the extra classpath, or null if not found
-     * @throws Exception if unable to resolve the extra classpath jars
      */
     protected List<Resource> findExtraClasspathJars(WebAppContext context)
-        throws Exception
     {
         if (context == null || context.getExtraClasspath() == null)
             return null;
 
         return context.getExtraClasspath()
-            .getResources()
             .stream()
             .filter(this::isFileSupported)
             .collect(Collectors.toList());
@@ -775,7 +772,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return List.of();
 
         return context.getExtraClasspath()
-            .getResources()
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
