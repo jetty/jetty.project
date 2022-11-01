@@ -113,11 +113,8 @@ public abstract class Resource implements Iterable<Resource>
     public abstract boolean isContainedIn(Resource r);
 
     /**
-     * Return an Iterator of all Resource's referenced in this Resource.
-     *
-     * <p>
-     *     This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator.
-     * </p>
+     * <p>Return an Iterator of all Resource's referenced in this Resource.</p>
+     * <p>This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator of this resource.</p>
      *
      * @return the iterator of Resources.
      */
@@ -198,22 +195,28 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Creates a new input stream to the resource.
      *
-     * @return an input stream to the resource
-     * @throws IOException if unable to open the input stream
+     * @return an input stream to the resource or null if one is not available.
+     * @throws IOException if there is a problem opening the input stream
      */
     public InputStream newInputStream() throws IOException
     {
-        return Files.newInputStream(getPath(), StandardOpenOption.READ);
+        Path path = getPath();
+        if (path == null)
+            return null;
+        return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
     /**
      * Readable ByteChannel for the resource.
      *
-     * @return an readable bytechannel to the resource or null if one is not available.
+     * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
      */
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
+        Path path = getPath();
+        if (path == null)
+            return null;
         return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
 

@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class ResourceCollectionTest
+public class CombinedResourceTest
 {
     private final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
     public WorkDir workDir;
@@ -78,7 +78,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = ResourceFactory.combine(
+        Resource rc = ResourceFactory.combine(
             resourceFactory.newResource(one),
             resourceFactory.newResource(two),
             resourceFactory.newResource(three)
@@ -127,7 +127,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = ResourceFactory.combine(
+        Resource rc = ResourceFactory.combine(
             resourceFactory.newResource(one),
             resourceFactory.newResource(two),
             resourceFactory.newResource(three)
@@ -135,8 +135,8 @@ public class ResourceCollectionTest
 
         // This should return a ResourceCollection with 3 `/dir/` sub-directories.
         Resource r = rc.resolve("dir");
-        assertTrue(r instanceof ResourceCollection);
-        rc = (ResourceCollection)r;
+        assertTrue(r instanceof CombinedResource);
+        rc = (CombinedResource)r;
         assertEquals(getContent(rc, "1.txt"), "1 - one (in dir)");
         assertEquals(getContent(rc, "2.txt"), "2 - two (in dir)");
         assertEquals(getContent(rc, "3.txt"), "3 - three (in dir)");
@@ -149,7 +149,7 @@ public class ResourceCollectionTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        ResourceCollection rc = ResourceFactory.combine(
+        Resource rc = ResourceFactory.combine(
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
                 resourceFactory.newResource(three)
@@ -175,7 +175,7 @@ public class ResourceCollectionTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path twoDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        ResourceCollection rc1 = ResourceFactory.combine(
+        Resource rc1 = ResourceFactory.combine(
             List.of(
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
@@ -183,7 +183,7 @@ public class ResourceCollectionTest
             )
         );
 
-        ResourceCollection rc2 = ResourceFactory.combine(
+        Resource rc2 = ResourceFactory.combine(
             List.of(
                 // the original ResourceCollection
                 rc1,
@@ -202,9 +202,11 @@ public class ResourceCollectionTest
         };
 
         List<URI> actual = new ArrayList<>();
-        for (Resource res: rc2.getResources())
+        assertThat(rc2, instanceOf(CombinedResource.class));
+        if (rc2 instanceof CombinedResource combinedResource)
         {
-            actual.add(res.getURI());
+            for (Resource res : combinedResource.getResources())
+                actual.add(res.getURI());
         }
         assertThat(actual, contains(expected));
     }
@@ -307,7 +309,7 @@ public class ResourceCollectionTest
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        ResourceCollection rc = resourceFactory.newResource(uris);
+        Resource rc = resourceFactory.newResource(uris);
         assertThat(getContent(rc, "test.txt"), is("Test"));
     }
 
@@ -333,7 +335,7 @@ public class ResourceCollectionTest
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        ResourceCollection rc = resourceFactory.newResource(uris);
+        Resource rc = resourceFactory.newResource(uris);
         assertThat(getContent(rc, "test.txt"), is("Test inside lib-foo.jar"));
         assertThat(getContent(rc, "testZed.txt"), is("TestZed inside lib-zed.jar"));
     }
