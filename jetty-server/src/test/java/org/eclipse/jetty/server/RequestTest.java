@@ -787,12 +787,11 @@ public class RequestTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "Host: whatever.com:xxxx",
-        "Host: myhost:testBadPort",
-        "Host: a b c d",
-        "Host: a\to\tz",
-        "Host: hosta, hostb, hostc",
-        "Host: hosta,hostb,hostc",
+        "Host: whatever.com:xxxx", // invalid port
+        "Host: myhost:testBadPort", // invalid port
+        "Host: a b c d", // spaces
+        "Host: a\to\tz", // control characters
+        "Host: hosta, hostb, hostc", // spaces (commas are ok)
         "Host: hosta\nHost: hostb\nHost: hostc" // multi-line
     })
     public void testInvalidHostHeader(String hostline) throws Exception
