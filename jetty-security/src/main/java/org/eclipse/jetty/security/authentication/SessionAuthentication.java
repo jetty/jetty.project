@@ -19,6 +19,7 @@ import java.io.Serializable;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.Authenticator;
@@ -98,5 +99,19 @@ public class SessionAuthentication extends AbstractUserAuthentication
     public String toString()
     {
         return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
+    }
+
+    @Override
+    public void sessionWillPassivate(HttpSessionEvent se)
+    {
+    }
+
+    @Override
+    public void sessionDidActivate(HttpSessionEvent se)
+    {
+        if (_session == null)
+        {
+            _session = se.getSession();
+        }
     }
 }
