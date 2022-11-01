@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.util;
 
-import java.net.Inet6Address;
-import java.net.UnknownHostException;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,14 +31,10 @@ public class HostPortTest
 
         return Stream.of(
             Arguments.of("", "", null),
-            Arguments.of(":80", "", "80"),
             Arguments.of("host", "host", null),
             Arguments.of("host:80", "host", "80"),
             Arguments.of("10.10.10.1", "10.10.10.1", null),
             Arguments.of("10.10.10.1:80", "10.10.10.1", "80"),
-            Arguments.of("[0::0::0::1]", "[0::0::0::1]", null),
-            Arguments.of("[0::0::0::1]:80", "[0::0::0::1]", "80"),
-            Arguments.of("0:1:2:3:4:5:6", "[0:1:2:3:4:5:6]", null),
             Arguments.of("127.0.0.1:65535", "127.0.0.1", "65535"),
             // Localhost tests
             Arguments.of("localhost:80", "localhost", "80"),
@@ -71,18 +64,21 @@ public class HostPortTest
     {
         return Stream.of(
             null,
-            "host:",
-            "127.0.0.1:",
-            "[0::0::0::0::1]:",
-            "host:xxx",
-            "127.0.0.1:xxx",
-            "[0::0::0::0::1]:xxx",
-            "host:-80",
-            "127.0.0.1:-80",
-            "[0::0::0::0::1]:-80",
-            "127.0.0.1:65536"
-        )
-            .map(Arguments::of);
+            ":80", // no host, port only
+            "host:", // no port
+            "127.0.0.1:", // no port
+            "[0::0::0::0::1]:", // no port
+            "[0::0::0::1]", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
+            "[0::0::0::1]:80", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
+            "0:1:2:3:4:5:6", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "IPv6 address too short"
+            "host:xxx", // invalid port
+            "127.0.0.1:xxx", // host + invalid port
+            "[0::0::0::0::1]:xxx", // ipv6 + invalid port
+            "host:-80", // host + invalid port
+            "127.0.0.1:-80", // ipv4 + invalid port
+            "[0::0::0::0::1]:-80", // ipv6 + invalid port
+            "127.0.0.1:65536" // ipv4 + port value too high
+        ).map(Arguments::of);
     }
 
     @ParameterizedTest
@@ -115,11 +111,5 @@ public class HostPortTest
         {
             new HostPort(authority);
         });
-    }
-
-    @Test
-    public void testIsIPV6() throws UnknownHostException
-    {
-        Inet6Address.getByName("[webtide.com]");
     }
 }
