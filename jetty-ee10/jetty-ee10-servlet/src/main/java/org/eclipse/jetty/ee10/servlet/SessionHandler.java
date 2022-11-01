@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -729,25 +728,29 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
 
         addSessionStreamWrapper(request);
 
-        // TODO rather than wrapping the processor yet again here, we could just inject the
-        //      SessionManager to the servletContextRequest, which already has the ability to
-        //      extend the processor as the ContextRequest is-a Request.WrapperProcessor
         return (req, res, callback) ->
         {
+            ServletContextRequest servletContextReq = Request.as(req, ServletContextRequest.class);
+            if (servletContextReq == null)
+                throw new IllegalArgumentException();
+            ServletContextRequest.ServletApiRequest servletApiReq = servletContextReq.getServletApiRequest();
+            if (servletApiReq == null)
+                throw new IllegalArgumentException();
+
             // find and set the session if one exists
             RequestedSession requestedSession = resolveRequestedSessionId(req);
 
-            servletApiRequest.setCoreSession(requestedSession.session());
-            servletApiRequest.setSessionManager(this);
-            servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
-            servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
+            servletApiReq.setCoreSession(requestedSession.session());
+            servletApiReq.setSessionManager(this);
+            servletApiReq.setRequestedSessionId(requestedSession.sessionId());
+            servletApiReq.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
 
             HttpCookie cookie = access(requestedSession.session(), req.getConnectionMetaData().isSecure());
 
             // Handle changed ID or max-age refresh, but only if this is not a redispatched request
             if (cookie != null)
             {
-                ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+                ServletContextResponse servletContextResponse = servletContextReq.getResponse();
                 Response.replaceCookie(servletContextResponse, cookie);
             }
 

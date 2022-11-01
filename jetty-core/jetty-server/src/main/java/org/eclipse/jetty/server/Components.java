@@ -36,7 +36,7 @@ public interface Components
      * The cache will have a life cycle limited by the connection, i.e. no cache map will live
      * longer that the connection associated with it.  However, a cache may have a shorter life
      * than a connection (e.g. it may be discarded for implementation reasons).  A cache map is
-     * guaranteed to be give to only a single request concurrently, so objects saved there do not
+     * guaranteed to apply to only a single request concurrently, so objects saved there do not
      * need to be made safe from access by simultaneous request.
      * If the connection is known to be none-persistent then the cache may be a noop cache and discard
      * all items set on it.
