@@ -19,9 +19,9 @@ import java.io.Serializable;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionBindingListener;
-import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.security.AbstractUserAuthentication;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.UserIdentity;
@@ -76,7 +76,13 @@ public class SessionAuthentication extends AbstractUserAuthentication
             return;
         }
 
-        LoginService loginService = security.getLoginService();
+        LoginService loginService;
+        Authenticator authenticator = security.getAuthenticator();
+        if (authenticator instanceof LoginAuthenticator)
+            loginService = ((LoginAuthenticator)authenticator).getLoginService();
+        else
+            loginService = security.getLoginService();
+
         if (loginService == null)
         {
             if (LOG.isDebugEnabled())
@@ -92,19 +98,5 @@ public class SessionAuthentication extends AbstractUserAuthentication
     public String toString()
     {
         return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
-    }
-
-    @Override
-    public void sessionWillPassivate(HttpSessionEvent se)
-    {
-    }
-
-    @Override
-    public void sessionDidActivate(HttpSessionEvent se)
-    {
-        if (_session == null)
-        {
-            _session = se.getSession();
-        }
     }
 }

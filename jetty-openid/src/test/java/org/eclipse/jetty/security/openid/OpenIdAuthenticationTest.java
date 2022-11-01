@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,6 +112,7 @@ public class OpenIdAuthenticationTest
         context.setSecurityHandler(securityHandler);
 
         File datastoreDir = MavenTestingUtils.getTargetTestingDir("datastore");
+        IO.delete(datastoreDir);
         FileSessionDataStoreFactory fileSessionDataStoreFactory = new FileSessionDataStoreFactory();
         fileSessionDataStoreFactory.setStoreDir(datastoreDir);
         server.addBean(fileSessionDataStoreFactory);
