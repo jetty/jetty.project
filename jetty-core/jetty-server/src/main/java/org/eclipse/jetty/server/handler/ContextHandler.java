@@ -804,7 +804,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     protected ContextRequest wrap(Request request)
     {
-        return new ContextRequest(this, _context, request);
+        return new ContextRequest(_context, request);
     }
 
     @Override
@@ -1271,8 +1271,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Request contextRequest = wrap(request); // TODO reuse any previous wrapper
-            Response contextResponse = new ContextResponse(_context, contextRequest, response);
+            ContextRequest contextRequest = wrap(request); // TODO reuse any previous wrapper
+            ContextResponse contextResponse = contextRequest.wrap(response);
             Context lastContext = __context.get();
             if (lastContext == _context)
                 _processor.process(contextRequest, contextResponse, callback);

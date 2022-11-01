@@ -56,6 +56,7 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.ee10.servlet.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -75,7 +76,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
@@ -86,7 +86,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServletContextRequest extends ContextRequest implements Runnable
+public class ServletContextRequest extends ContextRequest implements Request.Processor
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
@@ -138,7 +138,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         PathSpec pathSpec,
         MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
+        super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -148,16 +148,18 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _matchedPath = matchedPath;
     }
 
-    public String getPathInContext()
-    {
-        return _pathInContext;
-    }
-
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        _servletChannel.setCallback(callback);
-        super.process(request, response, callback);
+        // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
+        ServletContextRequest servletRequest = Request.as(request, ServletContextRequest.class);
+        servletRequest.getServletChannel().setCallback(callback);
+        servletRequest.getServletChannel().handle();
+    }
+
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override
@@ -172,7 +174,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     @Override
-    protected ContextResponse newContextResponse(Request request, Response response)
+    protected ServletContextResponse wrap(Response response)
     {
         _response = new ServletContextResponse(_servletChannel, this, response);
         return _response;
@@ -303,12 +305,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public String getServletName()
     {
         return _mappedServlet.getServletHolder().getName();
-    }
-
-    Runnable onContentAvailable()
-    {
-        // TODO not sure onReadReady is right method or at least could be renamed.
-        return getState().onReadReady() ? this : null;
     }
 
     public void addEventListener(final EventListener listener)
@@ -739,11 +735,10 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
                 return true;
 
-            //do the authentication
-            if (_authentication instanceof Authentication.Deferred)
-            {
-                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this, getResponse(), getCallback()));
-            }
+            // do the authentication
+            // TODO better handle the callback
+            if (_authentication instanceof DeferredAuthentication deferred)
+                setAuthentication(deferred.authenticate(ServletContextRequest.this, getResponse(), _servletChannel.getCallback()));
 
             //if the authentication did not succeed
             if (_authentication instanceof Authentication.Deferred)

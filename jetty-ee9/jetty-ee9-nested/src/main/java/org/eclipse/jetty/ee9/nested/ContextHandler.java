@@ -2362,12 +2362,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         private final HttpChannel _httpChannel;
 
-        protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
-                                     org.eclipse.jetty.server.handler.ContextHandler.Context context,
+        protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler.Context context,
                                      org.eclipse.jetty.server.Request wrapped,
                                      HttpChannel httpChannel)
         {
-            super(contextHandler, context, wrapped);
+            super(context, wrapped);
             _httpChannel = httpChannel;
         }
 
@@ -2473,7 +2472,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(this.getContext(), request, httpChannel);
             httpChannel.onRequest(coreContextRequest);
             return coreContextRequest;
         }

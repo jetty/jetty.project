@@ -86,6 +86,11 @@ public class ServletChannel implements Runnable
         _callback = callback;
     }
 
+    public Callback getCallback()
+    {
+        return _callback;
+    }
+
     public void init(ServletContextRequest request)
     {
         _connector = request.getConnectionMetaData().getConnector();
