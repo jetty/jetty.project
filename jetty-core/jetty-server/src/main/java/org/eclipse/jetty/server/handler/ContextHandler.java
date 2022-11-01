@@ -638,6 +638,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         // wrap might fail (eg ServletContextHandler could not match a servlet)
         if (contextRequest == null)
             return null;
+        request.setAttribute(ContextRequest.class.getName(), contextRequest);
 
         // Does this handler want to process the request itself?
         Request.Processor processor = processByContextHandler(contextRequest);
@@ -1271,7 +1272,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            ContextRequest contextRequest = wrap(request); // TODO reuse any previous wrapper
+            // TODO better mechanism than attributes to reuse the wrapper.
+            // TODO disabling wrapper reuse for now to see what breaks?
+            ContextRequest contextRequest = null; // (ContextRequest) request.getAttribute(ContextRequest.class.getName());
+            if (contextRequest == null)
+                contextRequest = wrap(request);
             ContextResponse contextResponse = contextRequest.wrap(response);
             Context lastContext = __context.get();
             if (lastContext == _context)

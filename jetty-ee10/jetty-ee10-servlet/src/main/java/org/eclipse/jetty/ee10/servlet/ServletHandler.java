@@ -82,6 +82,13 @@ import org.slf4j.LoggerFactory;
 public class ServletHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletHandler.class);
+    private static final Request.Processor PROCESSOR = (request, response, callback) ->
+    {
+        // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
+        ServletContextRequest servletRequest = Request.as(request, ServletContextRequest.class);
+        servletRequest.getServletChannel().setCallback(callback);
+        servletRequest.getServletChannel().handle();
+    };
 
     private final AutoLock _lock = new AutoLock();
     private ServletContextHandler _servletContextHandler;
@@ -433,7 +440,7 @@ public class ServletHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        return Request.as(request, ServletContextRequest.class);
+        return PROCESSOR;
     }
 
     /**

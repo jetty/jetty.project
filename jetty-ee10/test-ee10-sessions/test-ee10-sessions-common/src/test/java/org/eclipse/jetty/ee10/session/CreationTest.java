@@ -285,7 +285,8 @@ public class CreationTest
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist
+            //check that the session exists
+            System.err.println("servlet._id " + servlet._id);
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
             assertThat(response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
         }

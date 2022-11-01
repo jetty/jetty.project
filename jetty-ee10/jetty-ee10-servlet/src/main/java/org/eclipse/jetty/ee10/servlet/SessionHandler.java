@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -713,48 +714,61 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         setUsingURLs(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
+    private ServletContextRequest.ServletApiRequest getServletApiRequest(Request request)
+    {
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        if (servletContextRequest == null)
+            throw new IllegalArgumentException("Request is not a valid ServletContextRequest");
+        ServletContextRequest.ServletApiRequest servletApiReq = servletContextRequest.getServletApiRequest();
+        if (servletApiReq == null)
+            throw new IllegalArgumentException("Request is not a valid ServletContextRequest");
+        return servletApiReq;
+    }
+
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest =
-            (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
-        if (servletApiRequest == null)
-            throw new IllegalStateException("Request is not a valid ServletContextRequest");
-
         Request.Processor processor = getHandler().handle(request);
         if (processor == null)
             return null;
 
-        addSessionStreamWrapper(request);
+        return new SessionProcessor(processor);
+    }
 
-        return (req, res, callback) ->
+    private class SessionProcessor implements Request.Processor
+    {
+        private final Request.Processor _processor;
+
+        private SessionProcessor(Request.Processor processor)
         {
-            ServletContextRequest servletContextReq = Request.as(req, ServletContextRequest.class);
-            if (servletContextReq == null)
-                throw new IllegalArgumentException();
-            ServletContextRequest.ServletApiRequest servletApiReq = servletContextReq.getServletApiRequest();
-            if (servletApiReq == null)
-                throw new IllegalArgumentException();
+            _processor = processor;
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            addSessionStreamWrapper(request);
+
+            ServletApiRequest servletApiRequest = getServletApiRequest(request);
 
             // find and set the session if one exists
-            RequestedSession requestedSession = resolveRequestedSessionId(req);
+            RequestedSession requestedSession = resolveRequestedSessionId(request);
 
-            servletApiReq.setCoreSession(requestedSession.session());
-            servletApiReq.setSessionManager(this);
-            servletApiReq.setRequestedSessionId(requestedSession.sessionId());
-            servletApiReq.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
+            servletApiRequest.setCoreSession(requestedSession.session());
+            servletApiRequest.setSessionManager(SessionHandler.this);
+            servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
+            servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
 
-            HttpCookie cookie = access(requestedSession.session(), req.getConnectionMetaData().isSecure());
+            HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
 
             // Handle changed ID or max-age refresh, but only if this is not a redispatched request
             if (cookie != null)
             {
-                ServletContextResponse servletContextResponse = servletContextReq.getResponse();
+                ServletContextResponse servletContextResponse = servletApiRequest.getRequest().getResponse();
                 Response.replaceCookie(servletContextResponse, cookie);
             }
 
-            processor.process(req, res, callback);
-        };
+            _processor.process(request, response, callback);
+        }
     }
 }
