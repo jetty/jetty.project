@@ -36,7 +36,7 @@
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.3.4</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
-    <commons.compress.version>1.21</commons.compress.version>
+    <commons.compress.version>1.22</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
@@ -101,7 +101,7 @@
     <junit.version>5.9.1</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.19.0</log4j2.version>
-    <logback.version>1.4.1</logback.version>
+    <logback.version>1.4.4</logback.version>
     <mariadb.version>3.0.8</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.resolver.version>1.8.2</maven.resolver.version>
