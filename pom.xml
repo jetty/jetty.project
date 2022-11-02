@@ -107,7 +107,7 @@
     <jetty-version-txt.plugin.version>2.7</jetty-version-txt.plugin.version>
     <license.plugin.version>4.1</license.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
     <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
     <maven.checkstyle.plugin.version>3.1.0</maven.checkstyle.plugin.version>
