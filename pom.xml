@@ -128,7 +128,7 @@
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
-    <maven.deploy.plugin.version>3.0.0-M2</maven.deploy.plugin.version>
+    <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
     <servicemix-depends.plugin.version>1.4.0</servicemix-depends.plugin.version>
     <versions.plugin.version>2.11.0</versions.plugin.version>
 
