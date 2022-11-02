@@ -24,7 +24,6 @@ import java.util.Optional;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.ee9.osgi.boot.internal.webapp.OSGiWebappClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
