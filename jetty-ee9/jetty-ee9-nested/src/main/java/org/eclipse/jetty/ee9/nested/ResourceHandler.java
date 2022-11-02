@@ -25,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingContentFactory;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -112,7 +112,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         contentFactory = new FileMappedHttpContentFactory(contentFactory);
-        contentFactory = new EvictingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
+        contentFactory = new ValidatingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
         return contentFactory;
     }
 

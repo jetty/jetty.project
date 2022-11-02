@@ -34,9 +34,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
  * {@link HttpContent.Factory} implementation that wraps any other {@link HttpContent.Factory} instance
- * using it as a caching authority.
- * Only HttpContent instances whose path is not a directory are cached.
+ * using it as a caching authority. Only HttpContent instances whose path is not a directory are cached.
+ * </p>
+ * <p>
+ * No eviction is done by this {@link HttpContent.Factory}, once an entry is in the cache it is always
+ * assumed to be valid. This class can be extended to implement the validation behaviours on
+ * {@link CachingHttpContent} which allow entries to be evicted once they become invalid.
+ * </p>
+ * @see ValidatingCachingContentFactory
  */
 public class CachingHttpContentFactory implements HttpContent.Factory
 {
@@ -118,7 +125,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private void shrinkCache()
     {
         // While we need to shrink
-        while (_cache.size() > 0 && (_cache.size() > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
+        int numCacheEntries = _cache.size();
+        while (numCacheEntries > 0 && (numCacheEntries > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
         {
             // Scan the entire cache and generate an ordered list by last accessed time.
             SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
@@ -143,6 +151,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                     break;
                 removeFromCache(content);
             }
+
+            numCacheEntries = _cache.size();
         }
     }
 
@@ -272,21 +282,24 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             }
             _etagField = etagField;
 
-            // Map the content into memory if possible.
-            RetainableByteBuffer buffer = null;
-            try
+            // Read the content into memory if the HttpContent does not already have a buffer.
+            RetainableByteBuffer buffer = httpContent.getBuffer();
+            if (buffer != null)
             {
-                long contentLengthValue = getContentLengthValue();
-                if (contentLengthValue > _maxCachedFileSize)
+                try
                 {
-                    buffer = _byteBufferPool.acquire((int)contentLengthValue, false);
-                    BufferUtil.readFrom(httpContent.getResource().newReadableByteChannel(), contentLengthValue, buffer.getBuffer());
+                    long contentLengthValue = getContentLengthValue();
+                    if (contentLengthValue > _maxCachedFileSize)
+                    {
+                        buffer = _byteBufferPool.acquire((int)contentLengthValue, false);
+                        BufferUtil.readFrom(httpContent.getResource().newReadableByteChannel(), contentLengthValue, buffer.getBuffer());
+                    }
                 }
-            }
-            catch (Throwable t)
-            {
-                buffer = null;
-                LOG.warn("Failed to read Resource", t);
+                catch (Throwable t)
+                {
+                    buffer = null;
+                    LOG.warn("Failed to read Resource", t);
+                }
             }
             _buffer = buffer;
 
@@ -335,6 +348,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void release()
         {
+            super.release();
             if (_buffer != null)
                 _buffer.release();
         }

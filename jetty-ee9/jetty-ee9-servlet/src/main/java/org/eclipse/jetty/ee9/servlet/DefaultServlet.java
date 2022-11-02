@@ -32,7 +32,6 @@ import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingContentFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -257,7 +257,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                _cachingContentFactory = new EvictingCachingContentFactory(contentFactory,
+                _cachingContentFactory = new ValidatingCachingContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis());
                 contentFactory = _cachingContentFactory;
                 if (maxCacheSize >= 0)

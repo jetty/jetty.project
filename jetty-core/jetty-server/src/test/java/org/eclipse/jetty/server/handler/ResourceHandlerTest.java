@@ -38,7 +38,6 @@ import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
-import org.eclipse.jetty.http.EvictingCachingContentFactory;
 import org.eclipse.jetty.http.FileMappedHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.http.ValidatingCachingContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -669,7 +669,7 @@ public class ResourceHandlerTest
                 HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
                 contentFactory = new FileMappedHttpContentFactory(contentFactory);
-                contentFactory = new EvictingCachingContentFactory(contentFactory, 0);
+                contentFactory = new ValidatingCachingContentFactory(contentFactory, 0);
                 return contentFactory;
             }
         };

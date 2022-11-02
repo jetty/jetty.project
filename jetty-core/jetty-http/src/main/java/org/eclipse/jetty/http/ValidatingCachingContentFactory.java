@@ -41,24 +41,41 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * elapsed the entry will be invalid and will be evicted from the cache at the next access.
  * </p>
  */
-public class EvictingCachingContentFactory extends CachingHttpContentFactory implements Runnable
+public class ValidatingCachingContentFactory extends CachingHttpContentFactory implements Runnable
 {
     private final Scheduler _scheduler;
     private final long _sweepDelay;
     private final long _validationTime;
     private final long _maxCacheIdleTime;
 
-    public EvictingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
-                                         @Name("validationTime") long validationTime)
+    /**
+     * Construct a {@link ValidatingCachingContentFactory} which validates entries upon use to check if they
+     * are still valid.
+     *
+     * @param authority the wrapped {@link HttpContent.Factory} to use.
+     * @param validationTime time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
+     */
+    public ValidatingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
+                                           @Name("validationTime") long validationTime)
     {
         this(authority, validationTime, null, -1, -1);
     }
 
-    public EvictingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
-                                         @Name("validationTime") long validationTime,
-                                         @Name("scheduler") Scheduler scheduler,
-                                         @Name("sweepDelay") long sweepDelay,
-                                         @Name("maxCacheIdleTime") long maxCacheIdleTime)
+    /**
+     * Construct a {@link ValidatingCachingContentFactory} which validates entries upon use to check if they
+     * are still valid and an optional period sweeper of the cache to find invalid and old entries to evict.
+     *
+     * @param authority the wrapped {@link HttpContent.Factory} to use.
+     * @param validationTime time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
+     * @param scheduler scheduler to use for the sweeper, can be null to not use sweeper.
+     * @param sweepDelay time between runs of the sweeper in ms (if < 0 never sweep for invalid entries).
+     * @param maxCacheIdleTime amount of time in ms an entry can be unused before evicted by the sweeper (if < 0 never evict unused entries).
+     */
+    public ValidatingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
+                                           @Name("validationTime") long validationTime,
+                                           @Name("scheduler") Scheduler scheduler,
+                                           @Name("sweepDelay") long sweepDelay,
+                                           @Name("maxCacheIdleTime") long maxCacheIdleTime)
     {
         super(authority);
         _validationTime = validationTime;
@@ -85,36 +102,42 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
     @Override
     public void run()
     {
-        ConcurrentMap<String, CachingHttpContent> cache = getCache();
-        for (Map.Entry<String, CachingHttpContent> entry : cache.entrySet())
+        try
         {
-            CachingHttpContent value = entry.getValue();
-            if (_maxCacheIdleTime > 0 && NanoTime.since(value.getLastAccessedNanos()) > TimeUnit.MILLISECONDS.toNanos(_maxCacheIdleTime))
-                removeFromCache(value);
-            else if (!value.isValid())
-                removeFromCache(value);
+            ConcurrentMap<String, CachingHttpContent> cache = getCache();
+            for (Map.Entry<String, CachingHttpContent> entry : cache.entrySet())
+            {
+                CachingHttpContent value = entry.getValue();
+                if (_maxCacheIdleTime > 0 && NanoTime.since(value.getLastAccessedNanos()) > TimeUnit.MILLISECONDS.toNanos(_maxCacheIdleTime))
+                    removeFromCache(value);
+                else if (!value.isValid())
+                    removeFromCache(value);
+            }
         }
-        schedule();
+        finally
+        {
+            schedule();
+        }
     }
 
     @Override
     protected CachingHttpContent newCachedContent(String p, HttpContent httpContent)
     {
-        return new EvictingCachedContent(p, httpContent, _validationTime);
+        return new ValidatingCachedContent(p, httpContent, _validationTime);
     }
 
     @Override
     protected CachingHttpContent newNotFoundContent(String p)
     {
-        return new EvictingNotFoundContent(p, _validationTime);
+        return new ValidatingNotFoundContent(p, _validationTime);
     }
 
-    protected class EvictingCachedContent extends CachedHttpContent
+    protected class ValidatingCachedContent extends CachedHttpContent
     {
         private final long _validationTime;
         private final AtomicLong _lastValidated = new AtomicLong();
 
-        public EvictingCachedContent(String key, HttpContent httpContent, long validationTime)
+        public ValidatingCachedContent(String key, HttpContent httpContent, long validationTime)
         {
             super(key, httpContent);
             _lastValidated.set(NanoTime.now());
@@ -140,12 +163,12 @@ public class EvictingCachingContentFactory extends CachingHttpContentFactory imp
         }
     }
 
-    protected static class EvictingNotFoundContent extends NotFoundHttpContent
+    protected static class ValidatingNotFoundContent extends NotFoundHttpContent
     {
         private final long _validationTime;
         private final AtomicLong _lastValidated = new AtomicLong();
 
-        public EvictingNotFoundContent(String key, long validationTime)
+        public ValidatingNotFoundContent(String key, long validationTime)
         {
             super(key);
             _validationTime = validationTime;
