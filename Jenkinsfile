@@ -14,7 +14,6 @@ pipeline {
         stage("Build / Test - JDK8") {
           agent { node { label 'linux' } }
           steps {
-            container('jetty-build') {
               timeout( time: 240, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk8", "clean install", "maven3")
@@ -38,40 +37,36 @@ pipeline {
                        sourcePattern: '**/src/main/java'
                 recordIssues id: "jdk8", name: "Static Analysis jdk8", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
-            }
           }
         }
 
+        /*
         stage("Build / Test - JDK11") {
           agent { node { label 'linux' } }
           steps {
-            container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk11", "clean install -Djacoco.skip=true -Perrorprone", "maven3")
                 recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
               }
-            }
           }
         }
 
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
-            container( 'jetty-build' ) {
               timeout( time: 240, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk17", "clean install -Djacoco.skip=true", "maven3")
                 recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
-            }
           }
         }
+         */
 
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
           steps {
-            container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk11",
@@ -79,55 +74,23 @@ pipeline {
                             "maven3")
                 recordIssues id: "javadoc", enabledForFailure: true, tools: [javaDoc()]
               }
-            }
           }
         }
 
+        /*
         stage("Build Compact3") {
           agent { node { label 'linux' } }
           steps {
-            container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
                 checkout scm
                 mavenBuild( "jdk8", "-Pcompact3 clean install -DskipTests", "maven3")
               }
-            }
           }
         }
+         */
       }
     }
   }
-  post {
-    failure {
-      slackNotif()
-    }
-    unstable {
-      slackNotif()
-    }
-    fixed {
-      slackNotif()
-    }
-  }
-}
-
-def slackNotif() {
-    script {
-      try
-      {
-        if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' )
-        {
-          //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
-          // by ${BUILD_USER}
-          COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
-          slackSend channel: '#jenkins',
-                    color: COLOR_MAP[currentBuild.currentResult],
-                    message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
-        }
-      } catch (Exception e) {
-        e.printStackTrace()
-        echo "skip failure slack notification: " + e.getMessage()
-      }
-    }
 }
 
 /**
