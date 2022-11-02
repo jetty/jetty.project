@@ -408,6 +408,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return false;
     }
 
+    protected void enterScope(Request contextRequest, ClassLoader loader)
+    {
+        __context.set(_context);
+        if (loader != null)
+            Thread.currentThread().setContextClassLoader(loader);
+        enterScope(contextRequest);
+    }
+
     /**
      * @param request A request that is applicable to the scope, or null
      */
@@ -424,6 +432,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 LOG.warn("Unable to enter scope", e);
             }
         }
+    }
+
+    protected void exitScope(Request request, Context lastContext, ClassLoader lastLoader)
+    {
+        exitScope(request);
+        __context.set(lastContext);
+        Thread.currentThread().setContextClassLoader(lastLoader);
     }
 
     /**
@@ -650,18 +665,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         ClassLoader loader = _context.getClassLoader();
         try
         {
-            __context.set(_context);
-            if (loader != null)
-                Thread.currentThread().setContextClassLoader(loader);
-            enterScope(contextRequest);
+            enterScope(contextRequest, loader);
             processor = getHandler().handle(contextRequest);
         }
         finally
         {
-            exitScope(contextRequest);
-            __context.set(lastContext);
-            if (loader != null)
-                Thread.currentThread().setContextClassLoader(lastLoader);
+            exitScope(contextRequest, lastContext, lastLoader);
         }
 
         if (processor == null)
@@ -1055,19 +1064,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
             try
             {
-                __context.set(this);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(loader);
-
-                enterScope(request);
+                enterScope(request, loader);
                 return supplier.get();
             }
             finally
             {
-                exitScope(request);
-                __context.set(lastContext);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(lastLoader);
+                exitScope(request, lastContext, lastLoader);
             }
         }
 
@@ -1082,19 +1084,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-
-                    enterScope(request);
+                    enterScope(request, loader);
                     callable.call();
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1110,18 +1105,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(request);
+                    enterScope(request, loader);
                     consumer.accept(t);
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1143,18 +1132,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(request);
+                    enterScope(request, loader);
                     runnable.run();
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1286,10 +1269,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
                 try
                 {
-                    __context.set(_context);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(contextRequest);
+                    enterScope(contextRequest, loader);
                     _processor.process(contextRequest, contextResponse, callback);
                 }
                 catch (Throwable th)
@@ -1298,10 +1278,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 }
                 finally
                 {
-                    exitScope(contextRequest);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(contextRequest, lastContext, lastLoader);
                 }
             }
         }
