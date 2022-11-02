@@ -14,10 +14,13 @@
 package org.eclipse.jetty.server.handler;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -128,13 +131,14 @@ public class TryPathsHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
+        super.handle(request);
         for (String path : paths)
         {
             String interpolated = interpolate(request, path);
-            Request.WrapperProcessor result = new Request.WrapperProcessor(new TryPathsRequest(request, interpolated));
-            Request.Processor childProcessor = super.handle(result);
-            if (childProcessor != null)
-                return result.wrapProcessor(childProcessor);
+            TryPathsRequest wrapper = new TryPathsRequest(request, interpolated);
+            Request.Processor processor = super.handle(wrapper);
+            if (processor != null)
+                return new TryProcessor(processor, interpolated, wrapper);
         }
         return null;
     }
@@ -182,6 +186,38 @@ public class TryPathsHandler extends Handler.Wrapper
         public HttpURI getHttpURI()
         {
             return _uri;
+        }
+    }
+
+    private class TryProcessor implements Request.Processor
+    {
+        private final Request.Processor _processor;
+        private final String _interpolated;
+        private volatile TryPathsRequest _wrapper;
+
+        public TryProcessor(Request.Processor processor, String interpolated, TryPathsRequest wrapper)
+        {
+            _processor = Objects.requireNonNull(processor);
+            _interpolated = interpolated;
+            _wrapper = wrapper;
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            TryPathsRequest wrapper = _wrapper;
+            if (wrapper != null && request == wrapper.getWrapped())
+                _wrapper = null;
+            else
+                wrapper = new TryPathsRequest(request, _interpolated);
+
+            _processor.process(wrapper, response, callback);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _processor.getInvocationType();
         }
     }
 }

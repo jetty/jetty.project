@@ -567,10 +567,15 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             if (processor == null)
                 return null;
 
-            return new WrappingProcessor(processor, wrapper);
+            return wrap(processor, wrapper);
         }
 
         protected abstract W wrap(Request request);
+
+        protected Request.Processor wrap(Request.Processor processor, W wrappedRequest)
+        {
+            return new WrappingProcessor(processor, wrappedRequest);
+        }
 
         protected Response wrap(W wrappedRequest, Response response)
         {
