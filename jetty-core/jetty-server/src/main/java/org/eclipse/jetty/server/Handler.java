@@ -572,9 +572,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
         protected abstract W wrap(Request request);
 
-        protected Request.Processor wrap(Request.Processor processor, W wrappedRequest)
+        protected Request.Processor wrap(Request.Processor processor, W originalWrappedRequest)
         {
-            return new WrappingProcessor(processor, wrappedRequest);
+            return new WrappingProcessor(processor, originalWrappedRequest);
         }
 
         protected Response wrap(W wrappedRequest, Response response)
@@ -591,20 +591,24 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         private class WrappingProcessor implements Request.Processor
         {
             private final Request.Processor _processor;
-            private volatile W _wrapper;
 
-            public WrappingProcessor(Request.Processor processor, W wrapper)
+            // Keep a reference to the first request that created the processor,
+            // so the wrapper created in handle can be reused in process. It is nulled
+            // after first use, so that subsequent uses will create new wrappers.
+            private volatile W _originalWrappedRequest;
+
+            public WrappingProcessor(Request.Processor processor, W originalWrappedRequest)
             {
                 _processor = Objects.requireNonNull(processor);
-                _wrapper = wrapper;
+                _originalWrappedRequest = originalWrappedRequest;
             }
 
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                W wrapper = _wrapper;
+                W wrapper = _originalWrappedRequest;
                 if (wrapper != null && request == wrapper.getWrapped())
-                    _wrapper = null;
+                    _originalWrappedRequest = null;
                 else
                     wrapper = wrap(request);
 
