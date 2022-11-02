@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -191,7 +192,8 @@ public class ReverseProxyTest
                 }
                 catch (InterruptedException x)
                 {
-                    x.printStackTrace();
+                    if (LoggerFactory.getLogger(Server.class).isDebugEnabled())
+                        LoggerFactory.getLogger(Server.class).debug("ignored", x);
                 }
             }
         });
