@@ -13,22 +13,13 @@
 
 package org.eclipse.jetty.ee9.osgi.boot.internal.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.jar.JarFile;
 
-import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee9.osgi.boot.utils.BundleClassLoaderHelperFactory;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.osgi.util.BundleClassLoaderHelperFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 import org.slf4j.Logger;
@@ -44,27 +35,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(OSGiWebappClassLoader.class.getName());
-
-    /**
-     * when a logging framework is setup in the osgi classloaders, it can access
-     * this and register the classes that must not be found in the jar.
-     */
-    public static final Set<String> JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED = new HashSet<>();
-
-    public static void addClassThatIdentifiesAJarThatMustBeRejected(Class<?> zclass)
-    {
-        JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED.add(TypeUtil.toClassReference(zclass.getName()));
-    }
-
-    public static void addClassThatIdentifiesAJarThatMustBeRejected(String zclassName)
-    {
-        JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED.add(TypeUtil.toClassReference(zclassName));
-    }
-
-    static
-    {
-        addClassThatIdentifiesAJarThatMustBeRejected(HttpServlet.class);
-    }
 
     private ClassLoader _osgiBundleClassLoader;
 
@@ -170,92 +140,5 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
                 throw cne;
             }
         }
-    }
-
-    private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
-    {
-        List<URL> list = new ArrayList<>();
-        while (e != null && e.hasMoreElements())
-        {
-            list.add(e.nextElement());
-        }
-        while (e2 != null && e2.hasMoreElements())
-        {
-            list.add(e2.nextElement());
-        }
-        return list;
-    }
-
-    /**
-     * Parse the classpath ourselves to be able to filter things. This is a
-     * derivative work of the super class
-     */
-    @Override
-    public void addClassPath(String classPath) throws IOException
-    {
-        for (Resource resource : Resource.fromList(classPath, false, (path) -> getContext().newResource(path)))
-        {
-            File file = resource.getFile();
-            if (file != null && isAcceptableLibrary(file, JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED))
-            {
-                super.addClassPath(resource);
-            }
-            else
-            {
-                LOG.info("Did not add {} to the classloader of the webapp {}", resource, getContext());
-            }
-        }
-    }
-
-    /**
-     * @return true if the lib should be included in the webapp classloader.
-     */
-    private boolean isAcceptableLibrary(File file, Set<String> pathToClassFiles)
-    {
-        try
-        {
-            if (file.isDirectory())
-            {
-                for (String criteria : pathToClassFiles)
-                {
-                    if (new File(file, criteria).exists())
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                JarFile jar = null;
-                try
-                {
-                    jar = new JarFile(file);
-                    for (String criteria : pathToClassFiles)
-                    {
-                        if (jar.getEntry(criteria) != null)
-                        {
-                            return false;
-                        }
-                    }
-                }
-                finally
-                {
-                    if (jar != null)
-                        try
-                        {
-                            jar.close();
-                        }
-                        catch (IOException ignored)
-                        {
-                        }
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            // nevermind. just trying our best
-            LOG.trace("IGNORED", e);
-        }
-        return true;
     }
 }

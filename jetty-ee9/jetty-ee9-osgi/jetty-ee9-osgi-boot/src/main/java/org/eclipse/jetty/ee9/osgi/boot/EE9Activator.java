@@ -29,11 +29,11 @@ import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.BundleContextProvider;
+import org.eclipse.jetty.osgi.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiApp;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.ServiceContextProvider;
 import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.osgi.util.internal.PackageAdminServiceTracker;
@@ -80,15 +80,14 @@ public class EE9Activator implements BundleActivator
             Optional<DeploymentManager> deployer = getDeploymentManager(server);
             if (deployer.isPresent())
             {
-                //TODO correct classnames
                 //TODO only add if not already present
                 deployer.get().addAppProvider(new BundleContextProvider(ENVIRONMENT, server, new EE9ContextFactory()));
                 deployer.get().addAppProvider(new BundleWebAppProvider(ENVIRONMENT, server, new EE9WebAppFactory()));
-                deployer.get().addAppProvider(new ServiceWebAppProvider(ENVIRONMENT, server, new EE9WebAppFactory()));
-                deployer.get().addAppProvider(new ServiceContextProvider(ENVIRONMENT, server, new EE9ContextFactory()));
             }
             else
                 LOG.info("No DeploymentManager for Server {}", server);
+            
+            return server;
         }
 
         @Override
@@ -110,7 +109,7 @@ public class EE9Activator implements BundleActivator
         }
     }
     
-    public class EE9ContextFactory implements ContextFactory
+    public static class EE9ContextFactory implements ContextFactory
     {
         @Override
         public ContextHandler createContextHandler(AbstractContextProvider provider, App app)
@@ -189,7 +188,7 @@ public class EE9Activator implements BundleActivator
         }
     }
 
-    public class EE9WebAppFactory implements ContextFactory
+    public static class EE9WebAppFactory implements ContextFactory
     {
         @Override
         public ContextHandler createContextHandler(AbstractContextProvider provider, App app)
