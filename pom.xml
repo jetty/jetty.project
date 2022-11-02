@@ -26,7 +26,7 @@
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
     <ant.version>1.10.12</ant.version>
-    <apache.avro.version>1.11.0</apache.avro.version>
+    <apache.avro.version>1.11.1</apache.avro.version>
     <asm.version>9.4</asm.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
