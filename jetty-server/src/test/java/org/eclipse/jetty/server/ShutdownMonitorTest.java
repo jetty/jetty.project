@@ -39,8 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ShutdownMonitorTest
 {
     @AfterEach
-    public void dispose()
+    public void shutdown()
     {
+        // clear out system properties set in individual test cases
+        System.getProperties().remove("STOP.EXIT");
         ShutdownMonitor.reset();
     }
 
