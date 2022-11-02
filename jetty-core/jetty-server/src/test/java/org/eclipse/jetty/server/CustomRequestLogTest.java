@@ -614,7 +614,7 @@ public class CustomRequestLogTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                if (request.getPathInContext().equals("/abort"))
+                if (Request.getPathInContext(request).equals("/abort"))
                 {
                     Callback cbk = Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed);
                     Content.Sink.write(response, false, "data", cbk);

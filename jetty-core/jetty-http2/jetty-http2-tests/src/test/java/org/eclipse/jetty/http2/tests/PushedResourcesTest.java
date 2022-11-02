@@ -108,7 +108,7 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if (target.equals(path1))
                 {
                     response.write(true, ByteBuffer.wrap(pushBytes1), callback);
@@ -173,7 +173,7 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if (target.equals(oldPath))
                 {
                     Response.sendRedirect(request, response, callback, newPath);

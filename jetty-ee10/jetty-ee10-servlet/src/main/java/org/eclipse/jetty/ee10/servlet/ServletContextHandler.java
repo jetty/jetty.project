@@ -1185,8 +1185,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ServletContextRequest wrap(Request request, String pathInContext)
+    protected ServletContextRequest wrap(Request request)
     {
+        // Need to ask directly to the Context for the pathInContext, rather than using
+        // Request.getPathInContext(), as the request is not yet wrapped in this Context.
+        String pathInContext = getContext().getPathInContext(request.getHttpURI().getCanonicalPath());
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
         if (matchedResource == null)
             return null;
@@ -1216,7 +1219,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
-        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(request.getPathInContext()))
+        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getPathInContext()))
             return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpServletResponse.SC_NOT_FOUND, null);
 
         return super.processByContextHandler(request);

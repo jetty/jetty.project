@@ -519,6 +519,10 @@ public class MultiPartTest
     {
         byte[] random = new byte[8192];
         ThreadLocalRandom.current().nextBytes(random);
+        // Make sure the last 2 bytes are not \r\n,
+        // otherwise the multipart parser gets confused.
+        random[random.length - 2] = 0;
+        random[random.length - 1] = 0;
 
         TestPartsListener listener = new TestPartsListener();
         MultiPart.Parser parser = new MultiPart.Parser("BOUNDARY", listener);
@@ -526,7 +530,7 @@ public class MultiPartTest
         String preamble = "Blah blah blah\r\n--BOUNDARY\r\n\r\n";
         parser.parse(Content.Chunk.from(BufferUtil.toBuffer(preamble), false));
         parser.parse(Content.Chunk.from(ByteBuffer.wrap(random), false));
-        String epilogue = "\r\n--BOUNDARY\r\nBlah blah blah!\r\n";
+        String epilogue = "\r\n--BOUNDARY--\r\nBlah blah blah!\r\n";
         ByteBuffer epilogueBuffer = BufferUtil.toBuffer(epilogue);
         parser.parse(Content.Chunk.from(epilogueBuffer, true));
 

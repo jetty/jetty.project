@@ -369,7 +369,7 @@ public class HttpClientTest extends AbstractTest
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 assertTrue(HttpMethod.OPTIONS.is(request.getMethod()));
-                assertEquals("*", request.getPathInContext());
+                assertEquals("*", Request.getPathInContext(request));
                 callback.succeeded();
             }
         });
@@ -392,7 +392,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                if ("*".equals(request.getPathInContext()))
+                if ("*".equals(Request.getPathInContext(request)))
                 {
                     // Be nasty and send a relative redirect.
                     // Code 303 will change the method to GET.
@@ -566,7 +566,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if ("/notMapped".equals(target))
                     org.eclipse.jetty.server.Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
                 else
@@ -762,7 +762,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if (target.equals("/1"))
                     assertTrue(latch.await(5, TimeUnit.SECONDS));
                 else if (target.equals("/2"))

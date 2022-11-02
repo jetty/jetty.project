@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -94,6 +95,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     private String _displayName;
     private String _contextPath = "/";
+    private boolean _rootContext = true;
     private Resource _baseResource;
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
@@ -593,20 +595,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return false;
     }
 
-    protected String getPathInContext(Request request)
-    {
-        String path = request.getPathInContext();
-        if (!path.startsWith(_context.getContextPath()))
-            return null;
-        if ("/".equals(_context.getContextPath()))
-            return path;
-        if (path.length() == _context.getContextPath().length())
-            return "";
-        if (path.charAt(_context.getContextPath().length()) != '/')
-            return null;
-        return path.substring(_context.getContextPath().length());
-    }
-
     @Override
     public void destroy()
     {
@@ -622,27 +610,45 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (!checkVirtualHost(request))
             return null;
 
-        String pathInContext = getPathInContext(request);
-        if (pathInContext == null)
-            return null;
+        // The root context handles all requests.
+        if (!_rootContext)
+        {
+            // Otherwise match the path.
+            String path = request.getHttpURI().getCanonicalPath();
+            if (path == null || !path.startsWith(_contextPath))
+                return null;
 
-        if (pathInContext.isEmpty() && !getAllowNullPathInContext())
-            return this::processMovedPermanently;
+            if (path.length() == _contextPath.length())
+            {
+                if (!getAllowNullPathInContext())
+                    return this::processMovedPermanently;
+            }
+            else
+            {
+                if (path.charAt(_contextPath.length()) != '/')
+                    return null;
+            }
+        }
 
         // TODO check availability and maybe return a 503
         if (!isAvailable() && isStarted())
             return this::processUnavailable;
 
-        ContextRequest contextRequest = wrap(request, pathInContext);
+        ContextRequest contextRequest = wrap(request);
         // wrap might fail (eg ServletContextHandler could not match a servlet)
         if (contextRequest == null)
             return null;
 
+        // Does this handler want to process the request itself?
         Request.Processor processor = processByContextHandler(contextRequest);
         if (processor != null)
             return processor;
 
-        return contextRequest.wrapProcessor(_context.get(contextRequest, contextRequest));
+        // The contextRequest is-a Supplier<Processor> that calls effectively calls getHandler().handle(request).
+        // Call this supplier in the scope of the context.
+        Request.Processor contextScopedProcessor = _context.get(contextRequest, contextRequest);
+        // Wrap the contextScopedProcessor with a wrapper that uses the wrapped request
+        return contextRequest.wrapProcessor(contextScopedProcessor);
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -665,7 +671,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     protected Request.Processor processByContextHandler(ContextRequest contextRequest)
     {
-        if (!_allowNullPathInContext && StringUtil.isEmpty(contextRequest.getPathInContext()))
+        if (!_allowNullPathInContext && StringUtil.isEmpty(Request.getPathInContext(contextRequest)))
         {
             return (request, response, callback) ->
             {
@@ -687,7 +693,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _contextPath = URIUtil.canonicalPath(contextPath);
+        _contextPath = URIUtil.canonicalPath(Objects.requireNonNull(contextPath));
+        _rootContext = "/".equals(contextPath);
     }
 
     /**
@@ -777,9 +784,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _errorProcessor = errorProcessor;
     }
 
-    protected ContextRequest wrap(Request request, String pathInContext)
+    protected ContextRequest wrap(Request request)
     {
-        return new ContextRequest(this, _context, request, pathInContext);
+        return new ContextRequest(this, _context, request);
     }
 
     @Override
@@ -1162,6 +1169,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             DecoratedObjectFactory factory = getDecoratedObjectFactory();
             if (factory != null)
                 factory.destroy(o);
+        }
+
+        @Override
+        public String getPathInContext(String fullPath)
+        {
+            if (_rootContext)
+                return fullPath;
+            if (!fullPath.startsWith(_contextPath))
+                return null;
+            if (fullPath.length() == _contextPath.length())
+                return "";
+            if (fullPath.charAt(_contextPath.length()) != '/')
+                return null;
+            return fullPath.substring(_contextPath.length());
         }
     }
 

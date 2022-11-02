@@ -35,15 +35,15 @@ import org.slf4j.LoggerFactory;
 public class PushBuilderImpl implements PushBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(PushBuilderImpl.class);
-
     private static final HttpField JETTY_PUSH = new HttpField("x-http2-push", "PushBuilder");
-    private static EnumSet<HttpMethod> UNSAFE_METHODS = EnumSet.of(
+    private static final EnumSet<HttpMethod> UNSAFE_METHODS = EnumSet.of(
         HttpMethod.POST,
         HttpMethod.PUT,
         HttpMethod.DELETE,
         HttpMethod.CONNECT,
         HttpMethod.OPTIONS,
-        HttpMethod.TRACE);
+        HttpMethod.TRACE
+    );
 
     private final Request _request;
     private final HttpFields.Mutable _fields;
@@ -51,7 +51,6 @@ public class PushBuilderImpl implements PushBuilder
     private String _queryString;
     private String _sessionId;
     private String _path;
-    private String _lastModified;
 
     public PushBuilderImpl(Request request, HttpFields fields, String method, String queryString, String sessionId)
     {
@@ -190,6 +189,5 @@ public class PushBuilderImpl implements PushBuilder
 
         _request.getHttpChannel().getCoreRequest().push(push);
         _path = null;
-        _lastModified = null;
     }
 }

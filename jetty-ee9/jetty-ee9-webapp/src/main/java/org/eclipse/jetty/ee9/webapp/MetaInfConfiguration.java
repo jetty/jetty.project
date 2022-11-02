@@ -729,7 +729,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return null;
 
         return context.getExtraClasspath()
-            .getResources()
             .stream()
             .filter(this::isFileSupported)
             .collect(Collectors.toList());
@@ -773,7 +772,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
             return List.of();
 
         return context.getExtraClasspath()
-            .getResources()
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());

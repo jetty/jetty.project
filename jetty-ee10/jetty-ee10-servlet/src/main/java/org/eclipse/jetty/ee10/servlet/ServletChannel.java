@@ -397,7 +397,7 @@ public class ServletChannel implements Runnable
                             ServletHandler servletHandler = servletContextApi.getContext().getServletContextHandler().getServletHandler();
                             ServletHandler.MappedServlet mappedServlet = _request._mappedServlet;
 
-                            mappedServlet.handle(servletHandler, _request.getPathInContext(), _request.getHttpServletRequest(), _request.getHttpServletResponse());
+                            mappedServlet.handle(servletHandler, Request.getPathInContext(_request), _request.getHttpServletRequest(), _request.getHttpServletResponse());
                         });
 
                         break;
@@ -408,7 +408,7 @@ public class ServletChannel implements Runnable
                         dispatch(DispatcherType.ASYNC, () ->
                         {
                             HttpURI uri;
-                            String pathInContext = _request.getPathInContext();
+                            String pathInContext = Request.getPathInContext(_request);
                             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
                             String dispatchString = asyncContextEvent.getDispatchPath();
                             if (dispatchString != null)
@@ -796,7 +796,7 @@ public class ServletChannel implements Runnable
             if (authentication instanceof Authentication.User userAuthentication)
                 _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
 
-            String realPath = apiRequest.getServletContext().getRealPath(_request.getPathInContext());
+            String realPath = apiRequest.getServletContext().getRealPath(Request.getPathInContext(_request));
             _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
 
             String servletName = _request.getServletName();
@@ -838,8 +838,6 @@ public class ServletChannel implements Runnable
     /**
      * If a write or similar operation to this channel fails,
      * then this method should be called.
-     * <p>
-     * The standard implementation calls {@code HttpTransport#abort(Throwable)}.
      *
      * @param failure the failure that caused the abort.
      */

@@ -54,7 +54,7 @@ public class WebSocketClientDocs
         // Instantiate and configure HttpClient.
         HttpClient httpClient = new HttpClient();
         // For example, configure a proxy.
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", 8888));
+        httpClient.getProxyConfiguration().addProxy(new HttpProxy("localhost", 8888));
 
         // Instantiate WebSocketClient, passing HttpClient to the constructor.
         WebSocketClient webSocketClient = new WebSocketClient(httpClient);

@@ -102,8 +102,9 @@ public class MovedContextHandler extends ContextHandler
                 return;
 
             String path = _newContextURL;
-            if (!_discardPathInfo && request.getPathInContext() != null)
-                path = URIUtil.addPaths(path, request.getPathInContext());
+            String pathInContext = Request.getPathInContext(request);
+            if (!_discardPathInfo && pathInContext != null)
+                path = URIUtil.addPaths(path, pathInContext);
 
             HttpURI uri = request.getHttpURI();
             StringBuilder location = new StringBuilder();

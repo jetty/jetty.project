@@ -57,6 +57,7 @@ import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.AttributeNormalizer;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlAppendable;
 import org.slf4j.Logger;

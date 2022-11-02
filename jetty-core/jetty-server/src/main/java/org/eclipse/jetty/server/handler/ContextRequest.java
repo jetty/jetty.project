@@ -28,16 +28,14 @@ import org.slf4j.LoggerFactory;
 public class ContextRequest extends Request.WrapperProcessor implements Invocable, Supplier<Request.Processor>, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
-    private final String _pathInContext;
     private final ContextHandler _contextHandler;
     private final ContextHandler.Context _context;
     private Response _response;
     private Callback _callback;
 
-    protected ContextRequest(ContextHandler contextHandler, ContextHandler.Context context, Request wrapped, String pathInContext)
+    protected ContextRequest(ContextHandler contextHandler, ContextHandler.Context context, Request wrapped)
     {
         super(wrapped);
-        _pathInContext = pathInContext;
         _contextHandler = contextHandler;
         _context = context;
     }
@@ -115,11 +113,6 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
         return _context;
     }
 
-    public String getPathInContext()
-    {
-        return _pathInContext;
-    }
-
     @Override
     public Object getAttribute(String name)
     {
@@ -127,7 +120,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
         return switch (name)
         {
             case "o.e.j.s.h.ScopedRequest.contextPath" -> _context.getContextPath();
-            case "o.e.j.s.h.ScopedRequest.pathInContext" -> _pathInContext;
+            case "o.e.j.s.h.ScopedRequest.pathInContext" -> Request.getPathInContext(this);
             default -> super.getAttribute(name);
         };
     }

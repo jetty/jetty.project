@@ -2365,10 +2365,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
                                      org.eclipse.jetty.server.handler.ContextHandler.Context context,
                                      org.eclipse.jetty.server.Request wrapped,
-                                     String pathInContext,
                                      HttpChannel httpChannel)
         {
-            super(contextHandler, context, wrapped, pathInContext);
+            super(contextHandler, context, wrapped);
             _httpChannel = httpChannel;
         }
 
@@ -2456,7 +2455,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected ContextRequest wrap(org.eclipse.jetty.server.Request request, String pathInContext)
+        protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
         {
             HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().get(HttpChannel.class.getName());
             if (httpChannel == null)
@@ -2474,7 +2473,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, pathInContext, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, httpChannel);
             httpChannel.onRequest(coreContextRequest);
             return coreContextRequest;
         }

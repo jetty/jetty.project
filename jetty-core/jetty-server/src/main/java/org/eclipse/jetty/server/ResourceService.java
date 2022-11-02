@@ -175,7 +175,7 @@ public class ResourceService
 
     public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
     {
-        String pathInContext = request.getPathInContext();
+        String pathInContext = Request.getPathInContext(request);
 
         // Is this a Range request?
         List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());
@@ -457,10 +457,7 @@ public class ResourceService
             HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
             if (!uri.getCanonicalPath().endsWith("/"))
             {
-                // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
-                String parameter = uri.getParam();
                 uri.path(uri.getCanonicalPath() + "/");
-                uri.param(parameter);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
                 sendRedirect(request, response, callback, uri.getPathQuery());
@@ -544,11 +541,8 @@ public class ResourceService
         {
             // Redirect to the index
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-            // TODO need URI util that handles param and query without reconstructing entire URI with scheme and authority
             HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
-            String parameter = uri.getParam();
             uri.path(URIUtil.addPaths(contextPath, welcomeTarget));
-            uri.param(parameter);
             return new WelcomeAction(WelcomeActionType.REDIRECT, uri.getPathQuery());
         }
 

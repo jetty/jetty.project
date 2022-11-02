@@ -358,7 +358,7 @@ public class DefaultServletTest
         FS.ensureDirExists(docRoot.resolve("three"));
 
         String resBasePath = docRoot.toAbsolutePath().toString();
-        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("baseResource", resBasePath);
 
         String req1 = """
             GET /context/one/deep/ HTTP/1.1\r

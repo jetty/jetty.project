@@ -485,7 +485,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                if ("/done".equals(request.getPathInContext()))
+                if ("/done".equals(org.eclipse.jetty.server.Request.getPathInContext(request)))
                     callback.succeeded();
                 else
                     Response.sendRedirect(request, response, callback, "/done");

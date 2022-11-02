@@ -424,7 +424,7 @@ public class HttpClientTimeoutTest extends AbstractTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getPathInContext().startsWith("/one"))
+                if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     Thread.sleep(3 * timeout);
                 callback.succeeded();
             }
@@ -460,7 +460,7 @@ public class HttpClientTimeoutTest extends AbstractTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getPathInContext().startsWith("/one"))
+                if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     serverLatch.await();
                 callback.succeeded();
             }
