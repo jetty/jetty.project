@@ -363,7 +363,7 @@ public class StatisticsHandlerTest
             "\r\n";
 
         // 1st request
-        _connector.executeRequest(request);
+        LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest(request);
 
         barrier[0].await();
         assertEquals(1, _statistics.getConnections());
@@ -396,8 +396,10 @@ public class StatisticsHandlerTest
         barrier[1].reset();
         barrier[2].reset();
 
+        assertThat(localEndPoint.getResponse(), containsString(" 200 OK"));
+
         // 2nd request
-        _connector.executeRequest(request);
+        localEndPoint = _connector.executeRequest(request);
 
         barrier[0].await();
         assertEquals(2, _statistics.getConnections());

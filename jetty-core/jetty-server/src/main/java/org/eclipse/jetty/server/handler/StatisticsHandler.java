@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-public class StatisticsHandler extends Handler.Wrapper
+public class StatisticsHandler extends Handler.ProcessingWrapper<StatisticsHandler.StatisticsRequest>
 {
     private final Set<String> _connectionStats = ConcurrentHashMap.newKeySet();
     private final CounterStatistic _requestStats = new CounterStatistic();
@@ -56,11 +56,10 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         long beginNanoTime = NanoTime.now();
         _handleStats.increment();
-        StatisticsRequest statisticsRequest = wrap(request);
 
         try
         {
-            return statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
+            return super.handle(request);
         }
         catch (Throwable t)
         {
@@ -74,6 +73,7 @@ public class StatisticsHandler extends Handler.Wrapper
         }
     }
 
+    @Override
     protected StatisticsRequest wrap(Request request)
     {
         return new StatisticsRequest(request);
@@ -254,7 +254,13 @@ public class StatisticsHandler extends Handler.Wrapper
         return _processTimeStats.getStdDev();
     }
 
-    protected class StatisticsRequest extends Request.WrapperProcessor
+    @Override
+    protected void process(StatisticsRequest request, Response response, Callback callback, Request.Processor nextProcessor) throws Exception
+    {
+        request.process(response, callback, nextProcessor);
+    }
+
+    protected class StatisticsRequest extends Request.Wrapper
     {
         private final LongAdder _bytesRead = new LongAdder();
         private final LongAdder _bytesWritten = new LongAdder();
@@ -292,8 +298,7 @@ public class StatisticsHandler extends Handler.Wrapper
             return NanoTime.since(_processStartNanoTime);
         }
 
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        public void process(Response response, Callback callback, Request.Processor nextProcessor) throws Exception
         {
             _processStartNanoTime = NanoTime.now();
             _processStats.increment();
@@ -363,7 +368,7 @@ public class StatisticsHandler extends Handler.Wrapper
 
             try
             {
-                super.process(this, response, callback);
+                nextProcessor.process(this, response, callback);
             }
             catch (Throwable t)
             {
@@ -389,6 +394,18 @@ public class StatisticsHandler extends Handler.Wrapper
             _minimumWriteRate = minimumWriteRate;
         }
 
+        @Override
+        protected MinimumDataRateRequest wrap(Request request)
+        {
+            return new MinimumDataRateRequest(request);
+        }
+
+        @Override
+        protected MinimumDataRateResponse wrap(StatisticsRequest request, Response response)
+        {
+            return new MinimumDataRateResponse(request, response);
+        }
+
         private class MinimumDataRateRequest extends StatisticsRequest
         {
             private Content.Chunk.Error _errorContent;
@@ -396,18 +413,6 @@ public class StatisticsHandler extends Handler.Wrapper
             private MinimumDataRateRequest(Request request)
             {
                 super(request);
-            }
-
-            @Override
-            protected Request wrap(Request request)
-            {
-                return new MinimumDataRateRequest(request);
-            }
-
-            @Override
-            protected Response wrap(Request request, Response response)
-            {
-                return new MinimumDataRateResponse(request, response);
             }
 
             @Override
@@ -461,12 +466,6 @@ public class StatisticsHandler extends Handler.Wrapper
                 }
                 super.write(last, content, callback);
             }
-        }
-
-        @Override
-        protected StatisticsRequest wrap(Request request)
-        {
-            return new MinimumDataRateRequest(request);
         }
     }
 }

@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ErrorProcessor;
@@ -549,6 +550,67 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             Handler next = getHandler();
             return next == null ? InvocationType.NON_BLOCKING : next.getInvocationType();
+        }
+    }
+
+    /**
+     * <p>A {@link Handler.Wrapper} that allows for extensible processing and wrapping
+     * of the request and response objects.</p>
+     */
+    abstract class ProcessingWrapper<W extends Request.Wrapper> extends Wrapper
+    {
+        @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            W wrapper = wrap(request);
+            Request.Processor processor = super.handle(wrapper);
+            if (processor == null)
+                return null;
+
+            return new WrappingProcessor(processor, wrapper);
+        }
+
+        protected abstract W wrap(Request request);
+
+        protected Response wrap(W wrappedRequest, Response response)
+        {
+            return response;
+        }
+
+        protected void process(W wrappedRequest, Response response, Callback callback, Request.Processor nextProcessor)
+            throws Exception
+        {
+            nextProcessor.process(wrappedRequest, response, callback);
+        }
+
+        private class WrappingProcessor implements Request.Processor
+        {
+            private final Request.Processor _processor;
+            private volatile W _wrapper;
+
+            public WrappingProcessor(Request.Processor processor, W wrapper)
+            {
+                _processor = Objects.requireNonNull(processor);
+                _wrapper = wrapper;
+            }
+
+            @Override
+            public void process(Request request, Response response, Callback callback) throws Exception
+            {
+                W wrapper = _wrapper;
+                if (wrapper != null && request == wrapper.getWrapped())
+                    _wrapper = null;
+                else
+                    wrapper = wrap(request);
+
+                ProcessingWrapper.this.process(wrapper, wrap(wrapper, response), callback, _processor);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return _processor.getInvocationType();
+            }
         }
     }
 

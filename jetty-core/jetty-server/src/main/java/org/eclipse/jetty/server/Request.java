@@ -624,11 +624,14 @@ public interface Request extends Attributes, Content.Source
     @SuppressWarnings("unchecked")
     static <T extends Request.Wrapper> T as(Request request, Class<T> type)
     {
+        if (type.isInstance(request))
+            return (T)request;
+
         while (request instanceof Request.Wrapper wrapper)
         {
-            if (type.isInstance(wrapper))
-                return (T)wrapper;
             request = wrapper.getWrapped();
+            if (type.isInstance(request))
+                return (T)request;
         }
         return null;
     }
@@ -680,7 +683,9 @@ public interface Request extends Attributes, Content.Source
      *     }
      * }
      * </pre>
+     * @deprecated Use {@link Handler.ProcessingWrapper}
      */
+    @Deprecated
     class WrapperProcessor extends Wrapper implements Processor
     {
         private volatile Processor _processor;
