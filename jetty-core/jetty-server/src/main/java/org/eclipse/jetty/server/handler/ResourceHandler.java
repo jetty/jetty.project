@@ -19,12 +19,15 @@ import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -55,7 +58,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     public ResourceHandler()
     {
-        _resourceService = new ResourceService();
+        _resourceService = new HandlerResourceService();
     }
 
     @Override
@@ -199,12 +202,9 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceService.getPrecompressedFormats();
     }
 
-    /**
-     * @return If true, welcome files are redirected rather than forwarded to.
-     */
-    public boolean isRedirectWelcome()
+    public ResourceService.WelcomeMode getWelcomeMode()
     {
-        return _resourceService.isRedirectWelcome();
+        return _resourceService.getWelcomeMode();
     }
 
     /**
@@ -302,14 +302,9 @@ public class ResourceHandler extends Handler.Wrapper
         _mimeTypes = mimeTypes;
     }
 
-    /**
-     * @param redirectWelcome If true, welcome files are redirected rather than forwarded to.
-     * redirection is always used if the ResourceHandler is not scoped by
-     * a ContextHandler
-     */
-    public void setRedirectWelcome(boolean redirectWelcome)
+    public void setWelcomeMode(ResourceService.WelcomeMode welcomeMode)
     {
-        _resourceService.setRedirectWelcome(redirectWelcome);
+        _resourceService.setWelcomeMode(welcomeMode);
     }
 
     /**
@@ -335,8 +330,34 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public static class ResourceContext extends ContextHandler
     {
+        public ResourceContext()
         {
             setHandler(new ResourceHandler());
+        }
+    }
+
+    private class HandlerResourceService extends ResourceService
+    {
+        @Override
+        protected boolean rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+        {
+            HttpURI newHttpURI = HttpURI.build(request.getHttpURI())
+                .pathQuery(welcomeTarget);
+            Request newRequest = new Request.Wrapper(request)
+            {
+                @Override
+                public HttpURI getHttpURI()
+                {
+                    return newHttpURI;
+                }
+            };
+
+            Request.Processor processor = getServer().handle(newRequest);
+            if (processor == null)
+                return false;
+
+            processor.process(newRequest, response, callback);
+            return true;
         }
     }
 }

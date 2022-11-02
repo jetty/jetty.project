@@ -156,7 +156,8 @@ public class DefaultServlet extends HttpServlet
 
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
-        _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
+        boolean redirectWelcome = getInitBoolean("redirectWelcome", false);
+        _resourceService.setWelcomeMode(redirectWelcome ? ResourceService.WelcomeMode.REDIRECT : ResourceService.WelcomeMode.SERVE);
         _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
@@ -916,58 +917,61 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected void welcomeActionProcess(Request coreRequest, Response coreResponse, Callback callback, WelcomeAction welcomeAction) throws IOException
+        protected boolean redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
         {
-            HttpServletRequest request = getServletRequest(coreRequest);
-            HttpServletResponse response = getServletResponse(coreResponse);
-            ServletContext context = request.getServletContext();
-            boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+            HttpServletRequest servletRequest = getServletRequest(request);
+            HttpServletResponse servletResponse = getServletResponse(response);
 
-            String welcome = welcomeAction.target();
+            boolean included = servletRequest.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
 
-            switch (welcomeAction.type())
+            String servletPath = included ? (String)servletRequest.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
+                : servletRequest.getServletPath();
+
+            if (isPathInfoOnly())
+                welcomeTarget = URIUtil.addPaths(servletPath, welcomeTarget);
+
+            servletResponse.setContentLength(0);
+            servletResponse.sendRedirect(welcomeTarget); // Call API (might be overridden)
+            callback.succeeded();
+            return true;
+        }
+
+        @Override
+        protected boolean serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
+        {
+            HttpServletRequest servletRequest = getServletRequest(request);
+            HttpServletResponse servletResponse = getServletResponse(response);
+
+            boolean included = servletRequest.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+
+            RequestDispatcher dispatcher = servletRequest.getServletContext().getRequestDispatcher(welcomeTarget);
+            if (dispatcher == null)
+                return false;
+
+            try
             {
-                case REDIRECT ->
+                if (included)
                 {
-                    if (isRedirectWelcome() || context == null)
-                    {
-                        String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
-                            : request.getServletPath();
-
-                        if (isPathInfoOnly())
-                            welcome = URIUtil.addPaths(servletPath, welcome);
-
-                        response.setContentLength(0);
-                        response.sendRedirect(welcome); // Call API (might be overridden)
-                        callback.succeeded();
-                    }
+                    dispatcher.include(servletRequest, servletResponse);
                 }
-                case SERVE ->
+                else
                 {
-                    RequestDispatcher dispatcher = context.getRequestDispatcher(welcome);
-                    if (dispatcher != null)
-                    {
-                        // Forward to the index
-                        try
-                        {
-                            if (included)
-                            {
-                                dispatcher.include(request, response);
-                            }
-                            else
-                            {
-                                request.setAttribute("org.eclipse.jetty.server.welcome", welcomeAction.target());
-                                dispatcher.forward(request, response);
-                            }
-                            callback.succeeded();
-                        }
-                        catch (ServletException e)
-                        {
-                            callback.failed(e);
-                        }
-                    }
+                    servletRequest.setAttribute("org.eclipse.jetty.server.welcome", welcomeTarget);
+                    dispatcher.forward(servletRequest, servletResponse);
                 }
+                callback.succeeded();
             }
+            catch (ServletException e)
+            {
+                callback.failed(e);
+            }
+            return true;
+        }
+
+        @Override
+        protected boolean rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
+        {
+            return serveWelcome(request, response, callback, welcomeTarget);
         }
 
         @Override
@@ -1053,7 +1057,7 @@ public class DefaultServlet extends HttpServlet
         @Override
         public long getContentLengthValue()
         {
-            return ResourceService.NO_CONTENT_LENGTH;
+            return -1;
         }
     }
 

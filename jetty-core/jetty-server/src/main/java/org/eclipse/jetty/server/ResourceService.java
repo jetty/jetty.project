@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.ByteRange;
@@ -59,21 +60,17 @@ import org.slf4j.LoggerFactory;
 public class ResourceService
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
+    private static final int NO_CONTENT_LENGTH = -1;
+    private static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
-    // TODO: see if we can set this to private eventually
-    public static final int NO_CONTENT_LENGTH = -1;
-    // TODO: see if we can set this to private eventually
-    public static final int USE_KNOWN_CONTENT_LENGTH = -2;
-
-    private List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
+    private final List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
+    private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
+    private final List<String> _preferredEncodingOrder = new ArrayList<>();
     private WelcomeFactory _welcomeFactory;
-
-    private boolean _redirectWelcome = false;
+    private WelcomeMode _welcomeMode = WelcomeMode.SERVE;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
     private HttpContent.ContentFactory _contentFactory;
-    private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
-    private List<String> _preferredEncodingOrder = new ArrayList<>();
     private int _encodingCacheSize = 100;
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
@@ -453,7 +450,6 @@ public class ResourceService
             {
                 uri.path(uri.getCanonicalPath() + "/");
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                // TODO: can writeRedirect (override) also work for WelcomeActionType.REDIRECT?
                 sendRedirect(request, response, callback, uri.getPathQuery());
                 return;
             }
@@ -467,62 +463,127 @@ public class ResourceService
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
-    public enum WelcomeActionType
+    /**
+     * <p>How welcome paths should be processed.</p>
+     */
+    public enum WelcomeMode
     {
+        /**
+         * The welcome path is used in an HTTP redirect
+         * as the value of the {@code Location} header.
+         */
         REDIRECT,
-        SERVE
+        /**
+         * The welcome path is served either as a real file
+         * or forwarded to be processed again.
+         */
+        SERVE,
+        /**
+         * The welcome path is wrapped in a new request
+         * that is re-handled.
+         */
+        REHANDLE
     }
 
     /**
-     * Behavior for a potential welcome action
-     * as determined by {@link ResourceService#processWelcome(Request, Response)}
+     * <p>A welcome target path paired with how to process it.</p>
      *
-     * <p>
-     * For {@link WelcomeActionType#REDIRECT} this is the resulting `Location` response header.
-     * For {@link WelcomeActionType#SERVE} this is the resulting path to for welcome serve, note that
-     * this is just a path, and can point to a real file, or a dynamic handler for
-     * welcome processing (such as Jetty core Handler, or EE Servlet), it's up
-     * to the implementation of {@link ResourceService#welcome(Request, Response, Callback)}
-     * to handle the various action types.
-     * </p>
-     *
-     * @param type the type of action
-     * @param target The target URI path of the action.
+     * @param target the welcome target URI path
+     * @param mode the welcome mode
      */
-    public record WelcomeAction(WelcomeActionType type, String target) {}
-
-    private boolean welcome(Request request, Response response, Callback callback) throws IOException
+    public record WelcomeAction(String target, WelcomeMode mode)
     {
-        WelcomeAction welcomeAction = processWelcome(request, response);
+    }
+
+    private boolean welcome(Request request, Response response, Callback callback) throws Exception
+    {
+        WelcomeAction welcomeAction = processWelcome(request);
         if (welcomeAction == null)
             return false;
 
-        welcomeActionProcess(request, response, callback, welcomeAction);
+        return processWelcomeAction(request, response, callback, welcomeAction);
+    }
+
+    protected boolean processWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
+    {
+        return switch (welcomeAction.mode)
+        {
+            case REDIRECT -> redirectWelcome(request, response, callback, welcomeAction.target);
+            case SERVE ->
+                // TODO : check conditional headers.
+                serveWelcome(request, response, callback, welcomeAction.target);
+            case REHANDLE -> rehandleWelcome(request, response, callback, welcomeAction.target);
+        };
+    }
+
+    /**
+     * <p>Redirects to the given welcome target path.</p>
+     * <p>Implementations should use HTTP redirect APIs to generate
+     * a redirect response whose location is the welcome target path.</p>
+     *
+     * @param request the request to redirect
+     * @param response the response
+     * @param callback the callback to complete
+     * @param welcomeTarget the welcome target path to redirect to
+     * @return true when the request will be redirected and the callback completed,
+     * false otherwise
+     * @throws Exception if the redirection fails
+     */
+    protected boolean redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    {
+        response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
+        sendRedirect(request, response, callback, welcomeTarget);
         return true;
     }
 
-    // TODO: could use a better name
-    protected void welcomeActionProcess(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws IOException
+    /**
+     * <p>Serves the given welcome target file.</p>
+     * <p>Implementations should write the welcome target
+     * file bytes over the network to the client.</p>
+     *
+     * @param request the request
+     * @param response the response
+     * @param callback the callback to complete
+     * @param welcomeTarget the welcome target file to serve
+     * @return true when the welcome target file will be served and the callback completed,
+     * false otherwise
+     * @throws Exception if serving the welcome target file fails
+     */
+    protected boolean serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
-        switch (welcomeAction.type)
-        {
-            case REDIRECT ->
-            {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-                sendRedirect(request, response, callback, welcomeAction.target);
-            }
-            case SERVE ->
-            {
-                // TODO : check conditional headers.
-                HttpContent c = _contentFactory.getContent(welcomeAction.target);
-                sendData(request, response, callback, c, List.of());
-            }
-        }
+        HttpContent c = _contentFactory.getContent(welcomeTarget);
+        sendData(request, response, callback, c, List.of());
+        return true;
     }
 
-    private WelcomeAction processWelcome(Request request, Response response) throws IOException
+    /**
+     * <p>Rehandles the given welcome target path.</p>
+     * <p>Implementations should call {@link Handler#handle(Request)}
+     * on a {@code Handler} that may handle the welcome target path
+     * differently from the original path.</p>
+     * <p>For example, a request for {@code /ctx/} may be rewritten
+     * as {@code /ctx/index.jsp} and rehandled from the {@code Server}.
+     * In this example, the rehandling of {@code /ctx/index.jsp} may
+     * trigger a different code path so that the rewritten request
+     * is handled by a different {@code Handler}, in this example
+     * one that knows how to handle JSP resources.</p>
+     *
+     * @param request the request
+     * @param response the response
+     * @param callback the callback to complete
+     * @param welcomeTarget the welcome target path to rehandle to
+     * @return true when the welcome target path will be rehandled and the callback completed,
+     * false otherwise
+     * @throws Exception if the rehandling fails
+     */
+    protected boolean rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
-        String welcomeTarget = _welcomeFactory.getWelcomeTarget(request);
+        return false;
+    }
+
+    private WelcomeAction processWelcome(Request request) throws IOException
+    {
+        String welcomeTarget = getWelcomeFactory().getWelcomeTarget(request);
         if (welcomeTarget == null)
             return null;
 
@@ -531,17 +592,16 @@ public class ResourceService
         if (LOG.isDebugEnabled())
             LOG.debug("welcome={}", welcomeTarget);
 
-        if (_redirectWelcome)
+        WelcomeMode welcomeMode = getWelcomeMode();
+        welcomeTarget = switch (welcomeMode)
         {
-            // Redirect to the index
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
-            HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
-            uri.path(URIUtil.addPaths(contextPath, welcomeTarget));
-            return new WelcomeAction(WelcomeActionType.REDIRECT, uri.getPathQuery());
-        }
+            case REDIRECT, REHANDLE -> HttpURI.build(request.getHttpURI())
+                .path(URIUtil.addPaths(contextPath, welcomeTarget))
+                .getPathQuery();
+            case SERVE -> welcomeTarget;
+        };
 
-        // Serve welcome file
-        return new WelcomeAction(WelcomeActionType.SERVE, welcomeTarget);
+        return new WelcomeAction(welcomeTarget, welcomeMode);
     }
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
@@ -720,12 +780,9 @@ public class ResourceService
         return _precompressedFormats;
     }
 
-    /**
-     * @return If true, welcome files are redirected rather than forwarded to.
-     */
-    public boolean isRedirectWelcome()
+    public WelcomeMode getWelcomeMode()
     {
-        return _redirectWelcome;
+        return _welcomeMode;
     }
 
     public WelcomeFactory getWelcomeFactory()
@@ -798,14 +855,9 @@ public class ResourceService
         return _encodingCacheSize;
     }
 
-    /**
-     * @param redirectWelcome If true, welcome files are redirected rather than forwarded to.
-     * redirection is always used if the ResourceHandler is not scoped by
-     * a ContextHandler
-     */
-    public void setRedirectWelcome(boolean redirectWelcome)
+    public void setWelcomeMode(WelcomeMode welcomeMode)
     {
-        _redirectWelcome = redirectWelcome;
+        _welcomeMode = Objects.requireNonNull(welcomeMode);
     }
 
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)

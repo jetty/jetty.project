@@ -157,10 +157,16 @@ public class TryPathsHandler extends Handler.Wrapper
 
             String originalPathAttribute = getOriginalPathAttribute();
             if (originalPathAttribute != null)
-                setAttribute(originalPathAttribute, Request.getPathInContext(wrapped));
+            {
+                if (getAttribute(originalPathAttribute) == null)
+                    setAttribute(originalPathAttribute, Request.getPathInContext(wrapped));
+            }
             String originalQueryAttribute = getOriginalQueryAttribute();
             if (originalQueryAttribute != null)
-                setAttribute(originalQueryAttribute, originalURI.getQuery());
+            {
+                if (getAttribute(originalQueryAttribute) == null)
+                    setAttribute(originalQueryAttribute, originalURI.getQuery());
+            }
 
             String originalContextPath = Request.getContextPath(wrapped);
             HttpURI.Mutable rewrittenURI = HttpURI.build(originalURI);
