@@ -29,21 +29,29 @@ public class quiche_recv_info
     private static final MemoryLayout LAYOUT = MemoryLayout.structLayout(
         C_POINTER.withName("from"),
         C_INT.withName("from_len"),
+        MemoryLayout.paddingLayout(32),
+        C_POINTER.withName("to"),
+        C_INT.withName("to_len"),
         MemoryLayout.paddingLayout(32)
     );
 
     private static final VarHandle from = MemoryHandles.asAddressVarHandle(LAYOUT.varHandle(long.class, MemoryLayout.PathElement.groupElement("from")));
     private static final VarHandle from_len = LAYOUT.varHandle(int.class, MemoryLayout.PathElement.groupElement("from_len"));
+    private static final VarHandle to = MemoryHandles.asAddressVarHandle(LAYOUT.varHandle(long.class, MemoryLayout.PathElement.groupElement("to")));
+    private static final VarHandle to_len = LAYOUT.varHandle(int.class, MemoryLayout.PathElement.groupElement("to_len"));
 
     public static MemorySegment allocate(ResourceScope scope)
     {
         return MemorySegment.allocateNative(LAYOUT, scope);
     }
 
-    public static void setSocketAddress(MemorySegment recvInfo, SocketAddress peer, ResourceScope scope)
+    public static void setSocketAddress(MemorySegment recvInfo, SocketAddress local, SocketAddress peer, ResourceScope scope)
     {
-        MemorySegment sockAddrSegment = sockaddr.convert(peer, scope);
-        from.set(recvInfo, sockAddrSegment.address());
-        from_len.set(recvInfo, (int)sockAddrSegment.byteSize());
+        MemorySegment peerSockAddrSegment = sockaddr.convert(peer, scope);
+        from.set(recvInfo, peerSockAddrSegment.address());
+        from_len.set(recvInfo, (int)peerSockAddrSegment.byteSize());
+        MemorySegment localSockAddrSegment = sockaddr.convert(local, scope);
+        to.set(recvInfo, localSockAddrSegment.address());
+        to_len.set(recvInfo, (int)localSockAddrSegment.byteSize());
     }
 }

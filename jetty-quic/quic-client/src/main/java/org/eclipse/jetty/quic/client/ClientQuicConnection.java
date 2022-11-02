@@ -96,7 +96,7 @@ public class ClientQuicConnection extends QuicConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("connecting to {} with protocols {}", remoteAddress, protocols);
 
-            QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
+            QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, getEndPoint().getLocalAddress(), remoteAddress);
             ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             if (LOG.isDebugEnabled())

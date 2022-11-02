@@ -62,7 +62,7 @@ public class ServerQuicConnection extends QuicConnection
     {
         ByteBufferPool byteBufferPool = getByteBufferPool();
         // TODO make the token validator configurable
-        QuicheConnection quicheConnection = QuicheConnection.tryAccept(connector.newQuicheConfig(), new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, remoteAddress);
+        QuicheConnection quicheConnection = QuicheConnection.tryAccept(connector.newQuicheConfig(), new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, getEndPoint().getLocalAddress(), remoteAddress);
         if (quicheConnection == null)
         {
             ByteBuffer negotiationBuffer = byteBufferPool.acquire(getOutputBufferSize(), true);
