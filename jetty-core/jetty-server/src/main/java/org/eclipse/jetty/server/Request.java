@@ -702,6 +702,7 @@ public interface Request extends Attributes, Content.Source
          * @param processor the {@code Processor} to wrap
          * @return this instance
          */
+        @Deprecated
         public Processor wrapProcessor(Processor processor)
         {
             _processor = processor;
@@ -710,6 +711,8 @@ public interface Request extends Attributes, Content.Source
 
         private void wrappedProcess(Request request, Response response, Callback callback) throws Exception
         {
+            // TODO the problem with this approach is that a reused processor IS the original request, so it
+            // is held in memory forever.  Probably not a problem, but unexpected.
             if (request == this.getWrapped())
             {
                 process(this, wrap(this, response), callback);
@@ -723,6 +726,7 @@ public interface Request extends Attributes, Content.Source
 
         protected Request wrap(Request request) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException
         {
+            // TODO this is not a good way to do this.  Just temporary until this class is replaced.
             if (_constructor == null)
                 _constructor = this.getClass().getConstructor(Request.class);
             return _constructor.newInstance(request);
