@@ -1307,7 +1307,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    private static class ChannelCallback implements Callback
+    static class ChannelCallback implements Callback
     {
         private static final Logger LOG = LoggerFactory.getLogger(ChannelCallback.class);
 

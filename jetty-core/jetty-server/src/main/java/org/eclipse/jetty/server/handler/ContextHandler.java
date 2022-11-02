@@ -1272,9 +1272,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            // TODO better mechanism than attributes to reuse the wrapper.
-            // TODO disabling wrapper reuse for now to see what breaks?
-            ContextRequest contextRequest = null; // (ContextRequest) request.getAttribute(ContextRequest.class.getName());
+            // TODO better mechanism than attributes to reuse the wrapper?
+            ContextRequest contextRequest = (ContextRequest)request.getAttribute(ContextRequest.class.getName());
             if (contextRequest == null)
                 contextRequest = wrap(request);
             ContextResponse contextResponse = contextRequest.wrap(response);

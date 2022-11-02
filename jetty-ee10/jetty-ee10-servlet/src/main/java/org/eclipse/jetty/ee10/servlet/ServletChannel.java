@@ -65,11 +65,11 @@ public class ServletChannel implements Runnable
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
     private final AtomicLong _requests = new AtomicLong();
+    private final ServletRequestState _state = new ServletRequestState(this);
     private Connector _connector;
     private Executor _executor;
     private HttpConfiguration _configuration;
     private EndPoint _endPoint;
-    private ServletRequestState _state;
     private ServletContextHandler.ServletContextApi _servletContextApi;
     private ServletContextRequest _request;
     private boolean _expects100Continue;
@@ -81,8 +81,6 @@ public class ServletChannel implements Runnable
 
     public void setCallback(Callback callback)
     {
-        if (_callback != null)
-            throw new IllegalStateException();
         _callback = callback;
     }
 
@@ -97,7 +95,7 @@ public class ServletChannel implements Runnable
         _executor = request.getContext();
         _configuration = request.getConnectionMetaData().getHttpConfiguration();
         _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-        _state = new ServletRequestState(this); // TODO can this be recycled?
+        _state.recycle();
         _servletContextApi = request.getContext().getServletContext();
         _request = request;
         _expects100Continue = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());

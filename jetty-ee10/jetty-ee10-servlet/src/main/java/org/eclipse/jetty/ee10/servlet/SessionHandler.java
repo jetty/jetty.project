@@ -714,17 +714,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         setUsingURLs(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
-    private ServletContextRequest.ServletApiRequest getServletApiRequest(Request request)
-    {
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        if (servletContextRequest == null)
-            throw new IllegalArgumentException("Request is not a valid ServletContextRequest");
-        ServletContextRequest.ServletApiRequest servletApiReq = servletContextRequest.getServletApiRequest();
-        if (servletApiReq == null)
-            throw new IllegalArgumentException("Request is not a valid ServletContextRequest");
-        return servletApiReq;
-    }
-
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
@@ -749,7 +738,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         {
             addSessionStreamWrapper(request);
 
-            ServletApiRequest servletApiRequest = getServletApiRequest(request);
+            ServletApiRequest servletApiRequest = ServletContextHandler.getServletApiRequest(request);
 
             // find and set the session if one exists
             RequestedSession requestedSession = resolveRequestedSessionId(request);

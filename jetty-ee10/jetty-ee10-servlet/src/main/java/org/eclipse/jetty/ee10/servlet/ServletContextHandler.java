@@ -150,6 +150,17 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         DESTROYED
     }
 
+    public static ServletContextRequest.ServletApiRequest getServletApiRequest(Request request)
+    {
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        if (servletContextRequest == null)
+            throw new IllegalArgumentException("Request is not a valid ServletContextRequest");
+        ServletContextRequest.ServletApiRequest servletApiReq = servletContextRequest.getServletApiRequest();
+        if (servletApiReq == null)
+            throw new IllegalArgumentException("Request is not a valid ServletContextRequest");
+        return servletApiReq;
+    }
+
     public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
     {
         if (servletContext instanceof ServletContextApi servletContextApi)
@@ -1198,14 +1209,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return null;
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
-        // TODO We should cache this heavy weight object!  Something like:
-        // TODO: ServletChannel is not properly cleared out so I have disabled the caching of this for now.
-        ServletChannel servletChannel = null; // (ServletChannel)request.getComponents().getCache().get("blah.blah.ServletChannel");
+        ServletChannel servletChannel = (ServletChannel)request.getComponents().getCache().get(ServletChannel.class.getName());
         if (servletChannel == null)
         {
-            // TODO this may not be the right object to recycle, but ultimately we want to reuse: HttpInput, HttpOutput, ServletChannelState etc. etc.
             servletChannel = new ServletChannel();
-            // request.getComponents().getCache().put("blah.blah.ServletChannel", servletChannel); TODO: Re-enable.
+            request.getComponents().getCache().put(ServletChannel.class.getName(), servletChannel);
         }
 
         ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext,
