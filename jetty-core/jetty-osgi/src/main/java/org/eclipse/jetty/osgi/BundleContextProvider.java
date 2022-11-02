@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.osgi;
 
+import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -22,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.osgi.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
@@ -43,22 +44,31 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
-    private Map<String, App> _appMap = new HashMap<String, App>();
+    private Map<Path, App> _appMap = new HashMap<>();
 
-    private Map<Bundle, List<App>> _bundleMap = new HashMap<Bundle, List<App>>();
+    private Map<Bundle, List<App>> _bundleMap = new HashMap<>();
 
     private ServiceRegistration _serviceRegForBundles;
 
     private BundleTracker _tracker;
 
+    /**
+     * ContextBundleTracker
+     *
+     * Track deployment of Bundles that should be deployed to Jetty as contexts.
+     */
     public class ContextBundleTracker extends BundleTracker
     {
-        protected String _managedServerName;
+        protected String _serverName;
 
-        public ContextBundleTracker(BundleContext bundleContext, String managedServerName)
+        /**
+         * @param bundleContext our bundle
+         * @param serverName the Server instance to which we will deploy contexts
+         */
+        public ContextBundleTracker(BundleContext bundleContext, String serverName)
         {
             super(bundleContext, Bundle.ACTIVE | Bundle.STOPPING, null);
-            _managedServerName = managedServerName;
+            _serverName = serverName;
         }
 
         @Override
@@ -67,8 +77,8 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             try
             {
                 String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
-                    (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
+                if ((StringUtil.isBlank(serverName) && _serverName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
+                    (!StringUtil.isBlank(serverName) && (serverName.equals(_serverName))))
                 {
                     if (bundleAdded(bundle))
                         return bundle;
@@ -95,21 +105,23 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         }
     }
 
-    public BundleContextProvider(Server server, ContextFactory contextFactory)
+    public BundleContextProvider(String environment, Server server, ContextFactory contextFactory)
     {
-        super(server, contextFactory);
+        super(environment, server, contextFactory);
     }
 
     @Override
     protected void doStart() throws Exception
     {
+        String serverName = (String)getServer().getAttribute(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+        
         //Track bundles that are ContextHandlers that should be deployed
-        _tracker = new ContextBundleTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServer().getManagedServerName());
+        _tracker = new ContextBundleTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), serverName);
         _tracker.open();
 
         //register as an osgi service for deploying contexts defined in a bundle, advertising the name of the jetty Server instance we are related to
         Dictionary<String, String> properties = new Hashtable<String, String>();
-        properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServer().getManagedServerName());
+        properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, serverName);
         _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(BundleProvider.class.getName(), this, properties);
         super.doStart();
     }
@@ -133,6 +145,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         }
     }
 
+    /**
+     * Deploy a bundle as a Jetty context.
+     */
     @Override
     public boolean bundleAdded(Bundle bundle) throws Exception
     {
@@ -159,10 +174,24 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         String[] tmp = contextFiles.split("[,;]");
         for (String contextFile : tmp)
         {
-            Path path = AbstractContextProvider.findFileInBundle(contextFile, jettyHome, bundleOverrideLocation, bundle);
-            
+            //try to find it relative to the bundle in which it is being deployed
+            if (contextFile.startsWith("./"))
+                contextFile = contextFile.substring(1);
+
+            if (!contextFile.startsWith("/"))
+                contextFile = "/" + contextFile;
+
+            URL entry = bundle.getEntry(contextFile);
+
+            if (entry == null)
+            {
+                LOG.warn("Could not resolve {} in bundle {})", contextFile, bundle.getSymbolicName());
+                continue;
+            }
+
+            Path path = Paths.get(entry.toURI());
             OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, path);
-            _appMap.put(originId, app);
+            _appMap.put(path, app);
             List<App> apps = _bundleMap.get(bundle);
             if (apps == null)
             {
@@ -192,13 +221,13 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         {
             for (App app : apps)
             {
-                _appMap.remove(app.getOriginId());
-                getDeploymentManager().removeApp(app);
-                removed = true;
+                if (_appMap.remove(app.getPath()) != null)
+                {
+                    getDeploymentManager().removeApp(app);
+                    removed = true;
+                }
             }
         }
         return removed; //true if even 1 context was removed associated with this bundle
     }
-    
-    
 }

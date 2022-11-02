@@ -65,14 +65,7 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     public static final String DEFAULT_JETTYHOME = "/jettyhome";
 
-    public static JettyBootstrapActivator getInstance()
-    {
-        return INSTANCE;
-    }
-
-    private ServiceRegistration _registeredServer;
-
-    private ServiceTracker _jettyServerServiceTracker;
+    private ServiceRegistration<?> _registeredServer;
 
     /**
      * Setup a new jetty Server, register it as a service. 
@@ -86,8 +79,6 @@ public class JettyBootstrapActivator implements BundleActivator
 
         if (references == null || references.length == 0)
             LOG.warn("OSGi support for java.util.ServiceLoader may not be present. You may experience runtime errors.");
-
-        INSTANCE = this;
 
         // Create a default jetty instance right now.
         startJettyAtJettyHome(context);
@@ -103,11 +94,6 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         try
         {
-            if (_jettyServerServiceTracker != null)
-            {
-                _jettyServerServiceTracker.close();
-                _jettyServerServiceTracker = null;
-            }
             if (_registeredServer != null)
             {
                 try
@@ -264,7 +250,7 @@ public class JettyBootstrapActivator implements BundleActivator
             //Register the default Server instance as an OSGi service.
             //The JettyServerServiceTrackers will notice it and set it up to deploy bundles as wars etc
             //for each environment eg ee9,ee10, etc
-            bundleContext.registerService(Server.class.getName(), defaultServer, properties);
+            _registeredServer = bundleContext.registerService(Server.class.getName(), defaultServer, properties);
             LOG.info("Default jetty server configured");
         }
         catch (Exception e)

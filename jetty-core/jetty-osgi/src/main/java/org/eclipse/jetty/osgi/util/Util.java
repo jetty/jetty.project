@@ -13,23 +13,110 @@
 
 package org.eclipse.jetty.osgi.util;
 
+import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.util.StringUtil;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
 import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * Various useful functions utility methods for OSGi wide use.
  */
 public class Util
 {
+    /**
+     * Resolve a path either absolutely or against the bundle install location, or
+     * against jetty home.
+     * 
+     * @param path the path to resolve
+     * @param bundlePath the path to the bundle install location
+     * @param jettyHome the path to jetty home
+     * @return the resolved path or null if the path does not exist
+     */
+    public static Path resolvePath(String path, Path bundlePath, Path jettyHome)
+    {
+        if (StringUtil.isBlank(path))
+            return null;
+
+        if (path.startsWith("/") || path.startsWith("file:/")) //absolute location
+            return Paths.get(path);
+        
+        //relative location
+        //try inside the bundle first
+        if (bundlePath != null)
+        {
+            Path p = bundlePath.resolve(path);
+            if (Files.exists(p))
+                return p;
+        }
+
+        if (jettyHome != null)
+        {
+            Path p = jettyHome.resolve(path);
+            if (Files.exists(p))
+                return p;
+        }
+
+        return null;
+    }
+    
+    /**
+     * Resolve the file system paths to bundles identified by their symbolic names.
+     * 
+     * @param bundleSymbolicNames comma separated list of symbolic bundle names
+     * @param bundleContext the bundle on whose behalf to resolve
+     * @return List of resolved Paths matching the bundle symbolic names
+     * 
+     * @throws Exception
+     */
+    public static List<Path> getPathsToBundlesBySymbolicNames(String bundleSymbolicNames, BundleContext bundleContext)
+        throws Exception
+    {
+        if (bundleSymbolicNames == null)
+            return Collections.emptyList();
+
+        Objects.requireNonNull(bundleContext);
+
+        ServiceReference ref = bundleContext.getServiceReference(org.osgi.service.packageadmin.PackageAdmin.class.getName());
+        PackageAdmin packageAdmin = (ref == null) ? null : (PackageAdmin)bundleContext.getService(ref);
+        if (packageAdmin == null)
+            throw new IllegalStateException("Unable to get PackageAdmin reference to locate required Tld bundles");
+
+        List<Path> paths = new ArrayList<>();
+        String[] symbNames = bundleSymbolicNames.split("[, ]");
+
+        for (String symbName : symbNames)
+        {
+            Bundle[] bs = packageAdmin.getBundles(symbName, null);
+            if (bs == null || bs.length == 0)
+            {
+                throw new IllegalArgumentException("Unable to locate the bundle '" + symbName + "' specified in manifest of " +
+                    bundleContext.getBundle().getSymbolicName());
+            }
+
+            File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bs[0]);
+            paths.add(f.toPath());
+        }
+        
+        return paths;
+    }
+    
+
     /**
      * Create an osgi filter for the given classname and server name.
      *

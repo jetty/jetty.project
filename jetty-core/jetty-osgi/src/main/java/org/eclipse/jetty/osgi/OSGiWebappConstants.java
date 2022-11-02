@@ -70,7 +70,7 @@ public class OSGiWebappConstants
     public static final String JETTY_OSGI_BUNDLE = "osgi-bundle";
 
     /**
-     * List of relative pathes within the bundle to the jetty context files.
+     * List of relative paths within the bundle to the jetty context files.
      */
     public static final String JETTY_CONTEXT_FILE_PATH = "Jetty-ContextFilePath";
 
@@ -118,6 +118,11 @@ public class OSGiWebappConstants
      * that are in fact not embedded in a bundle
      */
     public static final String JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE = "Jetty-bundleInstall";
+    
+    /**
+     * Property naming the environment (eg ee8/ee9/ee10 etc)
+     */
+    public static final String JETTY_ENVIRONMENT = "Jetty-environment";
 
     /**
      * Comma separated list of bundles that contain tld file used by the webapp.

@@ -21,9 +21,9 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.ee9.osgi.boot.utils.Util;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.osgi.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.util.Util;
+import org.eclipse.jetty.ee9.webapp.WebappContext;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -95,15 +95,9 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
      */
     public class ServiceApp extends OSGiApp
     {
-
-        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary<String, String> properties, String originId)
+        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Path path)
         {
-            super(manager, provider, bundle, properties, originId);
-        }
-
-        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
-        {
-            super(manager, provider, bundle, originId);
+            super(manager, provider, bundle, path);
         }
 
         @Override
@@ -182,7 +176,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
             ServiceApp app = new ServiceApp(getDeploymentManager(), this, serviceRef.getBundle(), properties, originId);
             app.setContextPath(contextPath);
             app.setWebAppPath(base);
-            app.setWebAppContext(webApp); //set the pre=made webapp instance
+            app.setContextHandler(webApp); //set the pre=made webapp instance
             _serviceMap.put(serviceRef, app);
             getDeploymentManager().addApp(app);
             return true;

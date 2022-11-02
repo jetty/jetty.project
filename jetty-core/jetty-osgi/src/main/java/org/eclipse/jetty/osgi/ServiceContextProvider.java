@@ -89,12 +89,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
      */
     public class ServiceApp extends OSGiApp
     {
-        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String contextFile, String originId)
-        {
-            super(manager, provider, bundle, properties, contextFile, originId);
-        }
-
-        public ServiceApp(DeploymentManager manager, AppProvider provider, String originId, Bundle bundle, String contextFile)
+        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String contextFile)
         {
             super(manager, provider, originId, bundle, contextFile);
         }
@@ -137,19 +132,11 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             //See if there is a context file to apply to this pre-made context
             String contextFile = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
 
-            String[] keys = serviceRef.getPropertyKeys();
-            Dictionary<String, Object> properties = new Hashtable<>();
-            if (keys != null)
-            {
-                for (String key : keys)
-                {
-                    properties.put(key, serviceRef.getProperty(key));
-                }
-            }
             Bundle bundle = serviceRef.getBundle();
-            String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-" + (contextFile != null ? contextFile : serviceRef.getProperty(Constants.SERVICE_ID));
-            ServiceApp app = new ServiceApp(getDeploymentManager(), this, bundle, properties, contextFile, originId);
+            
+            ServiceApp app = new ServiceApp(getDeploymentManager(), this, bundle, );
             app.setHandler(context); //set the pre=made ContextHandler instance
+            app.set
             _serviceMap.put(serviceRef, app);
             getDeploymentManager().addApp(app);
             return true;

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -77,6 +78,8 @@ public class JettyServerFactory
     public static Server createServer(String name, Dictionary<String, Object> props, List<URL> jettyConfigurations)
         throws Exception
     {
+        Objects.requireNonNull(name);
+        
         Server server = null;
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
@@ -206,7 +209,11 @@ public class JettyServerFactory
             if (LOG.isDebugEnabled())
                 LOG.debug("Server classloader for contexts = {}", serverClassLoader);
 
+            //remember home, base, the classloader that will be the common parent for all context loaders, and the identity of the server
+            server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
+            server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
             server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER, serverClassLoader);
+            server.setAttribute(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, name);
             return server;
         }
         catch (Exception e)
