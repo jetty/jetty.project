@@ -1101,18 +1101,18 @@ public class StatisticsHandlerTest
         public Request.Processor handle(Request request) throws Exception
         {
             CountDownLatch latch = _latch;
-            Request.Processor wrappedProcessor = super.handle(request);
-            return new Request.WrapperProcessor(request).wrapProcessor((rq, rs, callback) ->
+            Request.Processor processor = super.handle(request);
+            return (rq, rs, callback) ->
             {
                 try
                 {
-                    wrappedProcessor.process(rq, rs, callback);
+                    processor.process(rq, rs, callback);
                 }
                 finally
                 {
                     latch.countDown();
                 }
-            });
+            };
         }
 
         private void reset()

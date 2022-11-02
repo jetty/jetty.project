@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -485,6 +487,7 @@ public interface Request extends Attributes, Content.Source
          * @throws Exception if there is a failure during the processing
          */
         void process(Request request, Response response, Callback callback) throws Exception;
+
     }
 
     /**
@@ -681,6 +684,7 @@ public interface Request extends Attributes, Content.Source
     class WrapperProcessor extends Wrapper implements Processor
     {
         private volatile Processor _processor;
+        private Constructor<? extends Request> _constructor;
 
         public WrapperProcessor(Request request)
         {
@@ -693,18 +697,43 @@ public interface Request extends Attributes, Content.Source
          * @param processor the {@code Processor} to wrap
          * @return this instance
          */
-        public WrapperProcessor wrapProcessor(Processor processor)
+        public Processor wrapProcessor(Processor processor)
         {
             _processor = processor;
-            return processor == null ? null : this;
+            return processor == null ? null : this::wrappedProcess;
+        }
+
+        private void wrappedProcess(Request request, Response response, Callback callback) throws Exception
+        {
+            if (request == this.getWrapped())
+            {
+                process(this, wrap(this, response), callback);
+                return;
+            }
+
+            // We need a new instance of the wrapper
+            Request wrapper = wrap(request);
+            process(wrapper, wrap(wrapper, response), callback);
+        }
+
+        protected Request wrap(Request request) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException
+        {
+            if (_constructor == null)
+                _constructor = this.getClass().getConstructor(Request.class);
+            return _constructor.newInstance(request);
+        }
+
+        protected Response wrap(Request request, Response response)
+        {
+            return response;
         }
 
         @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             Processor processor = _processor;
             if (processor != null)
-                processor.process(this, response, callback);
+                processor.process(request, response, callback);
         }
     }
 

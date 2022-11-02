@@ -834,7 +834,8 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public Object setAttribute(String name, Object attribute)
         {
-            if (Server.class.getName().equals(name) || HttpChannelState.class.getName().equals(name) || HttpConnection.class.getName().equals(name))
+            if (name.startsWith("org.eclipse.jetty.") &&
+                (Server.class.getName().equals(name) || HttpChannelState.class.getName().equals(name) || HttpConnection.class.getName().equals(name)))
                 return null;
             return getHttpChannel()._requestAttributes.setAttribute(name, attribute);
         }

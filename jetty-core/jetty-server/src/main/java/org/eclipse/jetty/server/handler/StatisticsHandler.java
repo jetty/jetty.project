@@ -56,7 +56,7 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         long beginNanoTime = NanoTime.now();
         _handleStats.increment();
-        StatisticsRequest statisticsRequest = new StatisticsRequest(request);
+        StatisticsRequest statisticsRequest = wrap(request);
 
         try
         {
@@ -72,6 +72,11 @@ public class StatisticsHandler extends Handler.Wrapper
             _handleStats.decrement();
             _handleTimeStats.record(NanoTime.since(beginNanoTime));
         }
+    }
+
+    protected StatisticsRequest wrap(Request request)
+    {
+        return new StatisticsRequest(request);
     }
 
     @ManagedOperation(value = "resets the statistics", impact = "ACTION")
@@ -249,7 +254,7 @@ public class StatisticsHandler extends Handler.Wrapper
         return _processTimeStats.getStdDev();
     }
 
-    private class StatisticsRequest extends Request.WrapperProcessor
+    protected class StatisticsRequest extends Request.WrapperProcessor
     {
         private final LongAdder _bytesRead = new LongAdder();
         private final LongAdder _bytesWritten = new LongAdder();
@@ -384,9 +389,8 @@ public class StatisticsHandler extends Handler.Wrapper
             _minimumWriteRate = minimumWriteRate;
         }
 
-        private class MinimumDataRateRequest extends Request.WrapperProcessor
+        private class MinimumDataRateRequest extends StatisticsRequest
         {
-            private StatisticsRequest _statisticsRequest;
             private Content.Chunk.Error _errorContent;
 
             private MinimumDataRateRequest(Request request)
@@ -395,9 +399,15 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public Object getAttribute(String name)
+            protected Request wrap(Request request)
             {
-                return _statisticsRequest.getAttribute(name);
+                return new MinimumDataRateRequest(request);
+            }
+
+            @Override
+            protected Response wrap(Request request, Response response)
+            {
+                return new MinimumDataRateResponse(request, response);
             }
 
             @Override
@@ -421,19 +431,6 @@ public class StatisticsHandler extends Handler.Wrapper
             public Content.Chunk read()
             {
                 return _errorContent != null ? _errorContent : super.read();
-            }
-
-            @Override
-            public WrapperProcessor wrapProcessor(Processor processor)
-            {
-                _statisticsRequest = (StatisticsRequest)processor;
-                return super.wrapProcessor(processor);
-            }
-
-            @Override
-            public void process(Request ignored, Response response, Callback callback) throws Exception
-            {
-                super.process(ignored, new MinimumDataRateResponse(this, response), callback);
             }
         }
 
@@ -467,13 +464,9 @@ public class StatisticsHandler extends Handler.Wrapper
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        protected StatisticsRequest wrap(Request request)
         {
-            MinimumDataRateRequest minimumDataRateRequest = new MinimumDataRateRequest(request);
-            Request.Processor processor = super.handle(minimumDataRateRequest);
-            if (processor == null)
-                return null;
-            return minimumDataRateRequest.wrapProcessor(processor);
+            return new MinimumDataRateRequest(request);
         }
     }
 }
