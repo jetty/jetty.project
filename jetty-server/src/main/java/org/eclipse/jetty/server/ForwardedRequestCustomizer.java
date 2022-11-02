@@ -64,9 +64,6 @@ import static java.lang.invoke.MethodType.methodType;
  * </p>
  * <table style="border: 1px solid black; border-collapse: separate; border-spacing: 0px;">
  *     <caption style="font-weight: bold; font-size: 1.2em">Request Authority Search Order</caption>
- *     <colgroup>
- *         <col><col style="width: 15%"><col><col><col><col>
- *     </colgroup>
  *     <thead style="background-color: lightgray">
  *         <tr>
  *             <th>#</th>
