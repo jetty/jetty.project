@@ -25,9 +25,11 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Properties;
 
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -38,10 +40,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShutdownMonitorTest
 {
-    @AfterEach
-    public void dispose()
+    @BeforeEach
+    public void reset()
     {
+        clearShutdownMonitorSystemProperties();
+    }
+
+    @AfterEach
+    public void shutdown()
+    {
+        clearShutdownMonitorSystemProperties();
         ShutdownMonitor.reset();
+    }
+
+    private void clearShutdownMonitorSystemProperties()
+    {
+        // clear out system properties set in individual test cases
+        Properties systemProperties = System.getProperties();
+        systemProperties.remove("STOP.EXIT");
+        systemProperties.remove("DEBUG");
+        systemProperties.remove("STOP.HOST");
+        systemProperties.remove("STOP.PORT");
+        systemProperties.remove("STOP.KEY");
     }
 
     @Test
@@ -125,6 +145,7 @@ public class ShutdownMonitorTest
     public void testNoExitSystemProperty() throws Exception
     {
         System.setProperty("STOP.EXIT", "false");
+        ShutdownMonitor.reset(); // this creates a new ShutdownMonitor singleton, so we do this now to get the System Property set properly
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertFalse(monitor.isExitVm());
@@ -178,6 +199,7 @@ public class ShutdownMonitorTest
     {
         //Test setting exit true
         System.setProperty("STOP.EXIT", "true");
+        ShutdownMonitor.reset(); // this creates a new ShutdownMonitor singleton, so we do this now to get the System Property set properly
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertTrue(monitor.isExitVm());
@@ -189,6 +211,7 @@ public class ShutdownMonitorTest
     {
         //Test setting exit false
         System.setProperty("STOP.EXIT", "false");
+        ShutdownMonitor.reset(); // this creates a new ShutdownMonitor singleton, so we do this now to get the System Property set properly
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertFalse(monitor.isExitVm());
