@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.osgi;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
@@ -153,6 +153,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     {
         if (bundle == null)
             return false;
+        
+        if (!isDeployable(bundle))
+            return false;
 
         //If the bundle defines a Web-ContextPath then its probably a webapp and the BundleWebAppProvider should deploy it
         if (bundle.getHeaders().get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) != null)
@@ -161,37 +164,33 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
                 LOG.debug("BundleContextProvider ignoring bundle {} with {} set", bundle.getSymbolicName(), OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
             return false;
         }
-
+        
+        //comma separated list of context xml files, each of which is a separate ContextHandler to deploy
         String contextFiles = bundle.getHeaders().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
 
+        //no contexts to deploy, ignore it
         if (contextFiles == null)
             return false;
 
+        //is the bundle destined for my environment?
+        
+        
+        
+        String jettyHome = (String)getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+        Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
+        
         boolean added = false;
-        //bundle defines JETTY_CONTEXT_FILE_PATH header,
-        //a comma separated list of context xml files that each define a ContextHandler
-        //TODO: (could be WebAppContexts)       
+     
         String[] tmp = contextFiles.split("[,;]");
         for (String contextFile : tmp)
-        {
-            //try to find it relative to the bundle in which it is being deployed
-            if (contextFile.startsWith("./"))
-                contextFile = contextFile.substring(1);
-
-            if (!contextFile.startsWith("/"))
-                contextFile = "/" + contextFile;
-
-            URL entry = bundle.getEntry(contextFile);
-
-            if (entry == null)
-            {
-                LOG.warn("Could not resolve {} in bundle {})", contextFile, bundle.getSymbolicName());
-                continue;
-            }
-
-            Path path = Paths.get(entry.toURI());
-            OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, path);
-            _appMap.put(path, app);
+        {            
+            OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
+            Path contextFilePath = Util.resolvePath(contextFile, app.getPath(), jettyHomePath);
+            
+            //set up the single context file for this deployment
+            app.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toUri().toString());
+            
+            _appMap.put(app.getPath(), app);
             List<App> apps = _bundleMap.get(bundle);
             if (apps == null)
             {

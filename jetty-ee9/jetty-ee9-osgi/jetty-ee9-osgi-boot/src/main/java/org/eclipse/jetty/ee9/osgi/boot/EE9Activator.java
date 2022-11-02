@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.ee9.osgi.boot;
 
-import java.io.File;
-import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,27 +28,24 @@ import org.eclipse.jetty.ee9.osgi.boot.internal.webapp.OSGiWebappClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
-import org.eclipse.jetty.osgi.AbstractOSGiApp;
 import org.eclipse.jetty.osgi.BundleContextProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
+import org.eclipse.jetty.osgi.OSGiApp;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.ServiceContextProvider;
-import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.osgi.util.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
@@ -120,22 +114,91 @@ public class EE9Activator implements BundleActivator
     {
         @Override
         public ContextHandler createContextHandler(AbstractContextProvider provider, App app)
+        throws Exception
         {
-            // TODO Auto-generated method stub
-            return null;
+            OSGiApp osgiApp = OSGiApp.class.cast(app);
+            String jettyHome = (String)app.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+            Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
+
+            ContextHandler contextHandler = new ContextHandler();
+
+            //Make base resource that of the bundle
+            contextHandler.setBaseResource(osgiApp.getPath());
+
+            //Use a classloader that knows about the common jetty parent loader, and also the bundle                  
+            OSGiClassLoader classLoader = new OSGiClassLoader((ClassLoader)app.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER),
+                osgiApp.getBundle());
+            contextHandler.setClassLoader(classLoader);
+
+            //Apply any context xml file
+            String tmp = osgiApp.getProperties().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+            final Path contextXmlPath = Util.resolvePath(tmp, osgiApp.getPath(), jettyHomePath);
+
+            if (contextXmlPath != null)
+            {
+                ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+                try
+                {
+                    Thread.currentThread().setContextClassLoader(contextHandler.getClassLoader());
+                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    {
+                        XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(contextHandler).newResource(contextXmlPath));
+                        WebAppClassLoader.runWithServerClassAccess(() ->
+                        {
+                            Map<String, String> properties = new HashMap<>();
+                            xmlConfiguration.getIdMap().put("Server", osgiApp.getDeploymentManager().getServer());
+                            properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, osgiApp.getPath().toUri().toString());
+                            properties.put(OSGiServerConstants.JETTY_HOME, (String)osgiApp.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
+                            xmlConfiguration.getProperties().putAll(properties);
+                            xmlConfiguration.configure(contextHandler);
+                            return null;
+                        });
+                        return null;
+                    });
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Error applying context xml", e);
+                    throw e;
+                }
+                finally
+                {
+                    Thread.currentThread().setContextClassLoader(oldLoader);
+                }
+            }
+
+            //osgi Enterprise Spec r4 p.427
+            contextHandler.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, osgiApp.getBundle().getBundleContext());
+
+            //make sure we protect also the osgi dirs specified by OSGi Enterprise spec
+            String[] targets = contextHandler.getProtectedTargets();
+            int length = (targets == null ? 0 : targets.length);
+
+            String[] updatedTargets = null;
+            if (targets != null)
+            {
+                updatedTargets = new String[length + OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
+                System.arraycopy(targets, 0, updatedTargets, 0, length);
+            }
+            else
+                updatedTargets = new String[OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
+            System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
+            contextHandler.setProtectedTargets(updatedTargets);
+            
+            return contextHandler;
         }
     }
-    
+
     public class EE9WebAppFactory implements ContextFactory
     {
         @Override
         public ContextHandler createContextHandler(AbstractContextProvider provider, App app)
-        throws Exception
+            throws Exception
         {
-            AbstractOSGiApp osgiApp = AbstractOSGiApp.class.cast(app);
+            OSGiApp osgiApp = OSGiApp.class.cast(app);
             String jettyHome = (String)app.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
-            
+
             WebAppContext webApp = new WebAppContext();
 
             //Apply defaults from the deployer providers
@@ -228,6 +291,10 @@ public class EE9Activator implements BundleActivator
             {
                 LOG.warn("Error applying context xml", e);
                 throw e;
+            }
+            finally
+            {
+                Thread.currentThread().setContextClassLoader(oldLoader);
             }
 
             //ensure the context path is set

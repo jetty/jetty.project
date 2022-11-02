@@ -37,7 +37,7 @@ public class OSGiUndeployer extends StandardUndeployer
     @Override
     public void processBinding(Node node, App app) throws Exception
     {
-        EventSender.getInstance().send(EventSender.UNDEPLOYING_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
+        EventSender.getInstance().send(EventSender.UNDEPLOYING_EVENT, ((OSGiApp)app).getBundle(), app.getContextPath());
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         ClassLoader cl = (ClassLoader)_server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
         Thread.currentThread().setContextClassLoader(cl);
@@ -49,7 +49,7 @@ public class OSGiUndeployer extends StandardUndeployer
         {
             Thread.currentThread().setContextClassLoader(old);
         }
-        EventSender.getInstance().send(EventSender.UNDEPLOYED_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
-        ((AbstractOSGiApp)app).deregisterAsOSGiService();
+        EventSender.getInstance().send(EventSender.UNDEPLOYED_EVENT, ((OSGiApp)app).getBundle(), app.getContextPath());
+        ((OSGiApp)app).deregisterAsOSGiService();
     }
 }

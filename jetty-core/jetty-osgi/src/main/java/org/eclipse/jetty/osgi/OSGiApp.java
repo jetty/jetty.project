@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.osgi;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -23,6 +25,7 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee.Deployable;
+import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
@@ -32,13 +35,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractOSGiApp
+ * OSGiApp
  *
  * Base class representing info about a WebAppContext/ContextHandler to be deployed into jetty.
  */
-public abstract class AbstractOSGiApp extends App
+public class OSGiApp extends App
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractOSGiApp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OSGiApp.class);
 
     protected Bundle _bundle;
     protected ServiceRegistration _registration;
@@ -46,6 +49,50 @@ public abstract class AbstractOSGiApp extends App
     protected String _baseResource;
     protected String _contextPath;
     
+    private static Path getBundlePath(Bundle bundle) throws Exception
+    {
+        String bundleOverrideLocation = bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
+        File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+        File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
+        return Paths.get(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toURI().toURL()).toURI());
+    }
+
+    /**
+     * @param manager the DeploymentManager to which to deploy
+     * @param provider the provider that discovered the context/webapp
+     * @param bundle the bundle associated with the context/webapp
+     * @param path the path to the bundle
+     */
+    public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle)
+    throws Exception
+    {
+        super(manager, provider, getBundlePath(bundle));
+
+        _bundle = Objects.requireNonNull(bundle);
+        
+        //copy all bundle headers into the properties
+        Dictionary<String, String> headers = bundle.getHeaders();
+        Enumeration<String> keys = headers.keys();
+        while (keys.hasMoreElements())
+        {
+            String key = keys.nextElement();
+            String val = headers.get(key);
+            if (Deployable.ENVIRONMENT.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_ENVIRONMENT.equalsIgnoreCase(key))
+                getProperties().put(Deployable.ENVIRONMENT, val);
+            else if (Deployable.DEFAULTS_DESCRIPTOR.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH.equalsIgnoreCase(key))
+            {
+                getProperties().put(Deployable.DEFAULTS_DESCRIPTOR, val);
+            }
+            else if (OSGiWebappConstants.JETTY_WEB_XML_PATH.equalsIgnoreCase(key))
+            {
+                getProperties().put(key, val);
+            }
+        }
+
+        //set up the context path based on the supplied value, or the calculated default
+        setContextPath(getContextPath(bundle));
+    }
+
     /**
      * Get or create a contextPath from bundle headers and information
      * 
@@ -74,41 +121,6 @@ public abstract class AbstractOSGiApp extends App
             contextPath = "/" + contextPath;
 
         return contextPath;
-    }
-
-    /**
-     * @param manager the DeploymentManager to which to deploy
-     * @param provider the provider that discovered the context/webapp
-     * @param bundle the bundle associated with the context/webapp
-     * @param path the path to the bundle
-     */
-    public AbstractOSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Path path)
-    {
-        super(manager, provider, path);
-
-        _bundle = Objects.requireNonNull(bundle);
-        
-        //copy all bundle headers into the properties
-        Dictionary<String, String> headers = bundle.getHeaders();
-        Enumeration<String> keys = headers.keys();
-        while (keys.hasMoreElements())
-        {
-            String key = keys.nextElement();
-            String val = headers.get(key);
-            if (Deployable.ENVIRONMENT.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_ENVIRONMENT.equalsIgnoreCase(key))
-                getProperties().put(Deployable.ENVIRONMENT, val);
-            else if (Deployable.DEFAULTS_DESCRIPTOR.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH.equalsIgnoreCase(key))
-            {
-                getProperties().put(Deployable.DEFAULTS_DESCRIPTOR, val);
-            }
-            else if (OSGiWebappConstants.JETTY_WEB_XML_PATH.equalsIgnoreCase(key))
-            {
-                getProperties().put(key, val);
-            }
-        }
-
-        //set up the context path based on the supplied value, or the calculated default
-        setContextPath(getContextPath(bundle));
     }
 
     @Override
@@ -172,6 +184,12 @@ public abstract class AbstractOSGiApp extends App
         return _registration;
     }
 
+    /**
+     * Register the Jetty deployed context/webapp as a service, as
+     * according to the OSGi Web Application Specification.
+     * 
+     * @throws Exception
+     */
     public void registerAsOSGiService() throws Exception
     {
         if (_registration == null)

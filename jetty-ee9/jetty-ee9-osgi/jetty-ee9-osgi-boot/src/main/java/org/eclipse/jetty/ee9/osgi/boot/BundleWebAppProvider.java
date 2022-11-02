@@ -13,20 +13,18 @@
 
 package org.eclipse.jetty.ee9.osgi.boot;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.BundleProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
+import org.eclipse.jetty.osgi.OSGiApp;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
@@ -44,9 +42,9 @@ import org.slf4j.LoggerFactory;
  * <p>
  * A Jetty Provider that knows how to deploy a WebApp contained inside a Bundle.
  */
-public class BundleWebAppProvider extends AbstractWebAppProvider implements BundleProvider
+public class BundleWebAppProvider extends AbstractContextProvider implements BundleProvider
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractWebAppProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.
@@ -140,6 +138,29 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         super.doStop();
     }
 
+    @Override
+    public boolean isDeployable(Bundle bundle)
+    {
+        //is it destined for my environment?
+        if (!super.isDeployable(bundle))
+            return false;
+        
+        //has a war path, could be a webapp
+        if (!StringUtil.isBlank(Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, bundle.getHeaders())))
+            return true;
+       
+        //has a context path header, could be a webapp
+       if (!StringUtil.isBlank(Util.getManifestHeaderValue(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH, bundle.getHeaders())))
+           return true;
+        
+       //has a web.xml, could be a webapp
+       if (bundle.getEntry("/WEB-INF/web.xml") != null)
+           return true;
+       
+       //not a webapp
+       return false;
+    }
+
     /**
      * A bundle has been added that could be a webapp
      *
@@ -150,6 +171,10 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     {
         if (bundle == null)
             return false;
+        
+        //can this bundle be deployed to my environment?
+        if (!isDeployable(bundle))
+            return false;
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader((ClassLoader)getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER));
@@ -158,14 +183,6 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             @SuppressWarnings("unchecked")
             Dictionary<String, String> headers = bundle.getHeaders();
             
-            //Override for bundle root may have been set
-            String bundleOverrideLocation = headers.get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
-
-            //Location on filesystem of bundle or the bundle override location
-            File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
-            File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
-            Path bundlePath = Paths.get(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toURI().toURL()).toURI());
-
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
             String staticResourcesLocation = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
             if (staticResourcesLocation != null)
@@ -173,7 +190,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
                 //TODO : we don't know whether an app is actually deployed, as deploymentManager swallows all
                 //exceptions inside the impl of addApp. Need to send the Event and also register as a service
                 //only if the deployment succeeded
-                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, bundlePath);
+                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
                 app.setBaseResource(staticResourcesLocation);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
@@ -184,7 +201,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             if (bundle.getEntry("/WEB-INF/web.xml") != null)
             {
                 String base = ".";
-                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, bundlePath);
+                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
                 app.setBaseResource(base);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
@@ -196,13 +213,14 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             {
                 //Could be a static webapp with no web.xml
                 String base = ".";
-                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, bundlePath);
+                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
                 app.setBaseResource(base);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
                 return true;
             }
 
+            //not a webapp
             return false;
         }
         finally

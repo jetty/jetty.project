@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
@@ -31,11 +32,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.packageadmin.PackageAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,9 +58,9 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
 
     public AbstractContextProvider(String environment, Server server, ContextFactory contextFactory)
     {
-        _environment = environment;
-        _server = server;
-        _contextFactory = contextFactory;
+        _environment = Objects.requireNonNull(environment);
+        _server = Objects.requireNonNull(server);
+        _contextFactory = Objects.requireNonNull(contextFactory);
     }
 
     public Server getServer()
@@ -80,185 +81,8 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
 
         //Create a ContextHandler suitable to deploy in OSGi
         ContextHandler h = _contextFactory.createContextHandler(this, app);
-        
-        //Apply defaults from the deployer providers
-        if (h instanceof Deployable deployable)
-            deployable.initializeDefaults(_properties);
-        
-        //Finish configuring the ContextHandler
-        _contextFactory.configureContextHandler(_server, this, app, h);
-        
-        applyContextXmlFiles(h)
 
         return h;
-    }
-    
-    
-
-    protected void applyMetaInfContextXml(Resource rootResource, String overrideBundleInstallLocation)
-        throws Exception
-    {
-        if (_bundle == null)
-            return;
-        if (_webApp == null)
-            return;
-
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Context classloader = {}", cl);
-        try
-        {
-
-            Thread.currentThread().setContextClassLoader(_webApp.getClassLoader());
-
-            URI contextXmlUri = null;
-
-            //TODO replace this with getting the InputStream so we don't cache in URL
-            //Try looking for a context xml file in META-INF with a specific name
-            URL url = _bundle.getEntry("/META-INF/jetty-webapp-context.xml");
-            if (url != null)
-            {
-                contextXmlUri = url.toURI();
-            }
-
-            if (contextXmlUri == null)
-            {
-                //Didn't find specially named file, try looking for a property that names a context xml file to use
-                if (_properties != null)
-                {
-                    String tmp = (String)_properties.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
-                    if (tmp != null)
-                    {
-                        String[] filenames = tmp.split("[,;]");
-                        if (filenames != null && filenames.length > 0)
-                        {
-                            String filename = filenames[0]; //should only be 1 filename in this usage
-                            String jettyHome = (String)getServer().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
-                            if (jettyHome == null)
-                                jettyHome = System.getProperty(OSGiServerConstants.JETTY_HOME);
-                            Resource res = findFile(filename, jettyHome, overrideBundleInstallLocation, _bundle);
-                            if (res != null)
-                            {
-                                contextXmlUri = res.getURI();
-                            }
-                        }
-                    }
-                }
-            }
-            if (contextXmlUri == null)
-                return;
-
-            // Apply it just as the standard jetty ContextProvider would do
-            LOG.info("Applying {} to {}", contextXmlUri, _webApp);
-
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(contextXmlUri));
-            WebAppClassLoader.runWithServerClassAccess(() ->
-            {
-                HashMap<String, String> properties = new HashMap<>();
-                xmlConfiguration.getIdMap().put("Server", getDeploymentManager().getServer());
-                properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
-                properties.put(OSGiServerConstants.JETTY_HOME, (String)getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
-                xmlConfiguration.getProperties().putAll(properties);
-                xmlConfiguration.configure(_webApp);
-                return null;
-            });
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(cl);
-        }
-    }
-    
-    
-
-    
-    //TODO
-    private void configureContextHandler(ContextHandler contextHandler)
-        throws Exception
-    {
-        //Set the base resource of the ContextHandler, if not already set, can also be overridden by the context xml file
-        if (contextHandler != null && contextHandler.getBaseResource() == null)
-        {
-            contextHandler.setBaseResource(rootResource);
-        }
-
-        //Use a classloader that knows about the common jetty parent loader, and also the bundle                  
-        OSGiClassLoader classLoader = new OSGiClassLoader(getServer().getParentClassLoaderForWebapps(), _bundle);
-
-        //if there is a context file, find it and apply it
-        if (contextFile == null && contextHandler == null)
-            throw new IllegalStateException("No context file or ContextHandler");
-
-        if (contextFile != null)
-        {
-            //apply the contextFile, creating the ContextHandler, the DeploymentManager will register it in the ContextHandlerCollection
-            Resource res = null;
-
-            String jettyHome = (String)getServer().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
-            if (jettyHome == null)
-                jettyHome = System.getProperty(OSGiServerConstants.JETTY_HOME);
-
-            res = findFile(_contextFile, jettyHome, bundleOverrideLocation, _bundle);
-
-            //apply the context xml file, either to an existing ContextHandler, or letting the
-            //it create the ContextHandler as necessary
-            if (res != null)
-            {
-                ClassLoader cl = Thread.currentThread().getContextClassLoader();
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Context classloader = {}", cl);
-                try
-                {
-                    Thread.currentThread().setContextClassLoader(classLoader);
-
-                    XmlConfiguration xmlConfiguration = new XmlConfiguration(res);
-                    HashMap properties = new HashMap();
-                    //put the server instance in
-                    properties.put("Server", getServer().getServer());
-                    //put in the location of the bundle root
-                    properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
-
-                    // insert the bundle's location as a property.
-                    xmlConfiguration.getProperties().putAll(properties);
-
-                    if (_contextHandler == null)
-                        _contextHandler = (ContextHandler)xmlConfiguration.configure();
-                    else
-                        xmlConfiguration.configure(_contextHandler);
-                }
-                finally
-                {
-                    Thread.currentThread().setContextClassLoader(cl);
-                }
-            }
-        }
-
-        //Set up the class loader we created
-        _contextHandler.setClassLoader(classLoader);
-
-        //If a bundle/service property specifies context path, let it override the context xml
-        String contextPath = (String)_osgiProperties.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
-        if (contextPath != null)
-            _contextHandler.setContextPath(contextPath);
-
-        //osgi Enterprise Spec r4 p.427
-        _contextHandler.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, _bundle.getBundleContext());
-
-        //make sure we protect also the osgi dirs specified by OSGi Enterprise spec
-        String[] targets = _contextHandler.getProtectedTargets();
-        int length = (targets == null ? 0 : targets.length);
-
-        String[] updatedTargets = null;
-        if (targets != null)
-        {
-            updatedTargets = new String[length + OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
-            System.arraycopy(targets, 0, updatedTargets, 0, length);
-        }
-        else
-            updatedTargets = new String[OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
-        System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
-        _contextHandler.setProtectedTargets(updatedTargets);
     }
 
     @Override
@@ -430,5 +254,33 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     public String getTldBundles()
     {
         return _properties.get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
+    }
+    
+    public boolean isDeployable(Bundle bundle)
+    {
+        if (bundle == null)
+            return false;
+        
+        //check environment matches
+        if (getEnvironmentName().equalsIgnoreCase(bundle.getHeaders().get(Deployable.ENVIRONMENT)))
+            return true;
+        
+        return false;
+    }
+    
+    public boolean isDeployable(ServiceReference service)
+    {
+        if (service == null)
+            return false;
+        
+        //has it been deployed before?
+        if (!StringUtil.isBlank((String)service.getProperty(OSGiWebappConstants.WATERMARK)))
+            return false;
+        
+        //destined for our environment?
+        if (getEnvironmentName().equalsIgnoreCase((String)service.getProperty(Deployable.ENVIRONMENT)))
+            return true;
+
+        return false;
     }
 }
