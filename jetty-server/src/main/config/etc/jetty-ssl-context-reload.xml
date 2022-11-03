@@ -5,7 +5,7 @@
     <Arg>
       <New id="keyStoreScanner" class="org.eclipse.jetty.util.ssl.KeyStoreScanner">
         <Arg><Ref refid="sslContextFactory"/></Arg>
-        <Arg type="boolean"><Property name="jetty.sslContext.reload.resolveAlias" default="true"/></Arg>
+        <Arg type="boolean"><Property name="jetty.sslContext.reload.followLinks" default="true"/></Arg>
         <Set name="scanInterval"><Property name="jetty.sslContext.reload.scanInterval" default="1"/></Set>
       </New>
     </Arg>

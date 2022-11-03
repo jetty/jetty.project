@@ -16,6 +16,6 @@ etc/jetty-ssl-context-reload.xml
 # Monitored directory scan period, in seconds.
 # jetty.sslContext.reload.scanInterval=1
 
-# Whether to resolve aliases in the KeyStore path.
-# jetty.sslContext.reload.resolveAlias=true
+# Whether to resolve symbolic links in the KeyStore path.
+# jetty.sslContext.reload.followLinks=true
 # end::documentation[]

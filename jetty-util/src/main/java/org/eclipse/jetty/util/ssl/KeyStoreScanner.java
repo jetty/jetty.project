@@ -47,7 +47,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         this(sslContextFactory, true);
     }
 
-    public KeyStoreScanner(SslContextFactory sslContextFactory, boolean resolveAlias)
+    public KeyStoreScanner(SslContextFactory sslContextFactory, boolean followLinks)
     {
         this.sslContextFactory = sslContextFactory;
         try
@@ -59,7 +59,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
             if (monitoredFile.isDirectory())
                 throw new IllegalArgumentException("expected keystore file not directory");
 
-            if (resolveAlias && keystoreResource.isAlias())
+            if (followLinks && keystoreResource.isAlias())
             {
                 // This resource has an alias, so monitor the target of the alias.
                 monitoredFile = new File(keystoreResource.getAlias());
@@ -78,7 +78,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (!parentFile.exists() || !parentFile.isDirectory())
             throw new IllegalArgumentException("error obtaining keystore dir");
 
-        _scanner = new Scanner(null, resolveAlias);
+        _scanner = new Scanner(null, followLinks);
         _scanner.addDirectory(parentFile.toPath());
         _scanner.setScanInterval(1);
         _scanner.setReportDirs(false);
