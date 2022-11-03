@@ -51,7 +51,7 @@ public final class URIUtil
 
     static
     {
-        REGNAME_ALLOWED = new boolean[127];
+        REGNAME_ALLOWED = new boolean[128];
         Arrays.fill(REGNAME_ALLOWED, false);
         for (char c : REGNAME.toCharArray())
         {
