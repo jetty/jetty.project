@@ -98,9 +98,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     /**
      * The production state of the strategy.
      */
-    static final int IDLE = 0;        // No tasks or producers.
-    static final int PRODUCING = 1;   // There is an active producing thread.
-    static final int REPRODUCING = 2; // There is an active producing thread and demand for more production.
+    private static final int IDLE = 0;        // No tasks or producers.
+    private static final int PRODUCING = 1;   // There is an active producing thread.
+    private static final int REPRODUCING = 2; // There is an active producing thread and demand for more production.
 
     /**
      * The sub-strategies used by the strategy to consume tasks that are produced.
@@ -327,7 +327,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     return SubStrategy.PRODUCE_CONSUME;
 
                 // check if a pending producer is available.
-                int executed = 0;
+                boolean tryExecuted = false;
                 while (true)
                 {
                     long biState = _state.get();
@@ -335,10 +335,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     int pending = AtomicBiInteger.getHi(biState);
 
                     // If a pending producer is available or one can be started
-                    pending += executed;
-                    if (pending <= 0 && _tryExecutor.tryExecute(_runPendingProducer))
+                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(_runPendingProducer))
                     {
-                        executed++;
+                        tryExecuted = true;
                         pending++;
                     }
 
@@ -369,7 +368,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 if (!nonBlocking)
                 {
                     // check if a pending producer is available.
-                    int executed = 0;
+                    boolean tryExecuted = false;
                     while (true)
                     {
                         long biState = _state.get();
@@ -377,10 +376,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                         int pending = AtomicBiInteger.getHi(biState);
 
                         // If a pending producer is available or one can be started
-                        pending += executed;
-                        if (pending <= 0 && _tryExecutor.tryExecute(_runPendingProducer))
+                        if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(_runPendingProducer))
                         {
-                            executed++;
+                            tryExecuted = true;
                             pending++;
                         }
 
