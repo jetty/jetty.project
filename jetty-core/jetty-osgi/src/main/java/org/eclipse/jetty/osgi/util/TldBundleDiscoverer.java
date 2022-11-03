@@ -14,8 +14,10 @@
 package org.eclipse.jetty.osgi.util;
 
 import java.net.URL;
+import java.util.List;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.osgi.framework.Bundle;
 
 /**
  * TldBundleDiscoverer

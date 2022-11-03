@@ -56,7 +56,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * Comma separated list of symbolic names of bundles that contain tlds that should be considered
      * as on the container classpath
      */
-    public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.ee9.osgi.tldbundles";
+    public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.osgi.tldbundles";
     /**
      * Regex of symbolic names of bundles that should be considered to be on the container classpath
      */

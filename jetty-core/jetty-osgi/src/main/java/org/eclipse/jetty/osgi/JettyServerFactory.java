@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.osgi;
 
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,14 +34,17 @@ import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.FakeURLClassLoader;
+import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
 import org.eclipse.jetty.osgi.util.TldBundleDiscoverer;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.osgi.framework.Bundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,16 +64,21 @@ public class JettyServerFactory
      */
     public static final String PROPERTY_THIS_JETTY_XML_FOLDER_URL = "this.jetty.xml.parent.folder.url";
 
-    private static Collection<TldBundleDiscoverer> __containerTldBundleDiscoverers = new ArrayList<>();
+    private static Collection<ServerClasspathContributor> __serverClasspathContributors = new ArrayList<>();
 
-    public static void addContainerTldBundleDiscoverer(TldBundleDiscoverer tldBundleDiscoverer)
+    public static void registerServerClasspathContributor(ServerClasspathContributor contributor)
     {
-        __containerTldBundleDiscoverers.add(tldBundleDiscoverer);
+        __serverClasspathContributors.add(contributor);
     }
 
-    public static Collection<TldBundleDiscoverer> getContainerTldBundleDiscoverers()
+    public static void unregisterServerClasspathContributor(ServerClasspathContributor contributor)
     {
-        return __containerTldBundleDiscoverers;
+        __serverClasspathContributors.remove(contributor);
+    }
+
+    public static Collection<ServerClasspathContributor> getServerClasspathContributors()
+    {
+        return __serverClasspathContributors;
     }
 
     /*
@@ -89,6 +98,8 @@ public class JettyServerFactory
             // Ensure we have a classloader that will have access to all jetty classes
             ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, JettyServerFactory.class.getClassLoader());
 
+            ClassLoader serverClassLoader = libExtClassLoader;
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("LibExtClassLoader = {}", libExtClassLoader);
 
@@ -179,32 +190,16 @@ public class JettyServerFactory
             deploymentLifeCycleBindings.add(new StandardStopper());
             deploymentLifeCycleBindings.add(new OSGiUndeployer(server));
             deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
-
-            //ensure support for jsp, if enabled
-            //if support for jsp is enabled, we need to convert locations of bundles that contain tlds into urls.
-            //these are tlds that we want jasper to treat as if they are on the container's classpath. Web bundles
-            //can use the Require-TldBundle MANIFEST header to name other tld-containing bundles that should be regarded
-            //as on the webapp classpath.
-            ClassLoader serverClassLoader;
-            if (!__containerTldBundleDiscoverers.isEmpty())
-            {
-                Set<URL> urls = new HashSet<>();
-                //discover bundles with tlds that need to be on the container's classpath as URLs
-                for (TldBundleDiscoverer d : __containerTldBundleDiscoverers)
-                {
-                    URL[] list = d.getUrlsForBundlesWithTlds(deploymentManager, BundleFileLocatorHelperFactory.getFactory().getHelper());
-                    if (list != null)
-                    {
-                        for (URL u : list)
-                        {
-                            urls.add(u);
-                        }
-                    }
-                }
-                serverClassLoader = new FakeURLClassLoader(libExtClassLoader, urls.toArray(new URL[urls.size()]));
-            }
-            else
-                serverClassLoader = libExtClassLoader;
+            
+            //find bundles that should be on the container classpath and convert to URLs
+            List<URL> contributedURLs = new ArrayList<>();
+            List<Bundle> contributedBundles = new ArrayList<>();
+            Collection<ServerClasspathContributor> serverClasspathContributors = getServerClasspathContributors();
+            serverClasspathContributors.stream().forEach(c -> contributedBundles.addAll(c.getScannableBundles()));
+            contributedBundles.stream().forEach(b -> contributedURLs.addAll(convertBundleToURL(b)));
+            
+            if (!contributedURLs.isEmpty())
+                serverClassLoader = new FakeURLClassLoader(libExtClassLoader, contributedURLs.toArray(new URL[contributedURLs.size()]));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Server classloader for contexts = {}", serverClassLoader);
@@ -213,6 +208,7 @@ public class JettyServerFactory
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
             server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER, serverClassLoader);
+            server.setAttribute(OSGiServerConstants.SERVER_CLASSPATH_BUNDLES, contributedBundles);
             server.setAttribute(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, name);
             return server;
         }
@@ -302,5 +298,46 @@ public class JettyServerFactory
             }
         }
         return libURLs;
+    }
+    
+    private static List<URL> convertBundleToURL(Bundle bundle)
+    {
+        List<URL> urls = new ArrayList<>();
+        try
+        {
+            File file = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+
+            if (file.isDirectory())
+            {
+                for (File f : file.listFiles())
+                {
+                    if (FileID.isJavaArchive(f.getName()) && f.isFile())
+                    {
+                        urls.add(f.toURI().toURL());
+                    }
+                    else if (f.isDirectory() && f.getName().equals("lib"))
+                    {
+                        for (File f2 : file.listFiles())
+                        {
+                            if (FileID.isJavaArchive(f2.getName()) && f2.isFile())
+                            {
+                                urls.add(f2.toURI().toURL());
+                            }
+                        }
+                    }
+                }
+                urls.add(file.toURI().toURL());
+            }
+            else
+            {
+                urls.add(file.toURI().toURL());
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to convert bundle {} to url", bundle, e);
+        }
+
+        return urls;
     }
 }

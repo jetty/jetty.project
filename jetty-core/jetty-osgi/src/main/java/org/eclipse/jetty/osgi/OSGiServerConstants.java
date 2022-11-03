@@ -82,8 +82,13 @@ public class OSGiServerConstants
     public static final String MANAGED_JETTY_SHARED_LIB_FOLDER_URLS = "managedJettySharedLibFolderUrls";
     
     /*
-     * Name of server attribute which stores a classloader suitable as the parent classloader for contexts
+     * Name of server attribute that stores a classloader suitable as the parent classloader for contexts
      */
     public static final String SERVER_CLASSLOADER = "org.eclipse.jetty.osgi.server.classLoader";
+    
+    /**
+     * Name of server attribute that stores a List<Bundle> of bundles on the server classpath that must be scanned
+     */
+    public static final String SERVER_CLASSPATH_BUNDLES = "org.eclipse.jetty.osgi.server.classpathBundles";
     
 }

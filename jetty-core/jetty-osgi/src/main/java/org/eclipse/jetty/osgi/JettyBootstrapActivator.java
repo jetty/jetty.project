@@ -29,6 +29,7 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.osgi.util.Util;
+import org.eclipse.jetty.osgi.util.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -66,7 +67,8 @@ public class JettyBootstrapActivator implements BundleActivator
     public static final String DEFAULT_JETTYHOME = "/jettyhome";
 
     private ServiceRegistration<?> _registeredServer;
-
+    private PackageAdminServiceTracker _packageAdminServiceTracker;
+    
     /**
      * Setup a new jetty Server, register it as a service. 
      *
@@ -75,6 +77,10 @@ public class JettyBootstrapActivator implements BundleActivator
     @Override
     public void start(final BundleContext context) throws Exception
     {
+        // track other bundles and fragments attached to this bundle that we
+        // should activate, as OSGi will not call activators for them.
+        _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
+
         ServiceReference[] references = context.getAllServiceReferences("org.eclipse.jetty.http.HttpFieldPreEncoder", null);
 
         if (references == null || references.length == 0)
@@ -92,6 +98,14 @@ public class JettyBootstrapActivator implements BundleActivator
     @Override
     public void stop(BundleContext context) throws Exception
     {
+        
+        if (_packageAdminServiceTracker != null)
+        {
+            _packageAdminServiceTracker.stop();
+            context.removeServiceListener(_packageAdminServiceTracker);
+            _packageAdminServiceTracker = null;
+        }
+
         try
         {
             if (_registeredServer != null)

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
@@ -77,11 +78,46 @@ public class EE9Activator implements BundleActivator
             Server server = (Server)contributor.getBundleContext().getService(sr);
             //configure for ee9 webapp and context deployment if not already done so
             Optional<DeploymentManager> deployer = getDeploymentManager(server);
+            BundleWebAppProvider webAppProvider = null;
+            BundleContextProvider contextProvider = null;
+
+            @SuppressWarnings("unchecked")
+            List<Bundle> bundles = (List<Bundle>)server.getAttribute(OSGiServerConstants.SERVER_CLASSPATH_BUNDLES);
+            String containerScanBundlePattern = null;
+            if (bundles != null)
+            {
+                StringBuffer strbuff = new StringBuffer();
+                bundles.stream().forEach(b -> strbuff.append(b.getSymbolicName()).append("|"));
+                containerScanBundlePattern = strbuff.toString().substring(0, strbuff.length() - 1);
+            }
+
             if (deployer.isPresent())
             {
-                //TODO only add if not already present
-                deployer.get().addAppProvider(new BundleContextProvider(ENVIRONMENT, server, new EE9ContextFactory()));
-                deployer.get().addAppProvider(new BundleWebAppProvider(ENVIRONMENT, server, new EE9WebAppFactory()));
+                for (AppProvider provider : deployer.get().getAppProviders())
+                {
+                    if (BundleContextProvider.class.isInstance(provider) && ENVIRONMENT.equalsIgnoreCase(provider.getEnvironmentName()))
+                        contextProvider = BundleContextProvider.class.cast(provider);
+                    if (BundleWebAppProvider.class.isInstance(provider) && ENVIRONMENT.equalsIgnoreCase(provider.getEnvironmentName()))
+                        webAppProvider = BundleWebAppProvider.class.cast(provider);
+                }
+                if (contextProvider == null)
+                {
+                    contextProvider = new BundleContextProvider(ENVIRONMENT, server, new EE9ContextFactory());
+                    deployer.get().addAppProvider(contextProvider);
+                }
+
+                if (webAppProvider == null)
+                {
+                    webAppProvider = new BundleWebAppProvider(ENVIRONMENT, server, new EE9WebAppFactory());
+                    deployer.get().addAppProvider(webAppProvider);
+                }
+                
+                //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
+                if (containerScanBundlePattern != null)
+                {
+                    contextProvider.getProperties().put(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
+                    webAppProvider.getProperties().put(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
+                }
             }
             else
                 LOG.info("No DeploymentManager for Server {}", server);
@@ -201,7 +237,7 @@ public class EE9Activator implements BundleActivator
 
             //Apply defaults from the deployer providers
             webApp.initializeDefaults(provider.getProperties());
-
+            
             // make sure we provide access to all the jetty bundles by going
             // through this bundle.
             OSGiWebappClassLoader webAppLoader = new OSGiWebappClassLoader((ClassLoader)osgiApp.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER), 
@@ -222,6 +258,9 @@ public class EE9Activator implements BundleActivator
                 webApp.setExtraClasspath(extraClasspath);
 
             webApp.setClassLoader(webAppLoader);
+            
+            //Take care of extra provider properties
+            webApp.setAttribute(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, provider.getProperties().get(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN));
             
             //TODO needed?
             webApp.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundles);
