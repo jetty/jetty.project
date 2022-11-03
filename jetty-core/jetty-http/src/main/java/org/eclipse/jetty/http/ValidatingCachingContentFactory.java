@@ -72,8 +72,8 @@ public class ValidatingCachingContentFactory extends CachingHttpContentFactory i
      * @param validationTime time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
      * @param byteBufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use.
      * @param scheduler scheduler to use for the sweeper, can be null to not use sweeper.
-     * @param sweepDelay time between runs of the sweeper in ms (if < 0 never sweep for invalid entries).
-     * @param maxCacheIdleTime amount of time in ms an entry can be unused before evicted by the sweeper (if < 0 never evict unused entries).
+     * @param sweepDelay time between runs of the sweeper in ms (if 0 never sweep for invalid entries).
+     * @param maxCacheIdleTime amount of time in ms an entry can be unused before evicted by the sweeper (if 0 never evict unused entries).
      */
     public ValidatingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
                                            @Name("validationTime") long validationTime,
