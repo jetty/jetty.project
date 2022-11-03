@@ -240,6 +240,4 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         }
         return false;
     }
-
-
 }

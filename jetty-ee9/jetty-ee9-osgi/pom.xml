@@ -31,7 +31,6 @@
   <modules>
     <module>jetty-ee9-osgi-boot</module>
     <module>jetty-ee9-osgi-boot-jsp</module>
-    <module>jetty-ee9-osgi-alpn</module>
     <module>test-jetty-ee9-osgi-webapp</module>
     <module>test-jetty-ee9-osgi-webapp-resources</module>
     <module>test-jetty-ee9-osgi-context</module>

@@ -116,7 +116,6 @@ public class Util
         return paths;
     }
     
-
     /**
      * Create an osgi filter for the given classname and server name.
      *
