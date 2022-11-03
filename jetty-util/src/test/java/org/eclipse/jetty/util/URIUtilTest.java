@@ -765,9 +765,9 @@ public class URIUtilTest
         "192.168.1.22",
         "192.168.1.com"
     })
-    public void testIsRegNameTrue(String token)
+    public void testIsValidHostRegisteredNameTrue(String token)
     {
-        assertTrue(URIUtil.isRegName(token), "Token [" + token + "] should be a valid reg-name");
+        assertTrue(URIUtil.isValidHostRegisteredName(token), "Token [" + token + "] should be a valid reg-name");
     }
 
     @ParameterizedTest
@@ -775,6 +775,7 @@ public class URIUtilTest
         " ",
         "tab\tchar",
         "a long name with spaces",
+        "8-bit-\u00dd", // 8-bit characters
         "пример.рф", // unicode - raw IDN (not normalized to punycode)
         // Invalid pct-encoding
         "%XX",
@@ -783,8 +784,8 @@ public class URIUtilTest
         "100%",
         "[brackets]"
     })
-    public void testIsRegNameFalse(String token)
+    public void testIsValidHostRegisteredNameFalse(String token)
     {
-        assertFalse(URIUtil.isRegName(token), "Token [" + token + "] should be an invalid reg-name");
+        assertFalse(URIUtil.isValidHostRegisteredName(token), "Token [" + token + "] should be an invalid reg-name");
     }
 }

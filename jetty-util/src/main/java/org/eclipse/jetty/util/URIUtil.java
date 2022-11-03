@@ -17,6 +17,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.slf4j.Logger;
@@ -40,6 +41,24 @@ public class URIUtil
     public static final String SLASH = "/";
     public static final String HTTP = "http";
     public static final String HTTPS = "https";
+
+    // From https://www.rfc-editor.org/rfc/rfc3986
+    private static final String UNRESERVED = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~";
+    private static final String SUBDELIMS = "!$&'()*+,;=";
+    private static final String REGNAME = UNRESERVED + SUBDELIMS;
+
+    // Allowed characters in https://www.rfc-editor.org/rfc/rfc3986 reg-name
+    private static final boolean[] REGNAME_ALLOWED;
+
+    static
+    {
+        REGNAME_ALLOWED = new boolean[127];
+        Arrays.fill(REGNAME_ALLOWED, false);
+        for (char c : REGNAME.toCharArray())
+        {
+            REGNAME_ALLOWED[c] = true;
+        }
+    }
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
     public static final Charset __CHARSET = StandardCharsets.UTF_8;
@@ -1123,12 +1142,12 @@ public class URIUtil
     }
 
     /**
-     * True if token is a <a href="https://www.rfc-editor.org/rfc/rfc3986">RFC3986</a> {@code reg-name}
+     * True if token is a <a href="https://www.rfc-editor.org/rfc/rfc3986">RFC3986</a> {@code reg-name} (Registered Name)
      *
      * @param token the to test
-     * @return true if the token passes as a valid reg-name
+     * @return true if the token passes as a valid Host Registered Name
      */
-    public static boolean isRegName(String token)
+    public static boolean isValidHostRegisteredName(String token)
     {
         /* reg-name ABNF is defined as :
          *   reg-name      = *( unreserved / pct-encoded / sub-delims )
@@ -1145,12 +1164,10 @@ public class URIUtil
         for (int i = 0; i < length; i++)
         {
             char c = token.charAt(i);
-            // unreserved
-            if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+            if (c > 127)
+                return false;
+            if (REGNAME_ALLOWED[c])
                 continue;
-            if (c == '-' || c == '.' || c == '_' || c == '~')
-                continue;
-            // pct-encoded
             if (c == '%')
             {
                 if (StringUtil.isHex(token, i + 1, 2))
@@ -1159,13 +1176,9 @@ public class URIUtil
                     continue;
                 }
                 else
+                {
                     return false;
-            }
-            // sub-delims
-            if (c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')' ||
-                c == '*' || c == '+' || c == ',' || c == ';' || c == '=')
-            {
-                continue;
+                }
             }
             return false;
         }

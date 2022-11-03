@@ -84,7 +84,7 @@ public class HostPort
                     {
                         // host/ipv4 with port
                         _host = authority.substring(0, c);
-                        if (StringUtil.isBlank(_host) || !URIUtil.isRegName(_host))
+                        if (StringUtil.isBlank(_host) || !isValidHostName(_host))
                             throw new IllegalArgumentException("Bad Authority");
                         _port = parsePort(authority.substring(c + 1));
                     }
@@ -93,7 +93,7 @@ public class HostPort
                 {
                     // host/ipv4 without port
                     _host = authority;
-                    if (StringUtil.isBlank(_host) || !URIUtil.isRegName(_host))
+                    if (StringUtil.isBlank(_host) || !isValidHostName(_host))
                         throw new IllegalArgumentException("Bad Authority");
                     _port = 0;
                 }
@@ -109,7 +109,7 @@ public class HostPort
         }
     }
 
-    private boolean isValidIpAddress(String ip)
+    protected boolean isValidIpAddress(String ip)
     {
         try
         {
@@ -122,6 +122,11 @@ public class HostPort
         {
             return false;
         }
+    }
+
+    protected boolean isValidHostName(String name)
+    {
+        return URIUtil.isValidHostRegisteredName(name);
     }
 
     /**
