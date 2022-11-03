@@ -40,6 +40,9 @@ import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.ValidatingCachingContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -257,8 +260,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
+                ByteBufferPool byteBufferPool = getByteBufferPool(_contextHandler);
                 _cachingContentFactory = new ValidatingCachingContentFactory(contentFactory,
-                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis());
+                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), byteBufferPool);
                 contentFactory = _cachingContentFactory;
                 if (maxCacheSize >= 0)
                     _cachingContentFactory.setMaxCacheSize(maxCacheSize);
@@ -294,6 +298,17 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
         if (LOG.isDebugEnabled())
             LOG.debug("resource base = {}", _baseResource);
+    }
+
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    {
+        if (contextHandler == null)
+            return new NoopByteBufferPool();
+        Server server = contextHandler.getServer();
+        if (server == null)
+            return new NoopByteBufferPool();
+        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
+        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
     }
 
     private String getInitParameter(String name, String... deprecated)

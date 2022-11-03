@@ -17,6 +17,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.http.PreCompressedHttpContent;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.BufferUtil;
@@ -864,18 +864,10 @@ public class ResourceService
         if (start == 0 && content.getResource().length() == contentLength)
         {
             // attempt efficient ByteBuffer based write for whole content
-            RetainableByteBuffer buffer = content.getBuffer();
+            ByteBuffer buffer = content.getByteBuffer();
             if (buffer != null)
             {
-                try
-                {
-                    buffer.retain();
-                    BufferUtil.writeTo(buffer.getBuffer(), out);
-                }
-                finally
-                {
-                    buffer.release();
-                }
+                BufferUtil.writeTo(buffer, out);
                 return;
             }
 

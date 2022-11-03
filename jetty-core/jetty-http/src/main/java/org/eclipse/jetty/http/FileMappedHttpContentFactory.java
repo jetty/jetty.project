@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,12 +52,11 @@ public class FileMappedHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public RetainableByteBuffer getBuffer()
+        public ByteBuffer getByteBuffer()
         {
             try
             {
-                ByteBuffer buffer = BufferUtil.toMappedBuffer(content.getResource().getPath());
-                return new RetainableByteBuffer(buffer, b -> {});
+                return BufferUtil.toMappedBuffer(content.getResource().getPath());
             }
             catch (Throwable t)
             {
@@ -66,7 +64,7 @@ public class FileMappedHttpContentFactory implements HttpContent.Factory
                     LOG.debug("Error getting Mapped Buffer", t);
             }
 
-            return super.getBuffer();
+            return super.getByteBuffer();
         }
     }
 }

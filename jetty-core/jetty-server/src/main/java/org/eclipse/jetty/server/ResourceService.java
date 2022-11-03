@@ -43,9 +43,8 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -575,6 +574,7 @@ public class ResourceService
     private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
         long contentLength = content.getContentLengthValue();
+        callback = Callback.from(callback, content::release);
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("sendData content=%s", content));
@@ -629,11 +629,10 @@ public class ResourceService
     {
         try
         {
-            RetainableByteBuffer buffer = content.getBuffer();
+            ByteBuffer buffer = content.getByteBuffer();
             if (buffer != null)
             {
-                buffer.retain();
-                response.write(true, buffer.getBuffer(), Callback.from(callback, buffer::release));
+                response.write(true, buffer, callback);
             }
             else
             {
@@ -647,6 +646,7 @@ public class ResourceService
         }
         catch (Throwable x)
         {
+            content.release();
             callback.failed(x);
         }
     }
@@ -846,11 +846,12 @@ public class ResourceService
         private final ReadableByteChannel source;
         private final Content.Sink sink;
         private final Callback callback;
-        private final RetainableByteBuffer byteBuffer;
+        private final ByteBuffer byteBuffer;
+        private final ByteBufferPool byteBufferPool;
 
         public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
-            RetainableByteBufferPool byteBufferPool = target.getRequest().getComponents().getByteBufferPool().asRetainableByteBufferPool();
+            this.byteBufferPool = target.getRequest().getComponents().getByteBufferPool();
             this.source = content.getResource().newReadableByteChannel();
             this.sink = target;
             this.callback = callback;
@@ -865,30 +866,30 @@ public class ResourceService
             if (!source.isOpen())
                 return Action.SUCCEEDED;
 
-            BufferUtil.clearToFill(byteBuffer.getBuffer());
-            int read = source.read(byteBuffer.getBuffer());
+            BufferUtil.clearToFill(byteBuffer);
+            int read = source.read(byteBuffer);
             if (read == -1)
             {
                 IO.close(source);
                 sink.write(true, BufferUtil.EMPTY_BUFFER, this);
                 return Action.SCHEDULED;
             }
-            BufferUtil.flipToFlush(byteBuffer.getBuffer(), 0);
-            sink.write(false, byteBuffer.getBuffer(), this);
+            BufferUtil.flipToFlush(byteBuffer, 0);
+            sink.write(false, byteBuffer, this);
             return Action.SCHEDULED;
         }
 
         @Override
         protected void onCompleteSuccess()
         {
-            byteBuffer.release();
+            byteBufferPool.release(byteBuffer);
             callback.succeeded();
         }
 
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            byteBuffer.release();
+            byteBufferPool.release(byteBuffer);
             callback.failed(x);
         }
     }

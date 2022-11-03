@@ -14,11 +14,11 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -61,7 +61,7 @@ public interface HttpContent
 
     Resource getResource();
 
-    RetainableByteBuffer getBuffer();
+    ByteBuffer getByteBuffer();
 
     /**
      * @return Set of available pre-compressed formats for this content, or null if this has not been checked.

@@ -24,10 +24,12 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.ValidatingCachingContentFactory;
-import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -52,6 +54,7 @@ public class ResourceHandler extends Handler.Wrapper
 {
     private final ResourceService _resourceService;
 
+    private ByteBufferPool _byteBufferPool;
     private Resource _resourceBase;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
@@ -64,9 +67,9 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
         if (_resourceBase == null)
         {
-            Context context = ContextHandler.getCurrentContext();
             if (context != null)
                 _resourceBase = context.getBaseResource();
         }
@@ -75,6 +78,7 @@ public class ResourceHandler extends Handler.Wrapper
         if (_mimeTypes == null)
             _mimeTypes = new MimeTypes();
 
+        _byteBufferPool = getByteBufferPool(context);
         _resourceService.setContentFactory(setupContentFactory());
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
         if (_resourceService.getStylesheet() == null)
@@ -83,12 +87,23 @@ public class ResourceHandler extends Handler.Wrapper
         super.doStart();
     }
 
+    private static ByteBufferPool getByteBufferPool(ContextHandler.Context context)
+    {
+        if (context == null)
+            return new NoopByteBufferPool();
+        Server server = context.getContextHandler().getServer();
+        if (server == null)
+            return new NoopByteBufferPool();
+        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
+        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+    }
+
     protected HttpContent.Factory setupContentFactory()
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         contentFactory = new FileMappedHttpContentFactory(contentFactory);
-        contentFactory = new ValidatingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis());
+        contentFactory = new ValidatingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
         return contentFactory;
     }
 

@@ -669,7 +669,7 @@ public class ResourceHandlerTest
                 HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
                 contentFactory = new FileMappedHttpContentFactory(contentFactory);
-                contentFactory = new ValidatingCachingContentFactory(contentFactory, 0);
+                contentFactory = new ValidatingCachingContentFactory(contentFactory, 0, _local.getByteBufferPool());
                 return contentFactory;
             }
         };
