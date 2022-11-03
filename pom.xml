@@ -60,7 +60,7 @@
     <javax.websocket.api.version>1.0</javax.websocket.api.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.4.3.Final</jboss.logging.version>
+    <jboss.logging.version>3.5.0.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.schemas.version>3.1.2</jetty.schemas.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
