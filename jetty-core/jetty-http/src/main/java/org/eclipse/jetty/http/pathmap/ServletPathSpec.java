@@ -177,15 +177,15 @@ public class ServletPathSpec extends AbstractPathSpec
 
         if (info.startsWith("./"))
             info = info.substring(2);
-        if (base.endsWith(URIUtil.SLASH))
-            if (info.startsWith(URIUtil.SLASH))
+        if (base.endsWith("/"))
+            if (info.startsWith("/"))
                 path = base + info.substring(1);
             else
                 path = base + info;
-        else if (info.startsWith(URIUtil.SLASH))
+        else if (info.startsWith("/"))
             path = base + info;
         else
-            path = base + URIUtil.SLASH + info;
+            path = base + "/" + info;
         return path;
     }
 

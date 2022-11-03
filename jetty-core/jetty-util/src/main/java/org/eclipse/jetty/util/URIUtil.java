@@ -54,14 +54,10 @@ public final class URIUtil
         .with("jar:")
         .build();
 
-    public static final String SLASH = "/";
-    public static final String HTTP = "http";
-    public static final String HTTPS = "https";
-
     /**
      * The characters that are supported by the URI class and that can be decoded by {@link #canonicalPath(String)}
      */
-    public static final boolean[] __uriSupportedCharacters = new boolean[]
+    private static final boolean[] URI_SUPPORTED_CHARACTERS = new boolean[]
     {
         false, // 0x00 is illegal
         false, // 0x01 is illegal
@@ -680,7 +676,7 @@ public final class URIUtil
     {
         // Allow any 8-bit character (as it's likely unicode).
         // or any character labeled with true in __uriSupportedCharacters static
-        return (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code]);
+        return (code >= URI_SUPPORTED_CHARACTERS.length || URI_SUPPORTED_CHARACTERS[code]);
     }
 
     /**
@@ -969,7 +965,7 @@ public final class URIUtil
 
         if (buf.charAt(split - 1) == '/')
         {
-            if (p2.startsWith(URIUtil.SLASH))
+            if (p2.startsWith("/"))
             {
                 buf.deleteCharAt(split - 1);
                 buf.insert(split - 1, p2);
@@ -979,7 +975,7 @@ public final class URIUtil
         }
         else
         {
-            if (p2.startsWith(URIUtil.SLASH))
+            if (p2.startsWith("/"))
                 buf.insert(split, p2);
             else
             {
@@ -1011,8 +1007,8 @@ public final class URIUtil
         if (p2 == null || p2.length() == 0)
             return p1;
 
-        boolean p1EndsWithSlash = p1.endsWith(SLASH);
-        boolean p2StartsWithSlash = p2.startsWith(SLASH);
+        boolean p1EndsWithSlash = p1.endsWith("/");
+        boolean p2StartsWithSlash = p2.startsWith("/");
 
         if (p1EndsWithSlash && p2StartsWithSlash)
         {
@@ -1025,15 +1021,15 @@ public final class URIUtil
         StringBuilder buf = new StringBuilder(p1.length() + p2.length() + 2);
         buf.append(p1);
 
-        if (p1.endsWith(SLASH))
+        if (p1.endsWith("/"))
         {
-            if (p2.startsWith(SLASH))
+            if (p2.startsWith("/"))
                 buf.setLength(buf.length() - 1);
         }
         else
         {
-            if (!p2.startsWith(SLASH))
-                buf.append(SLASH);
+            if (!p2.startsWith("/"))
+                buf.append("/");
         }
         buf.append(p2);
 
@@ -1099,7 +1095,7 @@ public final class URIUtil
      */
     public static String parentPath(String p)
     {
-        if (p == null || URIUtil.SLASH.equals(p))
+        if (p == null || "/".equals(p))
             return null;
         int slash = p.lastIndexOf('/', p.length() - 2);
         if (slash >= 0)

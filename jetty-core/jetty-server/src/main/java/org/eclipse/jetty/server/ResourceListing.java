@@ -225,7 +225,7 @@ public class ResourceListing
 
             // Ensure name has a slash if it's a directory
             if (item.isDirectory() && !name.endsWith("/"))
-                name += URIUtil.SLASH;
+                name += "/";
 
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
