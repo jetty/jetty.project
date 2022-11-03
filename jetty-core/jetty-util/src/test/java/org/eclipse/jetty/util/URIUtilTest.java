@@ -75,10 +75,8 @@ public class URIUtilTest
     public void testEncodePath(String rawPath, String expectedEncoded)
     {
         // test basic encode/decode
-        StringBuilder buf = new StringBuilder();
-        buf.setLength(0);
-        URIUtil.encodePath(buf, rawPath);
-        assertEquals(expectedEncoded, buf.toString());
+        String result = URIUtil.encodePath(rawPath);
+        assertEquals(expectedEncoded, result);
     }
 
     @Test
@@ -829,29 +827,6 @@ public class URIUtilTest
 
         assertThat(URIUtil.correctFileURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
         assertThat(URIUtil.correctFileURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
-    }
-
-    public static Stream<Arguments> encodeSpacesSource()
-    {
-        return Stream.of(
-            // null
-            Arguments.of(null, null),
-
-            // no spaces
-            Arguments.of("abc", "abc"),
-
-            // match
-            Arguments.of("a c", "a%20c"),
-            Arguments.of("   ", "%20%20%20"),
-            Arguments.of("a%20space", "a%20space")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("encodeSpacesSource")
-    public void testEncodeSpaces(String raw, String expected)
-    {
-        assertThat(URIUtil.encodeSpaces(raw), is(expected));
     }
 
     public static Stream<Arguments> encodeSpecific()

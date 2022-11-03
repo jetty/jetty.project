@@ -206,180 +206,155 @@ public final class URIUtil
         if (path == null || path.length() == 0)
             return path;
 
-        StringBuilder buf = encodePath(null, path);
-        return buf == null ? path : buf.toString();
-    }
-
-    /**
-     * Encode a URI path.
-     *
-     * @param path The path to encode
-     * @param buf StringBuilder to encode path into (or null)
-     * @return The StringBuilder or null if no substitutions required.
-     */
-    public static StringBuilder encodePath(StringBuilder buf, String path)
-    {
+        StringBuilder buf = null;
         byte[] bytes = null;
-        if (buf == null)
-        {
-            loop:
-            for (int i = 0; i < path.length(); i++)
-            {
-                char c = path.charAt(i);
-                switch (c)
-                {
-                    case '%':
-                    case '?':
-                    case ';':
-                    case '#':
-                    case '"':
-                    case '\'':
-                    case '<':
-                    case '>':
-                    case ' ':
-                    case '[':
-                    case '\\':
-                    case ']':
-                    case '^':
-                    case '`':
-                    case '{':
-                    case '|':
-                    case '}':
-                        buf = new StringBuilder(path.length() * 2);
-                        break loop;
-                    default:
-                        if (c < 0x20 || c >= 0x7f)
-                        {
-                            bytes = path.getBytes(StandardCharsets.UTF_8);
-                            buf = new StringBuilder(path.length() * 2);
-                            break loop;
-                        }
-                }
-            }
-            if (buf == null)
-                return null;
-        }
-
-        int i;
 
         loop:
-        for (i = 0; i < path.length(); i++)
+        for (int i = 0; i < path.length(); i++)
         {
             char c = path.charAt(i);
             switch (c)
             {
-                case '%' -> buf.append("%25");
-                case '?' -> buf.append("%3F");
-                case ';' -> buf.append("%3B");
-                case '#' -> buf.append("%23");
-                case '"' -> buf.append("%22");
-                case '\'' -> buf.append("%27");
-                case '<' -> buf.append("%3C");
-                case '>' -> buf.append("%3E");
-                case ' ' -> buf.append("%20");
-                case '[' -> buf.append("%5B");
-                case '\\' -> buf.append("%5C");
-                case ']' -> buf.append("%5D");
-                case '^' -> buf.append("%5E");
-                case '`' -> buf.append("%60");
-                case '{' -> buf.append("%7B");
-                case '|' -> buf.append("%7C");
-                case '}' -> buf.append("%7D");
-                default ->
-                {
+                case '%':
+                case '?':
+                case ';':
+                case '#':
+                case '"':
+                case '\'':
+                case '<':
+                case '>':
+                case ' ':
+                case '[':
+                case '\\':
+                case ']':
+                case '^':
+                case '`':
+                case '{':
+                case '|':
+                case '}':
+                    buf = new StringBuilder(path.length() * 2);
+                    break loop;
+                default:
                     if (c < 0x20 || c >= 0x7f)
                     {
                         bytes = path.getBytes(StandardCharsets.UTF_8);
+                        buf = new StringBuilder(path.length() * 2);
                         break loop;
                     }
-                    buf.append(c);
-                }
             }
         }
 
-        if (bytes != null)
+        if (buf != null)
         {
-            for (; i < bytes.length; i++)
+            int i = 0;
+
+            loop:
+            for (i = 0; i < path.length(); i++)
             {
-                byte c = bytes[i];
+                char c = path.charAt(i);
                 switch (c)
                 {
-                    case '%':
-                        buf.append("%25");
-                        continue;
-                    case '?':
-                        buf.append("%3F");
-                        continue;
-                    case ';':
-                        buf.append("%3B");
-                        continue;
-                    case '#':
-                        buf.append("%23");
-                        continue;
-                    case '"':
-                        buf.append("%22");
-                        continue;
-                    case '\'':
-                        buf.append("%27");
-                        continue;
-                    case '<':
-                        buf.append("%3C");
-                        continue;
-                    case '>':
-                        buf.append("%3E");
-                        continue;
-                    case ' ':
-                        buf.append("%20");
-                        continue;
-                    case '[':
-                        buf.append("%5B");
-                        continue;
-                    case '\\':
-                        buf.append("%5C");
-                        continue;
-                    case ']':
-                        buf.append("%5D");
-                        continue;
-                    case '^':
-                        buf.append("%5E");
-                        continue;
-                    case '`':
-                        buf.append("%60");
-                        continue;
-                    case '{':
-                        buf.append("%7B");
-                        continue;
-                    case '|':
-                        buf.append("%7C");
-                        continue;
-                    case '}':
-                        buf.append("%7D");
-                        continue;
-                    default:
+                    case '%' -> buf.append("%25");
+                    case '?' -> buf.append("%3F");
+                    case ';' -> buf.append("%3B");
+                    case '#' -> buf.append("%23");
+                    case '"' -> buf.append("%22");
+                    case '\'' -> buf.append("%27");
+                    case '<' -> buf.append("%3C");
+                    case '>' -> buf.append("%3E");
+                    case ' ' -> buf.append("%20");
+                    case '[' -> buf.append("%5B");
+                    case '\\' -> buf.append("%5C");
+                    case ']' -> buf.append("%5D");
+                    case '^' -> buf.append("%5E");
+                    case '`' -> buf.append("%60");
+                    case '{' -> buf.append("%7B");
+                    case '|' -> buf.append("%7C");
+                    case '}' -> buf.append("%7D");
+                    default ->
+                    {
                         if (c < 0x20 || c >= 0x7f)
                         {
-                            buf.append('%');
-                            TypeUtil.toHex(c, buf);
+                            bytes = path.getBytes(StandardCharsets.UTF_8);
+                            break loop;
                         }
-                        else
-                            buf.append((char)c);
+                        buf.append(c);
+                    }
+                }
+            }
+
+            if (bytes != null)
+            {
+                for (; i < bytes.length; i++)
+                {
+                    byte c = bytes[i];
+                    switch (c)
+                    {
+                        case '%':
+                            buf.append("%25");
+                            continue;
+                        case '?':
+                            buf.append("%3F");
+                            continue;
+                        case ';':
+                            buf.append("%3B");
+                            continue;
+                        case '#':
+                            buf.append("%23");
+                            continue;
+                        case '"':
+                            buf.append("%22");
+                            continue;
+                        case '\'':
+                            buf.append("%27");
+                            continue;
+                        case '<':
+                            buf.append("%3C");
+                            continue;
+                        case '>':
+                            buf.append("%3E");
+                            continue;
+                        case ' ':
+                            buf.append("%20");
+                            continue;
+                        case '[':
+                            buf.append("%5B");
+                            continue;
+                        case '\\':
+                            buf.append("%5C");
+                            continue;
+                        case ']':
+                            buf.append("%5D");
+                            continue;
+                        case '^':
+                            buf.append("%5E");
+                            continue;
+                        case '`':
+                            buf.append("%60");
+                            continue;
+                        case '{':
+                            buf.append("%7B");
+                            continue;
+                        case '|':
+                            buf.append("%7C");
+                            continue;
+                        case '}':
+                            buf.append("%7D");
+                            continue;
+                        default:
+                            if (c < 0x20 || c >= 0x7f)
+                            {
+                                buf.append('%');
+                                TypeUtil.toHex(c, buf);
+                            }
+                            else
+                                buf.append((char)c);
+                    }
                 }
             }
         }
 
-        return buf;
-    }
-
-    /**
-     * Encode a raw URI String and convert any raw spaces to
-     * their "%20" equivalent.
-     *
-     * @param str input raw string
-     * @return output with spaces converted to "%20"
-     */
-    public static String encodeSpaces(String str)
-    {
-        return StringUtil.replace(str, " ", "%20");
+        return buf == null ? path : buf.toString();
     }
 
     /**
@@ -499,11 +474,12 @@ public final class URIUtil
     /**
      * Encode a URI path.
      *
-     * @param path The path the encode
+     * @param path The path to encode
      * @param buf StringBuilder to encode path into (or null)
      * @param encode String of characters to encode. % is always encoded.
      * @return The StringBuilder or null if no substitutions required.
      */
+    // TODO: remove, only used in URIUtilTest?
     public static StringBuilder encodeString(StringBuilder buf,
                                              String path,
                                              String encode)
@@ -1701,7 +1677,7 @@ public final class URIUtil
         return ((codepoint == '?') || (codepoint == '#'));
     }
 
-    public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
+    static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
     {
         if (uriA.equals(uriB))
             return true;
