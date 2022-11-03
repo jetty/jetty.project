@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,9 +57,6 @@ public final class URIUtil
     public static final String SLASH = "/";
     public static final String HTTP = "http";
     public static final String HTTPS = "https";
-
-    // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-    public static final Charset __CHARSET = StandardCharsets.UTF_8;
 
     /**
      * The characters that are supported by the URI class and that can be decoded by {@link #canonicalPath(String)}
@@ -206,7 +202,7 @@ public final class URIUtil
      * This is the same encoding offered by URLEncoder, except that
      * the '/' character is not encoded.
      *
-     * @param path The path the encode
+     * @param path The path to encode
      * @return The encoded path
      */
     public static String encodePath(String path)
@@ -214,36 +210,24 @@ public final class URIUtil
         if (path == null || path.length() == 0)
             return path;
 
-        StringBuilder buf = encodePath(null, path, 0);
+        StringBuilder buf = encodePath(null, path);
         return buf == null ? path : buf.toString();
     }
 
     /**
      * Encode a URI path.
      *
-     * @param path The path the encode
+     * @param path The path to encode
      * @param buf StringBuilder to encode path into (or null)
      * @return The StringBuilder or null if no substitutions required.
      */
     public static StringBuilder encodePath(StringBuilder buf, String path)
     {
-        return encodePath(buf, path, 0);
-    }
-
-    /**
-     * Encode a URI path.
-     *
-     * @param path The path the encode
-     * @param buf StringBuilder to encode path into (or null)
-     * @return The StringBuilder or null if no substitutions required.
-     */
-    private static StringBuilder encodePath(StringBuilder buf, String path, int offset)
-    {
         byte[] bytes = null;
         if (buf == null)
         {
             loop:
-            for (int i = offset; i < path.length(); i++)
+            for (int i = 0; i < path.length(); i++)
             {
                 char c = path.charAt(i);
                 switch (c)
@@ -270,7 +254,7 @@ public final class URIUtil
                     default:
                         if (c < 0x20 || c >= 0x7f)
                         {
-                            bytes = path.getBytes(URIUtil.__CHARSET);
+                            bytes = path.getBytes(StandardCharsets.UTF_8);
                             buf = new StringBuilder(path.length() * 2);
                             break loop;
                         }
@@ -283,70 +267,37 @@ public final class URIUtil
         int i;
 
         loop:
-        for (i = offset; i < path.length(); i++)
+        for (i = 0; i < path.length(); i++)
         {
             char c = path.charAt(i);
             switch (c)
             {
-                case '%':
-                    buf.append("%25");
-                    continue;
-                case '?':
-                    buf.append("%3F");
-                    continue;
-                case ';':
-                    buf.append("%3B");
-                    continue;
-                case '#':
-                    buf.append("%23");
-                    continue;
-                case '"':
-                    buf.append("%22");
-                    continue;
-                case '\'':
-                    buf.append("%27");
-                    continue;
-                case '<':
-                    buf.append("%3C");
-                    continue;
-                case '>':
-                    buf.append("%3E");
-                    continue;
-                case ' ':
-                    buf.append("%20");
-                    continue;
-                case '[':
-                    buf.append("%5B");
-                    continue;
-                case '\\':
-                    buf.append("%5C");
-                    continue;
-                case ']':
-                    buf.append("%5D");
-                    continue;
-                case '^':
-                    buf.append("%5E");
-                    continue;
-                case '`':
-                    buf.append("%60");
-                    continue;
-                case '{':
-                    buf.append("%7B");
-                    continue;
-                case '|':
-                    buf.append("%7C");
-                    continue;
-                case '}':
-                    buf.append("%7D");
-                    continue;
-
-                default:
+                case '%' -> buf.append("%25");
+                case '?' -> buf.append("%3F");
+                case ';' -> buf.append("%3B");
+                case '#' -> buf.append("%23");
+                case '"' -> buf.append("%22");
+                case '\'' -> buf.append("%27");
+                case '<' -> buf.append("%3C");
+                case '>' -> buf.append("%3E");
+                case ' ' -> buf.append("%20");
+                case '[' -> buf.append("%5B");
+                case '\\' -> buf.append("%5C");
+                case ']' -> buf.append("%5D");
+                case '^' -> buf.append("%5E");
+                case '`' -> buf.append("%60");
+                case '{' -> buf.append("%7B");
+                case '|' -> buf.append("%7C");
+                case '}' -> buf.append("%7D");
+                default ->
+                {
                     if (c < 0x20 || c >= 0x7f)
                     {
-                        bytes = path.getBytes(URIUtil.__CHARSET);
+                        bytes = path.getBytes(StandardCharsets.UTF_8);
                         break loop;
                     }
                     buf.append(c);
+                }
             }
         }
 
@@ -510,41 +461,40 @@ public final class URIUtil
         for (int i = idx; i < len; i++)
         {
             char c = str.charAt(i);
-            switch (c)
+            if (c == '%')
             {
-                case '%':
-                    if ((i + 2) < len)
+                if ((i + 2) < len)
+                {
+                    char u = str.charAt(i + 1);
+                    char l = str.charAt(i + 2);
+                    char result = (char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(l)));
+                    boolean decoded = false;
+                    for (char f : find)
                     {
-                        char u = str.charAt(i + 1);
-                        char l = str.charAt(i + 2);
-                        char result = (char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(l)));
-                        boolean decoded = false;
-                        for (char f : find)
+                        if (f == result)
                         {
-                            if (f == result)
-                            {
-                                ret.append(result);
-                                decoded = true;
-                                break;
-                            }
+                            ret.append(result);
+                            decoded = true;
+                            break;
                         }
-                        if (decoded)
-                        {
-                            i += 2;
-                        }
-                        else
-                        {
-                            ret.append(c);
-                        }
+                    }
+                    if (decoded)
+                    {
+                        i += 2;
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad URI % encoding");
+                        ret.append(c);
                     }
-                    break;
-                default:
-                    ret.append(c);
-                    break;
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Bad URI % encoding");
+                }
+            }
+            else
+            {
+                ret.append(c);
             }
         }
         return ret.toString();
@@ -1189,7 +1139,6 @@ public final class URIUtil
                 case '.':
                     if (slash)
                         break loop;
-                    slash = false;
                     break;
 
                 case '?':
@@ -1306,18 +1255,13 @@ public final class URIUtil
             char c = path.charAt(i);
             switch (c)
             {
-                case '/':
-                    slash = true;
-                    break;
-
-                case '.':
+                case '/' -> slash = true;
+                case '.' ->
+                {
                     if (slash)
                         break loop;
-                    slash = false;
-                    break;
-
-                default:
-                    slash = false;
+                }
+                default -> slash = false;
             }
 
             i++;
@@ -1339,14 +1283,15 @@ public final class URIUtil
             char c = path.charAt(i);
             switch (c)
             {
-                case '/':
+                case '/' ->
+                {
                     if (doDotsSlash(canonical, dots))
                         return null;
                     slash = true;
                     dots = 0;
-                    break;
-
-                case '.':
+                }
+                case '.' ->
+                {
                     // Count dots only if they are leading in the segment
                     if (dots > 0)
                         dots++;
@@ -1355,15 +1300,16 @@ public final class URIUtil
                     else
                         canonical.append('.');
                     slash = false;
-                    break;
-
-                default:
+                }
+                default ->
+                {
                     // Add leading dots to the path
                     while (dots-- > 0)
                         canonical.append('.');
                     canonical.append(c);
                     dots = 0;
                     slash = false;
+                }
             }
             i++;
         }
@@ -1582,27 +1528,24 @@ public final class URIUtil
      */
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
-        synchronized (url)
+        url.append(scheme).append("://").append(HostPort.normalizeHost(server));
+
+        if (port > 0)
         {
-            url.append(scheme).append("://").append(HostPort.normalizeHost(server));
-
-            if (port > 0)
+            switch (scheme)
             {
-                switch (scheme)
-                {
-                    case "http":
-                        if (port != 80)
-                            url.append(':').append(port);
-                        break;
-
-                    case "https":
-                        if (port != 443)
-                            url.append(':').append(port);
-                        break;
-
-                    default:
+                case "http":
+                    if (port != 80)
                         url.append(':').append(port);
-                }
+                    break;
+
+                case "https":
+                    if (port != 443)
+                        url.append(':').append(port);
+                    break;
+
+                default:
+                    url.append(':').append(port);
             }
         }
     }
@@ -1973,9 +1916,12 @@ public final class URIUtil
     }
 
     /**
+     * <p>
      * Take an arbitrary URI and provide a URI that is suitable for mounting the URI as a Java FileSystem.
-     *
+     * </p>
+     * <p>
      * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
+     * </p>
      *
      * @param uri the URI to mutate to a {@code jar:file:...} URI.
      * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or the unchanged URI if not a Java Archive.
@@ -2034,9 +1980,13 @@ public final class URIUtil
     }
 
     /**
+     * <p>
      * Unwrap a URI to expose its container path reference.
+     * </p>
      *
+     * <p>
      * Take out the container archive name URI from a {@code jar:file:${container-name}!/} URI.
+     * </p>
      *
      * @param uri the input URI
      * @return the container String if a {@code jar} scheme, or just the URI untouched.
