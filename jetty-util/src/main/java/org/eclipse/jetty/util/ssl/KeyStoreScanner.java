@@ -44,7 +44,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
 
     public KeyStoreScanner(SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory, false);
+        this(sslContextFactory, true);
     }
 
     public KeyStoreScanner(SslContextFactory sslContextFactory, boolean resolveAlias)
