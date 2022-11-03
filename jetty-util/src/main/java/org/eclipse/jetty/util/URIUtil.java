@@ -34,8 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see UrlEncoded
  */
-public class URIUtil
-    implements Cloneable
+public final class URIUtil
 {
     private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
     public static final String SLASH = "/";
