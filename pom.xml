@@ -1054,7 +1054,7 @@
       <dependency>
         <groupId>org.jboss.threads</groupId>
         <artifactId>jboss-threads</artifactId>
-        <version>3.4.2.Final</version>
+        <version>3.5.0.Final</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
