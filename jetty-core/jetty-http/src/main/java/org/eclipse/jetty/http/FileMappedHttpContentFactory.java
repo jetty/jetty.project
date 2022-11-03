@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,37 +27,76 @@ public class FileMappedHttpContentFactory implements HttpContent.Factory
     private static final Logger LOG = LoggerFactory.getLogger(FileMappedHttpContentFactory.class);
 
     private final HttpContent.Factory _factory;
+    private final int _minFileSize;
 
     public FileMappedHttpContentFactory(HttpContent.Factory factory)
     {
+        this(factory, 16 * 1024);
+    }
+
+    public FileMappedHttpContentFactory(HttpContent.Factory factory, int minFileSize)
+    {
         _factory = Objects.requireNonNull(factory);
+        _minFileSize = minFileSize;
     }
 
     @Override
     public HttpContent getContent(String path) throws IOException
     {
         HttpContent content = _factory.getContent(path);
-        if (content != null && content.getContentLengthValue() > 16 * 1024)
+        if (content != null && content.getContentLengthValue() > _minFileSize)
             return new FileMappedContent(content);
         return content;
     }
 
     public static class FileMappedContent extends HttpContentWrapper
     {
-        private final HttpContent content;
+        private final AutoLock _lock = new AutoLock();
+        private final HttpContent _content;
+        private boolean _processed;
+        private ByteBuffer _buffer;
 
         public FileMappedContent(HttpContent content)
         {
             super(content);
-            this.content = content;
+            this._content = content;
         }
 
         @Override
         public ByteBuffer getByteBuffer()
         {
+            try (AutoLock lock = _lock.lock())
+            {
+                if (!_processed)
+                {
+                    _processed = true;
+                    _buffer = getMappedByteBuffer();
+                }
+
+                return (_buffer == null) ? super.getByteBuffer() : _buffer;
+            }
+        }
+
+        @Override
+        public long getBytesOccupied()
+        {
+            try (AutoLock lock = _lock.lock())
+            {
+                if (!_processed)
+                {
+                    _processed = true;
+                    _buffer = getMappedByteBuffer();
+                }
+
+                return (_buffer == null) ? super.getBytesOccupied() : 0;
+            }
+        }
+
+        private ByteBuffer getMappedByteBuffer()
+        {
             try
             {
-                return BufferUtil.toMappedBuffer(content.getResource().getPath());
+                return BufferUtil.toMappedBuffer(_content.getResource().getPath());
             }
             catch (Throwable t)
             {
@@ -64,7 +104,7 @@ public class FileMappedHttpContentFactory implements HttpContent.Factory
                     LOG.debug("Error getting Mapped Buffer", t);
             }
 
-            return super.getByteBuffer();
+            return null;
         }
     }
 }

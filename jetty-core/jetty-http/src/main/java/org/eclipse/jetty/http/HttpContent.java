@@ -63,6 +63,11 @@ public interface HttpContent
 
     ByteBuffer getByteBuffer();
 
+    default long getBytesOccupied()
+    {
+        return getContentLengthValue();
+    }
+
     /**
      * @return Set of available pre-compressed formats for this content, or null if this has not been checked.
      */

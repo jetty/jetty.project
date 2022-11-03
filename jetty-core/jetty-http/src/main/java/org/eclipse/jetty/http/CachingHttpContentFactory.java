@@ -158,7 +158,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (removed != null)
         {
             removed.release();
-            _cachedSize.addAndGet(-removed.getContentLengthValue());
+            _cachedSize.addAndGet(-removed.getBytesOccupied());
         }
     }
 
@@ -188,11 +188,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             return false;
 
         // Will it fit in the cache?
-        long len = httpContent.getContentLengthValue();
-        if (len <= 0)
-            return false;
-        if (httpContent instanceof FileMappedHttpContentFactory.FileMappedContent)
-             return true;
+        long len = httpContent.getBytesOccupied();
         return (len <= _maxCachedFileSize && len <= _maxCacheSize);
     }
 
@@ -220,7 +216,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             {
                 wasAdded.set(true);
                 CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(p) : newCachedContent(p, httpContent);
-                _cachedSize.addAndGet(cachingContent.getContentLengthValue());
+                _cachedSize.addAndGet(cachingContent.getBytesOccupied());
                 return cachingContent;
             });
 
