@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -32,7 +34,7 @@ public class MovedContextHandler extends ContextHandler
     private String _redirectURI;
     private boolean _discardPathInContext = true;
     private boolean _discardQuery = true;
-    private String _cacheControl;
+    private HttpField _cacheControl;
 
     public MovedContextHandler()
     {
@@ -134,7 +136,7 @@ public class MovedContextHandler extends ContextHandler
      */
     public String getCacheControl()
     {
-        return _cacheControl;
+        return _cacheControl == null ? null : _cacheControl.getValue();
     }
 
     /**
@@ -142,7 +144,7 @@ public class MovedContextHandler extends ContextHandler
      */
     public void setCacheControl(String cacheControl)
     {
-        _cacheControl = cacheControl;
+        _cacheControl = cacheControl == null ? null : new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cacheControl);
     }
 
     private class Redirector extends Handler.Processor
@@ -180,9 +182,9 @@ public class MovedContextHandler extends ContextHandler
 
             response.getHeaders().put(HttpHeader.LOCATION, redirectHttpURI.asString());
 
-            String cacheControl = getCacheControl();
+            HttpField cacheControl = _cacheControl;
             if (cacheControl != null)
-                response.getHeaders().put(HttpHeader.CACHE_CONTROL, cacheControl);
+                response.getHeaders().put(cacheControl);
 
             callback.succeeded();
         }
