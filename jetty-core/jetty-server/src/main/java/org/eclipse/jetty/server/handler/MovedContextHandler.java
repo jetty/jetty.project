@@ -50,7 +50,7 @@ public class MovedContextHandler extends ContextHandler
     }
 
     /**
-     * @return the redirect status code
+     * @return the redirect status code, by default 303
      */
     public int getStatusCode()
     {
