@@ -66,7 +66,9 @@ public class URIUtilTest
             Arguments.of("/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
                 "/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E"),
             Arguments.of("test\u00f6?\u00f6:\u00df", "test%C3%B6%3F%C3%B6:%C3%9F"),
-            Arguments.of("test?\u00f6?\u00f6:\u00df", "test%3F%C3%B6%3F%C3%B6:%C3%9F")
+            Arguments.of("test?\u00f6?\u00f6:\u00df", "test%3F%C3%B6%3F%C3%B6:%C3%9F"),
+            Arguments.of("/test space/", "/test%20space/"),
+            Arguments.of("/test\u007fdel/", "/test%7Fdel/")
         );
     }
 
