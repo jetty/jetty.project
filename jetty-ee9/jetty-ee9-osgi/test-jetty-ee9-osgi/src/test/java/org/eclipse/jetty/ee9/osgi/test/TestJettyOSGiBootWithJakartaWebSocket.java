@@ -92,9 +92,9 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     public void testWebsocket() throws Exception
     {
         startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.common");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.client");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.server");
-        startBundle(bundleContext, "org.eclipse.jetty.demos.webapp");
+        startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.client");
+        startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.server");
+        startBundle(bundleContext, "org.eclipse.jetty.ee9.demos.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);

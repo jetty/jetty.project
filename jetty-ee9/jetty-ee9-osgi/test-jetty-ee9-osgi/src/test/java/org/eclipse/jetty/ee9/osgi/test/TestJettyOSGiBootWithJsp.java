@@ -62,7 +62,7 @@ public class TestJettyOSGiBootWithJsp
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(CoreOptions.cleanCaches(true));
         
-        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee9.demos").artifactId("jetty-ee9-demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         return options.toArray(new Option[0]);
     }
 

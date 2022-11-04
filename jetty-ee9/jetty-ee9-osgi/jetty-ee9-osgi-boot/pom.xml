@@ -85,7 +85,7 @@
         <configuration>
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.ee9.osgi.boot;singleton:=true</Bundle-SymbolicName>
-            <Bundle-Activator>org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
+            <Bundle-Activator>org.eclipse.jetty.ee9.osgi.boot.EE9Activator</Bundle-Activator>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
             <Import-Package>
               ${osgi.slf4j.import.packages},

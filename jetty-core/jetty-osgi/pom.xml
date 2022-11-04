@@ -39,6 +39,18 @@
           </argLine>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Activator>org.eclipse.jetty.osgi.JettyBootstrapActivator</Bundle-Activator>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencyManagement>

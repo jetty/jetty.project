@@ -81,10 +81,10 @@ public class TestJettyOSGiBootWebAppAsService
 
         // a bundle that registers a webapp as a service for the jetty osgi core
         // to pick up and deploy
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-webapp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("test-jetty-ee9-osgi-webapp").versionAsInProject().start());
 
         //a bundle that registers a new named Server instance
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("test-jetty-ee9-osgi-server").versionAsInProject().start());
 
         return res;
     }

@@ -11,13 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.util.internal;
+package org.eclipse.jetty.osgi.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import org.eclipse.jetty.osgi.util.BundleClassLoaderHelper;
 import org.osgi.framework.Bundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

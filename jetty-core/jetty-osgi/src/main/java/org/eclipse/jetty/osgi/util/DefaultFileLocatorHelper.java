@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.util.internal;
+package org.eclipse.jetty.osgi.util;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.zip.ZipFile;
 
-import org.eclipse.jetty.osgi.util.BundleFileLocatorHelper;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.PathResource;

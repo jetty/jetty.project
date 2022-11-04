@@ -64,7 +64,7 @@ public class TestJettyOSGiBootContextAsService
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         // a bundle that registers a webapp as a service for the jetty osgi core to pick up and deploy
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-context").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("test-jetty-ee9-osgi-context").versionAsInProject().start());
 
         options.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(System.getProperty("mavenRepoPath")));
 

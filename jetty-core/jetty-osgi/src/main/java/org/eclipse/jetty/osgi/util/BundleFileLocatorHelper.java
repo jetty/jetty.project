@@ -17,7 +17,6 @@ import java.io.File;
 import java.net.URL;
 import java.util.Enumeration;
 
-import org.eclipse.jetty.osgi.util.internal.DefaultFileLocatorHelper;
 import org.osgi.framework.Bundle;
 
 /**
@@ -32,7 +31,7 @@ public interface BundleFileLocatorHelper
     /**
      * The name of the custom implementation for this interface in a fragment.
      */
-    public static final String CLASS_NAME = "org.eclipse.jetty.ee9.osgi.boot.utils.FileLocatorHelperImpl";
+    public static final String CLASS_NAME = "org.eclipse.jetty.osgi.util.FileLocatorHelperImpl";
 
     /**
      * The default instance supports felix and equinox

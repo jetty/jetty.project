@@ -35,8 +35,8 @@ import org.eclipse.jetty.osgi.OSGiApp;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.OSGiClassLoader;
+import org.eclipse.jetty.osgi.util.PackageAdminServiceTracker;
 import org.eclipse.jetty.osgi.util.Util;
-import org.eclipse.jetty.osgi.util.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -74,6 +74,7 @@ public class EE9Activator implements BundleActivator
         @Override
         public Object addingService(ServiceReference sr)
         {
+            System.err.println("EE9 SERVER TRACKER NOTIFIED SERVER created");
             Bundle contributor = sr.getBundle();
             Server server = (Server)contributor.getBundleContext().getService(sr);
             //configure for ee9 webapp and context deployment if not already done so
@@ -423,6 +424,7 @@ public class EE9Activator implements BundleActivator
     @Override
     public void start(final BundleContext context) throws Exception
     {
+        System.err.println("EE9ACTIVATOR STARTING");
         // track other bundles and fragments attached to this bundle that we
         // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
@@ -430,6 +432,7 @@ public class EE9Activator implements BundleActivator
         //track jetty Server instances
         _tracker = new ServiceTracker(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker());
         _tracker.open();
+        System.err.println("EE9ACTIVATOR TRACKERS REGISTERED");
     }
 
     /**
