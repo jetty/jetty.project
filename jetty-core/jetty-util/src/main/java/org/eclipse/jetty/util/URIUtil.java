@@ -217,7 +217,7 @@ public final class URIUtil
      */
     public static String encodePath(String path)
     {
-        if (path == null || path.length() == 0)
+        if (StringUtil.isBlank(path))
             return path;
 
         boolean needsEncoding = false;
@@ -235,9 +235,7 @@ public final class URIUtil
         if (needsByteEncoding)
             return encodePathBytes(path);
         else if (needsEncoding)
-        {
             return encodePathString(path);
-        }
         else
             return path;
     }
@@ -252,10 +250,12 @@ public final class URIUtil
             if (ENCODE_PATH_NEEDS_ENCODING[c])
             {
                 buf.append('%');
-                TypeUtil.toHex(c, buf);
+                TypeUtil.toHex((byte)c, buf);
             }
             else
+            {
                 buf.append(c);
+            }
         }
         return buf.toString();
     }
@@ -272,7 +272,9 @@ public final class URIUtil
                 TypeUtil.toHex(b, buf);
             }
             else
+            {
                 buf.append((char)b);
+            }
         }
         return buf.toString();
     }

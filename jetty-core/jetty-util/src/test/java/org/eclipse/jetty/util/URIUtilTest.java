@@ -1018,10 +1018,10 @@ public class URIUtilTest
             builder.append(i);
         String path = builder.toString();
         String encoded = URIUtil.encodePath(path);
-        // Check endoded is visible
+        // Check encoded is visible
         for (char c : encoded.toCharArray())
         {
-            assertTrue(c > 0x20 && c < 0x80);
+            assertTrue(c > 0x20 && c < 0x7f);
             assertFalse(Character.isWhitespace(c));
             assertFalse(Character.isISOControl(c), "isISOControl(0x%2x)".formatted((byte)c));
         }
