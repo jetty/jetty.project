@@ -118,7 +118,7 @@
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.17.4</testcontainers.version>
+    <testcontainers.version>1.17.5</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
@@ -154,7 +154,7 @@
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.4.0</maven.shade.plugin.version>
+    <maven.shade.plugin.version>3.4.1</maven.shade.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
