@@ -210,7 +210,7 @@ public final class URIUtil
     /**
      * Encode a URI path.
      * This is the same encoding offered by URLEncoder, except that
-     * the '/' character is not encoded.
+     * the '{@code /}' character is not encoded.
      *
      * @param path The path to encode
      * @return The encoded path
@@ -325,7 +325,7 @@ public final class URIUtil
      * Decode a raw String and convert any specific URI encoded sequences into characters.
      *
      * @param str input raw string
-     * @param charsToDecode the list of raw characters that need to be decoded (if encountered), leaving all other encoded sequences alone.
+     * @param charsToDecode the list of raw characters that need to be decoded (if encountered), leaving all the other encoded sequences alone.
      * @return output with specified characters decoded.
      */
     @SuppressWarnings("Duplicates")
@@ -396,7 +396,7 @@ public final class URIUtil
      *
      * @param path The path to encode
      * @param buf StringBuilder to encode path into (or null)
-     * @param encode String of characters to encode. % is always encoded.
+     * @param encode String of characters to encode. '{@code %}' is always encoded.
      * @return The StringBuilder or null if no substitutions required.
      */
     // TODO: remove, only used in URIUtilTest?
@@ -626,11 +626,11 @@ public final class URIUtil
      * <p>
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
      * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
-     * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
+     * Unsafe characters, other than '{@code /}' will be encoded.  Encodings will be uppercase hex.
      * Canonical paths are also normalized and may be used in string comparisons with other canonical paths.
      * <p>
-     * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
-     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
+     * For example the path {@code /fo %2fo/b%61r} will be normalized to {@code /fo%20%2Fo/bar},
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal {@code /fo /o/bar}.
      * @return the canonical path or null if it is non-normal
      * @see #decodePath(String)
      * @see #normalizePath(String)
@@ -759,7 +759,8 @@ public final class URIUtil
         }
     }
 
-    /* Decode a URI path and strip parameters of ISO-8859-1 path
+    /**
+     * Decode a URI path and strip parameters of ISO-8859-1 path
      */
     private static String decodeISO88591Path(String path, int offset, int length)
     {
@@ -831,7 +832,7 @@ public final class URIUtil
     /**
      * Add two encoded URI path segments.
      * Handles null and empty paths, path and query params
-     * (eg ?a=b or ;JSESSIONID=xxx) and avoids duplicate '/'
+     * (e.g. {@code ?a=b} or {@code ;JSESSIONID=xxx}) and avoids duplicate '{@code /}'
      *
      * @param p1 URI path segment (should be encoded)
      * @param p2 URI path segment (should be encoded)
@@ -885,8 +886,10 @@ public final class URIUtil
 
     /**
      * Add two Decoded URI path segments.
-     * Handles null and empty paths.  Path and query params (eg ?a=b or
-     * ;JSESSIONID=xxx) are not handled
+     * <p>
+     * Handles null and empty paths.
+     * Path and query params (e.g. {@code ?a=b} or {@code ;JSESSIONID=xxx}) are not handled
+     * </p>
      *
      * @param p1 URI path segment (should be decoded)
      * @param p2 URI path segment (should be decoded)
@@ -932,10 +935,12 @@ public final class URIUtil
         return buf.toString();
     }
 
-    /** Add a path and a query string
+    /**
+     * Add a path and a query string
+     *
      * @param path The path which may already contain a query
      * @param query The query string to add (if blank, no query is added)
-     * @return The path with any non-blank query added after a '?' or '&amp;' as appropriate.
+     * @return The path with any non-blank query added after a '{@code ?}' or '{@code &amp;}' as appropriate.
      */
     public static String addPathQuery(String path, String query)
     {
@@ -984,7 +989,9 @@ public final class URIUtil
 
     /**
      * Return the parent Path.
+     * <p>
      * Treat a URI like a directory path and return the parent directory.
+     * </p>
      *
      * @param p the path to return a parent reference to
      * @return the parent path of the URI
@@ -1000,7 +1007,8 @@ public final class URIUtil
     }
 
     /**
-     * <p>Normalize a URI path and query by factoring out all segments of "." and ".."
+     * <p>
+     * Normalize a URI path and query by factoring out all segments of '{@code .}' and '{@code ..}'
      * up until any query or fragment.
      * Null is returned if the path is normalized above its root.
      * </p>
@@ -1108,8 +1116,8 @@ public final class URIUtil
 
     /**
      * <p>Check if a path would be normalized within itself. For example,
-     * <code>/foo/../../bar</code> is normalized above its root and would
-     * thus return false, whilst <code>/foo/./bar/..</code> is normal within itself
+     * {@code /foo/../../bar} is normalized above its root and would
+     * thus return false, whilst {@code /foo/./bar/..} is normal within itself
      * and would return true.
      * @param path The path to check
      * @return True if the normal form of the path is within the root of the path.
@@ -1121,11 +1129,11 @@ public final class URIUtil
     }
 
     /**
-     * <p>Normalize a URI path by factoring out all segments of "." and "..".
+     * <p>Normalize a URI path by factoring out all segments of {@code .} and {@code ..}.
      * Null is returned if the path is normalized above its root.
      * </p>
      *
-     * @param path the decoded URI path to convert. Any special characters (e.g. '?', "#") are assumed to be part of
+     * @param path the decoded URI path to convert. Any special characters (e.g. {@code ?}, {@code #}) are assumed to be part of
      * the path segments.
      * @return the normalized path, or null if path traversal above root.
      * @see #normalizePathQuery(String)
@@ -1258,7 +1266,7 @@ public final class URIUtil
 
     /**
      * Convert a path to a compact form.
-     * All instances of "//" and "///" etc. are factored out to single "/"
+     * All instances of {@code //} and {@code ///} etc. are factored out to single {@code /}
      *
      * @param path the path to compact
      * @return the compacted path
@@ -1442,7 +1450,7 @@ public final class URIUtil
         }
     }
 
-    // Only URIUtil is using this method
+    // Only used by URIUtil
     static boolean equalsIgnoreEncodings(String uriA, String uriB)
     {
         try
@@ -1457,6 +1465,7 @@ public final class URIUtil
         }
     }
 
+    // Only used by URIUtil
     static String ensureSafeEncoding(String path)
     {
         if (path == null)
@@ -1682,8 +1691,8 @@ public final class URIUtil
     }
 
     /**
-     * Combine two query strings into one. Each query string should not contain the beginning '?' character, but
-     * may contain multiple parameters separated by the '{@literal &}' character.
+     * Combine two query strings into one. Each query string should not contain the beginning '{@code ?}' character, but
+     * may contain multiple parameters separated by the '{@code &}' character.
      * @param query1 the first query string.
      * @param query2 the second query string.
      * @return the combination of the two query strings.
@@ -1746,12 +1755,12 @@ public final class URIUtil
     }
 
     /**
-     * Split a string of references, that may be split with {@code ,}, or {@code ;}, or {@code |} into URIs.
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into URIs.
      * <p>
      *     Each part of the input string could be path references (unix or windows style), or string URI references.
      * </p>
      * <p>
-     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as `jar:file:...!/`.
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
      * </p>
      *
      * @param str the input string of references
@@ -1816,7 +1825,7 @@ public final class URIUtil
      * </p>
      *
      * @param uri the URI to mutate to a {@code jar:file:...} URI.
-     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or the unchanged URI if not a Java Archive.
+     * @return the {@code jar:${uri_to_java_archive}!/${internal-reference}} URI or the unchanged URI if not a Java Archive.
      * @see FileID#isArchive(URI)
      */
     public static URI toJarFileUri(URI uri)
