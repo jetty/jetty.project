@@ -189,8 +189,22 @@ public final class URIUtil
         false, // 0x7f DEL is illegal
     };
 
+    private static final boolean[] ENCODE_PATH_NEEDS_ENCODING;
+
     private URIUtil()
     {
+    }
+
+    static
+    {
+        ENCODE_PATH_NEEDS_ENCODING = new boolean[128];
+        // Special characters
+        for (char c: "%?;#\"'<> [\\]^`{|}".toCharArray())
+            ENCODE_PATH_NEEDS_ENCODING[c] = true;
+        // control characters
+        ENCODE_PATH_NEEDS_ENCODING[0x7f] = true;
+        for (int i = 0; i < 0x20; i++)
+            ENCODE_PATH_NEEDS_ENCODING[i] = true;
     }
 
     /**
@@ -206,155 +220,61 @@ public final class URIUtil
         if (path == null || path.length() == 0)
             return path;
 
-        StringBuilder buf = null;
-        byte[] bytes = null;
-
-        loop:
-        for (int i = 0; i < path.length(); i++)
+        boolean needsEncoding = false;
+        boolean needsByteEncoding = false;
+        int length = path.length();
+        for (int i = 0; i < length; i++)
         {
             char c = path.charAt(i);
-            switch (c)
-            {
-                case '%':
-                case '?':
-                case ';':
-                case '#':
-                case '"':
-                case '\'':
-                case '<':
-                case '>':
-                case ' ':
-                case '[':
-                case '\\':
-                case ']':
-                case '^':
-                case '`':
-                case '{':
-                case '|':
-                case '}':
-                    buf = new StringBuilder(path.length() * 2);
-                    break loop;
-                default:
-                    if (c < 0x20 || c >= 0x7f)
-                    {
-                        bytes = path.getBytes(StandardCharsets.UTF_8);
-                        buf = new StringBuilder(path.length() * 2);
-                        break loop;
-                    }
-            }
+            if (c > 0x7F) // 8-bit +
+                needsByteEncoding = true;
+            else if (ENCODE_PATH_NEEDS_ENCODING[c])
+                needsEncoding = true;
         }
 
-        if (buf != null)
+        if (needsByteEncoding)
+            return encodePathBytes(path);
+        else if (needsEncoding)
         {
-            int i = 0;
-
-            loop:
-            for (i = 0; i < path.length(); i++)
-            {
-                char c = path.charAt(i);
-                switch (c)
-                {
-                    case '%' -> buf.append("%25");
-                    case '?' -> buf.append("%3F");
-                    case ';' -> buf.append("%3B");
-                    case '#' -> buf.append("%23");
-                    case '"' -> buf.append("%22");
-                    case '\'' -> buf.append("%27");
-                    case '<' -> buf.append("%3C");
-                    case '>' -> buf.append("%3E");
-                    case ' ' -> buf.append("%20");
-                    case '[' -> buf.append("%5B");
-                    case '\\' -> buf.append("%5C");
-                    case ']' -> buf.append("%5D");
-                    case '^' -> buf.append("%5E");
-                    case '`' -> buf.append("%60");
-                    case '{' -> buf.append("%7B");
-                    case '|' -> buf.append("%7C");
-                    case '}' -> buf.append("%7D");
-                    default ->
-                    {
-                        if (c < 0x20 || c >= 0x7f)
-                        {
-                            bytes = path.getBytes(StandardCharsets.UTF_8);
-                            break loop;
-                        }
-                        buf.append(c);
-                    }
-                }
-            }
-
-            if (bytes != null)
-            {
-                for (; i < bytes.length; i++)
-                {
-                    byte c = bytes[i];
-                    switch (c)
-                    {
-                        case '%':
-                            buf.append("%25");
-                            continue;
-                        case '?':
-                            buf.append("%3F");
-                            continue;
-                        case ';':
-                            buf.append("%3B");
-                            continue;
-                        case '#':
-                            buf.append("%23");
-                            continue;
-                        case '"':
-                            buf.append("%22");
-                            continue;
-                        case '\'':
-                            buf.append("%27");
-                            continue;
-                        case '<':
-                            buf.append("%3C");
-                            continue;
-                        case '>':
-                            buf.append("%3E");
-                            continue;
-                        case ' ':
-                            buf.append("%20");
-                            continue;
-                        case '[':
-                            buf.append("%5B");
-                            continue;
-                        case '\\':
-                            buf.append("%5C");
-                            continue;
-                        case ']':
-                            buf.append("%5D");
-                            continue;
-                        case '^':
-                            buf.append("%5E");
-                            continue;
-                        case '`':
-                            buf.append("%60");
-                            continue;
-                        case '{':
-                            buf.append("%7B");
-                            continue;
-                        case '|':
-                            buf.append("%7C");
-                            continue;
-                        case '}':
-                            buf.append("%7D");
-                            continue;
-                        default:
-                            if (c < 0x20 || c >= 0x7f)
-                            {
-                                buf.append('%');
-                                TypeUtil.toHex(c, buf);
-                            }
-                            else
-                                buf.append((char)c);
-                    }
-                }
-            }
+            return encodePathString(path);
         }
+        else
+            return path;
+    }
 
-        return buf == null ? path : buf.toString();
+    private static String encodePathString(String path)
+    {
+        StringBuilder buf = new StringBuilder(path.length() * 2);
+        int length = path.length();
+        for (int i = 0; i < length; i++)
+        {
+            char c = path.charAt(i);
+            if (ENCODE_PATH_NEEDS_ENCODING[c])
+            {
+                buf.append('%');
+                TypeUtil.toHex(c, buf);
+            }
+            else
+                buf.append(c);
+        }
+        return buf.toString();
+    }
+
+    private static String encodePathBytes(String path)
+    {
+        StringBuilder buf = new StringBuilder(path.length() * 2);
+        byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
+        for (byte b : pathBytes)
+        {
+            if (b < 0 || ENCODE_PATH_NEEDS_ENCODING[b])
+            {
+                buf.append('%');
+                TypeUtil.toHex(b, buf);
+            }
+            else
+                buf.append((char)b);
+        }
+        return buf.toString();
     }
 
     /**

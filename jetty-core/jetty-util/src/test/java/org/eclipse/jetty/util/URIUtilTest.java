@@ -809,17 +809,18 @@ public class URIUtilTest
     }
 
     @Test
-    public void testCorrectBadFileURIActualFile() throws Exception
+    public void testCorrectBadFileURIActualFile(WorkDir workDir) throws Exception
     {
-        File file = MavenTestingUtils.getTargetFile("testCorrectBadFileURIActualFile.txt");
-        FS.touch(file);
+        Path testfile = workDir.getEmptyPathDir().resolve("testCorrectBadFileURIActualFile.txt");
+        FS.touch(testfile);
 
-        URI expectedUri = file.toPath().toUri();
+        URI expectedUri = testfile.toUri(); // correct URI with `://`
 
         assertThat(expectedUri.toASCIIString(), containsString("://"));
 
-        URI fileUri = file.toURI();
-        URI fileUrlUri = file.toURL().toURI();
+        File file = testfile.toFile();
+        URI fileUri = file.toURI(); // java produced bad format with only `:/` (not `://`)
+        URI fileUrlUri = file.toURL().toURI(); // java produced bad format with only `:/` (not `://`)
 
         // If these 2 tests start failing, that means Java itself has been fixed
         assertThat(fileUri.toASCIIString(), not(containsString("://")));
@@ -1020,7 +1021,7 @@ public class URIUtilTest
         {
             assertTrue(c > 0x20 && c < 0x80);
             assertFalse(Character.isWhitespace(c));
-            assertFalse(Character.isISOControl(c));
+            assertFalse(Character.isISOControl(c), "isISOControl(0x%2x)".formatted((byte)c));
         }
         // check decode to original
         String decoded = URIUtil.decodePath(encoded);
