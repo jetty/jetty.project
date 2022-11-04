@@ -1452,23 +1452,14 @@ public final class URIUtil
         }
     }
 
-    // Only used by URIUtil
-    static boolean equalsIgnoreEncodings(String uriA, String uriB)
-    {
-        try
-        {
-            String safeDecodedUriA = ensureSafeEncoding(uriA);
-            String safeDecodedUriB = ensureSafeEncoding(uriB);
-            return safeDecodedUriA.equals(safeDecodedUriB);
-        }
-        catch (IllegalArgumentException e)
-        {
-            return false;
-        }
-    }
-
-    // Only used by URIUtil
-    static String ensureSafeEncoding(String path)
+    /**
+     * Encode characters in a path to ensure they only contain safe encodings suitable for both
+     * {@link URI} and {@link Paths#get(URI)} usage.
+     *
+     * @param path the path to encode
+     * @return the returned path with only safe encodings
+     */
+    public static String encodePathSafeEncoding(String path)
     {
         if (path == null)
             return null;
@@ -1608,42 +1599,6 @@ public final class URIUtil
         return ((codepoint == '?') || (codepoint == '#'));
     }
 
-    static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
-    {
-        if (uriA.equals(uriB))
-            return true;
-
-        if (uriA.toASCIIString().equals(uriB.toASCIIString()))
-            return true;
-
-        // TODO: this check occurs in uriA.equals(uriB)
-        if (uriA.getScheme() == null)
-        {
-            if (uriB.getScheme() != null)
-                return false;
-        }
-        else if (!uriA.getScheme().equalsIgnoreCase(uriB.getScheme()))
-            return false;
-
-        if ("jar".equalsIgnoreCase(uriA.getScheme()))
-        {
-            // at this point we know that both uri's are "jar:"
-            URI uriAssp = URI.create(uriA.getRawSchemeSpecificPart());
-            URI uriBssp = URI.create(uriB.getRawSchemeSpecificPart());
-            return equalsIgnoreEncodings(uriAssp, uriBssp);
-        }
-
-        if (uriA.getAuthority() == null)
-        {
-            if (uriB.getAuthority() != null)
-                return false;
-        }
-        else if (!uriA.getAuthority().equals(uriB.getAuthority()))
-            return false;
-
-        return equalsIgnoreEncodings(uriA.getRawPath(), uriB.getRawPath());
-    }
-
     /**
      * Add a sub path to an existing URI.
      *
@@ -1674,7 +1629,7 @@ public final class URIUtil
 
         // ensure that the base has a safe encoding suitable for both
         // URI and Paths.get(URI) later usage
-        path = ensureSafeEncoding(path);
+        path = encodePathSafeEncoding(path);
         pathLen = path.length();
 
         if (base.length() == 0)

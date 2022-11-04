@@ -565,7 +565,7 @@ public class URIUtilTest
         assertThat(actual, is(expected));
     }
 
-    public static Stream<Arguments> ensureSafeEncodingSource()
+    public static Stream<Arguments> encodePathSafeEncodingSource()
     {
         return Stream.of(
             Arguments.of("/foo", "/foo"),
@@ -589,10 +589,10 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @MethodSource("ensureSafeEncodingSource")
-    public void testEnsureSafeEncoding(String input, String expected)
+    @MethodSource("encodePathSafeEncodingSource")
+    public void testEncodePathSafeEncoding(String input, String expected)
     {
-        assertThat(URIUtil.ensureSafeEncoding(input), is(expected));
+        assertThat(URIUtil.encodePathSafeEncoding(input), is(expected));
     }
 
     public static Stream<Arguments> compactPathSource()
@@ -635,139 +635,6 @@ public class URIUtilTest
     {
         String actual = URIUtil.parentPath(path);
         assertEquals(expectedPath, actual, String.format("parent %s", path));
-    }
-
-    public static Stream<Arguments> equalsIgnoreEncodingStringTrueSource()
-    {
-        return Stream.of(
-            Arguments.of("http://example.com/foo/bar", "http://example.com/foo/bar"),
-            Arguments.of("/barry%27s", "/barry%27s"),
-            Arguments.of("/b rry%27s", "/b%20rry%27s"),
-            Arguments.of("/barry's", "/barry%27s"),
-            Arguments.of("/barry%27s", "/barry's"),
-            Arguments.of("/b rry's", "/b%20rry%27s"),
-            Arguments.of("/b rry%27s", "/b%20rry's"),
-            Arguments.of("/re bar", "/re%20bar"),
-
-            Arguments.of("/foo%2fbar", "/foo%2fbar"),
-            Arguments.of("/foo%2fbar", "/foo%2Fbar"),
-
-            // encoded vs not-encode ("%" symbol is encoded as "%25")
-            Arguments.of("/abc%25xyz", "/abc%xyz"),
-            Arguments.of("/abc%25xy", "/abc%xy"),
-            Arguments.of("/abc%25x", "/abc%x"),
-            Arguments.of("/zzz%25", "/zzz%"),
-
-            // unicode encoded vs not-encoded
-            Arguments.of("/path/to/bä€ãm/", "/path/to/b%C3%A4%E2%82%AC%C3%A3m/")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingStringTrueSource")
-    public void testEqualsIgnoreEncodingStringTrue(String uriA, String uriB)
-    {
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-    }
-
-    public static Stream<Arguments> equalsIgnoreEncodingStringFalseSource()
-    {
-        return Stream.of(
-            // case difference
-            Arguments.of("ABC", "abc"),
-            // Encoding difference ("'" is "%27")
-            Arguments.of("/barry's", "/barry%26s"),
-            // Never match on "%2f" differences - only intested in filename / directory name differences
-            // This could be a directory called "foo" with a file called "bar" on the left, and just a file "foo%2fbar" on the right
-            Arguments.of("/foo/bar", "/foo%2fbar"),
-            // not actually encoded
-            Arguments.of("/foo2fbar", "/foo/bar"),
-            // path params
-            Arguments.of("/path;a=b/to;x=y/foo/", "/path/to/foo"),
-            // encoded vs not-encode ("%" symbol is encoded as "%25")
-            Arguments.of("/yyy%25zzz", "/aaa%xxx"),
-            Arguments.of("/zzz%25", "/aaa%"),
-            // %2F then multi-byte unicode
-            Arguments.of("/path/to/bãm/", "/path%2Fto/b%C3%A3m/"),
-            // multi-byte unicode then %2F
-            Arguments.of("/path/bãm/or/bust", "/path/b%C3%A3m/or%2Fbust"),
-            // mix of %2F and multiple consecutive multi-byte unicode
-            Arguments.of("/path/to/bä€ãm/", "/path%2Fto/b%C3%A4%E2%82%AC%C3%A3m/")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingStringFalseSource")
-    public void testEqualsIgnoreEncodingStringFalse(String uriA, String uriB)
-    {
-        assertFalse(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-    }
-
-    public static Stream<Arguments> equalsIgnoreEncodingURITrueSource()
-    {
-        return Stream.of(
-            Arguments.of(
-                URI.create("HTTP:/foo/b%61r"),
-                URI.create("http:/f%6Fo/bar")
-            ),
-            Arguments.of(
-                URI.create("jar:file:/path/to/main.jar!/META-INF/versions/"),
-                URI.create("jar:file:/path/to/main.jar!/META-INF/%76ersions/")
-            ),
-            Arguments.of(
-                URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/"),
-                URI.create("jar:file:/path/to/main.jar!/META-INF/versions/")
-            ),
-            // unicode in opaque jar:file: URI
-            Arguments.of(
-                URI.create("jar:file:///path/to/test.jar!/bãm/"),
-                URI.create("jar:file:///path/to/test.jar!/b%C3%A3m/")
-            ),
-            // multiple consecutive unicode
-            Arguments.of(
-                URI.create("file:///path/to/bä€ãm/"),
-                URI.create("file:///path/to/b%C3%A4%E2%82%AC%C3%A3m/")
-            )
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingURITrueSource")
-    public void testEqualsIgnoreEncodingURITrue(URI uriA, URI uriB)
-    {
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-    }
-
-    public static Stream<Arguments> equalsIgnoreEncodingURIFalseSource()
-    {
-        return Stream.of(
-            Arguments.of(
-                URI.create("/foo%2Fbar"),
-                URI.create("/foo/bar")
-            ),
-            // %2F then unicode
-            Arguments.of(
-                URI.create("file:///path/to/bãm/"),
-                URI.create("file:///path%2Fto/b%C3%A3m/")
-            ),
-            // unicode then %2F
-            Arguments.of(
-                URI.create("file:///path/bãm/or/bust"),
-                URI.create("file:///path/b%C3%A3m/or%2Fbust")
-            ),
-            // mix of %2F and multiple consecutive unicode
-            Arguments.of(
-                URI.create("file:///path/to/bä€ãm/"),
-                URI.create("file:///path%2Fto/b%C3%A4%E2%82%AC%C3%A3m/")
-            )
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingURIFalseSource")
-    public void testEqualsIgnoreEncodingURIFalse(URI uriA, URI uriB)
-    {
-        assertFalse(URIUtil.equalsIgnoreEncodings(uriA, uriB));
     }
 
     public static Stream<Arguments> correctBadFileURICases()
