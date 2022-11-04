@@ -217,19 +217,27 @@ public final class URIUtil
      */
     public static String encodePath(String path)
     {
-        if (StringUtil.isBlank(path))
+        if (StringUtil.isEmpty(path))
             return path;
 
-        boolean needsEncoding = false;
+        // byte encoding always wins and, if encountered, should be used.
         boolean needsByteEncoding = false;
+        // string (char-by-char) encoding, but it could be followed by a need for byte encoding instead
+        boolean needsEncoding = false;
         int length = path.length();
         for (int i = 0; i < length; i++)
         {
             char c = path.charAt(i);
             if (c > 0x7F) // 8-bit +
+            {
                 needsByteEncoding = true;
-            else if (ENCODE_PATH_NEEDS_ENCODING[c])
+                break; // have to encode byte by byte now
+            }
+            if (ENCODE_PATH_NEEDS_ENCODING[c])
+            {
+                // could be followed by a byte encoding, so no break
                 needsEncoding = true;
+            }
         }
 
         if (needsByteEncoding)
