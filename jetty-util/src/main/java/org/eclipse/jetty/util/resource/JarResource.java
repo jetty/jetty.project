@@ -216,6 +216,10 @@ public class JarResource extends URLResource
 
                 File file = new File(directory, entryName);
 
+                if (!file.toPath().normalize().startsWith(directory.toPath().normalize())) {
+                    throw new IOException("Bad zip entry");
+                }
+
                 if (entry.isDirectory())
                 {
                     // Make directory

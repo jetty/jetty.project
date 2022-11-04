@@ -302,6 +302,9 @@ public class JettyHomeTester
                 if (entry.isDirectory())
                 {
                     File dir = new File(output, entry.getName());
+                    if (!dir.toPath().normalize().startsWith(output.toPath().normalize())) {
+                        throw new IOException("Bad zip entry");
+                    }
                     if (!Files.exists(dir.toPath()))
                     {
                         Files.createDirectories(dir.toPath());
@@ -311,6 +314,9 @@ public class JettyHomeTester
                 {
                     // Read zipEntry and write to a file.
                     File file = new File(output, entry.getName());
+                    if (!file.toPath().normalize().startsWith(output.toPath().normalize())) {
+                        throw new IOException("Bad zip entry");
+                    }
                     if (!Files.exists(file.getParentFile().toPath()))
                     {
                         Files.createDirectories(file.getParentFile().toPath());

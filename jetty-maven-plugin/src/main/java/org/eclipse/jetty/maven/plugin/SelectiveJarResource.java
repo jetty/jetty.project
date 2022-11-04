@@ -149,6 +149,10 @@ public class SelectiveJarResource extends JarResource
 
                 File file = new File(directory, entryName);
 
+                if (!file.toPath().normalize().startsWith(directory.toPath().normalize())) {
+                    throw new IOException("Bad zip entry");
+                }
+
                 if (entry.isDirectory())
                 {
                     if (isIncluded(entryName))
