@@ -264,7 +264,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse helloResponse = client.GET("http://localhost:" + httpPort + "/test/hello");
