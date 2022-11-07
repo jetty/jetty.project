@@ -1,4 +1,5 @@
-jetty-9.4.50-SNAPSHOT
+jetty-9.4.50.v20221107 - 07 November 2022
+ + 8774 Added SizeLimitHandler
 
 jetty-9.4.49.v20220914 - 14 September 2022
  + 8414 BlockingArrayQueue drops all contents on drain
