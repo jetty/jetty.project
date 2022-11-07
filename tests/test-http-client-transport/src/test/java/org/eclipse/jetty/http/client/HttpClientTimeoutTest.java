@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.opentest4j.TestAbortedException;
@@ -292,6 +293,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -330,6 +332,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -367,6 +370,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testRetryAfterConnectTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.

@@ -47,6 +47,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testConnectTimeout(Transport transport) throws Exception
     {
         init(transport);
@@ -75,6 +76,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
         init(transport);
@@ -106,6 +108,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void retryAfterConnectTimeout(Transport transport) throws Exception
     {
         init(transport);
