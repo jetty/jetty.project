@@ -24,6 +24,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,10 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ConnectTimeoutTest extends AbstractTest
 {
     @Test
+    @Tag("external")
     public void testConnectTimeout() throws Exception
     {
-        final String host = "192.168.111.222";
-        final int port = 80;
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
