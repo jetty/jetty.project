@@ -47,11 +47,13 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testConnectTimeout(Transport transport) throws Exception
     {
         init(transport);
-        final String host = "10.255.255.1";
-        final int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -74,11 +76,13 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
         init(transport);
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -104,11 +108,13 @@ public class HttpClientConnectTimeoutTest extends AbstractTest<TransportScenario
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void retryAfterConnectTimeout(Transport transport) throws Exception
     {
         init(transport);
-        final String host = "10.255.255.1";
-        final int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
