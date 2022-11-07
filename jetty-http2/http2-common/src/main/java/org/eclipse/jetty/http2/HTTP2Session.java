@@ -1541,6 +1541,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             {
                 if (shutdownCallback != null)
                     return shutdownCallback;
+                if (closed == CloseState.CLOSED)
+                    return CompletableFuture.completedFuture(null);
                 shutdownCallback = future = new Callback.Completable();
             }
             goAway(GoAwayFrame.GRACEFUL, Callback.NOOP);
@@ -2028,7 +2030,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // such as onGoAway() may be in a race to finish,
             // but only one moves to CLOSED and runs the action.
             Runnable action = null;
-            CompletableFuture<Void> future;
             try (AutoLock ignored = lock.lock())
             {
                 long count = streamCount.get();
@@ -2038,8 +2039,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         LOG.debug("Deferred closing action, {} pending streams on {}", count, HTTP2Session.this);
                     return;
                 }
-
-                future = shutdownCallback;
 
                 switch (closed)
                 {
@@ -2080,14 +2079,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     LOG.debug("Executing zero streams action on {}", HTTP2Session.this);
                 action.run();
             }
-            if (future != null)
-                future.complete(null);
         }
 
         private void terminate(GoAwayFrame frame)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Terminating {}", HTTP2Session.this);
+
+            CompletableFuture<Void> completable;
+            try (AutoLock ignored = lock.lock())
+            {
+                completable = shutdownCallback;
+            }
+            if (completable != null)
+                completable.complete(null);
+
             HTTP2Session.this.terminate(failure);
             notifyClose(HTTP2Session.this, frame, Callback.NOOP);
         }
