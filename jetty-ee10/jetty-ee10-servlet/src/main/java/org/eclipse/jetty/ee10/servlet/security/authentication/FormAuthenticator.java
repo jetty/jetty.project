@@ -253,7 +253,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     {
                         nuri = servletApiRequest.getContextPath();
                         if (nuri.length() == 0)
-                            nuri = URIUtil.SLASH;
+                            nuri = "/";
                     }
                     else
                         nuri = savedURI.asString();

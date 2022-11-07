@@ -242,7 +242,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
         String uri = request.getRequestURI();
         if (uri == null)
-            uri = URIUtil.SLASH;
+            uri = "/";
 
         mandatory |= isJSecurityCheck(uri);
         if (!mandatory)
@@ -275,7 +275,7 @@ public class FormAuthenticator extends LoginAuthenticator
                         {
                             nuri = request.getContextPath();
                             if (nuri.length() == 0)
-                                nuri = URIUtil.SLASH;
+                                nuri = "/";
                         }
                         formAuth = new FormAuthentication(getAuthMethod(), user);
                     }

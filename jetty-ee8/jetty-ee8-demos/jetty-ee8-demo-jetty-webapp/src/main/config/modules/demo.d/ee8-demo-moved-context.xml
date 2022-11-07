@@ -4,9 +4,9 @@
 <!-- Simple handler to redirect from old path to new -->
 <Configure class="org.eclipse.jetty.server.handler.MovedContextHandler">
   <Set name="contextPath">/oldContextPath</Set>
-  <Set name="newContextURL">/test/dump/moved</Set>
-  <Set name="permanent">false</Set>
-  <Set name="discardPathInfo">false</Set>
+  <Set name="redirectURI">/test/dump/moved</Set>
+  <Set name="statusCode">302</Set>
+  <Set name="discardPathInContext">false</Set>
   <Set name="discardQuery">false</Set>
-  <Set name="expires">-1</Set>
+  <Set name="cacheControl">no-cache</Set>
 </Configure>
