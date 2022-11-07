@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.NoRouteToHostException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
@@ -36,7 +35,7 @@ public class ConnectTimeoutTest extends AbstractTest
     @Test
     public void testConnectTimeout() throws Exception
     {
-        final String host = "10.255.255.1";
+        final String host = "192.168.111.222";
         final int port = 80;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
@@ -51,13 +50,6 @@ public class ConnectTimeoutTest extends AbstractTest
             @Override
             public void failed(Throwable x)
             {
-                if (x instanceof NoRouteToHostException)
-                {
-                    // Unable to connect to destination is not a failure.
-                    latch.countDown();
-                    return;
-                }
-
                 assertThat(x, instanceOf(SocketTimeoutException.class));
                 latch.countDown();
             }
