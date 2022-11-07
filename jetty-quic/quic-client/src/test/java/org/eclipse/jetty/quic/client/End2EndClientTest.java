@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -102,8 +102,8 @@ public class End2EndClientTest
         LifeCycle.stop(server);
     }
 
-    @Disabled("Flaky test - see Issue #8815")
     @Test
+    @Tag("flaky") // Issue #8815
     public void testSimpleHTTP1() throws Exception
     {
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
@@ -141,6 +141,7 @@ public class End2EndClientTest
     }
 
     @Test
+    @Tag("flaky") // Issue #8815
     public void testMultiThreadedHTTP1()
     {
         int count = 1000;
