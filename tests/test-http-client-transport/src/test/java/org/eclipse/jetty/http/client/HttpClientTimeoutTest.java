@@ -302,8 +302,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -336,8 +337,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         init(transport);
 
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -372,8 +374,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         init(transport);
 
-        final String host = "10.255.255.1";
-        final int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
