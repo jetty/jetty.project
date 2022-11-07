@@ -283,6 +283,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
