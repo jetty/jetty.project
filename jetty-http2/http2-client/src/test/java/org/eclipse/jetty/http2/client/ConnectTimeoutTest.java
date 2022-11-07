@@ -37,6 +37,7 @@ public class ConnectTimeoutTest extends AbstractTest
     @Tag("external")
     public void testConnectTimeout() throws Exception
     {
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
         final String host = "example.com";
         final int port = 81;
         int connectTimeout = 1000;
