@@ -1444,14 +1444,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     /**
      * <p>The HTTP/2 specification requires that stream ids are monotonically increasing,
-     * see https://tools.ietf.org/html/rfc7540#section-5.1.1.</p>
+     * see <a href="https://tools.ietf.org/html/rfc7540#section-5.1.1">RFC 7540, 5.1.1</a>.</p>
      * <p>This implementation uses a queue to atomically reserve a stream id and claim
      * a slot in the queue; the slot is then assigned the entries to write.</p>
      * <p>Concurrent threads push slots in the queue but only one thread flushes
      * the slots, up to the slot that has a non-null entries to write, therefore
      * guaranteeing that frames are sent strictly in their stream id order.</p>
      * <p>This class also coordinates the creation of streams with the close of
-     * the session, see https://tools.ietf.org/html/rfc7540#section-6.8.</p>
+     * the session, see
+     * <a href="https://tools.ietf.org/html/rfc7540#section-6.8">RFC 7540, 6.8</a>.</p>
      */
     private class StreamsState
     {
@@ -1483,6 +1484,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             {
                 if (shutdownCallback != null)
                     return shutdownCallback;
+                if (closed == CloseState.CLOSED)
+                    return CompletableFuture.completedFuture(null);
                 shutdownCallback = future = new Callback.Completable();
             }
             goAway(GoAwayFrame.GRACEFUL, Callback.NOOP);
@@ -1946,7 +1949,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // such as onGoAway() may be in a race to finish,
             // but only one moves to CLOSED and runs the action.
             Runnable action = null;
-            CompletableFuture<Void> future;
             try (AutoLock ignored = lock.lock())
             {
                 long count = streamCount.get();
@@ -1956,8 +1958,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         LOG.debug("Deferred closing action, {} pending streams on {}", count, HTTP2Session.this);
                     return;
                 }
-
-                future = shutdownCallback;
 
                 switch (closed)
                 {
@@ -1991,14 +1991,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                     LOG.debug("Executing zero streams action on {}", HTTP2Session.this);
                 action.run();
             }
-            if (future != null)
-                future.complete(null);
         }
 
         private void terminate(GoAwayFrame frame)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Terminating {}", HTTP2Session.this);
+
+            CompletableFuture<Void> completable;
+            try (AutoLock ignored = lock.lock())
+            {
+                completable = shutdownCallback;
+            }
+            if (completable != null)
+                completable.complete(null);
+
             HTTP2Session.this.terminate(failure);
             notifyClose(HTTP2Session.this, frame, Callback.NOOP);
         }
