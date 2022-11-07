@@ -23,6 +23,8 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -761,5 +763,48 @@ public interface Request extends Attributes, Content.Source
         return HttpURI.build(request.getHttpURI())
             .path(URIUtil.addPaths(getContextPath(request), newPathInContext))
             .asImmutable();
+    }
+
+    abstract class ReWrappingProcessor<W extends Request.Wrapper> implements Request.Processor
+    {
+        private final Request.Processor _processor;
+
+        // Keep a reference to the first request that created the processor,
+        // so the wrapper created in handle can be reused in process. It is nulled
+        // after first use, so that subsequent uses will create new wrappers.
+        private final AtomicReference<W> _originalWrapper;
+
+        protected ReWrappingProcessor(Processor processor, W originalWrapper)
+        {
+            _processor = Objects.requireNonNull(processor);
+            _originalWrapper = new AtomicReference<>(originalWrapper);
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            W wrapper = _originalWrapper.getAndSet(null);
+            if (wrapper == null)
+                wrapper = wrap(request);
+            process(wrapper, wrap(wrapper, response), callback, _processor);
+        }
+
+        protected abstract W wrap(Request request);
+
+        protected Response wrap(W wrappedRequest, Response response)
+        {
+            return response;
+        }
+
+        protected void process(W request, Response response, Callback callback, Request.Processor next) throws Exception
+        {
+            next.process(request, response, callback);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _processor.getInvocationType();
+        }
     }
 }

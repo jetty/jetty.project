@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ErrorProcessor;
@@ -554,76 +553,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     }
 
     /**
-     * <p>A {@link Handler.Wrapper} that allows for extensible processing and wrapping
-     * of the request and response objects.</p>
-     */
-    abstract class ProcessingWrapper<W extends Request.Wrapper> extends Wrapper
-    {
-        @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            W wrapper = wrap(request);
-            Request.Processor processor = super.handle(wrapper);
-            if (processor == null)
-                return null;
-
-            return wrap(processor, wrapper);
-        }
-
-        protected abstract W wrap(Request request);
-
-        protected Request.Processor wrap(Request.Processor processor, W originalWrappedRequest)
-        {
-            return new WrappingProcessor(processor, originalWrappedRequest);
-        }
-
-        protected Response wrap(W wrappedRequest, Response response)
-        {
-            return response;
-        }
-
-        protected void process(W wrappedRequest, Response response, Callback callback, Request.Processor nextProcessor)
-            throws Exception
-        {
-            nextProcessor.process(wrappedRequest, response, callback);
-        }
-
-        private class WrappingProcessor implements Request.Processor
-        {
-            private final Request.Processor _processor;
-
-            // Keep a reference to the first request that created the processor,
-            // so the wrapper created in handle can be reused in process. It is nulled
-            // after first use, so that subsequent uses will create new wrappers.
-            private volatile W _originalWrappedRequest;
-
-            public WrappingProcessor(Request.Processor processor, W originalWrappedRequest)
-            {
-                _processor = Objects.requireNonNull(processor);
-                _originalWrappedRequest = originalWrappedRequest;
-            }
-
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
-            {
-                W wrapper = _originalWrappedRequest;
-                if (wrapper != null && request == wrapper.getWrapped())
-                    _originalWrappedRequest = null;
-                else
-                    wrapper = wrap(request);
-
-                ProcessingWrapper.this.process(wrapper, wrap(wrapper, response), callback, _processor);
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return _processor.getInvocationType();
-            }
-        }
-    }
-
-    /**
      * <p>A {@link Handler.Container} that contains a list of other {@code Handler}s.</p>
      * 
      * TODO this should be called List instead
@@ -759,6 +688,63 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             {
                 super(InvocationType.NON_BLOCKING);
             }
+        }
+    }
+
+    /**
+     * <p>A {@link Handler.Wrapper} that allows for extensible processing and wrapping
+     * of the request and response objects.</p>
+     */
+    abstract class ProcessingWrapper<W extends Request.Wrapper> extends Wrapper
+    {
+        @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            W wrapper = wrap(request);
+            Request.Processor processor = doHandle(wrapper);
+            return processor == null ? null : wrap(processor, wrapper);
+        }
+
+        protected Request.Processor doHandle(W wrapper) throws Exception
+        {
+            return super.handle(wrapper);
+        }
+
+        protected abstract W wrap(Request request);
+
+        protected Request.Processor wrap(Request.Processor processor, W originalWrappedRequest)
+        {
+            return new Request.ReWrappingProcessor<>(processor, originalWrappedRequest)
+            {
+                @Override
+                protected W wrap(Request request)
+                {
+                    return ProcessingWrapper.this.wrap(request);
+                }
+
+                @Override
+                protected Response wrap(W wrappedRequest, Response response)
+                {
+                    return ProcessingWrapper.this.wrap(wrappedRequest, response);
+                }
+
+                @Override
+                protected void process(W request, Response response, Callback callback, Request.Processor next) throws Exception
+                {
+                    ProcessingWrapper.this.process(request, response, callback, next);
+                }
+            };
+        }
+
+        protected Response wrap(W wrappedRequest, Response response)
+        {
+            return response;
+        }
+
+        protected void process(W wrappedRequest, Response response, Callback callback, Request.Processor nextProcessor)
+            throws Exception
+        {
+            nextProcessor.process(wrappedRequest, response, callback);
         }
     }
 }
