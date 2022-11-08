@@ -464,31 +464,31 @@ public class ResourceService
     }
 
     /**
-     * <p>How welcome paths should be processed.</p>
+     * <p>How welcome targets should be processed.</p>
      */
     public enum WelcomeMode
     {
         /**
-         * The welcome path is used in an HTTP redirect
+         * The welcome target is used in an HTTP redirect
          * as the value of the {@code Location} header.
          */
         REDIRECT,
         /**
-         * The welcome path is served either as a real file
+         * The welcome target is served either as a real file
          * or forwarded to be processed again.
          */
         SERVE,
         /**
-         * The welcome path is wrapped in a new request
+         * The welcome target is wrapped in a new request
          * that is re-handled.
          */
         REHANDLE
     }
 
     /**
-     * <p>A welcome target path paired with how to process it.</p>
+     * <p>A welcome target paired with how to process it.</p>
      *
-     * @param target the welcome target URI path
+     * @param target the welcome target
      * @param mode the welcome mode
      */
     public record WelcomeAction(String target, WelcomeMode mode)
@@ -517,14 +517,14 @@ public class ResourceService
     }
 
     /**
-     * <p>Redirects to the given welcome target path.</p>
+     * <p>Redirects to the given welcome target.</p>
      * <p>Implementations should use HTTP redirect APIs to generate
-     * a redirect response whose location is the welcome target path.</p>
+     * a redirect response whose location is the welcome target.</p>
      *
      * @param request the request to redirect
      * @param response the response
      * @param callback the callback to complete
-     * @param welcomeTarget the welcome target path to redirect to
+     * @param welcomeTarget the welcome target to redirect to
      * @return true when the request will be redirected and the callback completed,
      * false otherwise
      * @throws Exception if the redirection fails
@@ -537,17 +537,17 @@ public class ResourceService
     }
 
     /**
-     * <p>Serves the given welcome target file.</p>
-     * <p>Implementations should write the welcome target
-     * file bytes over the network to the client.</p>
+     * <p>Serves the given welcome target.</p>
+     * <p>Implementations should write the welcome
+     * target bytes over the network to the client.</p>
      *
      * @param request the request
      * @param response the response
      * @param callback the callback to complete
-     * @param welcomeTarget the welcome target file to serve
-     * @return true when the welcome target file will be served and the callback completed,
+     * @param welcomeTarget the welcome target to serve
+     * @return true when the welcome target will be served and the callback completed,
      * false otherwise
-     * @throws Exception if serving the welcome target file fails
+     * @throws Exception if serving the welcome target fails
      */
     protected boolean serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
@@ -557,10 +557,10 @@ public class ResourceService
     }
 
     /**
-     * <p>Rehandles the given welcome target path.</p>
+     * <p>Rehandles the given welcome target.</p>
      * <p>Implementations should call {@link Handler#handle(Request)}
-     * on a {@code Handler} that may handle the welcome target path
-     * differently from the original path.</p>
+     * on a {@code Handler} that may handle the welcome target
+     * differently from the original request.</p>
      * <p>For example, a request for {@code /ctx/} may be rewritten
      * as {@code /ctx/index.jsp} and rehandled from the {@code Server}.
      * In this example, the rehandling of {@code /ctx/index.jsp} may
@@ -571,8 +571,8 @@ public class ResourceService
      * @param request the request
      * @param response the response
      * @param callback the callback to complete
-     * @param welcomeTarget the welcome target path to rehandle to
-     * @return true when the welcome target path will be rehandled and the callback completed,
+     * @param welcomeTarget the welcome target to rehandle to
+     * @return true when the welcome target will be rehandled and the callback completed,
      * false otherwise
      * @throws Exception if the rehandling fails
      */
@@ -757,7 +757,7 @@ public class ResourceService
     }
 
     /**
-     * @return If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * @return If true, directory listings are returned if no welcome target is found. Else 403 Forbidden.
      */
     public boolean isDirAllowed()
     {
@@ -807,7 +807,7 @@ public class ResourceService
     }
 
     /**
-     * @param dirAllowed If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
+     * @param dirAllowed If true, directory listings are returned if no welcome target is found. Else 403 Forbidden.
      */
     public void setDirAllowed(boolean dirAllowed)
     {
@@ -868,11 +868,11 @@ public class ResourceService
     public interface WelcomeFactory
     {
         /**
-         * Finds a matching welcome target URI path for the request.
+         * Finds a matching welcome target for the request.
          *
-         * @param request the request to use to determine the matching welcome target from.
+         * @param request the request to use to determine the matching welcome target
          * @return The URI path of the matching welcome target in context or null
-         * (null means no welcome target was found)
+         * if no welcome target was found
          */
         String getWelcomeTarget(Request request) throws IOException;
     }

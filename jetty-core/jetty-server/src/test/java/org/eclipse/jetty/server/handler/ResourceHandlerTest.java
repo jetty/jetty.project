@@ -93,6 +93,8 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.oneOf;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -3736,6 +3738,55 @@ public class ResourceHandlerTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3B/index.html"));
+    }
+
+    @Test
+    public void testWelcomeRehandleIsRehandled() throws Exception
+    {
+        Path dir = docRoot.resolve("rehandle");
+        FS.ensureDirExists(dir);
+        Path index = dir.resolve("index.txt");
+        Files.writeString(index, "Hello Index", UTF_8);
+
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REHANDLE);
+        _rootResourceHandler.setWelcomeFiles("index.txt");
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("""
+            GET /context/rehandle/ HTTP/1.1
+            Host: localhost
+                        
+            """));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getContent(), containsString("Hello Index"));
+    }
+
+    @Test
+    public void testWelcomeRehandleIsNotRehandled() throws Exception
+    {
+        Path dir = docRoot.resolve("rehandle");
+        FS.ensureDirExists(dir);
+        Path index = dir.resolve("index.txt");
+        Files.writeString(index, "Hello Index", UTF_8);
+
+        _server.stop();
+        // A plain ResourceService does not re-handle.
+        _rootResourceHandler.setResourceService(new ResourceService());
+        _rootResourceHandler.setDirAllowed(false);
+        _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REHANDLE);
+        _rootResourceHandler.setWelcomeFiles("index.txt");
+        _server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("""
+            GET /context/rehandle/ HTTP/1.1
+            Host: localhost
+                        
+            """));
+
+        assertNotNull(response);
+        // Not rehandled, and directory listing is forbidden, so 403.
+        assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
     }
 
     private void copyBigText(Path base) throws IOException

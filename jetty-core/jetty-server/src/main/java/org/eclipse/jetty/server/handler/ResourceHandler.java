@@ -50,25 +50,34 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class ResourceHandler extends Handler.Wrapper
 {
-    private final ResourceService _resourceService;
-
-    private Resource _resourceBase;
+    private ResourceService _resourceService;
+    private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
 
-    public ResourceHandler()
+    public ResourceService getResourceService()
     {
-        _resourceService = new HandlerResourceService();
+        return _resourceService;
+    }
+
+    public void setResourceService(ResourceService resourceService)
+    {
+        if (isStarted())
+            throw new IllegalStateException();
+        _resourceService = resourceService;
     }
 
     @Override
     public void doStart() throws Exception
     {
-        if (_resourceBase == null)
+        if (_resourceService == null)
+            _resourceService = new HandlerResourceService();
+
+        if (_baseResource == null)
         {
             Context context = ContextHandler.getCurrentContext();
             if (context != null)
-                _resourceBase = context.getBaseResource();
+                _baseResource = context.getBaseResource();
         }
 
 // TODO
@@ -78,15 +87,16 @@ public class ResourceHandler extends Handler.Wrapper
 
         setupContentFactory();
 
-        if (_resourceService.getStylesheet() == null)
-            _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
+        ResourceService resourceService = getResourceService();
+        if (resourceService.getStylesheet() == null)
+            resourceService.setStylesheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
     }
 
     private void setupContentFactory()
     {
-        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes, _resourceService.getPrecompressedFormats()));
+        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(ResourceFactory.of(_baseResource), _mimeTypes, _resourceService.getPrecompressedFormats()));
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(request ->
         {
@@ -97,7 +107,7 @@ public class ResourceHandler extends Handler.Wrapper
             {
                 String pathInContext = Request.getPathInContext(request);
                 String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
-                Resource welcomePath = _resourceBase.resolve(pathInContext).resolve(welcome);
+                Resource welcomePath = _baseResource.resolve(pathInContext).resolve(welcome);
                 if (Resources.isReadableFile(welcomePath))
                     return welcomeInContext;
             }
@@ -133,7 +143,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getBaseResource()
     {
-        return _resourceBase;
+        return _baseResource;
     }
 
     /**
@@ -223,7 +233,7 @@ public class ResourceHandler extends Handler.Wrapper
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _resourceBase = base;
+        _baseResource = base;
     }
 
     /**
