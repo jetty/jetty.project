@@ -32,7 +32,7 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.AutoDemandingMessageHandler;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.junit.jupiter.api.AfterEach;
@@ -144,7 +144,7 @@ public class DecoderReaderManySmallTest
         }
     }
 
-    public static class EventIdFrameHandler extends MessageHandler
+    public static class EventIdFrameHandler extends AutoDemandingMessageHandler
     {
         @Override
         public void onText(String text, Callback callback)

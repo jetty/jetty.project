@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.AutoDemandingMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ public class ChatWebSocketServer
 {
     protected static final Logger LOG = LoggerFactory.getLogger(ChatWebSocketServer.class);
 
-    private final Set<MessageHandler> members = new HashSet<>();
+    private final Set<AutoDemandingMessageHandler> members = new HashSet<>();
 
     private FrameHandler negotiate(WebSocketNegotiation negotiation)
     {
@@ -63,7 +63,7 @@ public class ChatWebSocketServer
         negotiation.setSubprotocol("chat");
 
         //  + MUST return the FrameHandler or null or exception?
-        return new MessageHandler()
+        return new AutoDemandingMessageHandler()
         {
             @Override
             public void onOpen(CoreSession coreSession, Callback callback)
@@ -80,7 +80,7 @@ public class ChatWebSocketServer
             @Override
             public void onText(String message, Callback callback)
             {
-                for (MessageHandler handler : members)
+                for (AutoDemandingMessageHandler handler : members)
                 {
                     if (handler == this)
                         continue;

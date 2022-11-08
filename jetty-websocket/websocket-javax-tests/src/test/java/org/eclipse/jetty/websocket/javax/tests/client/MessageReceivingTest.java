@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.AutoDemandingMessageHandler;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.eclipse.jetty.websocket.javax.tests.DataUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -235,7 +235,7 @@ public class MessageReceivingTest
         clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);
     }
 
-    public static class SendPartialTextFrameHandler extends MessageHandler
+    public static class SendPartialTextFrameHandler extends AutoDemandingMessageHandler
     {
         @Override
         public void onText(String wholeMessage, Callback callback)
@@ -255,7 +255,7 @@ public class MessageReceivingTest
         }
     }
 
-    public static class SendPartialBinaryFrameHandler extends MessageHandler
+    public static class SendPartialBinaryFrameHandler extends AutoDemandingMessageHandler
     {
         @Override
         public void onBinary(ByteBuffer wholeMessage, Callback callback)
@@ -305,7 +305,7 @@ public class MessageReceivingTest
         }
     }
 
-    public static class EchoWholeMessageFrameHandler extends MessageHandler
+    public static class EchoWholeMessageFrameHandler extends AutoDemandingMessageHandler
     {
         @Override
         public void onBinary(ByteBuffer wholeMessage, Callback callback)

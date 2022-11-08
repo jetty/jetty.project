@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.AutoDemandingMessageHandler;
 import org.eclipse.jetty.websocket.tests.AutobahnClient;
 import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
@@ -194,7 +194,7 @@ public class CoreAutobahnClient implements AutobahnClient
         }
     }
 
-    public Future<CoreSession> upgrade(MessageHandler handler, URI uri) throws Exception
+    public Future<CoreSession> upgrade(AutoDemandingMessageHandler handler, URI uri) throws Exception
     {
         // We manually set the port as we run the server in docker container.
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, uri, handler);

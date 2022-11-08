@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.AutoDemandingMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,7 @@ public class ChatWebSocketClient
 
     private final URI baseWebsocketUri;
     private final WebSocketCoreClient client;
-    private final MessageHandler handler;
+    private final AutoDemandingMessageHandler handler;
     private String name = String.format("unknown@%x", ThreadLocalRandom.current().nextInt());
 
     public ChatWebSocketClient(String hostname, int port) throws Exception
@@ -137,9 +137,9 @@ public class ChatWebSocketClient
         }
     }
 
-    public static MessageHandler messageHandlerFrom(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
+    public static AutoDemandingMessageHandler messageHandlerFrom(Consumer<String> onText, Consumer<ByteBuffer> onBinary)
     {
-        return new MessageHandler()
+        return new AutoDemandingMessageHandler()
         {
             @Override
             protected void onText(String message, Callback callback)

@@ -24,42 +24,56 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.internal.AbstractMessageHandler;
 
 /**
- * <p>A utility implementation of FrameHandler that de-fragments text frames and binary frames into a whole messages before
- * calling {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.</p>
- * <p>This is a demanding frame handler so flow control is by not automatic, an implementation of {@link #onText(String, Callback)}
- * and {@link #onBinary(ByteBuffer, Callback)} must call {@link CoreSession#demand(long)} to receive the next WebSocket frame.
+ * <p>
+ * A utility implementation of FrameHandler that de-fragments text frames and binary frames into a whole messages before
+ * calling {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.
+ * </p>
+ * <p>
+ * This is a demanding frame handler, meaning {@link FrameHandler#isDemanding()} returns true.
+ * This means that flow control is by not automatic, so implementations of this must always call {@link #demand()} to
+ * receive the next WebSocket frame. This is done by this class for non-final data frames, but the implementations of
+ * {@link #onText(String, Callback)} and {@link #onBinary(ByteBuffer, Callback)} must call {@link #demand()} manually.
+ * </p>
+ * <p>
  * Because this is a demanding FrameHandler it can be more efficient for binary messages by avoiding copies
- * for aggregation until the full message has been received.</p>
+ * for aggregation until the full message has been received.
+ * </p>
+ * @see AutoDemandingMessageHandler
  */
 public class DemandingMessageHandler extends AbstractMessageHandler
 {
     private Utf8StringBuilder _textMessageBuffer;
     private ByteBufferCallbackAccumulator _binaryMessageBuffer;
 
+    public void demand()
+    {
+        getCoreSession().demand(1);
+    }
+
     @Override
     protected void onPingFrame(Frame frame, Callback callback)
     {
         super.onPingFrame(frame, callback);
-        getCoreSession().demand(1);
+        demand();
     }
 
     @Override
     protected void onPongFrame(Frame frame, Callback callback)
     {
         super.onPongFrame(frame, callback);
-        getCoreSession().demand(1);
+        demand();
     }
 
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
         super.onOpen(coreSession, callback);
-        getCoreSession().demand(1);
+        demand();
     }
 
     @Override
@@ -109,7 +123,7 @@ public class DemandingMessageHandler extends AbstractMessageHandler
             else
             {
                 callback.succeeded();
-                getCoreSession().demand(1);
+                demand();
             }
         }
         catch (Utf8Appendable.NotUtf8Exception e)
@@ -181,7 +195,7 @@ public class DemandingMessageHandler extends AbstractMessageHandler
             else
             {
                 callback.succeeded();
-                getCoreSession().demand(1);
+                demand();
             }
         }
         catch (Throwable t)

@@ -82,7 +82,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 callback = Callback.NOOP;
             }
 
-            // If the methodHandle throws we don't want to fail callback twice.
             if (frame.isFin())
             {
                 byte[] buf = out.takeByteArray();

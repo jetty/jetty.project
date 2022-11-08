@@ -16,9 +16,9 @@ package org.eclipse.jetty.websocket.javax.tests.framehandlers;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.AutoDemandingMessageHandler;
 
-public class WholeMessageEcho extends MessageHandler
+public class WholeMessageEcho extends AutoDemandingMessageHandler
 {
     @Override
     public void onBinary(ByteBuffer wholeMessage, Callback callback)

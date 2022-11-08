@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal;
+package org.eclipse.jetty.websocket.core.util;
 
 import java.nio.ByteBuffer;
 
@@ -26,12 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A utility implementation of FrameHandler that de-fragments text frames and binary frames into a whole messages before
- * calling {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.
- * This is a demanding frame handler so
- * Flow control is by default automatic, but an implementation
- * may extend {@link #isDemanding()} to return true and then explicityly control
- * demand with calls to {@link CoreSession#demand(long)}
+ * <p>
+ * A utility class used as to implement whole message handlers. Implementations of this should override
+ * {@link #onTextFrame(Frame, Callback)} and {@link #onBinaryFrame(Frame, Callback)} to aggregate partial WebSocket messages
+ * into a whole message which is then delivered to {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.
+ * </p>
  */
 public abstract class AbstractMessageHandler implements FrameHandler
 {

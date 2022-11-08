@@ -47,7 +47,6 @@ public class DemandingMessageHandlerTest
     static byte[] fourByteUtf8Bytes = fourByteUtf8String.getBytes(StandardCharsets.UTF_8);
     static byte[] nonUtf8Bytes = {0x7F, (byte)0xFF, (byte)0xFF};
 
-    boolean demanding;
     CoreSession coreSession;
     List<String> textMessages = new ArrayList<>();
     List<ByteBuffer> binaryMessages = new ArrayList<>();
@@ -58,8 +57,6 @@ public class DemandingMessageHandlerTest
     @BeforeEach
     public void beforeEach() throws Exception
     {
-        demanding = false;
-
         coreSession = new CoreSession.Empty()
         {
             private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
@@ -92,7 +89,7 @@ public class DemandingMessageHandlerTest
             {
                 textMessages.add(message);
                 callbacks.add(callback);
-                getCoreSession().demand(1);
+                demand();
             }
 
             @Override
@@ -100,13 +97,7 @@ public class DemandingMessageHandlerTest
             {
                 binaryMessages.add(message);
                 callbacks.add(callback);
-                getCoreSession().demand(1);
-            }
-
-            @Override
-            public boolean isDemanding()
-            {
-                return demanding;
+                demand();
             }
         };
 
@@ -228,7 +219,7 @@ public class DemandingMessageHandlerTest
         assertThat(callbacks.size(), is(0));
 
         FutureCallback finalCallback = callback;
-        Exception e = assertThrows(ExecutionException.class, () -> finalCallback.get());
+        Exception e = assertThrows(ExecutionException.class, finalCallback::get);
         assertThat(e.getCause(), instanceOf(BadPayloadException.class));
 
         assertThat(frames.size(), is(0));
@@ -246,7 +237,7 @@ public class DemandingMessageHandlerTest
         assertThat(callbacks.size(), is(0));
 
         FutureCallback finalCallback = callback;
-        Exception e = assertThrows(ExecutionException.class, () -> finalCallback.get());
+        Exception e = assertThrows(ExecutionException.class, finalCallback::get);
         assertThat(e.getCause(), instanceOf(BadPayloadException.class));
 
         assertThat(frames.size(), is(0));
@@ -270,7 +261,7 @@ public class DemandingMessageHandlerTest
         assertThat(callbacks.size(), is(0));
 
         FutureCallback finalCallback = callback;
-        Exception e = assertThrows(ExecutionException.class, () -> finalCallback.get());
+        Exception e = assertThrows(ExecutionException.class, finalCallback::get);
         assertThat(e.getCause(), instanceOf(BadPayloadException.class));
 
         assertThat(frames.size(), is(0));
@@ -309,7 +300,7 @@ public class DemandingMessageHandlerTest
         assertThat(callbacks.size(), is(0));
 
         FutureCallback finalCallback = callback;
-        Exception e = assertThrows(ExecutionException.class, () -> finalCallback.get());
+        Exception e = assertThrows(ExecutionException.class, finalCallback::get);
         assertThat(e.getCause(), instanceOf(MessageTooLargeException.class));
     }
 
@@ -336,7 +327,7 @@ public class DemandingMessageHandlerTest
         assertThat(callbacks.size(), is(0));
 
         FutureCallback finalCallback1 = callback;
-        Exception e = assertThrows(ExecutionException.class, () -> finalCallback1.get());
+        Exception e = assertThrows(ExecutionException.class, finalCallback1::get);
         assertThat(e.getCause(), instanceOf(MessageTooLargeException.class));
     }
 
@@ -356,7 +347,7 @@ public class DemandingMessageHandlerTest
         assertThat(callback2.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
-        ExecutionException e = assertThrows(ExecutionException.class, () -> callback2.get());
+        ExecutionException e = assertThrows(ExecutionException.class, callback2::get);
         assertThat(e.getCause(), instanceOf(MessageTooLargeException.class));
     }
 
@@ -474,7 +465,7 @@ public class DemandingMessageHandlerTest
         assertThat(callbacks.size(), is(0));
 
         FutureCallback finalCallback = callback;
-        Throwable e = assertThrows(ExecutionException.class, () -> finalCallback.get());
+        Throwable e = assertThrows(ExecutionException.class, finalCallback::get);
         assertThat(e.getCause(), instanceOf(MessageTooLargeException.class));
     }
 
@@ -543,7 +534,7 @@ public class DemandingMessageHandlerTest
             {
                 binaryMessages.add(message);
                 callbacks.add(callback);
-                getCoreSession().demand(1);
+                demand();
             }
         };
 
@@ -555,7 +546,7 @@ public class DemandingMessageHandlerTest
         handler.onFrame(new Frame(OpCode.TEXT, true, "test"), callback);
         assertThat(callback.isDone(), is(true));
 
-        Exception e = assertThrows(ExecutionException.class, () -> callback.get());
+        Exception e = assertThrows(ExecutionException.class, callback::get);
         assertThat(e.getCause(), instanceOf(BadPayloadException.class));
 
         assertThat(textMessages.size(), is(0));
@@ -584,7 +575,7 @@ public class DemandingMessageHandlerTest
         handler.onFrame(new Frame(OpCode.BINARY, true, "test"), callback);
         assertThat(callback.isDone(), is(true));
 
-        Exception e = assertThrows(ExecutionException.class, () -> callback.get());
+        Exception e = assertThrows(ExecutionException.class, callback::get);
         assertThat(e.getCause(), instanceOf(BadPayloadException.class));
 
         assertThat(textMessages.size(), is(0));

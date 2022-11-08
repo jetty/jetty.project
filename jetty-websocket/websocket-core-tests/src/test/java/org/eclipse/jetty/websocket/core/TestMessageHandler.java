@@ -20,12 +20,12 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.websocket.core.internal.AbstractMessageHandler;
-import org.eclipse.jetty.websocket.core.util.MessageHandler;
+import org.eclipse.jetty.websocket.core.util.AbstractMessageHandler;
+import org.eclipse.jetty.websocket.core.util.AutoDemandingMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestMessageHandler extends MessageHandler
+public class TestMessageHandler extends AutoDemandingMessageHandler
 {
     protected static final Logger LOG = LoggerFactory.getLogger(TestMessageHandler.class);
 
