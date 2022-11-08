@@ -701,13 +701,8 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         public Request.Processor handle(Request request) throws Exception
         {
             W wrapper = wrap(request);
-            Request.Processor processor = doHandle(wrapper);
+            Request.Processor processor = super.handle(wrapper);
             return processor == null ? null : wrap(processor, wrapper);
-        }
-
-        protected Request.Processor doHandle(W wrapper) throws Exception
-        {
-            return super.handle(wrapper);
         }
 
         protected abstract W wrap(Request request);
