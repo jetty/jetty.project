@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.time.Instant;
 import java.util.Set;
 import java.util.SortedSet;
@@ -22,11 +23,11 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
@@ -44,19 +45,30 @@ import org.slf4j.LoggerFactory;
  * assumed to be valid. This class can be extended to implement the validation behaviours on
  * {@link CachingHttpContent} which allow entries to be evicted once they become invalid.
  * </p>
+ * <p><br>
+ * The default values for the cache are:
+ * <ul>
+ *     <li>maxCachedFileSize: {@value #DEFAULT_MAX_CACHE_SIZE}</li>
+ *     <li>maxCachedFiles: {@value #DEFAULT_MAX_CACHED_FILES}</li>
+ *     <li>maxCacheSize: {@value #DEFAULT_MAX_CACHE_SIZE}</li>
+ * </ul>
+ * </p>
  * @see ValidatingCachingContentFactory
  */
 public class CachingHttpContentFactory implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(CachingHttpContentFactory.class);
+    private static final int DEFAULT_MAX_CACHED_FILE_SIZE = 128 * 1024 * 1024;
+    private static final int DEFAULT_MAX_CACHED_FILES = 2048;
+    private static final int DEFAULT_MAX_CACHE_SIZE = 256 * 1024 * 1024;
 
     private final HttpContent.Factory _authority;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
     private final ByteBufferPool _byteBufferPool;
-    private int _maxCachedFileSize = 128 * 1024 * 1024;
-    private int _maxCachedFiles = 2048;
-    private int _maxCacheSize = 256 * 1024 * 1024;
+    private int _maxCachedFileSize = DEFAULT_MAX_CACHED_FILE_SIZE;
+    private int _maxCachedFiles = DEFAULT_MAX_CACHED_FILES;
+    private int _maxCacheSize = DEFAULT_MAX_CACHE_SIZE;
 
     public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool byteBufferPool)
     {
@@ -257,7 +269,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final String _cacheKey;
         private final HttpField _etagField;
         private final long _contentLengthValue;
-        private final AtomicLong _lastAccessed = new AtomicLong();
+        private volatile long _lastAccessed;
         private final Set<CompressedContentFormat> _compressedFormats;
         private final String _lastModifiedValue;
         private final String _characterEncoding;
@@ -265,7 +277,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final HttpField _contentLength;
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
-        private final AtomicInteger _referenceCount = new AtomicInteger(1);
+        private final Retainable.ReferenceCounter _referenceCount = new Retainable.ReferenceCounter();
 
         public CachedHttpContent(String key, HttpContent httpContent)
         {
@@ -291,7 +303,10 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                     if (contentLengthValue > _maxCachedFileSize)
                     {
                         byteBuffer = _byteBufferPool.acquire((int)contentLengthValue, false);
-                        BufferUtil.readFrom(httpContent.getResource().newReadableByteChannel(), contentLengthValue, byteBuffer);
+                        try (ReadableByteChannel readableByteChannel = httpContent.getResource().newReadableByteChannel())
+                        {
+                            BufferUtil.readFrom(readableByteChannel, contentLengthValue, byteBuffer);
+                        }
                     }
                 }
                 catch (Throwable t)
@@ -315,7 +330,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             _lastModifiedInstant = httpContent.getLastModifiedInstant();
             _lastModified = httpContent.getLastModified();
 
-            _lastAccessed.set(NanoTime.now());
+            _lastAccessed = NanoTime.now();
         }
 
         @Override
@@ -333,13 +348,13 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public long getLastAccessedNanos()
         {
-            return _lastAccessed.get();
+            return _lastAccessed;
         }
 
         @Override
         public void setLastAccessedNanos(long nanosTime)
         {
-            _lastAccessed.set(nanosTime);
+            _lastAccessed = nanosTime;
         }
 
         @Override
@@ -351,13 +366,13 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void retain()
         {
-            _referenceCount.incrementAndGet();
+            _referenceCount.retain();
         }
 
         @Override
         public void release()
         {
-            if (_referenceCount.decrementAndGet() == 0)
+            if (_referenceCount.release())
             {
                 if (_buffer != null)
                     _byteBufferPool.release(_buffer);
@@ -428,14 +443,14 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
     protected static class NotFoundHttpContent implements CachingHttpContent
     {
-        private final AtomicLong _lastAccessed = new AtomicLong();
+        private volatile long _lastAccessed;
 
         private final String _key;
 
         public NotFoundHttpContent(String key)
         {
             _key = key;
-            _lastAccessed.set(NanoTime.now());
+            _lastAccessed = NanoTime.now();
         }
 
         @Override
@@ -447,13 +462,13 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public long getLastAccessedNanos()
         {
-            return _lastAccessed.get();
+            return _lastAccessed;
         }
 
         @Override
         public void setLastAccessedNanos(long nanosTime)
         {
-            _lastAccessed.set(nanosTime);
+            _lastAccessed = nanosTime;
         }
 
         @Override

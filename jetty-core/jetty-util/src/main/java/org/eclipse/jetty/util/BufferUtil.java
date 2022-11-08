@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -595,14 +596,32 @@ public class BufferUtil
         }
     }
 
-    public static void readFrom(ReadableByteChannel newReadableByteChannel, long contentLengthValue, ByteBuffer byteBuffer) throws IOException
+    /**
+     * Read content from a {@link ReadableByteChannel} into a buffer.
+     * This may spin if {@link ReadableByteChannel#read(ByteBuffer)} returns 0 in which case this
+     * will call {@link Thread#onSpinWait()}.
+     *
+     * @param readableByteChannel the channel to read from.
+     * @param contentLengthValue the length of the content to read.
+     * @param byteBuffer the buffer to read into.
+     * @throws IOException if an I/O error occurs.
+     */
+    public static void readFrom(ReadableByteChannel readableByteChannel, long contentLengthValue, ByteBuffer byteBuffer) throws IOException
     {
         int pos = BufferUtil.flipToFill(byteBuffer);
-        try (ReadableByteChannel channel = newReadableByteChannel)
+        try
         {
-            int read = 0;
-            while (read != contentLengthValue)
-                read += channel.read(byteBuffer);
+            int totalRead = 0;
+            while (totalRead != contentLengthValue)
+            {
+                int read = readableByteChannel.read(byteBuffer);
+                if (read == 0)
+                    Thread.onSpinWait();
+                else if (read < 0)
+                    throw new EOFException();
+                else
+                    totalRead += read;
+            }
         }
         finally
         {

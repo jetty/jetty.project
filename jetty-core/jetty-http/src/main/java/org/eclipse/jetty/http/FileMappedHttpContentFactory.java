@@ -25,15 +25,29 @@ import org.slf4j.LoggerFactory;
 public class FileMappedHttpContentFactory implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileMappedHttpContentFactory.class);
+    private static final int DEFAULT_MIN_FILE_SIZE = 16 * 1024;
 
     private final HttpContent.Factory _factory;
     private final int _minFileSize;
 
+    /**
+     * Construct a {@link FileMappedHttpContentFactory} which can use file mapped buffers.
+     * Uses a default value of {@value DEFAULT_MIN_FILE_SIZE} for the minimum size of an
+     * {@link HttpContent} before trying to use a file mapped buffer.
+     *
+     * @param factory the wrapped {@link HttpContent.Factory} to use.
+     */
     public FileMappedHttpContentFactory(HttpContent.Factory factory)
     {
-        this(factory, 16 * 1024);
+        this(factory, DEFAULT_MIN_FILE_SIZE);
     }
 
+    /**
+     * Construct a {@link FileMappedHttpContentFactory} which can use file mapped buffers.
+     *
+     * @param factory the wrapped {@link HttpContent.Factory} to use.
+     * @param minFileSize the minimum size of an {@link HttpContent} before trying to use a file mapped buffer.
+     */
     public FileMappedHttpContentFactory(HttpContent.Factory factory, int minFileSize)
     {
         _factory = Objects.requireNonNull(factory);
@@ -49,7 +63,7 @@ public class FileMappedHttpContentFactory implements HttpContent.Factory
         return content;
     }
 
-    public static class FileMappedContent extends HttpContentWrapper
+    private static class FileMappedContent extends HttpContentWrapper
     {
         private final AutoLock _lock = new AutoLock();
         private final HttpContent _content;

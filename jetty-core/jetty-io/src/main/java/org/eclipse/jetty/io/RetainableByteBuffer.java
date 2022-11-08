@@ -38,7 +38,7 @@ public class RetainableByteBuffer extends Retainable.ReferenceCounter
     private final Consumer<RetainableByteBuffer> releaser;
     private final AtomicLong lastUpdate = new AtomicLong(NanoTime.now());
 
-    public RetainableByteBuffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
+    RetainableByteBuffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
     {
         super(0);
         this.releaser = releaser;
