@@ -1384,7 +1384,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
-        if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
+        if (pathInContext == null || !pathInContext.startsWith("/"))
             throw new MalformedURLException(pathInContext);
 
         Resource baseResource = _coreContextHandler.getBaseResource();
@@ -1476,8 +1476,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             Resource resource = getResource(path);
 
-            if (!path.endsWith(URIUtil.SLASH))
-                path = path + URIUtil.SLASH;
+            if (!path.endsWith("/"))
+                path = path + "/";
 
             HashSet<String> set = new HashSet<>();
 
@@ -1814,9 +1814,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (path == null)
                 return null;
             if (path.length() == 0)
-                path = URIUtil.SLASH;
+                path = "/";
             else if (path.charAt(0) != '/')
-                path = URIUtil.SLASH + path;
+                path = "/" + path;
 
             try
             {

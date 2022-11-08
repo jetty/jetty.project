@@ -74,7 +74,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -580,7 +579,7 @@ public class StreamResetTest extends AbstractTest
     @Test
     public void testServerExceptionConsumesQueuedData() throws Exception
     {
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             start(new Handler.Processor()
             {
