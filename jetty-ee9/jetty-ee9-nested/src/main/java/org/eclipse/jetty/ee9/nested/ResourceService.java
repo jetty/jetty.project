@@ -233,7 +233,7 @@ public class ResourceService
 
         String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
 
-        boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith(URIUtil.SLASH);
+        boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith("/");
         boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges == null;
 
         HttpContent content = null;
@@ -650,7 +650,7 @@ public class ResourceService
         }
 
         byte[] data = null;
-        String base = URIUtil.addEncodedPaths(request.getRequestURI(), URIUtil.SLASH);
+        String base = URIUtil.addEncodedPaths(request.getRequestURI(), "/");
         String dir = ResourceListing.getAsXHTML(resource, base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
         {

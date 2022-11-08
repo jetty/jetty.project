@@ -182,8 +182,8 @@ public class PathResource extends Resource
         if (Files.isDirectory(path))
         {
             String uriString = uri.toASCIIString();
-            if (!uriString.endsWith(URIUtil.SLASH))
-                uri = URIUtil.correctFileURI(URI.create(uriString + URIUtil.SLASH));
+            if (!uriString.endsWith("/"))
+                uri = URIUtil.correctFileURI(URI.create(uriString + "/"));
         }
 
         this.path = path;
@@ -282,7 +282,7 @@ public class PathResource extends Resource
         if (URIUtil.isNotNormalWithinSelf(subUriPath))
             throw new IllegalArgumentException(subUriPath);
 
-        if (URIUtil.SLASH.equals(subUriPath))
+        if ("/".equals(subUriPath))
             return this;
 
         URI uri = getURI();
