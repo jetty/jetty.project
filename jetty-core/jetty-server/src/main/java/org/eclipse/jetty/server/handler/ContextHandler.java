@@ -676,7 +676,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (processor == null)
             return null;
 
-        return new ContextProcessor(processor);
+        return new ContextProcessor(processor, contextRequest);
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -1243,23 +1243,31 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
-    public class ContextProcessor implements Request.Processor
+    public class ContextProcessor extends Request.ReWrappingProcessor<ContextRequest>
     {
         private final Request.Processor _processor;
 
-        public ContextProcessor(Request.Processor processor)
+        public ContextProcessor(Request.Processor processor, ContextRequest contextRequest)
         {
+            super(processor, contextRequest);
             _processor = processor;
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        protected ContextRequest wrap(Request request)
         {
-            // TODO better mechanism than attributes to reuse the wrapper?
-            ContextRequest contextRequest = (ContextRequest)request.getAttribute(ContextRequest.class.getName());
-            if (contextRequest == null)
-                contextRequest = wrap(request);
-            ContextResponse contextResponse = contextRequest.wrap(response);
+            return ContextHandler.this.wrap(request);
+        }
+
+        @Override
+        protected Response wrap(ContextRequest contextRequest, Response response)
+        {
+            return contextRequest.wrap(response);
+        }
+
+        @Override
+        protected void process(ContextRequest contextRequest, Response contextResponse, Callback callback, Request.Processor next) throws Exception
+        {
             Context lastContext = __context.get();
             if (lastContext == _context)
                 _processor.process(contextRequest, contextResponse, callback);
@@ -1281,12 +1289,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                     exitScope(contextRequest, lastContext, lastLoader);
                 }
             }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return _processor.getInvocationType();
         }
     }
 }
