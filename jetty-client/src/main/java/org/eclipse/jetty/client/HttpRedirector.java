@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.NanoTime;
@@ -315,7 +316,14 @@ public class HttpRedirector
             redirect.method(method);
 
             if (HttpMethod.GET.is(method))
+            {
                 redirect.body(null);
+                redirect.headers(headers ->
+                {
+                    headers.remove(HttpHeader.CONTENT_LENGTH);
+                    headers.remove(HttpHeader.CONTENT_TYPE);
+                });
+            }
 
             Request.Content body = redirect.getBody();
             if (body != null && !body.isReproducible())
