@@ -55,7 +55,7 @@ public class AllowedResourceAliasCheckerTest
     }
 
     @BeforeEach
-    public void setupContext(WorkDir workDir)
+    public void prepare(WorkDir workDir)
     {
         _client = new HttpClient();
         _server = new Server();
