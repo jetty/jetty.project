@@ -55,7 +55,7 @@ public class AllowedResourceAliasCheckerTest
     }
 
     @BeforeEach
-    public void startServer(WorkDir workDir)
+    public void setupContext(WorkDir workDir)
     {
         _client = new HttpClient();
         _server = new Server();
@@ -72,7 +72,7 @@ public class AllowedResourceAliasCheckerTest
     }
 
     @AfterEach
-    public void teardown()
+    public void dispose()
     {
         LifeCycle.stop(_client);
         LifeCycle.stop(_server);
