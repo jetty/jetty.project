@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.opentest4j.TestAbortedException;
@@ -282,6 +283,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -292,6 +294,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -302,8 +305,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -329,6 +333,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -336,8 +341,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         init(transport);
 
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -365,6 +371,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testRetryAfterConnectTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -372,8 +379,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         init(transport);
 
-        final String host = "10.255.255.1";
-        final int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 

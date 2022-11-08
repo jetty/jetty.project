@@ -238,9 +238,9 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 }
                 else
                 {
-                    // Send 100-Continue and consume the content
-                    IO.copy(request.getInputStream(), new ByteArrayOutputStream());
-                    // Send a redirect
+                    // Send 100-Continue and consume the content.
+                    IO.copy(request.getInputStream(), OutputStream.nullOutputStream());
+                    // Send a redirect.
                     response.sendRedirect("/done");
                 }
             }
