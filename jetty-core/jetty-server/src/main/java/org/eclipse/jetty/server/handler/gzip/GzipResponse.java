@@ -54,11 +54,12 @@ public class GzipResponse extends Response.Wrapper
     private final HttpField _vary;
     private final int _bufferSize;
     private final boolean _syncFlush;
+    private final boolean _deflateable;
 
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponse(Request request, Response wrapped, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
+    public GzipResponse(GzipRequest request, Response wrapped, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
     {
         super(request, wrapped);
 
@@ -66,6 +67,7 @@ public class GzipResponse extends Response.Wrapper
         _vary = vary;
         _bufferSize = bufferSize;
         _syncFlush = syncFlush;
+        _deflateable = request.isDeflateable();
     }
 
     @Override
@@ -158,7 +160,7 @@ public class GzipResponse extends Response.Wrapper
             if (contentLength < 0 && last)
                 contentLength = BufferUtil.length(content);
 
-            _deflaterEntry = _factory.getDeflaterEntry(request, contentLength);
+            _deflaterEntry = _deflateable ? _factory.getDeflaterEntry(request, contentLength) : null;
             if (_deflaterEntry == null)
             {
                 LOG.debug("{} exclude no deflater", this);

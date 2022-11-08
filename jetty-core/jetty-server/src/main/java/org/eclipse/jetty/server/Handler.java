@@ -714,26 +714,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
         protected Request.Processor wrap(Request.Processor processor, W originalWrappedRequest)
         {
-            return new Request.ReWrappingProcessor<>(processor, originalWrappedRequest)
-            {
-                @Override
-                protected W wrap(Request request)
-                {
-                    return ProcessingWrapper.this.wrap(request);
-                }
-
-                @Override
-                protected Response wrap(W wrappedRequest, Response response)
-                {
-                    return ProcessingWrapper.this.wrap(wrappedRequest, response);
-                }
-
-                @Override
-                protected void process(W request, Response response, Callback callback, Request.Processor next) throws Exception
-                {
-                    ProcessingWrapper.this.process(request, response, callback, next);
-                }
-            };
+            return new ProcessingWrapperProcessor(processor, originalWrappedRequest);
         }
 
         protected Response wrap(W wrappedRequest, Response response)
@@ -745,6 +726,32 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             throws Exception
         {
             nextProcessor.process(wrappedRequest, response, callback);
+        }
+
+        protected class ProcessingWrapperProcessor extends Request.ReWrappingProcessor<W>
+        {
+            public ProcessingWrapperProcessor(Request.Processor processor, W originalWrappedRequest)
+            {
+                super(processor, originalWrappedRequest);
+            }
+
+            @Override
+            protected W wrap(Request request)
+            {
+                return ProcessingWrapper.this.wrap(request);
+            }
+
+            @Override
+            protected Response wrap(W wrappedRequest, Response response)
+            {
+                return ProcessingWrapper.this.wrap(wrappedRequest, response);
+            }
+
+            @Override
+            protected void process(W request, Response response, Callback callback, Request.Processor next) throws Exception
+            {
+                ProcessingWrapper.this.process(request, response, callback, next);
+            }
         }
     }
 }

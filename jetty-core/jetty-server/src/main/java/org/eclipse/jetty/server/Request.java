@@ -740,6 +740,7 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        @Deprecated
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             Processor processor = _processor;
