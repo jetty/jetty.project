@@ -131,7 +131,7 @@ public class CombinedResource extends Resource
         if (URIUtil.isNotNormalWithinSelf(subUriPath))
             throw new IllegalArgumentException(subUriPath);
 
-        if (subUriPath.length() == 0 || URIUtil.SLASH.equals(subUriPath))
+        if (subUriPath.length() == 0 || "/".equals(subUriPath))
         {
             return this;
         }

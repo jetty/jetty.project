@@ -179,7 +179,7 @@ public class ResourceService
         // Is this a Range request?
         List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());
 
-        boolean endsWithSlash = pathInContext.endsWith(URIUtil.SLASH);
+        boolean endsWithSlash = pathInContext.endsWith("/");
 
         try
         {
@@ -557,7 +557,7 @@ public class ResourceService
             return;
         }
 
-        String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), URIUtil.SLASH);
+        String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), "/");
         String listing = ResourceListing.getAsXHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
         {

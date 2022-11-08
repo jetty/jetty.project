@@ -14,6 +14,8 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -22,7 +24,8 @@ import org.junit.jupiter.api.AfterEach;
 public abstract class AbstractRuleTest
 {
     protected Server _server = new Server();
-    protected LocalConnector _connector = new LocalConnector(_server);
+    protected HttpConfiguration httpConfig = new HttpConfiguration();
+    protected LocalConnector _connector = new LocalConnector(_server, new HttpConnectionFactory(httpConfig));
     protected RewriteHandler _rewriteHandler = new RewriteHandler();
 
     @AfterEach

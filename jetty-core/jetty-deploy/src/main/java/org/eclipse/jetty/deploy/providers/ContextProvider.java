@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Environment;
@@ -481,7 +480,7 @@ public class ContextProvider extends ScanningAppProvider
         // special case of archive (or dir) named "root" is / context
         if (contextPath.equalsIgnoreCase("root"))
         {
-            contextPath = URIUtil.SLASH;
+            contextPath = "/";
         }
         // handle root with virtual host form
         else if (StringUtil.startsWithIgnoreCase(contextPath, "root-"))
@@ -489,7 +488,7 @@ public class ContextProvider extends ScanningAppProvider
             int dash = contextPath.indexOf('-');
             String virtual = contextPath.substring(dash + 1);
             context.setVirtualHosts(Arrays.asList(virtual.split(",")));
-            contextPath = URIUtil.SLASH;
+            contextPath = "/";
         }
 
         // Ensure "/" is Prepended to all context paths.
