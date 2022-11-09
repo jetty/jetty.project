@@ -19,7 +19,9 @@
 package org.eclipse.jetty.test;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -88,7 +90,11 @@ public class AllowedResourceAliasCheckerTest
         FS.ensureDirExists(_baseDir);
 
         // Create a file in the baseDir.
-        Path file = Files.writeString(_baseDir.resolve("file.txt"), "this is a file in the baseDir");
+        Path file = _baseDir.resolve("file.txt");
+        try (OutputStream outputStream = Files.newOutputStream(file))
+        {
+            outputStream.write("this is a file in the baseDir".getBytes(StandardCharsets.UTF_8));
+        }
 
         boolean symlinkSupported;
         try
