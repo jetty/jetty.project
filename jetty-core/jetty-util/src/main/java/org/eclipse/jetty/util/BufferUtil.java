@@ -602,6 +602,7 @@ public class BufferUtil
      *
      * @param readableByteChannel the channel to read from.
      * @param byteBuffer the buffer to read into.
+     * @return the number of bytes read into the buffer.
      * @throws IOException if an I/O error occurs.
      */
     public static int readFrom(ReadableByteChannel readableByteChannel, ByteBuffer byteBuffer) throws IOException
