@@ -378,7 +378,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         String uri = request.getRequestURI();
         if (uri == null)
-            uri = URIUtil.SLASH;
+            uri = "/";
 
         mandatory |= isJSecurityCheck(uri);
         if (!mandatory)

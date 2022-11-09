@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
-  <name>Jetty Core :: QUIC :: Quiche :: Foreign Binding (incubator)</name>
+  <name>Jetty Core :: QUIC :: Quiche :: Foreign (Java 17)</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quic-quiche-foreign-incubator</bundle-symbolic-name>
@@ -20,9 +20,6 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>17</source>
-          <target>17</target>
-          <release>17</release>
           <compilerArgs>
             <arg>--add-modules</arg>
             <arg>jdk.incubator.foreign</arg>
@@ -70,7 +67,7 @@
        changed both its API (18) and its name (19), so tests are disabled on JDKs over 17.
        Eventually, new Foreign modules for JDKs 18 and 19 should be added.
        -->
-      <id>jdk18+</id>
+      <id>jdk18</id>
       <activation>
         <jdk>[18,)</jdk>
       </activation>

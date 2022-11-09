@@ -43,7 +43,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
-                Content.Sink.write(response, false, "pathInContext=%s%n".formatted(request.getPathInContext()), Callback.NOOP);
+                Content.Sink.write(response, false, "pathInContext=%s%n".formatted(Request.getPathInContext(request)), Callback.NOOP);
                 Content.Sink.write(response, false, "path=%s%n".formatted(request.getHttpURI().getPath()), Callback.NOOP);
                 Content.Sink.write(response, false, "query=%s%n".formatted(request.getHttpURI().getQuery()), Callback.NOOP);
                 Request original = Request.unWrap(request);

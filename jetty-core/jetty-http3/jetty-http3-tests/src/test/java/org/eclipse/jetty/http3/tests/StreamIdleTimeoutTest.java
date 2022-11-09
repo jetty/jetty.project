@@ -26,6 +26,7 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -83,11 +84,11 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
         {
             @Override
-            public boolean onIdleTimeout(Stream.Client stream, Throwable failure)
+            public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
             {
                 clientIdleLatch.countDown();
                 // Signal to close the stream.
-                return true;
+                promise.succeeded(true);
             }
         }).get(5, TimeUnit.SECONDS);
 
@@ -138,10 +139,10 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                     return new Stream.Server.Listener()
                     {
                         @Override
-                        public boolean onIdleTimeout(Stream.Server stream, Throwable failure)
+                        public void onIdleTimeout(Stream.Server stream, Throwable failure, Promise<Boolean> promise)
                         {
                             serverIdleLatch.countDown();
-                            return true;
+                            promise.succeeded(true);
                         }
                     };
                 }

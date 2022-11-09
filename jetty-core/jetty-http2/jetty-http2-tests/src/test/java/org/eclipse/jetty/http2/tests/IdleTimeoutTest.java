@@ -388,11 +388,11 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public boolean onIdleTimeout(Stream stream, Throwable x)
+            public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
             {
                 assertThat(x, Matchers.instanceOf(TimeoutException.class));
                 timeoutLatch.countDown();
-                return true;
+                promise.succeeded(true);
             }
         });
 
@@ -425,10 +425,10 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener()
                 {
                     @Override
-                    public boolean onIdleTimeout(Stream stream, Throwable x)
+                    public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
                     {
                         timeoutLatch.countDown();
-                        return true;
+                        promise.succeeded(true);
                     }
                 };
             }
@@ -472,10 +472,10 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener()
                 {
                     @Override
-                    public boolean onIdleTimeout(Stream stream, Throwable x)
+                    public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
                     {
                         timeoutLatch.countDown();
-                        return true;
+                        promise.succeeded(true);
                     }
                 };
             }

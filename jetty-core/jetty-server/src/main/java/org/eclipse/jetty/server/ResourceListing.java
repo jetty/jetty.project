@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,9 @@ public class ResourceListing
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
-        if (base == null || !resource.isDirectory())
+        if (base == null)
+            return null;
+        if (!Resources.isReadableDirectory(resource))
             return null;
 
         List<Resource> listing = resource.list().stream()
@@ -222,7 +225,7 @@ public class ResourceListing
 
             // Ensure name has a slash if it's a directory
             if (item.isDirectory() && !name.endsWith("/"))
-                name += URIUtil.SLASH;
+                name += "/";
 
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");

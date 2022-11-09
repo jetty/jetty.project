@@ -40,9 +40,10 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,7 +220,7 @@ public class MavenWebAppContext extends WebAppContext
      * configuration
      *
      * @param resourceBases Array of resources strings to set as a
-     * {@link ResourceCollection}.
+     * {@link CombinedResource}.
      */
     public void setResourceBases(String[] resourceBases)
     {
@@ -369,7 +370,7 @@ public class MavenWebAppContext extends WebAppContext
 
         // If no regular resource exists check for access to /WEB-INF/lib or
         // /WEB-INF/classes
-        if ((resource == null || !resource.exists()) && pathInContext != null && _classes != null)
+        if (resource == null && pathInContext != null && _classes != null)
         {
             // Normalize again to look for the resource inside /WEB-INF subdirectories.
             String uri = URIUtil.normalizePath(pathInContext);
@@ -394,11 +395,11 @@ public class MavenWebAppContext extends WebAppContext
                     // try matching
                     Resource res = null;
                     int i = 0;
-                    while (res == null && (i < _webInfClasses.size()))
+                    while (Resources.missing(res) && (i < _webInfClasses.size()))
                     {
                         String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                         res = ResourceFactory.of(this).newResource(newPath);
-                        if (!res.exists())
+                        if (Resources.missing(res))
                         {
                             res = null;
                             i++;

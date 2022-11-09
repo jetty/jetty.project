@@ -89,6 +89,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -710,8 +712,16 @@ public class RequestTest
         assertThat(responses, startsWith("HTTP/1.1 200"));
     }
 
-    @Test
-    public void testInvalidHostHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Host: whatever.com:xxxx", // invalid port
+        "Host: myhost:testBadPort", // invalid port
+        "Host: a b c d", // spaces
+        "Host: a\to\tz", // control characters
+        "Host: hosta, hostb, hostc", // spaces (commas are ok)
+        "Host: hosta\nHost: hostb\nHost: hostc" // multi-line
+    })
+    public void testInvalidHostHeader(String hostline) throws Exception
     {
         // Use a contextHandler with vhosts to force call to Request.getServerName()
         _server.stop();
@@ -720,7 +730,7 @@ public class RequestTest
 
         // Request with illegal Host header
         String request = "GET / HTTP/1.1\n" +
-            "Host: whatever.com:xxxx\n" +
+            hostline + "\n" +
             "Content-Type: text/html;charset=utf8\n" +
             "Connection: close\n" +
             "\n";
@@ -2246,6 +2256,7 @@ public class RequestTest
 
     private static class TestCoreRequest implements org.eclipse.jetty.server.Request
     {
+        private final Server _server = new Server();
         private final ConnectionMetaData _connectionMetaData;
         private final String _uri;
         private final HttpFields.Mutable _fields;
@@ -2290,13 +2301,7 @@ public class RequestTest
         @Override
         public Context getContext()
         {
-            return null;
-        }
-
-        @Override
-        public String getPathInContext()
-        {
-            return _uri;
+            return _server.getContext();
         }
 
         @Override

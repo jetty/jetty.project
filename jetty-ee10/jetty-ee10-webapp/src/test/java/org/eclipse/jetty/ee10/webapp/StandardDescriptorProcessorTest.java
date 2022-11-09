@@ -14,12 +14,14 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StandardDescriptorProcessorTest
@@ -53,12 +54,13 @@ public class StandardDescriptorProcessorTest
     }
 
     @Test
-    public void testVisitSessionConfig() throws Exception
+    public void testVisitSessionConfig(WorkDir workDir) throws Exception
     {
         File webXml = MavenTestingUtils.getTestResourceFile("web-session-config.xml");
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
-        wac.setBaseResource(MavenTestingUtils.getTargetTestingPath("testSessionConfig"));
+        Path docroot = workDir.getEmptyPathDir();
+        wac.setBaseResourceAsPath(docroot);
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));

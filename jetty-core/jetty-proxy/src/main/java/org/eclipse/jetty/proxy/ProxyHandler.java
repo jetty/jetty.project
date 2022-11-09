@@ -480,7 +480,7 @@ public abstract class ProxyHandler extends Handler.Processor
      * <p>Forward proxies are configured in client applications that use
      * {@link HttpClient} in this way:</p>
      * <pre>{@code
-     * httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+     * httpClient.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
      * }</pre>
      *
      * @see org.eclipse.jetty.client.ProxyConfiguration
@@ -517,6 +517,37 @@ public abstract class ProxyHandler extends Handler.Processor
     {
         private final Function<Request, HttpURI> httpURIRewriter;
 
+        /**
+         * <p>Convenience constructor that provides a rewrite function
+         * using {@link String#replaceAll(String, String)}.</p>
+         * <p>As a simple example, given the URI pattern of:</p>
+         * <p>{@code (https?)://([a-z]+):([0-9]+)/([^/]+)/(.*)}</p>
+         * <p>and given a replacement string of:</p>
+         * <p>{@code $1://$2:9000/proxy/$5}</p>
+         * <p>an incoming {@code HttpURI} of:</p>
+         * <p>{@code http://host:8080/ctx/path}</p>
+         * <p>will be rewritten as:</p>
+         * <p>{@code http://host:9000/proxy/path}</p>
+         *
+         * @param uriPattern the regex pattern to use to match the incoming URI
+         * @param uriReplacement the replacement string to use to rewrite the incoming URI
+         */
+        public Reverse(String uriPattern, String uriReplacement)
+        {
+            this(request ->
+            {
+                String uri = request.getHttpURI().toString();
+                return HttpURI.build(uri.replaceAll(uriPattern, uriReplacement));
+            });
+        }
+
+        /**
+         * <p>Creates a new instance with the given {@code HttpURI} rewrite function.</p>
+         * <p>The rewrite functions rewrites the client-to-proxy request URI into the
+         * proxy-to-server request URI.</p>
+         *
+         * @param httpURIRewriter a function that returns the URI of the server
+         */
         public Reverse(Function<Request, HttpURI> httpURIRewriter)
         {
             this.httpURIRewriter = Objects.requireNonNull(httpURIRewriter);
@@ -529,11 +560,11 @@ public abstract class ProxyHandler extends Handler.Processor
 
         /**
          * {@inheritDoc}
-         * <p>Applications that use this class must provide a rewrite function
-         * to the constructor.</p>
+         * <p>Applications that use this class typically provide a rewrite
+         * function to the constructor.</p>
          * <p>The rewrite function rewrites the client-to-proxy request URI,
-         * for example {@code http://example.com/path}, to the proxy-to-server
-         * request URI, for example {@code http://backend1:8080/path}.</p>
+         * for example {@code http://example.com/app/path}, to the proxy-to-server
+         * request URI, for example {@code http://backend1:8080/legacy/path}.</p>
          *
          * @param clientToProxyRequest the client-to-proxy request
          * @return the proxy-to-server request URI.

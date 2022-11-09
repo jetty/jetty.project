@@ -115,7 +115,7 @@ public class DefaultServletTest
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
 
         context = new ServletContextHandler();
-        context.setBaseResource(docRoot);
+        context.setBaseResourceAsPath(docRoot);
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
         context.setClassLoader(extraClassLoader);
@@ -358,7 +358,7 @@ public class DefaultServletTest
         FS.ensureDirExists(docRoot.resolve("three"));
 
         String resBasePath = docRoot.toAbsolutePath().toString();
-        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("baseResource", resBasePath);
 
         String req1 = """
             GET /context/one/deep/ HTTP/1.1\r

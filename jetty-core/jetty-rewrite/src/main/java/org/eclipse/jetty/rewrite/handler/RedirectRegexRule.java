@@ -34,6 +34,10 @@ public class RedirectRegexRule extends RegexRule
     protected String _location;
     private int _statusCode = HttpStatus.FOUND_302;
 
+    public RedirectRegexRule()
+    {
+    }
+
     public RedirectRegexRule(@Name("regex") String regex, @Name("location") String location)
     {
         super(regex);

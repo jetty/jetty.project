@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 
@@ -71,7 +70,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 
         // special case of archive (or dir) named "root" is / context
         if (path.equalsIgnoreCase("root") || path.equalsIgnoreCase("root/"))
-            path = URIUtil.SLASH;
+            path = "/";
 
         // Ensure "/" is Prepended to all context paths.
         if (path.charAt(0) != '/')

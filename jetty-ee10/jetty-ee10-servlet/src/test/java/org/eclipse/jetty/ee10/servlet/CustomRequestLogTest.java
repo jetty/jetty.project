@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.concurrent.BlockingQueue;
@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.security.Constraint;
@@ -48,9 +49,10 @@ import static org.hamcrest.Matchers.is;
 public class CustomRequestLogTest
 {
     private final BlockingQueue<String> _logs = new BlockingArrayQueue<>();
+    public WorkDir workDir;
     private Server _server;
     private LocalConnector _connector;
-    private Path _tmpDir;
+    private Path _baseDir;
 
     private void start(String formatString, HttpServlet servlet) throws Exception
     {
@@ -62,9 +64,11 @@ public class CustomRequestLogTest
         RequestLog requestLog = new CustomRequestLog(writer, formatString);
         _server.setRequestLog(requestLog);
 
-        _tmpDir = Path.of(System.getProperty("java.io.tmpdir")).toRealPath();
+        _baseDir = workDir.getEmptyPathDir();
+        Files.createDirectory(_baseDir.resolve("servlet"));
+        Files.createFile(_baseDir.resolve("servlet/info"));
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setBaseResource(_tmpDir);
+        context.setBaseResourceAsPath(_baseDir);
         context.setContextPath("/context");
         context.addServlet(new ServletHolder(servlet), "/servlet/*");
 
@@ -108,7 +112,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /context/servlet/info HTTP/1.0\n\n");
         String log = _logs.poll(5, TimeUnit.SECONDS);
-        String expected = new File(_tmpDir + File.separator + "servlet" + File.separator + "info").getCanonicalPath();
+        String expected = workDir.getPath().resolve("servlet/info").toString();
         assertThat(log, is("Filename: " + expected));
     }
 

@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -277,7 +278,7 @@ public class MultiPartCaptureTest
                 MessageDigest digest = MessageDigest.getInstance("SHA1");
                 assertTrue(part.getContent().rewind());
                 try (InputStream partInputStream = Content.Source.asInputStream(part.getContent());
-                     DigestOutputStream digester = new DigestOutputStream(IO.getNullStream(), digest))
+                     DigestOutputStream digester = new DigestOutputStream(OutputStream.nullOutputStream(), digest))
                 {
                     IO.copy(partInputStream, digester);
                     String actualSha1sum = Hex.asHex(digest.digest()).toLowerCase(Locale.US);

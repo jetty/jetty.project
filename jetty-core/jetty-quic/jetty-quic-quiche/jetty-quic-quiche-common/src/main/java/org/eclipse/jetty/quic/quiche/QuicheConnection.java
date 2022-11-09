@@ -49,14 +49,14 @@ public abstract class QuicheConnection
             LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
     }
 
-    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer) throws IOException
+    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer) throws IOException
     {
-        return connect(quicheConfig, peer, Quiche.QUICHE_MAX_CONN_ID_LEN);
+        return connect(quicheConfig, local, peer, Quiche.QUICHE_MAX_CONN_ID_LEN);
     }
 
-    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer, int connectionIdLength) throws IOException
+    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
     {
-        return QUICHE_BINDING.connect(quicheConfig, peer, connectionIdLength);
+        return QUICHE_BINDING.connect(quicheConfig, local, peer, connectionIdLength);
     }
 
     /**
@@ -73,9 +73,9 @@ public abstract class QuicheConnection
      * Fully consumes the {@code packetRead} buffer if the connection was accepted.
      * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
      */
-    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress peer) throws IOException
+    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
     {
-        return QUICHE_BINDING.tryAccept(quicheConfig, tokenValidator, packetRead, peer);
+        return QUICHE_BINDING.tryAccept(quicheConfig, tokenValidator, packetRead, local, peer);
     }
 
     public final List<Long> readableStreamIds()
@@ -93,11 +93,12 @@ public abstract class QuicheConnection
     /**
      * Read the buffer of cipher text coming from the network.
      * @param buffer the buffer to read.
+     * @param local the local address on which the buffer was received.
      * @param peer the address of the peer from which the buffer was received.
      * @return how many bytes were consumed.
      * @throws IOException
      */
-    public abstract int feedCipherBytes(ByteBuffer buffer, SocketAddress peer) throws IOException;
+    public abstract int feedCipherBytes(ByteBuffer buffer, SocketAddress local, SocketAddress peer) throws IOException;
 
     /**
      * Fill the given buffer with cipher text to be sent.

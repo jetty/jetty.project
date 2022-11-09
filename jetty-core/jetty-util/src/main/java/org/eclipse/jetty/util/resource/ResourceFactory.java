@@ -35,27 +35,23 @@ public interface ResourceFactory
     /**
      * <p>Make a Resource containing a collection of other resources</p>
      * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources.
-     * @see ResourceCollection
+     * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
+     * @see CombinedResource
      */
-    static ResourceCollection combine(List<Resource> resources)
+    static Resource combine(List<Resource> resources)
     {
-        if (resources == null || resources.isEmpty())
-            throw new IllegalArgumentException("No resources");
-        return new ResourceCollection(resources);
+        return CombinedResource.combine(resources);
     }
 
     /**
      * <p>Make a Resource containing a collection of other resources</p>
      * @param resources multiple resources to combine as a single resource. Typically, they are directories.
      * @return A Resource of multiple resources.
-     * @see ResourceCollection
+     * @see CombinedResource
      */
-    static ResourceCollection combine(Resource... resources)
+    static Resource combine(Resource... resources)
     {
-        if (resources == null || resources.length == 0)
-            throw new IllegalArgumentException("No resources");
-        return new ResourceCollection(List.of(resources));
+        return CombinedResource.combine(List.of(resources));
     }
 
     /**
@@ -203,12 +199,12 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a ResourceCollection from a list of URIs
+     * Construct a possible {@link CombinedResource} from a list of URIs
      *
      * @param uris the URIs
      * @return the Resource for the provided path
      */
-    default ResourceCollection newResource(List<URI> uris)
+    default Resource newResource(List<URI> uris)
     {
         if ((uris == null) || (uris.isEmpty()))
             throw new IllegalArgumentException("List of URIs is invalid");

@@ -26,6 +26,16 @@ import org.slf4j.LoggerFactory;
  */
 public interface Promise<C>
 {
+    Promise<Object> NOOP = new Promise<>()
+    {
+    };
+
+    @SuppressWarnings("unchecked")
+    static <T> Promise<T> noop()
+    {
+        return (Promise<T>)NOOP;
+    }
+
     /**
      * <p>Callback invoked when the operation completes.</p>
      *
@@ -43,6 +53,24 @@ public interface Promise<C>
      */
     default void failed(Throwable x)
     {
+    }
+
+    /**
+     * <p>Completes this promise with the given {@link CompletableFuture}.</p>
+     * <p>When the CompletableFuture completes normally, this promise is succeeded;
+     * when the CompletableFuture completes exceptionally, this promise is failed.</p>
+     *
+     * @param completable the CompletableFuture that completes this promise
+     */
+    default void completeWith(CompletableFuture<C> completable)
+    {
+        completable.whenComplete((o, x) ->
+        {
+            if (x == null)
+                succeeded(o);
+            else
+                failed(x);
+        });
     }
 
     /**

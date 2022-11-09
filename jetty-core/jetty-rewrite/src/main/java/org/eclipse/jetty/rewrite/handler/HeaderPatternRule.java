@@ -29,6 +29,10 @@ public class HeaderPatternRule extends PatternRule
     private String _headerValue;
     private boolean _add;
 
+    public HeaderPatternRule()
+    {
+    }
+
     public HeaderPatternRule(@Name("pattern") String pattern, @Name("name") String name, @Name("value") String value)
     {
         super(pattern);

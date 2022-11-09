@@ -1069,7 +1069,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                if (request.getPathInContext().startsWith("/303"))
+                if (Request.getPathInContext(request).startsWith("/303"))
                     org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, "/200");
                 callback.succeeded();
             }

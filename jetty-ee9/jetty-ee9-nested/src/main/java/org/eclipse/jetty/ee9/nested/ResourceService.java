@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -232,7 +233,7 @@ public class ResourceService
 
         String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
 
-        boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith(URIUtil.SLASH);
+        boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith("/");
         boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges == null;
 
         HttpContent content = null;
@@ -245,7 +246,16 @@ public class ResourceService
                 LOG.debug("content={}", content);
 
             // Not found?
-            if (content == null || !content.getResource().exists())
+            if (content == null || Resources.missing(content.getResource()))
+            {
+                if (included)
+                    throw new FileNotFoundException("!" + pathInContext);
+                notFound(request, response);
+                return response.isCommitted();
+            }
+
+            ContextHandler contextHandler = ContextHandler.getContextHandler(request.getServletContext());
+            if (contextHandler != null && !contextHandler.checkAlias(pathInContext, content.getResource()))
             {
                 if (included)
                     throw new FileNotFoundException("!" + pathInContext);
@@ -289,6 +299,10 @@ public class ResourceService
                     HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
+
+                    if (contextHandler != null && !contextHandler.checkAlias(pathInContext, precompressedContent.getResource()))
+                        content = null;
+
                     content = precompressedContent;
                     response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding.getEncoding());
                 }
@@ -636,7 +650,7 @@ public class ResourceService
         }
 
         byte[] data = null;
-        String base = URIUtil.addEncodedPaths(request.getRequestURI(), URIUtil.SLASH);
+        String base = URIUtil.addEncodedPaths(request.getRequestURI(), "/");
         String dir = ResourceListing.getAsXHTML(resource, base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
         {

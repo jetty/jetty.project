@@ -37,6 +37,7 @@
             <configuration>
               <finalName>${jmhjar.name}</finalName>
               <shadeTestJar>true</shadeTestJar>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>org.openjdk.jmh.Main</mainClass>
@@ -71,10 +72,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

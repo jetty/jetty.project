@@ -174,7 +174,7 @@ public class UnixDomainTest
         ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
 
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", fakeProxyPort));
+        httpClient.getProxyConfiguration().addProxy(new HttpProxy("localhost", fakeProxyPort));
         httpClient.start();
         try
         {
@@ -205,7 +205,7 @@ public class UnixDomainTest
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
                 assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if ("/v1".equals(target))
                 {
                     // As PROXYv1 does not support UNIX, the wrapped EndPoint data is used.

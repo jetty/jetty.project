@@ -62,7 +62,7 @@ public class SimpleSessionHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                String pathInContext = request.getPathInContext();
+                String pathInContext = Request.getPathInContext(request);
                 String[] split = pathInContext.substring(1).split("/");
 
                 SessionRequest sessionRequest = Request.as(request, SessionRequest.class);

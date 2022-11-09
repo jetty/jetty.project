@@ -421,7 +421,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                if (request.getPathInContext().endsWith("/1"))
+                if (Request.getPathInContext(request).endsWith("/1"))
                     sleep(2 * timeout);
                 callback.succeeded();
             }

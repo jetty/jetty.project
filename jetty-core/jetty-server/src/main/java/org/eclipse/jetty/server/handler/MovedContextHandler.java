@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -23,74 +25,126 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Moved ContextHandler.
- * This context can be used to replace a context that has changed
- * location.  Requests are redirected (either to a fixed URL or to a
- * new context base).
+ * <p>A {@code ContextHandler} with a child {@code Handler}
+ * that redirects to a configurable URI.</p>
  */
 public class MovedContextHandler extends ContextHandler
 {
-    final Redirector _redirector;
-    String _newContextURL;
-    boolean _discardPathInfo;
-    boolean _discardQuery;
-    boolean _permanent;
-    String _expires;
+    private int _statusCode = HttpStatus.SEE_OTHER_303;
+    private String _redirectURI;
+    private boolean _discardPathInContext = true;
+    private boolean _discardQuery = true;
+    private HttpField _cacheControl;
 
     public MovedContextHandler()
     {
-        _redirector = new Redirector();
-        setHandler(_redirector);
+        setHandler(new Redirector());
         setAllowNullPathInContext(true);
     }
 
-    public MovedContextHandler(Handler.Collection parent, String contextPath, String newContextURL)
+    public MovedContextHandler(Handler.Collection parent, String contextPath, String redirectURI)
     {
-        super(contextPath);
         parent.addHandler(this);
-        _newContextURL = newContextURL;
-        _redirector = new Redirector();
-        setHandler(_redirector);
+        setContextPath(contextPath);
+        setRedirectURI(redirectURI);
     }
 
-    public boolean isDiscardPathInfo()
+    /**
+     * @return the redirect status code, by default 303
+     */
+    public int getStatusCode()
     {
-        return _discardPathInfo;
+        return _statusCode;
     }
 
-    public void setDiscardPathInfo(boolean discardPathInfo)
+    /**
+     * @param statusCode the redirect status code
+     * @throws IllegalArgumentException if the status code is not of type redirect (3xx)
+     */
+    public void setStatusCode(int statusCode)
     {
-        _discardPathInfo = discardPathInfo;
+        if (!HttpStatus.isRedirection(statusCode))
+            throw new IllegalArgumentException("Invalid HTTP redirection status code: " + statusCode);
+        _statusCode = statusCode;
     }
 
-    public String getNewContextURL()
+    /**
+     * @return the URI to redirect to
+     */
+    public String getRedirectURI()
     {
-        return _newContextURL;
+        return _redirectURI;
     }
 
-    public void setNewContextURL(String newContextURL)
+    /**
+     * <p>Sets the URI to redirect to.</p>
+     * <p>If the redirect URI is not absolute, the original request scheme
+     * and authority will be used to build the redirect URI.</p>
+     * <p>The original request {@link Request#getPathInContext(Request) pathInContext}
+     * will be appended to the redirect URI path, unless {@link #isDiscardPathInContext()}.</p>
+     * <p>The original request query will be preserved in the redirect URI, unless
+     * {@link #isDiscardQuery()}.</p>
+     *
+     * @param redirectURI the URI to redirect to
+     */
+    public void setRedirectURI(String redirectURI)
     {
-        _newContextURL = newContextURL;
+        _redirectURI = redirectURI;
     }
 
-    public boolean isPermanent()
+    /**
+     * @return whether the original request {@code pathInContext} is discarded
+     */
+    public boolean isDiscardPathInContext()
     {
-        return _permanent;
+        return _discardPathInContext;
     }
 
-    public void setPermanent(boolean permanent)
+    /**
+     * <p>Whether to discard the original request {@link Request#getPathInContext(Request) pathInContext}
+     * when building the redirect URI.</p>
+     *
+     * @param discardPathInContext whether the original request {@code pathInContext} is discarded
+     * @see #setRedirectURI(String)
+     */
+    public void setDiscardPathInContext(boolean discardPathInContext)
     {
-        _permanent = permanent;
+        _discardPathInContext = discardPathInContext;
     }
 
+    /**
+     * @return whether the original request query is discarded
+     */
     public boolean isDiscardQuery()
     {
         return _discardQuery;
     }
 
+    /**
+     * <p>Whether to discard the original request query
+     * when building the redirect URI.</p>
+     *
+     * @param discardQuery whether the original request query is discarded
+     */
     public void setDiscardQuery(boolean discardQuery)
     {
         _discardQuery = discardQuery;
+    }
+
+    /**
+     * @return the {@code Cache-Control} header value or {@code null}
+     */
+    public String getCacheControl()
+    {
+        return _cacheControl == null ? null : _cacheControl.getValue();
+    }
+
+    /**
+     * @param cacheControl the {@code Cache-Control} header value or {@code null}
+     */
+    public void setCacheControl(String cacheControl)
+    {
+        _cacheControl = cacheControl == null ? null : new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cacheControl);
     }
 
     private class Redirector extends Handler.Processor
@@ -98,46 +152,41 @@ public class MovedContextHandler extends ContextHandler
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            if (_newContextURL == null)
-                return;
+            String redirectURI = getRedirectURI();
+            if (redirectURI == null)
+                redirectURI = "/";
 
-            String path = _newContextURL;
-            if (!_discardPathInfo && request.getPathInContext() != null)
-                path = URIUtil.addPaths(path, request.getPathInContext());
-
-            HttpURI uri = request.getHttpURI();
-            StringBuilder location = new StringBuilder();
-            location.append(uri.getScheme()).append("://").append(uri.getAuthority()).append(path);
-
-            if (!_discardQuery && uri.getQuery() != null)
+            HttpURI.Mutable redirectHttpURI = HttpURI.build(redirectURI);
+            if (redirectHttpURI.getScheme() == null)
             {
-                location.append('?');
-                String q = uri.getQuery();
-                q = q.replaceAll("\r\n?&=", "!");
-                location.append(q);
+                HttpURI httpURI = request.getHttpURI();
+                redirectHttpURI = redirectHttpURI.scheme(httpURI.getScheme())
+                    .authority(httpURI.getAuthority());
             }
 
-            response.getHeaders().put(HttpHeader.LOCATION, location.toString());
-            if (_expires != null)
-                response.getHeaders().put(HttpHeader.EXPIRES, _expires);
-            response.setStatus(_permanent ? HttpStatus.MOVED_PERMANENTLY_301 : HttpStatus.FOUND_302);
+            if (!isDiscardPathInContext())
+            {
+                String pathInContext = Request.getPathInContext(request);
+                String newPath = redirectHttpURI.getPath();
+                redirectHttpURI.path(URIUtil.addPaths(newPath, pathInContext));
+            }
+
+            if (!isDiscardQuery())
+            {
+                String query = request.getHttpURI().getQuery();
+                String newQuery = redirectHttpURI.getQuery();
+                redirectHttpURI.query(URIUtil.addQueries(query, newQuery));
+            }
+
+            response.setStatus(getStatusCode());
+
+            response.getHeaders().put(HttpHeader.LOCATION, redirectHttpURI.asString());
+
+            HttpField cacheControl = _cacheControl;
+            if (cacheControl != null)
+                response.getHeaders().put(cacheControl);
+
             callback.succeeded();
         }
-    }
-
-    /**
-     * @return the expires header value or null if no expires header
-     */
-    public String getExpires()
-    {
-        return _expires;
-    }
-
-    /**
-     * @param expires the expires header value or null if no expires header
-     */
-    public void setExpires(String expires)
-    {
-        _expires = expires;
     }
 }

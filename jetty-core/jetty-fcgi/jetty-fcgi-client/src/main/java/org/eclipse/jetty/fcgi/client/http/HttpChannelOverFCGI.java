@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,10 +139,13 @@ public class HttpChannelOverFCGI extends HttpChannel
         return exchange != null && receiver.responseSuccess(exchange);
     }
 
-    protected boolean responseFailure(Throwable failure)
+    protected void responseFailure(Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseFailure(failure);
+        if (exchange != null)
+            receiver.responseFailure(failure, promise);
+        else
+            promise.succeeded(false);
     }
 
     @Override
