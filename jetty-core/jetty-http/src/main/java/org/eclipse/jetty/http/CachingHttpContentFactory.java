@@ -22,8 +22,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
@@ -212,8 +212,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             cachingHttpContent.setLastAccessedNanos(NanoTime.now());
             if (cachingHttpContent.isValid())
             {
-                cachingHttpContent.retain();
-                return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
+                // If retain fails the CachingHttpContent was already evicted.
+                if (cachingHttpContent.retain())
+                    return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
             }
             else
                 removeFromCache(cachingHttpContent);
@@ -222,20 +223,52 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         HttpContent httpContent = _authority.getContent(path);
         if (isCacheable(httpContent))
         {
-            AtomicBoolean wasAdded = new AtomicBoolean(false);
-            cachingHttpContent = _cache.computeIfAbsent(path, p ->
+
+            // The re-mapping function may be run multiple times by compute.
+            AtomicReference<CachingHttpContent> added = new AtomicReference<>();
+            cachingHttpContent = _cache.compute(path, (key, content) ->
             {
-                wasAdded.set(true);
-                CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(p) : newCachedContent(p, httpContent);
-                _cachedSize.addAndGet(cachingContent.getBytesOccupied());
-                return cachingContent;
+                if (content == null)
+                {
+                    // Use AtomicReference to avoid recomputing the CachingHttpContent.
+                    CachingHttpContent cachingContent = added.get();
+                    if (cachingContent == null)
+                    {
+                        cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
+                        added.set(cachingContent);
+                        _cachedSize.addAndGet(cachingContent.getBytesOccupied());
+                    }
+                    return cachingContent;
+                }
+                else
+                {
+                    // If we lost the race to set the mapping we must invalidate the entry we created previously.
+                    CachingHttpContent cachingContent = added.getAndSet(null);
+                    if (cachingContent != null)
+                    {
+                        _cachedSize.addAndGet(-cachingContent.getBytesOccupied());
+                        cachingContent.release();
+                    }
+                    return content;
+                }
             });
 
-            cachingHttpContent.retain();
-            if (wasAdded.get())
+            // If retain fails the CachingHttpContent was already evicted.
+            if (!cachingHttpContent.retain())
+                return httpContent;
+
+            // We want to shrink cache only if we have just added an entry.
+            if (added.get() != null)
                 shrinkCache();
+
+            // If we did not add an entry we are using a cached version added by someone else,
+            // so we should release the local content taken from the authority.
+            else if (httpContent != null)
+                httpContent.release();
+
             return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
         }
+
         return httpContent;
     }
 
@@ -259,7 +292,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
         boolean isValid();
 
-        void retain();
+        boolean retain();
     }
 
     protected class CachedHttpContent extends HttpContent.HttpContentWrapper implements CachingHttpContent
@@ -276,6 +309,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final HttpField _contentLength;
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
+        private final boolean _isValid;
         private final Retainable.ReferenceCounter _referenceCount = new Retainable.ReferenceCounter();
 
         public CachedHttpContent(String key, HttpContent httpContent)
@@ -291,6 +325,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                 etagField = new PreEncodedHttpField(HttpHeader.ETAG, eTagValue);
             }
             _etagField = etagField;
+            _contentLengthValue = httpContent.getContentLengthValue();
+            boolean isValid = true;
 
             // Read the content into memory if the HttpContent does not already have a buffer.
             ByteBuffer byteBuffer = httpContent.getByteBuffer();
@@ -298,18 +334,24 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             {
                 try
                 {
-                    long contentLengthValue = getContentLengthValue();
-                    if (contentLengthValue <= _maxCachedFileSize)
+                    if (_contentLengthValue <= _maxCachedFileSize)
                     {
-                        byteBuffer = _byteBufferPool.acquire((int)contentLengthValue, false);
+                        byteBuffer = _byteBufferPool.acquire((int)_contentLengthValue, false);
                         try (ReadableByteChannel readableByteChannel = httpContent.getResource().newReadableByteChannel())
                         {
-                            BufferUtil.readFrom(readableByteChannel, contentLengthValue, byteBuffer);
+                            int read = BufferUtil.readFrom(readableByteChannel, byteBuffer);
+                            if (read != _contentLengthValue)
+                            {
+                                _byteBufferPool.release(byteBuffer);
+                                byteBuffer = null;
+                                isValid = false;
+                            }
                         }
                     }
                 }
                 catch (Throwable t)
                 {
+                    isValid = false;
                     if (byteBuffer != null)
                     {
                         _byteBufferPool.release(byteBuffer);
@@ -318,9 +360,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                     LOG.warn("Failed to read Resource", t);
                 }
             }
-            _buffer = byteBuffer;
 
-            _contentLengthValue = httpContent.getContentLengthValue();
+            _buffer = byteBuffer;
+            _isValid = isValid;
             _lastModifiedValue = httpContent.getLastModifiedValue();
             _characterEncoding = httpContent.getCharacterEncoding();
             _compressedFormats = httpContent.getPreCompressedContentFormats();
@@ -328,7 +370,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             _contentLength = httpContent.getContentLength();
             _lastModifiedInstant = httpContent.getLastModifiedInstant();
             _lastModified = httpContent.getLastModified();
-
             _lastAccessed = NanoTime.now();
         }
 
@@ -363,9 +404,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void retain()
+        public boolean retain()
         {
-            _referenceCount.retain();
+            return _referenceCount.tryRetain();
         }
 
         @Override
@@ -436,7 +477,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public boolean isValid()
         {
-            return true;
+            return _isValid;
         }
     }
 
@@ -578,8 +619,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void retain()
+        public boolean retain()
         {
+            return true;
         }
     }
 }
