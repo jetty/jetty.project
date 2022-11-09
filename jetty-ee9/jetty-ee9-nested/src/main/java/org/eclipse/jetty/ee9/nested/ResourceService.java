@@ -87,12 +87,12 @@ public class ResourceService
     private HttpField _cacheControl;
     private List<String> _gzipEquivalentFileExtensions;
 
-    public HttpContent.Factory getContentFactory()
+    public HttpContent.Factory getHttpContentFactory()
     {
         return _contentFactory;
     }
 
-    public void setContentFactory(HttpContent.Factory contentFactory)
+    public void setHttpContentFactory(HttpContent.Factory contentFactory)
     {
         _contentFactory = contentFactory;
     }

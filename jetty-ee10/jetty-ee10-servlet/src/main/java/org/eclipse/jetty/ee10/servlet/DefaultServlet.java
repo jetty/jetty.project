@@ -46,9 +46,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.FileMappedHttpContentFactory;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpContentWrapper;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -58,7 +57,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.ValidatingCachingContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
@@ -134,7 +133,7 @@ public class DefaultServlet extends HttpServlet
             contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
             if (getInitBoolean("useFileMappedBuffer", false))
-                contentFactory = new FileMappedHttpContentFactory(contentFactory);
+                contentFactory = new FileMappingHttpContentFactory(contentFactory);
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
@@ -143,7 +142,7 @@ public class DefaultServlet extends HttpServlet
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
                 ByteBufferPool byteBufferPool = getByteBufferPool(servletContextHandler);
-                ValidatingCachingContentFactory cached = new ValidatingCachingContentFactory(contentFactory,
+                ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), byteBufferPool);
                 contentFactory = cached;
                 if (maxCacheSize >= 0)
@@ -154,7 +153,7 @@ public class DefaultServlet extends HttpServlet
                     cached.setMaxCachedFiles(maxCachedFiles);
             }
         }
-        _resourceService.setContentFactory(contentFactory);
+        _resourceService.setHttpContentFactory(contentFactory);
 
         if (servletContextHandler.getWelcomeFiles() == null)
             servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
@@ -1053,7 +1052,7 @@ public class DefaultServlet extends HttpServlet
     /**
      * Wrap an existing HttpContent with one that takes has an unknown/unspecified length.
      */
-    private static class UnknownLengthHttpContent extends HttpContentWrapper
+    private static class UnknownLengthHttpContent extends HttpContent.HttpContentWrapper
     {
         public UnknownLengthHttpContent(HttpContent content)
         {
@@ -1073,7 +1072,7 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static class ForcedCharacterEncodingHttpContent extends HttpContentWrapper
+    private static class ForcedCharacterEncodingHttpContent extends HttpContent.HttpContentWrapper
     {
         private final String characterEncoding;
         private final String contentType;

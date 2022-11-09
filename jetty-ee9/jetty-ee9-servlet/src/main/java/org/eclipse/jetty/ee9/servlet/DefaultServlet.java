@@ -32,14 +32,14 @@ import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.FileMappedHttpContentFactory;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.ValidatingCachingContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Server;
@@ -252,7 +252,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
             contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
             if (_useFileMappedBuffer)
-                contentFactory = new FileMappedHttpContentFactory(contentFactory);
+                contentFactory = new FileMappingHttpContentFactory(contentFactory);
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
@@ -261,7 +261,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
                 ByteBufferPool byteBufferPool = getByteBufferPool(_contextHandler);
-                _cachingContentFactory = new ValidatingCachingContentFactory(contentFactory,
+                _cachingContentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), byteBufferPool);
                 contentFactory = _cachingContentFactory;
                 if (maxCacheSize >= 0)
@@ -272,7 +272,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                     _cachingContentFactory.setMaxCachedFiles(maxCachedFiles);
             }
         }
-        _resourceService.setContentFactory(contentFactory);
+        _resourceService.setHttpContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
         List<String> gzipEquivalentFileExtensions = new ArrayList<>();

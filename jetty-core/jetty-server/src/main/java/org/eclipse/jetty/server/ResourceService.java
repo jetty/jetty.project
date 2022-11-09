@@ -70,7 +70,6 @@ public class ResourceService
     private final List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
     private final List<String> _preferredEncodingOrder = new ArrayList<>();
-
     private WelcomeFactory _welcomeFactory;
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
@@ -146,12 +145,12 @@ public class ResourceService
         return content;
     }
 
-    public HttpContent.Factory getContentFactory()
+    public HttpContent.Factory getHttpContentFactory()
     {
         return _contentFactory;
     }
 
-    public void setContentFactory(HttpContent.Factory contentFactory)
+    public void setHttpContentFactory(HttpContent.Factory contentFactory)
     {
         _contentFactory = contentFactory;
     }

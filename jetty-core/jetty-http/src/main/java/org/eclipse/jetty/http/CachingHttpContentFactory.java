@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  *     <li>maxCacheSize: {@value #DEFAULT_MAX_CACHE_SIZE}</li>
  * </ul>
  * </p>
- * @see ValidatingCachingContentFactory
+ * @see ValidatingCachingHttpContentFactory
  */
 public class CachingHttpContentFactory implements HttpContent.Factory
 {
@@ -263,7 +263,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         void retain();
     }
 
-    protected class CachedHttpContent extends HttpContentWrapper implements CachingHttpContent
+    protected class CachedHttpContent extends HttpContent.HttpContentWrapper implements CachingHttpContent
     {
         private final ByteBuffer _buffer;
         private final String _cacheKey;
@@ -300,7 +300,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                 try
                 {
                     long contentLengthValue = getContentLengthValue();
-                    if (contentLengthValue > _maxCachedFileSize)
+                    if (contentLengthValue <= _maxCachedFileSize)
                     {
                         byteBuffer = _byteBufferPool.acquire((int)contentLengthValue, false);
                         try (ReadableByteChannel readableByteChannel = httpContent.getResource().newReadableByteChannel())

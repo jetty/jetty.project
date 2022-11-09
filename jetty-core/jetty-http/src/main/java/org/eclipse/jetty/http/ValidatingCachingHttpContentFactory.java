@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * elapsed the entry will be invalid and will be evicted from the cache at the next access.
  * </p>
  */
-public class ValidatingCachingContentFactory extends CachingHttpContentFactory implements Runnable
+public class ValidatingCachingHttpContentFactory extends CachingHttpContentFactory implements Runnable
 {
     private final Scheduler _scheduler;
     private final long _sweepDelay;
@@ -50,44 +50,44 @@ public class ValidatingCachingContentFactory extends CachingHttpContentFactory i
     private final long _maxCacheIdleTime;
 
     /**
-     * Construct a {@link ValidatingCachingContentFactory} which validates entries upon use to check if they
+     * Construct a {@link ValidatingCachingHttpContentFactory} which validates entries upon use to check if they
      * are still valid.
      *
      * @param authority the wrapped {@link HttpContent.Factory} to use.
-     * @param validationTime time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
+     * @param validationPeriod time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
      * @param byteBufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use.
      */
-    public ValidatingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
-                                           @Name("validationTime") long validationTime,
-                                           @Name("byteBufferPool") ByteBufferPool byteBufferPool)
+    public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
+                                               @Name("validationPeriod") long validationPeriod,
+                                               @Name("byteBufferPool") ByteBufferPool byteBufferPool)
     {
-        this(authority, validationTime, byteBufferPool, null, -1, -1);
+        this(authority, validationPeriod, byteBufferPool, null, -1, -1);
     }
 
     /**
-     * Construct a {@link ValidatingCachingContentFactory} which validates entries upon use to check if they
+     * Construct a {@link ValidatingCachingHttpContentFactory} which validates entries upon use to check if they
      * are still valid and an optional period sweeper of the cache to find invalid and old entries to evict.
      *
      * @param authority the wrapped {@link HttpContent.Factory} to use.
-     * @param validationTime time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
+     * @param validationPeriod time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
      * @param byteBufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use.
      * @param scheduler scheduler to use for the sweeper, can be null to not use sweeper.
-     * @param sweepDelay time between runs of the sweeper in ms (if 0 never sweep for invalid entries).
-     * @param maxCacheIdleTime amount of time in ms an entry can be unused before evicted by the sweeper (if 0 never evict unused entries).
+     * @param sweepPeriod time between runs of the sweeper in ms (if 0 never sweep for invalid entries).
+     * @param idleTimeout amount of time in ms an entry can be unused before evicted by the sweeper (if 0 never evict unused entries).
      */
-    public ValidatingCachingContentFactory(@Name("authority") HttpContent.Factory authority,
-                                           @Name("validationTime") long validationTime,
-                                           @Name("byteBufferPool") ByteBufferPool byteBufferPool,
-                                           @Name("scheduler") Scheduler scheduler,
-                                           @Name("sweepDelay") long sweepDelay,
-                                           @Name("maxCacheIdleTime") long maxCacheIdleTime)
+    public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
+                                               @Name("validationPeriod") long validationPeriod,
+                                               @Name("byteBufferPool") ByteBufferPool byteBufferPool,
+                                               @Name("scheduler") Scheduler scheduler,
+                                               @Name("sweepPeriod") long sweepPeriod,
+                                               @Name("idleTimeout") long idleTimeout)
     {
         super(authority, byteBufferPool);
-        _validationTime = validationTime;
+        _validationTime = validationPeriod;
         _scheduler = scheduler;
-        _sweepDelay = sweepDelay;
-        _maxCacheIdleTime = maxCacheIdleTime;
-        if (scheduler != null && sweepDelay > 0)
+        _sweepDelay = sweepPeriod;
+        _maxCacheIdleTime = idleTimeout;
+        if (scheduler != null && sweepPeriod > 0)
             schedule();
     }
 

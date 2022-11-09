@@ -68,10 +68,6 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     {
         if (resource == null || !resource.exists())
             return null;
-
-        if (resource.isDirectory())
-            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()));
-
         return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(pathInContext));
     }
 

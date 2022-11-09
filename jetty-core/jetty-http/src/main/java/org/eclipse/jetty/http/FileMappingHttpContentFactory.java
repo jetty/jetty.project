@@ -22,33 +22,33 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FileMappedHttpContentFactory implements HttpContent.Factory
+public class FileMappingHttpContentFactory implements HttpContent.Factory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FileMappedHttpContentFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FileMappingHttpContentFactory.class);
     private static final int DEFAULT_MIN_FILE_SIZE = 16 * 1024;
 
     private final HttpContent.Factory _factory;
     private final int _minFileSize;
 
     /**
-     * Construct a {@link FileMappedHttpContentFactory} which can use file mapped buffers.
+     * Construct a {@link FileMappingHttpContentFactory} which can use file mapped buffers.
      * Uses a default value of {@value DEFAULT_MIN_FILE_SIZE} for the minimum size of an
      * {@link HttpContent} before trying to use a file mapped buffer.
      *
      * @param factory the wrapped {@link HttpContent.Factory} to use.
      */
-    public FileMappedHttpContentFactory(HttpContent.Factory factory)
+    public FileMappingHttpContentFactory(HttpContent.Factory factory)
     {
         this(factory, DEFAULT_MIN_FILE_SIZE);
     }
 
     /**
-     * Construct a {@link FileMappedHttpContentFactory} which can use file mapped buffers.
+     * Construct a {@link FileMappingHttpContentFactory} which can use file mapped buffers.
      *
      * @param factory the wrapped {@link HttpContent.Factory} to use.
      * @param minFileSize the minimum size of an {@link HttpContent} before trying to use a file mapped buffer.
      */
-    public FileMappedHttpContentFactory(HttpContent.Factory factory, int minFileSize)
+    public FileMappingHttpContentFactory(HttpContent.Factory factory, int minFileSize)
     {
         _factory = Objects.requireNonNull(factory);
         _minFileSize = minFileSize;
@@ -58,12 +58,16 @@ public class FileMappedHttpContentFactory implements HttpContent.Factory
     public HttpContent getContent(String path) throws IOException
     {
         HttpContent content = _factory.getContent(path);
-        if (content != null && content.getContentLengthValue() > _minFileSize)
-            return new FileMappedContent(content);
+        if (content != null)
+        {
+            long contentLength = content.getContentLengthValue();
+            if (contentLength > _minFileSize && contentLength < Integer.MAX_VALUE)
+                return new FileMappedContent(content);
+        }
         return content;
     }
 
-    private static class FileMappedContent extends HttpContentWrapper
+    private static class FileMappedContent extends HttpContent.HttpContentWrapper
     {
         private final AutoLock _lock = new AutoLock();
         private final HttpContent _content;

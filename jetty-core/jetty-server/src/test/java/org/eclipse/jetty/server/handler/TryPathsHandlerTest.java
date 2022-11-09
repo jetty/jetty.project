@@ -99,7 +99,7 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory setupContentFactory()
+            protected HttpContent.Factory setupHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
                 return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
@@ -174,7 +174,7 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory setupContentFactory()
+            protected HttpContent.Factory setupHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
                 return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());

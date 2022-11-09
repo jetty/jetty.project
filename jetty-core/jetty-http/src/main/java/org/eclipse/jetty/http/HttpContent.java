@@ -84,4 +84,136 @@ public interface HttpContent
          */
         HttpContent getContent(String path) throws IOException;
     }
+
+    /**
+     * HttpContent Wrapper.
+     */
+    class HttpContentWrapper implements HttpContent
+    {
+        private final HttpContent _delegate;
+
+        public HttpContentWrapper(HttpContent content)
+        {
+            _delegate = content;
+        }
+
+        public HttpContent getWrapped()
+        {
+            return _delegate;
+        }
+
+        @Override
+        public HttpField getContentType()
+        {
+            return _delegate.getContentType();
+        }
+
+        @Override
+        public String getContentTypeValue()
+        {
+            return _delegate.getContentTypeValue();
+        }
+
+        @Override
+        public String getCharacterEncoding()
+        {
+            return _delegate.getCharacterEncoding();
+        }
+
+        @Override
+        public Type getMimeType()
+        {
+            return _delegate.getMimeType();
+        }
+
+        @Override
+        public HttpField getContentEncoding()
+        {
+            return _delegate.getContentEncoding();
+        }
+
+        @Override
+        public String getContentEncodingValue()
+        {
+            return _delegate.getContentEncodingValue();
+        }
+
+        @Override
+        public HttpField getContentLength()
+        {
+            return _delegate.getContentLength();
+        }
+
+        @Override
+        public long getContentLengthValue()
+        {
+            return _delegate.getContentLengthValue();
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return _delegate.getLastModifiedInstant();
+        }
+
+        @Override
+        public HttpField getLastModified()
+        {
+            return _delegate.getLastModified();
+        }
+
+        @Override
+        public String getLastModifiedValue()
+        {
+            return _delegate.getLastModifiedValue();
+        }
+
+        @Override
+        public HttpField getETag()
+        {
+            return _delegate.getETag();
+        }
+
+        @Override
+        public String getETagValue()
+        {
+            return _delegate.getETagValue();
+        }
+
+        @Override
+        public Resource getResource()
+        {
+            return _delegate.getResource();
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return _delegate.getByteBuffer();
+        }
+
+        @Override
+        public long getBytesOccupied()
+        {
+            return _delegate.getBytesOccupied();
+        }
+
+        @Override
+        public Set<CompressedContentFormat> getPreCompressedContentFormats()
+        {
+            return _delegate.getPreCompressedContentFormats();
+        }
+
+        @Override
+        public void release()
+        {
+            _delegate.release();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), _delegate);
+        }
+    }
 }

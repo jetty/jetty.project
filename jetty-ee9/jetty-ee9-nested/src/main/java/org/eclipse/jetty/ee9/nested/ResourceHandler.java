@@ -25,7 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.FileMappedHttpContentFactory;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -33,7 +33,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.ValidatingCachingContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Server;
@@ -106,7 +106,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
         _byteBufferPool = getByteBufferPool(_context);
-        _resourceService.setContentFactory(setupContentFactory());
+        _resourceService.setHttpContentFactory(setupHttpContentFactory());
         _resourceService.setWelcomeFactory(this);
 
         super.doStart();
@@ -123,12 +123,12 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
     }
 
-    protected HttpContent.Factory setupContentFactory()
+    protected HttpContent.Factory setupHttpContentFactory()
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-        contentFactory = new FileMappedHttpContentFactory(contentFactory);
-        contentFactory = new ValidatingCachingContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
+        contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
         return contentFactory;
     }
 
