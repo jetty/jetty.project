@@ -226,7 +226,7 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                String requestURI = request.getPathInContext();
+                String requestURI = Request.getPathInContext(request);
                 if (requestURI.endsWith(primaryResource))
                 {
                     assertFalse(request.getConnectionMetaData().isPushSupported());
