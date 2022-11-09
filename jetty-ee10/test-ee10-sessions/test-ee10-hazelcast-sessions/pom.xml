@@ -11,6 +11,7 @@
   <name>Jetty EE10 Tests :: Sessions :: Hazelcast</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
+    <skipTests>true</skipTests> <!-- -->
   </properties>
   <build>
     <plugins>
