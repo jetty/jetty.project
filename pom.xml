@@ -49,7 +49,7 @@
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.15.1</hawtio.version>
-    <hazelcast.version>4.2.5</hazelcast.version>
+    <hazelcast.version>5.2.0</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
     <jackson.version>2.13.4</jackson.version>
