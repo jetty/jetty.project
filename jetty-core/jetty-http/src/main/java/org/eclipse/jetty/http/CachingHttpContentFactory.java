@@ -45,14 +45,13 @@ import org.slf4j.LoggerFactory;
  * assumed to be valid. This class can be extended to implement the validation behaviours on
  * {@link CachingHttpContent} which allow entries to be evicted once they become invalid.
  * </p>
- * <p><br>
+ * <br>
  * The default values for the cache are:
  * <ul>
  *     <li>maxCachedFileSize: {@value #DEFAULT_MAX_CACHE_SIZE}</li>
  *     <li>maxCachedFiles: {@value #DEFAULT_MAX_CACHED_FILES}</li>
  *     <li>maxCacheSize: {@value #DEFAULT_MAX_CACHE_SIZE}</li>
  * </ul>
- * </p>
  * @see ValidatingCachingHttpContentFactory
  */
 public class CachingHttpContentFactory implements HttpContent.Factory
