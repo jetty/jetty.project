@@ -53,7 +53,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -65,7 +64,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -100,18 +98,14 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * Resource Handler test
  */
-@ExtendWith(WorkDirExtension.class)
 public class ResourceHandlerTest
 {
     public WorkDir workDir;
-
     private Path docRoot;
-
     private Server _server;
     private LocalConnector _local;
-
     private ResourceHandler _rootResourceHandler;
-
+    private ContextHandler _contextHandler;
     private ContextHandlerCollection _contextHandlerCollection;
 
     private static void addBasicWelcomeScenarios(Scenarios scenarios)
@@ -660,12 +654,12 @@ public class ResourceHandlerTest
         _rootResourceHandler = new ResourceHandler();
         _rootResourceHandler.setWelcomeFiles("welcome.txt");
 
-        ContextHandler contextHandler = new ContextHandler("/context");
-        contextHandler.setHandler(_rootResourceHandler);
-        contextHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
+        _contextHandler = new ContextHandler("/context");
+        _contextHandler.setHandler(_rootResourceHandler);
+        _contextHandler.setBaseResource(ResourceFactory.root().newResource(docRoot));
 
         _contextHandlerCollection = new ContextHandlerCollection();
-        _contextHandlerCollection.addHandler(contextHandler);
+        _contextHandlerCollection.addHandler(_contextHandler);
 
         _server.setHandler(_contextHandlerCollection);
         _server.start();
@@ -1737,7 +1731,7 @@ public class ResourceHandlerTest
             Arguments.of("""
                 GET /context/directory;JSESSIONID=12345678 HTTP/1.1\r
                 Host: local\r
-                Connection: close\r              
+                Connection: close\r
                 \r
                 """, "/context/directory/;JSESSIONID=12345678"),
             Arguments.of("""
@@ -3771,11 +3765,19 @@ public class ResourceHandlerTest
         Files.writeString(index, "Hello Index", UTF_8);
 
         _server.stop();
-        // A plain ResourceService does not re-handle.
-        _rootResourceHandler.setResourceService(new ResourceService());
+        _rootResourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected ResourceService newResourceService()
+            {
+                // A plain ResourceService does not re-handle.
+                return new ResourceService();
+            }
+        };
         _rootResourceHandler.setDirAllowed(false);
         _rootResourceHandler.setWelcomeMode(ResourceService.WelcomeMode.REHANDLE);
         _rootResourceHandler.setWelcomeFiles("index.txt");
+        _contextHandler.setHandler(_rootResourceHandler);
         _server.start();
 
         HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("""

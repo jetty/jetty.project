@@ -50,29 +50,24 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class ResourceHandler extends Handler.Wrapper
 {
-    private ResourceService _resourceService;
+    private final ResourceService _resourceService = newResourceService();
     private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
+
+    protected ResourceService newResourceService()
+    {
+        return new HandlerResourceService();
+    }
 
     public ResourceService getResourceService()
     {
         return _resourceService;
     }
 
-    public void setResourceService(ResourceService resourceService)
-    {
-        if (isStarted())
-            throw new IllegalStateException();
-        _resourceService = resourceService;
-    }
-
     @Override
     public void doStart() throws Exception
     {
-        if (_resourceService == null)
-            _resourceService = new HandlerResourceService();
-
         if (_baseResource == null)
         {
             Context context = ContextHandler.getCurrentContext();
