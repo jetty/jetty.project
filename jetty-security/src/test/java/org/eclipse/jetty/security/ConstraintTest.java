@@ -1134,7 +1134,6 @@ public class ConstraintTest
 
         response = _connector.getResponse("POST /ctx/auth/info HTTP/1.1\r\n" +
             "Host: test\r\n" +
-            "Host: localhost\r\n" +
             "Content-Type: text/plain\r\n" +
             "Content-Length: 10\r\n" +
             "\r\n" +
