@@ -549,9 +549,9 @@ public class GzipHandler extends Handler.ProcessingWrapper<GzipRequest> implemen
     }
 
     @Override
-    protected void process(GzipRequest wrappedRequest, Response response, Callback callback, Request.Processor nextProcessor) throws Exception
+    protected void process(GzipRequest wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor nextProcessor) throws Exception
     {
-        wrappedRequest.process(response, callback, nextProcessor);
+        wrappedRequest.process(wrappedResponse, callback, nextProcessor);
     }
 
     /**

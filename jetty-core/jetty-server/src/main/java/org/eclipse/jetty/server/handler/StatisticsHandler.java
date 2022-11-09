@@ -255,9 +255,9 @@ public class StatisticsHandler extends Handler.ProcessingWrapper<StatisticsHandl
     }
 
     @Override
-    protected void process(StatisticsRequest request, Response response, Callback callback, Request.Processor nextProcessor) throws Exception
+    protected void process(StatisticsRequest request, Response wrappedResponse, Callback callback, Request.Processor nextProcessor) throws Exception
     {
-        request.process(response, callback, nextProcessor);
+        request.process(wrappedResponse, callback, nextProcessor);
     }
 
     protected class StatisticsRequest extends Request.Wrapper

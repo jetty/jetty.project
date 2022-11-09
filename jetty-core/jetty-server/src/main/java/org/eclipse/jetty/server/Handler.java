@@ -692,8 +692,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     }
 
     /**
-     * <p>A {@link Handler.Wrapper} that allows for extensible processing and wrapping
-     * of the request and response objects.</p>
+     * <p>A {@link Handler.Wrapper} that supports wrapping of the request and optional wrapping of the response.
+     * The process methods can be implemented on this handler class and take the wrapped request object so that down casting
+     * is not necessary.</p>
      */
     abstract class ProcessingWrapper<W extends Request.Wrapper> extends Wrapper
     {
@@ -702,28 +703,47 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             W wrapper = wrap(request);
             Request.Processor processor = super.handle(wrapper);
-            return processor == null ? null : wrap(processor, wrapper);
+            return processor == null ? null : new ProcessingWrapperProcessor(processor, wrapper);
         }
 
+        /**
+         * <p>Wrap the request to be processed.  This is called from {@link #handle(Request)} to
+         * initially wrap a request. It may optionally also be called from the
+         * {@link org.eclipse.jetty.server.Request.ReWrappingProcessor} if a new request is passed
+         * to the {@link Request.Processor#process(Request, Response, Callback)} method.</p>
+         * @param request The request to wrap
+         * @return The wrapped request.
+         */
         protected abstract W wrap(Request request);
 
-        protected Request.Processor wrap(Request.Processor processor, W originalWrappedRequest)
-        {
-            return new ProcessingWrapperProcessor(processor, originalWrappedRequest);
-        }
-
+        /** <p>Optionally wrap the response object.
+         * Called before calling {@link #process(Request.Wrapper, Response, Callback, Request.Processor)}</p>
+         * @param wrappedRequest The wrapped request associated with the response.
+         * @param response The response to wrap.
+         * @return Either the wrapped response or the response itself.
+         */
         protected Response wrap(W wrappedRequest, Response response)
         {
             return response;
         }
 
-        protected void process(W wrappedRequest, Response response, Callback callback, Request.Processor nextProcessor)
+        /** <p>Process the wrapped request.  This is called with the wrapped request and optionally wrapped response. It may be
+         * extended if additional processing behaviour is needed, otherwise the default implementation calls the next
+         * processor to process the wrapped request and response.</p>
+         * @param wrappedRequest The wrapped request to process
+         * @param wrappedResponse The optionally wrapped response to process
+         * @param callback The callback to call when processing is complete.
+         * @param nextProcessor The wrapped processor that should be used to process the request if not processed by this
+         * wrapper.
+         * @throws Exception If the nextProcessor throws.
+         */
+        protected void process(W wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor nextProcessor)
             throws Exception
         {
-            nextProcessor.process(wrappedRequest, response, callback);
+            nextProcessor.process(wrappedRequest, wrappedResponse, callback);
         }
 
-        protected class ProcessingWrapperProcessor extends Request.ReWrappingProcessor<W>
+        private class ProcessingWrapperProcessor extends Request.ReWrappingProcessor<W>
         {
             public ProcessingWrapperProcessor(Request.Processor processor, W originalWrappedRequest)
             {
@@ -743,9 +763,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             }
 
             @Override
-            protected void process(W request, Response response, Callback callback, Request.Processor next) throws Exception
+            protected void process(W wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor next) throws Exception
             {
-                ProcessingWrapper.this.process(request, response, callback, next);
+                ProcessingWrapper.this.process(wrappedRequest, wrappedResponse, callback, next);
             }
         }
     }
