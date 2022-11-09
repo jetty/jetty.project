@@ -1163,7 +1163,16 @@ public class Request implements HttpServletRequest
         {
             ServletInputStream in = getInputStream();
             _readerEncoding = encoding;
-            _reader = new BufferedReader(new InputStreamReader(in, encoding));
+            _reader = new BufferedReader(new InputStreamReader(in, encoding))
+            {
+                @Override
+                public void close() throws IOException
+                {
+                    // Do not call super to avoid marking this reader as closed,
+                    // but do close the ServletInputStream that can be reopened.
+                    in.close();
+                }
+            };
         }
         else if (_channel.isExpecting100Continue())
         {
