@@ -62,19 +62,20 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             long contentLength = content.getContentLengthValue();
             if (contentLength > _minFileSize && contentLength < Integer.MAX_VALUE)
-                return new FileMappedContent(content);
+                return new FileMappedHttpContent(content);
         }
         return content;
     }
 
-    private static class FileMappedContent extends HttpContent.HttpContentWrapper
+    private static class FileMappedHttpContent extends HttpContent.HttpContentWrapper
     {
+        private static final ByteBuffer SENTINEL_BUFFER = BufferUtil.allocate(0);
+
         private final AutoLock _lock = new AutoLock();
         private final HttpContent _content;
-        private boolean _processed;
-        private ByteBuffer _buffer;
+        private volatile ByteBuffer _buffer;
 
-        public FileMappedContent(HttpContent content)
+        public FileMappedHttpContent(HttpContent content)
         {
             super(content);
             this._content = content;
@@ -83,30 +84,30 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         @Override
         public ByteBuffer getByteBuffer()
         {
+            ByteBuffer buffer = _buffer;
+            if (buffer != null)
+                return (buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : buffer;
+
             try (AutoLock lock = _lock.lock())
             {
-                if (!_processed)
-                {
-                    _processed = true;
+                if (_buffer == null)
                     _buffer = getMappedByteBuffer();
-                }
-
-                return (_buffer == null) ? super.getByteBuffer() : _buffer;
+                return (_buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : _buffer;
             }
         }
 
         @Override
         public long getBytesOccupied()
         {
+            ByteBuffer buffer = _buffer;
+            if (buffer != null)
+                return (buffer == SENTINEL_BUFFER) ? super.getBytesOccupied() : 0;
+
             try (AutoLock lock = _lock.lock())
             {
-                if (!_processed)
-                {
-                    _processed = true;
+                if (_buffer == null)
                     _buffer = getMappedByteBuffer();
-                }
-
-                return (_buffer == null) ? super.getBytesOccupied() : 0;
+                return (_buffer == SENTINEL_BUFFER) ? super.getBytesOccupied() : 0;
             }
         }
 
@@ -122,7 +123,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
                     LOG.debug("Error getting Mapped Buffer", t);
             }
 
-            return null;
+            return SENTINEL_BUFFER;
         }
     }
 }
