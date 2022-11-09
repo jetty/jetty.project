@@ -148,7 +148,7 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            String pathInfo = request.getPathInContext();
+            String pathInfo = Request.getPathInContext(request);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
             Content.Sink.write(response, true, "This is content for " + pathInfo + "\n", callback);
         }

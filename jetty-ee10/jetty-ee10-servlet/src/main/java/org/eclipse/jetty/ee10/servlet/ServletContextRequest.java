@@ -139,7 +139,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         PathSpec pathSpec,
         MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request, pathInContext);
+        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -147,6 +147,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
+    }
+
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override
@@ -1219,16 +1224,22 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
             if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
             {
-                final ServletInputStream in = getInputStream();
+                ServletInputStream in = getInputStream();
                 _readerEncoding = encoding;
                 _reader = new BufferedReader(new InputStreamReader(in, encoding))
                 {
                     @Override
                     public void close() throws IOException
                     {
+                        // Do not call super to avoid marking this reader as closed,
+                        // but do close the ServletInputStream that can be reopened.
                         in.close();
                     }
                 };
+            }
+            else if (_servletChannel.isExpecting100Continue())
+            {
+                _servletChannel.continue100(_httpInput.available());
             }
             _inputState = INPUT_READER;
             return _reader;

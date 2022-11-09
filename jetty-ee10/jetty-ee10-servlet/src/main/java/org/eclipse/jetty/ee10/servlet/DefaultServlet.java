@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -52,6 +53,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.server.HttpStream;
@@ -419,6 +421,7 @@ public class DefaultServlet extends HttpServlet
 
         private final HttpServletRequest _servletRequest;
         private final HttpFields _httpFields;
+        private final HttpURI _uri;
 
         ServletCoreRequest(HttpServletRequest request)
         {
@@ -439,6 +442,9 @@ public class DefaultServlet extends HttpServlet
                 }
             }
             _httpFields = fields.asImmutable();
+            _uri = (request.getDispatcherType() == DispatcherType.REQUEST)
+                ? getWrapped().getHttpURI()
+                : Request.newHttpURIFrom(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
         }
 
         @Override
@@ -448,9 +454,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public String getPathInContext()
+        public HttpURI getHttpURI()
         {
-            return URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo());
+            return _uri;
         }
 
         @Override
@@ -882,7 +888,8 @@ public class DefaultServlet extends HttpServlet
                 return null;
             }
 
-            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : coreRequest.getPathInContext();
+            String pathInContext = Request.getPathInContext(coreRequest);
+            String requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
 
             String welcomeServlet = null;
             Resource base = _baseResource.resolve(requestTarget);
@@ -891,7 +898,7 @@ public class DefaultServlet extends HttpServlet
                 for (String welcome : welcomes)
                 {
                     Resource welcomePath = base.resolve(welcome);
-                    String welcomeInContext = URIUtil.addPaths(coreRequest.getPathInContext(), welcome);
+                    String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
 
                     if (Resources.isReadableFile(welcomePath))
                         return welcomeInContext;

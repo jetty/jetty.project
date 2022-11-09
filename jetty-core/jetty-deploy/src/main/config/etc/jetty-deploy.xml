@@ -23,13 +23,7 @@
           <Arg>starting</Arg>
           <Arg>customise</Arg>
         </Call>
-        <Call name="addLifeCycleBinding">
-          <Arg>
-            <New class="org.eclipse.jetty.deploy.bindings.DebugBinding">
-              <Arg>customise</Arg>
-            </New>
-          </Arg>
-        </Call> -->
+         -->
 
       </New>
     </Arg>

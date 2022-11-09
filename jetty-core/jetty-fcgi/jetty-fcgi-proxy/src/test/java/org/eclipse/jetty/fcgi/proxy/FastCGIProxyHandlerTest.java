@@ -91,7 +91,7 @@ public class FastCGIProxyHandlerTest
         {
             HttpURI httpURI = request.getHttpURI();
             HttpURI.Mutable newHttpURI = HttpURI.build(httpURI)
-                .path(appContextPath + request.getPathInContext());
+                .path(appContextPath + Request.getPathInContext(request));
             newHttpURI.port(unixDomainPath == null ? ((ServerConnector)serverConnector).getLocalPort() : 0);
             return newHttpURI;
         }, "/scriptRoot");
@@ -152,7 +152,7 @@ public class FastCGIProxyHandlerTest
             public void process(Request request, Response response, Callback callback)
             {
                 assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
-                assertEquals(path, request.getPathInContext());
+                assertEquals(path, Request.getPathInContext(request));
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
             }
@@ -198,7 +198,7 @@ public class FastCGIProxyHandlerTest
             {
                 assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), startsWith(originalPath));
                 assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
-                assertThat(request.getPathInContext(), endsWith(remotePath));
+                assertThat(Request.getPathInContext(request), endsWith(remotePath));
                 callback.succeeded();
             }
         });
@@ -211,7 +211,7 @@ public class FastCGIProxyHandlerTest
             @Override
             public Request.Processor handle(Request request) throws Exception
             {
-                if (request.getPathInContext().startsWith("/remote/"))
+                if (Request.getPathInContext(request).startsWith("/remote/"))
                 {
                     request.setAttribute(pathAttribute, originalPath);
                     request.setAttribute(queryAttribute, originalQuery);

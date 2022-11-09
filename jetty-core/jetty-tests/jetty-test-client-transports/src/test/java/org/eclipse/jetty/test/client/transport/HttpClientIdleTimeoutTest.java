@@ -42,7 +42,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
-                if (!request.getPathInContext().equals("/timeout"))
+                if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
             }
         });
@@ -76,7 +76,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
-                if (!request.getPathInContext().equals("/timeout"))
+                if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
             }
         });

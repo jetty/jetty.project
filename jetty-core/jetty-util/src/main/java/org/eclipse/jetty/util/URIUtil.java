@@ -18,12 +18,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -55,17 +55,28 @@ public final class URIUtil
         .with("jar:")
         .build();
 
-    public static final String SLASH = "/";
-    public static final String HTTP = "http";
-    public static final String HTTPS = "https";
+    // From https://www.rfc-editor.org/rfc/rfc3986
+    private static final String UNRESERVED = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~";
+    private static final String SUBDELIMS = "!$&'()*+,;=";
+    private static final String REGNAME = UNRESERVED + SUBDELIMS;
 
-    // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-    public static final Charset __CHARSET = StandardCharsets.UTF_8;
+    // Allowed characters in https://www.rfc-editor.org/rfc/rfc3986 reg-name
+    private static final boolean[] REGNAME_ALLOWED;
+
+    static
+    {
+        REGNAME_ALLOWED = new boolean[128];
+        Arrays.fill(REGNAME_ALLOWED, false);
+        for (char c : REGNAME.toCharArray())
+        {
+            REGNAME_ALLOWED[c] = true;
+        }
+    }
 
     /**
      * The characters that are supported by the URI class and that can be decoded by {@link #canonicalPath(String)}
      */
-    public static final boolean[] __uriSupportedCharacters = new boolean[]
+    private static final boolean[] URI_SUPPORTED_CHARACTERS = new boolean[]
     {
         false, // 0x00 is illegal
         false, // 0x01 is illegal
@@ -197,242 +208,102 @@ public final class URIUtil
         false, // 0x7f DEL is illegal
     };
 
+    private static final boolean[] ENCODE_PATH_NEEDS_ENCODING;
+
     private URIUtil()
     {
+    }
+
+    static
+    {
+        ENCODE_PATH_NEEDS_ENCODING = new boolean[128];
+        // Special characters
+        for (char c: "%?;#\"'<> [\\]^`{|}".toCharArray())
+            ENCODE_PATH_NEEDS_ENCODING[c] = true;
+        // control characters
+        ENCODE_PATH_NEEDS_ENCODING[0x7f] = true;
+        for (int i = 0; i < 0x20; i++)
+            ENCODE_PATH_NEEDS_ENCODING[i] = true;
     }
 
     /**
      * Encode a URI path.
      * This is the same encoding offered by URLEncoder, except that
-     * the '/' character is not encoded.
+     * the '{@code /}' character is not encoded.
      *
-     * @param path The path the encode
+     * @param path The path to encode
      * @return The encoded path
      */
     public static String encodePath(String path)
     {
-        if (path == null || path.length() == 0)
+        if (StringUtil.isEmpty(path))
             return path;
 
-        StringBuilder buf = encodePath(null, path, 0);
-        return buf == null ? path : buf.toString();
-    }
-
-    /**
-     * Encode a URI path.
-     *
-     * @param path The path the encode
-     * @param buf StringBuilder to encode path into (or null)
-     * @return The StringBuilder or null if no substitutions required.
-     */
-    public static StringBuilder encodePath(StringBuilder buf, String path)
-    {
-        return encodePath(buf, path, 0);
-    }
-
-    /**
-     * Encode a URI path.
-     *
-     * @param path The path the encode
-     * @param buf StringBuilder to encode path into (or null)
-     * @return The StringBuilder or null if no substitutions required.
-     */
-    private static StringBuilder encodePath(StringBuilder buf, String path, int offset)
-    {
-        byte[] bytes = null;
-        if (buf == null)
-        {
-            loop:
-            for (int i = offset; i < path.length(); i++)
-            {
-                char c = path.charAt(i);
-                switch (c)
-                {
-                    case '%':
-                    case '?':
-                    case ';':
-                    case '#':
-                    case '"':
-                    case '\'':
-                    case '<':
-                    case '>':
-                    case ' ':
-                    case '[':
-                    case '\\':
-                    case ']':
-                    case '^':
-                    case '`':
-                    case '{':
-                    case '|':
-                    case '}':
-                        buf = new StringBuilder(path.length() * 2);
-                        break loop;
-                    default:
-                        if (c < 0x20 || c >= 0x7f)
-                        {
-                            bytes = path.getBytes(URIUtil.__CHARSET);
-                            buf = new StringBuilder(path.length() * 2);
-                            break loop;
-                        }
-                }
-            }
-            if (buf == null)
-                return null;
-        }
-
-        int i;
-
-        loop:
-        for (i = offset; i < path.length(); i++)
+        // byte encoding always wins and, if encountered, should be used.
+        boolean needsByteEncoding = false;
+        // string (char-by-char) encoding, but it could be followed by a need for byte encoding instead
+        boolean needsEncoding = false;
+        int length = path.length();
+        for (int i = 0; i < length; i++)
         {
             char c = path.charAt(i);
-            switch (c)
+            if (c > 0x7F) // 8-bit +
             {
-                case '%':
-                    buf.append("%25");
-                    continue;
-                case '?':
-                    buf.append("%3F");
-                    continue;
-                case ';':
-                    buf.append("%3B");
-                    continue;
-                case '#':
-                    buf.append("%23");
-                    continue;
-                case '"':
-                    buf.append("%22");
-                    continue;
-                case '\'':
-                    buf.append("%27");
-                    continue;
-                case '<':
-                    buf.append("%3C");
-                    continue;
-                case '>':
-                    buf.append("%3E");
-                    continue;
-                case ' ':
-                    buf.append("%20");
-                    continue;
-                case '[':
-                    buf.append("%5B");
-                    continue;
-                case '\\':
-                    buf.append("%5C");
-                    continue;
-                case ']':
-                    buf.append("%5D");
-                    continue;
-                case '^':
-                    buf.append("%5E");
-                    continue;
-                case '`':
-                    buf.append("%60");
-                    continue;
-                case '{':
-                    buf.append("%7B");
-                    continue;
-                case '|':
-                    buf.append("%7C");
-                    continue;
-                case '}':
-                    buf.append("%7D");
-                    continue;
-
-                default:
-                    if (c < 0x20 || c >= 0x7f)
-                    {
-                        bytes = path.getBytes(URIUtil.__CHARSET);
-                        break loop;
-                    }
-                    buf.append(c);
+                needsByteEncoding = true;
+                break; // have to encode byte by byte now
+            }
+            if (ENCODE_PATH_NEEDS_ENCODING[c])
+            {
+                // could be followed by a byte encoding, so no break
+                needsEncoding = true;
             }
         }
 
-        if (bytes != null)
-        {
-            for (; i < bytes.length; i++)
-            {
-                byte c = bytes[i];
-                switch (c)
-                {
-                    case '%':
-                        buf.append("%25");
-                        continue;
-                    case '?':
-                        buf.append("%3F");
-                        continue;
-                    case ';':
-                        buf.append("%3B");
-                        continue;
-                    case '#':
-                        buf.append("%23");
-                        continue;
-                    case '"':
-                        buf.append("%22");
-                        continue;
-                    case '\'':
-                        buf.append("%27");
-                        continue;
-                    case '<':
-                        buf.append("%3C");
-                        continue;
-                    case '>':
-                        buf.append("%3E");
-                        continue;
-                    case ' ':
-                        buf.append("%20");
-                        continue;
-                    case '[':
-                        buf.append("%5B");
-                        continue;
-                    case '\\':
-                        buf.append("%5C");
-                        continue;
-                    case ']':
-                        buf.append("%5D");
-                        continue;
-                    case '^':
-                        buf.append("%5E");
-                        continue;
-                    case '`':
-                        buf.append("%60");
-                        continue;
-                    case '{':
-                        buf.append("%7B");
-                        continue;
-                    case '|':
-                        buf.append("%7C");
-                        continue;
-                    case '}':
-                        buf.append("%7D");
-                        continue;
-                    default:
-                        if (c < 0x20 || c >= 0x7f)
-                        {
-                            buf.append('%');
-                            TypeUtil.toHex(c, buf);
-                        }
-                        else
-                            buf.append((char)c);
-                }
-            }
-        }
-
-        return buf;
+        if (needsByteEncoding)
+            return encodePathBytes(path);
+        else if (needsEncoding)
+            return encodePathString(path);
+        else
+            return path;
     }
 
-    /**
-     * Encode a raw URI String and convert any raw spaces to
-     * their "%20" equivalent.
-     *
-     * @param str input raw string
-     * @return output with spaces converted to "%20"
-     */
-    public static String encodeSpaces(String str)
+    private static String encodePathString(String path)
     {
-        return StringUtil.replace(str, " ", "%20");
+        StringBuilder buf = new StringBuilder(path.length() * 2);
+        int length = path.length();
+        for (int i = 0; i < length; i++)
+        {
+            char c = path.charAt(i);
+            if (ENCODE_PATH_NEEDS_ENCODING[c])
+            {
+                buf.append('%');
+                TypeUtil.toHex((byte)c, buf);
+            }
+            else
+            {
+                buf.append(c);
+            }
+        }
+        return buf.toString();
+    }
+
+    private static String encodePathBytes(String path)
+    {
+        StringBuilder buf = new StringBuilder(path.length() * 2);
+        byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
+        for (byte b : pathBytes)
+        {
+            if (b < 0 || ENCODE_PATH_NEEDS_ENCODING[b])
+            {
+                buf.append('%');
+                TypeUtil.toHex(b, buf);
+            }
+            else
+            {
+                buf.append((char)b);
+            }
+        }
+        return buf.toString();
     }
 
     /**
@@ -483,7 +354,7 @@ public final class URIUtil
      * Decode a raw String and convert any specific URI encoded sequences into characters.
      *
      * @param str input raw string
-     * @param charsToDecode the list of raw characters that need to be decoded (if encountered), leaving all other encoded sequences alone.
+     * @param charsToDecode the list of raw characters that need to be decoded (if encountered), leaving all the other encoded sequences alone.
      * @return output with specified characters decoded.
      */
     @SuppressWarnings("Duplicates")
@@ -510,41 +381,40 @@ public final class URIUtil
         for (int i = idx; i < len; i++)
         {
             char c = str.charAt(i);
-            switch (c)
+            if (c == '%')
             {
-                case '%':
-                    if ((i + 2) < len)
+                if ((i + 2) < len)
+                {
+                    char u = str.charAt(i + 1);
+                    char l = str.charAt(i + 2);
+                    char result = (char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(l)));
+                    boolean decoded = false;
+                    for (char f : find)
                     {
-                        char u = str.charAt(i + 1);
-                        char l = str.charAt(i + 2);
-                        char result = (char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(l)));
-                        boolean decoded = false;
-                        for (char f : find)
+                        if (f == result)
                         {
-                            if (f == result)
-                            {
-                                ret.append(result);
-                                decoded = true;
-                                break;
-                            }
+                            ret.append(result);
+                            decoded = true;
+                            break;
                         }
-                        if (decoded)
-                        {
-                            i += 2;
-                        }
-                        else
-                        {
-                            ret.append(c);
-                        }
+                    }
+                    if (decoded)
+                    {
+                        i += 2;
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad URI % encoding");
+                        ret.append(c);
                     }
-                    break;
-                default:
-                    ret.append(c);
-                    break;
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Bad URI % encoding");
+                }
+            }
+            else
+            {
+                ret.append(c);
             }
         }
         return ret.toString();
@@ -553,11 +423,12 @@ public final class URIUtil
     /**
      * Encode a URI path.
      *
-     * @param path The path the encode
+     * @param path The path to encode
      * @param buf StringBuilder to encode path into (or null)
-     * @param encode String of characters to encode. % is always encoded.
+     * @param encode String of characters to encode. '{@code %}' is always encoded.
      * @return The StringBuilder or null if no substitutions required.
      */
+    // TODO: remove, only used in URIUtilTest?
     public static StringBuilder encodeString(StringBuilder buf,
                                              String path,
                                              String encode)
@@ -698,6 +569,29 @@ public final class URIUtil
     }
 
     /**
+     * @param path The path to check for validity
+     * @return True if the path does not contain any invalid path characters
+     */
+    public static boolean isPathValid(String path)
+    {
+        if (path == null)
+            return true;
+
+        int end = path.length();
+        for (int i = 0; i < end; i++)
+        {
+            char c = path.charAt(i);
+            switch (c)
+            {
+                case '?' :
+                case '#' :
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Test if codepoint is safe and unambiguous to pass as input to {@link URI}
      *
      * @param code the codepoint code to test
@@ -707,7 +601,7 @@ public final class URIUtil
     {
         // Allow any 8-bit character (as it's likely unicode).
         // or any character labeled with true in __uriSupportedCharacters static
-        return (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code]);
+        return (code >= URI_SUPPORTED_CHARACTERS.length || URI_SUPPORTED_CHARACTERS[code]);
     }
 
     /**
@@ -761,11 +655,11 @@ public final class URIUtil
      * <p>
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
      * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
-     * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
+     * Unsafe characters, other than '{@code /}' will be encoded.  Encodings will be uppercase hex.
      * Canonical paths are also normalized and may be used in string comparisons with other canonical paths.
      * <p>
-     * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
-     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
+     * For example the path {@code /fo %2fo/b%61r} will be normalized to {@code /fo%20%2Fo/bar},
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal {@code /fo /o/bar}.
      * @return the canonical path or null if it is non-normal
      * @see #decodePath(String)
      * @see #normalizePath(String)
@@ -894,7 +788,8 @@ public final class URIUtil
         }
     }
 
-    /* Decode a URI path and strip parameters of ISO-8859-1 path
+    /**
+     * Decode a URI path and strip parameters of ISO-8859-1 path
      */
     private static String decodeISO88591Path(String path, int offset, int length)
     {
@@ -966,7 +861,7 @@ public final class URIUtil
     /**
      * Add two encoded URI path segments.
      * Handles null and empty paths, path and query params
-     * (eg ?a=b or ;JSESSIONID=xxx) and avoids duplicate '/'
+     * (e.g. {@code ?a=b} or {@code ;JSESSIONID=xxx}) and avoids duplicate '{@code /}'
      *
      * @param p1 URI path segment (should be encoded)
      * @param p2 URI path segment (should be encoded)
@@ -996,7 +891,7 @@ public final class URIUtil
 
         if (buf.charAt(split - 1) == '/')
         {
-            if (p2.startsWith(URIUtil.SLASH))
+            if (p2.startsWith("/"))
             {
                 buf.deleteCharAt(split - 1);
                 buf.insert(split - 1, p2);
@@ -1006,7 +901,7 @@ public final class URIUtil
         }
         else
         {
-            if (p2.startsWith(URIUtil.SLASH))
+            if (p2.startsWith("/"))
                 buf.insert(split, p2);
             else
             {
@@ -1020,8 +915,10 @@ public final class URIUtil
 
     /**
      * Add two Decoded URI path segments.
-     * Handles null and empty paths.  Path and query params (eg ?a=b or
-     * ;JSESSIONID=xxx) are not handled
+     * <p>
+     * Handles null and empty paths.
+     * Path and query params (e.g. {@code ?a=b} or {@code ;JSESSIONID=xxx}) are not handled
+     * </p>
      *
      * @param p1 URI path segment (should be decoded)
      * @param p2 URI path segment (should be decoded)
@@ -1038,8 +935,8 @@ public final class URIUtil
         if (p2 == null || p2.length() == 0)
             return p1;
 
-        boolean p1EndsWithSlash = p1.endsWith(SLASH);
-        boolean p2StartsWithSlash = p2.startsWith(SLASH);
+        boolean p1EndsWithSlash = p1.endsWith("/");
+        boolean p2StartsWithSlash = p2.startsWith("/");
 
         if (p1EndsWithSlash && p2StartsWithSlash)
         {
@@ -1052,25 +949,27 @@ public final class URIUtil
         StringBuilder buf = new StringBuilder(p1.length() + p2.length() + 2);
         buf.append(p1);
 
-        if (p1.endsWith(SLASH))
+        if (p1.endsWith("/"))
         {
-            if (p2.startsWith(SLASH))
+            if (p2.startsWith("/"))
                 buf.setLength(buf.length() - 1);
         }
         else
         {
-            if (!p2.startsWith(SLASH))
-                buf.append(SLASH);
+            if (!p2.startsWith("/"))
+                buf.append("/");
         }
         buf.append(p2);
 
         return buf.toString();
     }
 
-    /** Add a path and a query string
+    /**
+     * Add a path and a query string
+     *
      * @param path The path which may already contain a query
      * @param query The query string to add (if blank, no query is added)
-     * @return The path with any non-blank query added after a '?' or '&amp;' as appropriate.
+     * @return The path with any non-blank query added after a '{@code ?}' or '{@code &amp;}' as appropriate.
      */
     public static String addPathQuery(String path, String query)
     {
@@ -1119,14 +1018,16 @@ public final class URIUtil
 
     /**
      * Return the parent Path.
+     * <p>
      * Treat a URI like a directory path and return the parent directory.
+     * </p>
      *
      * @param p the path to return a parent reference to
      * @return the parent path of the URI
      */
     public static String parentPath(String p)
     {
-        if (p == null || URIUtil.SLASH.equals(p))
+        if (p == null || "/".equals(p))
             return null;
         int slash = p.lastIndexOf('/', p.length() - 2);
         if (slash >= 0)
@@ -1135,7 +1036,8 @@ public final class URIUtil
     }
 
     /**
-     * <p>Normalize a URI path and query by factoring out all segments of "." and ".."
+     * <p>
+     * Normalize a URI path and query by factoring out all segments of '{@code .}' and '{@code ..}'
      * up until any query or fragment.
      * Null is returned if the path is normalized above its root.
      * </p>
@@ -1166,7 +1068,6 @@ public final class URIUtil
                 case '.':
                     if (slash)
                         break loop;
-                    slash = false;
                     break;
 
                 case '?':
@@ -1244,8 +1145,8 @@ public final class URIUtil
 
     /**
      * <p>Check if a path would be normalized within itself. For example,
-     * <code>/foo/../../bar</code> is normalized above its root and would
-     * thus return false, whilst <code>/foo/./bar/..</code> is normal within itself
+     * {@code /foo/../../bar} is normalized above its root and would
+     * thus return false, whilst {@code /foo/./bar/..} is normal within itself
      * and would return true.
      * @param path The path to check
      * @return True if the normal form of the path is within the root of the path.
@@ -1257,11 +1158,11 @@ public final class URIUtil
     }
 
     /**
-     * <p>Normalize a URI path by factoring out all segments of "." and "..".
+     * <p>Normalize a URI path by factoring out all segments of {@code .} and {@code ..}.
      * Null is returned if the path is normalized above its root.
      * </p>
      *
-     * @param path the decoded URI path to convert. Any special characters (e.g. '?', "#") are assumed to be part of
+     * @param path the decoded URI path to convert. Any special characters (e.g. {@code ?}, {@code #}) are assumed to be part of
      * the path segments.
      * @return the normalized path, or null if path traversal above root.
      * @see #normalizePathQuery(String)
@@ -1283,18 +1184,13 @@ public final class URIUtil
             char c = path.charAt(i);
             switch (c)
             {
-                case '/':
-                    slash = true;
-                    break;
-
-                case '.':
+                case '/' -> slash = true;
+                case '.' ->
+                {
                     if (slash)
                         break loop;
-                    slash = false;
-                    break;
-
-                default:
-                    slash = false;
+                }
+                default -> slash = false;
             }
 
             i++;
@@ -1316,14 +1212,15 @@ public final class URIUtil
             char c = path.charAt(i);
             switch (c)
             {
-                case '/':
+                case '/' ->
+                {
                     if (doDotsSlash(canonical, dots))
                         return null;
                     slash = true;
                     dots = 0;
-                    break;
-
-                case '.':
+                }
+                case '.' ->
+                {
                     // Count dots only if they are leading in the segment
                     if (dots > 0)
                         dots++;
@@ -1332,15 +1229,16 @@ public final class URIUtil
                     else
                         canonical.append('.');
                     slash = false;
-                    break;
-
-                default:
+                }
+                default ->
+                {
                     // Add leading dots to the path
                     while (dots-- > 0)
                         canonical.append('.');
                     canonical.append(c);
                     dots = 0;
                     slash = false;
+                }
             }
             i++;
         }
@@ -1397,7 +1295,7 @@ public final class URIUtil
 
     /**
      * Convert a path to a compact form.
-     * All instances of "//" and "///" etc. are factored out to single "/"
+     * All instances of {@code //} and {@code ///} etc. are factored out to single {@code /}
      *
      * @param path the path to compact
      * @return the compacted path
@@ -1484,6 +1382,50 @@ public final class URIUtil
     }
 
     /**
+     * True if token is a <a href="https://www.rfc-editor.org/rfc/rfc3986">RFC3986</a> {@code reg-name} (Registered Name)
+     *
+     * @param token the to test
+     * @return true if the token passes as a valid Host Registered Name
+     */
+    public static boolean isValidHostRegisteredName(String token)
+    {
+        /* reg-name ABNF is defined as :
+         *   reg-name      = *( unreserved / pct-encoded / sub-delims )
+         *   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+         *   pct-encoded   = "%" HEXDIG HEXDIG
+         *   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+         *                   / "*" / "+" / "," / ";" / "="
+         */
+
+        if (token == null)
+            return true; // null token is considered valid
+
+        int length = token.length();
+        for (int i = 0; i < length; i++)
+        {
+            char c = token.charAt(i);
+            if (c > 127)
+                return false;
+            if (REGNAME_ALLOWED[c])
+                continue;
+            if (c == '%')
+            {
+                if (StringUtil.isHex(token, i + 1, 2))
+                {
+                    i += 2;
+                    continue;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Create a new URI from the arguments, handling IPv6 host encoding and default ports
      *
      * @param scheme the URI scheme
@@ -1559,47 +1501,36 @@ public final class URIUtil
      */
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
-        synchronized (url)
+        url.append(scheme).append("://").append(HostPort.normalizeHost(server));
+
+        if (port > 0)
         {
-            url.append(scheme).append("://").append(HostPort.normalizeHost(server));
-
-            if (port > 0)
+            switch (scheme)
             {
-                switch (scheme)
-                {
-                    case "http":
-                        if (port != 80)
-                            url.append(':').append(port);
-                        break;
-
-                    case "https":
-                        if (port != 443)
-                            url.append(':').append(port);
-                        break;
-
-                    default:
+                case "http":
+                    if (port != 80)
                         url.append(':').append(port);
-                }
+                    break;
+
+                case "https":
+                    if (port != 443)
+                        url.append(':').append(port);
+                    break;
+
+                default:
+                    url.append(':').append(port);
             }
         }
     }
 
-    // Only URIUtil is using this method
-    static boolean equalsIgnoreEncodings(String uriA, String uriB)
-    {
-        try
-        {
-            String safeDecodedUriA = ensureSafeEncoding(uriA);
-            String safeDecodedUriB = ensureSafeEncoding(uriB);
-            return safeDecodedUriA.equals(safeDecodedUriB);
-        }
-        catch (IllegalArgumentException e)
-        {
-            return false;
-        }
-    }
-
-    static String ensureSafeEncoding(String path)
+    /**
+     * Encode characters in a path to ensure they only contain safe encodings suitable for both
+     * {@link URI} and {@link Paths#get(URI)} usage.
+     *
+     * @param path the path to encode
+     * @return the returned path with only safe encodings
+     */
+    public static String encodePathSafeEncoding(String path)
     {
         if (path == null)
             return null;
@@ -1739,42 +1670,6 @@ public final class URIUtil
         return ((codepoint == '?') || (codepoint == '#'));
     }
 
-    public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)
-    {
-        if (uriA.equals(uriB))
-            return true;
-
-        if (uriA.toASCIIString().equals(uriB.toASCIIString()))
-            return true;
-
-        // TODO: this check occurs in uriA.equals(uriB)
-        if (uriA.getScheme() == null)
-        {
-            if (uriB.getScheme() != null)
-                return false;
-        }
-        else if (!uriA.getScheme().equalsIgnoreCase(uriB.getScheme()))
-            return false;
-
-        if ("jar".equalsIgnoreCase(uriA.getScheme()))
-        {
-            // at this point we know that both uri's are "jar:"
-            URI uriAssp = URI.create(uriA.getRawSchemeSpecificPart());
-            URI uriBssp = URI.create(uriB.getRawSchemeSpecificPart());
-            return equalsIgnoreEncodings(uriAssp, uriBssp);
-        }
-
-        if (uriA.getAuthority() == null)
-        {
-            if (uriB.getAuthority() != null)
-                return false;
-        }
-        else if (!uriA.getAuthority().equals(uriB.getAuthority()))
-            return false;
-
-        return equalsIgnoreEncodings(uriA.getRawPath(), uriB.getRawPath());
-    }
-
     /**
      * Add a sub path to an existing URI.
      *
@@ -1805,7 +1700,7 @@ public final class URIUtil
 
         // ensure that the base has a safe encoding suitable for both
         // URI and Paths.get(URI) later usage
-        path = ensureSafeEncoding(path);
+        path = encodePathSafeEncoding(path);
         pathLen = path.length();
 
         if (base.length() == 0)
@@ -1824,8 +1719,8 @@ public final class URIUtil
     }
 
     /**
-     * Combine two query strings into one. Each query string should not contain the beginning '?' character, but
-     * may contain multiple parameters separated by the '{@literal &}' character.
+     * Combine two query strings into one. Each query string should not contain the beginning '{@code ?}' character, but
+     * may contain multiple parameters separated by the '{@code &}' character.
      * @param query1 the first query string.
      * @param query2 the second query string.
      * @return the combination of the two query strings.
@@ -1888,12 +1783,12 @@ public final class URIUtil
     }
 
     /**
-     * Split a string of references, that may be split with {@code ,}, or {@code ;}, or {@code |} into URIs.
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into URIs.
      * <p>
      *     Each part of the input string could be path references (unix or windows style), or string URI references.
      * </p>
      * <p>
-     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as `jar:file:...!/`.
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
      * </p>
      *
      * @param str the input string of references
@@ -1950,12 +1845,15 @@ public final class URIUtil
     }
 
     /**
+     * <p>
      * Take an arbitrary URI and provide a URI that is suitable for mounting the URI as a Java FileSystem.
-     *
+     * </p>
+     * <p>
      * The resulting URI will point to the {@code jar:file://foo.jar!/} said Java Archive (jar, war, or zip)
+     * </p>
      *
      * @param uri the URI to mutate to a {@code jar:file:...} URI.
-     * @return the <code>jar:${uri_to_java_archive}!/${internal-reference}</code> URI or the unchanged URI if not a Java Archive.
+     * @return the {@code jar:${uri_to_java_archive}!/${internal-reference}} URI or the unchanged URI if not a Java Archive.
      * @see FileID#isArchive(URI)
      */
     public static URI toJarFileUri(URI uri)
@@ -2011,9 +1909,13 @@ public final class URIUtil
     }
 
     /**
+     * <p>
      * Unwrap a URI to expose its container path reference.
+     * </p>
      *
+     * <p>
      * Take out the container archive name URI from a {@code jar:file:${container-name}!/} URI.
+     * </p>
      *
      * @param uri the input URI
      * @return the container String if a {@code jar} scheme, or just the URI untouched.

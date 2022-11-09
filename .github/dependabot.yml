@@ -7,7 +7,8 @@ updates:
     schedule:
       interval: "monthly"
       day: "saturday"
-      time: "02:00"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
     # Associate with milestone 10.0.x
     milestone: 6
     ignore:
@@ -50,7 +51,8 @@ updates:
     schedule:
       interval: "monthly"
       day: "saturday"
-      time: "02:00"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
     # Associate with milestone 11.0.x
     milestone: 7
     ignore:
@@ -93,5 +95,19 @@ updates:
         versions: [ ">=4.0.0" ]
       - dependency-name: "org.jboss.weld.servlet:*"
         versions: [ ">=5.0.0" ]
+      - dependency-name: "org.infinispan:*"
+        versions: [ ">=12" ]
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 30
+    target-branch: "jetty-9.4.x"
+    schedule:
+      interval: "monthly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    ignore:
+      # Restrict updates in this branch to jetty in the 9.4.x space
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]

@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.net.ConnectException;
 import java.net.HttpCookie;
 import java.nio.ByteBuffer;
@@ -62,6 +63,7 @@ import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.ProxyConfiguration.Proxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -124,6 +126,7 @@ public class ProxyServletTest
     }
 
     private HttpClient client;
+    private Proxy clientProxy;
     private Server proxy;
     private ServerConnector proxyConnector;
     private ServletContextHandler proxyContext;
@@ -198,6 +201,7 @@ public class ProxyServletTest
 
     private void startClient(Consumer<HttpClient> consumer) throws Exception
     {
+        clientProxy = new HttpProxy("localhost", proxyConnector.getLocalPort());
         client = prepareClient(consumer);
     }
 
@@ -207,7 +211,7 @@ public class ProxyServletTest
         clientPool.setName("client");
         HttpClient result = new HttpClient();
         result.setExecutor(clientPool);
-        result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        result.getProxyConfiguration().addProxy(clientProxy);
         if (consumer != null)
             consumer.accept(result);
         result.start();
@@ -730,7 +734,7 @@ public class ProxyServletTest
         startProxy(proxyServletClass);
         startClient();
         int port = serverConnector.getLocalPort();
-        client.getProxyConfiguration().getProxies().get(0).getExcludedAddresses().add("127.0.0.1:" + port);
+        clientProxy.getExcludedAddresses().add("127.0.0.1:" + port);
 
         // Try with a proxied host
         ContentResponse response = client.newRequest("localhost", port)
@@ -1635,5 +1639,37 @@ public class ProxyServletTest
         // The client should not send the content.
         assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testExpect100ContinueWithReader(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        startServer(new EmptyHttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Calling getReader() should trigger the send of 100 Continue.
+                IO.copy(request.getReader(), Writer.nullWriter());
+            }
+        });
+        startProxy(proxyServletClass);
+        startClient();
+        client.setMaxConnectionsPerDestination(1);
+
+        // Perform consecutive requests to test whether recycling of
+        // the Request on server side messes up 100 Continue handling.
+        int count = 8;
+        for (int i = 0; i < count; ++i)
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .path("/" + i)
+                .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+                .body(new BytesRequestContent(new byte[]{'h', 'e', 'l', 'l', 'o'}))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 }

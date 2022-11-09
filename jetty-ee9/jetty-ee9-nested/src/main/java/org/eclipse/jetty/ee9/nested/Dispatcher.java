@@ -305,14 +305,14 @@ public class Dispatcher implements RequestDispatcher
             if (key.startsWith(__INCLUDE_PREFIX))
                 return null;
 
-            return _attributes.getAttribute(key);
+            return getWrapped().getAttribute(key);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
             HashSet<String> set = new HashSet<>();
-            for (String name : _attributes.getAttributeNameSet())
+            for (String name : getWrapped().getAttributeNameSet())
             {
                 if (!name.startsWith(__INCLUDE_PREFIX) &&
                     !name.startsWith(__FORWARD_PREFIX))
@@ -345,13 +345,13 @@ public class Dispatcher implements RequestDispatcher
             // name is set here, it will be hidden by this class during the forward,
             // but revealed after the forward is complete just as if the reserved name
             // attribute had be set by the application before the forward.
-            return _attributes.setAttribute(key, value);
+            return getWrapped().setAttribute(key, value);
         }
 
         @Override
         public String toString()
         {
-            return "FORWARD+" + _attributes.toString();
+            return "FORWARD+" + getWrapped().toString();
         }
 
         @Override
@@ -438,14 +438,14 @@ public class Dispatcher implements RequestDispatcher
                 }
             }
 
-            return _attributes.getAttribute(key);
+            return getWrapped().getAttribute(key);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
             HashSet<String> set = new HashSet<>();
-            for (String name : _attributes.getAttributeNameSet())
+            for (String name : getWrapped().getAttributeNameSet())
             {
                 if (!name.startsWith(__INCLUDE_PREFIX))
                     set.add(name);
@@ -481,13 +481,13 @@ public class Dispatcher implements RequestDispatcher
         {
             // Allow any attribute to be set, even if a reserved name. If a reserved
             // name is set here, it will be revealed after the include is complete.
-            return _attributes.setAttribute(key, value);
+            return getWrapped().setAttribute(key, value);
         }
 
         @Override
         public String toString()
         {
-            return "INCLUDE+" + _attributes.toString();
+            return "INCLUDE+" + getWrapped().toString();
         }
 
         @Override

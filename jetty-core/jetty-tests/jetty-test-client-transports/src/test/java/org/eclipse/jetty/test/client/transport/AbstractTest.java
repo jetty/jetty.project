@@ -90,6 +90,14 @@ public class AbstractTest
         return List.copyOf(transports);
     }
 
+    public static Collection<Transport> transportsTCP()
+    {
+        Collection<Transport> transports = transports();
+        transports.remove(Transport.H3);
+        transports.remove(Transport.UNIX_DOMAIN);
+        return List.copyOf(transports);
+    }
+
     @AfterEach
     public void dispose()
     {

@@ -36,6 +36,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -66,7 +69,9 @@ public class URIUtilTest
             Arguments.of("/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
                 "/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E"),
             Arguments.of("test\u00f6?\u00f6:\u00df", "test%C3%B6%3F%C3%B6:%C3%9F"),
-            Arguments.of("test?\u00f6?\u00f6:\u00df", "test%3F%C3%B6%3F%C3%B6:%C3%9F")
+            Arguments.of("test?\u00f6?\u00f6:\u00df", "test%3F%C3%B6%3F%C3%B6:%C3%9F"),
+            Arguments.of("/test space/", "/test%20space/"),
+            Arguments.of("/test\u007fdel/", "/test%7Fdel/")
         );
     }
 
@@ -75,10 +80,8 @@ public class URIUtilTest
     public void testEncodePath(String rawPath, String expectedEncoded)
     {
         // test basic encode/decode
-        StringBuilder buf = new StringBuilder();
-        buf.setLength(0);
-        URIUtil.encodePath(buf, rawPath);
-        assertEquals(expectedEncoded, buf.toString());
+        String result = URIUtil.encodePath(rawPath);
+        assertEquals(expectedEncoded, result);
     }
 
     @Test
@@ -565,7 +568,7 @@ public class URIUtilTest
         assertThat(actual, is(expected));
     }
 
-    public static Stream<Arguments> ensureSafeEncodingSource()
+    public static Stream<Arguments> encodePathSafeEncodingSource()
     {
         return Stream.of(
             Arguments.of("/foo", "/foo"),
@@ -589,10 +592,10 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @MethodSource("ensureSafeEncodingSource")
-    public void testEnsureSafeEncoding(String input, String expected)
+    @MethodSource("encodePathSafeEncodingSource")
+    public void testEncodePathSafeEncoding(String input, String expected)
     {
-        assertThat(URIUtil.ensureSafeEncoding(input), is(expected));
+        assertThat(URIUtil.encodePathSafeEncoding(input), is(expected));
     }
 
     public static Stream<Arguments> compactPathSource()
@@ -637,139 +640,6 @@ public class URIUtilTest
         assertEquals(expectedPath, actual, String.format("parent %s", path));
     }
 
-    public static Stream<Arguments> equalsIgnoreEncodingStringTrueSource()
-    {
-        return Stream.of(
-            Arguments.of("http://example.com/foo/bar", "http://example.com/foo/bar"),
-            Arguments.of("/barry%27s", "/barry%27s"),
-            Arguments.of("/b rry%27s", "/b%20rry%27s"),
-            Arguments.of("/barry's", "/barry%27s"),
-            Arguments.of("/barry%27s", "/barry's"),
-            Arguments.of("/b rry's", "/b%20rry%27s"),
-            Arguments.of("/b rry%27s", "/b%20rry's"),
-            Arguments.of("/re bar", "/re%20bar"),
-
-            Arguments.of("/foo%2fbar", "/foo%2fbar"),
-            Arguments.of("/foo%2fbar", "/foo%2Fbar"),
-
-            // encoded vs not-encode ("%" symbol is encoded as "%25")
-            Arguments.of("/abc%25xyz", "/abc%xyz"),
-            Arguments.of("/abc%25xy", "/abc%xy"),
-            Arguments.of("/abc%25x", "/abc%x"),
-            Arguments.of("/zzz%25", "/zzz%"),
-
-            // unicode encoded vs not-encoded
-            Arguments.of("/path/to/bä€ãm/", "/path/to/b%C3%A4%E2%82%AC%C3%A3m/")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingStringTrueSource")
-    public void testEqualsIgnoreEncodingStringTrue(String uriA, String uriB)
-    {
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-    }
-
-    public static Stream<Arguments> equalsIgnoreEncodingStringFalseSource()
-    {
-        return Stream.of(
-            // case difference
-            Arguments.of("ABC", "abc"),
-            // Encoding difference ("'" is "%27")
-            Arguments.of("/barry's", "/barry%26s"),
-            // Never match on "%2f" differences - only intested in filename / directory name differences
-            // This could be a directory called "foo" with a file called "bar" on the left, and just a file "foo%2fbar" on the right
-            Arguments.of("/foo/bar", "/foo%2fbar"),
-            // not actually encoded
-            Arguments.of("/foo2fbar", "/foo/bar"),
-            // path params
-            Arguments.of("/path;a=b/to;x=y/foo/", "/path/to/foo"),
-            // encoded vs not-encode ("%" symbol is encoded as "%25")
-            Arguments.of("/yyy%25zzz", "/aaa%xxx"),
-            Arguments.of("/zzz%25", "/aaa%"),
-            // %2F then multi-byte unicode
-            Arguments.of("/path/to/bãm/", "/path%2Fto/b%C3%A3m/"),
-            // multi-byte unicode then %2F
-            Arguments.of("/path/bãm/or/bust", "/path/b%C3%A3m/or%2Fbust"),
-            // mix of %2F and multiple consecutive multi-byte unicode
-            Arguments.of("/path/to/bä€ãm/", "/path%2Fto/b%C3%A4%E2%82%AC%C3%A3m/")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingStringFalseSource")
-    public void testEqualsIgnoreEncodingStringFalse(String uriA, String uriB)
-    {
-        assertFalse(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-    }
-
-    public static Stream<Arguments> equalsIgnoreEncodingURITrueSource()
-    {
-        return Stream.of(
-            Arguments.of(
-                URI.create("HTTP:/foo/b%61r"),
-                URI.create("http:/f%6Fo/bar")
-            ),
-            Arguments.of(
-                URI.create("jar:file:/path/to/main.jar!/META-INF/versions/"),
-                URI.create("jar:file:/path/to/main.jar!/META-INF/%76ersions/")
-            ),
-            Arguments.of(
-                URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/"),
-                URI.create("jar:file:/path/to/main.jar!/META-INF/versions/")
-            ),
-            // unicode in opaque jar:file: URI
-            Arguments.of(
-                URI.create("jar:file:///path/to/test.jar!/bãm/"),
-                URI.create("jar:file:///path/to/test.jar!/b%C3%A3m/")
-            ),
-            // multiple consecutive unicode
-            Arguments.of(
-                URI.create("file:///path/to/bä€ãm/"),
-                URI.create("file:///path/to/b%C3%A4%E2%82%AC%C3%A3m/")
-            )
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingURITrueSource")
-    public void testEqualsIgnoreEncodingURITrue(URI uriA, URI uriB)
-    {
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-    }
-
-    public static Stream<Arguments> equalsIgnoreEncodingURIFalseSource()
-    {
-        return Stream.of(
-            Arguments.of(
-                URI.create("/foo%2Fbar"),
-                URI.create("/foo/bar")
-            ),
-            // %2F then unicode
-            Arguments.of(
-                URI.create("file:///path/to/bãm/"),
-                URI.create("file:///path%2Fto/b%C3%A3m/")
-            ),
-            // unicode then %2F
-            Arguments.of(
-                URI.create("file:///path/bãm/or/bust"),
-                URI.create("file:///path/b%C3%A3m/or%2Fbust")
-            ),
-            // mix of %2F and multiple consecutive unicode
-            Arguments.of(
-                URI.create("file:///path/to/bä€ãm/"),
-                URI.create("file:///path%2Fto/b%C3%A4%E2%82%AC%C3%A3m/")
-            )
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("equalsIgnoreEncodingURIFalseSource")
-    public void testEqualsIgnoreEncodingURIFalse(URI uriA, URI uriB)
-    {
-        assertFalse(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-    }
-
     public static Stream<Arguments> correctBadFileURICases()
     {
         return Stream.of(
@@ -811,17 +681,18 @@ public class URIUtilTest
     }
 
     @Test
-    public void testCorrectBadFileURIActualFile() throws Exception
+    public void testCorrectBadFileURIActualFile(WorkDir workDir) throws Exception
     {
-        File file = MavenTestingUtils.getTargetFile("testCorrectBadFileURIActualFile.txt");
-        FS.touch(file);
+        Path testfile = workDir.getEmptyPathDir().resolve("testCorrectBadFileURIActualFile.txt");
+        FS.touch(testfile);
 
-        URI expectedUri = file.toPath().toUri();
+        URI expectedUri = testfile.toUri(); // correct URI with `://`
 
         assertThat(expectedUri.toASCIIString(), containsString("://"));
 
-        URI fileUri = file.toURI();
-        URI fileUrlUri = file.toURL().toURI();
+        File file = testfile.toFile();
+        URI fileUri = file.toURI(); // java produced bad format with only `:/` (not `://`)
+        URI fileUrlUri = file.toURL().toURI(); // java produced bad format with only `:/` (not `://`)
 
         // If these 2 tests start failing, that means Java itself has been fixed
         assertThat(fileUri.toASCIIString(), not(containsString("://")));
@@ -829,29 +700,6 @@ public class URIUtilTest
 
         assertThat(URIUtil.correctFileURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
         assertThat(URIUtil.correctFileURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
-    }
-
-    public static Stream<Arguments> encodeSpacesSource()
-    {
-        return Stream.of(
-            // null
-            Arguments.of(null, null),
-
-            // no spaces
-            Arguments.of("abc", "abc"),
-
-            // match
-            Arguments.of("a c", "a%20c"),
-            Arguments.of("   ", "%20%20%20"),
-            Arguments.of("a%20space", "a%20space")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("encodeSpacesSource")
-    public void testEncodeSpaces(String raw, String expected)
-    {
-        assertThat(URIUtil.encodeSpaces(raw), is(expected));
     }
 
     public static Stream<Arguments> encodeSpecific()
@@ -1040,16 +888,52 @@ public class URIUtilTest
             builder.append(i);
         String path = builder.toString();
         String encoded = URIUtil.encodePath(path);
-        // Check endoded is visible
+        // Check encoded is visible
         for (char c : encoded.toCharArray())
         {
-            assertTrue(c > 0x20 && c < 0x80);
+            assertTrue(c > 0x20 && c < 0x7f);
             assertFalse(Character.isWhitespace(c));
-            assertFalse(Character.isISOControl(c));
+            assertFalse(Character.isISOControl(c), "isISOControl(0x%2x)".formatted((byte)c));
         }
         // check decode to original
         String decoded = URIUtil.decodePath(encoded);
         assertEquals(path, decoded);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "a",
+        "deadbeef",
+        "321zzz123",
+        "pct%25encoded",
+        "a,b,c",
+        "*",
+        "_-_-_",
+        "192.168.1.22",
+        "192.168.1.com"
+    })
+    public void testIsValidHostRegisteredNameTrue(String token)
+    {
+        assertTrue(URIUtil.isValidHostRegisteredName(token), "Token [" + token + "] should be a valid reg-name");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " ",
+        "tab\tchar",
+        "a long name with spaces",
+        "8-bit-\u00dd", // 8-bit characters
+        "пример.рф", // unicode - raw IDN (not normalized to punycode)
+        // Invalid pct-encoding
+        "%XX",
+        "%%",
+        "abc%d",
+        "100%",
+        "[brackets]"
+    })
+    public void testIsValidHostRegisteredNameFalse(String token)
+    {
+        assertFalse(URIUtil.isValidHostRegisteredName(token), "Token [" + token + "] should be an invalid reg-name");
     }
 
     public static Stream<Arguments> uriJarPrefixCasesGood()

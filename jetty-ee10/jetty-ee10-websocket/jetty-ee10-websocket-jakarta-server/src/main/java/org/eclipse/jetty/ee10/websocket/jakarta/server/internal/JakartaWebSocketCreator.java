@@ -139,7 +139,7 @@ public class JakartaWebSocketCreator implements WebSocketCreator
         {
             // We can get path params from PathSpec and Request Path.
             UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)pathSpecObject;
-            Map<String, String> pathParams = pathSpec.getPathParams(request.getPathInContext());
+            Map<String, String> pathParams = pathSpec.getPathParams(Request.getPathInContext(request));
 
             // Wrap the config with the path spec information.
             config = new PathParamServerEndpointConfig(config, pathParams);
