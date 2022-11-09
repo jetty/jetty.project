@@ -79,7 +79,8 @@ public class ResourceHandler extends Handler.Wrapper
             _mimeTypes = new MimeTypes();
 
         _byteBufferPool = getByteBufferPool(context);
-        _resourceService.setHttpContentFactory(setupHttpContentFactory());
+        if (_resourceService.getHttpContentFactory() == null)
+            _resourceService.setHttpContentFactory(setupHttpContentFactory());
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
         if (_resourceService.getStylesheet() == null)
             _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
@@ -96,6 +97,16 @@ public class ResourceHandler extends Handler.Wrapper
             return new NoopByteBufferPool();
         ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
         return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+    }
+
+    public void setHttpContentFactory(HttpContent.Factory httpContentFactory)
+    {
+        _resourceService.setHttpContentFactory(httpContentFactory);
+    }
+
+    public HttpContent.Factory getHttpContentFactory()
+    {
+        return _resourceService.getHttpContentFactory();
     }
 
     protected HttpContent.Factory setupHttpContentFactory()
@@ -141,12 +152,6 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request); // no content - try other handlers
 
         return (rq, rs, cb) -> _resourceService.doGet(rq, rs, cb, content);
-    }
-
-    // for testing only
-    HttpContent.Factory getHttpContentFactory()
-    {
-        return _resourceService.getHttpContentFactory();
     }
 
     /**
