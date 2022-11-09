@@ -187,10 +187,15 @@ public class ByteBufferAccumulator implements AutoCloseable
         }
     }
 
-    @Override
-    public void close()
+    public void reset()
     {
         _buffers.forEach(_bufferPool::release);
         _buffers.clear();
+    }
+
+    @Override
+    public void close()
+    {
+        reset();
     }
 }

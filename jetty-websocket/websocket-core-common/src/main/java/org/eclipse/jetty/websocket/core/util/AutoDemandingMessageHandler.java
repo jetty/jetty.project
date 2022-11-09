@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
@@ -42,7 +42,8 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 public class AutoDemandingMessageHandler extends AbstractMessageHandler
 {
     private Utf8StringBuilder _textMessageBuffer;
-    private ByteArrayOutputStream _binaryMessageBuffer;
+    private ByteBufferAccumulator _binaryMessageBuffer;
+    private long _binaryLength = 0;
 
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
@@ -57,6 +58,7 @@ public class AutoDemandingMessageHandler extends AbstractMessageHandler
         {
             _binaryMessageBuffer.reset();
             _binaryMessageBuffer = null;
+            _binaryLength = 0;
         }
 
         super.onClosed(closeStatus, callback);
@@ -123,7 +125,7 @@ public class AutoDemandingMessageHandler extends AbstractMessageHandler
     {
         try
         {
-            long size = (_binaryMessageBuffer == null ? 0 : _binaryMessageBuffer.size()) + frame.getPayloadLength();
+            long size = _binaryLength + frame.getPayloadLength();
             long maxBinaryMessageSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
             {
@@ -145,14 +147,18 @@ public class AutoDemandingMessageHandler extends AbstractMessageHandler
             if (frame.hasPayload())
             {
                 if (_binaryMessageBuffer == null)
-                    _binaryMessageBuffer = new ByteArrayOutputStream();
-                BufferUtil.writeTo(frame.getPayload(), _binaryMessageBuffer);
+                    _binaryMessageBuffer = new ByteBufferAccumulator();
+                _binaryLength += frame.getPayloadLength();
+                _binaryMessageBuffer.copyBuffer(frame.getPayload());
             }
 
             if (frame.isFin())
             {
-                onBinary(BufferUtil.toBuffer(_binaryMessageBuffer.toByteArray()), callback);
+                ByteBuffer buffer = _binaryMessageBuffer.toByteBuffer();
+                onBinary(buffer, Callback.from(callback, () -> _binaryMessageBuffer.getByteBufferPool().release(buffer)));
                 _binaryMessageBuffer.reset();
+                _binaryMessageBuffer = null;
+                _binaryLength = 0;
             }
             else
             {
@@ -165,13 +171,9 @@ public class AutoDemandingMessageHandler extends AbstractMessageHandler
             {
                 _binaryMessageBuffer.reset();
                 _binaryMessageBuffer = null;
+                _binaryLength = 0;
             }
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-                _binaryMessageBuffer = null;
         }
     }
 
