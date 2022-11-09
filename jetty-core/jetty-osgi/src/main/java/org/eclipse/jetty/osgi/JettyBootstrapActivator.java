@@ -35,7 +35,6 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -265,7 +264,6 @@ public class JettyBootstrapActivator implements BundleActivator
             //for each environment eg ee9,ee10, etc
             _registeredServer = bundleContext.registerService(Server.class.getName(), defaultServer, properties);
             LOG.info("Default jetty server configured");
-            System.err.println("DEFAULT JETTY SERVER CREATED AND REGISTERED");
         }
         catch (Exception e)
         {

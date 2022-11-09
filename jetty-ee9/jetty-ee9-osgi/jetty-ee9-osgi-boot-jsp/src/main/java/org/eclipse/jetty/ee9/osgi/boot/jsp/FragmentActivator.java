@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee9.osgi.boot.jsp;
 
-import org.eclipse.jetty.osgi.JettyServerFactory;
+import org.eclipse.jetty.ee9.osgi.boot.EE9Activator;
 import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -47,7 +47,7 @@ public class FragmentActivator implements BundleActivator
         //to urls and treated as if they are on the Jetty container's classpath so that 
         //jasper can deal with them
         _tldClasspathContributor = new TLDServerClasspathContributor();
-        JettyServerFactory.registerServerClasspathContributor(_tldClasspathContributor);
+        EE9Activator.registerServerClasspathContributor(_tldClasspathContributor);
     }
 
     /**
@@ -56,7 +56,7 @@ public class FragmentActivator implements BundleActivator
     @Override
     public void stop(BundleContext context) throws Exception
     {
-        JettyServerFactory.unregisterServerClasspathContributor(_tldClasspathContributor);
+        EE9Activator.unregisterServerClasspathContributor(_tldClasspathContributor);
         _tldClasspathContributor = null;
     }
 }

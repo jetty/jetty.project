@@ -8,12 +8,12 @@
     <!-- configuration (see $(jetty.home)/webapps/test.xml for an    -->
     <!-- example).                                                   -->
     <!-- =========================================================== -->
-    <Call name="addBean">
+    <!-- Call name="addBean">
       <Arg>
         <New class="org.eclipse.jetty.security.HashLoginService">
           <Set name="name">Test Realm</Set>
           <Set name="config"><Property name="jetty.home" default="src/test/config"/>/etc/realm.properties</Set>
         </New>
       </Arg>
-    </Call>
+    </Call -->
 </Configure>

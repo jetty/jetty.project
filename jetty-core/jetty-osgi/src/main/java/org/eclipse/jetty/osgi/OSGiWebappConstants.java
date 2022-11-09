@@ -122,7 +122,7 @@ public class OSGiWebappConstants
     /**
      * Property naming the environment (eg ee8/ee9/ee10 etc)
      */
-    public static final String JETTY_ENVIRONMENT = "Jetty-environment";
+    public static final String JETTY_ENVIRONMENT = "Jetty-Environment";
 
     /**
      * Comma separated list of bundles that contain tld file used by the webapp.

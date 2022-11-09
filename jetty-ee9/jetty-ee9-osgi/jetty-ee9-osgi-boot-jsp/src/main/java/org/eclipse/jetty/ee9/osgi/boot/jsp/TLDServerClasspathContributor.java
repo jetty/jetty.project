@@ -58,6 +58,7 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
         Bundle jstlBundle = findJstlBundle();
         if (jstlBundle != null)
             scannableBundles.add(jstlBundle);
+        System.err.println("JSTL BUNDLE IS: " + jstlBundle);
         
         final Bundle[] bundles = FrameworkUtil.getBundle(getClass()).getBundleContext().getBundles();
         for (Bundle bundle : bundles)
@@ -109,5 +110,4 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
 
         return null;
     }
-
 }

@@ -19,7 +19,7 @@ package org.eclipse.jetty.osgi;
  * Name of the properties that configure a jetty Server OSGi service.
  */
 public class OSGiServerConstants
-{
+{   
     /**
      * Usual system property used as the hostname for a typical jetty
      * configuration.

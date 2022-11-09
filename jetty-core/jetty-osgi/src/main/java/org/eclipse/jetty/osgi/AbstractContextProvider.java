@@ -262,7 +262,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             return false;
         
         //check environment matches
-        if (getEnvironmentName().equalsIgnoreCase(bundle.getHeaders().get(Deployable.ENVIRONMENT)))
+        if (getEnvironmentName().equalsIgnoreCase(bundle.getHeaders().get(OSGiWebappConstants.JETTY_ENVIRONMENT)))
             return true;
         
         return false;
@@ -278,7 +278,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             return false;
         
         //destined for our environment?
-        if (getEnvironmentName().equalsIgnoreCase((String)service.getProperty(Deployable.ENVIRONMENT)))
+        if (getEnvironmentName().equalsIgnoreCase((String)service.getProperty(OSGiWebappConstants.JETTY_ENVIRONMENT)))
             return true;
 
         return false;

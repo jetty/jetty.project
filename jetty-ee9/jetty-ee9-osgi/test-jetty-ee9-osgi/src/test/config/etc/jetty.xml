@@ -64,7 +64,7 @@
     <Set name="dumpAfterStart" property="jetty.server.dumpAfterStart"/>
     <Set name="dumpBeforeStop" property="jetty.server.dumpBeforeStop"/>
 
-    <Call class="org.eclipse.jetty.ee9.webapp.Configurations" name="setServerDefault">
+    <!-- Call class="org.eclipse.jetty.ee9.webapp.Configurations" name="setServerDefault">
       <Arg><Ref refid="Server"/></Arg>
       <Call name="add">
         <Arg name="configClass">
@@ -88,8 +88,9 @@
           </Array>
         </Arg>
       </Call>
-    </Call>
+    </Call -->
 
+    <!--
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.naming.factory.initial</Arg>
       <Arg><Property name="java.naming.factory.initial" default="org.eclipse.jetty.ee9.jndi.InitialContextFactory"/></Arg>
@@ -98,5 +99,6 @@
       <Arg>java.naming.factory.url.pkgs</Arg>
       <Arg><Property name="java.naming.factory.url.pkgs" default="org.eclipse.jetty.jndi"/></Arg>
     </Call>
+    -->
 
 </Configure>

@@ -65,6 +65,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             try
             {
                 String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+                
                 if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
                     (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
                 {
@@ -135,6 +136,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     @Override
     public boolean isDeployable(Bundle bundle)
     {
+        System.err.println("IS DEPLOYABLE BY ENVIRONMENT: " + super.isDeployable(bundle));
         //is it destined for my environment?
         if (!super.isDeployable(bundle))
             return false;
