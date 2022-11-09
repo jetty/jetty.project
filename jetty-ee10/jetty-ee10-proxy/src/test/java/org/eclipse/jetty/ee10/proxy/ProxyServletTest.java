@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.net.ConnectException;
 import java.net.HttpCookie;
 import java.nio.ByteBuffer;
@@ -1638,5 +1639,37 @@ public class ProxyServletTest
         // The client should not send the content.
         assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testExpect100ContinueWithReader(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        startServer(new EmptyHttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Calling getReader() should trigger the send of 100 Continue.
+                IO.copy(request.getReader(), Writer.nullWriter());
+            }
+        });
+        startProxy(proxyServletClass);
+        startClient();
+        client.setMaxConnectionsPerDestination(1);
+
+        // Perform consecutive requests to test whether recycling of
+        // the Request on server side messes up 100 Continue handling.
+        int count = 8;
+        for (int i = 0; i < count; ++i)
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .path("/" + i)
+                .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+                .body(new BytesRequestContent(new byte[]{'h', 'e', 'l', 'l', 'o'}))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 }
