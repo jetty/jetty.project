@@ -912,7 +912,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             // Override the property on the command line with the correct password.
             try (JettyHomeTester.Run run2 = distribution.start(pathProperty + "=cmdline"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 5, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertThat("${jetty.base}/cmdline", jettyBase.resolve("cmdline"), PathMatchers.isRegularFile());
                 assertThat("${jetty.base}/modbased", jettyBase.resolve("modbased"), not(PathMatchers.exists()));
             }
