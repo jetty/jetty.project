@@ -115,7 +115,6 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     {
         private final T _value;
         private final Pool<Entry>.Entry _entry;
-        private boolean closed = false;
 
         Entry(T value)
         {
@@ -135,11 +134,8 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
 
         public void release()
         {
-            if (!closed)
-            {
-                // Reset the value for the next usage.
-                reset(_value);
-            }
+            // Reset the value for the next usage.
+            reset(_value);
 
             if (_entry != null)
             {
@@ -160,7 +156,6 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
         public void close()
         {
             end(_value);
-            closed = true;
         }
     }
 
