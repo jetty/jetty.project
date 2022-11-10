@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -162,6 +163,49 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
         assertArrayEquals(data, response.getContent());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void test303WithRequestContentNotReproducible(Scenario scenario) throws Exception
+    {
+        start(scenario, new RedirectHandler());
+
+        byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        AsyncRequestContent body = new AsyncRequestContent(ByteBuffer.wrap(data));
+        body.close();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .path("/303/localhost/done")
+            .body(body)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
+        assertEquals(0, response.getContent().length);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void test307WithRequestContentNotReproducible(Scenario scenario) throws Exception
+    {
+        start(scenario, new RedirectHandler());
+
+        byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        AsyncRequestContent body = new AsyncRequestContent(ByteBuffer.wrap(data));
+        body.close();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .path("/307/localhost/done")
+            .body(body)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(307, response.getStatus());
+        assertTrue(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest

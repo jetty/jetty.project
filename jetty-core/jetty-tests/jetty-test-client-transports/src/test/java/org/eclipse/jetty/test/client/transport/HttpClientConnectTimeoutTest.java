@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
@@ -21,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Request;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -33,11 +33,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class HttpClientConnectTimeoutTest extends AbstractTest
 {
     @ParameterizedTest
-    @MethodSource("transportsNoUnixDomain")
+    @MethodSource("transportsTCP")
+    @Tag("external")
     public void testConnectTimeout(Transport transport) throws Exception
     {
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        String host = "example.com";
+        int port = 81;
         int connectTimeout = 1000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
@@ -57,11 +59,13 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoUnixDomain")
+    @MethodSource("transportsTCP")
+    @Tag("external")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        String host = "example.com";
+        int port = 81;
         int connectTimeout = 2000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
@@ -84,11 +88,13 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoUnixDomain")
+    @MethodSource("transportsTCP")
+    @Tag("external")
     public void retryAfterConnectTimeout(Transport transport) throws Exception
     {
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        String host = "example.com";
+        int port = 81;
         int connectTimeout = 1000;
         assumeTrue(connectTimeout(host, port, connectTimeout));
 
@@ -114,7 +120,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         assertNotNull(request.getAbortCause());
     }
 
-    private boolean connectTimeout(String host, int port, int connectTimeout) throws IOException
+    private boolean connectTimeout(String host, int port, int connectTimeout)
     {
         try (Socket socket = new Socket())
         {

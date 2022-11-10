@@ -47,7 +47,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1012,7 +1011,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci")
+    @Tag("flaky")
     public void testH3() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
