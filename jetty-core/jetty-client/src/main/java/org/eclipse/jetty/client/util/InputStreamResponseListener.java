@@ -256,7 +256,9 @@ public class InputStreamResponseListener extends Listener.Adapter
         InputStream result = new Input();
         if (stream.compareAndSet(null, result))
             return result;
-        return IO.getClosedStream();
+        result = InputStream.nullInputStream();
+        IO.close(result);
+        return result;
     }
 
     private List<Callback> drain()

@@ -42,6 +42,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GracefulShutdownTest extends AbstractTest
 {
+    @Override
+    protected void start(ServerSessionListener listener) throws Exception
+    {
+        super.start(listener);
+        // Don't let the default shutdown idleTimeout
+        // of just 1000 ms interfere with the test.
+        connector.setShutdownIdleTimeout(15000);
+    }
+
     @Test
     public void testGracefulShutdownWhileIdle() throws Exception
     {
