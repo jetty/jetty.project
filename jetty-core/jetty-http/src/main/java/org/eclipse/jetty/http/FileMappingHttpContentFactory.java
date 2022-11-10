@@ -67,7 +67,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         return content;
     }
 
-    private static class FileMappedHttpContent extends HttpContent.HttpContentWrapper
+    private static class FileMappedHttpContent extends HttpContent.Wrapper
     {
         private static final ByteBuffer SENTINEL_BUFFER = BufferUtil.allocate(0);
 

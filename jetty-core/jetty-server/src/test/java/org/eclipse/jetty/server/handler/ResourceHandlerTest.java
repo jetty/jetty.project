@@ -663,7 +663,7 @@ public class ResourceHandlerTest
         _rootResourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory setupHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory()
             {
                 // For testing the cache should be configured to validate the entry on every request.
                 HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
@@ -1539,9 +1539,6 @@ public class ResourceHandlerTest
         while (Files.getLastModifiedTime(tempPath).equals(before));
         long newExpectedSize = Files.size(tempPath);
 
-        // The cached Resource will only go to fileSystem for expiryTime once per second.
-        Thread.sleep(1100);
-
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
@@ -1956,9 +1953,6 @@ public class ResourceHandlerTest
             Files.writeString(testFile, "some different content\n");
         }
         while (Files.getLastModifiedTime(testFile).equals(before));
-
-        // The cached Resource will only go to fileSystem for expiryTime once per second.
-        Thread.sleep(1100);
 
         response = HttpTester.parseResponse(
             _local.getResponse("""

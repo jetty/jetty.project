@@ -1052,7 +1052,7 @@ public class DefaultServlet extends HttpServlet
     /**
      * Wrap an existing HttpContent with one that takes has an unknown/unspecified length.
      */
-    private static class UnknownLengthHttpContent extends HttpContent.HttpContentWrapper
+    private static class UnknownLengthHttpContent extends HttpContent.Wrapper
     {
         public UnknownLengthHttpContent(HttpContent content)
         {
@@ -1072,7 +1072,7 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static class ForcedCharacterEncodingHttpContent extends HttpContent.HttpContentWrapper
+    private static class ForcedCharacterEncodingHttpContent extends HttpContent.Wrapper
     {
         private final String characterEncoding;
         private final String contentType;

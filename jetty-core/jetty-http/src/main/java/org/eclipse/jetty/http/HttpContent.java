@@ -88,11 +88,11 @@ public interface HttpContent
     /**
      * HttpContent Wrapper.
      */
-    class HttpContentWrapper implements HttpContent
+    class Wrapper implements HttpContent
     {
         private final HttpContent _delegate;
 
-        public HttpContentWrapper(HttpContent content)
+        public Wrapper(HttpContent content)
         {
             _delegate = content;
         }

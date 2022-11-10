@@ -295,7 +295,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         boolean retain();
     }
 
-    protected class CachedHttpContent extends HttpContent.HttpContentWrapper implements CachingHttpContent
+    protected class CachedHttpContent extends HttpContent.Wrapper implements CachingHttpContent
     {
         private final ByteBuffer _buffer;
         private final String _cacheKey;
@@ -309,6 +309,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final HttpField _contentLength;
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
+        private final long _bytesOccupied;
         private final boolean _isValid;
         private final Retainable.ReferenceCounter _referenceCount = new Retainable.ReferenceCounter();
 
@@ -363,6 +364,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
             _buffer = byteBuffer;
             _isValid = isValid;
+            _bytesOccupied = httpContent.getBytesOccupied();
             _lastModifiedValue = httpContent.getLastModifiedValue();
             _characterEncoding = httpContent.getCharacterEncoding();
             _compressedFormats = httpContent.getPreCompressedContentFormats();
@@ -383,6 +385,12 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         public ByteBuffer getByteBuffer()
         {
             return _buffer;
+        }
+
+        @Override
+        public long getBytesOccupied()
+        {
+            return _bytesOccupied;
         }
 
         @Override

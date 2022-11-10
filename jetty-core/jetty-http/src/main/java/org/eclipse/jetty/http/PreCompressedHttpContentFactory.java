@@ -65,7 +65,7 @@ public class PreCompressedHttpContentFactory implements HttpContent.Factory
         return "%s@%x[%s,%s]".formatted(getClass().getSimpleName(), hashCode(), _factory, _preCompressedFormats);
     }
 
-    private static class CompressedFormatsHttpContent extends HttpContent.HttpContentWrapper
+    private static class CompressedFormatsHttpContent extends HttpContent.Wrapper
     {
         private final Set<CompressedContentFormat> compressedFormats;
 

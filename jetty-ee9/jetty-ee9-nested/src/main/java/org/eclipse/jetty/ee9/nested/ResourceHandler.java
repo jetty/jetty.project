@@ -60,6 +60,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     Resource _defaultStylesheet;
     MimeTypes _mimeTypes;
     private final ResourceService _resourceService;
+    private boolean _resetHttpContentFactory = false;
     Resource _stylesheet;
     String[] _welcomes = {"index.html"};
 
@@ -107,10 +108,24 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
         _byteBufferPool = getByteBufferPool(_context);
         if (_resourceService.getHttpContentFactory() == null)
-            _resourceService.setHttpContentFactory(setupHttpContentFactory());
+        {
+            _resourceService.setHttpContentFactory(newHttpContentFactory());
+            _resetHttpContentFactory = true;
+        }
         _resourceService.setWelcomeFactory(this);
 
         super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        if (_resetHttpContentFactory)
+        {
+            setHttpContentFactory(null);
+            _resetHttpContentFactory = false;
+        }
     }
 
     private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
@@ -127,6 +142,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     public void setHttpContentFactory(HttpContent.Factory httpContentFactory)
     {
         _resourceService.setHttpContentFactory(httpContentFactory);
+        _resetHttpContentFactory = false;
     }
 
     public HttpContent.Factory getHttpContentFactory()
@@ -134,7 +150,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         return _resourceService.getHttpContentFactory();
     }
 
-    protected HttpContent.Factory setupHttpContentFactory()
+    protected HttpContent.Factory newHttpContentFactory()
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
