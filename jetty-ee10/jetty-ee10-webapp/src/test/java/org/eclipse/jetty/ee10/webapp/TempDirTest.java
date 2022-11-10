@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -315,7 +315,7 @@ public class TempDirTest
      * Note that if run in the CI environment, the test will fail, because it runs as root,
      * so we _will_ have permission to write to this directory.
      */
-    @DisabledIfSystemProperty(named = "env", matches = "ci")
+    @Tag("not-on-ci")
     @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Test/Temp directory is always writable")
     @Test
     public void attributeWithInvalidPermissions()
