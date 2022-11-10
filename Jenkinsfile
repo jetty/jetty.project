@@ -94,7 +94,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -Dmaven.test.failure.ignore=true --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -DexcludedGroups=\"external, large-disk-resource, stress, slow\" -V -B -e -Djetty.testtracker.log=true $cmdline"
+          sh "mvn -Dmaven.test.failure.ignore=true --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -DexcludedGroups=\"external, large-disk-resource, stress, slow, not-on-ci, flaky\" -V -B -e -Djetty.testtracker.log=true $cmdline"
         }
       }
     }
