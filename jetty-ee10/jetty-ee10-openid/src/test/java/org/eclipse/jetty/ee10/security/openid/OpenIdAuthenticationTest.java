@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.security.openid;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
@@ -29,6 +30,9 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.session.FileSessionDataStoreFactory;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,6 +111,12 @@ public class OpenIdAuthenticationTest
         securityHandler.setInitParameter(OpenIdAuthenticator.LOGOUT_REDIRECT_PATH, "/");
         context.setSecurityHandler(securityHandler);
 
+        File datastoreDir = MavenTestingUtils.getTargetTestingDir("datastore");
+        IO.delete(datastoreDir);
+        FileSessionDataStoreFactory fileSessionDataStoreFactory = new FileSessionDataStoreFactory();
+        fileSessionDataStoreFactory.setStoreDir(datastoreDir);
+        server.addBean(fileSessionDataStoreFactory);
+
         server.start();
         String redirectUri = "http://localhost:" + connector.getLocalPort() + "/redirect_path";
         openIdProvider.addRedirectUri(redirectUri);
@@ -152,6 +162,19 @@ public class OpenIdAuthenticationTest
         // Request to admin page gives 403 as we do not have admin role
         response = client.GET(appUriString + "/admin");
         assertThat(response.getStatus(), is(HttpStatus.FORBIDDEN_403));
+
+        // We can restart the server and still be logged in as we have persistent session datastore.
+        server.stop();
+        server.start();
+        appUriString = "http://localhost:" + connector.getLocalPort();
+
+        // After restarting server the authentication is saved as a session authentication.
+        response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
 
         // We are no longer authenticated after logging out
         response = client.GET(appUriString + "/logout");
