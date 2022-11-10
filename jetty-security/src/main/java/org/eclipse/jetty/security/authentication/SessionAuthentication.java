@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import org.eclipse.jetty.security.AbstractUserAuthentication;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.UserIdentity;
@@ -76,7 +77,13 @@ public class SessionAuthentication extends AbstractUserAuthentication
             return;
         }
 
-        LoginService loginService = security.getLoginService();
+        LoginService loginService;
+        Authenticator authenticator = security.getAuthenticator();
+        if (authenticator instanceof LoginAuthenticator)
+            loginService = ((LoginAuthenticator)authenticator).getLoginService();
+        else
+            loginService = security.getLoginService();
+
         if (loginService == null)
         {
             if (LOG.isDebugEnabled())
