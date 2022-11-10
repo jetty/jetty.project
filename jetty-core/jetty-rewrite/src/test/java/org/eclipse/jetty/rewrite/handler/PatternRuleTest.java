@@ -157,7 +157,7 @@ public class PatternRuleTest extends AbstractRuleTest
         }
 
         @Override
-        public Request.WrapperProcessor apply(Request.WrapperProcessor input)
+        public RequestProcessor apply(RequestProcessor input)
         {
             _applied = true;
             return input;

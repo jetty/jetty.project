@@ -74,9 +74,9 @@ public class HeaderPatternRule extends PatternRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    public RequestProcessor apply(RequestProcessor input) throws IOException
     {
-        return new Request.WrapperProcessor(input)
+        return new RequestProcessor(input)
         {
             @Override
             public void process(Request ignored, Response response, Callback callback) throws Exception

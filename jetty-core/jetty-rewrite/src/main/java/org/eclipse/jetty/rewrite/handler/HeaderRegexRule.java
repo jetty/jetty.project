@@ -75,9 +75,9 @@ public class HeaderRegexRule extends RegexRule
     }
 
     @Override
-    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
+    protected RequestProcessor apply(RequestProcessor input, Matcher matcher) throws IOException
     {
-        return new Request.WrapperProcessor(input)
+        return new RequestProcessor(input)
         {
             @Override
             public void process(Request ignored, Response response, Callback callback) throws Exception

@@ -76,12 +76,12 @@ public class ResponsePatternRule extends PatternRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    public RequestProcessor apply(RequestProcessor input) throws IOException
     {
         if (getCode() < HttpStatus.CONTINUE_100)
             return null;
 
-        return new Request.WrapperProcessor(input)
+        return new RequestProcessor(input)
         {
             @Override
             public void process(Request ignored, Response response, Callback callback)

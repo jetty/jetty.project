@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +103,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
      * or {@code null} if no rule matched
      */
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    public RequestProcessor matchAndApply(RequestProcessor input) throws IOException
     {
         String originalPathAttribute = getOriginalPathAttribute();
         if (originalPathAttribute != null)
@@ -121,7 +120,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("applying {}", rule);
-            Request.WrapperProcessor output = rule.matchAndApply(input);
+            RequestProcessor output = rule.matchAndApply(input);
             if (output == null)
             {
                 if (LOG.isDebugEnabled())

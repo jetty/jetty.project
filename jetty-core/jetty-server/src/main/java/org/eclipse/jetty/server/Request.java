@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -733,12 +732,20 @@ public interface Request extends Attributes, Content.Source
             process(wrapper, wrap(wrapper, response), callback);
         }
 
-        protected Request wrap(Request request) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException
+        protected Request wrap(Request request)
         {
             // TODO this is not a good way to do this.  Just temporary until this class is replaced.
-            if (_constructor == null)
-                _constructor = this.getClass().getConstructor(Request.class);
-            return _constructor.newInstance(request);
+            try
+            {
+                if (_constructor == null)
+                    _constructor = this.getClass().getConstructor(Request.class);
+
+                return _constructor.newInstance(request);
+            }
+            catch (Exception t)
+            {
+                throw new RuntimeException(t);
+            }
         }
 
         protected Response wrap(Request request, Response response)
@@ -747,7 +754,6 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        @Deprecated
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             Processor processor = _processor;

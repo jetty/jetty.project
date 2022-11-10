@@ -75,7 +75,7 @@ public class InvalidURIRule extends Rule
     }
 
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    public RequestProcessor matchAndApply(RequestProcessor input) throws IOException
     {
         String path = input.getHttpURI().getDecodedPath();
 
@@ -91,9 +91,9 @@ public class InvalidURIRule extends Rule
         return null;
     }
 
-    private Request.WrapperProcessor apply(Request.WrapperProcessor input)
+    private RequestProcessor apply(RequestProcessor input)
     {
-        return new Request.WrapperProcessor(input)
+        return new RequestProcessor(input)
         {
             @Override
             public void process(Request ignored, Response response, Callback callback)

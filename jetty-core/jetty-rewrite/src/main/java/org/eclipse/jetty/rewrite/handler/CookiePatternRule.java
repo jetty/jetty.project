@@ -76,7 +76,7 @@ public class CookiePatternRule extends PatternRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    public RequestProcessor apply(RequestProcessor input) throws IOException
     {
         // TODO: fix once Request.getCookies() is implemented (currently always returns null)
         // Check that cookie is not already set
@@ -90,7 +90,7 @@ public class CookiePatternRule extends PatternRule
             }
         }
 
-        return new Request.WrapperProcessor(input)
+        return new RequestProcessor(input)
         {
             @Override
             public void process(Request ignored, Response response, Callback callback) throws Exception
