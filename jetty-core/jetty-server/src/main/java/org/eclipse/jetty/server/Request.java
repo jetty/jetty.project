@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -665,101 +664,6 @@ public interface Request extends Attributes, Content.Source
         if (originalRequest instanceof HttpChannelState.ChannelRequest channelRequest)
             return channelRequest.getContentBytesRead();
         return -1;
-    }
-
-    /**
-     * <p>A {@code Request.Wrapper} that is a {@code Request.Processor}.</p>
-     * <p>This class wraps both a {@code Request} and a {@code Processor}
-     * with the same instance.</p>
-     * <p>Typical usage:</p>
-     * <pre>
-     * class YourHandler extends Handler.Wrapper
-     * {
-     *     public Processor handle(Request request)
-     *     {
-     *         // Wrap the request.
-     *         WrapperProcessor wrapped = new YourWrapperProcessor(request);
-     *
-     *         // Delegate processing using the wrapped request to wrap a Processor.
-     *         return wrapped.wrapProcessor(super.handle(wrapped));
-     *     }
-     * }
-     * </pre>
-     * @deprecated Use {@link Handler.ProcessingWrapper}
-     */
-    @Deprecated
-    class WrapperProcessor extends Wrapper implements Processor
-    {
-        private volatile Processor _processor;
-        private Constructor<? extends Request> _constructor;
-
-        public WrapperProcessor(Request request)
-        {
-            super(request);
-        }
-
-        /**
-         * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
-         *
-         * @param processor the {@code Processor} to wrap
-         * @return this instance
-         */
-        @Deprecated
-        public Processor wrapProcessor(Processor processor)
-        {
-            _processor = processor;
-            return processor == null ? null : this::wrappedProcess;
-        }
-
-        private void wrappedProcess(Request request, Response response, Callback callback) throws Exception
-        {
-            // TODO the problem with this approach is that a reused processor IS the original request, so it
-            // is held in memory forever.  Probably not a problem, but unexpected.
-
-            Request wrapped = this.getWrapped();
-            while (wrapped != null)
-            {
-                if (request == wrapped)
-                {
-                    process(this, wrap(this, response), callback);
-                    return;
-                }
-                wrapped = wrapped instanceof Request.Wrapper w ? w.getWrapped() : null;
-            }
-
-            // We need a new instance of the wrapper
-            Request wrapper = wrap(request);
-            process(wrapper, wrap(wrapper, response), callback);
-        }
-
-        protected Request wrap(Request request)
-        {
-            // TODO this is not a good way to do this.  Just temporary until this class is replaced.
-            try
-            {
-                if (_constructor == null)
-                    _constructor = this.getClass().getConstructor(Request.class);
-
-                return _constructor.newInstance(request);
-            }
-            catch (Exception t)
-            {
-                throw new RuntimeException(t);
-            }
-        }
-
-        protected Response wrap(Request request, Response response)
-        {
-            return response;
-        }
-
-        @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
-        {
-            Processor processor = _processor;
-            if (processor != null)
-                processor.process(request, response, callback);
-        }
     }
 
     /**

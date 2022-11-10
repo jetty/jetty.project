@@ -1001,7 +1001,7 @@ public class RequestTest
                     }
                 };
 
-                org.eclipse.jetty.server.Request.WrapperProcessor wrapper = new org.eclipse.jetty.server.Request.WrapperProcessor(request)
+                org.eclipse.jetty.server.Request.Wrapper wrapper = new org.eclipse.jetty.server.Request.Wrapper(request)
                 {
                     @Override
                     public ConnectionMetaData getConnectionMetaData()
@@ -1010,7 +1010,25 @@ public class RequestTest
                     }
                 };
 
-                return wrapper.wrapProcessor(super.handle(wrapper));
+                org.eclipse.jetty.server.Request.Processor processor = super.handle(wrapper);
+                if (processor == null)
+                    return null;
+
+                return new org.eclipse.jetty.server.Request.ReWrappingProcessor<>(processor, wrapper)
+                {
+                    @Override
+                    protected org.eclipse.jetty.server.Request.Wrapper wrap(org.eclipse.jetty.server.Request request)
+                    {
+                        return new org.eclipse.jetty.server.Request.Wrapper(request)
+                        {
+                            @Override
+                            public ConnectionMetaData getConnectionMetaData()
+                            {
+                                return connectionMetaData;
+                            }
+                        };
+                    }
+                };
             }
         };
 
