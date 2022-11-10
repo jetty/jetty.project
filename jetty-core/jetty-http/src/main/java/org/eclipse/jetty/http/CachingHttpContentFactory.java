@@ -22,8 +22,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
@@ -59,15 +59,16 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private static final Logger LOG = LoggerFactory.getLogger(CachingHttpContentFactory.class);
     private static final int DEFAULT_MAX_CACHED_FILE_SIZE = 128 * 1024 * 1024;
     private static final int DEFAULT_MAX_CACHED_FILES = 2048;
-    private static final int DEFAULT_MAX_CACHE_SIZE = 256 * 1024 * 1024;
+    private static final long DEFAULT_MAX_CACHE_SIZE = 256 * 1024 * 1024;
 
     private final HttpContent.Factory _authority;
-    private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
     private final ByteBufferPool _byteBufferPool;
     private int _maxCachedFileSize = DEFAULT_MAX_CACHED_FILE_SIZE;
     private int _maxCachedFiles = DEFAULT_MAX_CACHED_FILES;
-    private int _maxCacheSize = DEFAULT_MAX_CACHE_SIZE;
+    private long _maxCacheSize = DEFAULT_MAX_CACHE_SIZE;
+    private boolean _useDirectByteBuffers = true;
 
     public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool byteBufferPool)
     {
@@ -101,12 +102,12 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         shrinkCache();
     }
 
-    public int getMaxCacheSize()
+    public long getMaxCacheSize()
     {
         return _maxCacheSize;
     }
 
-    public void setMaxCacheSize(int maxCacheSize)
+    public void setMaxCacheSize(long maxCacheSize)
     {
         _maxCacheSize = maxCacheSize;
         shrinkCache();
@@ -127,6 +128,16 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     {
         _maxCachedFiles = maxCachedFiles;
         shrinkCache();
+    }
+
+    public boolean isUseDirectByteBuffers()
+    {
+        return _useDirectByteBuffers;
+    }
+
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        _useDirectByteBuffers = useDirectByteBuffers;
     }
 
     private void shrinkCache()
@@ -221,55 +232,36 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         HttpContent httpContent = _authority.getContent(path);
-        if (isCacheable(httpContent))
+        if (!isCacheable(httpContent))
+            return httpContent;
+
+        // The re-mapping function may be run multiple times by compute.
+        AtomicBoolean added = new AtomicBoolean();
+        cachingHttpContent = _cache.computeIfAbsent(path, key ->
         {
+            CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
+            added.set(true);
+            _cachedSize.addAndGet(cachingContent.getBytesOccupied());
+            return cachingContent;
+        });
 
-            // The re-mapping function may be run multiple times by compute.
-            AtomicReference<CachingHttpContent> added = new AtomicReference<>();
-            cachingHttpContent = _cache.compute(path, (key, content) ->
-            {
-                if (content == null)
-                {
-                    // Use AtomicReference to avoid recomputing the CachingHttpContent.
-                    CachingHttpContent cachingContent = added.get();
-                    if (cachingContent == null)
-                    {
-                        cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
-                        added.set(cachingContent);
-                        _cachedSize.addAndGet(cachingContent.getBytesOccupied());
-                    }
-                    return cachingContent;
-                }
-                else
-                {
-                    // If we lost the race to set the mapping we must invalidate the entry we created previously.
-                    CachingHttpContent cachingContent = added.getAndSet(null);
-                    if (cachingContent != null)
-                    {
-                        _cachedSize.addAndGet(-cachingContent.getBytesOccupied());
-                        cachingContent.release();
-                    }
-                    return content;
-                }
-            });
+        // If retain fails the CachingHttpContent was already evicted.
+        if (!cachingHttpContent.retain())
+            return httpContent;
 
-            // If retain fails the CachingHttpContent was already evicted.
-            if (!cachingHttpContent.retain())
-                return httpContent;
-
+        if (added.get())
+        {
             // We want to shrink cache only if we have just added an entry.
-            if (added.get() != null)
-                shrinkCache();
-
+            shrinkCache();
+        }
+        else if (httpContent != null)
+        {
             // If we did not add an entry we are using a cached version added by someone else,
             // so we should release the local content taken from the authority.
-            else if (httpContent != null)
-                httpContent.release();
-
-            return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
+            httpContent.release();
         }
 
-        return httpContent;
+        return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
     }
 
     protected CachingHttpContent newCachedContent(String p, HttpContent httpContent)
@@ -337,7 +329,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                 {
                     if (_contentLengthValue <= _maxCachedFileSize)
                     {
-                        byteBuffer = _byteBufferPool.acquire((int)_contentLengthValue, false);
+                        byteBuffer = _byteBufferPool.acquire((int)_contentLengthValue, _useDirectByteBuffers);
                         try (ReadableByteChannel readableByteChannel = httpContent.getResource().newReadableByteChannel())
                         {
                             int read = BufferUtil.readFrom(readableByteChannel, byteBuffer);

@@ -57,7 +57,6 @@ public class ResourceHandler extends Handler.Wrapper
     private ByteBufferPool _byteBufferPool;
     private Resource _resourceBase;
     private MimeTypes _mimeTypes;
-    private boolean _resetHttpContentFactory = false;
     private List<String> _welcomes = List.of("index.html");
 
     public ResourceHandler()
@@ -80,27 +79,13 @@ public class ResourceHandler extends Handler.Wrapper
             _mimeTypes = new MimeTypes();
 
         _byteBufferPool = getByteBufferPool(context);
-        if (_resourceService.getHttpContentFactory() == null)
-        {
+        if (getHttpContentFactory() == null)
             _resourceService.setHttpContentFactory(newHttpContentFactory());
-            _resetHttpContentFactory = true;
-        }
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
         if (_resourceService.getStylesheet() == null)
             setStylesheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        if (_resetHttpContentFactory)
-        {
-            setHttpContentFactory(null);
-            _resetHttpContentFactory = false;
-        }
     }
 
     private static ByteBufferPool getByteBufferPool(ContextHandler.Context context)
@@ -112,12 +97,6 @@ public class ResourceHandler extends Handler.Wrapper
             return new NoopByteBufferPool();
         ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
         return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
-    }
-
-    public void setHttpContentFactory(HttpContent.Factory httpContentFactory)
-    {
-        _resourceService.setHttpContentFactory(httpContentFactory);
-        _resetHttpContentFactory = false;
     }
 
     public HttpContent.Factory getHttpContentFactory()
