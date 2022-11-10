@@ -716,10 +716,16 @@ public interface Request extends Attributes, Content.Source
         {
             // TODO the problem with this approach is that a reused processor IS the original request, so it
             // is held in memory forever.  Probably not a problem, but unexpected.
-            if (request == this.getWrapped())
+
+            Request wrapped = this.getWrapped();
+            while (wrapped != null)
             {
-                process(this, wrap(this, response), callback);
-                return;
+                if (request == wrapped)
+                {
+                    process(this, wrap(this, response), callback);
+                    return;
+                }
+                wrapped = wrapped instanceof Request.Wrapper w ? w.getWrapped() : null;
             }
 
             // We need a new instance of the wrapper
