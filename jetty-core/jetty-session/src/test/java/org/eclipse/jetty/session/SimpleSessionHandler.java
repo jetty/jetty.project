@@ -68,8 +68,35 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         if (processor == null)
             return null;
 
-        addSessionStreamWrapper(request);
-        return sessionRequest.wrapProcessor(processor);
+        return new Request.ReWrappingProcessor<>(processor, sessionRequest)
+        {
+            @Override
+            protected SessionRequest wrap(Request request)
+            {
+                return new SessionRequest(request);
+            }
+
+            @Override
+            protected void process(SessionRequest sessionRequest, Response response, Callback callback, Request.Processor next) throws Exception
+            {
+                addSessionStreamWrapper(sessionRequest.getWrapped());
+                sessionRequest._response = response;
+
+                RequestedSession requestedSession = resolveRequestedSessionId(sessionRequest);
+                sessionRequest._requestedSessionId = requestedSession.sessionId();
+                Session session = requestedSession.session();
+                sessionRequest._session.set(session);
+
+                if (session != null)
+                {
+                    HttpCookie cookie = access(session, sessionRequest.getConnectionMetaData().isSecure());
+                    if (cookie != null)
+                        Response.replaceCookie(response, cookie);
+                }
+
+                next.process(sessionRequest, response, callback);
+            }
+        };
     }
 
     @Override
@@ -84,7 +111,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         return new SessionAPI(session);
     }
 
-    public class SessionRequest extends Request.WrapperProcessor
+    public class SessionRequest extends Request.Wrapper
     {
         private final AtomicReference<Session> _session = new AtomicReference<>();
         private String _requestedSessionId;
@@ -99,7 +126,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         {
             return _session.get();
         }
-        
+
         public void setCoreSession(Session session)
         {
             _session.set(session);
@@ -122,26 +149,6 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             }
 
             return session == null || session.isInvalid() ? null : session.getAPISession();
-        }
-
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
-        {
-            _response = response;
-
-            RequestedSession requestedSession = resolveRequestedSessionId(this);
-            _requestedSessionId = requestedSession.sessionId();
-            Session session = requestedSession.session();
-            _session.set(session);
-
-            if (session != null)
-            {
-                HttpCookie cookie = access(session, getConnectionMetaData().isSecure());
-                if (cookie != null)
-                    Response.replaceCookie(_response, cookie);
-            }
-
-            super.process(ignored, _response, callback);
         }
     }
 
