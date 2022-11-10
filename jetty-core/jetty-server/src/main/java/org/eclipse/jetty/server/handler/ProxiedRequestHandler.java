@@ -57,21 +57,43 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             }
         };
 
-        Request.WrapperProcessor wrapper = new Request.WrapperProcessor(request)
+        Request.Wrapper wrapper = new ProxiedWrapper(request, proxiedFor);
+
+        Request.Processor processor = super.handle(wrapper);
+        if (processor == null)
+            return null;
+
+        return new Request.ReWrappingProcessor<>(processor, wrapper)
         {
             @Override
-            public HttpURI getHttpURI()
+            protected Request.Wrapper wrap(Request request)
             {
-                // TODO replace with any change in authority
-                return super.getHttpURI();
-            }
-
-            @Override
-            public ConnectionMetaData getConnectionMetaData()
-            {
-                return proxiedFor;
+                return new ProxiedWrapper(request, proxiedFor);
             }
         };
-        return wrapper.wrapProcessor(super.handle(wrapper));
+    }
+
+    private static class ProxiedWrapper extends Request.Wrapper
+    {
+        private final ConnectionMetaData _proxiedFor;
+
+        public ProxiedWrapper(Request request, ConnectionMetaData proxiedFor)
+        {
+            super(request);
+            _proxiedFor = proxiedFor;
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            // TODO replace with any change in authority
+            return super.getHttpURI();
+        }
+
+        @Override
+        public ConnectionMetaData getConnectionMetaData()
+        {
+            return _proxiedFor;
+        }
     }
 }
