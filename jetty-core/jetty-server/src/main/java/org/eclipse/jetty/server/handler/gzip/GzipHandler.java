@@ -531,6 +531,7 @@ public class GzipHandler extends Handler.ProcessingWrapper<GzipRequest> implemen
             LOG.debug("{} handle {}", this, request);
 
         if (!isPathInflatable(path) && !(isPathGzipable(path) && isPathMimeTypeGzipable(path)))
+            // Bypass wrapping
             return getHandler().handle(request);
         return super.handle(request);
     }
@@ -544,6 +545,10 @@ public class GzipHandler extends Handler.ProcessingWrapper<GzipRequest> implemen
     @Override
     protected Response wrap(GzipRequest wrappedRequest, Response response)
     {
+        final String path = Request.getPathInContext(wrappedRequest);
+        if (!isPathGzipable(path) || !isPathMimeTypeGzipable(path))
+            return response;
+
         int outputBufferSize = wrappedRequest.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         return new GzipResponse(wrappedRequest, response, this, getVary(), outputBufferSize, isSyncFlush());
     }
