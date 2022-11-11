@@ -30,6 +30,10 @@ public class HeaderRegexRule extends RegexRule
     private String _headerValue;
     private boolean _add;
 
+    public HeaderRegexRule()
+    {
+    }
+
     public HeaderRegexRule(@Name("regex") String regex, @Name("name") String name, @Name("value") String value)
     {
         super(regex);

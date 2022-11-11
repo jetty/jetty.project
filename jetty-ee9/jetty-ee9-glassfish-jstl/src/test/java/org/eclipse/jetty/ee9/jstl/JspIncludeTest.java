@@ -30,7 +30,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ public class JspIncludeTest
     private static URI baseUri;
 
     @BeforeAll
-    public static void startServer() throws Exception
+    public static void startServer(WorkDir workDir) throws Exception
     {
         // Setup Server
         server = new Server();
@@ -54,20 +55,22 @@ public class JspIncludeTest
         server.addConnector(connector);
         
         //Base dir for test
-        File testDir = MavenTestingUtils.getTargetTestingDir("jsp");
+        File testDir = workDir.getEmptyPathDir().toFile();
         File testLibDir = new File(testDir, "WEB-INF/lib");
         FS.ensureDirExists(testLibDir);
                 
         //Make a taglib jar
-        File srcTagLibDir = MavenTestingUtils.getTargetPath("test-classes/taglibjar").toFile();
-        File scratchTagLibDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-taglib-scratch");
+        File srcTagLibDir = MavenPaths.findTestResourceDir("taglibjar").toFile();
+        File scratchTagLibDir = new File(testDir, JspIncludeTest.class.getSimpleName() + "-taglib-scratch");
         IO.copy(srcTagLibDir, scratchTagLibDir);
         File tagLibJar =  new File(testLibDir, "testtaglib.jar");
         JAR.create(scratchTagLibDir, tagLibJar);
         
         //Copy content
-        File srcWebAppDir = MavenTestingUtils.getTargetPath("test-classes/webapp").toFile();
-        IO.copyDir(srcWebAppDir, testDir);
+        File destWebAppDir = new File(testDir, "webapp");
+        FS.ensureDirExists(destWebAppDir);
+        File srcWebAppDir = MavenPaths.findTestResourceDir("webapp").toFile();
+        IO.copyDir(srcWebAppDir, destWebAppDir);
 
         // Configure WebAppContext
         Configurations.setServerDefault(server).add(new JettyWebXmlConfiguration(), new AnnotationConfiguration());
@@ -75,9 +78,9 @@ public class JspIncludeTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
 
-        File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JspIncludeTest.class.getSimpleName() + "-scratch");
+        File scratchDir = new File(testDir, JspIncludeTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
-        JspConfig.init(context, testDir.toURI(), scratchDir);
+        JspConfig.init(context, destWebAppDir.toURI(), scratchDir);
 
         server.setHandler(context);
 
@@ -129,7 +132,6 @@ public class JspIncludeTest
             // System.out.printf("Response%n%s",response);
             assertThat("Response", response, containsString("<h2> Hello, this is the top page."));
             assertThat("Response", response, containsString("<h3> This is the included page"));
-
             assertThat("Response Header[main-page-key]", connection.getHeaderField("main-page-key"), is("main-page-value"));
             assertThat("Response Header[included-page-key]", connection.getHeaderField("included-page-key"), is("included-page-value"));
         }

@@ -19,17 +19,18 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,12 +67,12 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             // Look for classes directory
             Resource classes = webInf.resolve("classes/");
-            if (classes.exists())
+            if (Resources.isReadableDirectory(classes))
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
             Resource lib = webInf.resolve("lib/");
-            if (lib.exists() || lib.isDirectory())
+            if (Resources.isReadableDirectory(lib))
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
         }
     }
@@ -292,12 +293,14 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Use real location (if different) for WAR file, so that change/modification monitoring can work.
-            URI targetURI = webApp.getTargetURI();
-            if (targetURI != null)
+            if (webApp.isAlias())
             {
+                URI realURI = webApp.getRealURI();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} anti-aliased to {}", webApp, targetURI);
-                webApp = context.newResource(targetURI);
+                    LOG.debug("{} anti-aliased to {}", webApp, realURI);
+                Resource realWebApp = context.newResource(realURI);
+                if (Resources.exists(realWebApp))
+                    webApp = realWebApp;
             }
 
             if (LOG.isDebugEnabled())
@@ -310,18 +313,19 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource originalWarResource = webApp;
 
             // Is the WAR usable directly?
-            if (webApp.exists() && !webApp.isDirectory() && !webApp.toString().startsWith("jar:"))
+            if (Resources.isReadableFile(webApp) && FileID.isJavaArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
             {
-                // No - then lets see if it can be turned into a jar URL.
-                webApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
+                // Turned this into a jar URL.
+                Resource jarWebApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
+                if (Resources.isReadableFile(jarWebApp)) // but only if it is readable
+                    webApp = jarWebApp;
             }
 
             // If we should extract or the URL is still not usable
-            if (webApp.exists() && (
-                (context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
+            if ((context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() == null) ||
-                    !originalWarResource.isDirectory())
+                    !originalWarResource.isDirectory()
             )
             {
                 // Look for sibling directory.
@@ -329,11 +333,11 @@ public class WebInfConfiguration extends AbstractConfiguration
 
                 if (war != null)
                 {
+                    Path warPath = Path.of(war);
                     // look for a sibling like "foo/" to a "foo.war"
-                    Path warfile = context.getResourceFactory().newResource(war).getPath();
-                    if (warfile != null && warfile.getFileName().toString().toLowerCase(Locale.ENGLISH).endsWith(".war"))
+                    if (FileID.isWebArchive(warPath) && Files.exists(warPath))
                     {
-                        Path sibling = warfile.getParent().resolve(warfile.getFileName().toString().substring(0, warfile.getFileName().toString().length() - 4));
+                        Path sibling = warPath.getParent().resolve(FileID.getBasename(warPath));
                         if (Files.exists(sibling) && Files.isDirectory(sibling) && Files.isWritable(sibling))
                             extractedWebAppDir = sibling;
                     }
@@ -346,7 +350,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     context.setAttribute(TEMPORARY_RESOURCE_BASE, extractedWebAppDir);
                 }
 
-                if (webApp.getPath() != null && webApp.isDirectory())
+                if (Resources.isReadableDirectory(webApp))
                 {
                     // Copy directory
                     if (LOG.isDebugEnabled())
@@ -368,7 +372,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                             LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                         {
-                            Resource jarWebApp = resourceFactory.newResource(webApp.getPath());
+                            Resource jarWebApp = resourceFactory.newJarFileResource(webApp.getURI());
                             jarWebApp.copyTo(extractedWebAppDir);
                         }
                         extractionLock.delete();
@@ -386,18 +390,22 @@ public class WebInfConfiguration extends AbstractConfiguration
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                             try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                             {
-                                Resource jarWebApp = resourceFactory.newResource(webApp.getPath());
+                                Resource jarWebApp = resourceFactory.newJarFileResource(webApp.getURI());
                                 jarWebApp.copyTo(extractedWebAppDir);
                             }
                             extractionLock.delete();
                         }
                     }
                 }
-                webApp = context.getResourceFactory().newResource(extractedWebAppDir.normalize());
+                Resource extractedWebApp = context.getResourceFactory().newResource(extractedWebAppDir.normalize());
+                if (extractedWebApp == null)
+                    LOG.warn("Unable to use non-existent extracted war location: " + extractedWebApp);
+                else
+                    webApp = extractedWebApp;
             }
 
             // Now do we have something usable?
-            if (!webApp.exists() || !webApp.isDirectory())
+            if (Resources.missing(webApp))
             {
                 LOG.warn("Web application not found {}", war);
                 throw new java.io.FileNotFoundException(war);
@@ -414,41 +422,43 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             Resource webInf = webApp.resolve("WEB-INF/");
 
-            File extractedWebInfDir = new File(context.getTempDirectory(), "webinf");
-            if (extractedWebInfDir.exists())
-                IO.delete(extractedWebInfDir);
-            extractedWebInfDir.mkdir();
-            Resource webInfLib = webInf.resolve("lib/");
-            File webInfDir = new File(extractedWebInfDir, "WEB-INF");
-            webInfDir.mkdir();
-
-            if (webInfLib.exists())
+            if (Resources.isReadableDirectory(webInf))
             {
-                File webInfLibDir = new File(webInfDir, "lib");
-                if (webInfLibDir.exists())
-                    IO.delete(webInfLibDir);
-                webInfLibDir.mkdir();
+                File extractedWebInfDir = new File(context.getTempDirectory(), "webinf");
+                if (extractedWebInfDir.exists())
+                    IO.delete(extractedWebInfDir);
+                extractedWebInfDir.mkdir();
+                Resource webInfLib = webInf.resolve("lib/");
+                File webInfDir = new File(extractedWebInfDir, "WEB-INF");
+                webInfDir.mkdir();
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
-                webInfLib.copyTo(webInfLibDir.toPath());
+                if (Resources.isReadableDirectory(webInfLib))
+                {
+                    File webInfLibDir = new File(webInfDir, "lib");
+                    if (webInfLibDir.exists())
+                        IO.delete(webInfLibDir);
+                    webInfLibDir.mkdir();
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
+                    webInfLib.copyTo(webInfLibDir.toPath());
+                }
+
+                Resource webInfClasses = webInf.resolve("classes/");
+                if (Resources.isReadableDirectory(webInfClasses))
+                {
+                    File webInfClassesDir = new File(webInfDir, "classes");
+                    if (webInfClassesDir.exists())
+                        IO.delete(webInfClassesDir);
+                    webInfClassesDir.mkdir();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Copying WEB-INF/classes from {} to {}", webInfClasses, webInfClassesDir.getAbsolutePath());
+                    webInfClasses.copyTo(webInfClassesDir.toPath());
+                }
+                webInf = context.getResourceFactory().newResource(extractedWebInfDir.getCanonicalPath());
             }
 
-            Resource webInfClasses = webInf.resolve("classes/");
-            if (webInfClasses.exists())
-            {
-                File webInfClassesDir = new File(webInfDir, "classes");
-                if (webInfClassesDir.exists())
-                    IO.delete(webInfClassesDir);
-                webInfClassesDir.mkdir();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Copying WEB-INF/classes from {} to {}", webInfClasses, webInfClassesDir.getAbsolutePath());
-                webInfClasses.copyTo(webInfClassesDir.toPath());
-            }
-
-            webInf = context.getResourceFactory().newResource(extractedWebInfDir.getCanonicalPath());
-
-            Resource rc = Resource.combine(webInf, webApp);
+            Resource rc = ResourceFactory.combine(webInf, webApp);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("context.baseResource={}", rc);

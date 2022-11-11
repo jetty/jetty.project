@@ -26,12 +26,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
+import org.eclipse.jetty.ee9.nested.ContextHandler.ContextScopeListener;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener;
 import org.eclipse.jetty.session.AbstractSessionDataStore;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
@@ -39,7 +40,6 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *
  */
 //TODO ee9 ContextHandler broken for ContextListeners
-@Disabled
 public class RequestScopedSessionSaveTest
 {
     public class RequestAwareSessionDataStore extends AbstractSessionDataStore
@@ -138,13 +137,13 @@ public class RequestScopedSessionSaveTest
      * on scope exit.
      *
      */
-    public static class RequestAwareContextScopeListener implements ContextHandler.ContextScopeListener
+    public static class RequestAwareContextScopeListener implements ContextScopeListener
     {
         public static final ThreadLocal<String> __requestAttribute = new ThreadLocal<>();
         public static final String ATTRIBUTE = "cheese";
-        
+
         @Override
-        public void enterScope(org.eclipse.jetty.server.Context context, Request request)
+        public void enterScope(APIContext context, org.eclipse.jetty.ee9.nested.Request request, Object reason)
         {
             //set a request attribute
             if (request != null)
@@ -152,14 +151,12 @@ public class RequestScopedSessionSaveTest
                 request.setAttribute(ATTRIBUTE, (System.currentTimeMillis() % 2 == 0 ? "Parmigiano" : "Reblochon"));
                 __requestAttribute.set((String)request.getAttribute(ATTRIBUTE));
             }
-            ContextScopeListener.super.enterScope(context, request);
         }
 
         @Override
-        public void exitScope(org.eclipse.jetty.server.Context context, Request request)
+        public void exitScope(APIContext context, org.eclipse.jetty.ee9.nested.Request request)
         {
             __requestAttribute.remove();
-            ContextScopeListener.super.exitScope(context, request);
         }
     }
 

@@ -26,6 +26,7 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QuickStartTest
@@ -167,18 +169,23 @@ public class QuickStartTest
         //Generate the quickstart
         PreconfigureJNDIWar.main(new String[]{});
 
-        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
+        Path workDir = MavenPaths.targetTestDir(PreconfigureJNDIWar.class.getSimpleName());
+        Path targetDir = workDir.resolve("test-jndi-preconfigured");
+
+        Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
+        WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
         descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
-        assertThat(node, Matchers.notNullValue());
+        assertNotNull(node);
 
-        System.setProperty("jetty.home", "target");
+        System.setProperty("jetty.home", targetDir.toString());
 
         //war file or dir to start
-        String war = "target/test-jndi-preconfigured";
+        String war = targetDir.toString();
 
         //optional jetty context xml file to configure the webapp
-        Resource contextXml = webapp.getResourceFactory().newResource("src/test/resources/test-jndi.xml");
+        Path testResourceJndi = MavenTestingUtils.getTestResourcePathFile("test-jndi.xml");
+        Resource contextXml = webapp.getResourceFactory().newResource(testResourceJndi);
 
         Server server = new Server(0);
 
@@ -191,12 +198,9 @@ public class QuickStartTest
         webapp.setContextPath("/");
 
         //apply context xml file
-        if (contextXml != null)
-        {
-            // System.err.println("Applying "+contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
-            xmlConfiguration.configure(webapp);
-        }
+        // System.err.println("Applying "+contextXml);
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);
+        xmlConfiguration.configure(webapp);
 
         server.setHandler(webapp);
 

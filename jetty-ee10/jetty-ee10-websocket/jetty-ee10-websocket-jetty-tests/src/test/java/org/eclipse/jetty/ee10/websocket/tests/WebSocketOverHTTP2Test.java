@@ -43,6 +43,7 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
@@ -65,7 +66,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -79,7 +79,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
 public class WebSocketOverHTTP2Test
 {
     private Server server;
@@ -385,16 +384,19 @@ public class WebSocketOverHTTP2Test
         protected void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
-            factory.addMapping("/ws/null", (request, response) -> null);
+            factory.addMapping("/ws/null", (request, response) ->
+            {
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503, "null");
+                return null;
+            });
             factory.addMapping("/ws/throw", (request, response) ->
             {
                 throw new RuntimeException("throwing from creator");
             });
             factory.addMapping("/ws/connectionClose", (request, response) ->
             {
-                DelegatedServerUpgradeRequest upgradeRequest = (DelegatedServerUpgradeRequest)request.getHttpServletRequest();
-                Request baseRequest = (Request)upgradeRequest.getHttpServletRequest();
-                baseRequest.getConnectionMetaData().getConnection().getEndPoint().close();
+                Request coreRequest = ((DelegatedServerUpgradeRequest)request).getServerUpgradeRequest();
+                coreRequest.getConnectionMetaData().getConnection().getEndPoint().close();
                 return new EchoSocket();
             });
         }

@@ -100,7 +100,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             context = new WebAppContext();
             context.setContextPath("/" + contextName);
             context.setInitParameter("org.eclipse.jetty.ee10.servlet.Default.dirAllowed", "false");
-            context.setBaseResource(contextDir);
+            context.setBaseResourceAsPath(contextDir);
             context.setAttribute("org.eclipse.jetty.websocket.jakarta", Boolean.TRUE);
             context.addConfiguration(new JakartaWebSocketConfiguration());
         }
@@ -129,6 +129,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         {
             File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
             Path webXml = webInf.resolve("web.xml");
+            Files.deleteIfExists(webXml);
             IO.copy(testWebXml, webXml.toFile());
         }
 

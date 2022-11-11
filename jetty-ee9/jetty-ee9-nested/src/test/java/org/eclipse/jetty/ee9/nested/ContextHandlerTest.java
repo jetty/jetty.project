@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -176,7 +175,7 @@ public class ContextHandlerTest
                     coreRequest.connectionMetaData.persistent=%b
                     
                     """.formatted(
-                        coreRequest.getPathInContext(),
+                        org.eclipse.jetty.server.Request.getPathInContext(coreRequest),
                         baseRequest.hashCode(),
                         coreRequest.getId(),
                         coreRequest.getConnectionMetaData().getId(),

@@ -15,6 +15,7 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -25,20 +26,22 @@ import org.eclipse.jetty.util.URIUtil;
 public class CompactPathRule extends Rule
 {
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor request) throws IOException
     {
-        String path = input.getPathInContext();
+        String path = request.getHttpURI().getCanonicalPath();
         String compacted = URIUtil.compactPath(path);
 
         if (path.equals(compacted))
             return null;
 
-        return new Request.WrapperProcessor(input)
+        HttpURI uri = Request.newHttpURIFrom(request, compacted);
+
+        return new Request.WrapperProcessor(request)
         {
             @Override
-            public String getPathInContext()
+            public HttpURI getHttpURI()
             {
-                return compacted;
+                return uri;
             }
         };
     }

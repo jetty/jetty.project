@@ -60,6 +60,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextHandlerTest
@@ -188,7 +189,7 @@ public class ContextHandlerTest
         {
             if (request != null)
             {
-                assertThat(request.getPathInContext(), equalTo("/path"));
+                assertThat(Request.getPathInContext(request), equalTo("/path"));
                 assertThat(request.getContext(), sameInstance(_context));
             }
             assertThat(ContextHandler.getCurrentContext(), sameInstance(_context));
@@ -584,6 +585,31 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
 
         assertThat(result.get(), equalTo("OK"));
+    }
+
+    @Test
+    public void testSetHandlerLoopSelf()
+    {
+        ContextHandler contextHandlerA = new ContextHandler();
+        assertThrows(IllegalStateException.class, () -> contextHandlerA.setHandler(contextHandlerA));
+    }
+
+    @Test
+    public void testSetHandlerLoopDeepWrapper()
+    {
+        ContextHandler contextHandlerA = new ContextHandler();
+        Handler.Wrapper handlerWrapper = new Handler.Wrapper();
+        contextHandlerA.setHandler(handlerWrapper);
+        assertThrows(IllegalStateException.class, () -> handlerWrapper.setHandler(contextHandlerA));
+    }
+
+    @Test
+    public void testAddHandlerLoopDeep()
+    {
+        ContextHandler contextHandlerA = new ContextHandler();
+        Handler.Collection handlerCollection = new Handler.Collection();
+        contextHandlerA.setHandler(handlerCollection);
+        assertThrows(IllegalStateException.class, () -> handlerCollection.addHandler(contextHandlerA));
     }
 
     private static class ScopeListener implements ContextHandler.ContextScopeListener

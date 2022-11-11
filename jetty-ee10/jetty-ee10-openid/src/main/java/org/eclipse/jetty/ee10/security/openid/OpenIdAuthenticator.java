@@ -389,13 +389,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         String uri = request.getRequestURI();
         if (uri == null)
-            uri = URIUtil.SLASH;
+            uri = "/";
 
         mandatory |= isJSecurityCheck(uri);
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        if (isErrorPage(baseRequest.getPathInContext()) && !DeferredAuthentication.isDeferred(res))
+        if (isErrorPage(Request.getPathInContext(baseRequest)) && !DeferredAuthentication.isDeferred(res))
             return new DeferredAuthentication(this);
 
         try

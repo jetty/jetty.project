@@ -42,7 +42,7 @@ import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
@@ -55,17 +55,15 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -79,7 +77,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
 public class WebSocketOverHTTP2Test
 {
     private Server server;
@@ -105,7 +102,7 @@ public class WebSocketOverHTTP2Test
         server.addConnector(connector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        sslContextFactory.setKeyStorePath(MavenTestingUtils.getTargetPath("test-classes/keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
 
@@ -314,7 +311,7 @@ public class WebSocketOverHTTP2Test
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/throw");
 
         ExecutionException failure;
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
             failure = Assertions.assertThrows(ExecutionException.class, () ->
                 wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
@@ -385,16 +382,19 @@ public class WebSocketOverHTTP2Test
         protected void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
-            factory.addMapping("/ws/null", (request, response) -> null);
+            factory.addMapping("/ws/null", (request, response) ->
+            {
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503, "null");
+                return null;
+            });
             factory.addMapping("/ws/throw", (request, response) ->
             {
                 throw new RuntimeException("throwing from creator");
             });
             factory.addMapping("/ws/connectionClose", (request, response) ->
             {
-                DelegatedServerUpgradeRequest upgradeRequest = (DelegatedServerUpgradeRequest)request.getHttpServletRequest();
-                Request baseRequest = (Request)upgradeRequest.getHttpServletRequest();
-                baseRequest.getConnectionMetaData().getConnection().getEndPoint().close();
+                HttpServletRequest upgradeRequest = request.getHttpServletRequest();
+                ((org.eclipse.jetty.ee9.nested.Request)upgradeRequest).getHttpChannel().getEndPoint().close();
                 return new EchoSocket();
             });
         }

@@ -199,7 +199,7 @@ public class ThreadLimitHandlerTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(HttpStatus.OK_200);
-                if (!"/other".equals(request.getPathInContext()))
+                if (!"/other".equals(Request.getPathInContext(request)))
                 {
                     try
                     {

@@ -14,12 +14,14 @@
 package org.eclipse.jetty.ee9.plus.annotation;
 
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 
 import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -170,11 +172,16 @@ public class LifeCycleCallbackCollectionTest
     }
 
     @Test
-    public void testServletPostConstructPreDestroy() throws Exception
+    public void testServletPostConstructPreDestroy(WorkDir workDir) throws Exception
     {
+        // Start with an empty dir
+        Path testDir = workDir.getEmptyPathDir();
+
         Server server = new Server();
         WebAppContext context = new WebAppContext();
-        context.setResourceBase(MavenTestingUtils.getTargetTestingDir("predestroy-test").toURI().toURL().toString());
+        Path predestroyTestDir = testDir.resolve("predestroy-test");
+        FS.ensureDirExists(predestroyTestDir);
+        context.setBaseResourceAsPath(predestroyTestDir);
         context.setContextPath("/");
         server.setHandler(context);
 

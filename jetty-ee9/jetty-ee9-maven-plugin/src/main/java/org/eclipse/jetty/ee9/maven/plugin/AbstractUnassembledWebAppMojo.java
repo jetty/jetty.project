@@ -25,6 +25,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 
 /**
  * Base class for all goals that operate on unassembled webapps.
@@ -166,10 +167,10 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Has an explicit web.xml file been configured to use?
             if (webXml != null)
             {
-                Resource r = ResourceFactory.root().newResource(webXml.toPath());
-                if (r.exists() && !r.isDirectory())
+                Resource r = webApp.getResourceFactory().newResource(webXml.toPath());
+                if (Resources.isReadableFile(r))
                 {
-                    webApp.setDescriptor(r.toString());
+                    webApp.setDescriptor(r.getURI().toASCIIString());
                 }
             }
 
@@ -177,7 +178,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 Resource r = webApp.getBaseResource().resolve("WEB-INF/web.xml");
-                if (r.exists() && !r.isDirectory())
+                if (Resources.isReadableFile(r))
                 {
                     webApp.setDescriptor(r.toString());
                 }

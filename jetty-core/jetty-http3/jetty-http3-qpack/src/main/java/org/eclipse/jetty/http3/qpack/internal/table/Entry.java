@@ -119,7 +119,7 @@ public class Entry
                 int huffmanLen = HuffmanEncoder.octetsNeeded(value);
                 if (huffmanLen < 0)
                     throw new IllegalStateException("bad value");
-                int lenLen = NBitIntegerEncoder.octectsNeeded(7, huffmanLen);
+                int lenLen = NBitIntegerEncoder.octetsNeeded(7, huffmanLen);
                 _huffmanValue = new byte[1 + lenLen + huffmanLen];
                 ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);
 

@@ -13,17 +13,21 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.acme.webapp.TestAnnotation;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestMetaData
 {
-    File fragFile;
-    File nonFragFile;
+    Path fragFile;
+    Path nonFragFile;
     Resource fragResource;
     Resource nonFragResource;
     ResourceFactory.Closeable resourceFactory;
@@ -56,21 +60,45 @@ public class TestMetaData
     List<TestAnnotation> applications;
 
     @BeforeEach
-    public void setUp() throws Exception
+    public void setUp(WorkDir workDir) throws Exception
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-        File jarDir = new File(MavenTestingUtils.getTestResourcesDir(), "fragments");
-        assertTrue(jarDir.exists());
-        fragFile = new File(jarDir, "zeta.jar");
-        assertTrue(fragFile.exists());
         resourceFactory = ResourceFactory.closeable();
-        fragResource = resourceFactory.newResource(fragFile.toPath());
-        nonFragFile = new File(jarDir, "sigma.jar");
-        nonFragResource = resourceFactory.newResource(nonFragFile.toPath());
-        assertTrue(nonFragFile.exists());
-        webfragxml = resourceFactory.newJarFileResource(fragFile.toPath().toUri()).resolve("/META-INF/web-fragment.xml");
-        containerDir = resourceFactory.newResource(MavenTestingUtils.getTargetTestingDir("container").toPath());
-        webInfClassesDir = resourceFactory.newResource(MavenTestingUtils.getTargetTestingDir("webinfclasses").toPath());
+
+        Path testDir = workDir.getEmptyPathDir();
+        Path jarsDir = testDir.resolve("jars");
+        FS.ensureDirExists(jarsDir);
+
+        // Zeta JAR
+        fragFile = jarsDir.resolve("zeta.jar");
+        Files.copy(MavenTestingUtils.getTestResourcePathFile("fragments/zeta.jar"), fragFile);
+        assertTrue(Files.exists(fragFile));
+        fragResource = resourceFactory.newResource(fragFile);
+        assertNotNull(fragResource);
+
+        // Sigma JAR
+        nonFragFile = jarsDir.resolve("sigma.jar");
+        Files.copy(MavenTestingUtils.getTestResourcePathFile("fragments/sigma.jar"), nonFragFile);
+        assertTrue(Files.exists(nonFragFile));
+        nonFragResource = resourceFactory.newResource(nonFragFile);
+        assertNotNull(nonFragResource);
+
+        // Various Resources
+        Resource fragMount = resourceFactory.newJarFileResource(fragFile.toUri());
+        assertNotNull(fragMount);
+        webfragxml = fragMount.resolve("/META-INF/web-fragment.xml");
+        assertTrue(webfragxml.exists());
+
+        Path testContainerDir = testDir.resolve("container");
+        FS.ensureDirExists(testContainerDir);
+        Path testWebInfClassesDir = testDir.resolve("webinfclasses");
+        FS.ensureDirExists(testWebInfClassesDir);
+
+        containerDir = resourceFactory.newResource(testContainerDir);
+        assertNotNull(containerDir);
+        webInfClassesDir = resourceFactory.newResource(testWebInfClassesDir);
+        assertNotNull(webInfClassesDir);
+
         wac = new WebAppContext();
         applications = new ArrayList<>();
         annotationA = new TestAnnotation(wac, "com.acme.A", fragResource, applications);

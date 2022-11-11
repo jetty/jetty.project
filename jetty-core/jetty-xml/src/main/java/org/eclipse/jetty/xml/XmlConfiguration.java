@@ -1762,6 +1762,12 @@ public class XmlConfiguration
 
                 return args;
             }
+
+            @Override
+            public String toString()
+            {
+                return "%s@%x%s%s".formatted(this.getClass().getName(), hashCode(), _names, _arguments);
+            }
         }
     }
 

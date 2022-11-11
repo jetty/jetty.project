@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.quickstart;
 
-import java.net.URI;
 import java.nio.file.Files;
 import java.util.Locale;
 
@@ -125,7 +124,7 @@ public class PreconfigureQuickStartWar
             XmlConfiguration xmlConfiguration = new XmlConfiguration(xml);
             xmlConfiguration.configure(webapp);
         }
-        webapp.setBaseResource(dir.getPath().toAbsolutePath());
+        webapp.setBaseResource(dir);
         server.setHandler(webapp);
         try
         {

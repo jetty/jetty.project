@@ -42,6 +42,7 @@ import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,8 +99,10 @@ public class EnvConfiguration extends AbstractConfiguration
             org.eclipse.jetty.util.resource.Resource webInf = context.getWebInf();
             if (webInf != null && webInf.isDirectory())
             {
+                // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/jetty-env.xml
+                // TODO: should also never return from a META-INF/versions/#/WEB-INF/jetty-env.xml location
                 org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.resolve("jetty-env.xml");
-                if (jettyEnv.exists())
+                if (Resources.isReadableFile(jettyEnv))
                 {
                     jettyEnvXmlResource = jettyEnv;
                 }

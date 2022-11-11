@@ -51,7 +51,7 @@ public abstract class Descriptor
             }
             catch (SAXException | IOException e)
             {
-                LOG.warn("Unable to parse {}", _xml, e);
+                LOG.warn("Unable to parse {}", _xml.getURI(), e);
                 throw e;
             }
         }

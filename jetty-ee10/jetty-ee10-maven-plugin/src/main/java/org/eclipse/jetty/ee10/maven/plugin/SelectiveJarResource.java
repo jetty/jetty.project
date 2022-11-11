@@ -21,6 +21,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +40,8 @@ import org.slf4j.LoggerFactory;
  * SelectiveJarResource
  *
  * Selectively copies resources from a jar file based on includes/excludes.
+ * TODO: investigate if copyTo() can instead have an IncludeExcludeSet as a parameter?
+ * TODO: or have a smaller ResourceWrapper jetty-core class that can be overridden for specific behavior like in this class
  */
 public class SelectiveJarResource extends Resource
 {
@@ -111,6 +114,24 @@ public class SelectiveJarResource extends Resource
     }
 
     @Override
+    public boolean isDirectory()
+    {
+        return _delegate.isDirectory();
+    }
+
+    @Override
+    public Instant lastModified()
+    {
+        return _delegate.lastModified();
+    }
+
+    @Override
+    public boolean isReadable()
+    {
+        return _delegate.isReadable();
+    }
+
+    @Override
     public boolean isContainedIn(Resource r)
     {
         return _delegate.isContainedIn(r);
@@ -132,6 +153,12 @@ public class SelectiveJarResource extends Resource
     public String getFileName()
     {
         return _delegate.getFileName();
+    }
+
+    @Override
+    public Resource resolve(String subUriPath)
+    {
+        return _delegate.resolve(subUriPath);
     }
 
     @Override

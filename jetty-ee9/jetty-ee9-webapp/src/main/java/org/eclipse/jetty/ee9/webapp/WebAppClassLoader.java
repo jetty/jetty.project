@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -43,8 +44,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        ResourceCollection getExtraClasspath();
+        List<Resource> getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -192,13 +193,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             }
         }
 
-        if (context.getExtraClasspath() != null)
-        {
-            for (Resource resource : context.getExtraClasspath().getResources())
-            {
-                addClassPath(resource);
-            }
-        }
+        for (Resource extra : context.getExtraClasspath())
+            addClassPath(extra);
     }
 
     /**
@@ -223,41 +219,30 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
-     * @param resource Comma or semicolon separated path of filenames or URLs
-     * pointing to directories or jar files. Directories should end
-     * with '/'.
-     * @throws IOException if unable to add classpath from resource
+     * @param resource The resources to add to the classpath
      */
     public void addClassPath(Resource resource)
-        throws IOException
     {
-        if (resource instanceof ResourceCollection)
+        for (Resource r : resource)
         {
-            for (Resource r : ((ResourceCollection)resource).getResources())
+            if (resource.exists())
             {
-                addClassPath(r);
-            }
-        }
-        else
-        {
-            // Resolve file path if possible
-            Path path = resource.getPath();
-            if (path != null)
-            {
-                URL url = resource.getURI().toURL();
-                addURL(url);
-            }
-            else if (resource.isDirectory())
-            {
-                addURL(resource.getURI().toURL());
+                try
+                {
+                    addURL(r.getURI().toURL());
+                }
+                catch (MalformedURLException e)
+                {
+                    throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
+                }
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Check file exists and is not nested jar: {}", resource);
+                    LOG.debug("Check resource exists and is not a nested jar: {}", resource);
                 throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
             }
-        }
+        };
     }
 
     /**
@@ -273,11 +258,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             return;
 
         List<URI> uris = URIUtil.split(classPath);
-        ResourceCollection rc = _resourceFactory.newResource(uris);
-        for (Resource resource : rc.getResources())
-        {
-            addClassPath(resource);
-        }
+        addClassPath(_resourceFactory.newResource(uris));
     }
 
     /**
@@ -298,13 +279,16 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * Add elements to the class path for the context from the jar and zip files found
      * in the specified resource.
      *
-     * @param lib the resource that contains the jar and/or zip files.
+     * @param libs the resource that contains the jar and/or zip files.
      */
-    public void addJars(Resource lib)
+    public void addJars(Resource libs)
     {
-        if (lib.exists() && lib.isDirectory())
+        if (!Resources.isReadableDirectory(libs))
+            return;
+
+        for (Resource libDir: libs)
         {
-            Path dir = lib.getPath();
+            Path dir = libDir.getPath();
 
             try (Stream<Path> streamEntries = Files.list(dir))
             {

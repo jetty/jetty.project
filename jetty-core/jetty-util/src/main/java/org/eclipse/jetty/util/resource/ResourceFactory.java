@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -31,6 +32,28 @@ import org.eclipse.jetty.util.component.Dumpable;
  */
 public interface ResourceFactory
 {
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
+     * @see CombinedResource
+     */
+    static Resource combine(List<Resource> resources)
+    {
+        return CombinedResource.combine(resources);
+    }
+
+    /**
+     * <p>Make a Resource containing a collection of other resources</p>
+     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
+     * @return A Resource of multiple resources.
+     * @see CombinedResource
+     */
+    static Resource combine(Resource... resources)
+    {
+        return CombinedResource.combine(List.of(resources));
+    }
+
     /**
      * Construct a resource from a uri.
      *
@@ -49,6 +72,9 @@ public interface ResourceFactory
      */
     default Resource newSystemResource(String resource)
     {
+        if (StringUtil.isBlank(resource))
+            throw new IllegalArgumentException("Resource String is invalid: " + resource);
+
         URL url = null;
         // Try to format as a URL?
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -110,6 +136,9 @@ public interface ResourceFactory
      */
     default Resource newClassPathResource(String resource)
     {
+        if (StringUtil.isBlank(resource))
+            throw new IllegalArgumentException("Resource String is invalid: " + resource);
+
         URL url = ResourceFactory.class.getResource(resource);
 
         if (url == null)
@@ -135,6 +164,9 @@ public interface ResourceFactory
      */
     default Resource newMemoryResource(URL url)
     {
+        if (url == null)
+            throw new IllegalArgumentException("URL is null");
+
         return new MemoryResource(url);
     }
 
@@ -146,6 +178,9 @@ public interface ResourceFactory
      */
     default Resource newResource(String resource)
     {
+        if (StringUtil.isBlank(resource))
+            throw new IllegalArgumentException("Resource String is invalid: " + resource);
+
         return newResource(URIUtil.toURI(resource));
     }
 
@@ -157,22 +192,31 @@ public interface ResourceFactory
      */
     default Resource newResource(Path path)
     {
+        if (path == null)
+            throw new IllegalArgumentException("Path is null");
+
         return newResource(path.toUri());
     }
 
     /**
-     * Construct a ResourceCollection from a list of URIs
+     * Construct a possible {@link CombinedResource} from a list of URIs
      *
      * @param uris the URIs
      * @return the Resource for the provided path
      */
-    default ResourceCollection newResource(List<URI> uris)
+    default Resource newResource(List<URI> uris)
     {
-        return Resource.combine(uris.stream().map(this::newResource).toList());
+        if ((uris == null) || (uris.isEmpty()))
+            throw new IllegalArgumentException("List of URIs is invalid");
+
+        return combine(uris.stream().map(this::newResource).toList());
     }
 
     default Resource newResource(URL url)
     {
+        if (url == null)
+            throw new IllegalArgumentException("URL is null");
+
         try
         {
             return newResource(url.toURI());

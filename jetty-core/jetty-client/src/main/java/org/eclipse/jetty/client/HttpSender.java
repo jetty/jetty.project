@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,13 +226,13 @@ public abstract class HttpSender
         try
         {
             Executor executor = getHttpChannel().getHttpDestination().getHttpClient().getExecutor();
-            executor.execute(() -> abort(exchange, failure));
+            executor.execute(() -> abort(exchange, failure, Promise.noop()));
         }
         catch (RejectedExecutionException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Exchange aborted {}", exchange, x);
-            abort(exchange, failure);
+            abort(exchange, failure, Promise.noop());
         }
     }
 
@@ -272,7 +273,7 @@ public abstract class HttpSender
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Response failure from request {} {}", request, exchange);
-                    getHttpChannel().abortResponse(exchange, failure);
+                    getHttpChannel().abortResponse(exchange, failure, Promise.noop());
                 }
             }
         }
@@ -337,7 +338,7 @@ public abstract class HttpSender
             anyToFailure(failure);
     }
 
-    public boolean abort(HttpExchange exchange, Throwable failure)
+    public void abort(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
     {
         // Store only the first failure.
         this.failure.compareAndSet(null, failure);
@@ -349,7 +350,8 @@ public abstract class HttpSender
             RequestState current = requestState.get();
             if (current == RequestState.FAILURE)
             {
-                return false;
+                promise.succeeded(false);
+                return;
             }
             else
             {
@@ -364,13 +366,13 @@ public abstract class HttpSender
         if (abort)
         {
             abortRequest(exchange);
-            return true;
+            promise.succeeded(true);
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Concurrent failure: request termination skipped, performed by helpers");
-            return false;
+            promise.succeeded(false);
         }
     }
 

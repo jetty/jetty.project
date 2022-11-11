@@ -153,7 +153,7 @@ public class AsyncMiddleManServletTest
         clientPool.setName("client");
         client = new HttpClient();
         client.setExecutor(clientPool);
-        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        client.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         client.start();
     }
 
@@ -963,7 +963,7 @@ public class AsyncMiddleManServletTest
                     {
                         // Consume the stream once.
                         InputStream input = source.getInputStream();
-                        IO.copy(input, IO.getNullStream());
+                        IO.copy(input, OutputStream.nullOutputStream());
 
                         // Reset the stream and re-read it.
                         input.reset();
@@ -1116,7 +1116,7 @@ public class AsyncMiddleManServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                IO.copy(request.getInputStream(), IO.getNullStream());
+                IO.copy(request.getInputStream(), OutputStream.nullOutputStream());
             }
         });
         CountDownLatch destroyLatch = new CountDownLatch(1);

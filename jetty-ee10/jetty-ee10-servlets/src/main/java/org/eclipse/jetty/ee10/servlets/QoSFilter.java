@@ -288,18 +288,6 @@ public class QoSFilter implements Filter
         return _waitMs;
     }
 
-    /**
-     * Set the (short) amount of time (in milliseconds) that the filter would wait
-     * for the semaphore to become available before suspending a request.
-     *
-     * @param value wait time (in milliseconds)
-     * @deprecated use init-param waitMs instead
-     */
-    @Deprecated
-    public void setWaitMs(long value)
-    {
-        LOG.warn("Setter ignored: use waitMs init-param for QoSFilter");
-    }
 
     /**
      * Get the amount of time (in milliseconds) that the filter would suspend
@@ -314,19 +302,6 @@ public class QoSFilter implements Filter
     }
 
     /**
-     * Set the amount of time (in milliseconds) that the filter would suspend
-     * a request for while waiting for the semaphore to become available.
-     *
-     * @param value suspend time (in milliseconds)
-     * @deprecated use init-param suspendMs instead
-     */
-    @Deprecated
-    public void setSuspendMs(long value)
-    {
-        LOG.warn("Setter ignored: use suspendMs init-param for QoSFilter");
-    }
-
-    /**
      * Get the maximum number of requests allowed to be processed
      * at the same time.
      *
@@ -336,19 +311,6 @@ public class QoSFilter implements Filter
     public int getMaxRequests()
     {
         return _maxRequests;
-    }
-
-    /**
-     * Set the maximum number of requests allowed to be processed
-     * at the same time.
-     *
-     * @param value the number of requests
-     * @deprecated use init-param maxRequests instead
-     */
-    @Deprecated
-    public void setMaxRequests(int value)
-    {
-        LOG.warn("Setter ignored: use maxRequests init-param for QoSFilter instead");
     }
 
     private class QoSAsyncListener implements AsyncListener

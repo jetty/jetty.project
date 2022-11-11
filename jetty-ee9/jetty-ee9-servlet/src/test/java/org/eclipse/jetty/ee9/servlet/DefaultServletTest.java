@@ -358,7 +358,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testListingProperUrlEncoding() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
@@ -962,7 +961,6 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
-    @Disabled // TODO
     public void testWelcomeRedirectDirWithQuestion() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -995,7 +993,6 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
-    @Disabled // TODO
     public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1553,7 +1550,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1648,7 +1644,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testCachedGzip() throws Exception
     {
         FS.ensureDirExists(docRoot);
@@ -1731,7 +1726,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testBrotli() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1819,7 +1813,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testCachedBrotli() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1899,7 +1892,6 @@ public class DefaultServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testDefaultBrotliOverGzip() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
@@ -1933,10 +1925,19 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
+
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nAccept-Encoding:gzip, compress\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
+        body = response.getContent();
+        assertThat(body, containsString("fake brotli"));
     }
 
     @Test
-    @Disabled // TODO
     public void testCustomCompressionFormats() throws Exception
     {
         createFile(docRoot.resolve("data0.txt"), "Hello Text 0");

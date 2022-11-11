@@ -605,7 +605,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (!HttpMethod.PRI.is(request.getMethod()) &&
                     !HttpMethod.CONNECT.is(request.getMethod()) &&
-                    !_request.getPathInContext().startsWith("/") &&
+                    !Request.getPathInContext(_request).startsWith("/") &&
                     !HttpMethod.OPTIONS.is(request.getMethod()))
                 {
                     _processState = ProcessState.PROCESSING;
@@ -796,7 +796,7 @@ public class HttpChannelState implements HttpChannel, Components
             return _loggedRequest == null ? this : _loggedRequest;
         }
 
-        HttpStream getStream()
+        HttpStream getHttpStream()
         {
             return getHttpChannel()._stream;
         }
@@ -904,12 +904,6 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public String getPathInContext()
-        {
-            return _metaData.getURI().getCanonicalPath();
-        }
-
-        @Override
         public HttpFields getHeaders()
         {
             return _metaData.getFields();
@@ -1013,7 +1007,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void push(MetaData.Request request)
         {
-            getStream().push(request);
+            getHttpStream().push(request);
         }
 
         @Override
@@ -1047,7 +1041,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public TunnelSupport getTunnelSupport()
         {
-            return getStream().getTunnelSupport();
+            return getHttpStream().getTunnelSupport();
         }
 
         @Override
@@ -1370,7 +1364,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // is the request fully consumed?
                 Throwable unconsumed = stream.consumeAvailable();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("consumeAll: {} {} ", unconsumed == null, httpChannelState);
+                    LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState);
 
                 if (unconsumed != null && httpChannelState.getConnectionMetaData().isPersistent())
                 {
@@ -1468,7 +1462,7 @@ public class HttpChannelState implements HttpChannel, Components
         public InvocationType getInvocationType()
         {
             // TODO review this as it is probably not correct
-            return _request.getStream().getInvocationType();
+            return _request.getHttpStream().getInvocationType();
         }
     }
 
@@ -1536,6 +1530,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (needLastWrite)
+            {
                 _stream.send(_request._metaData, responseMetaData, true, null,
                     Callback.from(() -> httpChannel._handlerInvoker.failed(_failure),
                         x ->
@@ -1544,8 +1539,11 @@ public class HttpChannelState implements HttpChannel, Components
                                 _failure.addSuppressed(x);
                             httpChannel._handlerInvoker.failed(_failure);
                         }));
+            }
             else
+            {
                 httpChannel._handlerInvoker.failed(_failure);
+            }
         }
 
         @Override

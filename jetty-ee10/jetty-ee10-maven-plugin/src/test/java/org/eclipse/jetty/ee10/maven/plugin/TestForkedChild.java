@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -81,7 +80,7 @@ public class TestForkedChild
                 MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
-                webapp.setBaseResource(baseDir.toPath());
+                webapp.setBaseResourceAsPath(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[0]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing
@@ -142,7 +141,6 @@ public class TestForkedChild
         }
     }
 
-    @Disabled //Needs DefaultServlet
     @Test
     public void test() throws Exception
     {      

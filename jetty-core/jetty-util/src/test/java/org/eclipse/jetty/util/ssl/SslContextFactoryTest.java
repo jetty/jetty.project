@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -254,12 +253,12 @@ public class SslContextFactoryTest
         SslContextFactory.Server cf = new SslContextFactory.Server();
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
-            IllegalStateException x = assertThrows(IllegalStateException.class, () ->
+            IllegalArgumentException x = assertThrows(IllegalArgumentException.class, () ->
             {
                 cf.setTrustStorePath("/foo");
                 cf.start();
             });
-            assertThat(x.getMessage(), containsString(File.separator + "foo is not a valid keystore"));
+            assertThat(x.getMessage(), containsString("TrustStore Path not accessible: /foo"));
         }
     }
 

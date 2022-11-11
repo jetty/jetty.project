@@ -39,16 +39,4 @@
     <module>jetty-ee10-test-weld-cdi-webapp</module>
     <module>jetty-ee10-test-badinit-webapp</module>
   </modules>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

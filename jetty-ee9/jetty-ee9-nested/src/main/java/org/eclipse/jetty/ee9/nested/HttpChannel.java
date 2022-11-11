@@ -50,6 +50,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
@@ -64,17 +65,11 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
- * HttpChannel represents a single endpoint for HTTP semantic processing.
- * The HttpChannel is both an HttpParser.RequestHandler, where it passively receives events from
- * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
- * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
- * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the
- * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to
- * HttpTransport.completed().
+ * <p>The state machine that processes a request/response
+ * cycle interpreting the HTTP and Servlet semantic.</p>
  */
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
-    public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final ContextHandler _contextHandler;
@@ -114,10 +109,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _response = new Response(this, newHttpOutput());
         _executor = _connector.getServer().getThreadPool();
 
-        // TODO get real listeners from somewhere
-        _combinedListener = /* (connector instanceof AbstractConnector)
-            ? ((AbstractConnector)connector).getHttpChannelListeners()
-            : */ NOOP_LISTENER;
+        _combinedListener = new HttpChannelListeners(_connector.getBeans(Listener.class));
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -949,11 +941,24 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written={}", getRequest().getRequestURI(), getBytesWritten());
+            LOG.debug("onCompleted for {} written={}", _request.getRequestURI(), getBytesWritten());
 
         long idleTO = _configuration.getIdleTimeout();
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
+
+        if (getServer().getRequestLog() != null)
+        {
+            Authentication authentication = _request.getAuthentication();
+            if (authentication instanceof Authentication.User userAuthentication)
+                _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
+
+            String realPath = _request.getServletContext().getRealPath(_request.getPathInContext());
+            _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
+
+            String servletName = _request.getServletName();
+            _request.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+        }
 
         _request.onCompleted();
         _combinedListener.onComplete(_request);

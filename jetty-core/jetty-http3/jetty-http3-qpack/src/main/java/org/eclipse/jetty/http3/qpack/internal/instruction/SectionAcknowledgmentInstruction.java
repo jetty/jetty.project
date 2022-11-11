@@ -37,7 +37,7 @@ public class SectionAcknowledgmentInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool.Lease lease)
     {
-        int size = NBitIntegerEncoder.octectsNeeded(7, _streamId) + 1;
+        int size = NBitIntegerEncoder.octetsNeeded(7, _streamId) + 1;
         ByteBuffer buffer = lease.acquire(size, false);
         buffer.put((byte)0x80);
         NBitIntegerEncoder.encode(buffer, 7, _streamId);

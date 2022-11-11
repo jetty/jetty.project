@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.server.internal;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -69,10 +69,10 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
         return httpStream.onTrailer(frame);
     }
 
-    public boolean onIdleTimeout(HTTP3Stream stream, Throwable failure, Consumer<Runnable> consumer)
+    public void onIdleTimeout(HTTP3Stream stream, Throwable failure, BiConsumer<Runnable, Boolean> consumer)
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
-        return httpStream.onIdleTimeout(failure, consumer);
+        httpStream.onIdleTimeout(failure, consumer);
     }
 
     public Runnable onFailure(HTTP3Stream stream, Throwable failure)

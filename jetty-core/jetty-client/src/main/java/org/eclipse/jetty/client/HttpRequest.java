@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -54,6 +55,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Promise;
 
 public class HttpRequest implements Request
 {
@@ -771,15 +773,17 @@ public class HttpRequest implements Request
     {
         if (listener != null)
             responseListeners.add(listener);
-        sent();
         sender.accept(this, responseListeners);
     }
 
     void sent()
     {
-        long timeout = getTimeout();
-        if (timeout > 0)
-            timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
+        if (timeoutNanoTime == Long.MAX_VALUE)
+        {
+            long timeout = getTimeout();
+            if (timeout > 0)
+                timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
+        }
     }
 
     /**
@@ -813,11 +817,15 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public boolean abort(Throwable cause)
+    public CompletableFuture<Boolean> abort(Throwable cause)
     {
         if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
-            return conversation.abort(cause);
-        return false;
+        {
+            Promise.Completable<Boolean> promise = new Promise.Completable<>();
+            conversation.abort(cause, promise);
+            return promise;
+        }
+        return CompletableFuture.completedFuture(false);
     }
 
     @Override

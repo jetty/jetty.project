@@ -38,25 +38,6 @@ public class WebInfConfigurationTest
 {
     public WorkDir workDir;
 
-    public static Stream<Arguments> rawResourceNames()
-    {
-        return Stream.of(
-            Arguments.of("/", ""),
-            Arguments.of("/a", "a")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("rawResourceNames")
-    public void testTinyGetResourceBaseName(String rawPath, String expectedName) throws IOException
-    {
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Resource resource = resourceFactory.newResource(rawPath);
-            assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
-        }
-    }
-
     public static Stream<Arguments> fileBaseResourceNames()
     {
         return Stream.of(

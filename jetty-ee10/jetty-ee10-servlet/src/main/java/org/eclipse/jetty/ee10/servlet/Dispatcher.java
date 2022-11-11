@@ -34,6 +34,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -71,8 +72,9 @@ public class Dispatcher implements RequestDispatcher
         _named = null;
 
         _servletHandler = _contextHandler.getServletHandler();
-        _mappedServlet = _servletHandler.getMappedServlet(pathInContext);
-        _servletPathMapping = _mappedServlet.getServletPathMapping(_pathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(pathInContext);
+        _mappedServlet = matchedServlet.getResource();
+        _servletPathMapping = _mappedServlet.getServletPathMapping(_pathInContext, matchedServlet.getMatchedPath());
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
@@ -334,11 +336,11 @@ public class Dispatcher implements RequestDispatcher
             switch (name)
             {
                 case RequestDispatcher.INCLUDE_MAPPING:
-                    return _mappedServlet.getServletPathMapping(_pathInContext);
+                    return _servletPathMapping;
                 case RequestDispatcher.INCLUDE_SERVLET_PATH:
-                    return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+                    return _servletPathMapping.getServletPath();
                 case RequestDispatcher.INCLUDE_PATH_INFO:
-                    return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+                    return _servletPathMapping.getPathInfo();
                 case RequestDispatcher.INCLUDE_REQUEST_URI:
                     return (_uri == null) ? null : _uri.getPath();
                 case RequestDispatcher.INCLUDE_CONTEXT_PATH:
@@ -591,13 +593,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+            return _servletPathMapping.getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+            return _servletPathMapping.getServletPath();
         }
 
         @Override

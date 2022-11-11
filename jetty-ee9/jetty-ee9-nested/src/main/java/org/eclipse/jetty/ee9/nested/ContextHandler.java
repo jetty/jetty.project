@@ -89,6 +89,7 @@ import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1101,6 +1102,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * @return Returns the resourceBase.
      */
+    @ManagedAttribute("document root for context")
     public Resource getBaseResource()
     {
         return _coreContextHandler.getBaseResource();
@@ -1108,8 +1110,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /**
      * @return Returns the base resource as a string.
+     * @deprecated use #getBaseResource()
      */
-    @ManagedAttribute("document root for context")
+    @Deprecated
     public String getResourceBase()
     {
         Resource resourceBase = _coreContextHandler.getBaseResource();
@@ -1120,7 +1123,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Set the base resource for this context.
      *
      * @param base The resource used as the base for all static content of this context.
-     * @see #setResourceBase(String)
      */
     public void setBaseResource(Resource base)
     {
@@ -1131,11 +1133,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Set the base resource for this context.
      *
      * @param base The resource used as the base for all static content of this context.
-     * @see #setResourceBase(String)
+     * @see #setBaseResource(Resource)
      */
-    public void setBaseResource(Path base)
+    public void setBaseResourceAsPath(Path base)
     {
-        _coreContextHandler.setBaseResource(base);
+        _coreContextHandler.setBaseResourceAsPath(base);
+    }
+
+    /**
+     * Set the base resource for this context.
+     *
+     * @param base The resource used as the base for all static content of this context.
+     * @see #setBaseResource(Resource)
+     */
+    public void setBaseResourceAsString(String base)
+    {
+        _coreContextHandler.setBaseResourceAsString(base);
     }
 
     /**
@@ -1151,6 +1164,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         try
         {
             setBaseResource(newResource(resourceBase));
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw e;
         }
         catch (Exception e)
         {
@@ -1367,7 +1384,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
-        if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
+        if (pathInContext == null || !pathInContext.startsWith("/"))
             throw new MalformedURLException(pathInContext);
 
         Resource baseResource = _coreContextHandler.getBaseResource();
@@ -1379,11 +1396,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.resolve(pathInContext);
-
-            if (checkAlias(pathInContext, resource))
-                return resource;
-            return null;
+            return baseResource.resolve(pathInContext);
         }
         catch (Exception e)
         {
@@ -1401,10 +1414,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public boolean checkAlias(String path, Resource resource)
     {
         // Is the resource aliased?
-        if (resource.isAlias())
+        if (Resources.isReadable(resource) && resource.isAlias())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Alias resource {} for {}", resource, resource.getTargetURI());
+                LOG.debug("Alias resource {} for {}", resource, resource.getRealURI());
 
             // alias checks
             for (AliasCheck check : getAliasChecks())
@@ -1448,13 +1461,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Convert a URL or path to a Resource. The default implementation is a wrapper for {@link ResourceFactory#newResource(String)}.
      *
-     * @param urlOrPath The URL or path to convert
+     * @param uriOrPath The URL or path to convert
      * @return The Resource for the URL/path
      * @throws IOException The Resource could not be created.
      */
-    public Resource newResource(String urlOrPath) throws IOException
+    public Resource newResource(String uriOrPath) throws IOException
     {
-        return ResourceFactory.of(this).newResource(urlOrPath);
+        return ResourceFactory.of(this).newResource(uriOrPath);
     }
 
     public Set<String> getResourcePaths(String path)
@@ -1463,8 +1476,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             Resource resource = getResource(path);
 
-            if (!path.endsWith(URIUtil.SLASH))
-                path = path + URIUtil.SLASH;
+            if (!path.endsWith("/"))
+                path = path + "/";
 
             HashSet<String> set = new HashSet<>();
 
@@ -1801,9 +1814,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (path == null)
                 return null;
             if (path.length() == 0)
-                path = URIUtil.SLASH;
+                path = "/";
             else if (path.charAt(0) != '/')
-                path = URIUtil.SLASH + path;
+                path = "/" + path;
 
             try
             {
@@ -2352,10 +2365,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
                                      org.eclipse.jetty.server.handler.ContextHandler.Context context,
                                      org.eclipse.jetty.server.Request wrapped,
-                                     String pathInContext,
                                      HttpChannel httpChannel)
         {
-            super(contextHandler, context, wrapped, pathInContext);
+            super(contextHandler, context, wrapped);
             _httpChannel = httpChannel;
         }
 
@@ -2443,7 +2455,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected ContextRequest wrap(org.eclipse.jetty.server.Request request, String pathInContext)
+        protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
         {
             HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().get(HttpChannel.class.getName());
             if (httpChannel == null)
@@ -2461,7 +2473,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, pathInContext, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, httpChannel);
             httpChannel.onRequest(coreContextRequest);
             return coreContextRequest;
         }

@@ -33,8 +33,10 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.AttributeNormalizer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -203,10 +205,9 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 for (URI uri : uris)
                 {
                     Resource r = _resourceFactory.newResource(uri);
-                    if (r.exists())
-                        visitMetaInfResource(context, r);
-                    else
+                    if (Resources.missing(r))
                         throw new IllegalArgumentException("Resource not found: " + r);
+                    visitMetaInfResource(context, r);
                 }
             }
             default ->
@@ -242,6 +243,6 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         List<Resource> collection = new ArrayList<>();
         collection.add(context.getBaseResource());
         collection.addAll(metaInfResources);
-        context.setBaseResource(Resource.combine(collection));
+        context.setBaseResource(ResourceFactory.combine(collection));
     }
 }

@@ -98,6 +98,26 @@ public class DatabaseLoginServiceTestServer
         }
     }
     
+    public static class ExtendedDefaultServlet extends DefaultServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            if (resp.getStatus() == HttpServletResponse.SC_OK)
+                return;
+            
+            super.doPost(req, resp);
+        }
+
+        @Override
+        protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            if (resp.getStatus() == HttpServletResponse.SC_CREATED)
+                return;
+            super.doPut(req, resp);
+        }
+    }
+    
     public static class TestFilter extends HttpFilter
     {
         private final Path _resourcePath;
@@ -119,8 +139,9 @@ public class DatabaseLoginServiceTestServer
             OutputStream out = null;
             if (req.getMethod().equals("PUT"))
             {
-                Path p = _resourcePath.resolve(URLDecoder.decode(req.getPathInfo(), "utf-8"));
-                
+                //remove leading slash from pathinfo
+                Path p = _resourcePath.resolve(URLDecoder.decode(req.getPathInfo().substring(1), "utf-8"));
+
                 File file = p.toFile();
                 FS.ensureDirExists(file.getParentFile());
 
@@ -223,13 +244,13 @@ public class DatabaseLoginServiceTestServer
         ServletContextHandler root = new ServletContextHandler();
         root.setSecurityHandler(security);
         root.setContextPath("/");
-        root.setBaseResource(_resourceBase);
-        ServletHolder servletHolder = new ServletHolder(new DefaultServlet());
+        root.setBaseResourceAsPath(_resourceBase);
+        ServletHolder servletHolder = new ServletHolder(new ExtendedDefaultServlet());
         servletHolder.setInitParameter("gzip", "true");
         root.addServlet(servletHolder, "/*");
 
         _filter = new TestFilter(_resourceBase);
-        root.addFilter(_filter, "/", EnumSet.allOf(DispatcherType.class));
+        root.addFilter(_filter, "/*", EnumSet.allOf(DispatcherType.class));
         
         _server.setHandler(root);
     }

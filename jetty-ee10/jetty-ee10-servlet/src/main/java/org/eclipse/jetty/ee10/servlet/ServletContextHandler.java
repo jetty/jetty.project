@@ -74,6 +74,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -96,6 +97,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,7 +205,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _destroyServletContextListeners = new ArrayList<>();
-    protected final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
+    private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
@@ -784,7 +786,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
-        if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
+        if (pathInContext == null || !pathInContext.startsWith("/"))
             throw new MalformedURLException(pathInContext);
 
         Resource baseResource = getBaseResource();
@@ -836,8 +838,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             Resource resource = getResource(path);
 
-            if (!path.endsWith(URIUtil.SLASH))
-                path = path + URIUtil.SLASH;
+            if (!path.endsWith("/"))
+                path = path + "/";
 
             HashSet<String> set = new HashSet<>();
             for (Resource item: resource.list())
@@ -1079,7 +1081,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         Resource baseResource = getBaseResource();
         if (baseResource != null && baseResource.isAlias())
             LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
-                baseResource, baseResource.getTargetURI(), this);
+                baseResource, baseResource.getRealURI(), this);
 
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
@@ -1183,9 +1185,15 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ServletContextRequest wrap(Request request, String pathInContext)
+    protected ServletContextRequest wrap(Request request)
     {
-        ServletHandler.MappedServlet mappedServlet = _servletHandler.getMappedServlet(pathInContext);
+        // Need to ask directly to the Context for the pathInContext, rather than using
+        // Request.getPathInContext(), as the request is not yet wrapped in this Context.
+        String pathInContext = getContext().getPathInContext(request.getHttpURI().getCanonicalPath());
+        MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
+        if (matchedResource == null)
+            return null;
+        ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
         if (mappedServlet == null)
             return null;
 
@@ -1200,7 +1208,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             // request.getComponents().getCache().put("blah.blah.ServletChannel", servletChannel); TODO: Re-enable.
         }
 
-        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);
+        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext,
+            matchedResource.getResource(), matchedResource.getPathSpec(), matchedResource.getMatchedPath());
         servletChannel.init(servletContextRequest);
         return servletContextRequest;
     }
@@ -1210,7 +1219,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
-        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(request.getPathInContext()))
+        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getPathInContext()))
             return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpServletResponse.SC_NOT_FOUND, null);
 
         return super.processByContextHandler(request);
@@ -2880,9 +2889,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             if (path == null)
                 return null;
             if (path.length() == 0)
-                path = URIUtil.SLASH;
+                path = "/";
             else if (path.charAt(0) != '/')
-                path = URIUtil.SLASH + path;
+                path = "/" + path;
 
             try
             {
@@ -2922,7 +2931,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             for (Resource r: resource)
             {
-                if (r.exists())
+                // return first
+                if (Resources.exists(r))
                     return r.getURI().toURL();
             }
 

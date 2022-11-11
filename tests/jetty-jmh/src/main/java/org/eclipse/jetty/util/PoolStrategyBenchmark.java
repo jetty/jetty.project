@@ -83,7 +83,7 @@ public class PoolStrategyBenchmark
 
         for (int i = 0; i < SIZE; i++)
         {
-            pool.reserve(1).enable(Integer.toString(i), false);
+            pool.reserve().enable(Integer.toString(i), false);
         }
     }
 

@@ -80,6 +80,9 @@ public abstract class IdleTimeout
         long old = _idleTimeout;
         _idleTimeout = idleTimeout;
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Setting idle timeout {} -> {} on {}", old, idleTimeout, this);
+
         // Do we have an old timeout
         if (old > 0)
         {

@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 
@@ -189,17 +190,17 @@ public class HttpClientUploadDuringServerShutdownTest
                     }
 
                     @Override
-                    protected boolean abort(Throwable failure)
+                    protected void abort(Throwable failure, Promise<Boolean> promise)
                     {
                         try
                         {
                             associateLatch.await(5, TimeUnit.SECONDS);
-                            return super.abort(failure);
+                            super.abort(failure, promise);
                         }
                         catch (InterruptedException x)
                         {
                             x.printStackTrace();
-                            return false;
+                            promise.failed(x);
                         }
                     }
                 };

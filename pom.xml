@@ -28,13 +28,15 @@
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.15</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
-    <asciidoctorj.version>2.5.5</asciidoctorj.version>
-    <asm.version>9.3</asm.version>
+    <asciidoctorj.version>2.5.6</asciidoctorj.version>
+    <asm.version>9.4</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.3.3</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
+    <commons.compress.version>1.22</commons.compress.version>
+    <commons.io.version>2.11.0</commons.io.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.2</disruptor.version>
@@ -50,17 +52,17 @@
     <hazelcast.version>4.2.5</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
-    <jackson.databind.version>2.13.3</jackson.databind.version>
+    <jackson.version>2.13.4</jackson.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
-    <jboss-logmanager.version>2.1.18.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>2.1.19.Final</jboss-logmanager.version>
     <jboss-threads.version>3.5.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
-    <jetty-quiche-native.version>0.12.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.16.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jetty.test.version>5.9</jetty.test.version>
+    <jetty.test.version>6.0</jetty.test.version>
     <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
     <jmh.version>1.34</jmh.version>
     <jna.version>5.10.0</jna.version>
@@ -74,8 +76,8 @@
     <junit.version>5.9.0</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.19.0</log4j2.version>
-    <logback.version>1.4.1</logback.version>
-    <mariadb.version>3.0.7</mariadb.version>
+    <logback.version>1.4.4</logback.version>
+    <mariadb.version>3.0.8</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.4</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -88,10 +90,10 @@
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
-    <plexus-utils.version>3.4.2</plexus-utils.version>
+    <plexus-utils.version>3.5.0</plexus-utils.version>
     <slf4j.version>2.0.2</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
-    <testcontainers.version>1.17.3</testcontainers.version>
+    <testcontainers.version>1.17.5</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>1.20.1.Final</wildfly.elytron.version>
@@ -125,11 +127,10 @@
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.6.2</maven-plugin.plugin.version>
-    <maven.project-info-reports.plugin.version>3.1.2</maven.project-info-reports.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.3.0</maven.shade.plugin.version>
+    <maven.shade.plugin.version>3.4.1</maven.shade.plugin.version>
     <maven.site.plugin.version>3.12.0</maven.site.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
@@ -471,8 +472,10 @@
           <sourceDirectories>
             <!-- only scan source directory (not generated, filtered, or copied source) -->
             <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
           </sourceDirectories>
+          <testSourceDirectories>
+            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+          </testSourceDirectories>
         </configuration>
         <dependencies>
           <dependency>
@@ -654,11 +657,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>${maven.project-info-reports.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
           <version>${maven.release.plugin.version}</version>
         </plugin>
@@ -748,6 +746,22 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
           <version>${maven.war.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>${flatten.maven.plugin.version}</version>
+          <configuration>
+            <outputDirectory>${project.build.directory}</outputDirectory>
+            <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
+            <flattenMode>bom</flattenMode>
+            <updatePomFile>true</updatePomFile>
+            <pomElements>
+              <build>remove</build>
+              <properties>remove</properties>
+              <distributionManagement>remove</distributionManagement>
+            </pomElements>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -1232,11 +1246,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-nosql</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jmx</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1248,6 +1257,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-keystore</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-nosql</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1323,6 +1337,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>jetty-fcgi-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.fcgi</groupId>
+        <artifactId>jetty-fcgi-proxy</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1505,6 +1524,13 @@
         <version>${infinispan.protostream.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>org.jboss.logging</groupId>
         <artifactId>jboss-logging</artifactId>
         <version>${jboss.logging.version}</version>
@@ -1667,47 +1693,6 @@
              -->
           </plugins>
         </pluginManagement>
-      </build>
-    </profile>
-    <profile>
-      <id>checkstyle</id>
-      <reporting>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>${maven.project-info-reports.plugin.version}</version>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-checkstyle-plugin</artifactId>
-            <reportSets>
-              <reportSet>
-                <reports>
-                  <report>checkstyle</report>
-                </reports>
-              </reportSet>
-            </reportSets>
-          </plugin>
-        </plugins>
-      </reporting>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-site-plugin</artifactId>
-            <version>${maven.site.plugin.version}</version>
-            <executions>
-              <execution>
-                <id>build-site</id>
-                <goals>
-                  <goal>site</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
       </build>
     </profile>
     <profile>

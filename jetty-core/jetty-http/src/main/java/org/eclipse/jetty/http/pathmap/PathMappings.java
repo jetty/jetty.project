@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -86,6 +87,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         _mappings.clear();
         _prefixMap.clear();
         _suffixMap.clear();
+    }
+
+    public Stream<MappedResource<E>> streamResources()
+    {
+        return _mappings.stream();
     }
 
     public void removeIf(Predicate<MappedResource<E>> predicate)

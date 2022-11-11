@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 
 /**
  * Resource Handler.
@@ -91,9 +92,10 @@ public class ResourceHandler extends Handler.Wrapper
 
             for (String welcome : _welcomes)
             {
-                String welcomeInContext = URIUtil.addPaths(request.getPathInContext(), welcome);
-                Resource welcomePath = _resourceBase.resolve(request.getPathInContext()).resolve(welcome);
-                if (welcomePath != null && welcomePath.exists())
+                String pathInContext = Request.getPathInContext(request);
+                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
+                Resource welcomePath = _resourceBase.resolve(pathInContext).resolve(welcome);
+                if (Resources.isReadableFile(welcomePath))
                     return welcomeInContext;
             }
             // not found
@@ -110,7 +112,7 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContent(request.getPathInContext(), request);
+        HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
             return super.handle(request); // no content - try other handlers
 
@@ -225,6 +227,17 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
+     * @param base The resourceBase to server content from. If null the
+     * context resource base is used.  If non-null the {@link Resource} is created
+     * from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)} for
+     * this context.
+     */
+    public void setBaseResourceAsString(String base)
+    {
+        setBaseResource(base == null ? null : ResourceFactory.of(this).newResource(base));
+    }
+
+    /**
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
@@ -272,7 +285,6 @@ public class ResourceHandler extends Handler.Wrapper
     public void setPrecompressedFormats(List<CompressedContentFormat> precompressedFormats)
     {
         _resourceService.setPrecompressedFormats(precompressedFormats);
-        setupContentFactory();
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -288,7 +300,6 @@ public class ResourceHandler extends Handler.Wrapper
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
-        setupContentFactory();
     }
 
     /**

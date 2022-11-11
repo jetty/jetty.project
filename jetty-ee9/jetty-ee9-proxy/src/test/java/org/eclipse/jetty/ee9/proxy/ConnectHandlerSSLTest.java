@@ -155,7 +155,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            String uri = request.getPathInContext();
+            String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))
             {
                 StringBuilder builder = new StringBuilder();

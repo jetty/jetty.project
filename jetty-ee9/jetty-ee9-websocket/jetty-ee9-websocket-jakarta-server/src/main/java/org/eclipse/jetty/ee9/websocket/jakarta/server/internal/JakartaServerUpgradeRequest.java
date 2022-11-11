@@ -17,6 +17,7 @@ import java.net.URI;
 import java.security.Principal;
 
 import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class JakartaServerUpgradeRequest implements UpgradeRequest
@@ -45,6 +46,6 @@ public class JakartaServerUpgradeRequest implements UpgradeRequest
     @Override
     public String getPathInContext()
     {
-        return servletRequest.getPathInContext();
+        return Request.getPathInContext(servletRequest);
     }
 }

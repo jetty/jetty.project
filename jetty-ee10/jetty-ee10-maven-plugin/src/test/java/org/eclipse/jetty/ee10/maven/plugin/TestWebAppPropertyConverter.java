@@ -16,17 +16,17 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -94,7 +94,7 @@ public class TestWebAppPropertyConverter
 
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/foo");
-        webApp.setBaseResource(MavenTestingUtils.getTestResourcePathDir("root"));
+        webApp.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("root"));
         webApp.setTempDirectory(tmpDir);
         webApp.setPersistTempDirectory(false);
         webApp.setClasses(classesDir);
@@ -152,10 +152,13 @@ public class TestWebAppPropertyConverter
         assertEquals(true, webApp.isPersistTempDirectory());
         assertEquals(war.getAbsolutePath(), webApp.getWar());
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
-        assertThat(webApp.getBaseResource(), instanceOf(ResourceCollection.class));
+        assertThat(webApp.getBaseResource(), instanceOf(CombinedResource.class));
 
-        ResourceCollection resourceCollection = (ResourceCollection)webApp.getBaseResource();
-        List<URI> actual = resourceCollection.getResources().stream().filter(Objects::nonNull).map(Resource::getURI).toList();
+        Resource combinedResource = webApp.getBaseResource();
+        List<URI> actual = new ArrayList<>();
+        for (Resource r : combinedResource)
+            if (r != null)
+                actual.add(r.getURI());
         URI[] expected = new URI[]{base1.toURI(), base2.toURI()};
         assertThat(actual, containsInAnyOrder(expected));
     }

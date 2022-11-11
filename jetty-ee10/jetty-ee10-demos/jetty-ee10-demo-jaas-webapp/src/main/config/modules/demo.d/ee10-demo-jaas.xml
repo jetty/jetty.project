@@ -16,7 +16,7 @@
      <Set name="loginService">
        <New class="org.eclipse.jetty.ee10.jaas.JAASLoginService">
          <Set name="name">Demo JAAS Realm</Set>
-         <Set name="loginModuleName">xyz</Set>
+         <Set name="loginModuleName">ee10-xyz</Set>
        </New>
      </Set>
     </New>

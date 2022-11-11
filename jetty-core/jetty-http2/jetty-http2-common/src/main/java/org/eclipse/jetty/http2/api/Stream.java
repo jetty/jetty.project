@@ -218,13 +218,13 @@ public interface Stream
     /**
      * @param idleTimeout the stream idle timeout
      * @see #getIdleTimeout()
-     * @see Stream.Listener#onIdleTimeout(Stream, Throwable)
+     * @see Stream.Listener#onIdleTimeout(Stream, Throwable, Promise)
      */
     public void setIdleTimeout(long idleTimeout);
 
     /**
      * <p>Demands more {@code DATA} frames for this stream.</p>
-     * Calling this method causes {@link Listener#onDataAvailable(Stream)}
+     * <p>Calling this method causes {@link Listener#onDataAvailable(Stream)}
      * to be invoked, possibly at a later time, when the stream has data
      * to be read, but also when the stream has reached EOF.</p>
      * <p>This method is idempotent: calling it when there already is an
@@ -364,14 +364,14 @@ public interface Stream
         /**
          * <p>Callback method invoked when the stream exceeds its idle timeout.</p>
          *
-         * @param stream the stream
-         * @param x the timeout failure
-         * @return true to reset the stream, false to ignore the idle timeout
+         * @param stream  the stream
+         * @param x       the timeout failure
+         * @param promise the promise to complete
          * @see #getIdleTimeout()
          */
-        public default boolean onIdleTimeout(Stream stream, Throwable x)
+        public default void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
         {
-            return true;
+            promise.succeeded(true);
         }
 
         /**

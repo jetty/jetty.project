@@ -525,6 +525,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>jetty-fcgi-proxy</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>jetty-fcgi-server</artifactId>
       <optional>true</optional>
     </dependency>

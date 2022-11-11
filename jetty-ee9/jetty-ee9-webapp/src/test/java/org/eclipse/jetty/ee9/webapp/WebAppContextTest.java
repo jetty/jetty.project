@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -49,7 +50,9 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -233,8 +236,8 @@ public class WebAppContextTest
         server.start();
 
         ServletContext ctx = context.getServletContext();
-        assertNotNull(ctx.getRealPath("/doesnotexist"));
-        assertNotNull(ctx.getRealPath("/doesnotexist/"));
+        assertNull(ctx.getRealPath("/doesnotexist"));
+        assertNull(ctx.getRealPath("/doesnotexist/"));
     }
 
     /**
@@ -406,8 +409,10 @@ public class WebAppContextTest
         handlers.addHandler(contexts);
 
         WebAppContext context = new WebAppContext();
-        Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
+        Path testWebapp = MavenPaths.findTestResourceDir("webapp");
+        Resource testWebappResource = context.getResourceFactory().newResource(testWebapp);
+        assertTrue(Resources.isReadableDirectory(testWebappResource));
+        context.setBaseResource(testWebappResource);
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -417,7 +422,12 @@ public class WebAppContextTest
 
         server.start();
 
-        String rawResponse = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
+        String rawResponse = connector.getResponse("""
+            GET http://localhost:8080 HTTP/1.1\r
+            Host: localhost:8080\r
+            Connection: close\r
+            \r
+            """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response OK", response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -560,7 +570,7 @@ public class WebAppContextTest
     {
         List<Arguments> references = new ArrayList<>();
 
-        Path extLibs = MavenTestingUtils.getTargetPath("test-classes/ext");
+        Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
 
         // Absolute reference with trailing slash
@@ -575,7 +585,7 @@ public class WebAppContextTest
         // This will be in the String form similar to "src/test/resources/ext/" (with trailing slash)
         references.add(Arguments.of(relativeExtLibsDir + File.separator));
 
-        // This will be in the String form similar to "src/test/resources/ext/" (without trailing slash)
+        // This will be in the String form similar to "src/test/resources/ext" (without trailing slash)
         references.add(Arguments.of(relativeExtLibsDir));
 
         return references.stream();
@@ -592,7 +602,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path warPath = MavenTestingUtils.getTargetPath("test-classes/wars/dump.war");
+        Path warPath = MavenPaths.findTestResourceFile("wars/dump.war");
         context.setBaseResource(context.getResourceFactory().newResource(warPath));
 
         context.setExtraClasspath(extraClassPathReference);
@@ -609,7 +619,7 @@ public class WebAppContextTest
         WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
         URL[] urls = webAppClassLoader.getURLs();
         assertThat("URLs", urls.length, is(1));
-        Path extLibs = MavenTestingUtils.getTargetPath("test-classes/ext");
+        Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
     }

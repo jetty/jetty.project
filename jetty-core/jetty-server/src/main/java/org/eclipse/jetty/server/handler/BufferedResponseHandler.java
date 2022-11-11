@@ -129,7 +129,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         if (processor == null)
             return null;
 
-        final String path = request.getPathInContext();
+        final String path = Request.getPathInContext(request);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle {} in {}", this, request, request.getContext());

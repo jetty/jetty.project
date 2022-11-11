@@ -82,6 +82,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
@@ -632,7 +633,20 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      */
     public void setKeyStorePath(String keyStorePath)
     {
-        _keyStoreResource = ResourceFactory.of(this).newResource(keyStorePath);
+        if (StringUtil.isBlank(keyStorePath))
+        {
+            // allow user to unset variable
+            _keyStoreResource = null;
+            return;
+        }
+
+        Resource res = ResourceFactory.of(this).newResource(keyStorePath);
+        if (!Resources.isReadableFile(res))
+        {
+            _keyStoreResource = null;
+            throw new IllegalArgumentException("KeyStore Path not accessible: " + keyStorePath);
+        }
+        _keyStoreResource = res;
     }
 
     /**
@@ -703,7 +717,20 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      */
     public void setTrustStorePath(String trustStorePath)
     {
-        _trustStoreResource = StringUtil.isEmpty(trustStorePath) ? null : ResourceFactory.of(this).newResource(trustStorePath);
+        if (StringUtil.isBlank(trustStorePath))
+        {
+            // allow user to unset variable
+            _trustStoreResource = null;
+            return;
+        }
+
+        Resource res = ResourceFactory.of(this).newResource(trustStorePath);
+        if (!Resources.isReadableFile(res))
+        {
+            _trustStoreResource = null;
+            throw new IllegalArgumentException("TrustStore Path not accessible: " + trustStorePath);
+        }
+        _trustStoreResource = res;
     }
 
     /**

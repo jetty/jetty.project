@@ -14,6 +14,7 @@
 package org.eclipse.jetty.test.keystore;
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -54,12 +55,12 @@ public class KeystoreGeneratorTest
     }
 
     @BeforeEach
-    public void before() throws Exception
+    public void before(WorkDir workDir) throws Exception
     {
         // Generate a test keystore.
         String password = "myKeystorePassword";
-        File targetTestingDir = MavenTestingUtils.getTargetTestingDir();
-        File myPassword = KeystoreGenerator.generateTestKeystore(targetTestingDir.getAbsolutePath(), password);
+        Path outputFile = workDir.getEmptyPathDir().resolve("keystore-test.p12");
+        File myPassword = KeystoreGenerator.generateTestKeystore(outputFile.toString(), password);
         assertTrue(myPassword.exists());
 
         // Configure the SslContextFactory and HttpConnectionFactory to use the keystore.
@@ -80,7 +81,7 @@ public class KeystoreGeneratorTest
         _server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, BufferUtil.toBuffer("success"), callback);

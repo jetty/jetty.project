@@ -71,7 +71,7 @@ jobs:
           # queries: security-extended,security-and-quality
           
       - name: Set up Maven
-        uses: stCarolas/setup-maven@v4
+        uses: stCarolas/setup-maven@v.4.5
         with:
           maven-version: 3.8.6   
 
@@ -80,7 +80,7 @@ jobs:
           mvn -e -B -V org.apache.maven.plugins:maven-wrapper-plugin:3.1.0:wrapper "-Dmaven=3.8.6"
 
       - name: Clean install dependencies and build
-        run: ./mvnw clean install -DskipTests -V -B
+        run: mvn clean install -DskipTests -B -V
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun

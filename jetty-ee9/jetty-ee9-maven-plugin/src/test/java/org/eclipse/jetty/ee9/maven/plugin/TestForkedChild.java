@@ -32,7 +32,6 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test the JettyForkedChild class, which
@@ -81,7 +81,7 @@ public class TestForkedChild
                 MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
-                webapp.setBaseResource(ResourceFactory.root().newResource(baseDir.toPath()));
+                webapp.setBaseResourceAsPath(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[0]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing
@@ -98,6 +98,7 @@ public class TestForkedChild
     public void setUp()
     {
         baseDir = MavenTestingUtils.getTargetFile("test-classes/root");
+        assertTrue(baseDir.exists());
         testDir = MavenTestingUtils.getTargetTestingDir("forkedChild");
         FS.ensureEmpty(testDir);
         tmpDir = new File(testDir, "tmp");

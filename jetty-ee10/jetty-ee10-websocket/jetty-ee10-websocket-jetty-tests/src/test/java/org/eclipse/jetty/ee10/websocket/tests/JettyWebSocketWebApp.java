@@ -54,7 +54,7 @@ public class JettyWebSocketWebApp extends WebAppContext
 
         // Configure the WebAppContext.
         setContextPath("/" + contextName);
-        setBaseResource(contextDir);
+        setBaseResourceAsPath(contextDir);
         addConfiguration(new JettyWebSocketConfiguration());
     }
 

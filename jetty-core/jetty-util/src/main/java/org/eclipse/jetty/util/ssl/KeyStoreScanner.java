@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,18 +45,24 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
 
     public KeyStoreScanner(SslContextFactory sslContextFactory)
     {
+        this(sslContextFactory, true);
+    }
+
+    public KeyStoreScanner(SslContextFactory sslContextFactory, boolean followLinks)
+    {
         this.sslContextFactory = sslContextFactory;
         Resource keystoreResource = sslContextFactory.getKeyStoreResource();
-        Path monitoredFile = keystoreResource.getPath();
-        if (monitoredFile == null || !Files.exists(monitoredFile))
+        if (!keystoreResource.exists())
             throw new IllegalArgumentException("keystore file does not exist");
-        if (Files.isDirectory(monitoredFile))
+        if (keystoreResource.isDirectory())
             throw new IllegalArgumentException("expected keystore file not directory");
 
-        // Use real location of keystore (if different), so that change monitoring can work properly
-        URI targetURI = keystoreResource.getTargetURI();
-        if (targetURI != null)
-            monitoredFile = Paths.get(targetURI);
+        Path monitoredFile = keystoreResource.getPath();
+        if (followLinks && keystoreResource.isAlias())
+        {
+            // This resource has an alias, so monitor the target of the alias.
+            monitoredFile = Paths.get(keystoreResource.getRealURI());
+        }
 
         keystoreFile = monitoredFile;
         if (LOG.isDebugEnabled())
@@ -67,7 +72,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (!Files.exists(parentFile) || !Files.isDirectory(parentFile))
             throw new IllegalArgumentException("error obtaining keystore dir");
 
-        _scanner = new Scanner();
+        _scanner = new Scanner(null, followLinks);
         _scanner.addDirectory(parentFile);
         _scanner.setScanInterval(1);
         _scanner.setReportDirs(false);

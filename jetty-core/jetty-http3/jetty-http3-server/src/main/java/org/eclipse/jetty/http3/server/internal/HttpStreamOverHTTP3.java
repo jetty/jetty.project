@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -33,7 +33,6 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -475,29 +474,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return committed;
     }
 
-    @Override
-    public boolean isComplete()
-    {
-        // TODO
-        return false;
-    }
-
     public boolean isIdle()
     {
         // TODO: is this necessary?
         return true;
-    }
-
-    @Override
-    public void setUpgradeConnection(Connection connection)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Connection upgrade()
-    {
-        return null;
     }
 
     @Override
@@ -523,12 +503,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
     }
 
-    public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)
+    public void onIdleTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
     {
         Runnable runnable = httpChannel.onFailure(failure);
-        if (runnable != null)
-            consumer.accept(runnable);
-        return !httpChannel.isRequestHandled();
+        boolean idle = !httpChannel.isRequestHandled();
+        consumer.accept(runnable, idle);
     }
 
     public Runnable onFailure(Throwable failure)

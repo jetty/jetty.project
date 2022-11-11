@@ -67,6 +67,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.pathmap.MatchedPath;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
@@ -121,6 +123,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     private final HttpInput _httpInput;
     private final String _pathInContext;
     private final ServletChannel _servletChannel;
+    private final PathSpec _pathSpec;
+    final MatchedPath _matchedPath;
     private ServletContextResponse _response;
     private Charset _queryEncoding;
     private HttpFields _trailers;
@@ -130,14 +134,23 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         ServletChannel servletChannel,
         Request request,
         String pathInContext,
-        ServletHandler.MappedServlet mappedServlet)
+        ServletHandler.MappedServlet mappedServlet,
+        PathSpec pathSpec,
+        MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request, pathInContext);
+        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
         _httpInput = new HttpInput(_servletChannel); // TODO recycle
         _pathInContext = pathInContext;
+        _pathSpec = pathSpec;
+        _matchedPath = matchedPath;
+    }
+
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override
@@ -344,6 +357,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         private Authentication _authentication;
         private String _method;
         private ServletMultiPartFormData.Parts _parts;
+        private ServletPathMapping _servletPathMapping;
 
         public static Session getSession(HttpSession httpSession)
         {
@@ -535,7 +549,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public String getPathInfo()
         {
-            return ServletContextRequest.this._mappedServlet.getServletPathMapping(getRequest().getPathInContext()).getPathInfo();
+            return ServletContextRequest.this._matchedPath.getPathInfo();
         }
 
         @Override
@@ -623,7 +637,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public String getServletPath()
         {
-            return ServletContextRequest.this._mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+            return ServletContextRequest.this._matchedPath.getPathMatch();
         }
 
         @Override
@@ -1142,16 +1156,22 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
             if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
             {
-                final ServletInputStream in = getInputStream();
+                ServletInputStream in = getInputStream();
                 _readerEncoding = encoding;
                 _reader = new BufferedReader(new InputStreamReader(in, encoding))
                 {
                     @Override
                     public void close() throws IOException
                     {
+                        // Do not call super to avoid marking this reader as closed,
+                        // but do close the ServletInputStream that can be reopened.
                         in.close();
                     }
                 };
+            }
+            else if (_servletChannel.isExpecting100Continue())
+            {
+                _servletChannel.continue100(_httpInput.available());
             }
             _inputState = INPUT_READER;
             return _reader;

@@ -15,6 +15,7 @@
   <modules>
     <module>jetty-fcgi-client</module>
     <module>jetty-fcgi-server</module>
+    <module>jetty-fcgi-proxy</module>
   </modules>
 
   <dependencies>
