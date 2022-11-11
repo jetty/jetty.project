@@ -22,7 +22,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -34,8 +33,6 @@ import java.util.List;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -47,9 +44,13 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Resource implements Iterable<Resource>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
+    private static final Path CURRENT_WORKING_DIR;
+
+    static
+    {
+        CURRENT_WORKING_DIR = Path.of(System.getProperty("user.dir"));
+    }
 
     public static String dump(Resource resource)
     {
@@ -78,19 +79,18 @@ public abstract class Resource implements Iterable<Resource>
                     uri = new URI("file", uri.toString(), null);
                 else
                     // otherwise resolve against the current directory
-                    uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
+                    uri = CURRENT_WORKING_DIR.toUri().resolve(uri);
 
                 // Correct any `file:/path` to `file:///path` mistakes
                 uri = URIUtil.correctFileURI(uri);
             }
 
-            // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
-            if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-                return PathResource.of(uri);
-
-            return MountedPathResource.of(uri);
+            ResourceFactory resourceFactory = ResourceFactory.byScheme(uri.getScheme());
+            if (resourceFactory == null)
+                throw new IllegalArgumentException("URI scheme not supported: " + uri);
+            return resourceFactory.newResource(uri);
         }
-        catch (URISyntaxException | ProviderNotFoundException | IOException ex)
+        catch (URISyntaxException | ProviderNotFoundException ex)
         {
             throw new IllegalArgumentException(ex);
         }

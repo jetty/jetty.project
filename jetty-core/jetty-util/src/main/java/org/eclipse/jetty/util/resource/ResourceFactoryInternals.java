@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -29,6 +30,20 @@ import org.slf4j.LoggerFactory;
 class ResourceFactoryInternals
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceFactoryInternals.class);
+
+    static final Index.Mutable<ResourceFactory> RESOURCE_FACTORIES = new Index.Builder<ResourceFactory>()
+        .caseSensitive(false)
+        .mutable()
+        .build();
+
+    static
+    {
+        // The default resource factories
+        RESOURCE_FACTORIES.put("jar", new MountedPathResourceFactory());
+        PathResourceFactory pathResourceFactory = new PathResourceFactory();
+        RESOURCE_FACTORIES.put("file", pathResourceFactory);
+        RESOURCE_FACTORIES.put("jrt", pathResourceFactory);
+    }
 
     static ResourceFactory ROOT = new ResourceFactory()
     {

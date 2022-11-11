@@ -104,8 +104,8 @@ public class FileSystemPool implements Dumpable
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-            throw new IllegalArgumentException("not an allowed scheme: " + uri);
+        if (!uri.getScheme().equalsIgnoreCase("jar"))
+            throw new IllegalArgumentException("not an supported scheme: " + uri);
 
         FileSystem fileSystem = null;
         try (AutoLock ignore = poolLock.lock())
