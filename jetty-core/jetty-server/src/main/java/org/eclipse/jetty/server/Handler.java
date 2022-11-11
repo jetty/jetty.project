@@ -19,8 +19,10 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -694,11 +696,17 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     }
 
     /**
-     * A Handler Wrapper that conditionally applies the wrapped handler(s).
+     * <p>A Handler Wrapper that conditionally applies the next handler in the wrapped handler
+     * chain. The condition is determined by a lists of mandatory and non-mandatory {@link Predicate<Request>}s.
+     * A request must pass all mandatory predicates and at least one of any non -mandatory predicates. </p>
+     * <p>If the predicates do not match a request, then either the {@link #handle(Request)} method
+     * returns null; or if {@link #isSkipNext()} is true, then handling is continued by skipping
+     * just the next handler in the chain.</p>
      */
     class Conditional extends Wrapper
     {
-        private final List<Predicate<Request>> _conditions = new ArrayList<>();
+        private final List<Predicate<Request>> _mandatory = new ArrayList<>();
+        private final List<Predicate<Request>> _nonMandatory = new ArrayList<>();
         private final boolean _skipNext;
 
         public Conditional()
@@ -708,46 +716,27 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
         public Conditional(@Name("skipNext") boolean skipNext)
         {
-            this(skipNext, null);
-        }
-
-        public Conditional(List<Predicate<Request>> conditions)
-        {
-            this(false, conditions);
-        }
-
-        public Conditional(@Name("skipNext") boolean skipNext, List<Predicate<Request>> conditions)
-        {
             _skipNext = skipNext;
-            if (conditions != null)
-                setConditions(conditions);
         }
 
-        public void setConditions(List<Predicate<Request>> conditions)
+        public void setMandatory(List<Predicate<Request>> conditions)
         {
             if (isStarted())
                 throw new IllegalStateException(getState());
-            _conditions.clear();
-            _conditions.addAll(conditions);
+            _mandatory.clear();
+            _mandatory.addAll(conditions);
         }
 
-        public List<Predicate<Request>> getConditions()
+        public List<Predicate<Request>> getMandatory()
         {
-            return Collections.unmodifiableList(_conditions);
+            return Collections.unmodifiableList(_mandatory);
         }
 
-        public void add(Predicate<Request> condition)
-        {
-            if (isStarted())
-                throw new IllegalStateException(getState());
-            _conditions.add(condition);
-        }
-
-        public boolean remove(Predicate<Request> condition)
+        public void addMandatory(Predicate<Request> condition)
         {
             if (isStarted())
                 throw new IllegalStateException(getState());
-            return _conditions.remove(condition);
+            _mandatory.add(condition);
         }
 
         public boolean isSkipNext()
@@ -758,7 +747,8 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
-            for (Predicate<Request> p : _conditions)
+            // Must pass all mandatory predicates
+            for (Predicate<Request> p : _mandatory)
             {
                 if (!p.test(request))
                 {
@@ -768,7 +758,75 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
                     return null;
                 }
             }
-            return super.handle(request);
+
+            // If no non mandatory, then we pass
+            if (_nonMandatory.isEmpty())
+                return super.handle(request);
+
+            // must pass at least one of any non-mandatory predicates
+            for (Predicate<Request> p : _nonMandatory)
+            {
+                if (p.test(request))
+                    return super.handle(request);
+            }
+
+            // fail to pass
+            Handler next = getHandler();
+            if (_skipNext && next instanceof Wrapper wrapper && wrapper.getHandler() != null)
+                return wrapper.getHandler().handle(request);
+            return null;
+        }
+    }
+
+    class MethodMatcher implements Predicate<Request>
+    {
+        private final IncludeExclude<String> _methods;
+
+        public MethodMatcher()
+        {
+            this(new IncludeExclude<>());
+        }
+
+        public MethodMatcher(IncludeExclude<String> methods)
+        {
+            _methods = methods;
+        }
+
+        public IncludeExclude<String> getMethods()
+        {
+            return _methods;
+        }
+
+        @Override
+        public boolean test(Request request)
+        {
+            return _methods.test(request.getMethod());
+        }
+    }
+
+    class PathMatcher implements Predicate<Request>
+    {
+        private final IncludeExclude<String> _paths;
+
+        public PathMatcher()
+        {
+            this(new IncludeExclude<>(PathSpecSet.class));
+        }
+
+        public PathMatcher(IncludeExclude<String> paths)
+        {
+            _paths = paths;
+        }
+
+        public IncludeExclude<String> getPaths()
+        {
+            return _paths;
+        }
+
+        @Override
+        public boolean test(Request request)
+        {
+            return _paths.test(Request.getPathInContext(request));
         }
     }
 }
