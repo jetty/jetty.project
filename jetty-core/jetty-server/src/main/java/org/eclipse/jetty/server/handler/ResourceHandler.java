@@ -79,8 +79,7 @@ public class ResourceHandler extends Handler.Wrapper
             _mimeTypes = new MimeTypes();
 
         _byteBufferPool = getByteBufferPool(context);
-        if (getHttpContentFactory() == null)
-            _resourceService.setHttpContentFactory(newHttpContentFactory());
+        _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
         if (_resourceService.getStylesheet() == null)
             setStylesheet(getServer().getDefaultStyleSheet());
