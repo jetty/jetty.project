@@ -63,9 +63,10 @@ public class HTTP2ClientSession extends HTTP2Session
             else
             {
                 stream.process(frame, Callback.NOOP);
-                if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                    removeStream(stream);
+                boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(stream, frame);
+                if (closed)
+                    removeStream(stream);
             }
         }
         else
