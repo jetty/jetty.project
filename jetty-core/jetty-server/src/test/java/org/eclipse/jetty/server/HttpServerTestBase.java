@@ -36,12 +36,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
@@ -51,6 +54,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -1867,6 +1871,208 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(response, containsString("Hello"));
 
             Awaitility.await().atMost(5, TimeUnit.SECONDS).until(result::get, equalTo("value"));
+        }
+    }
+
+    @Test
+    public void testReuseRedirectProcessor() throws Exception
+    {
+        Handler.Wrapper reuse = new Handler.Wrapper()
+        {
+            private final AtomicReference<Request.Processor> _processor = new AtomicReference<>();
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                Request.Processor processor = _processor.get();
+                if (processor == null)
+                {
+                    processor = super.handle(request);
+                    _processor.set(processor);
+                }
+                return processor;
+            }
+        };
+        ContextHandler contextA = new ContextHandler("/a");
+        ContextHandler contextB = new ContextHandler("/b");
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        contexts.setHandlers(contextA, contextB);
+        reuse.setHandler(contexts);
+
+        // Context A reprocesses in context B
+        contextA.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                BRequest bRequest = new BRequest(request);
+                Request.Processor processor = contextB.handle(bRequest);
+                return new Request.ReWrappingProcessor<>(processor, bRequest)
+                {
+                    @Override
+                    protected BRequest wrap(Request request)
+                    {
+                        return new BRequest(request);
+                    }
+                };
+            }
+        });
+
+        // Context B dumps the request
+        contextB.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request ignored) throws Exception
+            {
+                return (request, response, callback) ->
+                {
+                    response.setStatus(200);
+                    Content.Sink.write(response, true, """
+                            contextPath = %s
+                            pathInContext = %s
+                            """.formatted(request.getContext().getContextPath(),
+                            Request.getPathInContext(request)),
+                        callback);
+                };
+            }
+        });
+
+        startServer(reuse);
+
+        // First request uses new processor normally
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                GET /a/hello HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("contextPath = /b"));
+            assertThat(response, containsString("pathInContext = /hello"));
+        }
+
+        // Next request re-uses processor from first request
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                GET /a/gidday HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("contextPath = /b"));
+            assertThat(response, containsString("pathInContext = /gidday"));
+        }
+    }
+
+    private static class BRequest extends Request.Wrapper
+    {
+        private final HttpURI _uri;
+
+        public BRequest(Request request)
+        {
+            super(request);
+            _uri = HttpURI.build(request.getHttpURI())
+                .path(URIUtil.addPaths("/b", Request.getPathInContext(request)))
+                .asImmutable();
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return _uri;
+        }
+    }
+
+    @Test
+    public void testReentrantProcessor() throws Exception
+    {
+        ContextHandler context = new ContextHandler("/ctx");
+
+        Handler.Wrapper reenter = new Handler.Wrapper()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                Request.Processor processor = super.handle(request);
+                return new Request.Processor()
+                {
+                    @Override
+                    public void process(Request request, Response response, Callback callback) throws Exception
+                    {
+                        if (request.getAttribute("reentered") == null)
+                        {
+                            request.setAttribute("reentered", "true");
+                            _server.handle(request).process(request, response, callback);
+                            return;
+                        }
+
+                        processor.process(request, response, callback);
+                    }
+                };
+            }
+        };
+        context.setHandler(reenter);
+        reenter.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request ignored) throws Exception
+            {
+                return (request, response, callback) ->
+                {
+                    response.setStatus(200);
+                    Content.Sink.write(response, true, """
+                            contextPath = %s
+                            pathInContext = %s
+                            reentered = %s
+                            """.formatted(request.getContext().getContextPath(),
+                            Request.getPathInContext(request),
+                            request.getAttribute("reentered")),
+                        callback);
+                };
+            }
+        });
+
+        startServer(context);
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                GET /ctx/hello HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("contextPath = /ctx"));
+            assertThat(response, containsString("pathInContext = /hello"));
+            assertThat(response, containsString("reentered = true"));
         }
     }
 }
