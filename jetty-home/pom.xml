@@ -50,6 +50,7 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -538,6 +539,7 @@
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>javadoc</artifactId>
                   <version>${project.version}</version>
+                  <classifier>javadoc</classifier>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
