@@ -252,14 +252,18 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
       <scope>test</scope>
       <type>zip</type>
       <exclusions>
-        <!-- eliminating dependencies of jetty-home that are being pulled in when in reactor
-             for the jetty build itself.  This can cause accidental cyclic references. -->
+        &lt;!&ndash; eliminating dependencies of jetty-home that are being pulled in when in reactor
+             for the jetty build itself.  This can cause accidental cyclic references. &ndash;&gt;
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>javadoc</artifactId>
+        </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty</groupId>
           <artifactId>jetty-alpn-conscrypt-server</artifactId>
@@ -365,7 +369,7 @@
           <artifactId>jboss-logging</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>

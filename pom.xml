@@ -245,6 +245,7 @@
     <module>documentation</module>
     <module>jetty-keystore</module>
     <module>jetty-unixdomain-server</module>
+    <module>javadoc</module>
   </modules>
 
   <build>
@@ -2206,9 +2207,6 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
-      <modules>
-        <module>javadoc</module>
-      </modules>
       <build>
         <plugins>
           <plugin>
