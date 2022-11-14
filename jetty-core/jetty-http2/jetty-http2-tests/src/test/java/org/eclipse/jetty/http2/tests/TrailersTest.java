@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -253,6 +254,7 @@ public class TrailersTest extends AbstractTest
     }
 
     @Test
+    @Tag("flaky") // see #8896
     public void testTrailersSentByServerShouldNotSendEmptyDataFrame() throws Exception
     {
         String trailerName = "X-Trailer";
