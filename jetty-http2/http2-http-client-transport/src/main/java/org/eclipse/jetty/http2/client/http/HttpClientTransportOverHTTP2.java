@@ -225,11 +225,21 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         }
 
         @Override
+        public void onGoAway(Session session, GoAwayFrame frame)
+        {
+            if (failConnectionPromise(new ClosedChannelException()))
+                return;
+            HttpConnectionOverHTTP2 connection = getConnection();
+            if (connection != null)
+                connection.remove();
+        }
+
+        @Override
         public void onClose(Session session, GoAwayFrame frame)
         {
             if (failConnectionPromise(new ClosedChannelException()))
                 return;
-            HttpConnectionOverHTTP2 connection = this.connection.getReference();
+            HttpConnectionOverHTTP2 connection = getConnection();
             if (connection != null)
                 HttpClientTransportOverHTTP2.this.onClose(connection, frame);
         }
@@ -240,7 +250,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             long idleTimeout = ((HTTP2Session)session).getEndPoint().getIdleTimeout();
             if (failConnectionPromise(new TimeoutException("Idle timeout expired: " + idleTimeout + " ms")))
                 return true;
-            HttpConnectionOverHTTP2 connection = this.connection.getReference();
+            HttpConnectionOverHTTP2 connection = getConnection();
             if (connection != null)
                 return connection.onIdleTimeout(idleTimeout);
             return true;
@@ -251,7 +261,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         {
             if (failConnectionPromise(failure))
                 return;
-            HttpConnectionOverHTTP2 connection = this.connection.getReference();
+            HttpConnectionOverHTTP2 connection = getConnection();
             if (connection != null)
                 connection.close(failure);
         }
@@ -262,6 +272,11 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             if (result)
                 connectionPromise().failed(failure);
             return result;
+        }
+
+        private HttpConnectionOverHTTP2 getConnection()
+        {
+            return connection.getReference();
         }
     }
 }

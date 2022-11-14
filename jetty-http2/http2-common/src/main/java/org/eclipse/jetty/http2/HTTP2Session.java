@@ -2036,14 +2036,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private boolean newRemoteStream(int streamId)
         {
+            boolean created = false;
             try (Locker.Lock l = lock.lock())
             {
                 switch (closed)
                 {
                     case NOT_CLOSED:
                     {
-                        HTTP2Session.this.onStreamCreated(streamId);
-                        return true;
+                        created = true;
+                        break;
                     }
                     case LOCALLY_CLOSED:
                     {
@@ -2051,15 +2052,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         if (streamId <= goAwaySent.getLastStreamId())
                         {
                             // Allow creation of streams that may have been in-flight.
-                            HTTP2Session.this.onStreamCreated(streamId);
-                            return true;
+                            created = true;
                         }
-                        return false;
+                        break;
                     }
                     default:
-                        return false;
+                        break;
                 }
             }
+            if (created)
+                HTTP2Session.this.onStreamCreated(streamId);
+            return created;
         }
 
         private void push(PushPromiseFrame frame, Promise<Stream> promise, Stream.Listener listener)
@@ -2108,14 +2111,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private int reserveSlot(Slot slot, int streamId, Consumer<Throwable> fail)
         {
             Throwable failure = null;
+            boolean reserved = false;
             try (Locker.Lock l = lock.lock())
             {
+                // SPEC: cannot create new streams after receiving a GOAWAY.
                 if (closed == CloseState.NOT_CLOSED)
                 {
                     if (streamId <= 0)
                     {
                         streamId = localStreamIds.getAndAdd(2);
-                        HTTP2Session.this.onStreamCreated(streamId);
+                        reserved = true;
                     }
                     slots.offer(slot);
                 }
@@ -2127,9 +2132,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
             }
             if (failure == null)
+            {
+                if (reserved)
+                    HTTP2Session.this.onStreamCreated(streamId);
                 return streamId;
-            fail.accept(failure);
-            return 0;
+            }
+            else
+            {
+                fail.accept(failure);
+                return 0;
+            }
         }
 
         private void freeSlot(Slot slot, int streamId)
