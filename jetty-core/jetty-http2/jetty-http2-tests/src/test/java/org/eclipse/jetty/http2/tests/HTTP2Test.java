@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -55,8 +56,10 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Graceful;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -513,7 +516,8 @@ public class HTTP2Test extends AbstractTest
             }
         });
         assertTrue(exchangeLatch4.await(5, TimeUnit.SECONDS));
-        assertEquals(1, session.getStreams().size());
+        // The stream is removed from the session just after returning from onHeaders(), so wait a little bit.
+        await().atMost(Duration.ofSeconds(1)).until(() -> session.getStreams().size(), is(1));
 
         // End the first stream.
         stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), new Callback()
