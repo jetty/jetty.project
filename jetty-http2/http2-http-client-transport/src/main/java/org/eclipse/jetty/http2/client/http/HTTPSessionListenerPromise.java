@@ -82,11 +82,21 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     }
 
     @Override
+    public void onGoAway(Session session, GoAwayFrame frame)
+    {
+        if (failConnectionPromise(new ClosedChannelException()))
+            return;
+        HttpConnectionOverHTTP2 connection = getConnection();
+        if (connection != null)
+            connection.remove();
+    }
+
+    @Override
     public void onClose(Session session, GoAwayFrame frame)
     {
         if (failConnectionPromise(new ClosedChannelException()))
             return;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
+        HttpConnectionOverHTTP2 connection = getConnection();
         if (connection != null)
             onClose(connection, frame);
     }
@@ -103,7 +113,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
         TimeoutException failure = new TimeoutException("Idle timeout expired: " + idleTimeout + " ms");
         if (failConnectionPromise(failure))
             return true;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
+        HttpConnectionOverHTTP2 connection = getConnection();
         if (connection != null)
             return connection.onIdleTimeout(idleTimeout, failure);
         return true;
@@ -114,7 +124,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     {
         if (failConnectionPromise(failure))
             return;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
+        HttpConnectionOverHTTP2 connection = getConnection();
         if (connection != null)
             connection.close(failure);
     }
@@ -125,5 +135,10 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
         if (result)
             httpConnectionPromise().failed(failure);
         return result;
+    }
+
+    private HttpConnectionOverHTTP2 getConnection()
+    {
+        return connection.getReference();
     }
 }
