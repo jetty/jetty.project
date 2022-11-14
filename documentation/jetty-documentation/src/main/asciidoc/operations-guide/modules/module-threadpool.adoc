@@ -16,15 +16,15 @@
 
 The `threadpool` module allows you to configure the server-wide thread pool.
 
-The thread pool creates threads on demand up to `maxThreads`, and idle them out if they are not used.
+The thread pool creates threads on demand up to `maxThreads`, and idles them out if they are not used.
 
 Since Jetty uses the thread pool internally to execute critical tasks, it is not recommended to constrain the thread pool to small values of `maxThreads` with the purpose of limiting HTTP request concurrency, as this could very likely cause a server lockup when Jetty needs to run a critical task but there are no threads available.
 Start with the default value of `maxThreads`, and tune for larger values if needed.
 
-The module file is `$JETTY_HOME/modules/threadpool.mod`:
+The module properties to configure the thread pool are:
 
 ----
-include::{JETTY_HOME}/modules/threadpool.mod[]
+include::{JETTY_HOME}/modules/threadpool.mod[tags=documentation]
 ----
 
 Among the configurable properties, the most relevant are:
@@ -37,3 +37,11 @@ The time, in milliseconds, after which an idle thread is released from the pool 
 
 `jetty.threadPool.maxThreads`::
 The max number of threads pooled by the thread pool -- defaults to 200.
+
+`jetty.threadPool.useVirtualThreads`::
+Whether to enable use of virtual threads, if the runtime supports them.
+Virtual threads are supported as a preview feature since Java 19.
++
+NOTE: To enable preview features, you need to specify the `+--enable-preview+` command line option, see the section about the xref:og-modules-directive-exec[[exec\] directive].
++
+By default, virtual threads are not used even if the runtime support them -- their use should be explicitly enabled.

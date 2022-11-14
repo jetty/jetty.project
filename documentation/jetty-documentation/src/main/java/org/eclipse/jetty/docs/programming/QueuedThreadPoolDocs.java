@@ -11,12 +11,18 @@
 // ========================================================================
 //
 
-[appendix]
-[[pg-arch]]
-== Jetty Architecture
+package org.eclipse.jetty.docs.programming;
 
-include::arch-bean.adoc[]
-include::arch-threads.adoc[]
-include::arch-io.adoc[]
-include::arch-listener.adoc[]
-include::arch-jmx.adoc[]
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+@SuppressWarnings("unused")
+public class QueuedThreadPoolDocs
+{
+    public void virtualThreads()
+    {
+        // tag::virtual-threads[]
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setUseVirtualThreads(true);
+        // end::virtual-threads[]
+    }
+}
