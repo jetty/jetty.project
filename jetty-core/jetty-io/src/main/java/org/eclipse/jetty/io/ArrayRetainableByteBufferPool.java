@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -92,7 +91,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
      */
     public ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, null, null, maxHeapMemory, maxDirectMemory);
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null);
     }
 
     /**
@@ -104,31 +103,10 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
      * @param maxBucketSize the maximum number of ByteBuffers for each bucket
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
-     * @param bucketIndexFor a {@link Function} that takes a capacity and returns a bucket index
-     * @param bucketCapacity a {@link Function} that takes a bucket index and returns a capacity
-     * @deprecated use {@link #ArrayRetainableByteBufferPool(int, int, int, int, IntUnaryOperator, IntUnaryOperator, long, long)}
-     * instead
-     */
-    @Deprecated
-    protected ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory,
-                                            Function<Integer, Integer> bucketIndexFor, Function<Integer, Integer> bucketCapacity)
-    {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, bucketIndexFor::apply, bucketCapacity::apply, maxHeapMemory, maxDirectMemory);
-    }
-
-    /**
-     * Creates a new ArrayRetainableByteBufferPool with the given configuration.
-     *
-     * @param minCapacity the minimum ByteBuffer capacity
-     * @param factor the capacity factor
-     * @param maxCapacity the maximum ByteBuffer capacity
-     * @param maxBucketSize the maximum number of ByteBuffers for each bucket
      * @param bucketIndexFor a {@link IntUnaryOperator} that takes a capacity and returns a bucket index
      * @param bucketCapacity a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
-     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
-     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      */
-    protected ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity, long maxHeapMemory, long maxDirectMemory)
+    protected ArrayRetainableByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
     {
         if (minCapacity <= 0)
             minCapacity = 0;

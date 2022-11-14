@@ -2051,12 +2051,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         private Stream newUpgradeStream(HeadersFrame frame, Stream.Listener listener, Consumer<Throwable> failFn)
         {
-            int streamId;
-            try (AutoLock ignored = lock.lock())
-            {
-                streamId = localStreamIds.getAndAdd(2);
-                HTTP2Session.this.onStreamCreated(streamId);
-            }
+            int streamId = localStreamIds.getAndAdd(2);
+            HTTP2Session.this.onStreamCreated(streamId);
             HTTP2Stream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData(), x ->
             {
                 HTTP2Session.this.onStreamDestroyed(streamId);
@@ -2072,30 +2068,22 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         private boolean newRemoteStream(int streamId)
         {
+            boolean created;
             try (AutoLock ignored = lock.lock())
             {
-                switch (closed)
+                created = switch (closed)
                 {
-                    case NOT_CLOSED:
-                    {
-                        HTTP2Session.this.onStreamCreated(streamId);
-                        return true;
-                    }
-                    case LOCALLY_CLOSED:
-                    {
+                    case NOT_CLOSED -> true;
+                    case LOCALLY_CLOSED ->
                         // SPEC: streams larger than GOAWAY's lastStreamId are dropped.
-                        if (streamId <= goAwaySent.getLastStreamId())
-                        {
-                            // Allow creation of streams that may have been in-flight.
-                            HTTP2Session.this.onStreamCreated(streamId);
-                            return true;
-                        }
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
+                        // Allow creation of streams that may have been in-flight.
+                        streamId <= goAwaySent.getLastStreamId();
+                    default -> false;
+                };
             }
+            if (created)
+                HTTP2Session.this.onStreamCreated(streamId);
+            return created;
         }
 
         private void push(PushPromiseFrame frame, Promise<Stream> promise, Stream.Listener listener)
@@ -2156,14 +2144,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         private int reserveSlot(Slot slot, int streamId, Consumer<Throwable> fail)
         {
             Throwable failure = null;
+            boolean reserved = false;
             try (AutoLock ignored = lock.lock())
             {
+                // SPEC: cannot create new streams after receiving a GOAWAY.
                 if (closed == CloseState.NOT_CLOSED)
                 {
                     if (streamId <= 0)
                     {
                         streamId = localStreamIds.getAndAdd(2);
-                        HTTP2Session.this.onStreamCreated(streamId);
+                        reserved = true;
                     }
                     slots.offer(slot);
                 }
@@ -2175,9 +2165,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 }
             }
             if (failure == null)
+            {
+                if (reserved)
+                    HTTP2Session.this.onStreamCreated(streamId);
                 return streamId;
-            fail.accept(failure);
-            return 0;
+            }
+            else
+            {
+                fail.accept(failure);
+                return 0;
+            }
         }
 
         private void freeSlot(Slot slot, int streamId)

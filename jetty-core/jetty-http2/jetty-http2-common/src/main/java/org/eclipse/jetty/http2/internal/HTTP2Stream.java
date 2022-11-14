@@ -375,9 +375,10 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         // here only handle responses and trailers.
         if (metaData.isResponse() || !metaData.isRequest())
         {
-            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                getSession().removeStream(this);
+            boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
             notifyHeaders(this, frame);
+            if (closed)
+                getSession().removeStream(this);
         }
 
         if (frame.isEndStream())

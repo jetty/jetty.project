@@ -354,37 +354,6 @@ public class ArrayRetainableByteBufferPoolTest
         assertThat(pool.dump(), containsString("]{capacity=4,inuse=3(75%)"));
     }
 
-    /**
-     * A variant of the {@link ArrayRetainableByteBufferPool} that
-     * uses buckets of buffers that increase in size by a power of
-     * 2 (eg 1k, 2k, 4k, 8k, etc.).
-     */
-    public static class ExponentialPool extends ArrayRetainableByteBufferPool
-    {
-        public ExponentialPool()
-        {
-            this(0, -1, Integer.MAX_VALUE);
-        }
-
-        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize)
-        {
-            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
-        }
-
-        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
-        {
-            super(minCapacity,
-                -1,
-                maxCapacity,
-                maxBucketSize,
-                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i,
-                maxHeapMemory,
-                maxDirectMemory
-            );
-        }
-    }
-
     @Test
     public void testEndiannessResetOnRelease()
     {
