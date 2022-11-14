@@ -19,15 +19,43 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ResourceFactoryTest
 {
     @Test
-    public void testCustomUriScheme()
+    public void testCustomUriSchemeNotRegistered()
     {
-        ResourceFactory.addResourceFactory("custom", new CustomResourceFactory());
+        // Try this as a normal String input first.
+        // We are subject to the URIUtil.toURI(String) behaviors here.
+        // Since the `ftp` scheme is not registered, it's not recognized as a supported URI.
+        // This will be treated as a relative path instead. (and the '//' will be compacted)
+        Resource resource = ResourceFactory.root().newResource("ftp://webtide.com/favicon.ico");
+        // Should not find this, as it doesn't exist on the filesystem.
+        assertNull(resource);
+
+        // Now try it as a formal URI object as input.
+        URI uri = URI.create("ftp://webtide.com/favicon.ico");
+        // This is an unsupported URI scheme
+        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
+        assertThat(iae.getMessage(), containsString("URI scheme not supported"));
+    }
+
+    @Test
+    public void testCustomUriSchemeRegistered()
+    {
+        ResourceFactory.registerResourceFactory("custom", new CustomResourceFactory());
+        // Try as a normal String input
         Resource resource = ResourceFactory.root().newResource("custom://foo");
+        assertThat(resource.getURI(), is(URI.create("custom://foo")));
+        assertThat(resource.getName(), is("custom-impl"));
+
+        // Try as a formal URI object as input
+        URI uri = URI.create("custom://foo");
+        resource = ResourceFactory.root().newResource(uri);
         assertThat(resource.getURI(), is(URI.create("custom://foo")));
         assertThat(resource.getName(), is("custom-impl"));
     }

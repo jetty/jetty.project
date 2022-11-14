@@ -236,9 +236,14 @@ public interface ResourceFactory
         return newResource(URIUtil.toJarFileUri(uri));
     }
 
-    static void addResourceFactory(String scheme, ResourceFactory resource)
+    static void registerResourceFactory(String scheme, ResourceFactory resource)
     {
         ResourceFactoryInternals.RESOURCE_FACTORIES.put(scheme, resource);
+    }
+
+    static ResourceFactory unregisterResourceFactory(String scheme)
+    {
+        return ResourceFactoryInternals.RESOURCE_FACTORIES.remove(scheme);
     }
 
     static ResourceFactory byScheme(String scheme)
