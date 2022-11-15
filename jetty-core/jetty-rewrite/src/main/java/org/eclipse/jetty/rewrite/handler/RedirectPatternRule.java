@@ -82,7 +82,7 @@ public class RedirectPatternRule extends PatternRule
         return new RequestProcessor(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback)
+            public void process(Response response, Callback callback)
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());

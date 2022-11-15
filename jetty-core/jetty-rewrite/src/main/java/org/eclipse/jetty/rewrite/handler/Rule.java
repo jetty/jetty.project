@@ -71,9 +71,15 @@ public abstract class Rule
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
+            assert getWrapped() == request;
+            process(response, callback);
+        }
+
+        protected void process(Response response, Callback callback) throws Exception
+        {
             Processor processor = _processor;
             if (processor != null)
-                processor.process(request, response, callback);
+                processor.process(this, response, callback);
         }
 
         /**
@@ -108,7 +114,7 @@ public abstract class Rule
             {
                 if (request == wrapped)
                 {
-                    process(this, wrap(this, response), callback);
+                    process(wrap(this, response), callback);
                     return;
                 }
                 wrapped = wrapped instanceof Request.Wrapper w ? w.getWrapped() : null;
@@ -116,7 +122,7 @@ public abstract class Rule
 
             // We need a new instance of the wrapper
             Request wrapper = wrap(request);
-            process(wrapper, wrap(wrapper, response), callback);
+            process(wrap(wrapper, response), callback);
         }
     }
 

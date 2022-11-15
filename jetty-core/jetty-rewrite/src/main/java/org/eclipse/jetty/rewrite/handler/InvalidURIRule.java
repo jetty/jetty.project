@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -96,7 +95,7 @@ public class InvalidURIRule extends Rule
         return new RequestProcessor(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback)
+            public void process(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))
