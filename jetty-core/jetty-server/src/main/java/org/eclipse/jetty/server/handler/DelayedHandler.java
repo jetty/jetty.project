@@ -57,42 +57,33 @@ public abstract class DelayedHandler extends Handler.Wrapper
             // TODO: add logic to not delay if it's a CONNECT request.
             // TODO: also add logic to not delay if it's a request that expects 100 Continue.
 
-            return new UntilContentProcessor(request, processor);
+            return new UntilContentProcessor(processor);
         }
     }
 
-    private static class UntilContentProcessor implements Request.Processor, Runnable
+    private static class UntilContentProcessor implements Request.Processor
     {
         private final Request.Processor _processor;
-        private final Request _request;
-        private Response _response;
-        private Callback _callback;
 
-        public UntilContentProcessor(Request request, Request.Processor processor)
+        public UntilContentProcessor(Request.Processor processor)
         {
-            _request = request;
             _processor = processor;
         }
 
         @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            _response = response;
-            _callback = callback;
-            _request.demand(this);
-        }
-
-        @Override
-        public void run()
-        {
-            try
+            request.demand(() ->
             {
-                _processor.process(_request, _response, _callback);
-            }
-            catch (Throwable t)
-            {
-                Response.writeError(_request, _response, _callback, t);
-            }
+                try
+                {
+                    _processor.process(request, response, callback);
+                }
+                catch (Throwable t)
+                {
+                    Response.writeError(request, response, callback, t);
+                }
+            });
         }
     }
 
@@ -108,26 +99,26 @@ public abstract class DelayedHandler extends Handler.Wrapper
             if (charset == null)
                 return processor;
 
-            return new UntilFormFieldsProcessor(request, processor);
+            return new UntilFormFieldsProcessor(processor);
         }
     }
 
     private static class UntilFormFieldsProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
     {
-        private final Request _request;
         private final Request.Processor _processor;
+        private Request _request;
         private Response _response;
         private Callback _callback;
 
-        public UntilFormFieldsProcessor(Request request, Request.Processor processor)
+        public UntilFormFieldsProcessor(Request.Processor processor)
         {
             _processor = processor;
-            _request = request;
         }
 
         @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
+            _request = request;
             _response = response;
             _callback = callback;
             FormFields.from(_request).whenComplete(this);
@@ -154,54 +145,61 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
-
-            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-            if (contentType == null)
-                return processor;
-
-            String contentTypeValue = HttpField.valueParameters(contentType, null);
-            if (!MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
-                return processor;
-            String boundary = MultiPart.extractBoundary(contentType);
-            if (boundary == null)
-                return processor;
-
-            return new Processor(request, processor, boundary);
+            return new DelayedMultiPartProcessor(processor);
         }
 
-        private static class Processor implements Request.Processor, Runnable, BiConsumer<MultiPartFormData.Parts, Throwable>
+        private static class DelayedMultiPartProcessor implements Request.Processor
         {
-            private final Request _request;
             private final Request.Processor _processor;
-            private final String _boundary;
-            private Response _response;
-            private Callback _callback;
-            private MultiPartFormData _formData;
 
-            private Processor(Request request, Request.Processor processor, String boundary)
+            private DelayedMultiPartProcessor(Request.Processor processor)
             {
-                _request = request;
                 _processor = processor;
-                _boundary = boundary;
             }
 
             @Override
-            public void process(Request ignored, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
+                String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+                if (contentType != null)
+                {
+                    String contentTypeValue = HttpField.valueParameters(contentType, null);
+                    if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
+                    {
+                        String boundary = MultiPart.extractBoundary(contentType);
+                        if (boundary != null)
+                        {
+                            WaitForFormData formData = new WaitForFormData(_processor, request, response, callback, boundary);
+                            request.setAttribute(MultiPartFormData.class.getName(), formData);
+                            formData.run();
+
+                            if (formData.isDone())
+                                _processor.process(request, response, callback);
+                            else
+                                formData.whenComplete(formData);
+                            return;
+                        }
+                    }
+                }
+
+                _processor.process(request, response, callback);
+            }
+        }
+
+        private static class WaitForFormData extends MultiPartFormData implements Runnable, BiConsumer<MultiPartFormData.Parts, Throwable>
+        {
+            private final Request.Processor _processor;
+            private final Request _request;
+            private final Response _response;
+            private final Callback _callback;
+
+            public WaitForFormData(Request.Processor processor, Request request, Response response, Callback callback, String boundary)
+            {
+                super(boundary);
+                _processor = processor;
+                _request = request;
                 _response = response;
                 _callback = callback;
-
-                String contentType = _request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-                _formData = new MultiPartFormData(_boundary);
-                // TODO: configure _formData.
-                _request.setAttribute(MultiPartFormData.class.getName(), _formData);
-
-                run();
-
-                if (_formData.isDone())
-                    _processor.process(_request, response, callback);
-                else
-                    _formData.whenComplete(this);
             }
 
             @Override
@@ -217,10 +215,10 @@ public abstract class DelayedHandler extends Handler.Wrapper
                     }
                     if (chunk instanceof Content.Chunk.Error error)
                     {
-                        _formData.completeExceptionally(error.getCause());
+                        completeExceptionally(error.getCause());
                         return;
                     }
-                    _formData.parse(chunk);
+                    parse(chunk);
                     chunk.release();
                     if (chunk.isLast())
                         return;
@@ -228,7 +226,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
             }
 
             @Override
-            public void accept(MultiPartFormData.Parts parts, Throwable throwable)
+            public void accept(Parts parts, Throwable throwable)
             {
                 try
                 {
