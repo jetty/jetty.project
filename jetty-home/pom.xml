@@ -521,7 +521,8 @@
                   <groupId>org.eclipse.jetty.documentation</groupId>
                   <artifactId>jetty-documentation</artifactId>
                   <version>${project.version}</version>
-                  <type>jar</type>
+                  <classifier>html</classifier>
+                  <type>zip</type>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${docs-assembly-directory}/docs</outputDirectory>
@@ -925,6 +926,14 @@
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.documentation</groupId>
+      <artifactId>jetty-documentation</artifactId>
+      <version>${project.version}</version>
+      <classifier>html</classifier>
+      <type>zip</type>
       <optional>true</optional>
     </dependency>
     <dependency>
