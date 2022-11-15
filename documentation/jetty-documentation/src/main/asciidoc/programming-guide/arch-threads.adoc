@@ -19,7 +19,7 @@ Writing a performant client or server is difficult, because it should:
 * Scale well with the number of processors.
 * Be efficient at using processor caches to avoid link:https://en.wikipedia.org/wiki/Parallel_slowdown[parallel slowdown].
 * Support multiple network protocols that may have very different requirements; for example, multiplexed protocols such as HTTP/2 introduce new challenges that are not present in non-multiplexed protocols such as HTTP/1.1.
-* Support different application threading models; for example, if a Jetty server invokes server-side application code that is allowed to call blocking APIs, then the Jetty server should not be affected by how long the blocking API call is, and should be able to process other connections or other requests in a timely fashion.
+* Support different application threading models; for example, if a Jetty server invokes server-side application code that is allowed to call blocking APIs, then the Jetty server should not be affected by how long the blocking API call takes, and should be able to process other connections or other requests in a timely fashion.
 
 [[pg-arch-threads-execution-strategy]]
 ==== Execution Strategies
@@ -60,7 +60,9 @@ hide time-axis
 12 is {hidden}
 ----
 
-If the task is a NIO selection event, then this model is the thread-per-selector model which is very CPU core cache efficient, but suffers from the link:http://en.wikipedia.org/wiki/Head-of-line_blocking[head-of-line blocking]: if one of the tasks blocks or runs slowly, then subsequent tasks cannot be produced (and therefore cannot be consumed either) and will pay in latency the cost of running previous, possibly unrelated, tasks.
+If the task is a NIO selection event, then this mode is the thread-per-selector mode which is very CPU core cache efficient, but suffers from the link:http://en.wikipedia.org/wiki/Head-of-line_blocking[head-of-line blocking]: if one of the tasks blocks or runs slowly, then subsequent tasks cannot be produced (and therefore cannot be consumed either) and will pay in latency the cost of running previous, possibly unrelated, tasks.
+
+This mode should only be used if the produced task is known to never block, or if the system tolerates well (or does not care about) head-of-line blocking.
 
 [[pg-arch-threads-execution-strategy-pec]]
 ===== Produce-Execute-Consume
@@ -101,7 +103,7 @@ The `Executor` implementation typically adds the task to a queue, and dequeues t
 
 This mode solves the head-of-line blocking discussed in the xref:pg-arch-threads-execution-strategy-pc[`Produce-Consume` section], but suffers of other issue:
 
-* It is not CPU core cache efficient, as the data available to the producer thread will need to be accessed by another thread that likely won't have that data in its caches.
+* It is not CPU core cache efficient, as the data available to the producer thread will need to be accessed by another thread that likely is going to run on a CPU core that will not have that data in its caches.
 * If the tasks take time to be run, the `Executor` queue may grow indefinitely.
 * A small latency is added to every task: the time it waits in the `Executor` queue.
 
@@ -154,12 +156,12 @@ Differently from `Produce-Execute-Consume`, here production happens on different
 ===== Adaptive Execution Strategy
 The modes of task consumption discussed above are captured by the `org.eclipse.jetty.util.thread.ExecutionStrategy` interface, with an additional implementation that also takes into account the behavior of the task when the task implements `Invocable`.
 
-For example, a task that declares itself as non-blocking could be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block.
+For example, a task that declares itself as non-blocking can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block.
 
 Conversely, a task that declares itself as blocking will stop production, and therefore must be consumed using either the `Produce-Execute-Consume` mode or the `Execute-Produce-Consume` mode.
 Deciding between these two modes depends on whether there is a free thread immediately available to take over production, and this is captured by the `org.eclipse.jetty.util.thread.TryExecutor` interface.
 
-An implementation of `TryExecutor` could be asked whether it can immediately allocate a free thread to run a task, as opposed to a normal `Executor`, that can only queue the task in the hope that there will be a thread in the near future that could run the task.
+An implementation of `TryExecutor` can be asked whether a thread can be immediately and exclusively allocated to run a task, as opposed to a normal `Executor` that can only queue the task in the expectation that there will be a thread available in the near future to run the task.
 
 The concept of task consumption modes, coupled with `Invocable` tasks that expose their behavior, coupled with a `TryExecutor` that guarantees whether production can be immediately taken over are captured by the default Jetty execution strategy, named `org.eclipse.jetty.util.thread.AdaptiveExecutionStrategy`.
 
@@ -182,7 +184,8 @@ These threads are reported by `QueuedThreadPool.leasedThreads` and are not avail
 
 `QueuedThreadPool` can be configured with a `reservedThreads` value.
 This value represents the maximum number of threads that can be reserved and used by the `TryExecutor` implementation.
-
+A negative value for `QueuedThreadPool.reservedThreads` means that the actual value will be heuristically derived from the number of CPU cores and `QueuedThreadPool.maxThreads`.
+A value of zero for `QueuedThreadPool.reservedThreads` means that reserved threads are disabled, and therefore the xref:pg-arch-threads-execution-strategy-epc[Execute-Produce-Consume mode] is never used -- the xref:pg-arch-threads-execution-strategy-pec[Produce-Execute-Consume mode] is always used instead.
 
 [[pg-arch-threads-thread-pool-virtual-threads]]
 ===== Virtual Threads
@@ -198,3 +201,10 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/QueuedThreadPoolDocs.java
 ----
 
 `AdaptiveExecutionStrategy` makes use of this setting when it determines that a task should be run with the xref:pg-arch-threads-execution-strategy-pec[`Produce-Execute-Consume` mode]: rather than submitting the task to `QueuedThreadPool` to be run in a platform thread, it runs the task in a new virtual thread.
+
+[NOTE]
+====
+Enabling virtual threads in `QueuedThreadPool` will default the number of reserved threads to zero, unless the number of reserved threads is explicitly configured to a positive value.
+
+Defaulting the number of reserved threads to zero ensures that the xref:pg-arch-threads-execution-strategy-pec[Produce-Execute-Consume mode] is always used, which means that virtual threads will always be used for blocking tasks.
+====

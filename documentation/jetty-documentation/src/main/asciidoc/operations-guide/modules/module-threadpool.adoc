@@ -44,4 +44,4 @@ Virtual threads are supported as a preview feature since Java 19.
 +
 NOTE: To enable preview features, you need to specify the `+--enable-preview+` command line option, see the section about the xref:og-modules-directive-exec[[exec\] directive].
 +
-By default, virtual threads are not used even if the runtime support them -- their use should be explicitly enabled.
+By default, virtual threads are not used even if the runtime support them -- their use must be explicitly enabled.
