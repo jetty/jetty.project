@@ -37,22 +37,15 @@ public class FragmentActivator implements BundleActivator
 {
     ServerClasspathContributor _tldClasspathContributor;
     
-    /**
-     *
-     */
     @Override
     public void start(BundleContext context) throws Exception
     {
-        //set up some classes that will look for bundles with tlds that must be converted
-        //to urls and treated as if they are on the Jetty container's classpath so that 
-        //jasper can deal with them
+        //Register a class that will provide the identity of bundles that 
+        //contain TLDs and therefore need to be scanned.
         _tldClasspathContributor = new TLDServerClasspathContributor();
         EE9Activator.registerServerClasspathContributor(_tldClasspathContributor);
     }
 
-    /**
-     *
-     */
     @Override
     public void stop(BundleContext context) throws Exception
     {

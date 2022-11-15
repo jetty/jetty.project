@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
  */
 public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
 {
-
     private static final Logger LOG = LoggerFactory.getLogger(OSGiWebappClassLoader.class.getName());
 
     private ClassLoader _osgiBundleClassLoader;

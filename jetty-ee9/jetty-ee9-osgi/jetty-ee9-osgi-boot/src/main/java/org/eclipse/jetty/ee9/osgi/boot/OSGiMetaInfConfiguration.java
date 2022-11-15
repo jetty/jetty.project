@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
@@ -43,13 +42,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * OSGiWebInfConfiguration
+ * OSGiMetaInfConfiguration
  *
- * Handle adding resources found in bundle fragments, and add them into the
+ * Handle adding resources found in bundles.
  */
 public class OSGiMetaInfConfiguration extends MetaInfConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(WebInfConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OSGiMetaInfConfiguration.class);
 
     /**
      * Comma separated list of symbolic names of bundles that contain tlds that should be considered
@@ -171,6 +170,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         Bundle[] bundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
         if (bundles != null && bundles.length > 0)
         {
+            @SuppressWarnings("unchecked")
             Set<Bundle> fragsAndReqsBundles = (Set<Bundle>)context.getAttribute(FRAGMENT_AND_REQUIRED_BUNDLES);
             if (fragsAndReqsBundles == null)
             {
@@ -178,6 +178,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                 context.setAttribute(FRAGMENT_AND_REQUIRED_BUNDLES, fragsAndReqsBundles);
             }
 
+            @SuppressWarnings("unchecked")
             Set<Resource> fragsAndReqsResources = (Set<Resource>)context.getAttribute(FRAGMENT_AND_REQUIRED_RESOURCES);
             if (fragsAndReqsResources == null)
             {
@@ -220,6 +221,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         Bundle bundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         if (bundle != null)
         {
+            @SuppressWarnings("unchecked")
             Set<Bundle> fragments = (Set<Bundle>)context.getAttribute(FRAGMENT_AND_REQUIRED_BUNDLES);
             if (fragments != null && !fragments.isEmpty())
             {
@@ -247,6 +249,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                 {
                     LinkedHashSet<Resource> resources = new LinkedHashSet<>();
                     //Add in any existing setting of extra resource dirs
+                    @SuppressWarnings("unchecked")
                     Set<Resource> resourceDirs = (Set<Resource>)context.getAttribute(MetaInfConfiguration.RESOURCE_DIRS);
                     if (resourceDirs != null && !resourceDirs.isEmpty())
                         resources.addAll(resourceDirs);
