@@ -2478,10 +2478,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected void enterScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyEnterScope(org.eclipse.jetty.server.Request coreRequest)
         {
             __context.set(_apiContext);
-            super.enterScope(coreRequest);
+            super.notifyEnterScope(coreRequest);
             Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
                 ? coreContextRequest.getHttpChannel().getRequest()
                 : null;
@@ -2498,7 +2498,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected void exitScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyExitScope(org.eclipse.jetty.server.Request coreRequest)
         {
             try
             {
@@ -2506,7 +2506,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     ? coreContextRequest.getHttpChannel().getRequest()
                     : null;
                 ContextHandler.this.exitScope(request);
-                super.exitScope(coreRequest);
+                super.notifyExitScope(coreRequest);
             }
             finally
             {

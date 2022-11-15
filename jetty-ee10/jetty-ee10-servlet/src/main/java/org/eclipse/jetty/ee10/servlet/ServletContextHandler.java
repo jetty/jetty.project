@@ -1127,7 +1127,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         Thread currentThread = null;
 
         // TODO: Review.
-        enterScope(null);
+        ContextHandler.Context lastContext = ContextHandler.getCurrentContext();
+        ClassLoader lastLoader = enterScope(null);
 
         Context context = getContext();
         try
@@ -1180,7 +1181,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         finally
         {
             _contextStatus = ContextStatus.NOTSET;
-            exitScope(null);
+            exitScope(null, lastContext, lastLoader);
             LOG.info("Stopped {}", this);
             // reset the classloader
             if ((oldClassloader == null || (oldClassloader != oldWebapploader)) && currentThread != null)
@@ -1234,9 +1235,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected void enterScope(Request request)
+    protected void notifyEnterScope(Request request)
     {
-        super.enterScope(request);
+        super.notifyEnterScope(request);
 
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
@@ -1256,7 +1257,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected void exitScope(Request request)
+    protected void notifyExitScope(Request request)
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
@@ -1274,7 +1275,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             }
         }
 
-        super.exitScope(request);
+        super.notifyExitScope(request);
     }
 
     /**

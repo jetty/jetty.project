@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
@@ -408,18 +407,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return false;
     }
 
-    protected void enterScope(Request contextRequest, ClassLoader loader)
+    protected ClassLoader enterScope(Request contextRequest)
     {
+        ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
         __context.set(_context);
-        if (loader != null)
-            Thread.currentThread().setContextClassLoader(loader);
-        enterScope(contextRequest);
+        if (_classLoader != null)
+            Thread.currentThread().setContextClassLoader(_classLoader);
+        notifyEnterScope(contextRequest);
+        return lastLoader;
     }
 
     /**
      * @param request A request that is applicable to the scope, or null
      */
-    protected void enterScope(Request request)
+    protected void notifyEnterScope(Request request)
     {
         for (ContextScopeListener listener : _contextListeners)
         {
@@ -436,7 +437,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     protected void exitScope(Request request, Context lastContext, ClassLoader lastLoader)
     {
-        exitScope(request);
+        notifyExitScope(request);
         __context.set(lastContext);
         Thread.currentThread().setContextClassLoader(lastLoader);
     }
@@ -444,7 +445,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     /**
      * @param request A request that is applicable to the scope, or null
      */
-    protected void exitScope(Request request)
+    protected void notifyExitScope(Request request)
     {
         for (int i = _contextListeners.size(); i-- > 0; )
         {
@@ -661,11 +662,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return processor;
 
         Context lastContext = __context.get();
-        ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-        ClassLoader loader = _context.getClassLoader();
+        ClassLoader lastLoader = enterScope(contextRequest);
         try
         {
-            enterScope(contextRequest, loader);
             processor = getHandler().handle(contextRequest);
         }
         finally
@@ -1054,25 +1053,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return ContextHandler.this.getVirtualHosts();
         }
 
-        public <T> T get(Supplier<T> supplier, Request request)
-        {
-            Context lastContext = __context.get();
-            if (lastContext == this)
-                return supplier.get();
-
-            ClassLoader loader = getClassLoader();
-            ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-            try
-            {
-                enterScope(request, loader);
-                return supplier.get();
-            }
-            finally
-            {
-                exitScope(request, lastContext, lastLoader);
-            }
-        }
-
         public void call(Invocable.Callable callable, Request request) throws Exception
         {
             Context lastContext = __context.get();
@@ -1080,11 +1060,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 callable.call();
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    enterScope(request, loader);
                     callable.call();
                 }
                 finally
@@ -1101,11 +1079,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 consumer.accept(t);
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    enterScope(request, loader);
                     consumer.accept(t);
                 }
                 finally
@@ -1128,11 +1104,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 runnable.run();
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    enterScope(request, loader);
                     runnable.run();
                 }
                 finally
@@ -1277,11 +1251,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 _processor.process(contextRequest, contextResponse, callback);
             else
             {
-                ClassLoader loader = _context.getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(contextRequest);
                 try
                 {
-                    enterScope(contextRequest, loader);
                     _processor.process(contextRequest, contextResponse, callback);
                 }
                 catch (Throwable th)
