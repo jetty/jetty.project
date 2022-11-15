@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.distribution;
+package org.eclipse.jetty.tests.hometester;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -40,6 +40,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.codehaus.plexus.util.IOUtil;
+import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositoryEvent;
@@ -60,10 +61,8 @@ import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,9 +161,9 @@ public class JettyHomeTester
         args = new ArrayList<>(args);
 
         String mavenLocalRepository = config.getMavenLocalRepository();
-        if (StringUtil.isNotBlank(mavenLocalRepository))
+        if (StringUtils.isNotBlank(mavenLocalRepository))
             mavenLocalRepository = System.getProperty("mavenRepoPath");
-        if (StringUtil.isNotBlank(mavenLocalRepository))
+        if (StringUtils.isNotBlank(mavenLocalRepository))
             args.add("maven.local.repo=" + mavenLocalRepository);
 
         // if this JVM has `maven.repo.uri` defined, make sure to propagate it to child
@@ -559,8 +558,8 @@ public class JettyHomeTester
          */
         public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
         {
-            long start = NanoTime.now();
-            while (NanoTime.since(start) < unit.toNanos(time))
+            long start = System.currentTimeMillis();
+            while (start < unit.toMillis(time))
             {
                 boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                 if (result)
@@ -587,8 +586,8 @@ public class JettyHomeTester
             thread.start();
             try
             {
-                long start = NanoTime.now();
-                while (NanoTime.since(start) < unit.toNanos(time))
+                long start = System.currentTimeMillis();
+                while (start < unit.toMillis(time))
                 {
                     boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                     if (result)

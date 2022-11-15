@@ -1341,6 +1341,12 @@
         <type>zip</type>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>jetty-home-tester</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http</artifactId>
         <version>${project.version}</version>
