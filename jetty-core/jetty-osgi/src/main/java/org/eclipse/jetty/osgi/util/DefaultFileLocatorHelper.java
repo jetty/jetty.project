@@ -27,8 +27,6 @@ import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 
 /**

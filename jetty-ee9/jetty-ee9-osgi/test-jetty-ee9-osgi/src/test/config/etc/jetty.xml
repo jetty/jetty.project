@@ -64,41 +64,13 @@
     <Set name="dumpAfterStart" property="jetty.server.dumpAfterStart"/>
     <Set name="dumpBeforeStop" property="jetty.server.dumpBeforeStop"/>
 
-    <!-- Call class="org.eclipse.jetty.ee9.webapp.Configurations" name="setServerDefault">
-      <Arg><Ref refid="Server"/></Arg>
-      <Call name="add">
-        <Arg name="configClass">
-          <Array type="String">
-            <Item>org.eclipse.jetty.ee9.webapp.FragmentConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.WebXmlConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.WebAppConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.ServletsConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.JspConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.JaasConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.JndiConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.webapp.JmxConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.osgi.annotations.AnnotationConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.osgi.boot.OSGiWebInfConfiguration</Item>
-            <Item>org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration</Item>
-          </Array>
-        </Arg>
-      </Call>
-    </Call -->
-
-    <!--
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.naming.factory.initial</Arg>
-      <Arg><Property name="java.naming.factory.initial" default="org.eclipse.jetty.ee9.jndi.InitialContextFactory"/></Arg>
+      <Arg><Property name="java.naming.factory.initial" default="org.eclipse.jetty.jndi.InitialContextFactory"/></Arg>
     </Call>
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.naming.factory.url.pkgs</Arg>
       <Arg><Property name="java.naming.factory.url.pkgs" default="org.eclipse.jetty.jndi"/></Arg>
     </Call>
-    -->
 
 </Configure>

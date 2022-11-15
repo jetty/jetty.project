@@ -69,7 +69,7 @@ public class JettyServerFactory
             List<URL> sharedURLs = getManagedJettySharedLibFolderUrls(props);
 
             // Ensure we have a classloader that will have access to all jetty classes
-            ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, JettyServerFactory.class.getClassLoader());
+            ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, contextCl/*JettyServerFactory.class.getClassLoader()*/);
 
             ClassLoader serverClassLoader = libExtClassLoader;
             

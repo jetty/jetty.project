@@ -56,6 +56,11 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -109,7 +114,7 @@
               org.osgi.util.tracker;version="${osgi-util-tracker-version}",
               org.xml.sax,
               org.xml.sax.helpers,
-              org.eclipse.jetty.annotations;resolution:=optional,
+              org.eclipse.jetty.ee9.annotations;resolution:=optional,
               *
             </Import-Package>
             <Require-Capability>

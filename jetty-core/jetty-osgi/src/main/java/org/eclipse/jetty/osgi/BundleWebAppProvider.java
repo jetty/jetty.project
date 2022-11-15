@@ -136,7 +136,6 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     @Override
     public boolean isDeployable(Bundle bundle)
     {
-        System.err.println("IS DEPLOYABLE BY ENVIRONMENT: " + super.isDeployable(bundle));
         //is it destined for my environment?
         if (!super.isDeployable(bundle))
             return false;
@@ -187,7 +186,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 //exceptions inside the impl of addApp. Need to send the Event and also register as a service
                 //only if the deployment succeeded
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
-                app.setBaseResource(staticResourcesLocation);
+                app.setPathToResourceBase(staticResourcesLocation);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
                 return true;
@@ -198,7 +197,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             {
                 String base = ".";
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
-                app.setBaseResource(base);
+                app.setPathToResourceBase(base);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
                 return true;
@@ -210,7 +209,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 //Could be a static webapp with no web.xml
                 String base = ".";
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
-                app.setBaseResource(base);
+                app.setPathToResourceBase(base);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
                 return true;

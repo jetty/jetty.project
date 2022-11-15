@@ -207,16 +207,25 @@ public class MimeTypes
         .withAll(() ->
         {
             Map<String, Type> result = new HashMap<>();
-            for (Type type : Type.values())
+            
+            try
             {
-                String key1 = type.toString();
-                result.put(key1, type);
-
-                if (key1.indexOf(";charset=") > 0)
+                for (Type type : Type.values())
                 {
-                    String key2 = StringUtil.replace(key1, ";charset=", "; charset=");
-                    result.put(key2, type);
+                    String key1 = type.toString();
+                    result.put(key1, type);
+
+                    if (key1.indexOf(";charset=") > 0)
+                    {
+                        String key2 = StringUtil.replace(key1, ";charset=", "; charset=");
+                        result.put(key2, type);
+                    }
                 }
+            }
+            catch (ClassFormatError e)
+            {
+                //TODO: remove this try-catch!!
+                System.err.println("Ignoring " + e);
             }
             return result;
         })
@@ -224,10 +233,18 @@ public class MimeTypes
 
     static
     {
-        for (MimeTypes.Type type : MimeTypes.Type.values())
+        try
         {
-            if (type.isCharsetAssumed())
-                __assumedEncodings.put(type.asString(), type.getCharsetString());
+            for (MimeTypes.Type type : MimeTypes.Type.values())
+            {
+                if (type.isCharsetAssumed())
+                    __assumedEncodings.put(type.asString(), type.getCharsetString());
+            }
+        }
+        catch (ClassFormatError e)
+        {
+                //TODO: remove this try-catch!!
+            System.err.println("Ignoring " + e);
         }
 
         String resourceName = "mime.properties";
@@ -235,9 +252,9 @@ public class MimeTypes
         {
             if (stream == null)
             {
-                LOG.warn("Missing mime-type resource: {}", resourceName);
-            }
-            else
+                    LOG.warn("Missing mime-type resource: {}", resourceName);
+                }
+                else
             {
                 try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
                 {
