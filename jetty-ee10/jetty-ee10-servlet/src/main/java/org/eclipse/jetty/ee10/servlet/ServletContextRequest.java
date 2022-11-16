@@ -127,6 +127,7 @@ public class ServletContextRequest extends ContextRequest
     private ServletContextResponse _response;
     private Charset _queryEncoding;
     private HttpFields _trailers;
+    private Processor _sessionProcessor;
 
     protected ServletContextRequest(
         ServletContextHandler.ServletContextApi servletContextApi,
@@ -161,6 +162,16 @@ public class ServletContextRequest extends ContextRequest
     void setTrailers(HttpFields trailers)
     {
         _trailers = trailers;
+    }
+
+    void setSessionProcessor(Processor processor)
+    {
+        _sessionProcessor = processor;
+    }
+
+    Processor getSessionProcessor()
+    {
+        return _sessionProcessor;
     }
 
     @Override

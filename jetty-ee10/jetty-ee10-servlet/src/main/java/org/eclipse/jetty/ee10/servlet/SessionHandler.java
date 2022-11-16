@@ -63,6 +63,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
     final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
     private final SessionCookieConfig _cookieConfig = new CookieConfig();
+    private final SessionProcessor _sessionProcessor = new SessionProcessor();
 
     private ServletContextHandler.Context _servletContextHandlerContext;
 
@@ -721,21 +722,22 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         if (processor == null)
             return null;
 
-        return new SessionProcessor(processor);
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        if (servletContextRequest == null)
+            throw new IllegalStateException("No ServletContextRequest for " + request);
+        servletContextRequest.setSessionProcessor(processor);
+        return _sessionProcessor;
     }
 
     private class SessionProcessor implements Request.Processor
     {
-        private final Request.Processor _processor;
-
-        private SessionProcessor(Request.Processor processor)
-        {
-            _processor = processor;
-        }
-
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+            if (servletContextRequest == null)
+                throw new IllegalStateException("No ServletContextRequest for " + request);
+
             addSessionStreamWrapper(request);
 
             ServletApiRequest servletApiRequest = ServletContextHandler.getServletApiRequest(request);
@@ -757,7 +759,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
                 Response.replaceCookie(servletContextResponse, cookie);
             }
 
-            _processor.process(request, response, callback);
+            servletContextRequest.getSessionProcessor().process(request, response, callback);
         }
     }
 }
