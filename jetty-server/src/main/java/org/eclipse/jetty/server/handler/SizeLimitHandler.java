@@ -126,6 +126,9 @@ public class SizeLimitHandler extends HandlerWrapper
         @Override
         public HttpInput.Content readFrom(HttpInput.Content content)
         {
+            if (content == null)
+                return null;
+
             if (content.hasContent())
             {
                 _read += content.remaining();
@@ -140,7 +143,16 @@ public class SizeLimitHandler extends HandlerWrapper
             if (content.hasRemaining())
             {
                 _written += content.remaining();
-                checkResponseLimit(_written);
+
+                try
+                {
+                    checkResponseLimit(_written);
+                }
+                catch (Throwable t)
+                {
+                    callback.failed(t);
+                    return;
+                }
             }
             getNextInterceptor().write(content, last, callback);
         }
