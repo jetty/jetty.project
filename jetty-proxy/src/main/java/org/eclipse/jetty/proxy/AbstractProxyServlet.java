@@ -663,7 +663,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 continue;
 
             String newHeaderValue = filterServerResponseHeader(clientRequest, serverResponse, headerName, field.getValue());
-            if (newHeaderValue == null || newHeaderValue.trim().length() == 0)
+            if (newHeaderValue == null)
                 continue;
 
             proxyResponse.addHeader(headerName, newHeaderValue);
