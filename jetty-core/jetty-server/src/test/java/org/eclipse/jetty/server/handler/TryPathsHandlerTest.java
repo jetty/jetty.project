@@ -22,10 +22,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import javax.net.ssl.SSLSocket;
 
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -37,6 +39,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +84,6 @@ public class TryPathsHandlerTest
         tryPaths.setPaths(paths);
         tryPaths.setHandler(handler);
 
-        server.setDumpAfterStart(true);
         server.start();
     }
 
@@ -94,7 +96,16 @@ public class TryPathsHandlerTest
     @Test
     public void testTryPaths() throws Exception
     {
-        ResourceHandler resourceHandler = new ResourceHandler();
+        ResourceHandler resourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                // We don't want to cache not found entries for this test.
+                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+            }
+        };
+
         resourceHandler.setDirAllowed(false);
         resourceHandler.setHandler(new Handler.Abstract()
         {
@@ -160,7 +171,15 @@ public class TryPathsHandlerTest
     @Test
     public void testTryPathsWithPathMappings() throws Exception
     {
-        ResourceHandler resourceHandler = new ResourceHandler();
+        ResourceHandler resourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                // We don't want to cache not found entries for this test.
+                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+            }
+        };
         resourceHandler.setDirAllowed(false);
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();

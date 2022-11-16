@@ -40,7 +40,7 @@ public class HttpContentRangeWriter
         Objects.requireNonNull(content, "HttpContent");
 
         // Try direct buffer
-        ByteBuffer buffer = content.getBuffer();
+        ByteBuffer buffer = content.getByteBuffer();
         if (buffer != null)
             return new ByteBufferRangeWriter(buffer);
 

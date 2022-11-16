@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -44,10 +45,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpContentWrapper;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -55,12 +55,17 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -85,7 +90,6 @@ public class DefaultServlet extends HttpServlet
 
     private ResourceFactory.Closeable _resourceFactory;
     private Resource _baseResource;
-    private boolean _useFileMappedBuffer = false;
 
     private boolean _isPathInfoOnly = false;
 
@@ -117,22 +121,30 @@ public class DefaultServlet extends HttpServlet
             }
         }
 
-        // TODO: should this come from context?
-        MimeTypes mimeTypes = new MimeTypes();
-        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
+        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
+            getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
 
-        _useFileMappedBuffer = getInitBoolean("useFileMappedBuffer", _useFileMappedBuffer);
-        ResourceContentFactory resourceContentFactory = new ResourceContentFactory(ResourceFactory.of(_baseResource), mimeTypes, precompressedFormats);
-        CachingContentFactory cached = new CachingContentFactory(resourceContentFactory, _useFileMappedBuffer);
-
-        int maxCacheSize = getInitInt("maxCacheSize", -2);
-        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-
-        try
+        // Try to get factory from ServletContext attribute.
+        HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
+        if (contentFactory == null)
         {
-            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2)
+            MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
+            contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
+            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
+
+            if (getInitBoolean("useFileMappedBuffer", false))
+                contentFactory = new FileMappingHttpContentFactory(contentFactory);
+
+            int maxCacheSize = getInitInt("maxCacheSize", -2);
+            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+            long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
+            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
+                ByteBufferPool byteBufferPool = getByteBufferPool(servletContextHandler);
+                ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
+                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), byteBufferPool);
+                contentFactory = cached;
                 if (maxCacheSize >= 0)
                     cached.setMaxCacheSize(maxCacheSize);
                 if (maxCachedFileSize >= -1)
@@ -141,15 +153,7 @@ public class DefaultServlet extends HttpServlet
                     cached.setMaxCachedFiles(maxCachedFiles);
             }
         }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to setup CachedContentFactory", e);
-            throw new UnavailableException(e.toString());
-        }
-
-        String resourceCache = getInitParameter("resourceCache");
-        getServletContext().setAttribute(resourceCache == null ? "resourceCache" : resourceCache, cached);
-        _resourceService.setContentFactory(cached);
+        _resourceService.setHttpContentFactory(contentFactory);
 
         if (servletContextHandler.getWelcomeFiles() == null)
             servletContextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
@@ -227,6 +231,17 @@ public class DefaultServlet extends HttpServlet
 
         if (LOG.isDebugEnabled())
             LOG.debug("base resource = {}", _baseResource);
+    }
+
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    {
+        if (contextHandler == null)
+            return new NoopByteBufferPool();
+        Server server = contextHandler.getServer();
+        if (server == null)
+            return new NoopByteBufferPool();
+        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
+        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
     }
 
     private String getInitParameter(String name, String... deprecated)
@@ -1037,7 +1052,7 @@ public class DefaultServlet extends HttpServlet
     /**
      * Wrap an existing HttpContent with one that takes has an unknown/unspecified length.
      */
-    private static class UnknownLengthHttpContent extends HttpContentWrapper
+    private static class UnknownLengthHttpContent extends HttpContent.Wrapper
     {
         public UnknownLengthHttpContent(HttpContent content)
         {
@@ -1057,7 +1072,7 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static class ForcedCharacterEncodingHttpContent extends HttpContentWrapper
+    private static class ForcedCharacterEncodingHttpContent extends HttpContent.Wrapper
     {
         private final String characterEncoding;
         private final String contentType;
