@@ -39,7 +39,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
@@ -67,6 +66,8 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * <p>Helper class to test the Jetty Distribution</p>.
@@ -562,14 +563,13 @@ public class JettyHomeTester
         {
             try
             {
-                Awaitility.await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
+                await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
                 return true;
             }
             catch (ConditionTimeoutException e)
             {
-                // nothing
+                return false;
             }
-            return false;
         }
 
         /**
@@ -589,18 +589,17 @@ public class JettyHomeTester
             thread.start();
             try
             {
-                Awaitility.await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
+                await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
                 return true;
             }
             catch (ConditionTimeoutException e)
             {
-                // nothing
+                return false;
             }
             finally
             {
                 logFileStreamer.stop();
             }
-            return false;
         }
 
         /**
