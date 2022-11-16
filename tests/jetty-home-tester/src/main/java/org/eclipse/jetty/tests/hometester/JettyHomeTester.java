@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.awaitility.core.ConditionTimeoutException;
+import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -67,6 +69,8 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * <p>Helper class to test the Jetty Distribution</p>.
@@ -569,16 +573,15 @@ public class JettyHomeTester
          */
         public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
         {
-            long end = System.currentTimeMillis() + unit.toMillis(time);
-            while (System.currentTimeMillis() < end)
+            try
             {
-                boolean result = logs.stream().anyMatch(s -> s.contains(txt));
-                if (result)
-                    return true;
-                //noinspection BusyWait
-                Thread.sleep(250);
+                await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
+                return true;
             }
-            return false;
+            catch (ConditionTimeoutException e)
+            {
+                return false;
+            }
         }
 
         /**
@@ -598,15 +601,11 @@ public class JettyHomeTester
             thread.start();
             try
             {
-                long end = System.currentTimeMillis() + unit.toMillis(time);
-                while (System.currentTimeMillis() < end)
-                {
-                    boolean result = logs.stream().anyMatch(s -> s.contains(txt));
-                    if (result)
-                        return true;
-                    //noinspection BusyWait
-                    Thread.sleep(250);
-                }
+                await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
+                return true;
+            }
+            catch (ConditionTimeoutException e)
+            {
                 return false;
             }
             finally
