@@ -23,6 +23,7 @@
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
@@ -31,6 +32,10 @@
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
       <version>${maven.resolver.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>

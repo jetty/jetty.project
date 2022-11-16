@@ -39,6 +39,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.AbstractRepositoryListener;
@@ -558,13 +560,14 @@ public class JettyHomeTester
          */
         public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
         {
-            long end = System.currentTimeMillis() + unit.toMillis(time);
-            while (System.currentTimeMillis() < end)
+            try
             {
-                boolean result = logs.stream().anyMatch(s -> s.contains(txt));
-                if (result)
-                    return true;
-                Thread.sleep(250);
+                Awaitility.await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
+                return true;
+            }
+            catch (ConditionTimeoutException e)
+            {
+                // nothing
             }
             return false;
         }
@@ -586,20 +589,18 @@ public class JettyHomeTester
             thread.start();
             try
             {
-                long end = System.currentTimeMillis() + unit.toMillis(time);
-                while (System.currentTimeMillis() < end)
-                {
-                    boolean result = logs.stream().anyMatch(s -> s.contains(txt));
-                    if (result)
-                        return true;
-                    Thread.sleep(250);
-                }
-                return false;
+                Awaitility.await().atMost(time, unit).until(() -> logs.stream().anyMatch(s -> s.contains(txt)));
+                return true;
+            }
+            catch (ConditionTimeoutException e)
+            {
+                // nothing
             }
             finally
             {
                 logFileStreamer.stop();
             }
+            return false;
         }
 
         /**
