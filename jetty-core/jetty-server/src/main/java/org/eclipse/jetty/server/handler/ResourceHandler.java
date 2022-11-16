@@ -81,8 +81,8 @@ public class ResourceHandler extends Handler.Wrapper
         _byteBufferPool = getByteBufferPool(context);
         _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
-        if (_resourceService.getStylesheet() == null)
-            setStylesheet(getServer().getDefaultStyleSheet());
+        if (_resourceService.getStyleSheet() == null)
+            setStyleSheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
     }
@@ -180,9 +180,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStylesheet()
+    public Resource getStyleSheet()
     {
-        return _resourceService.getStylesheet();
+        return _resourceService.getStyleSheet();
     }
 
     public List<String> getWelcomeFiles()
@@ -336,11 +336,11 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
+     * @param styleSheet The location of the style sheet to be used as a String.
      */
-    public void setStylesheet(Resource stylesheet)
+    public void setStyleSheet(Resource styleSheet)
     {
-        _resourceService.setStylesheet(stylesheet);
+        _resourceService.setStyleSheet(styleSheet);
     }
 
     public void setWelcomeFiles(String... welcomeFiles)

@@ -79,7 +79,7 @@ public class ResourceService
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
     private HttpField _cacheControl;
-    private Resource _stylesheet;
+    private Resource _styleSheet;
 
     public ResourceService()
     {
@@ -88,17 +88,17 @@ public class ResourceService
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
-    public void setStylesheet(Resource stylesheet)
+    public void setStyleSheet(Resource stylesheet)
     {
-        _stylesheet = stylesheet;
+        _styleSheet = stylesheet;
     }
 
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStylesheet()
+    public Resource getStyleSheet()
     {
-        return _stylesheet;
+        return _styleSheet;
     }
 
     public HttpContent getContent(String path, Request request) throws IOException
@@ -138,8 +138,8 @@ public class ResourceService
         else
         {
             // TODO: can this go in a "StaticContentFactory" that goes after ResourceContentFactory?
-            if ((_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
-                content = new ResourceHttpContent(_stylesheet, "text/css");
+            if ((_styleSheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
+                content = new ResourceHttpContent(_styleSheet, "text/css");
         }
 
         return content;

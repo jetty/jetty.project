@@ -57,10 +57,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     private ByteBufferPool _byteBufferPool;
     Resource _baseResource;
     ContextHandler _context;
-    Resource _defaultStylesheet;
+    Resource _defaultStyleSheet;
     MimeTypes _mimeTypes;
     private final ResourceService _resourceService;
-    Resource _stylesheet;
+    Resource _styleSheet;
     String[] _welcomes = {"index.html"};
 
     public ResourceHandler(ResourceService resourceService)
@@ -189,7 +189,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
 
         if (Resources.missing(r) && path.endsWith("/jetty-dir.css"))
-            r = getStylesheet();
+            r = getStyleSheet();
 
         if (r == null)
         {
@@ -217,7 +217,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
 
         if ((r == null || !r.exists()) && uri.getPath().endsWith("/jetty-dir.css"))
-            r = getStylesheet();
+            r = getStyleSheet();
 
         if (r == null)
         {
@@ -241,19 +241,19 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStylesheet()
+    public Resource getStyleSheet()
     {
-        if (_stylesheet != null)
+        if (_styleSheet != null)
         {
-            return _stylesheet;
+            return _styleSheet;
         }
         else
         {
-            if (_defaultStylesheet == null)
+            if (_defaultStyleSheet == null)
             {
-                _defaultStylesheet = getServer().getDefaultStyleSheet();
+                _defaultStyleSheet = getServer().getDefaultStyleSheet();
             }
-            return _defaultStylesheet;
+            return _defaultStyleSheet;
         }
     }
 
@@ -468,23 +468,23 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
+     * @param styleSheet The location of the style sheet to be used as a String.
      */
-    public void setStylesheet(String stylesheet)
+    public void setStyleSheet(String styleSheet)
     {
         try
         {
-            _stylesheet = ResourceFactory.of(this).newResource(stylesheet);
-            if (!_stylesheet.exists())
+            _styleSheet = ResourceFactory.of(this).newResource(styleSheet);
+            if (!_styleSheet.exists())
             {
-                LOG.warn("unable to find custom stylesheet: {}", stylesheet);
-                _stylesheet = null;
+                LOG.warn("unable to find custom styleSheet: {}", styleSheet);
+                _styleSheet = null;
             }
         }
         catch (Exception e)
         {
-            LOG.warn("Invalid StyleSheet reference: {}", stylesheet, e);
-            throw new IllegalArgumentException(stylesheet);
+            LOG.warn("Invalid StyleSheet reference: {}", styleSheet, e);
+            throw new IllegalArgumentException(styleSheet);
         }
     }
 

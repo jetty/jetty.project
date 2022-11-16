@@ -148,7 +148,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
     private ResourceFactory.Closeable _resourceFactory;
-    private Resource _stylesheet;
+    private Resource _styleSheet;
     private boolean _useFileMappedBuffer = false;
     private String _relativeBaseResource;
     private ServletHandler _servletHandler;
@@ -217,16 +217,16 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         {
             if (stylesheet != null)
             {
-                _stylesheet = _resourceFactory.newResource(stylesheet);
-                if (Resources.missing(_stylesheet))
+                _styleSheet = _resourceFactory.newResource(stylesheet);
+                if (Resources.missing(_styleSheet))
                 {
                     LOG.warn("Stylesheet {} does not exist", stylesheet);
-                    _stylesheet = null;
+                    _styleSheet = null;
                 }
             }
-            if (_stylesheet == null)
+            if (_styleSheet == null)
             {
-                _stylesheet = _contextHandler.getServer().getDefaultStyleSheet();
+                _styleSheet = _contextHandler.getServer().getDefaultStyleSheet();
             }
         }
         catch (Exception e)
@@ -480,7 +480,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
 
         if (Resources.missing(r) && subUriPath.endsWith("/jetty-dir.css"))
-            r = _stylesheet;
+            r = _styleSheet;
 
         return r;
     }

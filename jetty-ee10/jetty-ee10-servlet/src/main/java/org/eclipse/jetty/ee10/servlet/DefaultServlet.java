@@ -175,7 +175,7 @@ public class DefaultServlet extends HttpServlet
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
 
         // Use the servers default stylesheet unless there is one explicitly set by an init param.
-        _resourceService.setStylesheet(servletContextHandler.getServer().getDefaultStyleSheet());
+        _resourceService.setStyleSheet(servletContextHandler.getServer().getDefaultStyleSheet());
         String stylesheetParam = getInitParameter("stylesheet");
         if (stylesheetParam != null)
         {
@@ -184,7 +184,7 @@ public class DefaultServlet extends HttpServlet
                 Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
                 if (Resources.isReadableFile(stylesheet))
                 {
-                    _resourceService.setStylesheet(stylesheet);
+                    _resourceService.setStyleSheet(stylesheet);
                 }
                 else
                 {
