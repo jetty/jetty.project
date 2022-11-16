@@ -274,7 +274,7 @@ public class TrailersTest extends AbstractTest
         Session session = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, true);
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(2);
         List<Frame> frames = new ArrayList<>();
         session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
         {
@@ -291,8 +291,11 @@ public class TrailersTest extends AbstractTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                frames.add(data.frame());
+                DataFrame frame = data.frame();
+                frames.add(frame);
                 data.release();
+                if (frame.isEndStream())
+                    latch.countDown();
             }
         });
 

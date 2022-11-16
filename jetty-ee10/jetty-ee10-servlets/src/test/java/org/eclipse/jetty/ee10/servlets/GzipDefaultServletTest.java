@@ -123,6 +123,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
 
         assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
+
         // A HEAD request should have similar headers, but no body
         if (!method.equals("HEAD"))
         {
@@ -139,14 +140,14 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         @Override
         protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            switch (req.getMethod())
+            // Disregard the method given, use GET instead.
+            if ("WIBBLE".equals(req.getMethod()))
             {
-                case "WIBBLE":
-                    // Disregard the method given, use GET instead.
-                    doGet(req, resp);
-                    return;
-                default:
-                    super.service(req, resp);
+                doGet(req, resp);
+            }
+            else
+            {
+                super.service(req, resp);
             }
         }
     }
@@ -455,7 +456,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
      * A quality of 0 results in no compression.
      * </p>
      *
-     * See: http://bugs.eclipse.org/388072
+     * See: <a href="http://bugs.eclipse.org/388072">Bugzilla #388072</a>
      */
     @Test
     public void testIsNotGzipCompressedWithZeroQ() throws Exception

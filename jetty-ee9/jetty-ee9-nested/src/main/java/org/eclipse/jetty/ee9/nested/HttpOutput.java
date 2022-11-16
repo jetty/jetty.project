@@ -1305,8 +1305,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(http={},{})", httpContent, callback);
 
-        ByteBuffer buffer = httpContent.getBuffer();
-
+        ByteBuffer buffer = httpContent.getByteBuffer();
         if (buffer != null)
         {
             sendContent(buffer, callback);

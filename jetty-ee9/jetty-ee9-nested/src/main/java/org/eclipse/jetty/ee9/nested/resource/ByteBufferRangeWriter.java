@@ -25,17 +25,15 @@ import org.eclipse.jetty.util.BufferUtil;
 public class ByteBufferRangeWriter implements RangeWriter
 {
     private final ByteBuffer buffer;
-    private boolean closed = false;
 
     public ByteBufferRangeWriter(ByteBuffer buffer)
     {
-        this.buffer = buffer.asReadOnlyBuffer();
+        this.buffer = buffer;
     }
 
     @Override
     public void close() throws IOException
     {
-        closed = true;
     }
 
     @Override

@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -26,16 +27,22 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.CachedContentFactory;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
-import org.eclipse.jetty.ee9.nested.ResourceContentFactory;
 import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
+import org.eclipse.jetty.http.CachingHttpContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -136,10 +143,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
-
     private Resource _baseResource;
-    private CachedContentFactory _cache;
-
+    private CachingHttpContentFactory _cachingContentFactory;
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
     private ResourceFactory.Closeable _resourceFactory;
@@ -240,47 +245,34 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (cc != null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
 
-        String resourceCache = getInitParameter("resourceCache");
-        int maxCacheSize = getInitInt("maxCacheSize", -2);
-        int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-        int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-        if (resourceCache != null)
-        {
-            if (maxCacheSize != -1 || maxCachedFileSize != -2 || maxCachedFiles != -2)
-                LOG.debug("ignoring resource cache configuration, using resourceCache attribute");
-            if (_relativeBaseResource != null || _baseResource != null)
-                throw new UnavailableException("resourceCache specified with resource bases");
-            _cache = (CachedContentFactory)_servletContext.getAttribute(resourceCache);
-        }
-
-        try
-        {
-            if (_cache == null && (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2))
-            {
-                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags(), _resourceService.getPrecompressedFormats());
-                if (maxCacheSize >= 0)
-                    _cache.setMaxCacheSize(maxCacheSize);
-                if (maxCachedFileSize >= -1)
-                    _cache.setMaxCachedFileSize(maxCachedFileSize);
-                if (maxCachedFiles >= -1)
-                    _cache.setMaxCachedFiles(maxCachedFiles);
-                _servletContext.setAttribute(resourceCache == null ? "resourceCache" : resourceCache, _cache);
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to setup CachedContentFactory", e);
-            throw new UnavailableException(e.toString());
-        }
-
-        HttpContent.ContentFactory contentFactory = _cache;
+        // Try to get factory from ServletContext attribute.
+        HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
         if (contentFactory == null)
         {
-            contentFactory = new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats());
-            if (resourceCache != null)
-                _servletContext.setAttribute(resourceCache, contentFactory);
+            contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+            contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+            if (_useFileMappedBuffer)
+                contentFactory = new FileMappingHttpContentFactory(contentFactory);
+
+            int maxCacheSize = getInitInt("maxCacheSize", -2);
+            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+            long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
+            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
+            {
+                ByteBufferPool byteBufferPool = getByteBufferPool(_contextHandler);
+                _cachingContentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
+                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), byteBufferPool);
+                contentFactory = _cachingContentFactory;
+                if (maxCacheSize >= 0)
+                    _cachingContentFactory.setMaxCacheSize(maxCacheSize);
+                if (maxCachedFileSize >= -1)
+                    _cachingContentFactory.setMaxCachedFileSize(maxCachedFileSize);
+                if (maxCachedFiles >= -1)
+                    _cachingContentFactory.setMaxCachedFiles(maxCachedFiles);
+            }
         }
-        _resourceService.setContentFactory(contentFactory);
+        _resourceService.setHttpContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
         List<String> gzipEquivalentFileExtensions = new ArrayList<>();
@@ -306,6 +298,17 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
         if (LOG.isDebugEnabled())
             LOG.debug("resource base = {}", _baseResource);
+    }
+
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    {
+        if (contextHandler == null)
+            return new NoopByteBufferPool();
+        Server server = contextHandler.getServer();
+        if (server == null)
+            return new NoopByteBufferPool();
+        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
+        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
     }
 
     private String getInitParameter(String name, String... deprecated)
@@ -521,8 +524,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     @Override
     public void destroy()
     {
-        if (_cache != null)
-            _cache.flushCache();
+        if (_cachingContentFactory != null)
+            _cachingContentFactory.flushCache();
         super.destroy();
         IO.close(_resourceFactory);
     }

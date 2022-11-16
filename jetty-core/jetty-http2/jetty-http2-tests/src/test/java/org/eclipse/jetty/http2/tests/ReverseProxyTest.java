@@ -186,9 +186,10 @@ public class ReverseProxyTest
                     TimeUnit.MILLISECONDS.sleep(1);
                     Stream.Data data = stream.readData();
                     data.release();
-                    stream.demand();
                     if (data.frame().isEndStream())
                         clientLatch.countDown();
+                    else
+                        stream.demand();
                 }
                 catch (InterruptedException x)
                 {

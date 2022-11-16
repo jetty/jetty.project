@@ -111,8 +111,13 @@ public interface Retainable
         @Override
         public void retain()
         {
-            if (references.getAndUpdate(c -> c == 0 ? 0 : c + 1) == 0)
+            if (!tryRetain())
                 throw new IllegalStateException("released " + this);
+        }
+
+        public boolean tryRetain()
+        {
+            return references.getAndUpdate(c -> c == 0 ? 0 : c + 1) != 0;
         }
 
         @Override

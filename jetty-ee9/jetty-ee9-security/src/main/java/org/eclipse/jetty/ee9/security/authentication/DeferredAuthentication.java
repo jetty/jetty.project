@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.security.authentication;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
-import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -274,7 +274,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         @Override
         public PrintWriter getWriter() throws IOException
         {
-            return IO.getNullPrintWriter();
+            return new PrintWriter(Writer.nullWriter());
         }
 
         @Override

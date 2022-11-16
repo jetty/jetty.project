@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * (that are essentially ready to execute transient jobs), are:</p>
  * <ul>
  *   <li>{@link #getBusyThreads() busyThreads} = utilizedThreads + leasedThreads</li>
- *   <li>{@link #getIdleThreads()} idleThreads} = readyThreads - availableReservedThreads</li>
+ *   <li>{@link #getIdleThreads() idleThreads} = readyThreads - availableReservedThreads</li>
  * </ul>
  */
 @ManagedObject("A thread pool")

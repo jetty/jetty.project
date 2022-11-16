@@ -16,8 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -26,10 +25,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -47,6 +54,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
+    private ByteBufferPool _byteBufferPool;
     Resource _baseResource;
     ContextHandler _context;
     Resource _defaultStylesheet;
@@ -69,7 +77,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             {
             }
         });
-        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[]{".svgz"})));
+        _resourceService.setGzipEquivalentFileExtensions(List.of(".svgz"));
     }
 
     @Override
@@ -78,9 +86,9 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_welcomes == null)
             return null;
 
-        for (int i = 0; i < _welcomes.length; i++)
+        for (String s : _welcomes)
         {
-            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
+            String welcomeInContext = URIUtil.addPaths(pathInContext, s);
             Resource welcome = newResource(welcomeInContext);
             if (welcome.exists())
                 return welcomeInContext;
@@ -97,10 +105,37 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
-        _resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats()));
+        _byteBufferPool = getByteBufferPool(_context);
+        if (_resourceService.getHttpContentFactory() == null)
+            _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(this);
 
         super.doStart();
+    }
+
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    {
+        if (contextHandler == null)
+            return new NoopByteBufferPool();
+        Server server = contextHandler.getServer();
+        if (server == null)
+            return new NoopByteBufferPool();
+        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
+        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+    }
+
+    public HttpContent.Factory getHttpContentFactory()
+    {
+        return _resourceService.getHttpContentFactory();
+    }
+
+    protected HttpContent.Factory newHttpContentFactory()
+    {
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
+        return contentFactory;
     }
 
     /**

@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -99,6 +100,7 @@ public class BlockedWritesWithSmallThreadPoolTest
     }
 
     @Test
+    @Tag("flaky")
     public void testServerThreadsBlockedInWrites() throws Exception
     {
         int contentLength = 16 * 1024 * 1024;
