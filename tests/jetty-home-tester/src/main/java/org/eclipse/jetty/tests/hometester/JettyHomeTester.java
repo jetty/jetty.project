@@ -16,13 +16,16 @@ package org.eclipse.jetty.tests.hometester;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,11 +38,10 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -70,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * <p>Helper class to test the Jetty Distribution</p>.
  * <p>API can change without any further notice.</p>
  * <p>Usage:</p>
- * <pre>
+ * <pre>{@code
  * // Create the distribution.
  * String jettyVersion = "9.4.14.v20181114";
  * DistributionTester distribution = DistributionTester.Builder.newInstance()
@@ -102,7 +104,7 @@ import org.slf4j.LoggerFactory;
  *         assertEquals(HttpStatus.OK_200, response.getStatus());
  *     }
  * }
- * </pre>
+ * }</pre>
  */
 public class JettyHomeTester
 {
@@ -148,7 +150,7 @@ public class JettyHomeTester
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
         commands.addAll(config.getJVMArgs());
-        commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
+        commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath());
         int debugPort = Integer.getInteger("distribution.debug.port", 0);
         if (debugPort > 0)
         {
@@ -229,7 +231,7 @@ public class JettyHomeTester
         Path webapps = config.jettyBase.resolve("webapps").resolve(context);
         if (!Files.exists(webapps))
             Files.createDirectories(webapps);
-        unzip(warFile, webapps.toFile());
+        unzip(warFile.toPath(), webapps);
         return webapps;
     }
 
@@ -290,52 +292,61 @@ public class JettyHomeTester
         return "java";
     }
 
-    private void unzip(File zipFile, File output) throws IOException
+    public static void unzip(Path archive, Path outputDir) throws IOException
     {
-        try (InputStream fileInputStream = Files.newInputStream(zipFile.toPath());
-             ZipInputStream zipInputStream = new ZipInputStream(fileInputStream))
+        if (!Files.exists(outputDir))
+            throw new FileNotFoundException("Directory does not exist: " + outputDir);
+
+        if (!Files.isDirectory(outputDir))
+            throw new FileNotFoundException("Not a directory: " + outputDir);
+
+        Map<String, String> env = new HashMap<>();
+        env.put("releaseVersion", null); // no MultiRelease Jar file behaviors
+
+        URI outputDirURI = outputDir.toUri();
+        URI archiveURI = URI.create("jar:" + archive.toUri().toASCIIString());
+
+        try (FileSystem fs = FileSystems.newFileSystem(archiveURI, env))
         {
-            ZipEntry entry = zipInputStream.getNextEntry();
-            while (entry != null)
+            Path root = fs.getPath("/");
+            int archiveURISubIndex = root.toUri().toASCIIString().indexOf("!/") + 2;
+            try (Stream<Path> entriesStream = Files.walk(root))
             {
-                if (entry.isDirectory())
+                // ensure proper unpack order (eg: directories before files)
+                List<Path> sorted = entriesStream
+                    .sorted()
+                    .collect(Collectors.toList());
+
+                for (Path path : sorted)
                 {
-                    File dir = new File(output, entry.getName());
-                    if (!Files.exists(dir.toPath()))
+                    URI entryURI = path.toUri();
+                    String subURI = entryURI.toASCIIString().substring(archiveURISubIndex);
+                    URI outputPathURI = outputDirURI.resolve(subURI);
+                    Path outputPath = Path.of(outputPathURI);
+                    if (Files.isDirectory(path))
                     {
-                        Files.createDirectories(dir.toPath());
+                        if (!Files.exists(outputPath))
+                            Files.createDirectory(outputPath);
+                    }
+                    else
+                    {
+                        Files.copy(path, outputPath);
                     }
                 }
-                else
-                {
-                    // Read zipEntry and write to a file.
-                    File file = new File(output, entry.getName());
-                    if (!Files.exists(file.getParentFile().toPath()))
-                    {
-                        Files.createDirectories(file.getParentFile().toPath());
-                    }
-                    try (OutputStream outputStream = Files.newOutputStream(file.toPath()))
-                    {
-                        IOUtil.copy(zipInputStream, outputStream);
-                    }
-                }
-                // Get next entry
-                entry = zipInputStream.getNextEntry();
             }
         }
     }
 
     private Path resolveHomeArtifact(String version) throws Exception
     {
-        File artifactFile = resolveArtifact("org.eclipse.jetty:jetty-home:zip:" + version);
+        Path artifactFile = resolveArtifact("org.eclipse.jetty:jetty-home:zip:" + version).toPath();
 
         // create tmp directory to unzip distribution
         Path homes = MavenTestingUtils.getTargetTestingPath("homes");
         FS.ensureDirExists(homes);
         Path tmp = Files.createTempDirectory(homes, "jetty_home_");
-        File tmpFile = tmp.toFile();
 
-        unzip(artifactFile, tmpFile);
+        unzip(artifactFile, tmp);
 
         return tmp.resolve("jetty-home-" + version);
     }
@@ -564,6 +575,7 @@ public class JettyHomeTester
                 boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                 if (result)
                     return true;
+                //noinspection BusyWait
                 Thread.sleep(250);
             }
             return false;
@@ -592,6 +604,7 @@ public class JettyHomeTester
                     boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                     if (result)
                         return true;
+                    //noinspection BusyWait
                     Thread.sleep(250);
                 }
                 return false;
