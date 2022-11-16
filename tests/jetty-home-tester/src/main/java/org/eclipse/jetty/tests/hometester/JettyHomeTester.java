@@ -558,8 +558,8 @@ public class JettyHomeTester
          */
         public boolean awaitConsoleLogsFor(String txt, long time, TimeUnit unit) throws InterruptedException
         {
-            long start = System.currentTimeMillis();
-            while (start < unit.toMillis(time))
+            long end = System.currentTimeMillis() + unit.toMillis(time);
+            while (System.currentTimeMillis() < end)
             {
                 boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                 if (result)
@@ -586,8 +586,8 @@ public class JettyHomeTester
             thread.start();
             try
             {
-                long start = System.currentTimeMillis();
-                while (start < unit.toMillis(time))
+                long end = System.currentTimeMillis() + unit.toMillis(time);
+                while (System.currentTimeMillis() < end)
                 {
                     boolean result = logs.stream().anyMatch(s -> s.contains(txt));
                     if (result)
