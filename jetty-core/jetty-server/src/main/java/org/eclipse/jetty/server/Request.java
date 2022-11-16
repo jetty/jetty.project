@@ -726,7 +726,7 @@ public interface Request extends Attributes, Content.Source
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             W wrapper = _originalWrapper.getAndSet(null);
-            if (wrapper == null)
+            if (wrapper == null || wrapper.getWrapped() != request)
                 wrapper = wrap(request);
             process(wrapper, wrap(wrapper, response), callback, _processor);
         }
