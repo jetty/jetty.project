@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-public class StatisticsHandler extends Handler.ProcessingWrapper<StatisticsHandler.StatisticsRequest>
+public class StatisticsHandler extends Handler.ProcessingWrapper<StatisticsHandler.StatisticsRequest, Response>
 {
     private final Set<String> _connectionStats = ConcurrentHashMap.newKeySet();
     private final CounterStatistic _requestStats = new CounterStatistic();

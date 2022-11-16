@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GzipHandler extends Handler.ProcessingWrapper<GzipRequest> implements GzipFactory
+public class GzipHandler extends Handler.ProcessingWrapper<GzipRequest, Response> implements GzipFactory
 {
     public static final EnumSet<HttpHeader> ETAG_HEADERS = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
     public static final String GZIP_HANDLER_ETAGS = "o.e.j.s.h.gzip.GzipHandler.etag";

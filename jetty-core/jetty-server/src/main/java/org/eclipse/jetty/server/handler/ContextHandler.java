@@ -1217,7 +1217,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
-    public class ContextProcessor extends Request.ReWrappingProcessor<ContextRequest>
+    public class ContextProcessor extends Request.ReWrappingProcessor<ContextRequest, ContextResponse>
     {
         private final Request.Processor _processor;
 
@@ -1236,15 +1236,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        protected Response wrap(ContextRequest contextRequest, Response response)
+        protected ContextResponse wrap(ContextRequest contextRequest, Response response)
         {
             if (response instanceof ContextResponse contextResponse && contextResponse.getRequest().getContext() == _context)
-                return response;
+                return contextResponse;
             return contextRequest.wrap(response);
         }
 
         @Override
-        protected void process(ContextRequest contextRequest, Response contextResponse, Callback callback, Request.Processor next) throws Exception
+        protected void process(ContextRequest contextRequest, ContextResponse contextResponse, Callback callback, Request.Processor next) throws Exception
         {
             Context lastContext = __context.get();
             if (lastContext == _context)

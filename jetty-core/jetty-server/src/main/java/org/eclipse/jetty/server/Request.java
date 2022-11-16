@@ -685,20 +685,21 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * <p>A {@link Request.Processor} that wraps another {@link Request.Processor} and supports
-     * use of {@link Request.Wrapper}s.
-     * The {@link #process(Wrapper, Response, Callback, Processor)}</p> method is called from
+     * use of {@link Request.Wrapper}s and {@link Response.Wrapper}s.
+     * The typed {@link #process(Request, Response, Callback, Processor)} method is called from
      * {@link #process(Request, Response, Callback)} with the wrapped request and an optionally
-     * wrapped response.
-     * @param <W> The type of the wrapped request.
+     * wrapped response. </p>
+     * @param <REQ> The type of the optionally wrapped request.
+     * @param <RES> The type of the optionally wrapped response.
      */
-    abstract class ReWrappingProcessor<W extends Request.Wrapper> implements Request.Processor
+    class ReWrappingProcessor<REQ extends Request, RES extends Response> implements Request.Processor
     {
         private final Request.Processor _processor;
 
         // Keep a reference to the first request that created the processor,
         // so the wrapper created in handle can be reused in process. It is nulled
         // after first use, so that subsequent uses will create new wrappers.
-        private final AtomicReference<W> _originalWrapper;
+        private final AtomicReference<REQ> _originalWrapper;
 
         /**
          * @param processor The processor to wrap.
@@ -706,7 +707,7 @@ public interface Request extends Attributes, Content.Source
          * the processor from a call to {@link Handler#handle(Request)}. This wrapper
          * is reused if the wrapped request is passed to {@link #process(Request, Response, Callback)}.
          */
-        protected ReWrappingProcessor(Processor processor, W originalWrapper)
+        protected ReWrappingProcessor(Processor processor, REQ originalWrapper)
         {
             _processor = Objects.requireNonNull(processor);
             _originalWrapper = new AtomicReference<>(originalWrapper);
@@ -714,7 +715,7 @@ public interface Request extends Attributes, Content.Source
 
         /**
          * <p>Process the request by ensure it is wrapped and calling
-         * {@link #process(Wrapper, Response, Callback, Processor)}. If possible, the
+         * {@link #process(Request, Response, Callback, Processor)}. If possible, the
          * original request wrapper passed in the constructor is used.</p>
          * @param request the HTTP request to process
          * @param response the HTTP response to process
@@ -725,26 +726,10 @@ public interface Request extends Attributes, Content.Source
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            W wrapper = _originalWrapper.getAndSet(null);
-            if (wrapper == null || wrapper.getWrapped() != request)
-                wrapper = wrap(request);
-            process(wrapper, wrap(wrapper, response), callback, _processor);
-        }
-
-        /** <p>Wrap a request.</p>
-         * @param request The request to wrap.
-         * @return The wrapped request.
-         */
-        protected abstract W wrap(Request request);
-
-        /** <p>Optionally wrap the response.</p>
-         * @param wrappedRequest The associated wrapped request
-         * @param response The response to wrap
-         * @return The wrapped response or the response itself (the default implementation).
-         */
-        protected Response wrap(W wrappedRequest, Response response)
-        {
-            return response;
+            REQ original = _originalWrapper.getAndSet(null);
+            if (!(original instanceof Wrapper wrapper) || wrapper.getWrapped() != request)
+                original = wrap(request);
+            process(original, wrap(original, response), callback, _processor);
         }
 
         /** <p>Process the wrapped request and call the next processor.
@@ -758,9 +743,32 @@ public interface Request extends Attributes, Content.Source
          * @throws Exception if there is a failure during the processing and {@link Callback#failed(Throwable)} has not
          *                   been called.
          */
-        protected void process(W wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor next) throws Exception
+        protected void process(REQ wrappedRequest, RES wrappedResponse, Callback callback, Request.Processor next) throws Exception
         {
             next.process(wrappedRequest, wrappedResponse, callback);
+        }
+
+        /** <p>Wrap a request.</p>
+         * @param request The request to wrap.
+         * @return The wrapped request.
+         */
+        protected REQ wrap(Request request)
+        {
+            @SuppressWarnings("unchecked")
+            REQ wrapped = (REQ)request;
+            return wrapped;
+        }
+
+        /** <p>Optionally wrap the response.</p>
+         * @param wrappedRequest The associated wrapped request
+         * @param response The response to wrap
+         * @return The wrapped response or the response itself (the default implementation).
+         */
+        protected RES wrap(REQ wrappedRequest, Response response)
+        {
+            @SuppressWarnings("unchecked")
+            RES wrapper = (RES)response;
+            return wrapper;
         }
 
         @Override

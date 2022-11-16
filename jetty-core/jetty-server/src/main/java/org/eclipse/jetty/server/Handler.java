@@ -692,16 +692,18 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     }
 
     /**
-     * <p>A {@link Handler.Wrapper} that supports wrapping of the request and optional wrapping of the response.
+     * <p>A {@link Handler.Wrapper} that supports wrapping of the request and response.
      * The process methods can be implemented on this handler class and take the wrapped request object so that down casting
      * is not necessary.</p>
+     * @param <REQ> The type of the optionally wrapped request.
+     * @param <RES> The type of the optionally wrapped response.
      */
-    abstract class ProcessingWrapper<W extends Request.Wrapper> extends Wrapper
+    abstract class ProcessingWrapper<REQ extends Request, RES extends Response> extends Wrapper
     {
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
-            W wrapper = wrap(request);
+            REQ wrapper = wrap(request);
             Request.Processor processor = super.handle(wrapper);
             return processor == null ? null : new ProcessingWrapperProcessor(processor, wrapper);
         }
@@ -714,20 +716,22 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @param request The request to wrap
          * @return The wrapped request.
          */
-        protected abstract W wrap(Request request);
+        protected abstract REQ wrap(Request request);
 
         /** <p>Optionally wrap the response object.
-         * Called before calling {@link #process(Request.Wrapper, Response, Callback, Request.Processor)}</p>
+         * Called before calling {@link #process(Request, Response, Callback, Request.Processor)}</p>
          * @param wrappedRequest The wrapped request associated with the response.
          * @param response The response to wrap.
          * @return Either the wrapped response or the response itself.
          */
-        protected Response wrap(W wrappedRequest, Response response)
+        protected RES wrap(REQ wrappedRequest, Response response)
         {
-            return response;
+            @SuppressWarnings("unchecked")
+            RES res = (RES)response;
+            return res;
         }
 
-        /** <p>Process the wrapped request.  This is called with the wrapped request and optionally wrapped response. It may be
+        /** <p>Process the wrapped request.  This is called with the typed request and response. It may be
          * extended if additional processing behaviour is needed, otherwise the default implementation calls the next
          * processor to process the wrapped request and response.</p>
          * @param wrappedRequest The wrapped request to process
@@ -737,33 +741,33 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * wrapper.
          * @throws Exception If the nextProcessor throws.
          */
-        protected void process(W wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor nextProcessor)
+        protected void process(REQ wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor nextProcessor)
             throws Exception
         {
             nextProcessor.process(wrappedRequest, wrappedResponse, callback);
         }
 
-        private class ProcessingWrapperProcessor extends Request.ReWrappingProcessor<W>
+        private class ProcessingWrapperProcessor extends Request.ReWrappingProcessor<REQ, RES>
         {
-            public ProcessingWrapperProcessor(Request.Processor processor, W originalWrappedRequest)
+            public ProcessingWrapperProcessor(Request.Processor processor, REQ originalWrappedRequest)
             {
                 super(processor, originalWrappedRequest);
             }
 
             @Override
-            protected W wrap(Request request)
+            protected REQ wrap(Request request)
             {
                 return ProcessingWrapper.this.wrap(request);
             }
 
             @Override
-            protected Response wrap(W wrappedRequest, Response response)
+            protected RES wrap(REQ wrappedRequest, Response response)
             {
                 return ProcessingWrapper.this.wrap(wrappedRequest, response);
             }
 
             @Override
-            protected void process(W wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor next) throws Exception
+            protected void process(REQ wrappedRequest, RES wrappedResponse, Callback callback, Request.Processor next) throws Exception
             {
                 ProcessingWrapper.this.process(wrappedRequest, wrappedResponse, callback, next);
             }
