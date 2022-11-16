@@ -596,10 +596,14 @@ public class ResourceService
                 }
 
                 long ifmsl = DateParser.parseDate(ifms);
-                if (ifmsl != -1 && content.getResource().lastModified() / 1000 <= ifmsl / 1000)
+                if (ifmsl != -1)
                 {
-                    sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
-                    return false;
+                    long lm = content.getResource().lastModified();
+                    if (lm != -1 && lm / 1000 <= ifmsl / 1000)
+                    {
+                        sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
+                        return false;
+                    }
                 }
             }
 
@@ -607,10 +611,14 @@ public class ResourceService
             if (ifums != null && ifm == null)
             {
                 long ifumsl = DateParser.parseDate(ifums);
-                if (ifumsl != -1 && content.getResource().lastModified() / 1000 > ifumsl / 1000)
+                if (ifumsl != -1)
                 {
-                    response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
-                    return false;
+                    long lm = content.getResource().lastModified();
+                    if (lm != -1 && lm / 1000 > ifumsl / 1000)
+                    {
+                        response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
+                        return false;
+                    }
                 }
             }
         }
