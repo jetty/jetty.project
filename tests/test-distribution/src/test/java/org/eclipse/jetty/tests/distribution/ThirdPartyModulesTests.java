@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -245,6 +245,7 @@
     <module>documentation</module>
     <module>jetty-keystore</module>
     <module>jetty-unixdomain-server</module>
+    <module>javadoc</module>
   </modules>
 
   <build>
@@ -1340,6 +1341,12 @@
         <type>zip</type>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>jetty-home-tester</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http</artifactId>
         <version>${project.version}</version>
@@ -2206,9 +2213,6 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
-      <modules>
-        <module>javadoc</module>
-      </modules>
       <build>
         <plugins>
           <plugin>

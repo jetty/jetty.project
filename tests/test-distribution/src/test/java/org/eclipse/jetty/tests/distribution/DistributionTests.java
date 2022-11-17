@@ -43,6 +43,7 @@ import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.tests.distribution.openid.OpenIdProvider;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;

@@ -13,7 +13,7 @@
     <servlet-class>org.eclipse.jetty.proxy.ProxyServlet$Transparent</servlet-class>
     <init-param>
       <param-name>proxyTo</param-name>
-      <param-value>https://www.eclipse.org/jetty/javadoc/jetty-11/index.html?overview-summary.html</param-value>
+      <param-value>https://www.eclipse.org/jetty/javadoc/jetty-10/index.html?overview-summary.html</param-value>
     </init-param>
     <init-param>
       <param-name>hostHeader</param-name>
