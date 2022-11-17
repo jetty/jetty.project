@@ -70,7 +70,6 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void reopen()
     {
-        // TODO why is this never used?
         try (AutoLock lock = _lock.lock())
         {
             if (LOG.isDebugEnabled())

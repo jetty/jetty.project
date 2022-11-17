@@ -1198,7 +1198,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return null;
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
-        ServletChannel servletChannel = null; // (ServletChannel)request.getComponents().getCache().get(ServletChannel.class.getName());
+        ServletChannel servletChannel = (ServletChannel)request.getComponents().getCache().get(ServletChannel.class.getName());
         if (servletChannel == null)
         {
             servletChannel = new ServletChannel(this, request);

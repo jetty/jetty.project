@@ -416,6 +416,7 @@ public class AsyncServletIOTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        t.printStackTrace();
                         if (complete.decrementAndGet() == 0)
                             async.complete();
                     }

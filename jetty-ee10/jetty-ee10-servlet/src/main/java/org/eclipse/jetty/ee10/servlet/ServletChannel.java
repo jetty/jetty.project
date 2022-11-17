@@ -101,10 +101,11 @@ public class ServletChannel implements Runnable
     public void init(ServletContextRequest servletContextRequest)
     {
         _state.recycle();
-        _httpInput.recycle();
+        _httpInput.reopen();
         _servletContextApi = servletContextRequest.getContext().getServletContext();
         _servletContextRequest = servletContextRequest;
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+        _callback = null;
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{}",
@@ -351,10 +352,12 @@ public class ServletChannel implements Runnable
         }
     }
 
-    public void recycle()
+    private void recycle()
     {
         _written = 0;
         _oldIdleTimeout = 0;
+        _httpInput.recycle();
+        _callback = null;
     }
 
     @Override
@@ -813,6 +816,8 @@ public class ServletChannel implements Runnable
         if (_state.completeResponse())
             _callback.succeeded();
         _combinedListener.onComplete(_servletContextRequest);
+
+        recycle();
     }
 
     public boolean isCommitted()
