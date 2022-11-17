@@ -19,8 +19,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * Components made available via a {@link Request}
- * TODO flesh out this idea... maybe better name?
+ * Common components made available via a {@link Request}
  */
 public interface Components
 {
