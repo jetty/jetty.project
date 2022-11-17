@@ -2539,6 +2539,20 @@ public class ResourceHandlerTest
 
         assertThat(response.getStatus(), equalTo(304));
         assertThat(response.getContent(), is(""));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/simple.txt HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                If-Modified-Since: %s\r
+                If-None-Match: XYZ \r
+                \r
+                """.formatted(lastModified)));
+
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.get(LAST_MODIFIED), notNullValue());
+        assertThat(response.getContent(), containsString("simple text"));
     }
 
     @Test
@@ -2572,6 +2586,18 @@ public class ResourceHandlerTest
             \r
             """.formatted(lastModified)));
         assertThat(response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
+
+        response = HttpTester.parseResponse(_local.getResponse("""
+            GET /context/test-unmodified-since-file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            If-Unmodified-Since: %s \r
+            If-Match: XYZ\r
+            \r
+            """.formatted(lastModified)));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), equalTo("some content\nsome more content\n"));
+        assertThat(response.get(LAST_MODIFIED), notNullValue());
     }
 
     @Test

@@ -517,7 +517,7 @@ public class ResourceService
             String ifm = null;
             String ifnm = null;
             String ifms = null;
-            long ifums = -1;
+            String ifums = null;
 
             if (request instanceof Request)
             {
@@ -538,7 +538,7 @@ public class ResourceService
                                 ifms = field.getValue();
                                 break;
                             case IF_UNMODIFIED_SINCE:
-                                ifums = DateParser.parseDate(field.getValue());
+                                ifums = field.getValue();
                                 break;
                             default:
                         }
@@ -550,7 +550,7 @@ public class ResourceService
                 ifm = request.getHeader(HttpHeader.IF_MATCH.asString());
                 ifnm = request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
                 ifms = request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                ifums = request.getDateHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
+                ifums = request.getHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
             }
 
             if (_etags)
@@ -605,7 +605,7 @@ public class ResourceService
             }
 
             // Handle if modified since
-            if (ifms != null)
+            if (ifms != null && ifnm == null)
             {
                 //Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
@@ -615,19 +615,31 @@ public class ResourceService
                     return false;
                 }
 
-                long ifmsl = request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                if (ifmsl != -1 && content.getResource().lastModified().toEpochMilli() <= ifmsl)
+                long ifmsl = DateParser.parseDate(ifms);
+                if (ifmsl != -1)
                 {
-                    sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
-                    return false;
+                    long lm = content.getResource().lastModified().toEpochMilli();
+                    if (lm != -1 && lm / 1000 <= ifmsl / 1000)
+                    {
+                        sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
+                        return false;
+                    }
                 }
             }
 
             // Parse the if[un]modified dates and compare to resource
-            if (ifums != -1 && content.getResource().lastModified().toEpochMilli() > ifums)
+            if (ifums != null && ifm == null)
             {
-                response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
-                return false;
+                long ifumsl = DateParser.parseDate(ifums);
+                if (ifumsl != -1)
+                {
+                    long lm = content.getResource().lastModified().toEpochMilli();
+                    if (lm != -1 && lm / 1000 > ifumsl / 1000)
+                    {
+                        response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
+                        return false;
+                    }
+                }
             }
         }
         catch (IllegalArgumentException iae)
