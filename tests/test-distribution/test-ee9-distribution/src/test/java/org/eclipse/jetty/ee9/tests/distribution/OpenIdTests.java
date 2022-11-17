@@ -21,7 +21,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee9.tests.distribution.openid.OpenIdProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
-import org.eclipse.jetty.tests.distribution.JettyHomeTester;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
