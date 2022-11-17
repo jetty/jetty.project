@@ -96,6 +96,8 @@
                 infinispan-embedded,
                 infinispan-remote,
                 jetty-test-helper,
+                jetty-maven-plugin,
+                jetty-jspc-maven-plugin,
                 alpn-api,
                 quic-quiche,
                 quic-quiche-common,
@@ -132,7 +134,7 @@
             <id>build-javadoc</id>
             <phase>prepare-package</phase>
             <goals>
-              <goal>javadoc</goal>
+              <goal>jar</goal>
             </goals>
             <configuration>
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
@@ -382,29 +384,6 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <!-- === Maven Plugin Deps == -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jspc-maven-plugin</artifactId>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.annotation</groupId>
-          <artifactId>javax.annotation-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <!-- to make maven plugins source sane -->
-    <dependency>
-      <groupId>org.apache.maven.plugin-tools</groupId>
-      <artifactId>maven-plugin-annotations</artifactId>
       <scope>provided</scope>
     </dependency>
     <!-- === InfiniSpan Deps === -->

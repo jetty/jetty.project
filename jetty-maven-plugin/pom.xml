@@ -266,6 +266,7 @@
       <artifactId>jetty-home</artifactId>
       <scope>test</scope>
       <type>zip</type>
+      <optional>true</optional>
       <exclusions>
         <!-- eliminating dependencies of jetty-home that are being pulled in when in reactor
              for the jetty build itself.  This can cause accidental cyclic references. -->

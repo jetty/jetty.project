@@ -1,0 +1,46 @@
+<assembly>
+  <id>with-docs</id>
+  <formats>
+    <format>tar.gz</format>
+    <format>zip</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>${assembly-directory}</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+      <excludes>
+        <exclude>**/META-INF/**</exclude>
+        <exclude>*-config.jar</exclude>
+        <!-- we'll build up shell scripts with execute in separate file-set -->
+        <exclude>bin/*.sh</exclude>
+      </excludes>
+      <!-- The archive is generated with the uid / gid of the user that
+           built the jetty release.  which is highly unlikely to
+           exist on the target machines that unpack this tarball.
+           We set the user / group / other to have read-only access
+           to files, and read-execute access to directories
+           in the unpacked contents. -->
+      <fileMode>0444</fileMode>
+      <directoryMode>0755</directoryMode>
+    </fileSet>
+    <fileSet>
+      <directory>${assembly-directory}</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>bin/*.sh</include>
+      </includes>
+      <!-- Set read-execute for shell scripts -->
+      <fileMode>0555</fileMode>
+    </fileSet>
+    <fileSet>
+      <directory>${docs-assembly-directory}</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>

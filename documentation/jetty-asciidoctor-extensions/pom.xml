@@ -33,7 +33,8 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-distribution</artifactId>
+      <artifactId>jetty-home-tester</artifactId>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 </project>

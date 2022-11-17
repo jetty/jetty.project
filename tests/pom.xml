@@ -20,6 +20,7 @@
   <modules>
     <module>jetty-jmh</module>
     <module>jetty-http-tools</module>
+    <module>jetty-home-tester</module>
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-loginservice</module>
