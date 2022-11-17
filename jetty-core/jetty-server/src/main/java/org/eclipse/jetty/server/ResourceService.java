@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -326,7 +325,7 @@ public class ResourceService
             String ifm = null;
             String ifnm = null;
             String ifms = null;
-            long ifums = -1;
+            String ifums = null;
 
             // Find multiple fields by iteration as an optimization
             for (HttpField field : request.getHeaders())
@@ -338,7 +337,7 @@ public class ResourceService
                         case IF_MATCH -> ifm = field.getValue();
                         case IF_NONE_MATCH -> ifnm = field.getValue();
                         case IF_MODIFIED_SINCE -> ifms = field.getValue();
-                        case IF_UNMODIFIED_SINCE -> ifums = DateParser.parseDate(field.getValue());
+                        case IF_UNMODIFIED_SINCE -> ifums = field.getValue();
                         default ->
                         {
                         }
@@ -348,7 +347,6 @@ public class ResourceService
 
             if (_etags)
             {
-
                 String etag = content.getETagValue();
                 if (etag != null)
                 {
@@ -381,7 +379,7 @@ public class ResourceService
             }
 
             // Handle if modified since
-            if (ifms != null)
+            if (ifms != null && ifnm == null)
             {
                 //Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
@@ -391,19 +389,31 @@ public class ResourceService
                     return true;
                 }
 
-                long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE);
-                if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 <= ifmsl / 1000)
+                long ifmsl = DateParser.parseDate(ifms);
+                if (ifmsl != -1)
                 {
-                    writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                    return true;
+                    long lm = content.getResource().lastModified().toEpochMilli();
+                    if (lm != -1 && lm / 1000 <= ifmsl / 1000)
+                    {
+                        writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
+                        return true;
+                    }
                 }
             }
 
             // Parse the if[un]modified dates and compare to resource
-            if (ifums != -1 && Files.getLastModifiedTime(content.getResource().getPath()).toMillis() / 1000 > ifums / 1000)
+            if (ifums != null && ifm == null)
             {
-                writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
-                return true;
+                long ifumsl = DateParser.parseDate(ifums);
+                if (ifumsl != -1)
+                {
+                    long lm = content.getResource().lastModified().toEpochMilli();
+                    if (lm != -1 && lm / 1000 > ifumsl / 1000)
+                    {
+                        writeHttpError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
+                        return true;
+                    }
+                }
             }
         }
         catch (IllegalArgumentException iae)
