@@ -759,7 +759,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
                 Response.replaceCookie(servletContextResponse, cookie);
             }
 
-            servletContextRequest.getSessionProcessor().process(request, response, callback);
+            Request.Processor processor = servletContextRequest.getSessionProcessor();
+            if (processor == null)
+                processor = getHandler().handle(request);
+            processor.process(request, response, callback);
         }
     }
 }
