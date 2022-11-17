@@ -111,14 +111,17 @@ import org.slf4j.LoggerFactory;
 public interface Handler extends LifeCycle, Destroyable, Invocable
 {
     /**
-     * <p>Invoked to decide whether to handle the given HTTP request.</p>
+     * <p>Invoked to decide whether to handle the given HTTP request.
+     * </p>
      * <p>If the HTTP request can be handled by this {@code Handler},
-     * this method must return a non-null {@link Request.Processor}.</p>
+     * this method must return a non-null {@link Request.Processor}.
+     * </p>
      * <p>Otherwise, the HTTP request is not handled by this {@code Handler}
      * (for example, the HTTP request's URI does not match those handled
-     * by this {@code Handler}), and this method must return {@code null}.</p>
-     * <p>This method may inspect the HTTP request with the following rules:</p>
-     * <ul>
+     * by this {@code Handler}), and this method must return {@code null}.
+     * </p>
+     * <p>This method may inspect the HTTP request with the following rules:
+     * </p><ul>
      * <li>it may access read-only fields such as the HTTP headers, or the HTTP URI, etc.</li>
      * <li>it may wrap the {@link Request} in a {@link Request.Wrapper}, for example
      * to modify HTTP headers or modify the HTTP URI, etc.</li>
@@ -127,6 +130,13 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
      * <li>it must <em>not</em> read the request content (otherwise an {@link IllegalStateException}
      * will be thrown)</li>
      * </ul>
+     * <p>If a {@code Handler} wraps the request/response before invoking another handler, then it
+     * should return a processor that performs similar wrapping, either by reusing the original wrapper
+     * or by re-wrapping the request/response (see {@link org.eclipse.jetty.server.Request.ReWrappingProcessor}
+     * and {@link Handler.ProcessingWrapper}). </p>
+     * <p>A {@code Processor} by {@code handle} may be re-used for other requests only if the processor
+     * returned does not cache any state from the original request that is changed in a subsequent request.
+     * </p>
      * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
      * if present, otherwise a default HTTP 500 error is generated.</p>
      *
@@ -134,6 +144,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
      * @return a non-null {@link Request.Processor} that processes the request/response,
      * or null if this {@code Handler} does not handle the request
      * @throws Exception Thrown if there is a problem handling.
+     * @see Request.Processor
      */
     Request.Processor handle(Request request) throws Exception;
 
@@ -693,12 +704,12 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
     /**
      * <p>A {@link Handler.Wrapper} that supports wrapping of the request and response.
-     * The process methods can be implemented on this handler class and take the wrapped request object so that down casting
-     * is not necessary.</p>
+     * The {@link #process(Request, Response, Callback, Request.Processor)} method may be extended
+     * and is called with any typed reqeuest/response wrappers, so that down casting is not necessary.</p>
      * @param <REQ> The type of the optionally wrapped request.
      * @param <RES> The type of the optionally wrapped response.
      */
-    abstract class ProcessingWrapper<REQ extends Request, RES extends Response> extends Wrapper
+    class ProcessingWrapper<REQ extends Request, RES extends Response> extends Wrapper
     {
         @Override
         public Request.Processor handle(Request request) throws Exception
@@ -709,17 +720,24 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         /**
-         * <p>Wrap the request to be processed.  This is called from {@link #handle(Request)} to
-         * initially wrap a request. It may optionally also be called from the
+         * <p>Optionally wrap the request to be processed.  This is called from {@link #handle(Request)} to
+         * initially wrap a request. It may also be called from the
          * {@link org.eclipse.jetty.server.Request.ReWrappingProcessor} if a new request is passed
          * to the {@link Request.Processor#process(Request, Response, Callback)} method.</p>
+         * <p>The default implementations returns the request unwrapped.</p>
          * @param request The request to wrap
-         * @return The wrapped request.
+         * @return The wrapped request or the unwrapped request.
          */
-        protected abstract REQ wrap(Request request);
+        protected REQ wrap(Request request)
+        {
+            @SuppressWarnings("unchecked")
+            REQ req = (REQ)request;
+            return req;
+        }
 
         /** <p>Optionally wrap the response object.
          * Called before calling {@link #process(Request, Response, Callback, Request.Processor)}</p>
+         * <p>The default implementations returns the response unwrapped.</p>
          * @param wrappedRequest The wrapped request associated with the response.
          * @param response The response to wrap.
          * @return Either the wrapped response or the response itself.
@@ -741,7 +759,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * wrapper.
          * @throws Exception If the nextProcessor throws.
          */
-        protected void process(REQ wrappedRequest, Response wrappedResponse, Callback callback, Request.Processor nextProcessor)
+        protected void process(REQ wrappedRequest, RES wrappedResponse, Callback callback, Request.Processor nextProcessor)
             throws Exception
         {
             nextProcessor.process(wrappedRequest, wrappedResponse, callback);

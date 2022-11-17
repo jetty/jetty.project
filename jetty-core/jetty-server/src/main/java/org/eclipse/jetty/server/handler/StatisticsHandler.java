@@ -271,7 +271,6 @@ public class StatisticsHandler extends Handler.ProcessingWrapper<StatisticsHandl
             super(request);
         }
 
-        // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
         @Override
         public Object getAttribute(String name)
         {

@@ -449,7 +449,19 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * <p>A processor for an HTTP request and response.</p>
-     * <p>The processing typically involves reading the request content (if any) and producing a response.</p>
+     * <p>The processing typically involves reading the request content (if any) and producing a response, before
+     * signalling completion with the callback.
+     * </p>
+     * <p>A processor is typically obtained by calling {@link Handler#handle(Request)}. The processor so returned will be
+     * the processor of the origin resource, but it may be wrapped by additional handlers that filter/intercept the processing
+     * (e.g. {@link org.eclipse.jetty.server.handler.gzip.GzipHandler}.
+     * </p>
+     * <p>A processor  may be reused if and only for the subsequest requests are similar to the request passed
+     * to {@link Handler#handle(Request)}.  If a processor or any of its wrappers retains state from the handled
+     * request that is changed in a subsequent request, then the processing may be incorrect.  For example, if a processor
+     * retains the handled URI, then the uri of all subsequent requests may be ignored. In practise, this
+     * means that Processor reuse will only work with a-priori knowledge of what down stream handlers are deployed.</p>
+     * @see Handler#handle(Request)
      */
     @FunctionalInterface
     interface Processor extends Invocable
