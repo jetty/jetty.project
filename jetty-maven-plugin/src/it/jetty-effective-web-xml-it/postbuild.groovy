@@ -16,9 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*File buildLog = new File( basedir, 'build.log' )
-assert buildLog.text.contains( 'Started Server' )
-*/
 
-File effectiveWebXml = new File( basedir, 'webapp-war/target/effective-web.xml');
-assert effectiveWebXml.text.contains('<param-name>org.eclipse.jetty.resources</param-name>\n    <param-value><![CDATA[\n    "${user.dir.uri}/resources/target/classes/META-INF/resources"]]></param-value>\n  </context-param>');
+def rootNode = new XmlParser().parse(new File( basedir, 'webapp-war/target/effective-web.xml'))
+// find context-param node with param-name == org.eclipse.jetty.resources
+def ctxParam = rootNode.'**'.find{it.text() == "org.eclipse.jetty.resources"}.parent()
+def paramValue = ctxParam.'param-value'.get(0).text().trim()
+// assert the value of param-value child node
+assert paramValue.contains('${user.dir.uri}/resources/target/classes/META-INF/resources')
+
