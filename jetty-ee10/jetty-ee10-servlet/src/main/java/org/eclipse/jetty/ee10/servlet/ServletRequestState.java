@@ -480,7 +480,7 @@ public class ServletRequestState
                     return Action.WRITE_CALLBACK;
                 }
 
-                Scheduler scheduler = _servletChannel.getRequest()
+                Scheduler scheduler = _servletChannel.getServletContextRequest()
                     .getConnectionMetaData().getConnector().getScheduler();
                 if (scheduler != null && _timeoutMs > 0 && !_event.hasTimeoutTask())
                     _event.setTimeoutTask(scheduler.schedule(_event, _timeoutMs, TimeUnit.MILLISECONDS));
@@ -859,7 +859,7 @@ public class ServletRequestState
         // No sync as this is always called with lock held
 
         // Determine the actual details of the exception
-        final Request request = _servletChannel.getRequest();
+        final Request request = _servletChannel.getServletContextRequest();
         final int code;
         final String message;
         Throwable cause = _servletChannel.unwrap(th, BadMessageException.class, UnavailableException.class);
@@ -910,10 +910,10 @@ public class ServletRequestState
         //       - after unhandle for sync
         //       - after both unhandle and complete for async
 
-        ServletContextRequest servletContextRequest = _servletChannel.getRequest();
+        ServletContextRequest servletContextRequest = _servletChannel.getServletContextRequest();
         HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
 
-        final Request request = _servletChannel.getRequest();
+        final Request request = _servletChannel.getServletContextRequest();
         final Response response = _servletChannel.getResponse();
         if (message == null)
             message = HttpStatus.getMessage(code);
@@ -1110,7 +1110,7 @@ public class ServletRequestState
     protected void scheduleDispatch()
     {
         // TODO long winded!!!
-        _servletChannel.getRequest().getConnectionMetaData().getConnector().getExecutor().execute(_servletChannel);
+        _servletChannel.getServletContextRequest().getConnectionMetaData().getConnector().getExecutor().execute(_servletChannel);
     }
 
     protected void cancelTimeout()
@@ -1198,7 +1198,7 @@ public class ServletRequestState
         if (event != null && event.getSuppliedResponse() != null)
             return event.getSuppliedResponse();
 
-        ServletContextRequest servletContextRequest = _servletChannel.getRequest();
+        ServletContextRequest servletContextRequest = _servletChannel.getServletContextRequest();
         if (servletContextRequest != null)
             return servletContextRequest.getHttpServletResponse();
         return null;
@@ -1211,17 +1211,17 @@ public class ServletRequestState
 
     public Object getAttribute(String name)
     {
-        return _servletChannel.getRequest().getAttribute(name);
+        return _servletChannel.getServletContextRequest().getAttribute(name);
     }
 
     public void removeAttribute(String name)
     {
-        _servletChannel.getRequest().removeAttribute(name);
+        _servletChannel.getServletContextRequest().removeAttribute(name);
     }
 
     public void setAttribute(String name, Object attribute)
     {
-        _servletChannel.getRequest().setAttribute(name, attribute);
+        _servletChannel.getServletContextRequest().setAttribute(name, attribute);
     }
 
     /**

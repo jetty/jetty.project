@@ -365,7 +365,7 @@ public class ServletContextResponse extends ContextResponse
         }
 
         // Try any default char encoding for the context.
-        ServletContext context = _servletChannel.getRequest().getContext().getServletContext();
+        ServletContext context = _servletChannel.getServletContextRequest().getContext().getServletContext();
         if (context != null)
         {
             encoding = context.getResponseCharacterEncoding();

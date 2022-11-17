@@ -104,7 +104,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
         Object channel = request.getAttribute(ServletChannel.class.getName());
         if (channel instanceof ServletChannel)
-            return ((ServletChannel)channel).getRequest();
+            return ((ServletChannel)channel).getServletContextRequest();
 
         while (request instanceof ServletRequestWrapper)
         {
@@ -142,7 +142,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
-        _httpInput = new HttpInput(_servletChannel); // TODO recycle
+        _httpInput = _servletChannel.getHttpInput();
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;

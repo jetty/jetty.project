@@ -28,17 +28,19 @@ class BlockingContentProducer implements ContentProducer
 
     private final AsyncContentProducer _asyncContentProducer;
     private final AsyncContentProducer.LockedSemaphore _semaphore;
+    private final AutoLock _lock;
 
-    BlockingContentProducer(AsyncContentProducer delegate)
+    BlockingContentProducer(AsyncContentProducer delegate, AutoLock lock)
     {
         _asyncContentProducer = delegate;
+        _lock = lock;
         _semaphore = _asyncContentProducer.newLockedSemaphore();
     }
 
     @Override
     public AutoLock lock()
     {
-        return _asyncContentProducer.lock();
+        return _lock.lock();
     }
 
     @Override

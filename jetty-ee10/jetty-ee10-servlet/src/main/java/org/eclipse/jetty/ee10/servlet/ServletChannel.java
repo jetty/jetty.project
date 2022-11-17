@@ -64,20 +64,32 @@ public class ServletChannel implements Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
+    private final ServletRequestState _state;
     private final AtomicLong _requests = new AtomicLong();
-    private Connector _connector;
-    private Executor _executor;
-    private HttpConfiguration _configuration;
-    private EndPoint _endPoint;
-    private ServletRequestState _state;
+    private final Connector _connector;
+    private final Executor _executor;
+    private final HttpConfiguration _configuration;
+    private final EndPoint _endPoint;
+    private final HttpInput _httpInput;
+    private final Listener _combinedListener;
     private ServletContextHandler.ServletContextApi _servletContextApi;
-    private ServletContextRequest _request;
+    private ServletContextRequest _servletContextRequest;
     private boolean _expects100Continue;
-    private Listener _combinedListener;
     private long _oldIdleTimeout;
     private Callback _callback;
     // Bytes written after interception (e.g. after compression).
     private long _written;
+
+    public ServletChannel(ServletContextHandler servletContextHandler, Request request)
+    {
+        _state = new ServletRequestState(this);
+        _connector = request.getConnectionMetaData().getConnector();
+        _executor = request.getContext();
+        _configuration = request.getConnectionMetaData().getHttpConfiguration();
+        _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+        _httpInput = new HttpInput(this);
+        _combinedListener = new Listeners(_connector, servletContextHandler);
+    }
 
     public void setCallback(Callback callback)
     {
@@ -86,30 +98,24 @@ public class ServletChannel implements Runnable
         _callback = callback;
     }
 
-    public void init(ServletContextRequest request)
+    public void init(ServletContextRequest servletContextRequest)
     {
-        _connector = request.getConnectionMetaData().getConnector();
-        _executor = request.getContext();
-        _configuration = request.getConnectionMetaData().getHttpConfiguration();
-        _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-        _state = new ServletRequestState(this); // TODO can this be recycled?
-        _servletContextApi = request.getContext().getServletContext();
-        _request = request;
-        _expects100Continue = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-        _combinedListener = new Listeners(request);
-
-        request.getHttpInput().init();
+        _state.recycle();
+        _httpInput.recycle();
+        _servletContextApi = servletContextRequest.getContext().getServletContext();
+        _servletContextRequest = servletContextRequest;
+        _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{}",
                 this,
-                _request,
+                _servletContextRequest,
                 _state);
     }
 
     public ServletContextHandler.Context getContext()
     {
-        return _request.getContext();
+        return _servletContextRequest.getContext();
     }
 
     public ServletContextHandler getContextHandler()
@@ -124,12 +130,12 @@ public class ServletChannel implements Runnable
 
     public HttpOutput getHttpOutput()
     {
-        return _request.getHttpOutput();
+        return _servletContextRequest.getHttpOutput();
     }
 
     public HttpInput getHttpInput()
     {
-        return _request.getHttpInput();
+        return _httpInput;
     }
 
     public ServletContextHandler.ServletContextApi getServletContextContext()
@@ -195,14 +201,14 @@ public class ServletChannel implements Runnable
         return _connector.getServer();
     }
 
-    public ServletContextRequest getRequest()
+    public ServletContextRequest getServletContextRequest()
     {
-        return _request;
+        return _servletContextRequest;
     }
 
     public ServletContextResponse getResponse()
     {
-        return _request.getResponse();
+        return _servletContextRequest.getResponse();
     }
 
     public Connection getConnection()
@@ -363,7 +369,7 @@ public class ServletChannel implements Runnable
     public boolean handle()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("handle {} {} ", _request.getHttpURI(), this);
+            LOG.debug("handle {} {} ", _servletContextRequest.getHttpURI(), this);
 
         Action action = _state.handling();
 
@@ -395,9 +401,9 @@ public class ServletChannel implements Runnable
                         {
                             ServletContextHandler.ServletContextApi servletContextApi = getServletContextContext();
                             ServletHandler servletHandler = servletContextApi.getContext().getServletContextHandler().getServletHandler();
-                            ServletHandler.MappedServlet mappedServlet = _request._mappedServlet;
+                            ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
 
-                            mappedServlet.handle(servletHandler, Request.getPathInContext(_request), _request.getHttpServletRequest(), _request.getHttpServletResponse());
+                            mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getHttpServletRequest(), _servletContextRequest.getHttpServletResponse());
                         });
 
                         break;
@@ -408,15 +414,15 @@ public class ServletChannel implements Runnable
                         dispatch(DispatcherType.ASYNC, () ->
                         {
                             HttpURI uri;
-                            String pathInContext = Request.getPathInContext(_request);
+                            String pathInContext = Request.getPathInContext(_servletContextRequest);
                             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
                             String dispatchString = asyncContextEvent.getDispatchPath();
                             if (dispatchString != null)
                             {
-                                String contextPath = _request.getContext().getContextPath();
+                                String contextPath = _servletContextRequest.getContext().getContextPath();
                                 HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
                                 pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
-                                uri = HttpURI.build(_request.getHttpURI())
+                                uri = HttpURI.build(_servletContextRequest.getHttpURI())
                                     .path(URIUtil.addPaths(contextPath, pathInContext))
                                     .query(dispatchUri.getQuery());
                             }
@@ -425,13 +431,13 @@ public class ServletChannel implements Runnable
                                 uri = asyncContextEvent.getBaseURI();
                                 if (uri == null)
                                 {
-                                    uri = _request.getHttpURI();
+                                    uri = _servletContextRequest.getHttpURI();
                                 }
                                 else
                                 {
                                     pathInContext = uri.getCanonicalPath();
-                                    if (_request.getContext().getContextPath().length() > 1)
-                                        pathInContext = pathInContext.substring(_request.getContext().getContextPath().length());
+                                    if (_servletContextRequest.getContext().getContextPath().length() > 1)
+                                        pathInContext = pathInContext.substring(_servletContextRequest.getContext().getContextPath().length());
                                 }
                             }
 
@@ -454,7 +460,7 @@ public class ServletChannel implements Runnable
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
-                            Integer code = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                            Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             if (code == null)
                                 code = HttpStatus.INTERNAL_SERVER_ERROR_500;
                             getResponse().setStatus(code);
@@ -464,9 +470,9 @@ public class ServletChannel implements Runnable
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
-                            Response.ensureConsumeAvailableOrNotPersistent(_request, _request.getResponse());
+                            Response.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
 
-                            ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            ContextHandler.Context context = (ContextHandler.Context)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no processor, then create a minimal error response.
@@ -481,7 +487,7 @@ public class ServletChannel implements Runnable
                                 // _state.completing();
                                 try (Blocker.Callback blocker = Blocker.callback())
                                 {
-                                    dispatch(DispatcherType.ERROR, () -> errorProcessor.process(_request, getResponse(), blocker));
+                                    dispatch(DispatcherType.ERROR, () -> errorProcessor.process(_servletContextRequest, getResponse(), blocker));
                                     blocker.block();
                                 }
                             }
@@ -510,7 +516,7 @@ public class ServletChannel implements Runnable
                         finally
                         {
                             // clean up the context that was set in Response.sendError
-                            _request.removeAttribute(ErrorHandler.ERROR_CONTEXT);
+                            _servletContextRequest.removeAttribute(ErrorHandler.ERROR_CONTEXT);
                         }
                         break;
                     }
@@ -523,14 +529,14 @@ public class ServletChannel implements Runnable
                     case READ_CALLBACK:
                     {
                         ServletContextHandler handler = _state.getContextHandler();
-                        handler.getContext().run(() -> _request.getHttpInput().run());
+                        handler.getContext().run(() -> _servletContextRequest.getHttpInput().run());
                         break;
                     }
 
                     case WRITE_CALLBACK:
                     {
                         ServletContextHandler handler = _state.getContextHandler();
-                        handler.getContext().run(() -> _request.getHttpOutput().run());
+                        handler.getContext().run(() -> _servletContextRequest.getHttpOutput().run());
                         break;
                     }
 
@@ -550,14 +556,14 @@ public class ServletChannel implements Runnable
 
                             // Indicate Connection:close if we can't consume all.
                             if (getResponse().getStatus() >= 200)
-                                Response.ensureConsumeAvailableOrNotPersistent(_request, _request.getResponse());
+                                Response.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
                         }
 
 
                         // RFC 7230, section 3.3.
-                        if (!_request.isHead() &&
+                        if (!_servletContextRequest.isHead() &&
                             getResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
-                            !getResponse().isContentComplete(_request.getHttpOutput().getWritten()))
+                            !getResponse().isContentComplete(_servletContextRequest.getHttpOutput().getWritten()))
                         {
                             if (sendErrorOrAbort("Insufficient content written"))
                                 break;
@@ -625,21 +631,21 @@ public class ServletChannel implements Runnable
     {
         try
         {
-            _request.getResponse().getHttpOutput().reopen();
-            _servletContextApi.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
+            _servletContextRequest.getResponse().getHttpOutput().reopen();
+            _servletContextApi.getContext().getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
             getHttpOutput().reopen();
-            _combinedListener.onBeforeDispatch(_request);
+            _combinedListener.onBeforeDispatch(_servletContextRequest);
             dispatchable.dispatch();
         }
         catch (Throwable x)
         {
-            _combinedListener.onDispatchFailure(_request, x);
+            _combinedListener.onDispatchFailure(_servletContextRequest, x);
             throw x;
         }
         finally
         {
-            _combinedListener.onAfterDispatch(_request);
-            _servletContextApi.getContext().getServletContextHandler().requestDestroyed(_request, _request.getHttpServletRequest());
+            _combinedListener.onAfterDispatch(_servletContextRequest);
+            _servletContextApi.getContext().getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
         }
     }
 
@@ -661,19 +667,19 @@ public class ServletChannel implements Runnable
         if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(_request.getHttpServletRequest().getRequestURI(), failure);
+                LOG.debug(_servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
         }
         else if (noStack != null)
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
-                LOG.warn("handleException {}", _request.getHttpServletRequest().getRequestURI(), failure);
+                LOG.warn("handleException {}", _servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
             else
-                LOG.warn("handleException {} {}", _request.getHttpServletRequest().getRequestURI(), noStack.toString());
+                LOG.warn("handleException {} {}", _servletContextRequest.getHttpServletRequest().getRequestURI(), noStack.toString());
         }
         else
         {
-            LOG.warn(_request.getHttpServletRequest().getRequestURI(), failure);
+            LOG.warn(_servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
         }
 
         if (isCommitted())
@@ -740,14 +746,14 @@ public class ServletChannel implements Runnable
     @Override
     public String toString()
     {
-        if (_request == null)
+        if (_servletContextRequest == null)
         {
             return String.format("%s@%x{null}",
                 getClass().getSimpleName(),
                 hashCode());
         }
 
-        long timeStamp = _request.getTimeStamp();
+        long timeStamp = _servletContextRequest.getTimeStamp();
         return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
             getClass().getSimpleName(),
             hashCode(),
@@ -756,7 +762,7 @@ public class ServletChannel implements Runnable
             isRequestCompleted(),
             isResponseCompleted(),
             _state.getState(),
-            _request.getHttpURI(),
+            _servletContextRequest.getHttpURI(),
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
@@ -776,13 +782,13 @@ public class ServletChannel implements Runnable
 
     void onTrailers(HttpFields trailers)
     {
-        _request.setTrailers(trailers);
-        _combinedListener.onRequestTrailers(_request);
+        _servletContextRequest.setTrailers(trailers);
+        _combinedListener.onRequestTrailers(_servletContextRequest);
     }
 
     public void onCompleted()
     {
-        ServletContextRequest.ServletApiRequest apiRequest = _request.getServletApiRequest();
+        ServletContextRequest.ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
 
@@ -794,19 +800,19 @@ public class ServletChannel implements Runnable
         {
             Authentication authentication = apiRequest.getAuthentication();
             if (authentication instanceof Authentication.User userAuthentication)
-                _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
+                _servletContextRequest.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
 
-            String realPath = apiRequest.getServletContext().getRealPath(Request.getPathInContext(_request));
-            _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
+            String realPath = apiRequest.getServletContext().getRealPath(Request.getPathInContext(_servletContextRequest));
+            _servletContextRequest.setAttribute(CustomRequestLog.REAL_PATH, realPath);
 
-            String servletName = _request.getServletName();
-            _request.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+            String servletName = _servletContextRequest.getServletName();
+            _servletContextRequest.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
         }
 
         // Callback will either be succeeded here or failed in abort().
         if (_state.completeResponse())
             _callback.succeeded();
-        _combinedListener.onComplete(_request);
+        _combinedListener.onComplete(_servletContextRequest);
     }
 
     public boolean isCommitted()
@@ -848,7 +854,7 @@ public class ServletChannel implements Runnable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("abort {}", this, failure);
-            _combinedListener.onResponseFailure(_request, failure);
+            _combinedListener.onResponseFailure(_servletContextRequest, failure);
             _callback.failed(failure);
         }
     }
@@ -1032,10 +1038,10 @@ public class ServletChannel implements Runnable
     {
         private final List<Listener> _listeners;
 
-        private Listeners(ServletContextRequest request)
+        private Listeners(Connector connector, ServletContextHandler servletContextHandler)
         {
-            Collection<Listener> connectorListeners = request.getConnectionMetaData().getConnector().getBeans(Listener.class);
-            List<Listener> handlerListeners = request.getContext().getServletContextHandler().getEventListeners().stream()
+            Collection<Listener> connectorListeners = connector.getBeans(Listener.class);
+            List<Listener> handlerListeners = servletContextHandler.getEventListeners().stream()
                 .filter(l -> l instanceof Listener)
                 .map(Listener.class::cast)
                 .toList();
