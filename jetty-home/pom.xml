@@ -14,6 +14,7 @@
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
+    <docs-assembly-directory>${basedir}/target/jetty-home-with-docs</docs-assembly-directory>
     <jetty-setuid-version>1.0.4</jetty-setuid-version>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
@@ -50,6 +51,7 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -121,7 +123,6 @@
               </artifactItems>
             </configuration>
           </execution>
-
           <execution>
             <id>copy-jetty-core-deps</id>
             <phase>generate-resources</phase>
@@ -339,6 +340,44 @@
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>unpack-documentation</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.documentation</groupId>
+                  <artifactId>jetty-documentation</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>html</classifier>
+                  <type>zip</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${docs-assembly-directory}/docs</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-javadoc-aggregate</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>javadoc</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>javadoc</classifier>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${docs-assembly-directory}/javadoc</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -394,6 +433,19 @@
               <appendAssemblyId>true</appendAssemblyId>
             </configuration>
           </execution>
+          <execution>
+            <id>docs</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/jetty-with-docs-assembly.xml</descriptor>
+              </descriptors>
+              <appendAssemblyId>true</appendAssemblyId>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -436,7 +488,7 @@
       </plugin>
     </plugins>
   </build>
-  
+
   <dependencies>
     <!--    <dependency>-->
     <!--      <groupId>jakarta.mail</groupId>-->
@@ -625,6 +677,22 @@
       <optional>true</optional>
     </dependency>
 
+    <dependency>
+      <groupId>org.eclipse.jetty.documentation</groupId>
+      <artifactId>jetty-documentation</artifactId>
+      <version>${project.version}</version>
+      <classifier>html</classifier>
+      <type>zip</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>javadoc</artifactId>
+      <version>${project.version}</version>
+      <classifier>javadoc</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
   </dependencies>
 
 </project>

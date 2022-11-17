@@ -767,6 +767,7 @@ public class ServletHandlerTest
         server.addConnector(connector);
 
         server.start();
+        server.dumpStdErr();
 
         assertThat(connector.getResponse("GET /default HTTP/1.0\r\n\r\n"), containsString("mapping='/'"));
         assertThat(connector.getResponse("GET /foo HTTP/1.0\r\n\r\n"), containsString("mapping='/foo'"));

@@ -81,7 +81,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -282,12 +281,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         // Link the handlers
         relinkHandlers();
-
-        /*
-        TODO: error handling.
-        if (errorHandler != null)
-            setErrorHandler(errorHandler);
-        */
     }
     
     public ServletContextApi newServletContextApi()
@@ -1001,8 +994,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             setSecurityHandler((SecurityHandler)handler);
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
-        else if (handler instanceof GzipHandler)
-            setGzipHandler((GzipHandler)handler);
         else
         {
             if (handler != null)
@@ -1019,7 +1010,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             wrapper.setHandler(handler);
     }
 
-    // TODO: review this.
     private void relinkHandlers()
     {
         Handler.Nested handler = this;
@@ -1086,7 +1076,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
-        // TODO who uses this???
         if (getServer() != null)
             _servletContext.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
@@ -1115,7 +1104,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         ClassLoader oldWebapploader = null;
         Thread currentThread = null;
 
-        // TODO: Review.
         enterScope(null);
 
         Context context = getContext();
@@ -1138,12 +1126,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             // retain only durable listeners
             setEventListeners(_durableListeners);
             _durableListeners.clear();
-
-            /*
-            TODO:
-            if (_errorHandler != null)
-                _errorHandler.stop();
-            */
 
             for (EventListener l : _programmaticListeners)
             {
@@ -1685,18 +1667,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         replaceHandler(_servletHandler, servletHandler);
         _servletHandler = servletHandler;
         relinkHandlers();
-    }
-
-    /**
-     * @param gzipHandler the GzipHandler for this ServletContextHandler
-     * @deprecated use {@link #insertHandler(Handler.Nested)} instead
-     */
-    @Deprecated
-    public void setGzipHandler(GzipHandler gzipHandler)
-    {
-        // TODO remove
-        insertHandler(gzipHandler);
-        LOG.warn("ServletContextHandler.setGzipHandler(GzipHandler) is deprecated, use insertHandler(HandlerWrapper) instead.");
     }
 
     /**

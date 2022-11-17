@@ -97,6 +97,8 @@
                 infinispan-embedded,
                 infinispan-remote,
                 jetty-test-helper,
+                jetty-maven-plugin,
+                jetty-jspc-maven-plugin,
                 alpn-api,
                 javax.servlet,
                 javax.websocket,
@@ -129,7 +131,7 @@
             <id>build-javadoc</id>
             <phase>prepare-package</phase>
             <goals>
-              <goal>javadoc</goal>
+              <goal>jar</goal>
             </goals>
             <configuration>
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
@@ -145,11 +147,11 @@
   </build>
 
   <dependencies>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-client</artifactId>
@@ -175,21 +177,21 @@
       <artifactId>jetty-alpn-java-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>apache-jsp</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
+    </dependency>-->
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>glassfish-jstl</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
+    </dependency>-->
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-cdi</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
@@ -250,16 +252,16 @@
       <artifactId>jetty-http3-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaas</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
+    </dependency>-->
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaspi</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.memcached</groupId>
       <artifactId>jetty-memcached-sessions</artifactId>
@@ -270,11 +272,11 @@
       <artifactId>jetty-nosql</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-osgi-boot</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
@@ -290,37 +292,37 @@
       <artifactId>jetty-quic-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-quickstart</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-runner</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
+    </dependency>-->
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-openid</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-start</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-unixsocket-client</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
+    </dependency>-->
+    <!--<dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jakarta-server</artifactId>
       <scope>provided</scope>
@@ -339,7 +341,7 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-server</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
@@ -353,7 +355,7 @@
     </dependency>
     <!-- javax.mail Dep -->
     <!-- to support MailSessionReference.java -->
-    <dependency>
+    <!--<dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
       <scope>provided</scope>
@@ -362,24 +364,7 @@
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <!-- === Maven Plugin Deps == -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jspc-maven-plugin</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <!-- to make maven plugins source sane -->
-    <dependency>
-      <groupId>org.apache.maven.plugin-tools</groupId>
-      <artifactId>maven-plugin-annotations</artifactId>
-      <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <!-- === InfiniSpan Deps === -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -411,10 +396,10 @@
       <artifactId>protostream</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>jakarta.activation</groupId>
       <artifactId>jakarta.activation-api</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
   </dependencies>
 </project>
