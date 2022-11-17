@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -33,15 +34,16 @@ import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
+import org.eclipse.jetty.http.PreCompressedHttpContent;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -65,20 +67,19 @@ public class ResourceService
     // TODO: see if we can set this to private eventually
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
-    private List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
+    private final List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
+    private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
+    private final List<String> _preferredEncodingOrder = new ArrayList<>();
     private WelcomeFactory _welcomeFactory;
-
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
-    private HttpContent.ContentFactory _contentFactory;
-    private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
-    private List<String> _preferredEncodingOrder = new ArrayList<>();
+    private HttpContent.Factory _contentFactory;
     private int _encodingCacheSize = 100;
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
     private HttpField _cacheControl;
-    private Resource _stylesheet;
+    private Resource _styleSheet;
 
     public ResourceService()
     {
@@ -87,48 +88,69 @@ public class ResourceService
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
-    public void setStylesheet(Resource stylesheet)
+    public void setStyleSheet(Resource stylesheet)
     {
-        _stylesheet = stylesheet;
+        _styleSheet = stylesheet;
     }
 
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStylesheet()
+    public Resource getStyleSheet()
     {
-        return _stylesheet;
+        return _styleSheet;
     }
 
     public HttpContent getContent(String path, Request request) throws IOException
     {
-        ContextHandler contextHandler = ContextHandler.getContextHandler(request);
-        return getContent(path, contextHandler);
-    }
-
-    public HttpContent getContent(String path, AliasCheck aliasCheck) throws IOException
-    {
         HttpContent content = _contentFactory.getContent(path == null ? "" : path);
         if (content != null)
         {
+            AliasCheck aliasCheck = ContextHandler.getContextHandler(request);
             if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
                 return null;
+
+            Collection<CompressedContentFormat> compressedContentFormats = (content.getPreCompressedContentFormats() == null)
+                ? _precompressedFormats : content.getPreCompressedContentFormats();
+            if (!compressedContentFormats.isEmpty())
+            {
+                List<String> preferredEncodingOrder = getPreferredEncodingOrder(request);
+                if (!preferredEncodingOrder.isEmpty())
+                {
+                    for (String encoding : preferredEncodingOrder)
+                    {
+                        CompressedContentFormat contentFormat = isEncodingAvailable(encoding, compressedContentFormats);
+                        if (contentFormat == null)
+                            continue;
+
+                        HttpContent preCompressedContent = _contentFactory.getContent(path + contentFormat.getExtension());
+                        if (preCompressedContent == null)
+                            continue;
+
+                        if (aliasCheck != null && !aliasCheck.checkAlias(path, preCompressedContent.getResource()))
+                            continue;
+
+                        return new PreCompressedHttpContent(content, preCompressedContent, contentFormat);
+                    }
+                }
+            }
         }
         else
         {
-            if ((_stylesheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
-                content = new ResourceHttpContent(_stylesheet, "text/css");
+            // TODO: can this go in a "StaticContentFactory" that goes after ResourceContentFactory?
+            if ((_styleSheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
+                content = new ResourceHttpContent(_styleSheet, "text/css");
         }
 
         return content;
     }
 
-    public HttpContent.ContentFactory getContentFactory()
+    public HttpContent.Factory getHttpContentFactory()
     {
         return _contentFactory;
     }
 
-    public void setContentFactory(HttpContent.ContentFactory contentFactory)
+    public void setHttpContentFactory(HttpContent.Factory contentFactory)
     {
         _contentFactory = contentFactory;
     }
@@ -157,7 +179,6 @@ public class ResourceService
         List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());
 
         boolean endsWithSlash = pathInContext.endsWith("/");
-        boolean checkPrecompressedVariants = _precompressedFormats.size() > 0 && !endsWithSlash && reqRanges.isEmpty();
 
         try
         {
@@ -184,27 +205,13 @@ public class ResourceService
             if (passConditionalHeaders(request, response, content, callback))
                 return;
 
-            // Precompressed variant available?
-            Map<CompressedContentFormat, ? extends HttpContent> precompressedContents = checkPrecompressedVariants ? content.getPrecompressedContents() : null;
-            if (precompressedContents != null && precompressedContents.size() > 0)
-            {
-                // Tell caches that response may vary by accept-encoding
+            if (content.getPreCompressedContentFormats() == null || !content.getPreCompressedContentFormats().isEmpty())
                 response.getHeaders().put(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
-                List<String> preferredEncodings = getPreferredEncodingOrder(request);
-                CompressedContentFormat precompressedContentEncoding = getBestPrecompressedContent(preferredEncodings, precompressedContents.keySet());
-                if (precompressedContentEncoding != null)
-                {
-                    HttpContent precompressedContent = precompressedContents.get(precompressedContentEncoding);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("precompressed={}", precompressedContent);
-                    content = precompressedContent;
-                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING, precompressedContentEncoding.getEncoding());
-                }
-            }
-
-            // TODO this should be done by HttpContent#getContentEncoding?
-            if (isGzippedContent(pathInContext))
+            HttpField contentEncoding = content.getContentEncoding();
+            if (contentEncoding != null)
+                response.getHeaders().put(contentEncoding);
+            else if (isImplicitlyGzippedContent(pathInContext))
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
 
             // Send the data
@@ -280,7 +287,7 @@ public class ResourceService
         return values;
     }
 
-    private boolean isGzippedContent(String path)
+    private boolean isImplicitlyGzippedContent(String path)
     {
         if (path == null || _gzipEquivalentFileExtensions == null)
             return false;
@@ -293,25 +300,19 @@ public class ResourceService
         return false;
     }
 
-    private CompressedContentFormat getBestPrecompressedContent(List<String> preferredEncodings, java.util.Collection<CompressedContentFormat> availableFormats)
+    private CompressedContentFormat isEncodingAvailable(String encoding, Collection<CompressedContentFormat> availableFormats)
     {
         if (availableFormats.isEmpty())
             return null;
 
-        for (String encoding : preferredEncodings)
+        for (CompressedContentFormat format : availableFormats)
         {
-            for (CompressedContentFormat format : availableFormats)
-            {
-                if (format.getEncoding().equals(encoding))
-                    return format;
-            }
-
-            if ("*".equals(encoding))
-                return availableFormats.iterator().next();
-
-            if (HttpHeaderValue.IDENTITY.asString().equals(encoding))
-                return null;
+            if (format.getEncoding().equals(encoding))
+                return format;
         }
+
+        if ("*".equals(encoding))
+            return availableFormats.iterator().next();
         return null;
     }
 
@@ -347,9 +348,12 @@ public class ResourceService
 
             if (_etags)
             {
+
                 String etag = content.getETagValue();
                 if (etag != null)
                 {
+                    // TODO: this is a hack to get the etag of the non-preCompressed version.
+                    etag = EtagUtils.rewriteWithSuffix(content.getETagValue(), "");
                     if (ifm != null)
                     {
                         String matched = matchesEtag(etag, ifm);
@@ -569,6 +573,7 @@ public class ResourceService
     private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
         long contentLength = content.getContentLengthValue();
+        callback = Callback.from(callback, content::release);
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("sendData content=%s", content));
@@ -623,14 +628,24 @@ public class ResourceService
     {
         try
         {
-            ByteBuffer buffer = content.getBuffer();
+            ByteBuffer buffer = content.getByteBuffer();
             if (buffer != null)
+            {
                 response.write(true, buffer, callback);
+            }
             else
+            {
+                // TODO: is it possible to do zero-copy transfer?
+                // WritableByteChannel c = Response.asWritableByteChannel(target);
+                // FileChannel fileChannel = (FileChannel) source;
+                // fileChannel.transferTo(0, contentLength, c);
+
                 new ContentWriterIteratingCallback(content, response, callback).iterate();
+            }
         }
         catch (Throwable x)
         {
+            content.release();
             callback.failed(x);
         }
     }
@@ -831,20 +846,17 @@ public class ResourceService
         private final Content.Sink sink;
         private final Callback callback;
         private final ByteBuffer byteBuffer;
+        private final ByteBufferPool byteBufferPool;
 
         public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
-            // TODO: is it possible to do zero-copy transfer?
-//            WritableByteChannel c = Response.asWritableByteChannel(target);
-//            FileChannel fileChannel = (FileChannel) source;
-//            fileChannel.transferTo(0, contentLength, c);
-
+            this.byteBufferPool = target.getRequest().getComponents().getByteBufferPool();
             this.source = content.getResource().newReadableByteChannel();
             this.sink = target;
             this.callback = callback;
             int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
             boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-            this.byteBuffer = useOutputDirectByteBuffers ? ByteBuffer.allocateDirect(outputBufferSize) : ByteBuffer.allocate(outputBufferSize); // TODO use pool
+            this.byteBuffer = byteBufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);
         }
 
         @Override
@@ -852,7 +864,8 @@ public class ResourceService
         {
             if (!source.isOpen())
                 return Action.SUCCEEDED;
-            byteBuffer.clear();
+
+            BufferUtil.clearToFill(byteBuffer);
             int read = source.read(byteBuffer);
             if (read == -1)
             {
@@ -860,7 +873,7 @@ public class ResourceService
                 sink.write(true, BufferUtil.EMPTY_BUFFER, this);
                 return Action.SCHEDULED;
             }
-            byteBuffer.flip();
+            BufferUtil.flipToFlush(byteBuffer, 0);
             sink.write(false, byteBuffer, this);
             return Action.SCHEDULED;
         }
@@ -868,12 +881,14 @@ public class ResourceService
         @Override
         protected void onCompleteSuccess()
         {
+            byteBufferPool.release(byteBuffer);
             callback.succeeded();
         }
 
         @Override
         protected void onCompleteFailure(Throwable x)
         {
+            byteBufferPool.release(byteBuffer);
             callback.failed(x);
         }
     }

@@ -2380,14 +2380,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         CoreContextHandler()
         {
-            super.setHandler(new Handler.Abstract()
-            {
-                @Override
-                public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
-                {
-                    return CoreContextHandler.this;
-                }
-            });
+            super.setHandler(new CoreToNestedHandler());
             addBean(ContextHandler.this, true);
         }
 
@@ -2519,6 +2512,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             public APIContext getAPIContext()
             {
                 return _apiContext;
+            }
+        }
+
+        private class CoreToNestedHandler extends Abstract
+        {
+            @Override
+            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            {
+                return CoreContextHandler.this;
             }
         }
     }

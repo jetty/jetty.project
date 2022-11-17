@@ -16,8 +16,7 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -34,31 +33,13 @@ public class ResourceHttpContent implements HttpContent
     final Path _path;
     final String _contentType;
     final HttpField _etag;
-    Map<CompressedContentFormat, HttpContent> _precompressedContents;
 
     public ResourceHttpContent(final Resource resource, final String contentType)
-    {
-        this(resource, contentType, null);
-    }
-
-    public ResourceHttpContent(final Resource resource, final String contentType, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
         _resource = resource;
         _path = resource.getPath();
         _contentType = contentType;
         _etag = EtagUtils.createWeakEtagField(resource);
-        if (precompressedContents == null)
-        {
-            _precompressedContents = null;
-        }
-        else
-        {
-            _precompressedContents = new HashMap<>(precompressedContents.size());
-            for (Map.Entry<CompressedContentFormat, HttpContent> entry : precompressedContents.entrySet())
-            {
-                _precompressedContents.put(entry.getKey(), new PrecompressedHttpContent(this, entry.getValue(), entry.getKey()));
-            }
-        }
     }
 
     @Override
@@ -95,6 +76,12 @@ public class ResourceHttpContent implements HttpContent
     public Type getMimeType()
     {
         return _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
+    }
+
+    @Override
+    public Instant getLastModifiedInstant()
+    {
+        return _resource.lastModified();
     }
 
     @Override
@@ -147,17 +134,17 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,ct=%s,c=%b}", this.getClass().getSimpleName(), hashCode(), _resource, _contentType, _precompressedContents != null);
+        return String.format("%s@%x{r=%s,ct=%s}", this.getClass().getSimpleName(), hashCode(), _resource, _contentType);
     }
 
     @Override
-    public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
+    public ByteBuffer getByteBuffer()
     {
-        return _precompressedContents;
+        return null;
     }
 
     @Override
-    public ByteBuffer getBuffer()
+    public Set<CompressedContentFormat> getPreCompressedContentFormats()
     {
         return null;
     }

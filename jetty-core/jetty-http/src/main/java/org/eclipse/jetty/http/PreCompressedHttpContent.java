@@ -14,19 +14,20 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
+import java.time.Instant;
+import java.util.Set;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
-public class PrecompressedHttpContent implements HttpContent
+public class PreCompressedHttpContent implements HttpContent
 {
     private final HttpContent _content;
     private final HttpContent _precompressedContent;
     private final CompressedContentFormat _format;
     private final HttpField _etag;
 
-    public PrecompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
+    public PreCompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
     {
         if (content == null)
             throw new IllegalArgumentException("Null HttpContent");
@@ -38,7 +39,7 @@ public class PrecompressedHttpContent implements HttpContent
         _content = content;
         _precompressedContent = precompressedContent;
         _format = format;
-        _etag = EtagUtils.createWeakEtagField(_content.getResource(), _format.getEtagSuffix());
+        _etag = new HttpField(HttpHeader.ETAG, EtagUtils.rewriteWithSuffix(_content.getETagValue(), _format.getEtagSuffix()));
     }
 
     @Override
@@ -57,6 +58,12 @@ public class PrecompressedHttpContent implements HttpContent
     public String getETagValue()
     {
         return getETag().getValue();
+    }
+
+    @Override
+    public Instant getLastModifiedInstant()
+    {
+        return _precompressedContent.getLastModifiedInstant();
     }
 
     @Override
@@ -131,15 +138,15 @@ public class PrecompressedHttpContent implements HttpContent
     }
 
     @Override
-    public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
+    public ByteBuffer getByteBuffer()
     {
-        return null;
+        return _precompressedContent.getByteBuffer();
     }
 
     @Override
-    public ByteBuffer getBuffer()
+    public Set<CompressedContentFormat> getPreCompressedContentFormats()
     {
-        return _precompressedContent.getBuffer();
+        return _content.getPreCompressedContentFormats();
     }
 
     @Override

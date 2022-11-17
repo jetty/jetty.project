@@ -194,15 +194,9 @@ public final class EtagUtils
         StringBuilder b = new StringBuilder(32);
         b.append("W/\"");
 
-        int length = name.length();
-        long lhash = 0;
-        for (int i = 0; i < length; i++)
-        {
-            lhash = 31 * lhash + name.charAt(i);
-        }
-
         Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
         long lastModifiedMillis = lastModified.toEpochMilli();
+        int lhash = Objects.hashCode(name);
         b.append(encoder.encodeToString(longToBytes(lastModifiedMillis ^ lhash)));
         b.append(encoder.encodeToString(longToBytes(size ^ lhash)));
         if (etagSuffix != null)
@@ -241,7 +235,9 @@ public final class EtagUtils
         }
         // find suffix (if present)
         int suffixIdx = etag.lastIndexOf('-', end);
-        if (suffixIdx >= 0 && suffixIdx >= start)
+        if ((suffixIdx - 1) >= 0 && (suffixIdx - 1 >= start) && etag.charAt(suffixIdx - 1) == '-')
+            end = suffixIdx - 1;
+        else if (suffixIdx >= 0 && suffixIdx >= start)
             end = suffixIdx;
 
         // build new etag
