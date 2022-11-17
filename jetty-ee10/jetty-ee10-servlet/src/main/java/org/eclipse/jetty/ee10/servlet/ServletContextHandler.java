@@ -81,6 +81,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -1180,11 +1181,12 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return null;
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
-        ServletChannel servletChannel = (ServletChannel)request.getComponents().getCache().get(ServletChannel.class.getName());
+        Attributes cache = request.getComponents().getCache();
+        ServletChannel servletChannel = (ServletChannel)cache.getAttribute(ServletChannel.class.getName());
         if (servletChannel == null)
         {
             servletChannel = new ServletChannel(this, request);
-            request.getComponents().getCache().put(ServletChannel.class.getName(), servletChannel);
+            cache.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
         ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext,
