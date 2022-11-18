@@ -45,8 +45,32 @@ public class SerializedInvoker
     public Runnable offer(Runnable task)
     {
         if (task == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Offering task null, skipping it in {}", this);
             return null;
+        }
+        if (NamedRunnable.LOG.isDebugEnabled())
+        {
+            if (!(task instanceof NamedRunnable))
+            {
+                StackTraceElement[] stackTrace = new Exception().getStackTrace();
+                for (StackTraceElement stackTraceElement : stackTrace)
+                {
+                    String className = stackTraceElement.getClassName();
+                    if (!className.equals(SerializedInvoker.class.getName()) && !className.equals(getClass().getName()))
+                    {
+                        String name = "Queued at " + className + "." + stackTraceElement.getMethodName() +
+                            "(" + stackTraceElement.getFileName() + ":" + stackTraceElement.getLineNumber() + ")";
+                        task = new NamedRunnable(task, name);
+                        break;
+                    }
+                }
+            }
+        }
         Link link = new Link(task);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Offering link {} of {}", link, this);
         Link penultimate = _tail.getAndSet(link);
         if (penultimate == null)
             return link;
@@ -62,6 +86,8 @@ public class SerializedInvoker
      */
     public Runnable offer(Runnable... tasks)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Offering {} tasks in {}", tasks.length, this);
         Runnable runnable = null;
         for (Runnable task : tasks)
         {
@@ -82,7 +108,16 @@ public class SerializedInvoker
     {
         Runnable todo = offer(task);
         if (todo != null)
+        {
             todo.run();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Executed {} of {}", todo, this);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Task was queued in {}", this);
+        }
     }
 
     /**
@@ -94,7 +129,22 @@ public class SerializedInvoker
     {
         Runnable todo = offer(tasks);
         if (todo != null)
+        {
             todo.run();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Executed {} of {}", todo, this);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Tasks were queued in {}", this);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 
     protected void onError(Runnable task, Throwable t)
@@ -140,16 +190,54 @@ public class SerializedInvoker
             Link link = this;
             while (link != null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
                 try
                 {
                     link._task.run();
                 }
                 catch (Throwable t)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
                     onError(link._task, t);
                 }
                 link = link.next();
+                if (link == null && LOG.isDebugEnabled())
+                    LOG.debug("Next link is null, execution is over, in {}", SerializedInvoker.this);
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s] -> %s", getClass().getSimpleName(), hashCode(), _task, _next);
+        }
+    }
+
+    private static final class NamedRunnable implements Runnable
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(NamedRunnable.class);
+
+        private final Runnable delegate;
+        private final String name;
+
+        public NamedRunnable(Runnable delegate, String name)
+        {
+            this.delegate = delegate;
+            this.name = name;
+        }
+
+        @Override
+        public void run()
+        {
+            delegate.run();
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
         }
     }
 }
