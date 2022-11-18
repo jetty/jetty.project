@@ -11,9 +11,9 @@
   <name>Jetty :: Documentation</name>
   <packaging>jar</packaging>
   <properties>
-    <assembly.skipAssembly>${skipTests}</assembly.skipAssembly>
-    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
-    <ee.version>ee10</ee.version>
+    <skipDocs>false</skipDocs>
+    <assembly.skipAssembly>${skipDocs}</assembly.skipAssembly>
+    <asciidoctor.skip>${skipDocs}</asciidoctor.skip>
   </properties>
 
   <build>
@@ -150,8 +150,8 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.eclipse.jetty.${ee.version}</groupId>
-        <artifactId>jetty-${ee.version}-bom</artifactId>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
         <version>${project.version}</version>
         <type>pom</type>
         <scope>import</scope>
@@ -181,20 +181,20 @@
       <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-servlets</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}</groupId>
-      <artifactId>jetty-${ee.version}-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
@@ -234,16 +234,16 @@
       <artifactId>jetty-nosql</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.${ee.version}.websocket</groupId>
-      <artifactId>jetty-${ee.version}-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
     </dependency>
   </dependencies>
 </project>
