@@ -74,6 +74,8 @@ var mystring = new String();
 
 If an object with the id `mystring` already exists, then it is not created again but rather just referenced.
 
+Within element `<Configure>`, the created object (if any) is in xref:og-xml-syntax-scope[scope] and may be the implicit target of other, nested, elements.
+
 Typically the `<Configure>` element is used to configure a `Server` instance or `ContextHandler` subclasses such as `WebAppContext` that represent web applications.
 
 [[og-xml-syntax-arg]]
@@ -187,12 +189,38 @@ This is equivalent to the following Java code:
 var myhost = InetAddress.getByName("jdk.java.net");
 ----
 
+The `class` attribute can also be used to specify the Java class or interface to use to lookup the non-``static`` method name.
+This is necessary when the object in scope, onto which the `<Call>` would be applied, is an instance of a class that is not visible to Jetty classes, or not accessible because it is not `public`.
+For example:
+
+[source,xml,subs=normal]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Call class="java.util.concurrent.Executors" name="newSingleThreadScheduledExecutor">
+    #<Call class="java.util.concurrent.ExecutorService" name="shutdown" />#
+  </Call>
+</Configure>
+----
+
+In the example above, `Executors.newSingleThreadScheduledExecutor()` returns an object whose class is a private JDK implementation class.
+Without an explicit `class` attribute, it is not possible to invoke the method `shutdown()` when it is obtained via reflection from the private JDK implementation class, because while the method is `public`, the private JDK implementation class is not, therefore this exception is thrown:
+
+[source]
+----
+java.lang.IllegalAccessException: class org.eclipse.jetty.xml.XmlConfiguration$JettyXmlConfiguration (in module org.eclipse.jetty.xml) cannot access a member of class java.util.concurrent.Executors$DelegatedExecutorService (in module java.base) with modifiers "public"
+----
+
+The solution is to explicitly use the `class` attribute of the `<Call>` element that is invoking the `shutdown()` method, specifying a publicly accessible class or interface that the object in scope extends or implements (in the example above `java.util.concurrent.ExecutorService`).
+
 [[og-xml-syntax-get]]
 ===== `<Get>`
 
 Element `<Get>` retrieves the value of a JavaBean property specified by the mandatory `name` attribute.
 
-If the JavaBean property is `foo` (or `Foo`), `<Get>` first attempts to invoke _method_ `getFoo()`; failing that, attempts to retrieve the value from _field_ `foo` (or `Foo`).
+If the JavaBean property is `foo` (or `Foo`), `<Get>` first attempts to invoke _method_ `getFoo()` or _method_ `isFoo()`; failing that, attempts to retrieve the value from _field_ `foo` (or `Foo`).
 
 [source,xml]
 ----
@@ -211,6 +239,8 @@ If the JavaBean property is `foo` (or `Foo`), `<Get>` first attempts to invoke _
   </Get>
 </Configure>
 ----
+
+The `class` attribute allows to perform `static` calls, or to lookup the getter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
 
 [[og-xml-syntax-set]]
 ===== `<Set>`
@@ -234,6 +264,8 @@ If the JavaBean property is `foo` (or `Foo`), `<Set>` first attempts to invoke _
   </Set>
 </Configure>
 ----
+
+The `class` attribute allows to perform `static` calls, or to lookup the setter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
 
 [[og-xml-syntax-map]]
 ===== `<Map>` and `<Entry>`
