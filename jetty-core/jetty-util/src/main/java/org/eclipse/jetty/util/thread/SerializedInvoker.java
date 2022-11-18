@@ -50,10 +50,15 @@ public class SerializedInvoker
                 LOG.debug("Offering task null, skipping it in {}", this);
             return null;
         }
+        // The NamedRunnable logger is checked to make it possible to enable the nice task names in a debugger
+        // while not flooding the logs nor stderr with logging statements just by adding
+        // org.eclipse.jetty.util.thread.SerializedInvoker$NamedRunnable.LEVEL=DEBUG to jetty-logging.properties.
         if (NamedRunnable.LOG.isDebugEnabled())
         {
             if (!(task instanceof NamedRunnable))
             {
+                // Wrap the given task with another one that's going to delegate run() to the wrapped task while the
+                // wrapper's toString() returns a description of the place in code where SerializedInvoker.run() was called.
                 StackTraceElement[] stackTrace = new Exception().getStackTrace();
                 for (StackTraceElement stackTraceElement : stackTrace)
                 {
@@ -108,16 +113,10 @@ public class SerializedInvoker
     {
         Runnable todo = offer(task);
         if (todo != null)
-        {
             todo.run();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Executed {} of {}", todo, this);
-        }
         else
-        {
             if (LOG.isDebugEnabled())
-                LOG.debug("Task was queued in {}", this);
-        }
+                LOG.debug("Queued link in {}", this);
     }
 
     /**
@@ -129,16 +128,10 @@ public class SerializedInvoker
     {
         Runnable todo = offer(tasks);
         if (todo != null)
-        {
             todo.run();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Executed {} of {}", todo, this);
-        }
         else
-        {
             if (LOG.isDebugEnabled())
-                LOG.debug("Tasks were queued in {}", this);
-        }
+                LOG.debug("Queued links in {}", this);
     }
 
     @Override
@@ -204,7 +197,7 @@ public class SerializedInvoker
                 }
                 link = link.next();
                 if (link == null && LOG.isDebugEnabled())
-                    LOG.debug("Next link is null, execution is over, in {}", SerializedInvoker.this);
+                    LOG.debug("Next link is null, execution is over in {}", SerializedInvoker.this);
             }
         }
 
@@ -215,18 +208,9 @@ public class SerializedInvoker
         }
     }
 
-    private static final class NamedRunnable implements Runnable
+    private record NamedRunnable(Runnable delegate, String name) implements Runnable
     {
         private static final Logger LOG = LoggerFactory.getLogger(NamedRunnable.class);
-
-        private final Runnable delegate;
-        private final String name;
-
-        public NamedRunnable(Runnable delegate, String name)
-        {
-            this.delegate = delegate;
-            this.name = name;
-        }
 
         @Override
         public void run()
