@@ -69,7 +69,7 @@ public class AdaptiveExecutionStrategyBenchmark
         // Make some test files
         for (int i = 0; i < 75; i++)
         {
-            File.createTempFile("AES_benchmark", i + ".txt", directory.toFile());
+            Files.createTempFile(directory.toFile().toPath(), "AES_benchmark", i + ".txt").toFile();
         }
 
         server = new TestServer(directory.toFile());
