@@ -39,11 +39,10 @@ import org.slf4j.LoggerFactory;
  */
 public class MimeTypes
 {
-
     private static final Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
-    private static final Map<String, String> __dftMimeMap = new HashMap<String, String>();
-    private static final Map<String, String> __inferredEncodings = new HashMap<String, String>();
-    private static final Map<String, String> __assumedEncodings = new HashMap<String, String>();
+    private static final Map<String, String> __dftMimeMap = new HashMap<>();
+    private static final Map<String, String> __inferredEncodings = new HashMap<>();
+    private static final Map<String, String> __assumedEncodings = new HashMap<>();
 
     public enum Type
     {
@@ -244,7 +243,7 @@ public class MimeTypes
                     Properties props = new Properties();
                     props.load(reader);
                     props.stringPropertyNames().stream()
-                        .filter(x -> x != null)
+                        .filter(Objects::nonNull)
                         .forEach(x ->
                             __dftMimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x))));
 
@@ -286,7 +285,7 @@ public class MimeTypes
                     Properties props = new Properties();
                     props.load(reader);
                     props.stringPropertyNames().stream()
-                        .filter(t -> t != null)
+                        .filter(Objects::nonNull)
                         .forEach(t ->
                         {
                             String charset = props.getProperty(t);
@@ -323,7 +322,7 @@ public class MimeTypes
         }
     }
 
-    private final Map<String, String> _mimeMap = new HashMap<String, String>();
+    private final Map<String, String> _mimeMap = new HashMap<>();
 
     /**
      * Constructor.
@@ -375,8 +374,7 @@ public class MimeTypes
                     break;
 
                 String ext = StringUtil.asciiToLowerCase(filename.substring(i + 1));
-                if (type == null)
-                    type = __dftMimeMap.get(ext);
+                type = __dftMimeMap.get(ext);
             }
         }
 
@@ -411,8 +409,7 @@ public class MimeTypes
                     break;
 
                 String ext = StringUtil.asciiToLowerCase(filename.substring(i + 1));
-                if (_mimeMap != null)
-                    type = _mimeMap.get(ext);
+                type = _mimeMap.get(ext);
                 if (type == null)
                     type = __dftMimeMap.get(ext);
             }
@@ -420,8 +417,7 @@ public class MimeTypes
 
         if (type == null)
         {
-            if (_mimeMap != null)
-                type = _mimeMap.get("*");
+            type = _mimeMap.get("*");
             if (type == null)
                 type = __dftMimeMap.get("*");
         }
@@ -615,14 +611,7 @@ public class MimeTypes
 
             if ('"' == b)
             {
-                if (quote)
-                {
-                    quote = false;
-                }
-                else
-                {
-                    quote = true;
-                }
+                quote = !quote;
 
                 switch (state)
                 {

@@ -192,7 +192,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    protected MimeTypes _mimeTypes; // TODO move to core context?
+    protected MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private Logger _logger;
@@ -2813,7 +2813,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (_mimeTypes == null)
                 return null;
-            return _mimeTypes.getMimeByExtension(file);
+            return getContext().getMimeTypes().getMimeByExtension(file);
         }
 
         @Override
