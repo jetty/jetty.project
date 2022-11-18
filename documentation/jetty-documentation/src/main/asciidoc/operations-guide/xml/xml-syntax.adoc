@@ -189,7 +189,7 @@ This is equivalent to the following Java code:
 var myhost = InetAddress.getByName("jdk.java.net");
 ----
 
-The `class` attribute can also be used to specify the Java class or interface to use to lookup the non-``static`` method name.
+The `class` attribute (or `<Class>` element) can also be used to specify the Java class or interface to use to lookup the non-``static`` method name.
 This is necessary when the object in scope, onto which the `<Call>` would be applied, is an instance of a class that is not visible to Jetty classes, or not accessible because it is not `public`.
 For example:
 
@@ -206,14 +206,14 @@ For example:
 ----
 
 In the example above, `Executors.newSingleThreadScheduledExecutor()` returns an object whose class is a private JDK implementation class.
-Without an explicit `class` attribute, it is not possible to invoke the method `shutdown()` when it is obtained via reflection from the private JDK implementation class, because while the method is `public`, the private JDK implementation class is not, therefore this exception is thrown:
+Without an explicit `class` attribute (or `<Class>` element), it is not possible to invoke the method `shutdown()` when it is obtained via reflection from the private JDK implementation class, because while the method is `public`, the private JDK implementation class is not, therefore this exception is thrown:
 
 [source]
 ----
 java.lang.IllegalAccessException: class org.eclipse.jetty.xml.XmlConfiguration$JettyXmlConfiguration (in module org.eclipse.jetty.xml) cannot access a member of class java.util.concurrent.Executors$DelegatedExecutorService (in module java.base) with modifiers "public"
 ----
 
-The solution is to explicitly use the `class` attribute of the `<Call>` element that is invoking the `shutdown()` method, specifying a publicly accessible class or interface that the object in scope extends or implements (in the example above `java.util.concurrent.ExecutorService`).
+The solution is to explicitly use the `class` attribute (or `<Class>` element) of the `<Call>` element that is invoking the `shutdown()` method, specifying a publicly accessible class or interface that the object in scope extends or implements (in the example above `java.util.concurrent.ExecutorService`).
 
 [[og-xml-syntax-get]]
 ===== `<Get>`
@@ -240,7 +240,7 @@ If the JavaBean property is `foo` (or `Foo`), `<Get>` first attempts to invoke _
 </Configure>
 ----
 
-The `class` attribute allows to perform `static` calls, or to lookup the getter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
+The `class` attribute (or `<Class>` element) allows to perform `static` calls, or to lookup the getter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
 
 [[og-xml-syntax-set]]
 ===== `<Set>`
@@ -265,7 +265,7 @@ If the JavaBean property is `foo` (or `Foo`), `<Set>` first attempts to invoke _
 </Configure>
 ----
 
-The `class` attribute allows to perform `static` calls, or to lookup the setter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
+The `class` attribute (or `<Class>` element) allows to perform `static` calls, or to lookup the setter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
 
 [[og-xml-syntax-map]]
 ===== `<Map>` and `<Entry>`

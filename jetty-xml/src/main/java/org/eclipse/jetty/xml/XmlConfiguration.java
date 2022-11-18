@@ -1180,7 +1180,7 @@ public class XmlConfiguration
                         if (value == null)
                         {
                             if (name == null)
-                                LOG.warn("Property '{}' is deprecated, do not use it", d);
+                                LOG.warn("Property '{}' is deprecated, no replacement available", d);
                             else
                                 LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
                         }
@@ -1242,7 +1242,7 @@ public class XmlConfiguration
                         if (value == null)
                         {
                             if (name == null)
-                                LOG.warn("SystemProperty '{}' is deprecated, do not use it", d);
+                                LOG.warn("SystemProperty '{}' is deprecated, no replacement available", d);
                             else
                                 LOG.warn("SystemProperty '{}' is deprecated, use '{}' instead", d, name);
                         }
@@ -1302,7 +1302,7 @@ public class XmlConfiguration
                     if (value != null)
                     {
                         if (name == null)
-                            LOG.warn("Property '{}' is deprecated, do not use it", d);
+                            LOG.warn("Property '{}' is deprecated, no replacement available", d);
                         else
                             LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
                         break;
