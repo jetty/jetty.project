@@ -136,8 +136,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Producer _producer;
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
+    private final Executor _virtualExecutor;
     private final Runnable _runPendingProducer = () -> tryProduce(true);
-    private Executor _virtualThreadsExecutor;
     private State _state = State.IDLE;
     private boolean _pending;
 
@@ -150,17 +150,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         _producer = producer;
         _executor = executor;
         _tryExecutor = TryExecutor.asTryExecutor(executor);
+        _virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(_executor);
         addBean(_producer);
         addBean(_tryExecutor);
+        addBean(_virtualExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        _virtualThreadsExecutor = VirtualThreads.getVirtualThreadsExecutor(_executor);
     }
 
     @Override
@@ -471,7 +466,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         try
         {
-            Executor executor = _virtualThreadsExecutor;
+            Executor executor = _virtualExecutor;
             if (executor == null)
                 executor = _executor;
             executor.execute(task);
@@ -491,7 +486,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @ManagedAttribute(value = "whether this execution strategy uses virtual threads", readonly = true)
     public boolean isUseVirtualThreads()
     {
-        return _virtualThreadsExecutor != null;
+        return _virtualExecutor != null;
     }
 
     @ManagedAttribute(value = "number of tasks consumed with PC mode", readonly = true)
