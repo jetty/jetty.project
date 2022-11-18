@@ -368,14 +368,14 @@
       <scope>provided</scope>
     </dependency>-->
     <!-- === InfiniSpan Deps === -->
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-common</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <!-- to make infinispan-common source sane -->
-    <dependency>
+    <!--<dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
       <scope>provided</scope>
@@ -385,19 +385,19 @@
                <artifactId>wildfly-common</artifactId>
            </exclusion>
        </exclusions>
-    </dependency>
+    </dependency>-->
     <!-- to make infinispan-common source sane -->
-    <dependency>
+    <!--<dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <!-- to make infinispan-common source sane -->
-    <dependency>
+    <!--<dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
       <scope>provided</scope>
-    </dependency>
+    </dependency>-->
     <!--<dependency>
       <groupId>jakarta.activation</groupId>
       <artifactId>jakarta.activation-api</artifactId>
