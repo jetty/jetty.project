@@ -115,7 +115,8 @@
                 mailapi,
                 javax.security.auth.message,
                 plexus-utils,
-                plexus-interpolation
+                plexus-interpolation,
+                jetty-quic-quiche-foreign-incubator
               </excludeArtifactIds>
               <classifier>sources</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
@@ -139,7 +140,7 @@
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
               <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
               <excludePackageNames>
-                org.eclipse.jetty.http3.client.transport.internal; org.eclipse.jetty.http3.client.internal; org.eclipse.jetty.http3.internal; org.eclipse.jetty.http3.internal.*; org.eclipse.jetty.http3.qpack.internal; org.eclipse.jetty.http3.qpack.internal.*; org.eclipse.jetty.http3.server.internal; org.eclipse.jetty.quic.common.internal; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.*; org.eclipse.jetty.quic.server.internal;
+                org.eclipse.jetty.http3.client.transport.internal; org.eclipse.jetty.http3.client.internal; org.eclipse.jetty.http3.internal; org.eclipse.jetty.http3.internal.*; org.eclipse.jetty.http3.qpack.internal; org.eclipse.jetty.http3.qpack.internal.*; org.eclipse.jetty.http3.server.internal; org.eclipse.jetty.quic.common.internal; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.foreign.*; org.eclipse.jetty.quic.quiche.*; org.eclipse.jetty.quic.server.internal;
               </excludePackageNames>
             </configuration>
           </execution>
