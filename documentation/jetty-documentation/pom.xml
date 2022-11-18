@@ -11,12 +11,20 @@
   <name>Jetty :: Documentation</name>
   <packaging>jar</packaging>
   <properties>
-    <skipDocs>false</skipDocs>
-    <assembly.skipAssembly>${skipDocs}</assembly.skipAssembly>
-    <asciidoctor.skip>${skipDocs}</asciidoctor.skip>
+    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
   </properties>
 
   <build>
+    <resources>
+      <!-- include something so that a asciidoctor.skip won't break assembly -->
+      <resource>
+        <directory>${project.basedir}/src/main/asciidoc</directory>
+        <includes>
+          <include>*.css</include>
+        </includes>
+        <targetPath>${project.build.directory}/html</targetPath>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.asciidoctor</groupId>
