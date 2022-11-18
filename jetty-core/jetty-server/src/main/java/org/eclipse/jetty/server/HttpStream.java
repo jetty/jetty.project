@@ -25,9 +25,9 @@ import org.eclipse.jetty.util.Callback;
 
 /**
  * A HttpStream is an abstraction that together with {@link MetaData.Request}, represents the
- * flow of data from and to a single request & response cycle.  It is roughly analogous to the
+ * flow of data from and to a single request and response cycle.  It is roughly analogous to the
  * Stream within a HTTP/2 connection, in that a connection can have many streams, each used once
- * and each representing a single request & response exchange.
+ * and each representing a single request and response exchange.
  */
 public interface HttpStream extends Callback
 {
