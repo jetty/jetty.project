@@ -99,6 +99,8 @@
                 jetty-test-helper,
                 jetty-maven-plugin,
                 jetty-jspc-maven-plugin,
+                jetty-quic-foreign-incubator,
+                jetty-quic-foreign-jna,
                 alpn-api,
                 javax.servlet,
                 javax.websocket,
