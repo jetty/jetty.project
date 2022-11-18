@@ -377,10 +377,11 @@ public class ArrayRetainableByteBufferPoolTest
                 -1,
                 maxCapacity,
                 maxBucketSize,
-                maxHeapMemory,
-                maxDirectMemory,
                 c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i);
+                i -> 1 << i,
+                maxHeapMemory,
+                maxDirectMemory
+            );
         }
     }
 

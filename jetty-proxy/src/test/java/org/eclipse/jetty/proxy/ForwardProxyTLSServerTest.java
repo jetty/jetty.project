@@ -130,7 +130,8 @@ public class ForwardProxyTLSServerTest
 
     protected HttpProxy newHttpProxy()
     {
-        return new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxySslContextFactory != null);
+        // Use an address to avoid resolution of "localhost" to multiple addresses.
+        return new HttpProxy(new Origin.Address("127.0.0.1", proxyConnector.getLocalPort()), proxySslContextFactory != null);
     }
 
     private HttpClient newHttpClient()
@@ -197,7 +198,7 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS);
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         try
@@ -232,7 +233,7 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS);
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         try
@@ -279,7 +280,7 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS);
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         try
@@ -364,7 +365,7 @@ public class ForwardProxyTLSServerTest
         });
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         // Short idle timeout for HttpClient.
         httpClient.setIdleTimeout(idleTimeout);
         httpClient.start();
@@ -402,7 +403,7 @@ public class ForwardProxyTLSServerTest
         stopProxy();
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), proxySslContextFactory != null));
+        httpClient.getProxyConfiguration().addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), proxySslContextFactory != null));
         httpClient.start();
 
         ExecutionException x = assertThrows(ExecutionException.class, () ->
@@ -430,7 +431,7 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS);
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         assertThrows(ExecutionException.class, () ->
@@ -462,7 +463,7 @@ public class ForwardProxyTLSServerTest
         });
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         assertThrows(ExecutionException.class, () ->
@@ -485,7 +486,7 @@ public class ForwardProxyTLSServerTest
 
         HttpClient httpClient = newHttpClient();
         HttpProxy httpProxy = new HttpProxy(new Origin.Address("[::1]", proxyConnector.getLocalPort()), proxyTLS != null);
-        httpClient.getProxyConfiguration().getProxies().add(httpProxy);
+        httpClient.getProxyConfiguration().addProxy(httpProxy);
         httpClient.start();
 
         try
@@ -614,8 +615,8 @@ public class ForwardProxyTLSServerTest
         HttpProxy httpProxy = newHttpProxy();
         if (includeAddress)
             httpProxy.getIncludedAddresses().add("localhost:" + serverConnector.getLocalPort());
-        httpClient.getProxyConfiguration().getProxies().add(httpProxy);
-        URI uri = URI.create((proxySslContextFactory == null ? "http" : "https") + "://localhost:" + proxyConnector.getLocalPort());
+        httpClient.getProxyConfiguration().addProxy(httpProxy);
+        URI uri = URI.create((proxySslContextFactory == null ? "http" : "https") + "://127.0.0.1:" + proxyConnector.getLocalPort());
         httpClient.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "proxyUser", "proxyPassword"));
         httpClient.start();
 
@@ -696,7 +697,7 @@ public class ForwardProxyTLSServerTest
         clientConnector.setSelectors(1);
         clientConnector.setSslContextFactory(clientSslContextFactory);
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         try
@@ -767,7 +768,7 @@ public class ForwardProxyTLSServerTest
         proxyClientTLS.setEndpointIdentificationAlgorithm(null);
         proxyClientTLS.start();
         HttpProxy httpProxy = new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxyClientTLS);
-        httpClient.getProxyConfiguration().getProxies().add(httpProxy);
+        httpClient.getProxyConfiguration().addProxy(httpProxy);
         httpClient.start();
 
         try
@@ -798,7 +799,7 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS);
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
         try
@@ -847,7 +848,7 @@ public class ForwardProxyTLSServerTest
         });
         startProxy(proxyTLS);
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.setConnectTimeout(timeout);
         httpClient.setIdleTimeout(4 * timeout);
         httpClient.start();
@@ -883,7 +884,7 @@ public class ForwardProxyTLSServerTest
         });
         startProxy(proxyTLS);
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.setConnectTimeout(timeout);
         // Short idle timeout for HttpClient.
         httpClient.setIdleTimeout(timeout);
@@ -929,7 +930,7 @@ public class ForwardProxyTLSServerTest
             }
         });
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.setConnectTimeout(timeout);
         httpClient.setIdleTimeout(10 * timeout);
         httpClient.start();
@@ -978,7 +979,7 @@ public class ForwardProxyTLSServerTest
         }
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+        httpClient.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         httpClient.start();
 
         try

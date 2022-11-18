@@ -536,9 +536,10 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
                 dataEntry = dataQueue.poll();
             }
             DataFrame frame = dataEntry.frame;
-            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                session.removeStream(this);
+            boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
             notifyDataDemanded(this, frame, dataEntry.callback);
+            if (closed)
+                session.removeStream(this);
         }
     }
 

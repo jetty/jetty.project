@@ -53,6 +53,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
     private MemorySegment sendInfo;
     private MemorySegment recvInfo;
     private MemorySegment stats;
+    private MemorySegment pathStats;
 
     private ForeignIncubatorQuicheConnection(MemoryAddress quicheConn, MemoryAddress quicheConfig, ResourceScope scope)
     {
@@ -62,6 +63,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         this.sendInfo = quiche_send_info.allocate(scope);
         this.recvInfo = quiche_recv_info.allocate(scope);
         this.stats = quiche_stats.allocate(scope);
+        this.pathStats = quiche_path_stats.allocate(scope);
     }
 
     public static byte[] fromPacket(ByteBuffer packet)
@@ -124,12 +126,12 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         }
     }
 
-    public static ForeignIncubatorQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer) throws IOException
+    public static ForeignIncubatorQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer) throws IOException
     {
-        return connect(quicheConfig, peer, QUICHE_MAX_CONN_ID_LEN);
+        return connect(quicheConfig, local, peer, QUICHE_MAX_CONN_ID_LEN);
     }
 
-    public static ForeignIncubatorQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer, int connectionIdLength) throws IOException
+    public static ForeignIncubatorQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
     {
         if (connectionIdLength > QUICHE_MAX_CONN_ID_LEN)
             throw new IOException("Connection ID length is too large: " + connectionIdLength + " > " + QUICHE_MAX_CONN_ID_LEN);
@@ -144,8 +146,9 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             scid.asByteBuffer().put(scidBytes);
             MemoryAddress libQuicheConfig = buildConfig(quicheConfig, scope);
 
-            MemorySegment s = sockaddr.convert(peer, scope);
-            MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostName(), scope), scid, scid.byteSize(), s, s.byteSize(), libQuicheConfig);
+            MemorySegment localSockaddr = sockaddr.convert(local, scope);
+            MemorySegment peerSockaddr = sockaddr.convert(peer, scope);
+            MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostName(), scope), scid, scid.byteSize(), localSockaddr, localSockaddr.byteSize(), peerSockaddr, peerSockaddr.byteSize(), libQuicheConfig);
             ForeignIncubatorQuicheConnection connection = new ForeignIncubatorQuicheConnection(quicheConn, libQuicheConfig, scope);
             keepScope = true;
             return connection;
@@ -226,6 +229,18 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         Boolean disableActiveMigration = config.getDisableActiveMigration();
         if (disableActiveMigration != null)
             quiche_h.quiche_config_set_disable_active_migration(quicheConfig, disableActiveMigration ? C_TRUE : C_FALSE);
+
+        Long maxConnectionWindow = config.getMaxConnectionWindow();
+        if (maxConnectionWindow != null)
+            quiche_h.quiche_config_set_max_connection_window(quicheConfig, maxConnectionWindow);
+
+        Long maxStreamWindow = config.getMaxStreamWindow();
+        if (maxStreamWindow != null)
+            quiche_h.quiche_config_set_max_stream_window(quicheConfig, maxStreamWindow);
+
+        Long activeConnectionIdLimit = config.getActiveConnectionIdLimit();
+        if (activeConnectionIdLimit != null)
+            quiche_h.quiche_config_set_active_connection_id_limit(quicheConfig, activeConnectionIdLimit);
 
         return quicheConfig;
     }
@@ -354,7 +369,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         }
     }
 
-    public static ForeignIncubatorQuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress peer) throws IOException
+    public static ForeignIncubatorQuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
     {
         boolean keepScope = false;
         ResourceScope scope = ResourceScope.newSharedScope();
@@ -442,8 +457,9 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             LOG.debug("connection creation...");
             MemoryAddress libQuicheConfig = buildConfig(quicheConfig, scope);
 
-            MemorySegment s = sockaddr.convert(peer, scope);
-            MemoryAddress quicheConn = quiche_h.quiche_accept(dcid.address(), getLong(dcid_len), odcid.address(), odcid.byteSize(), s.address(), s.byteSize(), libQuicheConfig);
+            MemorySegment localSockaddr = sockaddr.convert(local, scope);
+            MemorySegment peerSockaddr = sockaddr.convert(peer, scope);
+            MemoryAddress quicheConn = quiche_h.quiche_accept(dcid.address(), getLong(dcid_len), odcid.address(), odcid.byteSize(), localSockaddr.address(), localSockaddr.byteSize(), peerSockaddr.address(), peerSockaddr.byteSize(), libQuicheConfig);
             if (quicheConn == null)
             {
                 quiche_h.quiche_config_free(libQuicheConfig);
@@ -455,7 +471,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
             while (packetRead.hasRemaining())
             {
-                quicheConnection.feedCipherBytes(packetRead, peer);
+                quicheConnection.feedCipherBytes(packetRead, local, peer);
             }
             keepScope = true;
             return quicheConnection;
@@ -498,7 +514,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
     }
 
     @Override
-    public int feedCipherBytes(ByteBuffer buffer, SocketAddress peer) throws IOException
+    public int feedCipherBytes(ByteBuffer buffer, SocketAddress local, SocketAddress peer) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -508,7 +524,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             long received;
             try (ResourceScope scope = ResourceScope.newConfinedScope())
             {
-                quiche_recv_info.setSocketAddress(recvInfo, peer, scope);
+                quiche_recv_info.setSocketAddress(recvInfo, local, peer, scope);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
@@ -696,6 +712,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             sendInfo = null;
             recvInfo = null;
             stats = null;
+            pathStats = null;
         }
     }
 
@@ -729,8 +746,8 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            quiche_h.quiche_conn_stats(quicheConn, stats.address());
-            return quiche_stats.get_cwnd(stats);
+            quiche_h.quiche_conn_path_stats(quicheConn, 0L, pathStats.address());
+            return quiche_path_stats.get_cwnd(pathStats);
         }
     }
 

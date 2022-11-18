@@ -1028,6 +1028,8 @@ public class HttpParser
                         break;
 
                     case HOST:
+                        if (_host)
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Host: multiple headers");
                         _host = true;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
                         {

@@ -110,10 +110,11 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                         }
 
                         stream.process(frame, Callback.NOOP);
-                        if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                            removeStream(stream);
+                        boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                         Stream.Listener listener = notifyNewStream(stream, frame);
                         stream.setListener(listener);
+                        if (closed)
+                            removeStream(stream);
                     }
                 }
             }
@@ -132,9 +133,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             if (stream != null)
             {
                 stream.process(frame, Callback.NOOP);
-                if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                    removeStream(stream);
+                boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(stream, frame);
+                if (closed)
+                    removeStream(stream);
             }
             else
             {

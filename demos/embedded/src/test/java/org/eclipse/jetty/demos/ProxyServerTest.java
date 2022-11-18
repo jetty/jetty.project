@@ -40,7 +40,7 @@ public class ProxyServerTest extends AbstractEmbeddedTest
         server.start();
 
         URI uri = server.getURI();
-        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", uri.getPort()));
+        client.getProxyConfiguration().addProxy(new HttpProxy("localhost", uri.getPort()));
     }
 
     @AfterEach
