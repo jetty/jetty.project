@@ -118,12 +118,7 @@ public abstract class IncludeExcludeBasedFilter implements Filter
         else
         {
             String requestUrl = httpRequest.getPathInfo();
-            mimeType = MimeTypes.getDefaultMimeByExtension(requestUrl);
-
-            if (mimeType == null)
-            {
-                mimeType = "";
-            }
+            httpRequest.getServletContext().getMimeType(requestUrl);
 
             LOG.debug("Guessed mime type is {}", mimeType);
         }
