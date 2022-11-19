@@ -224,7 +224,7 @@ public class HandlerDocs
             return (req, res, callback) ->
             {
                 res.setStatus(200);
-                res.getHeaders().add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_UTF_8.asString());
+                res.getHeaders().add(HttpHeader.CONTENT_TYPE, MimeTypes.Known.TEXT_HTML_UTF_8.asString());
                 Content.Sink.write(res, true, index.toString(), callback);
             };
         }

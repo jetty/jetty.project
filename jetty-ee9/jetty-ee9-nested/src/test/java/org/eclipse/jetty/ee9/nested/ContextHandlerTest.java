@@ -136,7 +136,7 @@ public class ContextHandlerTest
             Content-Length: 7
             
             C=3&D=4
-            """.formatted(MimeTypes.Type.FORM_ENCODED.asString()));
+            """.formatted(MimeTypes.Known.FORM_ENCODED.asString()));
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 

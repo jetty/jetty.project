@@ -254,7 +254,7 @@ public class ForwardProxyTLSServerTest
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.POST)
                 .path("/echo")
-                .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString()))
+                .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.Known.FORM_ENCODED.asString()))
                 .headers(headers -> headers.put(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength)))
                 .body(new StringRequestContent(content))
                 .timeout(5, TimeUnit.SECONDS)
@@ -317,7 +317,7 @@ public class ForwardProxyTLSServerTest
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.POST)
                 .path("/echo")
-                .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString()))
+                .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.Known.FORM_ENCODED.asString()))
                 .headers(headers -> headers.put(HttpHeader.CONTENT_LENGTH, String.valueOf(body2.length())))
                 .body(new StringRequestContent(body2));
 
@@ -897,7 +897,7 @@ public class ForwardProxyTLSServerTest
                     else
                         callback.succeeded();
                 }
-                else if (MimeTypes.Type.FORM_ENCODED.is(request.getHeaders().get(HttpHeader.CONTENT_TYPE)))
+                else if (MimeTypes.Known.FORM_ENCODED.is(request.getHeaders().get(HttpHeader.CONTENT_TYPE)))
                 {
                     FormFields.from(request).whenComplete((fields, failure) ->
                     {

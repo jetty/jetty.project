@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -37,14 +36,11 @@ import org.slf4j.LoggerFactory;
 /**
  * MIME Type enum and utilities
  */
-public class MimeTypes
+public interface MimeTypes
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
-    private static final Map<String, String> __dftMimeMap = new HashMap<>();
-    private static final Map<String, String> __inferredEncodings = new HashMap<>();
-    private static final Map<String, String> __assumedEncodings = new HashMap<>();
+    Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
 
-    public enum Type
+    enum Known
     {
         FORM_ENCODED("application/x-www-form-urlencoded"),
         MESSAGE_HTTP("message/http"),
@@ -52,41 +48,41 @@ public class MimeTypes
         MULTIPART_FORM_DATA("multipart/form-data"),
 
         TEXT_HTML("text/html")
-        {
-            @Override
-            public HttpField getContentTypeField(Charset charset)
             {
-                if (Objects.equals(charset, StandardCharsets.UTF_8))
-                    return TEXT_HTML_UTF_8.getContentTypeField();
-                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
-                    return TEXT_HTML_8859_1.getContentTypeField();
-                return super.getContentTypeField(charset);
-            }
-        },
+                @Override
+                public HttpField getContentTypeField(Charset charset)
+                {
+                    if (Objects.equals(charset, StandardCharsets.UTF_8))
+                        return TEXT_HTML_UTF_8.getContentTypeField();
+                    if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                        return TEXT_HTML_8859_1.getContentTypeField();
+                    return super.getContentTypeField(charset);
+                }
+            },
         TEXT_PLAIN("text/plain")
-        {
-            @Override
-            public HttpField getContentTypeField(Charset charset)
             {
-                if (Objects.equals(charset, StandardCharsets.UTF_8))
-                    return TEXT_PLAIN_UTF_8.getContentTypeField();
-                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
-                    return TEXT_PLAIN_8859_1.getContentTypeField();
-                return super.getContentTypeField(charset);
-            }
-        },
+                @Override
+                public HttpField getContentTypeField(Charset charset)
+                {
+                    if (Objects.equals(charset, StandardCharsets.UTF_8))
+                        return TEXT_PLAIN_UTF_8.getContentTypeField();
+                    if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                        return TEXT_PLAIN_8859_1.getContentTypeField();
+                    return super.getContentTypeField(charset);
+                }
+            },
         TEXT_XML("text/xml")
-        {
-            @Override
-            public HttpField getContentTypeField(Charset charset)
             {
-                if (Objects.equals(charset, StandardCharsets.UTF_8))
-                    return TEXT_XML_UTF_8.getContentTypeField();
-                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
-                    return TEXT_XML_8859_1.getContentTypeField();
-                return super.getContentTypeField(charset);
-            }
-        },
+                @Override
+                public HttpField getContentTypeField(Charset charset)
+                {
+                    if (Objects.equals(charset, StandardCharsets.UTF_8))
+                        return TEXT_XML_UTF_8.getContentTypeField();
+                    if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                        return TEXT_XML_8859_1.getContentTypeField();
+                    return super.getContentTypeField(charset);
+                }
+            },
         TEXT_JSON("text/json", StandardCharsets.UTF_8),
         APPLICATION_JSON("application/json", StandardCharsets.UTF_8),
 
@@ -106,14 +102,14 @@ public class MimeTypes
         APPLICATION_JSON_UTF_8("application/json;charset=utf-8", APPLICATION_JSON);
 
         private final String _string;
-        private final Type _base;
+        private final Known _base;
         private final ByteBuffer _buffer;
         private final Charset _charset;
         private final String _charsetString;
         private final boolean _assumedCharset;
         private final HttpField _field;
 
-        Type(String s)
+        Known(String s)
         {
             _string = s;
             _buffer = BufferUtil.toBuffer(s);
@@ -124,7 +120,7 @@ public class MimeTypes
             _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
         }
 
-        Type(String s, Type base)
+        Known(String s, Known base)
         {
             _string = s;
             _buffer = BufferUtil.toBuffer(s);
@@ -136,7 +132,7 @@ public class MimeTypes
             _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
         }
 
-        Type(String s, Charset cs)
+        Known(String s, Charset cs)
         {
             _string = s;
             _base = this;
@@ -195,18 +191,18 @@ public class MimeTypes
             return new HttpField(HttpHeader.CONTENT_TYPE, getContentTypeWithoutCharset(_string) + ";charset=" + charset.name());
         }
 
-        public Type getBaseType()
+        public Known getBaseType()
         {
             return _base;
         }
     }
 
-    public static final Index<Type> CACHE = new Index.Builder<Type>()
+    Index<Known> CACHE = new Index.Builder<Known>()
         .caseSensitive(false)
         .withAll(() ->
         {
-            Map<String, Type> result = new HashMap<>();
-            for (Type type : Type.values())
+            Map<String, Known> result = new HashMap<>();
+            for (Known type : Known.values())
             {
                 String key1 = type.toString();
                 result.put(key1, type);
@@ -221,236 +217,266 @@ public class MimeTypes
         })
         .build();
 
-    static
+    /**
+     * Get the MIME type by filename extension.
+     *
+     * @param filename A file name
+     * @return MIME type matching the longest dot extension of the
+     * file name.
+     */
+    default String getMimeByExtension(String filename)
     {
-        for (MimeTypes.Type type : MimeTypes.Type.values())
-        {
-            if (type.isCharsetAssumed())
-                __assumedEncodings.put(type.asString(), type.getCharsetString());
-        }
+        String type = null;
 
-        String resourceName = "mime.properties";
-        try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
+        if (filename != null)
         {
-            if (stream == null)
+            int i = -1;
+            while (type == null)
             {
-                LOG.warn("Missing mime-type resource: {}", resourceName);
-            }
-            else
-            {
-                try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
-                {
-                    Properties props = new Properties();
-                    props.load(reader);
-                    props.stringPropertyNames().stream()
-                        .filter(Objects::nonNull)
-                        .forEach(x ->
-                            __dftMimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x))));
+                i = filename.indexOf(".", i + 1);
 
-                    if (__dftMimeMap.isEmpty())
-                    {
-                        LOG.warn("Empty mime types at {}", resourceName);
-                    }
-                    else if (__dftMimeMap.size() < props.keySet().size())
-                    {
-                        LOG.warn("Duplicate or null mime-type extension in resource: {}", resourceName);
-                    }
-                }
-                catch (IOException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Unable to read mime-type resource: {}", resourceName, e);
-                    else
-                        LOG.warn("Unable to read mime-type resource: {} - {}", resourceName, e.toString());
-                }
+                if (i < 0 || i >= filename.length())
+                    break;
+
+                String ext = StringUtil.asciiToLowerCase(filename.substring(i + 1));
+                type = getMimeForExtension(ext);
             }
         }
-        catch (IOException e)
+
+        if (type == null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn("Unable to load mime-type resource: {}", resourceName, e);
-            else
-                LOG.warn("Unable to load mime-type resource: {} - {}", resourceName, e.toString());
+            type = getMimeForExtension("*");
         }
 
-        resourceName = "encoding.properties";
-        try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
+        return type;
+    }
+
+    String getMimeForExtension(String extension);
+
+    String getCharsetInferredFromContentType(String contentType);
+
+    String getCharsetAssumedFromContentType(String contentType);
+
+    MimeTypes DEFAULTS = new MimeTypes()
+    {
+        private Map<String, String> _mimeMap = new HashMap<>();
+        private Map<String, String> _inferredEncodings = new HashMap<>();
+        private Map<String, String> _assumedEncodings = new HashMap<>();
+
         {
-            if (stream == null)
-                LOG.warn("Missing encoding resource: {}", resourceName);
-            else
+            for (Known type : Known.values())
             {
-                try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+                if (type.isCharsetAssumed())
+                    _assumedEncodings.put(type.asString(), type.getCharsetString());
+            }
+
+            String resourceName = "mime.properties";
+            try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
+            {
+                if (stream == null)
                 {
-                    Properties props = new Properties();
-                    props.load(reader);
-                    props.stringPropertyNames().stream()
-                        .filter(Objects::nonNull)
-                        .forEach(t ->
+                    LOG.warn("Missing mime-type resource: {}", resourceName);
+                }
+                else
+                {
+                    try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+                    {
+                        Properties props = new Properties();
+                        props.load(reader);
+                        props.stringPropertyNames().stream()
+                            .filter(Objects::nonNull)
+                            .forEach(x ->
+                                _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x))));
+
+                        if (_mimeMap.isEmpty())
                         {
-                            String charset = props.getProperty(t);
-                            if (charset.startsWith("-"))
-                                __assumedEncodings.put(t, charset.substring(1));
-                            else
-                                __inferredEncodings.put(t, props.getProperty(t));
-                        });
-
-                    if (__inferredEncodings.isEmpty())
-                    {
-                        LOG.warn("Empty encodings at {}", resourceName);
+                            LOG.warn("Empty mime types at {}", resourceName);
+                        }
+                        else if (_mimeMap.size() < props.keySet().size())
+                        {
+                            LOG.warn("Duplicate or null mime-type extension in resource: {}", resourceName);
+                        }
                     }
-                    else if ((__inferredEncodings.size() + __assumedEncodings.size()) < props.keySet().size())
+                    catch (IOException e)
                     {
-                        LOG.warn("Null or duplicate encodings in resource: {}", resourceName);
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("Unable to read mime-type resource: {}", resourceName, e);
+                        else
+                            LOG.warn("Unable to read mime-type resource: {} - {}", resourceName, e.toString());
                     }
                 }
-                catch (IOException e)
+            }
+            catch (IOException e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Unable to load mime-type resource: {}", resourceName, e);
+                else
+                    LOG.warn("Unable to load mime-type resource: {} - {}", resourceName, e.toString());
+            }
+
+            resourceName = "encoding.properties";
+            try (InputStream stream = MimeTypes.class.getResourceAsStream(resourceName))
+            {
+                if (stream == null)
+                    LOG.warn("Missing encoding resource: {}", resourceName);
+                else
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Unable to read encoding resource: {}", resourceName, e);
-                    else
-                        LOG.warn("Unable to read encoding resource: {} - {}", resourceName, e.toString());
+                    try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+                    {
+                        Properties props = new Properties();
+                        props.load(reader);
+                        props.stringPropertyNames().stream()
+                            .filter(Objects::nonNull)
+                            .forEach(t ->
+                            {
+                                String charset = props.getProperty(t);
+                                if (charset.startsWith("-"))
+                                    _assumedEncodings.put(t, charset.substring(1));
+                                else
+                                    _inferredEncodings.put(t, props.getProperty(t));
+                            });
+
+                        if (_inferredEncodings.isEmpty())
+                        {
+                            LOG.warn("Empty encodings at {}", resourceName);
+                        }
+                        else if ((_inferredEncodings.size() + _assumedEncodings.size()) < props.keySet().size())
+                        {
+                            LOG.warn("Null or duplicate encodings in resource: {}", resourceName);
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("Unable to read encoding resource: {}", resourceName, e);
+                        else
+                            LOG.warn("Unable to read encoding resource: {} - {}", resourceName, e.toString());
+                    }
                 }
             }
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.warn("Unable to load encoding resource: {}", resourceName, e);
-            else
-                LOG.warn("Unable to load encoding resource: {} - {}", resourceName, e.toString());
-        }
-    }
-
-    private final Map<String, String> _mimeMap = new HashMap<>();
-
-    /**
-     * Constructor.
-     */
-    public MimeTypes()
-    {
-    }
-
-    public Map<String, String> getMimeMap()
-    {
-        return _mimeMap;
-    }
-
-    /**
-     * @param mimeMap A Map of file extension to mime-type.
-     */
-    public void setMimeMap(Map<String, String> mimeMap)
-    {
-        _mimeMap.clear();
-        if (mimeMap != null)
-        {
-            for (Entry<String, String> ext : mimeMap.entrySet())
+            catch (IOException e)
             {
-                _mimeMap.put(StringUtil.asciiToLowerCase(ext.getKey()), normalizeMimeType(ext.getValue()));
-            }
-        }
-    }
-
-    /**
-     * Get the MIME type by filename extension.
-     * Lookup only the static default mime map.
-     *
-     * @param filename A file name
-     * @return MIME type matching the longest dot extension of the
-     * file name.
-     */
-    public static String getDefaultMimeByExtension(String filename)
-    {
-        String type = null;
-
-        if (filename != null)
-        {
-            int i = -1;
-            while (type == null)
-            {
-                i = filename.indexOf(".", i + 1);
-
-                if (i < 0 || i >= filename.length())
-                    break;
-
-                String ext = StringUtil.asciiToLowerCase(filename.substring(i + 1));
-                type = __dftMimeMap.get(ext);
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Unable to load encoding resource: {}", resourceName, e);
+                else
+                    LOG.warn("Unable to load encoding resource: {} - {}", resourceName, e.toString());
             }
         }
 
-        if (type == null)
+        @Override
+        public String getMimeForExtension(String extension)
         {
-            type = __dftMimeMap.get("*");
+            return _mimeMap.get(extension);
         }
 
-        return type;
-    }
+        @Override
+        public String getCharsetInferredFromContentType(String contentType)
+        {
+            return _inferredEncodings.get(contentType);
+        }
 
-    /**
-     * Get the MIME type by filename extension.
-     * Lookup the content and static default mime maps.
-     *
-     * @param filename A file name
-     * @return MIME type matching the longest dot extension of the
-     * file name.
-     */
-    public String getMimeByExtension(String filename)
+        @Override
+        public String getCharsetAssumedFromContentType(String contentType)
+        {
+            return _assumedEncodings.get(contentType);
+        }
+    };
+
+    class Wrapper implements MimeTypes
     {
-        String type = null;
+        private final MimeTypes _wrapped;
 
-        if (filename != null)
+        public Wrapper(MimeTypes wrapped)
         {
-            int i = -1;
-            while (type == null)
-            {
-                i = filename.indexOf(".", i + 1);
-
-                if (i < 0 || i >= filename.length())
-                    break;
-
-                String ext = StringUtil.asciiToLowerCase(filename.substring(i + 1));
-                type = _mimeMap.get(ext);
-                if (type == null)
-                    type = __dftMimeMap.get(ext);
-            }
+            _wrapped = wrapped;
         }
 
-        if (type == null)
+        public MimeTypes getWrapped()
         {
-            type = _mimeMap.get("*");
-            if (type == null)
-                type = __dftMimeMap.get("*");
+            return _wrapped;
         }
 
-        return type;
+        @Override
+        public String getMimeForExtension(String extension)
+        {
+            return getWrapped().getMimeForExtension(extension);
+        }
+
+        @Override
+        public String getCharsetInferredFromContentType(String contentType)
+        {
+            return getWrapped().getCharsetInferredFromContentType(contentType);
+        }
+
+        @Override
+        public String getCharsetAssumedFromContentType(String contentType)
+        {
+            return getWrapped().getCharsetAssumedFromContentType(contentType);
+        }
     }
 
-    /**
-     * Set a mime mapping
-     *
-     * @param extension the extension
-     * @param type the mime type
-     */
-    public void addMimeMapping(String extension, String type)
+    class Mapped extends Wrapper
     {
-        _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
+        private final Map<String, String> _mimeMap = new HashMap<>();
+        private Map<String, String> _inferredEncodings = new HashMap<>();
+        private Map<String, String> _assumedEncodings = new HashMap<>();
+
+        /**
+         * Constructor.
+         */
+        public Mapped(MimeTypes defaults)
+        {
+            super(defaults);
+        }
+
+        @Override
+        public String getMimeForExtension(String extension)
+        {
+            String mimeType = _mimeMap.get(extension);
+            return mimeType == null ? super.getMimeForExtension(extension) : mimeType;
+        }
+
+        @Override
+        public String getCharsetInferredFromContentType(String contentType)
+        {
+            String charset =  _inferredEncodings.get(contentType);
+            return charset == null ? super.getCharsetInferredFromContentType(contentType) : charset;
+        }
+
+        @Override
+        public String getCharsetAssumedFromContentType(String contentType)
+        {
+            String charset =  _assumedEncodings.get(contentType);
+            return (charset == null) ? super.getCharsetAssumedFromContentType(contentType) : charset;
+        }
+
+        /**
+         * Set a mime mapping
+         *
+         * @param extension the extension
+         * @param type the mime type
+         */
+        public void addMimeMapping(String extension, String type)
+        {
+            _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
+        }
     }
 
-    public static Set<String> getKnownMimeTypes()
+    static Set<String> getKnownMimeTypes()
     {
         return new HashSet<>(__dftMimeMap.values());
     }
 
     private static String normalizeMimeType(String type)
     {
-        MimeTypes.Type t = CACHE.get(type);
+        Known t = CACHE.get(type);
         if (t != null)
             return t.asString();
 
         return StringUtil.asciiToLowerCase(type);
     }
 
-    public static String getCharsetFromContentType(String value)
+    static String getCharsetFromContentType(String value)
     {
         if (value == null)
             return null;
@@ -563,41 +589,7 @@ public class MimeTypes
         return null;
     }
 
-    /**
-     * Access a mutable map of mime type to the charset inferred from that content type.
-     * An inferred encoding is used by when encoding/decoding a stream and is
-     * explicitly set in any metadata (eg Content-Type).
-     *
-     * @return Map of mime type to charset
-     */
-    public static Map<String, String> getInferredEncodings()
-    {
-        return __inferredEncodings;
-    }
-
-    /**
-     * Access a mutable map of mime type to the charset assumed for that content type.
-     * An assumed encoding is used by when encoding/decoding a stream, but is not
-     * explicitly set in any metadata (eg Content-Type).
-     *
-     * @return Map of mime type to charset
-     */
-    public static Map<String, String> getAssumedEncodings()
-    {
-        return __assumedEncodings;
-    }
-
-    public static String getCharsetInferredFromContentType(String contentType)
-    {
-        return __inferredEncodings.get(contentType);
-    }
-
-    public static String getCharsetAssumedFromContentType(String contentType)
-    {
-        return __assumedEncodings.get(contentType);
-    }
-
-    public static String getContentTypeWithoutCharset(String value)
+    static String getContentTypeWithoutCharset(String value)
     {
         int end = value.length();
         int state = 0;

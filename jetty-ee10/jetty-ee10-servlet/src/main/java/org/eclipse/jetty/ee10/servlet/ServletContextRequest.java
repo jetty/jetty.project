@@ -787,8 +787,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         public Collection<Part> getParts() throws IOException, ServletException
         {
             String contentType = getContentType();
-            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
-                throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
+            if (contentType == null || !MimeTypes.Known.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
+                throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Known.MULTIPART_FORM_DATA.asString()));
             if (_parts == null)
                 _parts = ServletMultiPartFormData.from(this);
             return _parts.getParts();
@@ -874,7 +874,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                     String contentType = getContentType();
                     if (contentType != null)
                     {
-                        MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
+                        MimeTypes.Known mime = MimeTypes.CACHE.get(contentType);
                         String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
                         if (charset != null)
                             _characterEncoding = charset;

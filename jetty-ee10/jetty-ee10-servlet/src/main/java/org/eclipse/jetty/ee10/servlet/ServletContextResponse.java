@@ -77,7 +77,7 @@ public class ServletContextResponse extends ContextResponse
     private final ServletContextRequest _request;
     private String _characterEncoding;
     private String _contentType;
-    private MimeTypes.Type _mimeType;
+    private MimeTypes.Known _mimeType;
     private Locale _locale;
     private EncodingFrom _encodingFrom = EncodingFrom.NOT_SET;
     private OutputType _outputType = OutputType.NONE;

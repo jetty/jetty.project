@@ -54,7 +54,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             protected void service(Request request, Response response)
             {
                 assertEquals("POST", request.getMethod());
-                assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(MimeTypes.Known.FORM_ENCODED.asString(), request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 FormFields.from(request).whenComplete((fields, failure) ->
                 {
                     assertEquals(value1, fields.get(name1).getValue());
