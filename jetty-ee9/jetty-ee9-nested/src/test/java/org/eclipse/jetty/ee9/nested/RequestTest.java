@@ -332,7 +332,7 @@ public class RequestTest
         //an exception parsing the params
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
-            "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\n" +
+            "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\n" +
             "Connection: close\n" +
             "Content-Length: 100\n" +
             "\n" +
@@ -1111,7 +1111,7 @@ public class RequestTest
         String content = "name1=test&name2=test2&name3=&name4=test";
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
-            "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\r\n" +
             "Content-Length: " + content.length() + "\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
@@ -1128,7 +1128,7 @@ public class RequestTest
         String content = "name1=test&name2=test2&name3=&name4=test";
         String request = "UNKNOWN / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
-            "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\r\n" +
             "Content-Length: " + content.length() + "\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
@@ -1150,7 +1150,7 @@ public class RequestTest
         String content = "name1=test&name2=test2&name3=&name4=test";
         String request = "EXTRA / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
-            "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\r\n" +
             "Content-Length: " + content.length() + "\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
@@ -1174,7 +1174,7 @@ public class RequestTest
         String content = "name1=test&name2=test%E4&name3=&name4=test";
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
-            "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\r\n" +
             "Content-Length: " + content.length() + "\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
@@ -1198,7 +1198,7 @@ public class RequestTest
         String content = "name1=test&name2=test%C3%A4&name3=&name4=test";
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
-            "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\r\n" +
+            "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\r\n" +
             "Content-Length: " + content.length() + "\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
@@ -1763,7 +1763,7 @@ public class RequestTest
 
             String request = "POST / HTTP/1.1\r\n" +
                 "Host: whatever\r\n" +
-                "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\r\n" +
+                "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\r\n" +
                 "Content-Length: " + buf.length() + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
@@ -1801,7 +1801,7 @@ public class RequestTest
 
             String request = "POST / HTTP/1.1\r\n" +
                 "Host: whatever\r\n" +
-                "Content-Type: " + MimeTypes.Known.FORM_ENCODED.asString() + "\r\n" +
+                "Content-Type: " + MimeTypes.PreDefined.FORM_ENCODED.asString() + "\r\n" +
                 "Content-Length: " + buf.length() + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
@@ -2150,7 +2150,7 @@ public class RequestTest
             ((Request)request).setHandled(true);
 
             if (request.getContentLength() > 0 &&
-                !request.getContentType().startsWith(MimeTypes.Known.FORM_ENCODED.asString()) &&
+                !request.getContentType().startsWith(MimeTypes.PreDefined.FORM_ENCODED.asString()) &&
                 !request.getContentType().startsWith("multipart/form-data"))
                 assertNotNull(IO.toString(request.getInputStream()));
 

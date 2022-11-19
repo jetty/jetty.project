@@ -353,7 +353,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 session.setAttribute(__J_URI, req.getHttpURI());
                 session.setAttribute(__J_METHOD, req.getMethod());
 
-                if (MimeTypes.Known.FORM_ENCODED.is(servletApiRequest.getContentType()) && HttpMethod.POST.is(req.getMethod()))
+                if (MimeTypes.PreDefined.FORM_ENCODED.is(servletApiRequest.getContentType()) && HttpMethod.POST.is(req.getMethod()))
                 {
                     session.setAttribute(__J_POST, servletApiRequest.getContentParameters());
                 }

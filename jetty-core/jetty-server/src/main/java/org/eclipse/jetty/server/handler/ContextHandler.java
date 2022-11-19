@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -87,9 +88,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return "jetty/" + Server.getVersion();
     }
 
-    // TODO should persistent attributes be an Attributes.Layer over server attributes?
-    private final Attributes _persistentAttributes = new Mapped();
+    /*
+     * The context and specifically attributes and mimeTypes are not implemented as a layer over
+     * The server context, attributes and mimeTypes, because ultimately we may support cross context
+     * dispatch, in which case the properties and behaviour of a context would be dynamic.
+     * So the context replaces the context in the request, it does not wrap it.
+     */
     private final Context _context;
+    private final Attributes _persistentAttributes = new Mapped();
+    private final MimeTypes.Mapped _mimeTypes = new MimeTypes.Mapped();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -156,6 +163,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected Context newContext()
     {
         return new Context();
+    }
+
+    public MimeTypes.Mutable getMimeTypes()
+    {
+        return _mimeTypes;
     }
 
     @Override
@@ -1000,6 +1012,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         public String getContextPath()
         {
             return _contextPath;
+        }
+
+        @Override
+        public MimeTypes getMimeTypes()
+        {
+            return _mimeTypes;
         }
 
         @Override

@@ -711,7 +711,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             _method = request.getMethod();
 
             // TODO:
-            if (MimeTypes.Known.FORM_ENCODED.is(request.getHeaders().get(HttpHeader.CONTENT_TYPE)) && HttpMethod.POST.is(request.getMethod()))
+            if (MimeTypes.PreDefined.FORM_ENCODED.is(request.getHeaders().get(HttpHeader.CONTENT_TYPE)) && HttpMethod.POST.is(request.getMethod()))
             {
                 MultiMap<String> formParameters = new MultiMap<>();
                 // request.extractFormParameters(formParameters);

@@ -34,7 +34,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FormFields;
@@ -91,8 +90,6 @@ public class GzipHandlerTest
     private static final String __contentETag = String.format("W/\"%x\"", __content.hashCode());
     private static final String __contentETagGzip = String.format("W/\"%x" + CompressedContentFormat.GZIP.getEtagSuffix() + "\"", __content.hashCode());
     private static final String __icontent = "BEFORE" + __content + "AFTER";
-
-    private static final MimeTypes __mimeTypes = new MimeTypes();
 
     private Server _server;
     private LocalConnector _connector;
@@ -162,7 +159,7 @@ public class GzipHandlerTest
 
             // TODO get mime type from context.
             Context context = request.getContext();
-            String contentType = __mimeTypes.getMimeByExtension(filename);
+            String contentType = context.getMimeTypes().getMimeByExtension(filename);
             if (contentType != null)
                 return contentType;
             return defaultContentType;

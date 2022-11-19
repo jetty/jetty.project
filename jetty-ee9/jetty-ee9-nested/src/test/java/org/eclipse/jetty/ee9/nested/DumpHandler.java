@@ -94,7 +94,7 @@ public class DumpHandler extends AbstractHandler
         }
 
         baseRequest.setHandled(true);
-        response.setHeader(HttpHeader.CONTENT_TYPE.asString(), MimeTypes.Known.TEXT_HTML.asString());
+        response.setHeader(HttpHeader.CONTENT_TYPE.asString(), MimeTypes.PreDefined.TEXT_HTML.asString());
 
         OutputStream out = response.getOutputStream();
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);

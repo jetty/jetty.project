@@ -130,7 +130,7 @@ public class FormTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .path(contextPath + servletPath)
-            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.Known.FORM_ENCODED.asString()))
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.FORM_ENCODED.asString()))
             .body(content)
             .onRequestBegin(request ->
             {

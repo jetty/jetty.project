@@ -51,7 +51,7 @@ public class MimeTypesTest
     @MethodSource("mimeTypesByExtensionCases")
     public void testMimeTypesByExtension(String filename, String expectedMimeType)
     {
-        MimeTypes mimetypes = new MimeTypes();
+        MimeTypes mimetypes = new MimeTypes.Mapped();
         String contentType = mimetypes.getMimeByExtension(filename);
         assertThat("MimeTypes.getMimeByExtension(\"" + filename + "\")",
             contentType, is(expectedMimeType));
@@ -60,7 +60,7 @@ public class MimeTypesTest
     @Test
     public void testGetMimeByExtensionNoExtension()
     {
-        MimeTypes mimetypes = new MimeTypes();
+        MimeTypes mimetypes = new MimeTypes.Mapped();
         String contentType = mimetypes.getMimeByExtension("README");
         assertNull(contentType);
     }

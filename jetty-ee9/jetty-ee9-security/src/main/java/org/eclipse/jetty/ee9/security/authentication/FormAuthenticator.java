@@ -378,7 +378,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     session.setAttribute(__J_URI, buf.toString());
                     session.setAttribute(__J_METHOD, request.getMethod());
 
-                    if (MimeTypes.Known.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
+                    if (MimeTypes.PreDefined.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
                     {
                         MultiMap<String> formParameters = new MultiMap<>();
                         baseRequest.extractFormParameters(formParameters);

@@ -50,8 +50,8 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
             return null;
 
         // TODO mimeTypes from context
-        MimeTypes.Known type = MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
-        if (MimeTypes.Known.FORM_ENCODED != type)
+        MimeTypes.PreDefined type = MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
+        if (MimeTypes.PreDefined.FORM_ENCODED != type)
             return null;
 
         String cs = MimeTypes.getCharsetFromContentType(contentType);

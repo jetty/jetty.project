@@ -73,7 +73,6 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -192,7 +191,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    protected MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private Logger _logger;
@@ -649,24 +647,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    /**
-     * @return Returns the mimeTypes.
-     */
-    public MimeTypes getMimeTypes()
-    {
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
-        return _mimeTypes;
-    }
-
-    /**
-     * @param mimeTypes The mimeTypes to set.
-     */
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
-    }
-
     public void setWelcomeFiles(String[] files)
     {
         _welcomeFiles = files;
@@ -1078,9 +1058,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         if (getServer() != null)
             _servletContext.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
-
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
 
         _durableListeners.addAll(getEventListeners());
 
@@ -2811,8 +2788,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public String getMimeType(String file)
         {
-            if (_mimeTypes == null)
-                return null;
             return getContext().getMimeTypes().getMimeByExtension(file);
         }
 

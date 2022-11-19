@@ -297,7 +297,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         private final Set<CompressedContentFormat> _compressedFormats;
         private final String _lastModifiedValue;
         private final String _characterEncoding;
-        private final MimeTypes.Known _mimeType;
+        private final MimeTypes.PreDefined _mimeType;
         private final HttpField _contentLength;
         private final Instant _lastModifiedInstant;
         private final HttpField _lastModified;
@@ -445,7 +445,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public MimeTypes.Known getMimeType()
+        public MimeTypes.PreDefined getMimeType()
         {
             return _mimeType;
         }
@@ -530,7 +530,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public MimeTypes.Known getMimeType()
+        public MimeTypes.PreDefined getMimeType()
         {
             return null;
         }

@@ -142,7 +142,7 @@ public class ErrorHandler extends AbstractHandler
 
         if (acceptable.isEmpty() && !baseRequest.getHttpFields().contains(HttpHeader.ACCEPT))
         {
-            generateAcceptableResponse(baseRequest, request, response, code, message, MimeTypes.Known.TEXT_HTML.asString());
+            generateAcceptableResponse(baseRequest, request, response, code, message, MimeTypes.PreDefined.TEXT_HTML.asString());
         }
         else
         {
@@ -251,26 +251,26 @@ public class ErrorHandler extends AbstractHandler
                 return;
         }
 
-        MimeTypes.Known type;
+        MimeTypes.PreDefined type;
         switch (contentType)
         {
             case "text/html":
             case "text/*":
             case "*/*":
-                type = MimeTypes.Known.TEXT_HTML;
+                type = MimeTypes.PreDefined.TEXT_HTML;
                 if (charset == null)
                     charset = StandardCharsets.ISO_8859_1;
                 break;
 
             case "text/json":
             case "application/json":
-                type = MimeTypes.Known.TEXT_JSON;
+                type = MimeTypes.PreDefined.TEXT_JSON;
                 if (charset == null)
                     charset = StandardCharsets.UTF_8;
                 break;
 
             case "text/plain":
-                type = MimeTypes.Known.TEXT_PLAIN;
+                type = MimeTypes.PreDefined.TEXT_PLAIN;
                 if (charset == null)
                     charset = StandardCharsets.ISO_8859_1;
                 break;
@@ -291,7 +291,7 @@ public class ErrorHandler extends AbstractHandler
                 switch (type)
                 {
                     case TEXT_HTML:
-                        response.setContentType(MimeTypes.Known.TEXT_HTML.asString());
+                        response.setContentType(MimeTypes.PreDefined.TEXT_HTML.asString());
                         response.setCharacterEncoding(charset.name());
                         request.setAttribute(ERROR_CHARSET, charset);
                         handleErrorPage(request, writer, code, message);
@@ -301,7 +301,7 @@ public class ErrorHandler extends AbstractHandler
                         writeErrorJson(request, writer, code, message);
                         break;
                     case TEXT_PLAIN:
-                        response.setContentType(MimeTypes.Known.TEXT_PLAIN.asString());
+                        response.setContentType(MimeTypes.PreDefined.TEXT_PLAIN.asString());
                         response.setCharacterEncoding(charset.name());
                         writeErrorPlain(request, writer, code, message);
                         break;
@@ -522,7 +522,7 @@ public class ErrorHandler extends AbstractHandler
             reason = HttpStatus.getMessage(status);
         if (HttpStatus.hasNoBody(status))
             return BufferUtil.EMPTY_BUFFER;
-        fields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Known.TEXT_HTML_8859_1.asString());
+        fields.put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_HTML_8859_1.asString());
         return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
     }
 

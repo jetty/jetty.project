@@ -467,7 +467,7 @@ public class Request implements HttpServletRequest
             if (contentLength != 0 && _inputState == INPUT_NONE)
             {
                 String baseType = HttpField.valueParameters(contentType, null);
-                if (MimeTypes.Known.FORM_ENCODED.is(baseType) &&
+                if (MimeTypes.PreDefined.FORM_ENCODED.is(baseType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
                     if (_metaData != null && !isContentEncodingSupported())
@@ -477,7 +477,7 @@ public class Request implements HttpServletRequest
 
                     extractFormParameters(_contentParameters);
                 }
-                else if (MimeTypes.Known.MULTIPART_FORM_DATA.is(baseType) &&
+                else if (MimeTypes.PreDefined.MULTIPART_FORM_DATA.is(baseType) &&
                     getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
                     _multiParts == null)
                 {
@@ -651,7 +651,7 @@ public class Request implements HttpServletRequest
                 String contentType = getContentType();
                 if (contentType != null)
                 {
-                    MimeTypes.Known mime = MimeTypes.CACHE.get(contentType);
+                    MimeTypes.PreDefined mime = MimeTypes.CACHE.get(contentType);
                     String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
                     if (charset != null)
                         _characterEncoding = charset;
@@ -2013,7 +2013,7 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         String contentType = getContentType();
-        if (contentType == null || !MimeTypes.Known.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
+        if (contentType == null || !MimeTypes.PreDefined.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
             throw new ServletException("Unsupported Content-Type [" + contentType + "], expected [multipart/form-data]");
         return getParts(null);
     }

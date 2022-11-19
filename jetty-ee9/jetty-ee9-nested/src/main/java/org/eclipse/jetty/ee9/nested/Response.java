@@ -87,7 +87,7 @@ public class Response implements HttpServletResponse
     private int _status = HttpStatus.OK_200;
     private String _reason;
     private Locale _locale;
-    private MimeTypes.Known _mimeType;
+    private MimeTypes.PreDefined _mimeType;
     private String _characterEncoding;
     private EncodingFrom _encodingFrom = EncodingFrom.NOT_SET;
     private String _contentType;
@@ -793,12 +793,12 @@ public class Response implements HttpServletResponse
             return _mimeType.getCharsetString();
 
         // Try charset assumed from content type (assumed charsets are not added to content type header).
-        encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+        encoding = _channel.getRequest().getCoreRequest().getContext().getMimeTypes().getCharsetAssumedFromContentType(_contentType);
         if (encoding != null)
             return encoding;
 
         // Try char set inferred from content type.
-        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+        encoding = _channel.getRequest().getCoreRequest().getContext().getMimeTypes().getCharsetInferredFromContentType(_contentType);
         if (encoding != null)
         {
             if (setContentType)

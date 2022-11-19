@@ -18,7 +18,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Set;
 
-import org.eclipse.jetty.http.MimeTypes.Known;
+import org.eclipse.jetty.http.MimeTypes.PreDefined;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -73,7 +73,7 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public Known getMimeType()
+    public PreDefined getMimeType()
     {
         return _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
     }

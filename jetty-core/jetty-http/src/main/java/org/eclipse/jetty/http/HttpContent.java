@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 
-import org.eclipse.jetty.http.MimeTypes.Known;
+import org.eclipse.jetty.http.MimeTypes.PreDefined;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -39,7 +39,7 @@ public interface HttpContent
 
     String getCharacterEncoding();
 
-    Known getMimeType();
+    PreDefined getMimeType();
 
     HttpField getContentEncoding();
 
@@ -121,7 +121,7 @@ public interface HttpContent
         }
 
         @Override
-        public Known getMimeType()
+        public PreDefined getMimeType()
         {
             return _delegate.getMimeType();
         }

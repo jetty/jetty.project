@@ -134,7 +134,7 @@ public class DefaultHandler extends Handler.Processor
         }
 
         response.setStatus(HttpStatus.NOT_FOUND_404);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Known.TEXT_HTML_UTF_8.toString());
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_HTML_UTF_8.toString());
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
              OutputStreamWriter writer = new OutputStreamWriter(outputStream, UTF_8))

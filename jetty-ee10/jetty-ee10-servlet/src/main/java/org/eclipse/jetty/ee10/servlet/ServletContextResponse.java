@@ -77,7 +77,7 @@ public class ServletContextResponse extends ContextResponse
     private final ServletContextRequest _request;
     private String _characterEncoding;
     private String _contentType;
-    private MimeTypes.Known _mimeType;
+    private MimeTypes.PreDefined _mimeType;
     private Locale _locale;
     private EncodingFrom _encodingFrom = EncodingFrom.NOT_SET;
     private OutputType _outputType = OutputType.NONE;
@@ -349,14 +349,15 @@ public class ServletContextResponse extends ContextResponse
         // Try charset from mime type.
         if (_mimeType != null && _mimeType.isCharsetAssumed())
             return _mimeType.getCharsetString();
-
+        
         // Try charset assumed from content type (assumed charsets are not added to content type header).
-        encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+        MimeTypes mimeTypes = _request.getContext().getMimeTypes();
+        encoding = mimeTypes.getCharsetAssumedFromContentType(_contentType);
         if (encoding != null)
             return encoding;
 
         // Try char set inferred from content type.
-        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+        encoding = mimeTypes.getCharsetInferredFromContentType(_contentType);
         if (encoding != null)
         {
             if (setContentType)
