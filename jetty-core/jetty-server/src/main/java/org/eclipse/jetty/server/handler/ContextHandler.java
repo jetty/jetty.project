@@ -96,7 +96,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      */
     private final Context _context;
     private final Attributes _persistentAttributes = new Mapped();
-    private final MimeTypes.Mapped _mimeTypes = new MimeTypes.Mapped();
+    private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 

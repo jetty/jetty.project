@@ -33,12 +33,12 @@ import org.slf4j.LoggerFactory;
 /**
  * MIME Type enum and utilities
  */
-public interface MimeTypes
+public class MimeTypes
 {
-    Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
+    static Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
-    enum Type
+    public enum Type
     {
         FORM_ENCODED("application/x-www-form-urlencoded"),
         MESSAGE_HTTP("message/http"),
@@ -186,7 +186,7 @@ public interface MimeTypes
         }
     }
 
-    Index<Type> CACHE = new Index.Builder<Type>()
+    public static Index<Type> CACHE = new Index.Builder<Type>()
         .caseSensitive(false)
         .withAll(() ->
         {
@@ -206,6 +206,25 @@ public interface MimeTypes
         })
         .build();
 
+    protected final Map<String, String> _mimeMap = new HashMap<>();
+    protected final Map<String, String> _inferredEncodings = new HashMap<>();
+    protected final Map<String, String> _assumedEncodings = new HashMap<>();
+
+    public MimeTypes()
+    {
+        this(DEFAULTS);
+    }
+
+    public MimeTypes(MimeTypes defaults)
+    {
+        if (defaults != null)
+        {
+            _mimeMap.putAll(defaults.getMimeMap());
+            _assumedEncodings.putAll(defaults.getAssumedMap());
+            _inferredEncodings.putAll(defaults.getInferredMap());
+        }
+    }
+
     /**
      * Get the MIME type by filename extension.
      *
@@ -213,7 +232,7 @@ public interface MimeTypes
      * @return MIME type matching the longest dot extension of the
      * file name.
      */
-    default String getMimeByExtension(String filename)
+    public String getMimeByExtension(String filename)
     {
         String type = null;
 
@@ -240,20 +259,47 @@ public interface MimeTypes
         return type;
     }
 
-    String getMimeForExtension(String extension);
-
-    String getCharsetInferredFromContentType(String contentType);
-
-    String getCharsetAssumedFromContentType(String contentType);
-
-    Map<String, String> getMimeMap();
-
-    Map<String, String> getInferredMap();
-
-    Map<String, String> getAssumedMap();
-
-    interface Mutable extends MimeTypes
+    public String getMimeForExtension(String extension)
     {
+        return _mimeMap.get(extension);
+    }
+
+    public String getCharsetInferredFromContentType(String contentType)
+    {
+        return _inferredEncodings.get(contentType);
+    }
+
+    public String getCharsetAssumedFromContentType(String contentType)
+    {
+        return _assumedEncodings.get(contentType);
+    }
+
+    public Map<String, String> getMimeMap()
+    {
+        return Collections.unmodifiableMap(_mimeMap);
+    }
+
+    public Map<String, String> getInferredMap()
+    {
+        return Collections.unmodifiableMap(_inferredEncodings);
+    }
+
+    public Map<String, String> getAssumedMap()
+    {
+        return Collections.unmodifiableMap(_assumedEncodings);
+    }
+
+    public static class Mutable extends MimeTypes
+    {
+        public Mutable()
+        {
+        }
+
+        public Mutable(MimeTypes defaults)
+        {
+            super(defaults);
+        }
+
         /**
          * Set a mime mapping
          *
@@ -261,14 +307,23 @@ public interface MimeTypes
          * @param type the mime type
          * @return previous value
          */
-        String addMimeMapping(String extension, String type);
+        public String addMimeMapping(String extension, String type)
+        {
+            return _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
+        }
 
-        String addInferred(String contentType, String encoding);
+        public String addInferred(String contentType, String encoding)
+        {
+            return _inferredEncodings.put(contentType, encoding);
+        }
 
-        String addAssumed(String contentType, String encoding);
+        public String addAssumed(String contentType, String encoding)
+        {
+            return _assumedEncodings.put(contentType, encoding);
+        }
     }
 
-    MimeTypes DEFAULTS = new MimeTypes.Base()
+    public static MimeTypes DEFAULTS = new MimeTypes(null)
     {
         {
             for (Type type : Type.values())
@@ -371,82 +426,6 @@ public interface MimeTypes
         }
     };
 
-    class Base implements MimeTypes
-    {
-        protected final Map<String, String> _mimeMap = new HashMap<>();
-        protected final Map<String, String> _inferredEncodings = new HashMap<>();
-        protected final Map<String, String> _assumedEncodings = new HashMap<>();
-
-        @Override
-        public String getMimeForExtension(String extension)
-        {
-            return _mimeMap.get(extension);
-        }
-
-        @Override
-        public String getCharsetInferredFromContentType(String contentType)
-        {
-            return _inferredEncodings.get(contentType);
-        }
-
-        @Override
-        public String getCharsetAssumedFromContentType(String contentType)
-        {
-            return _assumedEncodings.get(contentType);
-        }
-
-        @Override
-        public Map<String, String> getMimeMap()
-        {
-            return Collections.unmodifiableMap(_mimeMap);
-        }
-
-        @Override
-        public Map<String, String> getInferredMap()
-        {
-            return Collections.unmodifiableMap(_inferredEncodings);
-        }
-
-        @Override
-        public Map<String, String> getAssumedMap()
-        {
-            return Collections.unmodifiableMap(_assumedEncodings);
-        }
-    }
-
-    class Mapped extends Base implements Mutable
-    {
-        public Mapped()
-        {
-            this(DEFAULTS);
-        }
-
-        public Mapped(MimeTypes defaults)
-        {
-            _mimeMap.putAll(defaults.getMimeMap());
-            _assumedEncodings.putAll(defaults.getAssumedMap());
-            _inferredEncodings.putAll(defaults.getInferredMap());
-        }
-
-        @Override
-        public String addMimeMapping(String extension, String type)
-        {
-            return _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
-        }
-
-        @Override
-        public String addInferred(String contentType, String encoding)
-        {
-            return _inferredEncodings.put(contentType, encoding);
-        }
-
-        @Override
-        public String addAssumed(String contentType, String encoding)
-        {
-            return _assumedEncodings.put(contentType, encoding);
-        }
-    }
-
     private static String normalizeMimeType(String type)
     {
         Type t = CACHE.get(type);
@@ -456,7 +435,7 @@ public interface MimeTypes
         return StringUtil.asciiToLowerCase(type);
     }
 
-    static String getCharsetFromContentType(String value)
+    public static String getCharsetFromContentType(String value)
     {
         if (value == null)
             return null;
@@ -569,7 +548,7 @@ public interface MimeTypes
         return null;
     }
 
-    static String getContentTypeWithoutCharset(String value)
+    public static String getContentTypeWithoutCharset(String value)
     {
         int end = value.length();
         int state = 0;

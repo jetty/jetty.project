@@ -34,7 +34,7 @@ public class TestStaticMimeTypeServlet extends AbstractFileContentServlet
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
-        mimeTypes = new MimeTypes.Mapped();
+        mimeTypes = new MimeTypes.Mutable();
         // Some real world, yet not terribly common, mime type mappings.
         mimeTypes.addMimeMapping("bz2", "application/bzip2");
         mimeTypes.addMimeMapping("br", "application/brotli");
