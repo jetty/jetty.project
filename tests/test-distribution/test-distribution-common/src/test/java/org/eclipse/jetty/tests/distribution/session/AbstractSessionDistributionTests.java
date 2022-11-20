@@ -38,6 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractSessionDistributionTests extends AbstractJettyHomeTest

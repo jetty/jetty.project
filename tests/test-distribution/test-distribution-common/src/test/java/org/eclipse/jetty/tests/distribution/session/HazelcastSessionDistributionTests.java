@@ -42,6 +42,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HazelcastSessionDistributionTests extends AbstractSessionDistributionTests
 {
