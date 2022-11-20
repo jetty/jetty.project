@@ -98,14 +98,18 @@ public class ServletChannel
         _callback = callback;
     }
 
-    public void init(ServletContextRequest servletContextRequest)
+    /**
+     * Associate this channel with a specific request.
+     * @param servletContextRequest The request to associate
+     * @see #recycle()
+     */
+    public void associate(ServletContextRequest servletContextRequest)
     {
         _state.recycle();
         _httpInput.reopen();
         _servletContextApi = servletContextRequest.getContext().getServletContext();
         _servletContextRequest = servletContextRequest;
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-        _callback = null;
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{}",
@@ -352,12 +356,17 @@ public class ServletChannel
         }
     }
 
+    /**
+     * @see #associate(ServletContextRequest)
+     */
     private void recycle()
     {
+        _httpInput.recycle();
+        _servletContextApi = null;
+        _servletContextRequest = null;
+        _callback = null;
         _written = 0;
         _oldIdleTimeout = 0;
-        _httpInput.recycle();
-        _callback = null;
     }
 
     /**

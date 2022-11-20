@@ -1191,7 +1191,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext,
             matchedResource.getResource(), matchedResource.getPathSpec(), matchedResource.getMatchedPath());
-        servletChannel.init(servletContextRequest);
+        servletChannel.associate(servletContextRequest);
         return servletContextRequest;
     }
 
