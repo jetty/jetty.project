@@ -87,7 +87,7 @@ public class Response implements HttpServletResponse
     private int _status = HttpStatus.OK_200;
     private String _reason;
     private Locale _locale;
-    private MimeTypes.PreDefined _mimeType;
+    private MimeTypes.Type _mimeType;
     private String _characterEncoding;
     private EncodingFrom _encodingFrom = EncodingFrom.NOT_SET;
     private String _contentType;

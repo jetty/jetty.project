@@ -90,7 +90,7 @@ public class HttpClientProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
@@ -128,7 +128,7 @@ public class HttpClientProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
@@ -177,7 +177,7 @@ public class HttpClientProxyProtocolTest
                     assertNotNull(proxyEndPoint.getTLV(typeTLS));
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
@@ -223,7 +223,7 @@ public class HttpClientProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });

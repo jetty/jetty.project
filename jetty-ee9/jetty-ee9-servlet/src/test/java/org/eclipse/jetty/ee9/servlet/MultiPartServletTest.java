@@ -75,10 +75,10 @@ public class MultiPartServletTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            if (!req.getContentType().contains(MimeTypes.PreDefined.MULTIPART_FORM_DATA.asString()))
+            if (!req.getContentType().contains(MimeTypes.Type.MULTIPART_FORM_DATA.asString()))
             {
                 resp.setContentType("text/plain");
-                resp.getWriter().println("not content type " + MimeTypes.PreDefined.MULTIPART_FORM_DATA);
+                resp.getWriter().println("not content type " + MimeTypes.Type.MULTIPART_FORM_DATA);
                 resp.getWriter().println("contentType: " + req.getContentType());
                 return;
             }
@@ -96,7 +96,7 @@ public class MultiPartServletTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            if (!req.getContentType().contains(MimeTypes.PreDefined.MULTIPART_FORM_DATA.asString()))
+            if (!req.getContentType().contains(MimeTypes.Type.MULTIPART_FORM_DATA.asString()))
             {
                 resp.sendError(400);
                 return;

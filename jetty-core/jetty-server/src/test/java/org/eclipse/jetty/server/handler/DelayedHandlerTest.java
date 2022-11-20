@@ -433,7 +433,7 @@ public class DelayedHandlerTest
                 Content-Type: %s
                 Content-Length: 22
                 
-                """.formatted(MimeTypes.PreDefined.FORM_ENCODED).getBytes(StandardCharsets.UTF_8));
+                """.formatted(MimeTypes.Type.FORM_ENCODED).getBytes(StandardCharsets.UTF_8));
             output.flush();
             assertFalse(processing.await(100, TimeUnit.MILLISECONDS));
 

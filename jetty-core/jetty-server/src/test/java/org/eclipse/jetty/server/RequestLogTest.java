@@ -180,7 +180,7 @@ public class RequestLogTest
                 StringBuilder req = new StringBuilder();
                 req.append("POST ").append(requestPath).append(" HTTP/1.1\r\n");
                 req.append("Host: ").append(baseURI.getRawAuthority()).append("\r\n");
-                req.append("Content-Type: ").append(MimeTypes.PreDefined.FORM_ENCODED).append("\r\n");
+                req.append("Content-Type: ").append(MimeTypes.Type.FORM_ENCODED).append("\r\n");
                 req.append("Content-Length: ").append(bufForm.length).append("\r\n");
                 req.append("Connection: close\r\n");
                 req.append("\r\n");
@@ -266,7 +266,7 @@ public class RequestLogTest
                 StringBuilder req = new StringBuilder();
                 req.append("POST /hello HTTP/1.1\r\n");
                 req.append("Host: ").append(baseURI.getRawAuthority()).append("\r\n");
-                req.append("Content-Type: ").append(MimeTypes.PreDefined.FORM_ENCODED).append("\r\n");
+                req.append("Content-Type: ").append(MimeTypes.Type.FORM_ENCODED).append("\r\n");
                 req.append("Content-Length: ").append(bufForm.length).append("\r\n");
                 // add extra Transfer-Encoding: chunked header, making the POST request invalid per HTTP spec
                 req.append("Transfer-Encoding: chunked\r\n");

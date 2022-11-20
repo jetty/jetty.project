@@ -45,7 +45,7 @@ public class Jetty12Example
                                 Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, "the handler says Hello World", callback);
             }
         });

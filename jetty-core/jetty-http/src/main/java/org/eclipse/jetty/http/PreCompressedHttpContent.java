@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 
-import org.eclipse.jetty.http.MimeTypes.PreDefined;
+import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class PreCompressedHttpContent implements HttpContent
@@ -109,7 +109,7 @@ public class PreCompressedHttpContent implements HttpContent
     }
 
     @Override
-    public PreDefined getMimeType()
+    public Type getMimeType()
     {
         return _content.getMimeType();
     }

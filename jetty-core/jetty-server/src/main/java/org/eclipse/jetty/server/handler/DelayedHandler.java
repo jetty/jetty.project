@@ -160,7 +160,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
                 return processor;
 
             String contentTypeValue = HttpField.valueParameters(contentType, null);
-            if (!MimeTypes.PreDefined.MULTIPART_FORM_DATA.is(contentTypeValue))
+            if (!MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
                 return processor;
             String boundary = MultiPart.extractBoundary(contentType);
             if (boundary == null)

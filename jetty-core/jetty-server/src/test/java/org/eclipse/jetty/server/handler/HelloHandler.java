@@ -49,7 +49,7 @@ public class HelloHandler extends Handler.Processor.NonBlocking
     public void process(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
         Content.Sink.write(response, true, _message, callback);
     }
 }

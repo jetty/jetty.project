@@ -141,7 +141,7 @@ public class DumpHandler extends Handler.Processor.Blocking
             return;
         }
 
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_HTML.asString());
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML.asString());
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
         Writer writer = new OutputStreamWriter(buf, StandardCharsets.ISO_8859_1);

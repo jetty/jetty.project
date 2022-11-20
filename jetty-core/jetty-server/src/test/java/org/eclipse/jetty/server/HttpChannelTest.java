@@ -104,7 +104,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
     }
 
@@ -140,7 +140,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
     }
 
@@ -153,7 +153,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 AtomicInteger count = new AtomicInteger(10000);
                 Callback writer = new Callback()
                 {
@@ -208,7 +208,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(stream.getResponseContent().remaining(), equalTo(10000));
     }
 
@@ -263,7 +263,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         stream.addContent(body, true);
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
@@ -275,7 +275,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
@@ -307,7 +307,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
@@ -318,7 +318,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
@@ -348,7 +348,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
@@ -388,7 +388,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
@@ -711,7 +711,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         stream.addContent(body, true);
@@ -723,7 +723,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
 
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
@@ -739,7 +739,7 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
             }
@@ -765,7 +765,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure().getMessage(), containsString("Content not consumed"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
@@ -782,7 +782,7 @@ public class HttpChannelTest
             {
                 response.setStatus(200);
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
             }
@@ -807,7 +807,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), equalTo(HttpHeaderValue.CLOSE.asString()));
@@ -830,7 +830,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         assertThat(stream.addContent(body, true), nullValue());
@@ -842,7 +842,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
         // 2nd request
@@ -893,7 +893,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         assertThat(stream.addContent(BufferUtil.toBuffer(parts[0]), false), nullValue());
@@ -970,7 +970,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
         Iterator<String> timeline = history.iterator();
@@ -1035,7 +1035,7 @@ public class HttpChannelTest
             .add(HttpHeader.HOST, "localhost")
             .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
             .put(HttpHeader.TRAILER, "Some")
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
@@ -1046,7 +1046,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
         HttpFields trailersRcv = stream.getResponseTrailers();
@@ -1255,7 +1255,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
             .add(HttpHeader.CONTENT_LENGTH, "12")
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, -1);

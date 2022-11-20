@@ -36,7 +36,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MimeTypes.PreDefined;
+import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
@@ -130,7 +130,7 @@ public class ErrorProcessor implements Request.Processor
                 callback.succeeded();
                 return;
             }
-            acceptable = Collections.singletonList(PreDefined.TEXT_HTML.asString());
+            acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
         }
         List<Charset> charsets = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET).stream()
             .map(s ->
@@ -168,14 +168,14 @@ public class ErrorProcessor implements Request.Processor
 
     protected boolean generateAcceptableResponse(Request request, Response response, Callback callback, String contentType, List<Charset> charsets, int code, String message, Throwable cause) throws IOException
     {
-        PreDefined type;
+        Type type;
         Charset charset;
         switch (contentType)
         {
             case "text/html":
             case "text/*":
             case "*/*":
-                type = PreDefined.TEXT_HTML;
+                type = Type.TEXT_HTML;
                 charset = charsets.stream().findFirst().orElse(StandardCharsets.ISO_8859_1);
                 break;
 
@@ -187,11 +187,11 @@ public class ErrorProcessor implements Request.Processor
                     charset = StandardCharsets.ISO_8859_1;
                 else
                     return false;
-                type = PreDefined.TEXT_JSON.is(contentType) ? PreDefined.TEXT_JSON : PreDefined.APPLICATION_JSON;
+                type = Type.TEXT_JSON.is(contentType) ? Type.TEXT_JSON : Type.APPLICATION_JSON;
                 break;
 
             case "text/plain":
-                type = PreDefined.TEXT_PLAIN;
+                type = Type.TEXT_PLAIN;
                 charset = charsets.stream().findFirst().orElse(StandardCharsets.ISO_8859_1);
                 break;
 
@@ -428,7 +428,7 @@ public class ErrorProcessor implements Request.Processor
             reason = HttpStatus.getMessage(status);
         if (HttpStatus.hasNoBody(status))
             return BufferUtil.EMPTY_BUFFER;
-        fields.put(HttpHeader.CONTENT_TYPE, PreDefined.TEXT_HTML_8859_1.asString());
+        fields.put(HttpHeader.CONTENT_TYPE, Type.TEXT_HTML_8859_1.asString());
         return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
     }
 

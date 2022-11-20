@@ -37,7 +37,8 @@ public interface MimeTypes
 {
     Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
 
-    enum PreDefined
+    /** Enumeration of predefined MimeTypes. This is not exhaustive */
+    enum Type
     {
         FORM_ENCODED("application/x-www-form-urlencoded"),
         MESSAGE_HTTP("message/http"),
@@ -99,13 +100,13 @@ public interface MimeTypes
         APPLICATION_JSON_UTF_8("application/json;charset=utf-8", APPLICATION_JSON);
 
         private final String _string;
-        private final PreDefined _base;
+        private final Type _base;
         private final Charset _charset;
         private final String _charsetString;
         private final boolean _assumedCharset;
         private final HttpField _field;
 
-        PreDefined(String s)
+        Type(String s)
         {
             _string = s;
             _base = this;
@@ -115,7 +116,7 @@ public interface MimeTypes
             _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
         }
 
-        PreDefined(String s, PreDefined base)
+        Type(String s, Type base)
         {
             _string = s;
             _base = base;
@@ -126,7 +127,7 @@ public interface MimeTypes
             _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
         }
 
-        PreDefined(String s, Charset cs)
+        Type(String s, Charset cs)
         {
             _string = s;
             _base = this;
@@ -179,18 +180,18 @@ public interface MimeTypes
             return new HttpField(HttpHeader.CONTENT_TYPE, getContentTypeWithoutCharset(_string) + ";charset=" + charset.name());
         }
 
-        public PreDefined getBaseType()
+        public Type getBaseType()
         {
             return _base;
         }
     }
 
-    Index<PreDefined> CACHE = new Index.Builder<PreDefined>()
+    Index<Type> CACHE = new Index.Builder<Type>()
         .caseSensitive(false)
         .withAll(() ->
         {
-            Map<String, PreDefined> result = new HashMap<>();
-            for (PreDefined type : PreDefined.values())
+            Map<String, Type> result = new HashMap<>();
+            for (Type type : Type.values())
             {
                 String key1 = type.toString();
                 result.put(key1, type);
@@ -270,7 +271,7 @@ public interface MimeTypes
     MimeTypes DEFAULTS = new MimeTypes.Base()
     {
         {
-            for (PreDefined type : PreDefined.values())
+            for (Type type : Type.values())
             {
                 if (type.isCharsetAssumed())
                     _assumedEncodings.put(type.asString(), type.getCharsetString());
@@ -448,7 +449,7 @@ public interface MimeTypes
 
     private static String normalizeMimeType(String type)
     {
-        PreDefined t = CACHE.get(type);
+        Type t = CACHE.get(type);
         if (t != null)
             return t.asString();
 

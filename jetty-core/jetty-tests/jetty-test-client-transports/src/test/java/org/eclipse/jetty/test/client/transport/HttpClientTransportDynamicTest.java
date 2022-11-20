@@ -401,7 +401,7 @@ public class HttpClientTransportDynamicTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
             }
         });
@@ -498,7 +498,7 @@ public class HttpClientTransportDynamicTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
             }
         });
@@ -573,7 +573,7 @@ public class HttpClientTransportDynamicTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
             }
         });
@@ -612,7 +612,7 @@ public class HttpClientTransportDynamicTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.PreDefined.TEXT_PLAIN_UTF_8.asString());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
             }
         });
