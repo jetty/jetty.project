@@ -423,9 +423,9 @@ public interface MimeTypes
 
         public Mapped(MimeTypes defaults)
         {
-            _mimeMap.entrySet().addAll(defaults.getMimeMap().entrySet());
-            _assumedEncodings.entrySet().addAll(defaults.getAssumedMap().entrySet());
-            _inferredEncodings.entrySet().addAll(defaults.getInferredMap().entrySet());
+            _mimeMap.putAll(defaults.getMimeMap());
+            _assumedEncodings.putAll(defaults.getAssumedMap());
+            _inferredEncodings.putAll(defaults.getInferredMap());
         }
 
         @Override
