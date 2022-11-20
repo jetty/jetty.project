@@ -783,6 +783,9 @@ public class ServletChannel
         _combinedListener.onRequestTrailers(_servletContextRequest);
     }
 
+    /**
+     * @see #abort(Throwable)
+     */
     public void onCompleted()
     {
         ServletContextRequest.ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
@@ -812,9 +815,9 @@ public class ServletChannel
             Callback callback = _callback;
             // Must recycle before notification to allow for reuse.
             recycle();
+            _combinedListener.onComplete(_servletContextRequest);
             callback.succeeded();
         }
-        _combinedListener.onComplete(_servletContextRequest);
     }
 
     public boolean isCommitted()
@@ -848,6 +851,7 @@ public class ServletChannel
      * then this method should be called.
      *
      * @param failure the failure that caused the abort.
+     * @see #onCompleted()
      */
     public void abort(Throwable failure)
     {
@@ -856,8 +860,10 @@ public class ServletChannel
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("abort {}", this, failure);
+            Callback callback = _callback;
+            recycle();
             _combinedListener.onResponseFailure(_servletContextRequest, failure);
-            _callback.failed(failure);
+            callback.failed(failure);
         }
     }
 
