@@ -21,14 +21,12 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee10.tests.distribution.openid.OpenIdProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
-import org.eclipse.jetty.tests.distribution.JettyHomeTester;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OpenIdTests extends AbstractJettyHomeTest
 {
