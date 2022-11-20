@@ -16,18 +16,15 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -103,7 +100,6 @@ public interface MimeTypes
 
         private final String _string;
         private final PreDefined _base;
-        private final ByteBuffer _buffer;
         private final Charset _charset;
         private final String _charsetString;
         private final boolean _assumedCharset;
@@ -112,7 +108,6 @@ public interface MimeTypes
         PreDefined(String s)
         {
             _string = s;
-            _buffer = BufferUtil.toBuffer(s);
             _base = this;
             _charset = null;
             _charsetString = null;
@@ -123,7 +118,6 @@ public interface MimeTypes
         PreDefined(String s, PreDefined base)
         {
             _string = s;
-            _buffer = BufferUtil.toBuffer(s);
             _base = base;
             int i = s.indexOf(";charset=");
             _charset = Charset.forName(s.substring(i + 9));
@@ -136,7 +130,6 @@ public interface MimeTypes
         {
             _string = s;
             _base = this;
-            _buffer = BufferUtil.toBuffer(s);
             _charset = cs;
             _charsetString = _charset == null ? null : _charset.toString().toLowerCase(Locale.ENGLISH);
             _assumedCharset = true;
@@ -252,7 +245,11 @@ public interface MimeTypes
 
     String getCharsetAssumedFromContentType(String contentType);
 
-    Set<String> getKnownMimeTypes();
+    Map<String, String> getMimeMap();
+
+    Map<String, String> getInferredMap();
+
+    Map<String, String> getAssumedMap();
 
     interface Mutable extends MimeTypes
     {
@@ -261,21 +258,17 @@ public interface MimeTypes
          *
          * @param extension the extension
          * @param type the mime type
+         * @return previous value
          */
         String addMimeMapping(String extension, String type);
 
         String addInferred(String contentType, String encoding);
 
         String addAssumed(String contentType, String encoding);
-
     }
 
-    MimeTypes DEFAULTS = new MimeTypes()
+    MimeTypes DEFAULTS = new MimeTypes.Base()
     {
-        private final Map<String, String> _mimeMap = new HashMap<>();
-        private final Map<String, String> _inferredEncodings = new HashMap<>();
-        private final Map<String, String> _assumedEncodings = new HashMap<>();
-
         {
             for (PreDefined type : PreDefined.values())
             {
@@ -375,6 +368,13 @@ public interface MimeTypes
                     LOG.warn("Unable to load encoding resource: {} - {}", resourceName, e.toString());
             }
         }
+    };
+
+    class Base implements MimeTypes
+    {
+        protected final Map<String, String> _mimeMap = new HashMap<>();
+        protected final Map<String, String> _inferredEncodings = new HashMap<>();
+        protected final Map<String, String> _assumedEncodings = new HashMap<>();
 
         @Override
         public String getMimeForExtension(String extension)
@@ -395,57 +395,26 @@ public interface MimeTypes
         }
 
         @Override
-        public Set<String> getKnownMimeTypes()
+        public Map<String, String> getMimeMap()
         {
-            return new HashSet<>(_mimeMap.values());
-        }
-    };
-
-    class Wrapper implements MimeTypes
-    {
-        private final MimeTypes _wrapped;
-
-        public Wrapper(MimeTypes wrapped)
-        {
-            _wrapped = wrapped;
-        }
-
-        public MimeTypes getWrapped()
-        {
-            return _wrapped;
+            return Collections.unmodifiableMap(_mimeMap);
         }
 
         @Override
-        public String getMimeForExtension(String extension)
+        public Map<String, String> getInferredMap()
         {
-            return getWrapped().getMimeForExtension(extension);
+            return Collections.unmodifiableMap(_inferredEncodings);
         }
 
         @Override
-        public String getCharsetInferredFromContentType(String contentType)
+        public Map<String, String> getAssumedMap()
         {
-            return getWrapped().getCharsetInferredFromContentType(contentType);
-        }
-
-        @Override
-        public String getCharsetAssumedFromContentType(String contentType)
-        {
-            return getWrapped().getCharsetAssumedFromContentType(contentType);
-        }
-
-        @Override
-        public Set<String> getKnownMimeTypes()
-        {
-            return getWrapped().getKnownMimeTypes();
+            return Collections.unmodifiableMap(_assumedEncodings);
         }
     }
 
-    class Mapped extends Wrapper implements Mutable
+    class Mapped extends Base implements Mutable
     {
-        private final Map<String, String> _mimeMap = new HashMap<>();
-        private final Map<String, String> _inferredEncodings = new HashMap<>();
-        private final Map<String, String> _assumedEncodings = new HashMap<>();
-
         public Mapped()
         {
             this(DEFAULTS);
@@ -453,36 +422,9 @@ public interface MimeTypes
 
         public Mapped(MimeTypes defaults)
         {
-            super(defaults);
-        }
-
-        @Override
-        public String getMimeForExtension(String extension)
-        {
-            String mimeType = _mimeMap.get(extension);
-            return mimeType == null ? super.getMimeForExtension(extension) : mimeType;
-        }
-
-        @Override
-        public String getCharsetInferredFromContentType(String contentType)
-        {
-            String charset =  _inferredEncodings.get(contentType);
-            return charset == null ? super.getCharsetInferredFromContentType(contentType) : charset;
-        }
-
-        @Override
-        public String getCharsetAssumedFromContentType(String contentType)
-        {
-            String charset =  _assumedEncodings.get(contentType);
-            return (charset == null) ? super.getCharsetAssumedFromContentType(contentType) : charset;
-        }
-
-        @Override
-        public Set<String> getKnownMimeTypes()
-        {
-            Set<String> types =  new HashSet<>(super.getKnownMimeTypes());
-            types.addAll(_mimeMap.values());
-            return types;
+            _mimeMap.entrySet().addAll(defaults.getMimeMap().entrySet());
+            _assumedEncodings.entrySet().addAll(defaults.getAssumedMap().entrySet());
+            _inferredEncodings.entrySet().addAll(defaults.getInferredMap().entrySet());
         }
 
         @Override
