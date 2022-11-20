@@ -19,6 +19,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.util.IncludeExclude;
@@ -118,7 +119,9 @@ public abstract class IncludeExcludeBasedFilter implements Filter
         else
         {
             String requestUrl = httpRequest.getPathInfo();
-            mimeType = MimeTypes.getDefaultMimeByExtension(requestUrl);
+            Request baseRequest = Request.getBaseRequest(httpRequest);
+            mimeType = (baseRequest == null ? MimeTypes.DEFAULTS : baseRequest.getCoreRequest().getContext().getMimeTypes())
+                .getMimeByExtension(requestUrl);
 
             if (mimeType == null)
             {
