@@ -1874,6 +1874,7 @@
         <spotbugs.effort>Default</spotbugs.effort>
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
+        <maven.repo.uri></maven.repo.uri>
       </properties>
       <modules>
       <!-- FIXME: Do we want to keep this?
@@ -1895,6 +1896,7 @@
               <configuration>
                 <systemPropertyVariables>
                   <env>ci</env>
+                  <maven.repo.uri>${maven.repo.uri}</maven.repo.uri>
                 </systemPropertyVariables>
               </configuration>
             </plugin>
