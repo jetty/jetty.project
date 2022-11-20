@@ -329,7 +329,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private void scheduleReadListenerNotification()
     {
-        _servletChannel.execute(_servletChannel);
+        _servletChannel.execute(_servletChannel::handle);
     }
 
     /**

@@ -60,7 +60,7 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
 /**
  * TODO describe what this class does
  */
-public class ServletChannel implements Runnable
+public class ServletChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
@@ -358,12 +358,6 @@ public class ServletChannel implements Runnable
         _oldIdleTimeout = 0;
         _httpInput.recycle();
         _callback = null;
-    }
-
-    @Override
-    public void run()
-    {
-        handle();
     }
 
     /**
@@ -814,10 +808,13 @@ public class ServletChannel implements Runnable
 
         // Callback will either be succeeded here or failed in abort().
         if (_state.completeResponse())
-            _callback.succeeded();
+        {
+            Callback callback = _callback;
+            // Must recycle before notification to allow for reuse.
+            recycle();
+            callback.succeeded();
+        }
         _combinedListener.onComplete(_servletContextRequest);
-
-        recycle();
     }
 
     public boolean isCommitted()

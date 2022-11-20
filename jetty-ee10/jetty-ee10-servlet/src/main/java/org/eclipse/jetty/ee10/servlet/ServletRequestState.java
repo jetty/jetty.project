@@ -733,7 +733,7 @@ public class ServletRequestState
 
         cancelTimeout(event);
         if (handle)
-            runInContext(event, _servletChannel);
+            runInContext(event, _servletChannel::handle);
     }
 
     public void asyncError(Throwable failure)
@@ -767,7 +767,7 @@ public class ServletRequestState
         if (event != null)
         {
             cancelTimeout(event);
-            runInContext(event, _servletChannel);
+            runInContext(event, _servletChannel::handle);
         }
     }
 
@@ -1110,7 +1110,7 @@ public class ServletRequestState
     protected void scheduleDispatch()
     {
         // TODO long winded!!!
-        _servletChannel.getServletContextRequest().getConnectionMetaData().getConnector().getExecutor().execute(_servletChannel);
+        _servletChannel.getServletContextRequest().getConnectionMetaData().getConnector().getExecutor().execute(_servletChannel::handle);
     }
 
     protected void cancelTimeout()
