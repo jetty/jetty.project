@@ -89,10 +89,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     /*
-     * The context and specifically attributes and mimeTypes are not implemented as a layer over
-     * The server context, attributes and mimeTypes, because ultimately we may support cross context
-     * dispatch, in which case the properties and behaviour of a context would be dynamic.
-     * So the context replaces the context in the request, it does not wrap it.
+     * The context (specifically it's attributes and mimeTypes) are not implemented as a layer over
+     * the server context, as  this handler's context replaces the context in the request, it does not
+     * wrap it. This is so that any cross context dispatch does not inherit attributes and types from
+     * the dispatching context.
      */
     private final Context _context;
     private final Attributes _persistentAttributes = new Mapped();
