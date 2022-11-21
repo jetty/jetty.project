@@ -74,7 +74,7 @@ public class ResourceHandler extends Handler.Wrapper
                 _resourceBase = context.getBaseResource();
         }
 
-        _mimeTypes = context.getMimeTypes();
+        _mimeTypes = context == null ? MimeTypes.DEFAULTS : context.getMimeTypes();
 
         _byteBufferPool = getByteBufferPool(context);
         _resourceService.setHttpContentFactory(newHttpContentFactory());
