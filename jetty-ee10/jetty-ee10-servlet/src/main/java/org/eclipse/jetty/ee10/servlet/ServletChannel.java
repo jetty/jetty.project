@@ -65,6 +65,8 @@ public class ServletChannel
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
     private final ServletRequestState _state;
+    private final ServletContextHandler.Context _context;
+    private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
@@ -72,17 +74,18 @@ public class ServletChannel
     private final EndPoint _endPoint;
     private final HttpInput _httpInput;
     private final Listener _combinedListener;
-    private ServletContextHandler.ServletContextApi _servletContextApi;
-    private ServletContextRequest _servletContextRequest;
-    private boolean _expects100Continue;
-    private long _oldIdleTimeout;
-    private Callback _callback;
+    private volatile ServletContextRequest _servletContextRequest;
+    private volatile boolean _expects100Continue;
+    private volatile long _oldIdleTimeout;
+    private volatile Callback _callback;
     // Bytes written after interception (e.g. after compression).
-    private long _written;
+    private volatile long _written;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
         _state = new ServletRequestState(this);
+        _context = servletContextHandler.getContext();
+        _servletContextApi = _context.getServletContext();
         _connector = request.getConnectionMetaData().getConnector();
         _executor = request.getContext();
         _configuration = request.getConnectionMetaData().getHttpConfiguration();
@@ -107,7 +110,6 @@ public class ServletChannel
     {
         _state.recycle();
         _httpInput.reopen();
-        _servletContextApi = servletContextRequest.getContext().getServletContext();
         _servletContextRequest = servletContextRequest;
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
@@ -120,12 +122,12 @@ public class ServletChannel
 
     public ServletContextHandler.Context getContext()
     {
-        return _servletContextRequest.getContext();
+        return _context;
     }
 
     public ServletContextHandler getContextHandler()
     {
-        return getContext().getContextHandler();
+        return _context.getContextHandler();
     }
 
     public ServletContextHandler.ServletContextApi getServletContext()
@@ -213,7 +215,8 @@ public class ServletChannel
 
     public ServletContextResponse getResponse()
     {
-        return _servletContextRequest.getResponse();
+        ServletContextRequest request = _servletContextRequest;
+        return request == null ? null : request.getResponse();
     }
 
     public Connection getConnection()
@@ -362,7 +365,6 @@ public class ServletChannel
     private void recycle()
     {
         _httpInput.recycle();
-        _servletContextApi = null;
         _servletContextRequest = null;
         _callback = null;
         _written = 0;
@@ -406,7 +408,7 @@ public class ServletChannel
                         dispatch(DispatcherType.REQUEST, () ->
                         {
                             ServletContextHandler.ServletContextApi servletContextApi = getServletContextContext();
-                            ServletHandler servletHandler = servletContextApi.getContext().getServletContextHandler().getServletHandler();
+                            ServletHandler servletHandler = _context.getServletContextHandler().getServletHandler();
                             ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
 
                             mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getHttpServletRequest(), _servletContextRequest.getHttpServletResponse());
@@ -425,7 +427,7 @@ public class ServletChannel
                             String dispatchString = asyncContextEvent.getDispatchPath();
                             if (dispatchString != null)
                             {
-                                String contextPath = _servletContextRequest.getContext().getContextPath();
+                                String contextPath = _context.getContextPath();
                                 HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
                                 pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
                                 uri = HttpURI.build(_servletContextRequest.getHttpURI())
@@ -442,8 +444,8 @@ public class ServletChannel
                                 else
                                 {
                                     pathInContext = uri.getCanonicalPath();
-                                    if (_servletContextRequest.getContext().getContextPath().length() > 1)
-                                        pathInContext = pathInContext.substring(_servletContextRequest.getContext().getContextPath().length());
+                                    if (_context.getContextPath().length() > 1)
+                                        pathInContext = pathInContext.substring(_context.getContextPath().length());
                                 }
                             }
 
@@ -534,15 +536,13 @@ public class ServletChannel
 
                     case READ_CALLBACK:
                     {
-                        ServletContextHandler handler = _state.getContextHandler();
-                        handler.getContext().run(() -> _servletContextRequest.getHttpInput().run());
+                        _context.run(() -> _servletContextRequest.getHttpInput().run());
                         break;
                     }
 
                     case WRITE_CALLBACK:
                     {
-                        ServletContextHandler handler = _state.getContextHandler();
-                        handler.getContext().run(() -> _servletContextRequest.getHttpOutput().run());
+                        _context.run(() -> _servletContextRequest.getHttpOutput().run());
                         break;
                     }
 
@@ -638,7 +638,7 @@ public class ServletChannel
         try
         {
             _servletContextRequest.getResponse().getHttpOutput().reopen();
-            _servletContextApi.getContext().getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+            _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
             getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_servletContextRequest);
             dispatchable.dispatch();
@@ -651,7 +651,7 @@ public class ServletChannel
         finally
         {
             _combinedListener.onAfterDispatch(_servletContextRequest);
-            _servletContextApi.getContext().getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
+            _context.getServletContextHandler().requestDestroyed(_servletContextRequest, _servletContextRequest.getHttpServletRequest());
         }
     }
 
@@ -685,7 +685,8 @@ public class ServletChannel
         }
         else
         {
-            LOG.warn(_servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
+            ServletContextRequest request = _servletContextRequest;
+            LOG.warn(request == null ? "unknown request" : request.getHttpServletRequest().getRequestURI(), failure);
         }
 
         if (isCommitted())
@@ -819,11 +820,12 @@ public class ServletChannel
         }
 
         // Callback will either be succeeded here or failed in abort().
+        Callback callback = _callback;
+        // Must recycle before notification to allow for reuse.
+        // Recycle always done here even if an abort is called.
+        recycle();
         if (_state.completeResponse())
         {
-            Callback callback = _callback;
-            // Must recycle before notification to allow for reuse.
-            recycle();
             _combinedListener.onComplete(_servletContextRequest);
             callback.succeeded();
         }
@@ -870,7 +872,6 @@ public class ServletChannel
             if (LOG.isDebugEnabled())
                 LOG.debug("abort {}", this, failure);
             Callback callback = _callback;
-            recycle();
             _combinedListener.onResponseFailure(_servletContextRequest, failure);
             callback.failed(failure);
         }
