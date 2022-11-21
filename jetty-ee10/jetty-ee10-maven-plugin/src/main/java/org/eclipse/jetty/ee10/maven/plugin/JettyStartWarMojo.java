@@ -60,7 +60,7 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
     protected JettyHomeForker homeForker;
 
     @Override
-    public void configureWebApp() throws AbstractMojoExecutionException
+    public void configureWebApp() throws Exception
     {
         super.configureWebApp();
         //if a war has not been explicitly configured, use the one from the project

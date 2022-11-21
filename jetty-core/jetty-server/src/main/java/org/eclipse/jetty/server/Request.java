@@ -205,13 +205,17 @@ public interface Request extends Attributes, Content.Source
     @Override
     Content.Chunk read();
 
-    // TODO should this be on the connectionMetaData?
-    default boolean isPushSupported()
+    /**
+     * <p>Pushes the given {@code resource} to the client.</p>
+     *
+     * @param resource the resource to push
+     * @throws UnsupportedOperationException if the push functionality is not supported
+     * @see ConnectionMetaData#isPushSupported()
+     */
+    default void push(MetaData.Request resource)
     {
-        return false; // TODO
+        throw new UnsupportedOperationException();
     }
-
-    void push(MetaData.Request request); // TODO
 
     /**
      * <p>Adds a listener for asynchronous errors.</p>
@@ -584,15 +588,9 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public boolean isPushSupported()
+        public void push(MetaData.Request resource)
         {
-            return getWrapped().isPushSupported();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getWrapped().push(request);
+            getWrapped().push(resource);
         }
 
         @Override

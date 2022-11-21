@@ -931,10 +931,10 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public void push(MetaData.Request request)
+                public void push(MetaData.Request resource)
                 {
                     history.add("push");
-                    super.push(request);
+                    super.push(resource);
                 }
 
                 @Override

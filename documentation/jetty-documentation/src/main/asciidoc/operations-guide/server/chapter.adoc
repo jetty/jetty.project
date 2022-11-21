@@ -1,0 +1,26 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-server]]
+=== Jetty Server
+
+The Jetty `Server` object is the central component that links protocol connectors to web applications.
+
+The `Server` component is defined by the xref:og-module-server[`server` Jetty module], that in turn depends on other Jetty modules that provide key functionalities, in particular:
+
+* xref:og-server-logging[Logging]
+* xref:og-module-bytebufferpool[`ByteBuffer` pooling]
+* xref:og-server-threadpool[`Thread` pooling]
+
+include::server-logging.adoc[]
+include::server-threadpool.adoc[]

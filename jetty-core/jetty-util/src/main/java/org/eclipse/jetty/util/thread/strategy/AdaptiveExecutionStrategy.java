@@ -132,8 +132,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Producer _producer;
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
+    private final Executor _virtualExecutor;
     private final Runnable _runPendingProducer = () -> tryProduce(true);
-    private boolean _useVirtualThreads;
     private final AtomicBiInteger _state = new AtomicBiInteger();
 
     /**
@@ -145,17 +145,12 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         _producer = producer;
         _executor = executor;
         _tryExecutor = TryExecutor.asTryExecutor(executor);
+        _virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(_executor);
         addBean(_producer);
         addBean(_tryExecutor);
+        addBean(_virtualExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        _useVirtualThreads = VirtualThreads.isUseVirtualThreads(_executor);
     }
 
     @Override
@@ -528,10 +523,10 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         try
         {
-            if (isUseVirtualThreads())
-                VirtualThreads.executeOnVirtualThread(task);
-            else
-                _executor.execute(task);
+            Executor executor = _virtualExecutor;
+            if (executor == null)
+                executor = _executor;
+            executor.execute(task);
         }
         catch (RejectedExecutionException e)
         {
@@ -548,7 +543,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     @ManagedAttribute(value = "whether this execution strategy uses virtual threads", readonly = true)
     public boolean isUseVirtualThreads()
     {
-        return _useVirtualThreads;
+        return _virtualExecutor != null;
     }
 
     @ManagedAttribute(value = "number of tasks consumed with PC mode", readonly = true)
