@@ -59,18 +59,7 @@ public class SerializedInvoker
             {
                 // Wrap the given task with another one that's going to delegate run() to the wrapped task while the
                 // wrapper's toString() returns a description of the place in code where SerializedInvoker.run() was called.
-                StackTraceElement[] stackTrace = new Exception().getStackTrace();
-                for (StackTraceElement stackTraceElement : stackTrace)
-                {
-                    String className = stackTraceElement.getClassName();
-                    if (!className.equals(SerializedInvoker.class.getName()) && !className.equals(getClass().getName()))
-                    {
-                        String name = "Queued at " + className + "." + stackTraceElement.getMethodName() +
-                            "(" + stackTraceElement.getFileName() + ":" + stackTraceElement.getLineNumber() + ")";
-                        task = new NamedRunnable(task, name);
-                        break;
-                    }
-                }
+                task = new NamedRunnable(task, deriveTaskName(task));
             }
         }
         Link link = new Link(task);
@@ -81,6 +70,18 @@ public class SerializedInvoker
             return link;
         penultimate._next.lazySet(link);
         return null;
+    }
+
+    protected String deriveTaskName(Runnable task)
+    {
+        StackTraceElement[] stackTrace = new Exception().getStackTrace();
+        for (StackTraceElement stackTraceElement : stackTrace)
+        {
+            String className = stackTraceElement.getClassName();
+            if (!className.equals(SerializedInvoker.class.getName()) && !className.equals(getClass().getName()))
+                return "Queued at " + stackTraceElement;
+        }
+        return task.toString();
     }
 
     /**
