@@ -20,5 +20,6 @@
 * xref:og-protocols-http2s[Configure Secure HTTP/2]
 * xref:og-protocols-http3[Configure HTTP/3]
 * xref:og-protocols-proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
-* xref:og-logging[Configure Jetty Logging]
+* xref:og-server-logging[Configure Jetty Logging]
+* xref:og-server-threadpool[Configure Jetty Thread Pool and Virtual Threads]
 * xref:og-troubleshooting[Troubleshooting]

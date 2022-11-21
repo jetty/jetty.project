@@ -170,6 +170,7 @@ This is useful if you need to start Jetty and want to specify JVM options such a
 * `+-Xlog:gc+`, to specify the GC log file and options
 * `+-javaagent+`, to specify Java agents
 * `+-XX:+` options, for example to specify the GC implementation
+* `+--enable-preview+`, to enable Java preview features
 
 Start by creating `$JETTY_BASE/modules/jvm.mod`:
 

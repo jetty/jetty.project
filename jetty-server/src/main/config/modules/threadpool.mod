@@ -11,6 +11,7 @@ threadpool|default
 etc/jetty-threadpool.xml
 
 [ini-template]
+# tag::documentation[]
 ## Thread name prefix.
 #jetty.threadPool.namePrefix=qtp<hashCode>
 
@@ -32,3 +33,4 @@ etc/jetty-threadpool.xml
 
 ## Whether to output a detailed dump.
 #jetty.threadPool.detailedDump=false
+# end::documentation[]

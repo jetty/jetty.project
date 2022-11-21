@@ -11,12 +11,16 @@
 // ========================================================================
 //
 
-[appendix]
-[[pg-arch]]
-== Jetty Architecture
+[[og-server]]
+=== Jetty Server
 
-include::arch-bean.adoc[]
-include::arch-threads.adoc[]
-include::arch-io.adoc[]
-include::arch-listener.adoc[]
-include::arch-jmx.adoc[]
+The Jetty `Server` object is the central component that links protocol connectors to web applications.
+
+The `Server` component is defined by the xref:og-module-server[`server` Jetty module], that in turn depends on other Jetty modules that provide key functionalities, in particular:
+
+* xref:og-server-logging[Logging]
+* xref:og-module-bytebufferpool[`ByteBuffer` pooling]
+* xref:og-server-threadpool[`Thread` pooling]
+
+include::server-logging.adoc[]
+include::server-threadpool.adoc[]

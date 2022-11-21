@@ -14,6 +14,7 @@ threadpool
 etc/jetty-threadpool-virtual-preview.xml
 
 [ini-template]
+# tag::documentation[]
 ## Platform threads name prefix.
 #jetty.threadPool.namePrefix=qtp<hashCode>
 
@@ -39,4 +40,5 @@ etc/jetty-threadpool-virtual-preview.xml
 #jetty.threadPool.virtual.allowSetThreadLocals=true
 
 ## Whether virtual threads inherits the values of inheritable thread locals.
-#jetty.threadPool.virtual.allowSetThreadLocals=true
+#jetty.threadPool.virtual.inheritInheritableThreadLocals=true
+# end::documentation[]
