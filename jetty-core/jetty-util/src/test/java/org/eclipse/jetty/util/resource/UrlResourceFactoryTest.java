@@ -70,7 +70,7 @@ public class UrlResourceFactoryTest
         assertThat(favicon.getFileName(), is("favicon.ico"));
     }
 
-    public static class HttpsResourceFactory extends AbstractUrlResourceFactory
+    public static class HttpsResourceFactory extends UrlResourceFactory
     {
         public HttpsResourceFactory()
         {

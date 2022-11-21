@@ -26,15 +26,15 @@ import java.time.Instant;
 import org.eclipse.jetty.util.FileID;
 
 /**
- * Abstract ResourceFactory for {@link java.net.URL} based resources.
+ * {@link ResourceFactory} for {@link java.net.URL} based resources.
  */
-public abstract class AbstractUrlResourceFactory implements ResourceFactory
+class UrlResourceFactory implements ResourceFactory
 {
     private final String supportedProtocol;
     private int connectTimeout;
     private boolean useCaches;
 
-    protected AbstractUrlResourceFactory(String protocol)
+    protected UrlResourceFactory(String protocol)
     {
         this.supportedProtocol = protocol;
         this.connectTimeout = Integer.parseInt(System.getProperty(this.getClass().getName() + ".connectTimeout", "1000"));
@@ -134,7 +134,7 @@ public abstract class AbstractUrlResourceFactory implements ResourceFactory
         @Override
         public String getName()
         {
-            return uri.getPath();
+            return uri.toASCIIString();
         }
 
         @Override

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -58,6 +59,27 @@ public class ResourceFactoryTest
         resource = ResourceFactory.root().newResource(uri);
         assertThat(resource.getURI(), is(URI.create("custom://foo")));
         assertThat(resource.getName(), is("custom-impl"));
+    }
+
+    @Test
+    public void testRegisterHttpsUrlFactory()
+    {
+        ResourceFactory.registerUrlResourceFactory("https");
+        // Try as a normal String input
+        Resource resource = ResourceFactory.root().newResource("https://webtide.com/");
+        assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));
+        assertThat(resource.getName(), is("https://webtide.com/"));
+
+        // Try as a formal URI object as input
+        URI uri = URI.create("https://webtide.com/");
+        resource = ResourceFactory.root().newResource(uri);
+        assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));
+        assertThat(resource.getName(), is("https://webtide.com/"));
+
+        // Try a sub-resource
+        Resource subResource = resource.resolve("favicon.ico");
+        assertThat(subResource.getFileName(), is("favicon.ico"));
+        assertThat(subResource.length(), greaterThan(0L));
     }
 
     public static class CustomResourceFactory implements ResourceFactory
