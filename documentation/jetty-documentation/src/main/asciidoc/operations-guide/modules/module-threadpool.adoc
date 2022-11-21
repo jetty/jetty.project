@@ -29,6 +29,9 @@ include::{JETTY_HOME}/modules/threadpool.mod[tags=documentation]
 
 Among the configurable properties, the most relevant are:
 
+`jetty.threadPool.namePrefix`::
+The name prefix to use for the thread names.
+
 `jetty.threadPool.detailedDump`::
 Whether the thread pool should dump the whole stack trace of each thread, or just the topmost stack frame -- defaults to `false`.
 
@@ -38,10 +41,4 @@ The time, in milliseconds, after which an idle thread is released from the pool 
 `jetty.threadPool.maxThreads`::
 The max number of threads pooled by the thread pool -- defaults to 200.
 
-`jetty.threadPool.useVirtualThreads`::
-Whether to enable use of virtual threads, if the runtime supports them.
-Virtual threads are supported as a preview feature since Java 19.
-+
-NOTE: To enable preview features, you need to specify the `+--enable-preview+` command line option, see the section about the xref:og-modules-directive-exec[[exec\] directive].
-+
-By default, virtual threads are not used even if the runtime support them -- their use must be explicitly enabled.
+If you want to use virtual threads, introduced as a preview feature in Java 19, use the xref:og-module-threadpool-virtual-preview[`threadpool-virtual-preview`] Jetty module instead (see also the xref:og-server-threadpool[section about configuring the thread pool]).

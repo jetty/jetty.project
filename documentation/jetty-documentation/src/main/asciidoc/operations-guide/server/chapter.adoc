@@ -11,18 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.docs.programming;
+[[og-server]]
+=== Jetty Server
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+The Jetty `Server` object is the central component that links protocol connectors to web applications.
 
-@SuppressWarnings("unused")
-public class QueuedThreadPoolDocs
-{
-    public void virtualThreads()
-    {
-        // tag::virtual-threads[]
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setUseVirtualThreads(true);
-        // end::virtual-threads[]
-    }
-}
+The `Server` component is defined by the xref:og-module-server[`server` Jetty module], that in turn depends on other Jetty modules that provide key functionalities, in particular:
+
+* xref:og-server-logging[Logging]
+* xref:og-module-bytebufferpool[`ByteBuffer` pooling]
+* xref:og-server-threadpool[`Thread` pooling]
+
+include::server-logging.adoc[]
+include::server-threadpool.adoc[]
