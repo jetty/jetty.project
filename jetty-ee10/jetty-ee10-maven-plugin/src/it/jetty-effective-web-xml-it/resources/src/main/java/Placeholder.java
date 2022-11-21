@@ -11,13 +11,6 @@
 // ========================================================================
 //
 
-[[og-logging]]
-=== Logging
-
-There are two types of logging that can be configured in Jetty:
-
-* The logging of Jetty itself, that logs the server activity
-* The HTTP request logging, that logs information about HTTP requests and responses processed by Jetty
-
-include::logging-server.adoc[]
-include::logging-request.adoc[]
+public class Placeholder
+{
+}

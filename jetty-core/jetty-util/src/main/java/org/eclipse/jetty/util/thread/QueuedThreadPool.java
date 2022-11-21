@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -111,7 +112,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private int _lowThreadsThreshold = 1;
     private ThreadPoolBudget _budget;
     private long _stopTimeout;
-    private boolean _useVirtualThreads;
+    private Executor _virtualThreadsExecutor;
 
     public QueuedThreadPool()
     {
@@ -515,18 +516,18 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     @Override
-    public boolean isUseVirtualThreads()
+    public Executor getVirtualThreadsExecutor()
     {
-        return _useVirtualThreads;
+        return _virtualThreadsExecutor;
     }
 
     @Override
-    public void setUseVirtualThreads(boolean useVirtualThreads)
+    public void setVirtualThreadsExecutor(Executor executor)
     {
         try
         {
-            VirtualThreads.Configurable.super.setUseVirtualThreads(useVirtualThreads);
-            _useVirtualThreads = useVirtualThreads;
+            VirtualThreads.Configurable.super.setVirtualThreadsExecutor(executor);
+            _virtualThreadsExecutor = executor;
         }
         catch (UnsupportedOperationException ignored)
         {

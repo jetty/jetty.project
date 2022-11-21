@@ -85,6 +85,13 @@ public class AbstractTest
         return transports;
     }
 
+    public static Collection<Transport> transportsWithPushSupport()
+    {
+        Collection<Transport> transports = transports();
+        transports.retainAll(List.of(Transport.H2C, Transport.H2));
+        return transports;
+    }
+
     @AfterEach
     public void dispose()
     {
@@ -156,56 +163,55 @@ public class AbstractTest
     public AbstractConnector newConnector(Transport transport, Server server)
     {
         return switch (transport)
+        {
+            case HTTP, HTTPS, H2C, H2, FCGI ->
+                new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
+            case H3 ->
+                new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
+            case UNIX_DOMAIN ->
             {
-                case HTTP:
-                case HTTPS:
-                case H2C:
-                case H2:
-                case FCGI:
-                    yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-                case H3:
-                    yield new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
-                case UNIX_DOMAIN:
-                    UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-                    connector.setUnixDomainPath(unixDomainPath);
-                    yield connector;
-            };
+                UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, newServerConnectionFactory(transport));
+                connector.setUnixDomainPath(unixDomainPath);
+                yield connector;
+            }
+        };
     }
 
     protected ConnectionFactory[] newServerConnectionFactory(Transport transport)
     {
         List<ConnectionFactory> list = switch (transport)
+        {
+            case HTTP, UNIX_DOMAIN ->
+                List.of(new HttpConnectionFactory(httpConfig));
+            case HTTPS ->
             {
-                case HTTP, UNIX_DOMAIN -> List.of(new HttpConnectionFactory(httpConfig));
-                case HTTPS ->
-                {
-                    httpConfig.addCustomizer(new SecureRequestCustomizer());
-                    HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
-                    SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
-                    yield List.of(ssl, http);
-                }
-                case H2C ->
-                {
-                    httpConfig.addCustomizer(new HostHeaderCustomizer());
-                    yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
-                }
-                case H2 ->
-                {
-                    httpConfig.addCustomizer(new SecureRequestCustomizer());
-                    httpConfig.addCustomizer(new HostHeaderCustomizer());
-                    HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
-                    ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
-                    SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
-                    yield List.of(ssl, alpn, h2);
-                }
-                case H3 ->
-                {
-                    httpConfig.addCustomizer(new SecureRequestCustomizer());
-                    httpConfig.addCustomizer(new HostHeaderCustomizer());
-                    yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
-                }
-                case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
-            };
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
+                yield List.of(ssl, http);
+            }
+            case H2C ->
+            {
+                httpConfig.addCustomizer(new HostHeaderCustomizer());
+                yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
+            }
+            case H2 ->
+            {
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                httpConfig.addCustomizer(new HostHeaderCustomizer());
+                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+                ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
+                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
+                yield List.of(ssl, alpn, h2);
+            }
+            case H3 ->
+            {
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                httpConfig.addCustomizer(new HostHeaderCustomizer());
+                yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
+            }
+            case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
+        };
         return list.toArray(ConnectionFactory[]::new);
     }
 
@@ -221,40 +227,40 @@ public class AbstractTest
     protected HttpClientTransport newHttpClientTransport(Transport transport)
     {
         return switch (transport)
+        {
+            case HTTP, HTTPS ->
             {
-                case HTTP, HTTPS ->
-                {
-                    ClientConnector clientConnector = new ClientConnector();
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    yield new HttpClientTransportOverHTTP(clientConnector);
-                }
-                case H2C, H2 ->
-                {
-                    ClientConnector clientConnector = new ClientConnector();
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    HTTP2Client http2Client = new HTTP2Client(clientConnector);
-                    yield new HttpClientTransportOverHTTP2(http2Client);
-                }
-                case H3 ->
-                {
-                    HTTP3Client http3Client = new HTTP3Client();
-                    ClientConnector clientConnector = http3Client.getClientConnector();
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
-                    yield new HttpClientTransportOverHTTP3(http3Client);
-                }
-                case FCGI -> new HttpClientTransportOverFCGI(1, "");
-                case UNIX_DOMAIN ->
-                {
-                    ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    yield new HttpClientTransportOverHTTP(clientConnector);
-                }
-            };
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                yield new HttpClientTransportOverHTTP(clientConnector);
+            }
+            case H2C, H2 ->
+            {
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                HTTP2Client http2Client = new HTTP2Client(clientConnector);
+                yield new HttpClientTransportOverHTTP2(http2Client);
+            }
+            case H3 ->
+            {
+                HTTP3Client http3Client = new HTTP3Client();
+                ClientConnector clientConnector = http3Client.getClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+                yield new HttpClientTransportOverHTTP3(http3Client);
+            }
+            case FCGI -> new HttpClientTransportOverFCGI(1, "");
+            case UNIX_DOMAIN ->
+            {
+                ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                yield new HttpClientTransportOverHTTP(clientConnector);
+            }
+        };
     }
 
     protected URI newURI(Transport transport)
@@ -290,10 +296,10 @@ public class AbstractTest
         public boolean isSecure()
         {
             return switch (this)
-                {
-                    case HTTP, H2C, FCGI, UNIX_DOMAIN -> false;
-                    case HTTPS, H2, H3 -> true;
-                };
+            {
+                case HTTP, H2C, FCGI, UNIX_DOMAIN -> false;
+                case HTTPS, H2, H3 -> true;
+            };
         }
     }
 }
