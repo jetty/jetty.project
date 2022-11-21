@@ -77,6 +77,12 @@ class UrlResourceFactory implements ResourceFactory
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[%s]", this.getClass().getName(), this.hashCode(), this.supportedProtocol);
+    }
+
     private static class URLResource extends Resource
     {
         private final URI uri;
