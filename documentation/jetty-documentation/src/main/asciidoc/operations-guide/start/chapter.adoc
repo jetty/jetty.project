@@ -48,7 +48,7 @@ This is necessary to avoid that the Jetty start mechanism depend on logging libr
 [NOTE]
 ====
 This section is about the logging performed by the Jetty start mechanism _before_ it configures and starts Jetty.
-See the xref:og-logging[logging section] for information about logging when Jetty starts.
+See the xref:og-server-logging[logging section] for information about logging when Jetty starts.
 ====
 
 You can enable DEBUG level logging with the `--debug` command line option, for both the _tool_ and _start_ modes:

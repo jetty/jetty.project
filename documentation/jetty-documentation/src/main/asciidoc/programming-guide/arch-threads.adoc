@@ -1,0 +1,217 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-arch-threads]]
+=== Jetty Threading Architecture
+
+Writing a performant client or server is difficult, because it should:
+
+* Scale well with the number of processors.
+* Be efficient at using processor caches to avoid link:https://en.wikipedia.org/wiki/Parallel_slowdown[parallel slowdown].
+* Support multiple network protocols that may have very different requirements; for example, multiplexed protocols such as HTTP/2 introduce new challenges that are not present in non-multiplexed protocols such as HTTP/1.1.
+* Support different application threading models; for example, if a Jetty server invokes server-side application code that is allowed to call blocking APIs, then the Jetty server should not be affected by how long the blocking API call takes, and should be able to process other connections or other requests in a timely fashion.
+
+[[pg-arch-threads-execution-strategy]]
+==== Execution Strategies
+
+The Jetty threading architecture can be modeled with a producer/consumer pattern, where produced tasks needs to be consumed efficiently.
+
+For example, Jetty produces (among others) these tasks:
+
+* A task that wraps a NIO selection event, see the xref:pg-arch-io[Jetty I/O architecture].
+* A task that wraps the invocation of application code that may block (for example, the invocation of a Servlet to handle an HTTP request).
+
+A task is typically a `Runnable` object that may implement `org.eclipse.jetty.util.thread.Invocable` to indicate the behavior of the task (in particular, whether the task may block or not).
+
+Once a task has been produced, it may be consumed using these modes:
+
+* xref:pg-arch-threads-execution-strategy-pc[`Produce-Consume`]
+* xref:pg-arch-threads-execution-strategy-pec[`Produce-Execute-Consume`]
+* xref:pg-arch-threads-execution-strategy-epc[`Execute-Produce-Consume`]
+
+[[pg-arch-threads-execution-strategy-pc]]
+===== Produce-Consume
+In the `Produce-Consume` mode, the producer thread loops to produce a task that is run directly by the `Producer Thread`.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+
+compact concise "Producer Thread" as PT
+hide time-axis
+
+@PT
+0 is T1 #lightgreen
+1 is "Run T1" #dodgerblue
+5 is T2 #lightgreen
+6 is "Run T2" #dodgerblue
+8 is T3 #lightgreen
+9 is "Run T3" #dodgerblue
+12 is {hidden}
+----
+
+If the task is a NIO selection event, then this mode is the thread-per-selector mode which is very CPU core cache efficient, but suffers from the link:http://en.wikipedia.org/wiki/Head-of-line_blocking[head-of-line blocking]: if one of the tasks blocks or runs slowly, then subsequent tasks cannot be produced (and therefore cannot be consumed either) and will pay in latency the cost of running previous, possibly unrelated, tasks.
+
+This mode should only be used if the produced task is known to never block, or if the system tolerates well (or does not care about) head-of-line blocking.
+
+[[pg-arch-threads-execution-strategy-pec]]
+===== Produce-Execute-Consume
+In the `Produce-Execute-Consume` mode, the `Producer Thread` loops to produce tasks that are submitted to a `java.util.concurrent.Executor` to be run by ``Worker Thread``s different from the `Producer Thread`.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+
+compact concise "Producer Thread" as PT
+compact concise "Worker Thread 1" as WT1
+compact concise "Worker Thread 2" as WT2
+compact concise "Worker Thread 3" as WT3
+hide time-axis
+
+@PT
+0 is T1 #lightgreen
+1 is T2 #lightgreen
+2 is T3 #lightgreen
+3 is T4 #lightgreen
+4 is {hidden}
+
+@WT1
+1 is "Run T1" #dodgerblue
+5 is {hidden}
+
+@WT2
+2 is "Run T2" #dodgerblue
+4 is "Run T4" #dodgerblue
+8 is {hidden}
+
+@WT3
+3 is "Run T3" #dodgerblue
+6 is {hidden}
+----
+
+The `Executor` implementation typically adds the task to a queue, and dequeues the task when there is a worker thread available to run it.
+
+This mode solves the head-of-line blocking discussed in the xref:pg-arch-threads-execution-strategy-pc[`Produce-Consume` section], but suffers from other issues:
+
+* It is not CPU core cache efficient, as the data available to the producer thread will need to be accessed by another thread that likely is going to run on a CPU core that will not have that data in its caches.
+* If the tasks take time to be run, the `Executor` queue may grow indefinitely.
+* A small latency is added to every task: the time it waits in the `Executor` queue.
+
+[[pg-arch-threads-execution-strategy-epc]]
+===== Execute-Produce-Consume
+In the `Execute-Produce-Consume` mode, the producer thread `Thread 1` loops to produce a task, then submits one internal task to an `Executor` to take over production on thread `Thread 2`, and then runs the task in `Thread 1`, and so on.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+
+compact concise "Thread 1" as WT1
+compact concise "Thread 2" as WT2
+compact concise "Thread 3" as WT3
+compact concise "Thread 4" as WT4
+hide time-axis
+
+@WT1
+0 is T1 #lightgreen
+1 is "Run T1" #dodgerblue
+5 is {hidden}
+
+@WT2
+1 is T2 #lightgreen
+2 is "Run T2" #dodgerblue
+4 is T5 #lightgreen
+5 is "Run T5" #dodgerblue
+10 is {hidden}
+
+@WT3
+2 is T3 #lightgreen
+3 is "Run T3" #dodgerblue
+6 is {hidden}
+
+@WT4
+3 is T4 #lightgreen
+4 is "Run T4" #dodgerblue
+8 is {hidden}
+
+----
+
+This mode may operate like xref:pg-arch-threads-execution-strategy-pc[`Produce-Consume`] when the take over production task run, for example, by thread `Thread 3` takes time to be executed (for example, in a busy server): then thread `Thread 2` will produce one task and run it, then produce another task and run it, etc. -- `Thread 2` behaves exactly like the `Produce-Consume` mode.
+By the time thread `Thread 3` takes over task production from `Thread 2`, all the work might already be done.
+
+This mode may also operate similarly to xref:pg-arch-threads-execution-strategy-pec[`Produce-Execute-Consume`] when the take over production task always finds a free CPU core immediately (for example, in a mostly idle server): thread `Thread 1` will produce a task, yield production to `Thread 2` while `Thread 1` is running the task; `Thread 2` will produce a task, yield production to `Thread 3` while `Thread 2` is running the task, etc.
+
+Differently from `Produce-Execute-Consume`, here production happens on different threads, but the advantage is that the task is run by the same thread that produced it (which is CPU core cache efficient).
+
+[[pg-arch-threads-execution-strategy-adaptive]]
+===== Adaptive Execution Strategy
+The modes of task consumption discussed above are captured by the `org.eclipse.jetty.util.thread.ExecutionStrategy` interface, with an additional implementation that also takes into account the behavior of the task when the task implements `Invocable`.
+
+For example, a task that declares itself as non-blocking can be consumed using the `Produce-Consume` mode, since there is no risk to stop production because the task will not block.
+
+Conversely, a task that declares itself as blocking will stop production, and therefore must be consumed using either the `Produce-Execute-Consume` mode or the `Execute-Produce-Consume` mode.
+Deciding between these two modes depends on whether there is a free thread immediately available to take over production, and this is captured by the `org.eclipse.jetty.util.thread.TryExecutor` interface.
+
+An implementation of `TryExecutor` can be asked whether a thread can be immediately and exclusively allocated to run a task, as opposed to a normal `Executor` that can only queue the task in the expectation that there will be a thread available in the near future to run the task.
+
+The concept of task consumption modes, coupled with `Invocable` tasks that expose their own behavior, coupled with a `TryExecutor` that guarantees whether production can be immediately taken over are captured by the default Jetty execution strategy, named `org.eclipse.jetty.util.thread.AdaptiveExecutionStrategy`.
+
+[NOTE]
+====
+`AdaptiveExecutionStrategy` was previously named `EatWhatYouKill`, named after a hunting proverb in the sense that one should produce (kill) only what it consumes (eats).
+====
+
+[[pg-arch-threads-thread-pool]]
+==== Thread Pool
+Jetty's xref:pg-arch-threads[threading architecture] requires a more sophisticated thread pool than what offered by Java's `java.util.concurrent.ExecutorService`.
+
+Jetty's default thread pool implementation is link:{javadoc-url}/org/eclipse/jetty/util/thread/QueuedThreadPool.html[`QueuedThreadPool`].
+
+`QueuedThreadPool` integrates with the xref:pg-arch-bean[Jetty component model], implements `Executor`, provides a `TryExecutor` implementation (discussed in the xref:pg-arch-threads-execution-strategy-adaptive[adaptive execution strategy section]), and supports xref:pg-arch-threads-thread-pool-virtual-threads[virtual threads] (introduced as a preview feature in Java 19).
+
+`QueuedThreadPool` can be configured with a `maxThreads` value.
+
+However, some of the Jetty components (such as the xref:pg-arch-io-selector-manager[selectors]) permanently steal threads for their internal use, or rather `QueuedThreadPool` leases some threads to these components.
+These threads are reported by `QueuedThreadPool.leasedThreads` and are not available to run application code.
+
+`QueuedThreadPool` can be configured with a `reservedThreads` value.
+This value represents the maximum number of threads that can be reserved and used by the `TryExecutor` implementation.
+A negative value for `QueuedThreadPool.reservedThreads` means that the actual value will be heuristically derived from the number of CPU cores and `QueuedThreadPool.maxThreads`.
+A value of zero for `QueuedThreadPool.reservedThreads` means that reserved threads are disabled, and therefore the xref:pg-arch-threads-execution-strategy-epc[`Execute-Produce-Consume` mode] is never used -- the xref:pg-arch-threads-execution-strategy-pec[`Produce-Execute-Consume` mode] is always used instead.
+
+[[pg-arch-threads-thread-pool-virtual-threads]]
+===== Virtual Threads
+Virtual threads have been introduced in Java 19 as a preview feature.
+
+NOTE: In Java versions where virtual threads are a preview feature, remember to add `+--enable-preview+` to the command line options to use virtual threads.
+
+`QueuedThreadPool` can be configured to use virtual threads by specifying the virtual threads `Executor`:
+
+[source,java]
+----
+QueuedThreadPool threadPool = new QueuedThreadPool();
+threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
+----
+
+[CAUTION]
+====
+Jetty cannot enforce that the `Executor` passed to `setVirtualThreadsExecutor(Executor)` uses virtual threads, so make sure to specify a _virtual_ threads `Executor` and not a normal `Executor` that uses platform threads.
+====
+
+`AdaptiveExecutionStrategy` makes use of this setting when it determines that a task should be run with the xref:pg-arch-threads-execution-strategy-pec[`Produce-Execute-Consume` mode]: rather than submitting the task to `QueuedThreadPool` to be run in a platform thread, it submits the task to the virtual threads `Executor`.
+
+[NOTE]
+====
+Enabling virtual threads in `QueuedThreadPool` will default the number of reserved threads to zero, unless the number of reserved threads is explicitly configured to a positive value.
+
+Defaulting the number of reserved threads to zero ensures that the xref:pg-arch-threads-execution-strategy-pec[Produce-Execute-Consume mode] is always used, which means that virtual threads will always be used for blocking tasks.
+====

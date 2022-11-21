@@ -1,0 +1,79 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-server-threadpool]]
+==== Thread Pooling
+
+Jetty uses thread pooling to efficiently execute tasks that provide Jetty functionalities.
+
+Like any other component, the Jetty thread pool is configured and enabled via the xref:og-module-threadpool[`threadpool` Jetty module], that is transitively enabled by the xref:og-module-server[`server` Jetty module] which, in turn, is transitively enabled by a protocol module such as the xref:og-protocols-http[`http` Jetty module]:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
+----
+
+The command above gives you the default configuration for the thread pool.
+
+If you want to explicitly configure the thread pool, it is enough to explicitly specify the xref:og-module-threadpool[`threadpool`] module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=threadpool,http
+----
+
+After the command above, the `$JETTY_BASE` directory looks like this:
+
+[source,subs=verbatim]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── threadpool.ini
+----
+
+Now you can customize the `threadpool.ini` file to explicitly configure the thread pool.
+
+[[og-server-threadpool-virtual]]
+===== Virtual Threads Support
+
+Virtual threads have been introduced as a preview feature in Java 19.
+
+The xref:og-module-threadpool-virtual-preview[`threadpool-virtual-preview`] Jetty module provides support for virtual threads and it is mutually exclusive with the `threadpool` Jetty module.
+
+If you have already enabled the `threadpool` Jetty module, it is sufficient to remove it by removing the `$JETTY_BASE/start.d/threadpool.ini` file.
+
+Then, you can enable the xref:og-module-threadpool-virtual-preview[`threadpool-virtual-preview`] module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=threadpool-virtual-preview,http
+----
+
+After the command above, the `$JETTY_BASE` directory looks like this:
+
+[source,subs=verbatim]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── threadpool-virtual-preview.ini
+----
+
+Now you can customize the `threadpool-virtual-preview.ini` file to explicitly configure the thread pool and the virtual threads and then start Jetty:
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupArgs="--add-modules=threadpool-virtual-preview,http"]
+----

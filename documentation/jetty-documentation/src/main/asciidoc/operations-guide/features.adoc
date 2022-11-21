@@ -33,11 +33,5 @@ Clustering::
 * xref:og-sessions[HTTP Session Caching and Clustering]
 
 Performance::
+* xref:og-server-threadpool-virtual[Virtual Threads]
 * xref:og-quickstart[Faster Web Application Deployment]
-
-TODO
-
-* Jetty Overview
-* Jetty Modules
-* Rewrite Modules
-
