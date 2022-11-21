@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -229,34 +230,13 @@ public class MimeTypes
      * Get the MIME type by filename extension.
      *
      * @param filename A file name
-     * @return MIME type matching the longest dot extension of the
-     * file name.
+     * @return MIME type matching the last dot extension of the
+     * file name, or matching "*" if none found.
      */
     public String getMimeByExtension(String filename)
     {
-        String type = null;
-
-        if (filename != null)
-        {
-            int i = -1;
-            while (type == null)
-            {
-                i = filename.indexOf(".", i + 1);
-
-                if (i < 0 || i >= filename.length())
-                    break;
-
-                String ext = StringUtil.asciiToLowerCase(filename.substring(i + 1));
-                type = getMimeForExtension(ext);
-            }
-        }
-
-        if (type == null)
-        {
-            type = getMimeForExtension("*");
-        }
-
-        return type;
+        String ext = FileID.getExtension(filename);
+        return getMimeForExtension(Objects.requireNonNullElse(ext, "*"));
     }
 
     public String getMimeForExtension(String extension)
@@ -309,6 +289,8 @@ public class MimeTypes
          */
         public String addMimeMapping(String extension, String type)
         {
+            if (extension.contains("."))
+                throw new IllegalArgumentException("extensions cannot contain '.'");
             return _mimeMap.put(StringUtil.asciiToLowerCase(extension), normalizeMimeType(type));
         }
 
@@ -348,7 +330,12 @@ public class MimeTypes
                         props.stringPropertyNames().stream()
                             .filter(Objects::nonNull)
                             .forEach(x ->
-                                _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x))));
+                            {
+                                if (x.contains("."))
+                                    LOG.warn("ignoring invalid extension {} from mime.properties", x);
+                                else
+                                    _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x)));
+                            });
 
                         if (_mimeMap.isEmpty())
                         {
