@@ -148,7 +148,7 @@ public interface ResourceFactory
         try
         {
             URI uri = url.toURI();
-            return Resource.create(uri);
+            return newResource(uri);
         }
         catch (URISyntaxException e)
         {

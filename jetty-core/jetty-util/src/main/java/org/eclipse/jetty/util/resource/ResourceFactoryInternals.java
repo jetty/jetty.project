@@ -15,6 +15,9 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.ProviderNotFoundException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -30,7 +33,11 @@ import org.slf4j.LoggerFactory;
 class ResourceFactoryInternals
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceFactoryInternals.class);
+    private static final Path CURRENT_WORKING_DIR;
 
+    /**
+     * The Index (Map) of URI schemes to ResourceFactory implementations that is used by {@link CompositeResourceFactory}
+     */
     static final Index.Mutable<ResourceFactory> RESOURCE_FACTORIES = new Index.Builder<ResourceFactory>()
         .caseSensitive(false)
         .mutable()
@@ -38,6 +45,8 @@ class ResourceFactoryInternals
 
     static
     {
+        CURRENT_WORKING_DIR = Path.of(System.getProperty("user.dir"));
+
         // The default resource factories
         RESOURCE_FACTORIES.put("jar", new MountedPathResourceFactory());
         PathResourceFactory pathResourceFactory = new PathResourceFactory();
@@ -45,102 +54,148 @@ class ResourceFactoryInternals
         RESOURCE_FACTORIES.put("jrt", pathResourceFactory);
     }
 
-    static ResourceFactory ROOT = new ResourceFactory()
+    static ResourceFactory ROOT = new CompositeResourceFactory()
     {
         @Override
-        public Resource newResource(URI uri)
+        protected void onMounted(FileSystemPool.Mount mount, URI uri)
         {
-            FileSystemPool.Mount mount = mountIfNeeded(uri);
-            if (mount != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Leaked {} for {}", mount, uri, new Throwable());
-                else
-                    LOG.warn("Leaked {} for {}", mount, uri);
-            }
-            return Resource.create(uri);
-        }
-
-        @Override
-        public Resource newResource(String resource)
-        {
-            return newResource(URIUtil.toURI(resource));
+            // Since this ROOT ResourceFactory and has no lifecycle that can clean up
+            // the mount, we shall report this mount as a leak
+            if (LOG.isDebugEnabled())
+                LOG.warn("Leaked {} for {}", mount, uri, new Throwable());
+            else
+                LOG.warn("Leaked {} for {}", mount, uri);
         }
     };
 
-    /**
-     * <p>Mount a URI if it is needed.</p>
-     *
-     * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
-     * @return A reference counted {@link FileSystemPool.Mount} for that file system or null. Callers should call
-     * {@link FileSystemPool.Mount#close()} once they no longer require any resources from a mounted resource.
-     * @throws IllegalArgumentException If the uri could not be mounted.
-     */
-    static FileSystemPool.Mount mountIfNeeded(URI uri)
-    {
-        if (uri == null)
-            return null;
-        String scheme = uri.getScheme();
-        if (scheme == null || !scheme.equalsIgnoreCase("jar"))
-            return null;
-        try
-        {
-            return FileSystemPool.INSTANCE.mount(uri);
-        }
-        catch (IOException ioe)
-        {
-            throw new IllegalArgumentException(ioe);
-        }
-    }
-
     static class Closeable implements ResourceFactory.Closeable
     {
-        private final List<FileSystemPool.Mount> _mounts = new CopyOnWriteArrayList<>();
+        private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
 
         @Override
         public Resource newResource(URI uri)
         {
-            FileSystemPool.Mount mount = mountIfNeeded(uri);
-            if (mount != null)
-                _mounts.add(mount);
-            return Resource.create(uri);
+            return _compositeResourceFactory.newResource(uri);
         }
 
         @Override
         public void close()
         {
-            for (FileSystemPool.Mount mount : _mounts)
+            for (FileSystemPool.Mount mount : _compositeResourceFactory.getMounts())
                 IO.close(mount);
-            _mounts.clear();
+            _compositeResourceFactory.clearMounts();
         }
     }
 
     static class LifeCycle extends AbstractLifeCycle implements ResourceFactory.LifeCycle
     {
-        private final List<FileSystemPool.Mount> _mounts = new CopyOnWriteArrayList<>();
+        private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
 
         @Override
         public Resource newResource(URI uri)
         {
-            FileSystemPool.Mount mount = mountIfNeeded(uri);
-            if (mount != null)
-                _mounts.add(mount);
-            return Resource.create(uri);
+            return _compositeResourceFactory.newResource(uri);
         }
 
         @Override
         protected void doStop() throws Exception
         {
-            for (FileSystemPool.Mount mount : _mounts)
+            for (FileSystemPool.Mount mount : _compositeResourceFactory.getMounts())
                 IO.close(mount);
-            _mounts.clear();
+            _compositeResourceFactory.clearMounts();
             super.doStop();
         }
 
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _mounts));
+            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _compositeResourceFactory.getMounts()));
+        }
+    }
+
+    static class CompositeResourceFactory implements ResourceFactory
+    {
+        private final List<FileSystemPool.Mount> _mounts = new CopyOnWriteArrayList<>();
+
+        @Override
+        public Resource newResource(URI uri)
+        {
+            if (uri == null)
+                return null;
+
+            try
+            {
+                // If the URI is not absolute
+                if (!uri.isAbsolute())
+                {
+                    // If it is an absolute path,
+                    if (uri.toString().startsWith("/"))
+                        // just add the scheme
+                        uri = new URI("file", uri.toString(), null);
+                    else
+                        // otherwise resolve against the current directory
+                        uri = CURRENT_WORKING_DIR.toUri().resolve(uri);
+
+                    // Correct any `file:/path` to `file:///path` mistakes
+                    uri = URIUtil.correctFileURI(uri);
+                }
+
+                ResourceFactory resourceFactory = ResourceFactory.byScheme(uri.getScheme());
+                if (resourceFactory == null)
+                    throw new IllegalArgumentException("URI scheme not supported: " + uri);
+                if (resourceFactory instanceof MountedPathResourceFactory)
+                {
+                    FileSystemPool.Mount mount = mountIfNeeded(uri);
+                    if (mount != null)
+                    {
+                        _mounts.add(mount);
+                        onMounted(mount, uri);
+                    }
+                }
+                return resourceFactory.newResource(uri);
+            }
+            catch (URISyntaxException | ProviderNotFoundException ex)
+            {
+                throw new IllegalArgumentException("Unable to create resource from: " + uri, ex);
+            }
+        }
+
+        /**
+         * <p>Mount a URI if it is needed.</p>
+         *
+         * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
+         * @return A reference counted {@link FileSystemPool.Mount} for that file system or null. Callers should call
+         * {@link FileSystemPool.Mount#close()} once they no longer require any resources from a mounted resource.
+         * @throws IllegalArgumentException If the uri could not be mounted.
+         */
+        private FileSystemPool.Mount mountIfNeeded(URI uri)
+        {
+            String scheme = uri.getScheme();
+            if (!"jar".equalsIgnoreCase(scheme))
+                return null;
+            try
+            {
+                return FileSystemPool.INSTANCE.mount(uri);
+            }
+            catch (IOException ioe)
+            {
+                throw new IllegalArgumentException("Unable to mount: " + uri, ioe);
+            }
+        }
+
+        protected void onMounted(FileSystemPool.Mount mount, URI uri)
+        {
+            // override to specify behavior
+        }
+
+        public List<FileSystemPool.Mount> getMounts()
+        {
+            return _mounts;
+        }
+
+        public void clearMounts()
+        {
+            _mounts.clear();
         }
     }
 }

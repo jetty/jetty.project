@@ -17,12 +17,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
@@ -32,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
 
 /**
  * <p>
@@ -45,12 +42,6 @@ import org.eclipse.jetty.util.URIUtil;
 public abstract class Resource implements Iterable<Resource>
 {
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-    private static final Path CURRENT_WORKING_DIR;
-
-    static
-    {
-        CURRENT_WORKING_DIR = Path.of(System.getProperty("user.dir"));
-    }
 
     public static String dump(Resource resource)
     {
@@ -58,42 +49,6 @@ public abstract class Resource implements Iterable<Resource>
             return "null exists=false directory=false lm=-1";
         return "%s exists=%b directory=%b lm=%s"
             .formatted(resource.toString(), resource.exists(), resource.isDirectory(), resource.lastModified());
-    }
-
-    /**
-     * Construct a resource from a uri.
-     *
-     * @param uri A URI.
-     * @return A Resource object.
-     */
-    static Resource create(URI uri)
-    {
-        try
-        {
-            // If the URI is not absolute
-            if (!uri.isAbsolute())
-            {
-                // If it is an absolute path,
-                if (uri.toString().startsWith("/"))
-                    // just add the scheme
-                    uri = new URI("file", uri.toString(), null);
-                else
-                    // otherwise resolve against the current directory
-                    uri = CURRENT_WORKING_DIR.toUri().resolve(uri);
-
-                // Correct any `file:/path` to `file:///path` mistakes
-                uri = URIUtil.correctFileURI(uri);
-            }
-
-            ResourceFactory resourceFactory = ResourceFactory.byScheme(uri.getScheme());
-            if (resourceFactory == null)
-                throw new IllegalArgumentException("URI scheme not supported: " + uri);
-            return resourceFactory.newResource(uri);
-        }
-        catch (URISyntaxException | ProviderNotFoundException ex)
-        {
-            throw new IllegalArgumentException(ex);
-        }
     }
 
     /**
