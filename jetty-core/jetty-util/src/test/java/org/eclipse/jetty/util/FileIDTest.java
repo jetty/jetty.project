@@ -233,7 +233,7 @@ public class FileIDTest
             Arguments.of("foo.jar", "jar"),
             Arguments.of("FOO.WAR", "war"),
             Arguments.of("Foo.Zip", "zip"),
-            // From JDK 20
+            // From JDK 20 examples
             Arguments.of("foo.tar.gz", "gz"),
             Arguments.of("foo.bar", "bar"),
             Arguments.of("foo.", ""),
