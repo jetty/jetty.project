@@ -75,7 +75,7 @@ public class FileID
      * </p>
      *
      * <code>{@code
-     * "foo.tar.gz"	"gz"
+     * "foo.tar.gz" "gz"
      * "foo.bar"    "bar"
      * "foo."       ""
      * "foo"        null
