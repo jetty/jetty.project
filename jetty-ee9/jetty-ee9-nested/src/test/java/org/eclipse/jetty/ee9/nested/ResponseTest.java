@@ -2353,17 +2353,6 @@ public class ResponseTest
         }
 
         @Override
-        public boolean isPushSupported()
-        {
-            return false;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-        }
-
-        @Override
         public boolean addErrorListener(Predicate<Throwable> onError)
         {
             return false;

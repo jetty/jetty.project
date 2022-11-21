@@ -85,6 +85,13 @@ public class AbstractTest
         return transports;
     }
 
+    public static Collection<Transport> transportsWithPushSupport()
+    {
+        Collection<Transport> transports = transports();
+        transports.retainAll(List.of(Transport.H2C, Transport.H2));
+        return transports;
+    }
+
     @AfterEach
     public void dispose()
     {

@@ -1442,18 +1442,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public boolean isPushSupported()
-        {
-            return false;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public boolean isCommitted()
         {
             return _stream.get() != this || _generator.isCommitted();

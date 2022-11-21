@@ -390,6 +390,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
+    public boolean isPushSupported()
+    {
+        return getSession().isPushEnabled();
+    }
+
+    @Override
     public SocketAddress getRemoteSocketAddress()
     {
         return getEndPoint().getRemoteSocketAddress();
