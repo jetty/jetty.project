@@ -39,6 +39,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.ee9.webapp.tmpResourceBase";
+    public static final String UNPACKED_RESOURCE_BASE = "org.eclipse.jetty.webapp.unpackedResourceBase";
 
     protected Resource _preUnpackBaseResource;
 
@@ -94,6 +95,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         //reset the base resource back to what it was before we did any unpacking of resources
         context.setBaseResource(_preUnpackBaseResource);
+        context.removeAttribute(UNPACKED_RESOURCE_BASE);
     }
 
     @Override
@@ -408,6 +410,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
 
             context.setBaseResource(webApp);
+            context.setAttribute(UNPACKED_RESOURCE_BASE, webApp);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("webapp={}", webApp);

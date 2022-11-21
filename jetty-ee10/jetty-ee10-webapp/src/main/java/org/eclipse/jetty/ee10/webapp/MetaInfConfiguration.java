@@ -450,7 +450,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     private static boolean isEmptyResource(Resource resourcesDir)
     {
-        return !Resources.isReadableFile(resourcesDir);
+        return !Resources.isReadableDirectory(resourcesDir);
     }
 
     /**

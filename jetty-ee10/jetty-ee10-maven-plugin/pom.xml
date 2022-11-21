@@ -112,8 +112,6 @@
             <pomExclude>jetty-start-gwt-it/pom.xml</pomExclude>
             <!-- bean-validation-webapp-2.25.1.war is not jakarta namespace ready -->
             <pomExclude>jetty-start-war-mojo-it/pom.xml</pomExclude>
-            <!-- enable again when METAINF_RESOURCES is not normalized -->
-            <pomExclude>jetty-effective-web-xml-it/pom.xml</pomExclude>
           </pomExcludes>
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
