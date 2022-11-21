@@ -106,7 +106,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
     }
     
     @Override
-    protected void configureWebApp() throws AbstractMojoExecutionException
+    protected void configureWebApp() throws Exception
     {
         super.configureWebApp();
         try

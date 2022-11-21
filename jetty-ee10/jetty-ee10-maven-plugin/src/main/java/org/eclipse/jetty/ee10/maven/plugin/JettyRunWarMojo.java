@@ -68,7 +68,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     protected Path war;
     
     @Override
-    public void configureWebApp() throws AbstractMojoExecutionException
+    public void configureWebApp() throws Exception
     {
         super.configureWebApp();
         //if no war has been explicitly configured, use the one from the webapp project
