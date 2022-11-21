@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MimeTypes
 {
-    static Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
+    static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
     public enum Type
@@ -187,7 +187,7 @@ public class MimeTypes
         }
     }
 
-    public static Index<Type> CACHE = new Index.Builder<Type>()
+    public static final Index<Type> CACHE = new Index.Builder<Type>()
         .caseSensitive(false)
         .withAll(() ->
         {
@@ -305,7 +305,7 @@ public class MimeTypes
         }
     }
 
-    public static MimeTypes DEFAULTS = new MimeTypes(null)
+    public static final MimeTypes DEFAULTS = new MimeTypes(null)
     {
         {
             for (Type type : Type.values())
