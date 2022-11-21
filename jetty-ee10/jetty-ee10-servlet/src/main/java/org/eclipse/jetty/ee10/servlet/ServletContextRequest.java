@@ -78,7 +78,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
@@ -151,13 +150,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public String getPathInContext()
     {
         return _pathInContext;
-    }
-
-    @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        _servletChannel.setCallback(callback);
-        super.process(request, response, callback);
     }
 
     @Override
