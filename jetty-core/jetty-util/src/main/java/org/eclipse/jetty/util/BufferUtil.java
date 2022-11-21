@@ -595,6 +595,44 @@ public class BufferUtil
         }
     }
 
+    /**
+     * Read content from a {@link ReadableByteChannel} into a buffer.
+     * This may spin if {@link ReadableByteChannel#read(ByteBuffer)} returns 0 in which case this
+     * will call {@link Thread#onSpinWait()}.
+     *
+     * @param readableByteChannel the channel to read from.
+     * @param byteBuffer the buffer to read into.
+     * @return the number of bytes read into the buffer.
+     * @throws IOException if an I/O error occurs.
+     */
+    public static int readFrom(ReadableByteChannel readableByteChannel, ByteBuffer byteBuffer) throws IOException
+    {
+        int totalRead = 0;
+        int pos = BufferUtil.flipToFill(byteBuffer);
+        try
+        {
+            while (true)
+            {
+                if (BufferUtil.space(byteBuffer) == 0)
+                    break;
+
+                int read = readableByteChannel.read(byteBuffer);
+                if (read < 0)
+                    break;
+                else if (read == 0)
+                    Thread.onSpinWait();
+                else
+                    totalRead += read;
+            }
+        }
+        finally
+        {
+            BufferUtil.flipToFlush(byteBuffer, pos);
+        }
+
+        return totalRead;
+    }
+
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
         ByteBuffer tmp = allocate(8192);

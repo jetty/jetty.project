@@ -63,16 +63,16 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
     }
 
     @Override
-    public boolean isUseVirtualThreads()
+    public Executor getVirtualThreadsExecutor()
     {
-        return VirtualThreads.isUseVirtualThreads(_executor);
+        return VirtualThreads.getVirtualThreadsExecutor(_executor);
     }
 
     @Override
-    public void setUseVirtualThreads(boolean useVirtualThreads)
+    public void setVirtualThreadsExecutor(Executor executor)
     {
         if (_executor instanceof VirtualThreads.Configurable)
-            ((VirtualThreads.Configurable)_executor).setUseVirtualThreads(useVirtualThreads);
+            ((VirtualThreads.Configurable)_executor).setVirtualThreadsExecutor(executor);
     }
 
     @Override

@@ -29,9 +29,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
 public class PushBuilderImpl implements PushBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(PushBuilderImpl.class);

@@ -457,18 +457,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(MetaData.Request request)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean isCommitted()
     {
         return committed;

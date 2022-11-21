@@ -30,7 +30,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.nested.StatisticsHandler;
 import org.eclipse.jetty.http.HttpHeader;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -57,7 +55,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@Disabled // TODO
 public class StatisticsServletTest
 {
     private Server _server;
@@ -82,12 +79,9 @@ public class StatisticsServletTest
 
     private void addStatisticsHandler()
     {
-        StatisticsHandler statsHandler = new StatisticsHandler();
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setHandler(statsHandler);
-        _server.setHandler(contextHandler);
         ServletContextHandler statsContext = new ServletContextHandler(_server, "/");
-        statsHandler.setHandler(statsContext);
+        StatisticsHandler statsHandler = new StatisticsHandler();
+        statsContext.insertHandler(statsHandler);
         statsContext.addServlet(new ServletHolder(new TestServlet()), "/test1");
         ServletHolder servletHolder = new ServletHolder(new StatisticsServlet());
         servletHolder.setInitParameter("restrictToLocalhost", "false");

@@ -1002,6 +1002,36 @@ public class ProxyServletTest
         assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
+    @ParameterizedTest
+    @MethodSource("transparentImpls")
+    public void testTransparentProxyEmptyHeaderValue(AbstractProxyServlet proxyServletClass) throws Exception
+    {
+        String emptyHeaderName = "X-Empty";
+        startServer(new EmptyHttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals("", request.getHeader(emptyHeaderName));
+                response.setHeader(emptyHeaderName, "");
+            }
+        });
+        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        Map<String, String> initParams = new HashMap<>();
+        initParams.put("proxyTo", proxyTo);
+        startProxy(proxyServletClass, initParams);
+        startClient();
+
+        // Make the request to the proxy, it should transparently forward to the server.
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .headers(headers -> headers.put(emptyHeaderName, ""))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertEquals("", response.getHeaders().get(emptyHeaderName));
+    }
+
     /**
      * Only tests overridden ProxyServlet behavior, see CachingProxyServlet
      */
