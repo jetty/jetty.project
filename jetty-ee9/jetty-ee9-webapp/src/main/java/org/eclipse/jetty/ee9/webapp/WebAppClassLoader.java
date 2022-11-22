@@ -179,8 +179,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (_parent == null)
             throw new IllegalArgumentException("no parent classloader!");
 
-        _extensions.add(".jar");
-        _extensions.add(".zip");
+        _extensions.add("jar");
+        _extensions.add("zip");
 
         // TODO remove this system property
         String extensions = System.getProperty(WebAppClassLoader.class.getName() + ".extensions");

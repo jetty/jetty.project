@@ -65,9 +65,23 @@ public class FileID
     }
 
     /**
+     * <p>
      * Retrieve the extension of a URI path.
+     * </p>
+     *
+     * <p>
      * This is the name of the last segment of the URI path with a substring
-     * for the extension (if any), including the dot, lower-cased.
+     * for the extension (if any), excluding the dot, lower-cased.
+     * </p>
+     *
+     * <code>{@code
+     * "foo.tar.gz" "gz"
+     * "foo.bar"    "bar"
+     * "foo."       ""
+     * "foo"        null
+     * ".bar"       null
+     * null         null
+     * }</code>
      *
      * @param uri The URI to search
      * @return The last segment extension. Null if input uri is null, or scheme is null, or URI is not a `jar:file:` or `file:` based URI
@@ -105,9 +119,23 @@ public class FileID
     }
 
     /**
+     * <p>
      * Retrieve the extension of a file path (not a directory).
+     * </p>
+     *
+     * <p>
      * This is the name of the last segment of the file path with a substring
-     * for the extension (if any), including the dot, lower-cased.
+     * for the extension (if any), excluding the dot, lower-cased.
+     * </p>
+     *
+     * <code>{@code
+     * "foo.tar.gz" "gz"
+     * "foo.bar"    "bar"
+     * "foo."       ""
+     * "foo"        null
+     * ".bar"       null
+     * null         null
+     * }</code>
      *
      * @param path The string path
      * @return The last segment extension, or null if not a file, or null if there is no extension present
@@ -141,16 +169,16 @@ public class FileID
         if (lastSlash >= 0)
             filename = filename.substring(lastSlash + 1);
         int lastDot = filename.lastIndexOf('.');
-        if (lastDot < 0)
-            return null; // no extension
-        return filename.substring(lastDot).toLowerCase(Locale.ENGLISH);
+        if (lastDot <= 0)
+            return null; // no extension, or only filename that is only an extension (".foo")
+        return filename.substring(lastDot + 1).toLowerCase(Locale.ENGLISH);
     }
 
     /**
      * Test if Path matches any of the indicated extensions.
      *
      * @param path the Path to test
-     * @param extensions the list of extensions (all lowercase, with preceding {@code .} dot)
+     * @param extensions the list of extensions (all lowercase, without preceding {@code .} dot)
      * @return true if Path is a file, and has an extension, and it matches any of the indicated extensions
      */
     public static boolean isExtension(Path path, String... extensions)
@@ -162,7 +190,7 @@ public class FileID
      * Test if URI matches any of the indicated extensions.
      *
      * @param uri the URI to test
-     * @param extensions the list of extensions (all lowercase, with preceding {@code .} dot)
+     * @param extensions the list of extensions (all lowercase, without preceding {@code .} dot)
      * @return true if URI has an extension, and it matches any of the indicated extensions
      */
     public static boolean isExtension(URI uri, String... extensions)
@@ -174,7 +202,7 @@ public class FileID
      * Test if filename matches any of the indicated extensions.
      *
      * @param filename the filename to test
-     * @param extensions the list of extensions (all lowercase, with preceding {@code .} dot)
+     * @param extensions the list of extensions (all lowercase, without preceding {@code .} dot)
      * @return true if filename has an extension, and it matches any of the indicated extensions
      */
     public static boolean isExtension(String filename, String... extensions)
@@ -198,7 +226,7 @@ public class FileID
      * Does the provided path have a directory segment with the given name.
      *
      * @param path the path to search
-     * @param segmentName the segment name (of the given path) to look for (case insensitive lookup),
+     * @param segmentName the segment name (of the given path) to look for (case-insensitive lookup),
      * only capable of searching 1 segment name at a time, does not support "foo/bar" multi-segment
      * names.
      * @return true if the directory name exists in path, false if otherwise
@@ -218,75 +246,75 @@ public class FileID
     }
 
     /**
-     * Test if Path is any supported Java Archive type (ends in {@code .jar}, {@code .war}, or {@code .zip}).
+     * Test if Path is any supported Java Archive type (ends in {@code jar}, {@code war}, or {@code zip}).
      *
      * @param path the path to test
-     * @return true if path is a file, and an extension of {@code .jar}, {@code .war}, or {@code .zip}
+     * @return true if path is a file, and an extension of {@code jar}, {@code war}, or {@code zip}
      * @see #getExtension(Path)
      */
     public static boolean isArchive(Path path)
     {
-        return isExtension(path, ".jar", ".war", ".zip");
+        return isExtension(path, "jar", "war", "zip");
     }
 
     /**
-     * Test if filename is any supported Java Archive type (ends in {@code .jar}, {@code .war}, or {@code .zip}).
+     * Test if filename is any supported Java Archive type (ends in {@code jar}, {@code war}, or {@code zip}).
      *
      * @param filename the filename to test
-     * @return true if path is a file and name ends with {@code .jar}, {@code .war}, or {@code .zip}
+     * @return true if path is a file and name ends with {@code jar}, {@code war}, or {@code zip}
      * @see #getExtension(String)
      */
     public static boolean isArchive(String filename)
     {
-        return isExtension(filename, ".jar", ".war", ".zip");
+        return isExtension(filename, "jar", "war", "zip");
     }
 
     /**
      * Test if URI is any supported Java Archive type.
      *
      * @param uri the URI to test
-     * @return true if the URI has a path that seems to point to a ({@code .jar}, {@code .war}, or {@code .zip}).
+     * @return true if the URI has a path that seems to point to a ({@code jar}, {@code war}, or {@code zip}).
      * @see #isArchive(String)
      */
     public static boolean isArchive(URI uri)
     {
-        return isExtension(uri, ".jar", ".war", ".zip");
+        return isExtension(uri, "jar", "war", "zip");
     }
 
     /**
      * Test if Path is any supported Java Library Archive type (suitable to use as a library in a classpath/classloader)
      *
      * @param path the path to test
-     * @return true if path is a file, and an extension of {@code .jar}, or {@code .zip}
+     * @return true if path is a file, and an extension of {@code jar}, or {@code zip}
      * @see #getExtension(Path)
      */
     public static boolean isLibArchive(Path path)
     {
-        return isExtension(path, ".jar", ".zip");
+        return isExtension(path, "jar", "zip");
     }
 
     /**
      * Test if filename is any supported Java Library Archive type (suitable to use as a library in a classpath/classloader)
      *
      * @param filename the filename to test
-     * @return true if path is a file and name ends with {@code .jar}, or {@code .zip}
+     * @return true if path is a file and name ends with {@code jar}, or {@code zip}
      * @see #getExtension(String)
      */
     public static boolean isLibArchive(String filename)
     {
-        return isExtension(filename, ".jar", ".zip");
+        return isExtension(filename, "jar", "zip");
     }
 
     /**
      * Test if URI is any supported Java Library Archive type (suitable to use as a library in a classpath/classloader)
      *
      * @param uri the URI to test
-     * @return true if the URI has a path that seems to point to a ({@code .jar},  or {@code .zip}).
+     * @return true if the URI has a path that seems to point to a ({@code jar},  or {@code zip}).
      * @see #getExtension(URI)
      */
     public static boolean isLibArchive(URI uri)
     {
-        return isExtension(uri, ".jar", ".zip");
+        return isExtension(uri, "jar", "zip");
     }
 
     /**
@@ -368,33 +396,33 @@ public class FileID
      * Is the URI pointing to a Java Archive (JAR) File (not directory)
      *
      * @param uri the uri to test.
-     * @return True if a .jar file.
+     * @return True if a jar file.
      */
     public static boolean isJavaArchive(URI uri)
     {
-        return isExtension(uri, ".jar");
+        return isExtension(uri, "jar");
     }
 
     /**
      * Is the path a Java Archive (JAR) File (not directory)
      *
      * @param path the path to test.
-     * @return True if a .jar file.
+     * @return True if a jar file.
      */
     public static boolean isJavaArchive(Path path)
     {
-        return isExtension(path, ".jar");
+        return isExtension(path, "jar");
     }
 
     /**
      * Is the filename a JAR file.
      *
      * @param filename the filename to test.
-     * @return True if a .jar file.
+     * @return True if a jar file.
      */
     public static boolean isJavaArchive(String filename)
     {
-        return isExtension(filename, ".jar");
+        return isExtension(filename, "jar");
     }
 
     /**
@@ -467,61 +495,61 @@ public class FileID
             return false;
         if (!hasNamedPathSegment(path, "META-INF"))
             return false;
-        return isExtension(path, ".tld");
+        return isExtension(path, "tld");
     }
 
     /**
      * Is the path a Web Archive File (not directory)
      *
      * @param path the path to test.
-     * @return True if a .war file.
+     * @return True if a war file.
      */
     public static boolean isWebArchive(Path path)
     {
-        return isExtension(path, ".war");
+        return isExtension(path, "war");
     }
 
     /**
      * Is the path a Web Archive File (not directory)
      *
      * @param uri the uri to test.
-     * @return True if a .war file.
+     * @return True if a war file.
      */
     public static boolean isWebArchive(URI uri)
     {
-        return isExtension(uri, ".war");
+        return isExtension(uri, "war");
     }
 
     /**
      * Is the filename a WAR file.
      *
      * @param filename the filename to test.
-     * @return True if a .war file.
+     * @return True if a war file.
      */
     public static boolean isWebArchive(String filename)
     {
-        return isExtension(filename, ".war");
+        return isExtension(filename, "war");
     }
 
     /**
      * Is the Path a file that ends in XML?
      *
      * @param path the path to test
-     * @return true if a .xml, false otherwise
+     * @return true if a xml, false otherwise
      */
     public static boolean isXml(Path path)
     {
-        return isExtension(path, ".xml");
+        return isExtension(path, "xml");
     }
 
     /**
      * Is the Path a file that ends in XML?
      *
      * @param filename the filename to test
-     * @return true if a .xml, false otherwise
+     * @return true if a xml, false otherwise
      */
     public static boolean isXml(String filename)
     {
-        return isExtension(filename, ".xml");
+        return isExtension(filename, "xml");
     }
 }

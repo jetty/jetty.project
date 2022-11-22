@@ -228,11 +228,17 @@ public class FileIDTest
     public static Stream<Arguments> extensionCases()
     {
         return Stream.of(
-            Arguments.of("foo.xml", ".xml"),
-            Arguments.of("dir/foo.xml", ".xml"),
-            Arguments.of("foo.jar", ".jar"),
-            Arguments.of("FOO.WAR", ".war"),
-            Arguments.of("Foo.Zip", ".zip")
+            Arguments.of("foo.xml", "xml"),
+            Arguments.of("dir/foo.xml", "xml"),
+            Arguments.of("foo.jar", "jar"),
+            Arguments.of("FOO.WAR", "war"),
+            Arguments.of("Foo.Zip", "zip"),
+            // From JDK 20 examples
+            Arguments.of("foo.tar.gz", "gz"),
+            Arguments.of("foo.bar", "bar"),
+            Arguments.of("foo.", ""),
+            Arguments.of("foo", null),
+            Arguments.of(".bar", null)
         );
     }
 
