@@ -136,8 +136,14 @@ public class SessionTestSupport
 
     public WebAppContext addWebAppContext(String warPath, String contextPath) throws Exception
     {
-        //TODO
-        throw new UnsupportedOperationException("TODO!");
+        WebAppContext context = new WebAppContext(warPath, contextPath);
+        SessionHandler sessionHandler = newSessionHandler();
+        sessionHandler.setSessionIdManager(_sessionIdManager);
+        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
+        context.setSessionHandler(sessionHandler);
+        _contexts.addHandler(context);
+
+        return context; 
     }
 
     public Server getServer()

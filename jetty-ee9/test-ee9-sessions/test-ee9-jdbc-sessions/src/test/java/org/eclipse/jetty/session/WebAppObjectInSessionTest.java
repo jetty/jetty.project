@@ -22,8 +22,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * WebAppObjectInSessionTest
  */
-//TODO
-@Disabled
 @Testcontainers(disabledWithoutDocker = true)
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
