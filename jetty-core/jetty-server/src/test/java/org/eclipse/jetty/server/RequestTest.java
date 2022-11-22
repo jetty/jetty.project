@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -31,6 +32,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -122,6 +125,48 @@ public class RequestTest
         assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
         assertThat(responseBody, containsString("httpURI.path=/"));
         assertThat(responseBody, containsString("servername=myhost"));
+    }
+
+    /**
+     * Test to ensure that response.write() will add Content-Length on HTTP/1.1 responses.
+     */
+    @Test
+    public void testContentLengthNotSet() throws Exception
+    {
+        final int bufferSize = 4096;
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                byte[] buf = new byte[bufferSize];
+                Arrays.fill(buf, (byte)'x');
+
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+
+                ByteBuffer bbuf = ByteBuffer.wrap(buf);
+                int half = bufferSize / 2;
+                ByteBuffer halfBuf = bbuf.slice();
+                halfBuf.limit(half);
+                response.write(false, halfBuf, Callback.NOOP);
+                bbuf.position(half);
+                response.write(true, bbuf, callback);
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /foo HTTP/1.1\r
+                Host: local\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
+        String responseBody = response.getContent();
+        assertThat(responseBody.length(), is(bufferSize));
     }
 
     /**

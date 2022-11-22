@@ -173,7 +173,7 @@ public class GzipResponse extends Response.Wrapper
             _crc.reset();
 
             // Adjust headers
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, -1);
+            response.getHeaders().remove(HttpHeader.CONTENT_LENGTH);
             String etag = fields.get(HttpHeader.ETAG);
             if (etag != null)
                 fields.put(HttpHeader.ETAG, etagGzip(etag));
@@ -337,7 +337,7 @@ public class GzipResponse extends Response.Wrapper
                         int off = slice.arrayOffset() + slice.position();
                         int len = slice.remaining();
                         _crc.update(array, off, len);
-                        // Ideally we would want to use the ByteBuffer API for Deflaters. However due the the ByteBuffer implementation
+                        // Ideally we would want to use the ByteBuffer API for Deflaters. However, due to the ByteBuffer implementation
                         // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves.
                         _deflaterEntry.get().setInput(array, off, len);
                         slice.position(slice.position() + len);

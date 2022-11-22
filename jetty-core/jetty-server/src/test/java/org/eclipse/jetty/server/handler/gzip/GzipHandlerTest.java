@@ -297,26 +297,28 @@ public class GzipHandlerTest
         _server.start();
 
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
-        request.setMethod("GET");
-        request.setURI("/ctx/buffer/info");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host", "tester");
-        request.setHeader("accept-encoding", "gzip");
+        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding header.
+        String rawRequest = """
+            GET /ctx/buffer/info HTTP/1.1
+            Host: tester
+            Accept-Encoding: gzip
+            
+            """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
+        try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
+        {
+            ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+            IO.copy(testIn, testOut);
 
-        assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
+            assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
+        }
     }
 
     @Test
