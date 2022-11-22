@@ -37,7 +37,7 @@ public class UrlResourceFactoryTest
     @Tag("external")
     public void testHttps() throws IOException
     {
-        ResourceFactory.registerResourceFactory("https", new HttpsResourceFactory());
+        ResourceFactory.registerResourceFactory("https", new URLResourceFactory());
         Resource resource = ResourceFactory.root().newResource(URI.create("https://webtide.com/"));
         assertThat(resource, notNullValue());
         assertTrue(resource.exists());
@@ -68,13 +68,5 @@ public class UrlResourceFactoryTest
         assertThat(favicon.length(), not(-1));
         assertFalse(favicon.isDirectory());
         assertThat(favicon.getFileName(), is("favicon.ico"));
-    }
-
-    public static class HttpsResourceFactory extends UrlResourceFactory
-    {
-        public HttpsResourceFactory()
-        {
-            super("https");
-        }
     }
 }

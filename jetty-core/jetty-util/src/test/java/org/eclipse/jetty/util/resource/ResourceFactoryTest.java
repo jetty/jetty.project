@@ -64,7 +64,7 @@ public class ResourceFactoryTest
     @Test
     public void testRegisterHttpsUrlFactory()
     {
-        ResourceFactory.registerUrlResourceFactory("https");
+        ResourceFactory.registerResourceFactory("https", new URLResourceFactory());
         // Try as a normal String input
         Resource resource = ResourceFactory.root().newResource("https://webtide.com/");
         assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));

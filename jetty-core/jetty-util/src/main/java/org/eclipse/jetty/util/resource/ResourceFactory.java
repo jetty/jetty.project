@@ -241,11 +241,6 @@ public interface ResourceFactory
         ResourceFactoryInternals.RESOURCE_FACTORIES.put(scheme, resource);
     }
 
-    static void registerUrlResourceFactory(String scheme)
-    {
-        ResourceFactoryInternals.RESOURCE_FACTORIES.put(scheme, new UrlResourceFactory(scheme));
-    }
-
     static ResourceFactory unregisterResourceFactory(String scheme)
     {
         return ResourceFactoryInternals.RESOURCE_FACTORIES.remove(scheme);

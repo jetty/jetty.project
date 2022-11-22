@@ -28,17 +28,13 @@ import org.eclipse.jetty.util.FileID;
 /**
  * {@link ResourceFactory} for {@link java.net.URL} based resources.
  */
-class UrlResourceFactory implements ResourceFactory
+public class URLResourceFactory implements ResourceFactory
 {
-    private final String supportedProtocol;
-    private int connectTimeout;
-    private boolean useCaches;
+    private int connectTimeout = 1000;
+    private boolean useCaches = true;
 
-    protected UrlResourceFactory(String protocol)
+    public URLResourceFactory()
     {
-        this.supportedProtocol = protocol;
-        this.connectTimeout = Integer.parseInt(System.getProperty(this.getClass().getName() + ".connectTimeout", "1000"));
-        this.useCaches = Boolean.parseBoolean(System.getProperty(this.getClass().getName() + ".useCaches", "true"));
     }
 
     public int getConnectTimeout()
@@ -64,9 +60,6 @@ class UrlResourceFactory implements ResourceFactory
     @Override
     public Resource newResource(final URI uri)
     {
-        if (!uri.getScheme().equalsIgnoreCase(supportedProtocol))
-            throw new IllegalArgumentException("Scheme not support: " + uri.getScheme());
-
         try
         {
             return new URLResource(uri, this.connectTimeout, this.useCaches);
@@ -75,12 +68,6 @@ class UrlResourceFactory implements ResourceFactory
         {
             throw new RuntimeException("Bad URI: " + uri, e);
         }
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x[%s]", this.getClass().getName(), this.hashCode(), this.supportedProtocol);
     }
 
     private static class URLResource extends Resource
