@@ -58,7 +58,15 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
- * TODO describe what this class does
+ * The ServletChannel contains the state and behaviors associated with the Servlet API
+ * lifecycle for a single request/response cycle. Specifically it uses
+ * {@link ServletRequestState} to coordinate the states of dispatch state, input and
+ * output according to the servlet specification.  The combined state so obtained
+ * is reflected in the behaviour of the contained {@link HttpInput} implementation of
+ * {@link jakarta.servlet.ServletInputStream}.
+ *
+ * @see ServletRequestState
+ * @see HttpInput
  */
 public class ServletChannel
 {
@@ -821,12 +829,13 @@ public class ServletChannel
 
         // Callback will either be succeeded here or failed in abort().
         Callback callback = _callback;
+        ServletContextRequest servletContextRequest = _servletContextRequest;
         // Must recycle before notification to allow for reuse.
         // Recycle always done here even if an abort is called.
         recycle();
         if (_state.completeResponse())
         {
-            _combinedListener.onComplete(_servletContextRequest);
+            _combinedListener.onComplete(servletContextRequest);
             callback.succeeded();
         }
     }
