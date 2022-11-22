@@ -166,12 +166,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             out.tag("display-name", context.getDisplayName());
 
         // Set some special context parameters
-
-        // The location of the war file on disk
-        Resource base = (Resource)context.getAttribute(WebInfConfiguration.UNPACKED_RESOURCE_BASE);
-        //Not unpacked, pick the first base
-        if (base == null && context.getBaseResource() != null)
-            base = context.getBaseResource().iterator().next();
+        Resource base = context.getBaseResource();
+        base = (base != null ? base.iterator().next() : null);
         AttributeNormalizer normalizer = new AttributeNormalizer(base);
 
         // The library order
