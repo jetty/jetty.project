@@ -12,7 +12,7 @@
 //
 
 [[og-logging-request]]
-==== Request Logging
+===== Request Logging
 
 HTTP requests and responses can be logged to provide data that can be later analyzed with other tools, that can provide information such as the most frequently accessed request URIs, the response status codes, the request/response content lengths, geographical information about the clients, etc.
 

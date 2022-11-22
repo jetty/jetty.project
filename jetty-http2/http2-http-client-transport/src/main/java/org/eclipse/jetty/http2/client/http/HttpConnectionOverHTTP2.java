@@ -193,6 +193,11 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return false;
     }
 
+    void remove()
+    {
+        getHttpDestination().remove(this);
+    }
+
     @Override
     public void close()
     {
