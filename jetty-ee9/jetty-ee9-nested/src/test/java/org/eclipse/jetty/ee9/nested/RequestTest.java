@@ -1026,7 +1026,7 @@ public class RequestTest
                 return new org.eclipse.jetty.server.Request.ReWrappingProcessor<>(processor, wrapper)
                 {
                     @Override
-                    protected org.eclipse.jetty.server.Request.Wrapper wrap(org.eclipse.jetty.server.Request request)
+                    protected org.eclipse.jetty.server.Request.Wrapper wrapRequest(org.eclipse.jetty.server.Request request)
                     {
                         return new org.eclipse.jetty.server.Request.Wrapper(request)
                         {

@@ -714,7 +714,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
-            REQ wrapper = wrap(request);
+            REQ wrapper = wrapRequest(request);
             Request.Processor processor = super.handle(wrapper);
             return processor == null ? null : new ProcessingWrapperProcessor(processor, wrapper);
         }
@@ -728,7 +728,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @param request The request to wrap
          * @return The wrapped request or the unwrapped request.
          */
-        protected REQ wrap(Request request)
+        protected REQ wrapRequest(Request request)
         {
             @SuppressWarnings("unchecked")
             REQ req = (REQ)request;
@@ -742,7 +742,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @param response The response to wrap.
          * @return Either the wrapped response or the response itself.
          */
-        protected RES wrap(REQ wrappedRequest, Response response)
+        protected RES wrapResponse(REQ wrappedRequest, Response response)
         {
             @SuppressWarnings("unchecked")
             RES res = (RES)response;
@@ -773,15 +773,15 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             }
 
             @Override
-            protected REQ wrap(Request request)
+            protected REQ wrapRequest(Request request)
             {
-                return ProcessingWrapper.this.wrap(request);
+                return ProcessingWrapper.this.wrapRequest(request);
             }
 
             @Override
-            protected RES wrap(REQ wrappedRequest, Response response)
+            protected RES wrapResponse(REQ wrappedRequest, Response response)
             {
-                return ProcessingWrapper.this.wrap(wrappedRequest, response);
+                return ProcessingWrapper.this.wrapResponse(wrappedRequest, response);
             }
 
             @Override

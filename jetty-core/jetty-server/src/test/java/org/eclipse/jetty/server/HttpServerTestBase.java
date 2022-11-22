@@ -1909,7 +1909,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 return new Request.ReWrappingProcessor<>(processor, bRequest)
                 {
                     @Override
-                    protected BRequest wrap(Request request)
+                    protected BRequest wrapRequest(Request request)
                     {
                         return new BRequest(request);
                     }

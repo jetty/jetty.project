@@ -738,8 +738,8 @@ public interface Request extends Attributes, Content.Source
         {
             REQ original = _originalWrapper.getAndSet(null);
             if (!(original instanceof Wrapper wrapper) || wrapper.getWrapped() != request)
-                original = wrap(request);
-            process(original, wrap(original, response), callback, _processor);
+                original = wrapRequest(request);
+            process(original, wrapResponse(original, response), callback, _processor);
         }
 
         /** <p>Process the wrapped request and call the next processor.
@@ -762,7 +762,7 @@ public interface Request extends Attributes, Content.Source
          * @param request The request to wrap.
          * @return The wrapped request.
          */
-        protected REQ wrap(Request request)
+        protected REQ wrapRequest(Request request)
         {
             @SuppressWarnings("unchecked")
             REQ wrapped = (REQ)request;
@@ -774,7 +774,7 @@ public interface Request extends Attributes, Content.Source
          * @param response The response to wrap
          * @return The wrapped response or the response itself (the default implementation).
          */
-        protected RES wrap(REQ wrappedRequest, Response response)
+        protected RES wrapResponse(REQ wrappedRequest, Response response)
         {
             @SuppressWarnings("unchecked")
             RES wrapper = (RES)response;

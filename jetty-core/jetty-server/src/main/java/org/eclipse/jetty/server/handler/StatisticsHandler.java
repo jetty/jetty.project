@@ -74,7 +74,7 @@ public class StatisticsHandler extends Handler.ProcessingWrapper<StatisticsHandl
     }
 
     @Override
-    protected StatisticsRequest wrap(Request request)
+    protected StatisticsRequest wrapRequest(Request request)
     {
         return new StatisticsRequest(request);
     }
@@ -394,13 +394,13 @@ public class StatisticsHandler extends Handler.ProcessingWrapper<StatisticsHandl
         }
 
         @Override
-        protected MinimumDataRateRequest wrap(Request request)
+        protected MinimumDataRateRequest wrapRequest(Request request)
         {
             return new MinimumDataRateRequest(request);
         }
 
         @Override
-        protected MinimumDataRateResponse wrap(StatisticsRequest request, Response response)
+        protected MinimumDataRateResponse wrapResponse(StatisticsRequest request, Response response)
         {
             return new MinimumDataRateResponse(request, response);
         }

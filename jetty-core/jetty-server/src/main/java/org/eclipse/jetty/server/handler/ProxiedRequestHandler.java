@@ -66,7 +66,7 @@ public class ProxiedRequestHandler extends Handler.Wrapper
         return new Request.ReWrappingProcessor<>(processor, wrapper)
         {
             @Override
-            protected Request.Wrapper wrap(Request request)
+            protected Request.Wrapper wrapRequest(Request request)
             {
                 return new ProxiedWrapper(request, proxiedFor);
             }

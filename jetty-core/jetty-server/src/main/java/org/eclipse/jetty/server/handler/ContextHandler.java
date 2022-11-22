@@ -1228,7 +1228,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        protected ContextRequest wrap(Request request)
+        protected ContextRequest wrapRequest(Request request)
         {
             if (request instanceof ContextRequest contextRequest && contextRequest.getContext() == _context)
                 return contextRequest;
@@ -1236,7 +1236,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        protected ContextResponse wrap(ContextRequest contextRequest, Response response)
+        protected ContextResponse wrapResponse(ContextRequest contextRequest, Response response)
         {
             if (response instanceof ContextResponse contextResponse && contextResponse.getRequest().getContext() == _context)
                 return contextResponse;

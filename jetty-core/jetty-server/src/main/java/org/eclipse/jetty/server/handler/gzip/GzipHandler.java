@@ -537,13 +537,13 @@ public class GzipHandler extends Handler.ProcessingWrapper<GzipRequest, Response
     }
 
     @Override
-    protected GzipRequest wrap(Request request)
+    protected GzipRequest wrapRequest(Request request)
     {
         return new GzipRequest(request, this);
     }
 
     @Override
-    protected Response wrap(GzipRequest wrappedRequest, Response response)
+    protected Response wrapResponse(GzipRequest wrappedRequest, Response response)
     {
         final String path = Request.getPathInContext(wrappedRequest);
         if (!isPathGzipable(path) || !isPathMimeTypeGzipable(path))

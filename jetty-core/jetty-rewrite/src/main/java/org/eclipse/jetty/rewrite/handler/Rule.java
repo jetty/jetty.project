@@ -94,12 +94,12 @@ public abstract class Rule
             return processor == null ? null : this::wrappedProcess;
         }
 
-        protected Request wrap(Request request)
+        protected Request wrapRequest(Request request)
         {
             return request;
         }
 
-        protected Response wrap(Request request, Response response)
+        protected Response wrapResponse(Request request, Response response)
         {
             return response;
         }
@@ -114,15 +114,15 @@ public abstract class Rule
             {
                 if (request == wrapped)
                 {
-                    process(wrap(this, response), callback);
+                    process(wrapResponse(this, response), callback);
                     return;
                 }
                 wrapped = wrapped instanceof Request.Wrapper w ? w.getWrapped() : null;
             }
 
             // We need a new instance of the wrapper
-            Request wrapper = wrap(request);
-            process(wrap(wrapper, response), callback);
+            Request wrapper = wrapRequest(request);
+            process(wrapResponse(wrapper, response), callback);
         }
     }
 
@@ -143,7 +143,7 @@ public abstract class Rule
         }
 
         @Override
-        protected Request wrap(Request request)
+        protected Request wrapRequest(Request request)
         {
             return new Request.Wrapper(request)
             {

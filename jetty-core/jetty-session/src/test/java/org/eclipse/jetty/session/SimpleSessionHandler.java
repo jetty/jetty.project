@@ -71,7 +71,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         return new Request.ReWrappingProcessor<>(processor, sessionRequest)
         {
             @Override
-            protected SessionRequest wrap(Request request)
+            protected SessionRequest wrapRequest(Request request)
             {
                 return new SessionRequest(request);
             }
