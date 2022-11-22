@@ -495,7 +495,7 @@ public class FileID
             return false;
         if (!hasNamedPathSegment(path, "META-INF"))
             return false;
-        return isExtension(path, ".tld");
+        return isExtension(path, "tld");
     }
 
     /**
