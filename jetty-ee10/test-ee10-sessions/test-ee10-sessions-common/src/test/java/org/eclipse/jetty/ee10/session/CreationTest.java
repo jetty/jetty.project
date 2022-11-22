@@ -286,7 +286,6 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session exists
-            System.err.println("servlet._id " + servlet._id);
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
             assertThat(response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
         }
@@ -464,7 +463,6 @@ public class CreationTest
                 _id = session.getId();
                 session.setAttribute("value", 1);
 
-                System.err.println("Created session " + _id);
                 String check = request.getParameter("check");
                 if (!StringUtil.isBlank(check) && _store != null)
                 {
@@ -472,7 +470,6 @@ public class CreationTest
                     try
                     {
                         exists = _store.exists(_id);
-                        System.err.println("Does session exist in store: " + exists);
                     }
                     catch (Exception e)
                     {
@@ -494,12 +491,10 @@ public class CreationTest
                 else if ("createinvcreate".equals(action))
                 {
                     session.invalidate();
-                    System.err.println("Session invalidated " + _id);
                     assertNull(request.getSession(false));
                     assertNotNull(session);
                     session = request.getSession(true);
                     _id = session.getId();
-                    System.err.println("Created another session " + _id);
                 }
             }
         }
