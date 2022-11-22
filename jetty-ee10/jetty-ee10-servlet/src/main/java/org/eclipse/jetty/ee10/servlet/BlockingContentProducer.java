@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,19 +27,14 @@ class BlockingContentProducer implements ContentProducer
 
     private final AsyncContentProducer _asyncContentProducer;
     private final AsyncContentProducer.LockedSemaphore _semaphore;
-    private final AutoLock _lock;
 
-    BlockingContentProducer(AsyncContentProducer delegate, AutoLock lock)
+    /**
+     * @param asyncContentProducer The {@link AsyncContentProducer} to block against.
+     */
+    BlockingContentProducer(AsyncContentProducer asyncContentProducer)
     {
-        _asyncContentProducer = delegate;
-        _lock = lock;
+        _asyncContentProducer = asyncContentProducer;
         _semaphore = _asyncContentProducer.newLockedSemaphore();
-    }
-
-    @Override
-    public AutoLock lock()
-    {
-        return _lock.lock();
     }
 
     @Override

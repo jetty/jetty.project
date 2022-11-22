@@ -37,7 +37,10 @@ public class HttpInput extends ServletInputStream implements Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpInput.class);
 
-    private final AutoLock _lock = new AutoLock();
+    /**
+     * The lock shared with {@link AsyncContentProducer} and this class.
+     */
+    final AutoLock _lock = new AutoLock();
     private final ServletChannel _servletChannel;
     private final ServletRequestState _channelState;
     private final byte[] _oneByteBuffer = new byte[1];
@@ -53,7 +56,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         _servletChannel = channel;
         _channelState = _servletChannel.getState();
         _asyncContentProducer = new AsyncContentProducer(_servletChannel, _lock);
-        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer, _lock);
+        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
         _contentProducer = _blockingContentProducer;
     }
 
