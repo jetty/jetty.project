@@ -221,12 +221,14 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * <p>List of existing Resources contained in the given resource.</p>
+     * <p>List of contents of a directory {@link Resource}.</p>
      *
-     * <p>Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.</p>
+     * <p>Ordering is {@link java.nio.file.FileSystem} dependent, so callers may wish to sort the return value to ensure deterministic behavior.</p>
      *
-     * @return a mutable list of resources contained in the tracked resource,
-     * or an empty immutable list if unable to build the list.
+     * @return a mutable list of resources contained in the directory resource,
+     * or an empty immutable list if unable to build the list  (e.g. the resource is not a directory or not readable).
+     * @see Resource#isDirectory()
+     * @see Resource#isReadable()
      */
     public List<Resource> list()
     {

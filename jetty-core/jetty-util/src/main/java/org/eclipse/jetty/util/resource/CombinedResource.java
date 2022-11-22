@@ -32,9 +32,11 @@ import org.eclipse.jetty.util.URIUtil;
 public class CombinedResource extends Resource
 {
     /**
-     * <p>Make a Resource containing a combination of other resources</p>
-     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
+     * <p>Make a Resource containing a combination of multiple directory resources.</p>
+     * @param resources multiple directory resources to combine as a single resource. Order is significant.
+     * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed.
+     *         Any Resource returned will always return {@code true} from {@link Resource#isDirectory()}
+     * @throws IllegalArgumentException if a non-directory resource is passed.
      * @see CombinedResource
      */
     static Resource combine(List<Resource> resources)
