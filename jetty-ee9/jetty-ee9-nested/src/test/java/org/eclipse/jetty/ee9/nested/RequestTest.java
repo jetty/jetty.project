@@ -61,7 +61,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
@@ -2365,17 +2364,6 @@ public class RequestTest
 
         @Override
         public void fail(Throwable failure)
-        {
-        }
-
-        @Override
-        public boolean isPushSupported()
-        {
-            return false;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
         {
         }
 

@@ -23,6 +23,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -807,8 +808,75 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public PushBuilder newPushBuilder()
         {
-            // TODO NYI
-            return null;
+            if (!getConnectionMetaData().isPushSupported())
+                return null;
+
+            HttpFields.Mutable pushHeaders = HttpFields.build(ServletContextRequest.this.getHeaders(), EnumSet.of(
+                HttpHeader.IF_MATCH,
+                HttpHeader.IF_RANGE,
+                HttpHeader.IF_UNMODIFIED_SINCE,
+                HttpHeader.RANGE,
+                HttpHeader.EXPECT,
+                HttpHeader.IF_NONE_MATCH,
+                HttpHeader.IF_MODIFIED_SINCE)
+            );
+
+            String referrer = getRequestURL().toString();
+            String query = getQueryString();
+            if (query != null)
+                referrer += "?" + query;
+            pushHeaders.put(HttpHeader.REFERER, referrer);
+
+            // Any Set-Cookie in the response should be present in the push.
+            HttpFields.Mutable responseHeaders = getResponse().getHeaders();
+            List<String> setCookies = new ArrayList<>(responseHeaders.getValuesList(HttpHeader.SET_COOKIE));
+            setCookies.addAll(responseHeaders.getValuesList(HttpHeader.SET_COOKIE2));
+            String cookies = pushHeaders.get(HttpHeader.COOKIE);
+            if (!setCookies.isEmpty())
+            {
+                StringBuilder pushCookies = new StringBuilder();
+                if (cookies != null)
+                    pushCookies.append(cookies);
+                for (String setCookie : setCookies)
+                {
+                    Map<String, String> cookieFields = HttpCookie.extractBasics(setCookie);
+                    String cookieName = cookieFields.get("name");
+                    String cookieValue = cookieFields.get("value");
+                    String cookieMaxAge = cookieFields.get("max-age");
+                    long maxAge = cookieMaxAge != null ? Long.parseLong(cookieMaxAge) : -1;
+                    if (maxAge > 0)
+                    {
+                        if (pushCookies.length() > 0)
+                            pushCookies.append("; ");
+                        pushCookies.append(cookieName).append("=").append(cookieValue);
+                    }
+                }
+                pushHeaders.put(HttpHeader.COOKIE, pushCookies.toString());
+            }
+
+            String sessionId;
+            HttpSession httpSession = getSession(false);
+            if (httpSession != null)
+            {
+                try
+                {
+                    // Check that the session is valid;
+                    httpSession.getLastAccessedTime();
+                    sessionId = httpSession.getId();
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("invalid HTTP session", x);
+                    sessionId = getRequestedSessionId();
+                }
+            }
+            else
+            {
+                sessionId = getRequestedSessionId();
+            }
+
+            return new PushBuilderImpl(ServletContextRequest.this, pushHeaders, sessionId);
         }
 
         @Override

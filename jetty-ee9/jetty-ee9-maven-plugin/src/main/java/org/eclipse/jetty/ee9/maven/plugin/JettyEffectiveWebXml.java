@@ -14,12 +14,15 @@
 package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Generate the effective web.xml for a pre-built webapp. This goal will NOT
@@ -38,11 +41,30 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
     @Override
     public void configureWebApp() throws Exception
     {
-        //Use a nominated war file for which to generate the effective web.xml, or
-        //if that is not set, try to use the details of the current project's 
-        //unassembled webapp
         super.configureWebApp();
-        if (StringUtil.isBlank(webApp.getWar()))
+
+        //Try to determine if we're using an unassembled webapp, or an
+        //external||prebuilt webapp
+        String war = webApp.getWar();
+        Path path = null;
+        if (war != null)
+        {
+            try
+            {
+                URL url = new URL(war);
+                path = Paths.get(url.toURI());
+            }
+            catch (MalformedURLException e)
+            {
+                path = Paths.get(war);
+            }
+        }
+
+        Path start = path.getName(0);
+        int count = path.getNameCount();
+        Path end = path.getName(count > 0 ? count - 1 : count);
+        //if the war is not assembled, we must configure it
+        if (start.startsWith("src") || !end.toString().endsWith(".war"))
             super.configureUnassembledWebApp();
     }
     

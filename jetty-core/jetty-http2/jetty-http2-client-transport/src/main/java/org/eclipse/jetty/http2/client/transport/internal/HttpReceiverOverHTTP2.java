@@ -168,7 +168,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
-        BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushListener();
+        BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushHandler();
         if (pushListener != null)
         {
             Response.CompleteListener listener = pushListener.apply(request, pushRequest);

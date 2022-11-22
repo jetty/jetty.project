@@ -117,6 +117,8 @@ public class GzipResponse extends Response.Wrapper
                     String responseEtagGzip = etagGzip(responseEtag);
                     if (requestEtags.contains(responseEtagGzip))
                         response.getHeaders().put(HttpHeader.ETAG, responseEtagGzip);
+                    if (_vary != null)
+                        response.getHeaders().ensureField(_vary);
                 }
             }
 
