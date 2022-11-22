@@ -33,9 +33,13 @@ import org.eclipse.jetty.util.component.Dumpable;
 public interface ResourceFactory
 {
     /**
-     * <p>Make a Resource containing a collection of other resources</p>
-     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources or a single resource if only 1 is passed, or null if none are passed
+     * <p>Make a directory Resource containing a collection of other directory {@link Resource}s</p>
+     * @param resources multiple directory {@link Resource}s to combine as a single resource. Order is significant.
+     * @return A {@link CombinedResource} for multiple resources;
+     *         or a single {@link Resource} if only 1 is passed;
+     *         or null if none are passed.
+     *         The returned {@link Resource} will always return {@code true} from {@link Resource#isDirectory()}
+     * @throws IllegalArgumentException if a non-directory resource is passed.
      * @see CombinedResource
      */
     static Resource combine(List<Resource> resources)
@@ -44,9 +48,13 @@ public interface ResourceFactory
     }
 
     /**
-     * <p>Make a Resource containing a collection of other resources</p>
-     * @param resources multiple resources to combine as a single resource. Typically, they are directories.
-     * @return A Resource of multiple resources.
+     * <p>Make a directory Resource containing a collection of directory {@link Resource}s</p>
+     * @param resources multiple directory {@link Resource}s to combine as a single resource. Order is significant.
+     * @return A {@link CombinedResource} for multiple resources;
+     *         or a single {@link Resource} if only 1 is passed;
+     *         or null if none are passed.
+     *         The returned {@link Resource} will always return {@code true} from {@link Resource#isDirectory()}
+     * @throws IllegalArgumentException if a non-directory resource is passed.
      * @see CombinedResource
      */
     static Resource combine(Resource... resources)
