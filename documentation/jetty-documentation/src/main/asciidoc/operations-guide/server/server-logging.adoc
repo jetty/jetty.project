@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-[appendix]
-[[pg-arch]]
-== Jetty Architecture
+[[og-server-logging]]
+==== Logging
 
-include::arch-bean.adoc[]
-include::arch-threads.adoc[]
-include::arch-io.adoc[]
-include::arch-listener.adoc[]
-include::arch-jmx.adoc[]
+There are two types of logging that can be configured in Jetty:
+
+* The logging of Jetty itself, that logs the server activity
+* The HTTP request logging, that logs information about HTTP requests and responses processed by Jetty
+
+include::server-logging-server.adoc[]
+include::server-logging-request.adoc[]

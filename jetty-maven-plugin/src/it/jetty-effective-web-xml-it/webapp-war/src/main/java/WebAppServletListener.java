@@ -11,12 +11,23 @@
 // ========================================================================
 //
 
-[appendix]
-[[pg-arch]]
-== Jetty Architecture
+import java.net.URL;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
-include::arch-bean.adoc[]
-include::arch-threads.adoc[]
-include::arch-io.adoc[]
-include::arch-listener.adoc[]
-include::arch-jmx.adoc[]
+import static java.lang.String.format;
+
+public class WebAppServletListener implements ServletContextListener
+{
+
+    //Empty class, just to have something in src/main/java
+    @Override
+    public void contextInitialized(ServletContextEvent servletContextEvent)
+    {
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent servletContextEvent)
+    {
+    }
+}

@@ -147,6 +147,8 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                     String responseEtagGzip = etagGzip(responseEtag);
                     if (requestEtags.contains(responseEtagGzip))
                         response.getHttpFields().put(HttpHeader.ETAG, responseEtagGzip);
+                    if (_vary != null)
+                        response.getHttpFields().ensureField(_vary);
                 }
             }
 
