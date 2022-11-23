@@ -32,7 +32,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -341,7 +340,7 @@ public abstract class HttpReceiver
             callback.failed(new IllegalStateException("No demand for response content"));
             return false;
         }
-        if (decoder == null || HttpMethod.HEAD.is(exchange.getRequest().getMethod()))
+        if (decoder == null)
             return plainResponseContent(exchange, buffer, callback);
         else
             return decodeResponseContent(buffer, callback);
