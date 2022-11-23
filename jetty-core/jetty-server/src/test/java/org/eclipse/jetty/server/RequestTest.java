@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class RequestTest
 {
@@ -131,7 +132,43 @@ public class RequestTest
      * Test to ensure that response.write() will add Content-Length on HTTP/1.1 responses.
      */
     @Test
-    public void testContentLengthNotSet() throws Exception
+    public void testContentLengthNotSetOneWrites() throws Exception
+    {
+        final int bufferSize = 4096;
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                byte[] buf = new byte[bufferSize];
+                Arrays.fill(buf, (byte)'x');
+
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                response.write(true, ByteBuffer.wrap(buf), Callback.NOOP);
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /foo HTTP/1.1\r
+                Host: local\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
+        String responseBody = response.getContent();
+        assertThat(responseBody.length(), is(bufferSize));
+    }
+
+    /**
+     * Test to ensure that multiple response.write() will use
+     * Transfer-Encoding chunked on HTTP/1.1 responses.
+     */
+    @Test
+    public void testContentLengthNotSetTwoWrites() throws Exception
     {
         final int bufferSize = 4096;
         server.stop();
@@ -164,7 +201,8 @@ public class RequestTest
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
+        assertNull(response.getField(HttpHeader.CONTENT_LENGTH));
+        assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
         String responseBody = response.getContent();
         assertThat(responseBody.length(), is(bufferSize));
     }
