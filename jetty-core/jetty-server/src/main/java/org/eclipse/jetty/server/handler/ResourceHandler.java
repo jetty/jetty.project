@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
@@ -67,7 +68,7 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        Context context = ContextHandler.getCurrentContext();
         if (_resourceBase == null)
         {
             if (context != null)
@@ -87,11 +88,11 @@ public class ResourceHandler extends Handler.Wrapper
         super.doStart();
     }
 
-    private static ByteBufferPool getByteBufferPool(ContextHandler.Context context)
+    private ByteBufferPool getByteBufferPool(Context context)
     {
         if (context == null)
             return new NoopByteBufferPool();
-        Server server = context.getContextHandler().getServer();
+        Server server = getServer();
         if (server == null)
             return new NoopByteBufferPool();
         ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);

@@ -18,6 +18,7 @@ import java.util.function.BiFunction;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -165,7 +166,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (_servletHandler != null)
         {
             ServletContext context = _servletHandler.getServletContext();
-            if ((context instanceof org.eclipse.jetty.server.handler.ContextHandler.Context) && ((org.eclipse.jetty.server.handler.ContextHandler.Context)context).getContextHandler().isStarted())
+            if ((context instanceof ContextHandler.ScopedContext) && ((ContextHandler.ScopedContext)context).getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }
@@ -222,14 +223,14 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     public ServletContextHandler getServletContextHandler()
     {
-        ServletContext scontext = null;
+        ServletContext context = null;
 
         //try the ServletHandler first
         if (getServletHandler() != null)
-            scontext = getServletHandler().getServletContext();
+            context = getServletHandler().getServletContext();
 
-        if (scontext instanceof ServletContextHandler.Context)
-            return ((ServletContextHandler.Context)scontext).getServletContextHandler();
+        if (context instanceof ServletContextHandler.ServletContextApi api)
+            return api.getContext().getServletContextHandler();
 
         //try the ServletContextHandler next
         return ServletContextHandler.getCurrentServletContextHandler();

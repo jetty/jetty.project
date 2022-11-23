@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -73,13 +73,26 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
     /**
-     * Get the current ServletContext implementation.
+     * Get the current Context if any.
      *
-     * @return ServletContext implementation
+     * @return The {@link Context} from a {@link ContextHandler};
+     *         or {@link Server#getContext()} if the current {@link Thread} is not scoped to a {@link ContextHandler}.
      */
     public static Context getCurrentContext()
     {
         return __context.get();
+    }
+
+    public static ContextHandler getCurrentContextHandler()
+    {
+        Context context = getCurrentContext();
+        return (context instanceof ScopedContext scopedContext) ? scopedContext.getContextHandler() : null;
+    }
+
+    public static ContextHandler getContextHandler(Request request)
+    {
+        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
+        return (contextRequest == null) ? null : contextRequest.getContext().getContextHandler();
     }
 
     public static String getServerInfo()
@@ -89,7 +102,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     // TODO should persistent attributes be an Attributes.Layer over server attributes?
     private final Attributes _persistentAttributes = new Mapped();
-    private final Context _context;
+    private final ScopedContext _context;
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -122,12 +135,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         PREFIX
     }
 
-    public static ContextHandler getContextHandler(Request request)
-    {
-        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
-        return (contextRequest == null) ? null : contextRequest.getContext().getContextHandler();
-    }
-
     private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
     public ContextHandler()
@@ -153,9 +160,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
     }
 
-    protected Context newContext()
+    protected ScopedContext newContext()
     {
-        return new Context();
+        return new ScopedContext();
     }
 
     @Override
@@ -168,7 +175,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @ManagedAttribute(value = "Context")
-    public ContextHandler.Context getContext()
+    public ScopedContext getContext()
     {
         return _context;
     }
@@ -408,10 +415,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return false;
     }
 
+    protected ClassLoader enterScope(Request contextRequest)
+    {
+        ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+        __context.set(_context);
+        if (_classLoader != null)
+            Thread.currentThread().setContextClassLoader(_classLoader);
+        notifyEnterScope(contextRequest);
+        return lastLoader;
+    }
+
     /**
      * @param request A request that is applicable to the scope, or null
      */
-    protected void enterScope(Request request)
+    protected void notifyEnterScope(Request request)
     {
         for (ContextScopeListener listener : _contextListeners)
         {
@@ -426,10 +443,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
+    protected void exitScope(Request request, Context lastContext, ClassLoader lastLoader)
+    {
+        notifyExitScope(request);
+        __context.set(lastContext == null ? getServer().getContext() : lastContext);
+        Thread.currentThread().setContextClassLoader(lastLoader);
+    }
+
     /**
      * @param request A request that is applicable to the scope, or null
      */
-    protected void exitScope(Request request)
+    protected void notifyExitScope(Request request)
     {
         for (int i = _contextListeners.size(); i-- > 0; )
         {
@@ -531,6 +555,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (getContextPath() == null)
             throw new IllegalStateException("Null contextPath");
 
+        Server server = getServer();
+        if (server != null)
+            __context.set(server.getContext());
         _availability.set(Availability.STARTING);
         try
         {
@@ -644,11 +671,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (processor != null)
             return processor;
 
-        // The contextRequest is-a Supplier<Processor> that calls effectively calls getHandler().handle(request).
-        // Call this supplier in the scope of the context.
-        Request.Processor contextScopedProcessor = _context.get(contextRequest, contextRequest);
-        // Wrap the contextScopedProcessor with a wrapper that uses the wrapped request
-        return contextRequest.wrapProcessor(contextScopedProcessor);
+        ClassLoader lastLoader = enterScope(contextRequest);
+        try
+        {
+            processor = getHandler().handle(contextRequest);
+        }
+        finally
+        {
+            exitScope(contextRequest, request.getContext(), lastLoader);
+        }
+
+        return contextRequest.wrapProcessor(processor);
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -965,9 +998,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return host;
     }
 
-    public class Context extends Attributes.Layer implements org.eclipse.jetty.server.Context
+    public class ScopedContext extends Attributes.Layer implements Context
     {
-        public Context()
+        public ScopedContext()
         {
             // TODO Should the ScopedContext attributes be a layer over the ServerContext attributes?
             super(_persistentAttributes);
@@ -1026,32 +1059,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return ContextHandler.this.getVirtualHosts();
         }
 
-        public <T> T get(Supplier<T> supplier, Request request)
-        {
-            Context lastContext = __context.get();
-            if (lastContext == this)
-                return supplier.get();
-
-            ClassLoader loader = getClassLoader();
-            ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-            try
-            {
-                __context.set(this);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(loader);
-
-                enterScope(request);
-                return supplier.get();
-            }
-            finally
-            {
-                exitScope(request);
-                __context.set(lastContext);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(lastLoader);
-            }
-        }
-
         public void call(Invocable.Callable callable, Request request) throws Exception
         {
             Context lastContext = __context.get();
@@ -1059,23 +1066,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 callable.call();
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-
-                    enterScope(request);
                     callable.call();
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1087,22 +1085,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 consumer.accept(t);
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(request);
                     consumer.accept(t);
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1120,22 +1110,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 runnable.run();
             else
             {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                ClassLoader lastLoader = enterScope(request);
                 try
                 {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(request);
                     runnable.run();
                 }
                 finally
                 {
-                    exitScope(request);
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
+                    exitScope(request, lastContext, lastLoader);
                 }
             }
         }
@@ -1195,13 +1177,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        default void enterScope(org.eclipse.jetty.server.Context context, Request request) {}
+        default void enterScope(Context context, Request request) {}
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        default void exitScope(org.eclipse.jetty.server.Context context, Request request) {}
+        default void exitScope(Context context, Request request) {}
     }
 
     private static class VHost

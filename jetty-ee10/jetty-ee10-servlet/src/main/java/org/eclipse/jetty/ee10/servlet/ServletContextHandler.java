@@ -75,6 +75,7 @@ import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -168,18 +169,18 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         return getServletContext(ContextHandler.getCurrentContext());
     }
 
-    public static ServletContext getServletContext(ContextHandler.Context context)
+    public static ServletContext getServletContext(Context context)
     {
-        if (context instanceof Context)
-            return ((Context)context).getServletContext();
+        if (context instanceof ServletScopedContext)
+            return ((ServletScopedContext)context).getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
-        if (context instanceof Context)
-            return ((Context)context).getServletContextHandler();
+        Context context = ContextHandler.getCurrentContext();
+        if (context instanceof ServletScopedContext)
+            return ((ServletScopedContext)context).getServletContextHandler();
         return null;
     }
 
@@ -877,13 +878,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        void enterScope(Context context, ServletContextRequest request);
+        void enterScope(ServletScopedContext context, ServletContextRequest request);
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(Context context, ServletContextRequest request);
+        void exitScope(ServletScopedContext context, ServletContextRequest request);
     }
 
     public ServletContext getServletContext()
@@ -892,15 +893,15 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ContextHandler.Context newContext()
+    protected ScopedContext newContext()
     {
-        return new Context();
+        return new ServletScopedContext();
     }
 
     @Override
-    public Context getContext()
+    public ServletScopedContext getContext()
     {
-        return (Context)super.getContext();
+        return (ServletScopedContext)super.getContext();
     }
 
     protected void setParent(Container parent)
@@ -945,7 +946,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             if (listener instanceof ServletContextScopeListener)
             {
-                ContextHandler.Context currentContext = ContextHandler.getCurrentContext();
+                Context currentContext = ContextHandler.getCurrentContext();
                 _contextListeners.add((ServletContextScopeListener)listener);
                 if (currentContext != null)
                     ((ServletContextScopeListener)listener).enterScope(getContext(), null);
@@ -1104,9 +1105,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         ClassLoader oldWebapploader = null;
         Thread currentThread = null;
 
-        enterScope(null);
+        Context lastContext = ContextHandler.getCurrentContext();
+        ClassLoader lastLoader = enterScope(null);
 
-        Context context = getContext();
+        ServletScopedContext context = getContext();
         try
         {
             // Set the classloader
@@ -1151,7 +1153,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         finally
         {
             _contextStatus = ContextStatus.NOTSET;
-            exitScope(null);
+            exitScope(null, lastContext, lastLoader);
             LOG.info("Stopped {}", this);
             // reset the classloader
             if ((oldClassloader == null || (oldClassloader != oldWebapploader)) && currentThread != null)
@@ -1208,9 +1210,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected void enterScope(Request request)
+    protected void notifyEnterScope(Request request)
     {
-        super.enterScope(request);
+        super.notifyEnterScope(request);
 
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
@@ -1230,7 +1232,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected void exitScope(Request request)
+    protected void notifyExitScope(Request request)
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
@@ -1248,7 +1250,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             }
         }
 
-        super.exitScope(request);
+        super.notifyExitScope(request);
     }
 
     /**
@@ -2002,7 +2004,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    public class Context extends ContextHandler.Context
+    public class ServletScopedContext extends ScopedContext
     {
         public ServletContextApi getServletContext()
         {
@@ -2113,7 +2115,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             _effectiveMinorVersion = v;
         }
 
-        public Context getContext()
+        public ServletScopedContext getContext()
         {
             return ServletContextHandler.this.getContext();
         }

@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +63,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
     private final SessionCookieConfig _cookieConfig = new CookieConfig();
 
-    private ServletContextHandler.Context _servletContextHandlerContext;
+    private ServletContextHandler.ServletScopedContext _servletContextHandlerContext;
 
     private Server _server;
     private Handler _handler;
@@ -312,7 +311,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public ServletContext getServletContext()
         {
-            return ServletContextHandler.getServletContext((ContextHandler.Context)_session.getSessionManager().getContext());
+            return ServletContextHandler.getServletContext((ContextHandler.ScopedContext)_session.getSessionManager().getContext());
         }
 
         @Override
@@ -494,9 +493,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     public void doStart() throws Exception
     {
         super.doStart();
-        if (!(getContext() instanceof ServletContextHandler.Context))
+        if (!(getContext() instanceof ServletContextHandler.ServletScopedContext))
             throw new IllegalStateException("!ServlerContextHandler.Context");
-        _servletContextHandlerContext = (ServletContextHandler.Context)getContext();
+        _servletContextHandlerContext = (ServletContextHandler.ServletScopedContext)getContext();
         configureCookies();
     }
 
