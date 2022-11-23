@@ -446,7 +446,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected void exitScope(Request request, Context lastContext, ClassLoader lastLoader)
     {
         notifyExitScope(request);
-        __context.set(lastContext == null ? getServer().getContext() : lastContext);
+        __context.set(lastContext == null && getServer() != null ? getServer().getContext() : lastContext);
         Thread.currentThread().setContextClassLoader(lastLoader);
     }
 
