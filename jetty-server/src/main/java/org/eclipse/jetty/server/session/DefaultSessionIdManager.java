@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.session;
 
 import java.security.SecureRandom;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,7 +68,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      */
     public DefaultSessionIdManager(Server server)
     {
-        _server = server;
+        _server = Objects.requireNonNull(server);
+        _server.setSessionIdManager(this);
     }
 
     /**
@@ -85,7 +87,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      */
     public void setServer(Server server)
     {
-        _server = server;
+        _server = Objects.requireNonNull(server);
+        _server.setSessionIdManager(this);
     }
 
     /**
@@ -270,7 +273,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
         return id;
     }
-
+    
     @Override
     public boolean isIdInUse(String id)
     {
@@ -308,9 +311,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     protected void doStart() throws Exception
     {
-        if (_server == null)
-            throw new IllegalStateException("No Server for SessionIdManager");
-
         initRandom();
 
         if (_workerName == null)
