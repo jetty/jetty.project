@@ -154,8 +154,9 @@ public class AutoDemandingMessageHandler extends AbstractMessageHandler
 
             if (frame.isFin())
             {
-                ByteBuffer buffer = _binaryMessageBuffer.toByteBuffer();
-                onBinary(buffer, Callback.from(callback, () -> _binaryMessageBuffer.getByteBufferPool().release(buffer)));
+                ByteBuffer buffer = _binaryMessageBuffer.takeByteBuffer();
+                ByteBufferAccumulator accumulator = _binaryMessageBuffer;
+                onBinary(buffer, Callback.from(callback, () -> accumulator.getByteBufferPool().release(buffer)));
                 _binaryMessageBuffer.reset();
                 _binaryMessageBuffer = null;
                 _binaryLength = 0;

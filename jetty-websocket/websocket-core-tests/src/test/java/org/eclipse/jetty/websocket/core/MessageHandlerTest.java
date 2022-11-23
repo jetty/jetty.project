@@ -46,7 +46,6 @@ public class MessageHandlerTest
     static byte[] fourByteUtf8Bytes = fourByteUtf8String.getBytes(StandardCharsets.UTF_8);
     static byte[] nonUtf8Bytes = {0x7F, (byte)0xFF, (byte)0xFF};
 
-    boolean demanding;
     CoreSession coreSession;
     List<String> textMessages = new ArrayList<>();
     List<ByteBuffer> binaryMessages = new ArrayList<>();
@@ -57,8 +56,6 @@ public class MessageHandlerTest
     @BeforeEach
     public void beforeEach() throws Exception
     {
-        demanding = false;
-
         coreSession = new CoreSession.Empty()
         {
             private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
@@ -96,7 +93,7 @@ public class MessageHandlerTest
             @Override
             public boolean isDemanding()
             {
-                return demanding;
+                return false;
             }
         };
 
