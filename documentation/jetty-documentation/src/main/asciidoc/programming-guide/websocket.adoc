@@ -28,6 +28,31 @@ Each side of a WebSocket connection, either client or server, is made of two ent
 * A xref:pg-websocket-endpoints[WebSocket _endpoint_], the entity that _receives_ WebSocket events.
 * A xref:pg-websocket-session[WebSocket _session_], the entity that offers an API to _send_ WebSocket data (and to close the WebSocket connection), as well as to configure WebSocket connection parameters.
 
+[[pg-websocket-configuration]]
+==== WebSocket Configuration
+
+There are various different ways to configure WebSocket connections, default configuration can be applied to the `WebSocketUpgradeFilter` and the `WebSocketContainer`, this default configuration is applied before the WebSocket is given to the application in the `onOpen()` notification, this configuration can further be modified in `onOpen()` and any time after using the configuration on the `Session`.
+
+Settings which can be configured include:
+
+* MAX_BINARY_MESSAGE_SIZE - The maximum size of a binary message which can be received. (default: 64 * 1024)
+
+* MAX_TEXT_MESSAGE_SIZE - The maximum size of a text message which can be received. (default: 64 * 1024)
+
+* MAX_FRAME_SIZE - The maximum payload size of any WebSocket Frame which can be received. (default: 64 * 1024)
+
+* INPUT_BUFFER_SIZE - The input (read from network layer) buffer size. This is the raw read operation buffer size, before the parsing of the websocket frames. (default: 4 * 1024)
+
+* OUTPUT_BUFFER_SIZE - The output (write to network layer) buffer size. This is the raw write operation buffer size and has no relationship to the websocket frame. (default: 4 * 1024)
+
+* AUTO_FRAGMENT - If set to true, frames are automatically fragmented to respect the maximum frame size. (default: true)
+
+* IDLE_TIMEOUT - The duration that a websocket may be idle before being closed by the implementation. (default: 30 seconds)
+
+* WRITE_TIMEOUT - The maximum time a frame may be waiting to be sent. (default: infinite)
+
+* MAX_OUTGOING_FRAMES - Set the maximum number of data frames allowed to be waiting to be sent at any one time. (default: infinite)
+
 [[pg-websocket-endpoints]]
 ==== WebSocket Endpoints
 
