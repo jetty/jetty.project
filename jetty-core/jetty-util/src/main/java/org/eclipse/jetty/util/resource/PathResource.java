@@ -44,19 +44,11 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Index<String> ALLOWED_SCHEMES = new Index.Builder<String>()
+    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>()
         .caseSensitive(false)
         .with("file")
         .with("jrt")
         .build();
-
-    public static PathResource of(URI uri) throws IOException
-    {
-        Path path = Paths.get(uri.normalize());
-        if (!Files.exists(path))
-            return null;
-        return new PathResource(path, uri, false);
-    }
 
     // The path object represented by this instance
     private final Path path;
@@ -176,7 +168,7 @@ public class PathResource extends Resource
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (!bypassAllowedSchemeCheck && !ALLOWED_SCHEMES.contains(uri.getScheme()))
+        if (!bypassAllowedSchemeCheck && !SUPPORTED_SCHEMES.contains(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
         if (Files.isDirectory(path))
