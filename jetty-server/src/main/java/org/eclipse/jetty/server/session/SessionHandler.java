@@ -426,7 +426,6 @@ public class SessionHandler extends ScopedHandler
                     {
                         Thread.currentThread().setContextClassLoader(serverLoader);
                         _sessionIdManager = new DefaultSessionIdManager(server);
-                        server.setSessionIdManager(_sessionIdManager);
                         server.manage(_sessionIdManager);
                         _sessionIdManager.start();
                     }

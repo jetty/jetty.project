@@ -100,7 +100,6 @@ public class BalancerServletTest
         {
             DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
             sessionIdManager.setWorkerName(nodeName);
-            server.setSessionIdManager(sessionIdManager);
         }
 
         return server;
