@@ -19,7 +19,6 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Set;
 
-import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;

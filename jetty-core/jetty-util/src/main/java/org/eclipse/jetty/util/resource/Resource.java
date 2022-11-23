@@ -17,13 +17,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
@@ -33,9 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -47,9 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Resource implements Iterable<Resource>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
     public static String dump(Resource resource)
     {
@@ -57,43 +49,6 @@ public abstract class Resource implements Iterable<Resource>
             return "null exists=false directory=false lm=-1";
         return "%s exists=%b directory=%b lm=%s"
             .formatted(resource.toString(), resource.exists(), resource.isDirectory(), resource.lastModified());
-    }
-
-    /**
-     * Construct a resource from a uri.
-     *
-     * @param uri A URI.
-     * @return A Resource object.
-     */
-    static Resource create(URI uri)
-    {
-        try
-        {
-            // If the URI is not absolute
-            if (!uri.isAbsolute())
-            {
-                // If it is an absolute path,
-                if (uri.toString().startsWith("/"))
-                    // just add the scheme
-                    uri = new URI("file", uri.toString(), null);
-                else
-                    // otherwise resolve against the current directory
-                    uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
-
-                // Correct any `file:/path` to `file:///path` mistakes
-                uri = URIUtil.correctFileURI(uri);
-            }
-
-            // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
-            if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-                return PathResource.of(uri);
-
-            return MountedPathResource.of(uri);
-        }
-        catch (URISyntaxException | ProviderNotFoundException | IOException ex)
-        {
-            throw new IllegalArgumentException(ex);
-        }
     }
 
     /**

@@ -31,6 +31,7 @@ import java.util.StringTokenizer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1903,7 +1904,8 @@ public final class URIUtil
         Objects.requireNonNull(resource);
 
         // Only try URI for string for known schemes, otherwise assume it is a Path
-        return (KNOWN_SCHEMES.getBest(resource) != null)
+        ResourceFactory resourceFactory = ResourceFactory.getBestByScheme(resource);
+        return (resourceFactory != null)
             ? correctFileURI(URI.create(resource))
             : Paths.get(resource).toUri();
     }

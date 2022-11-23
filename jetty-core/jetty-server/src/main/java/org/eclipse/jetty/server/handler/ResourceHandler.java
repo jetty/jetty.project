@@ -75,9 +75,7 @@ public class ResourceHandler extends Handler.Wrapper
                 _resourceBase = context.getBaseResource();
         }
 
-        // TODO: _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
+        _mimeTypes = context == null ? MimeTypes.DEFAULTS : context.getMimeTypes();
 
         _byteBufferPool = getByteBufferPool(context);
         _resourceService.setHttpContentFactory(newHttpContentFactory());
@@ -319,11 +317,6 @@ public class ResourceHandler extends Handler.Wrapper
     public int getEncodingCacheSize()
     {
         return _resourceService.getEncodingCacheSize();
-    }
-
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
     }
 
     /**
