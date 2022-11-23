@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlets;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -25,16 +26,15 @@ import org.eclipse.jetty.http.MimeTypes;
 /**
  * Test servlet for testing against unusual MimeTypes and Content-Types.
  */
-@SuppressWarnings("serial")
 public class TestStaticMimeTypeServlet extends AbstractFileContentServlet
 {
-    private MimeTypes mimeTypes;
+    private MimeTypes.Mutable mimeTypes;
 
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
-        mimeTypes = new MimeTypes();
+        mimeTypes = new MimeTypes.Mutable();
         // Some real world, yet not terribly common, mime type mappings.
         mimeTypes.addMimeMapping("bz2", "application/bzip2");
         mimeTypes.addMimeMapping("br", "application/brotli");
@@ -65,10 +65,7 @@ public class TestStaticMimeTypeServlet extends AbstractFileContentServlet
         response.setHeader("ETag", "W/etag-" + fileName);
 
         String mime = mimeTypes.getMimeByExtension(fileName);
-        if (mime == null)
-            response.setContentType("application/octet-stream");
-        else
-            response.setContentType(mime);
+        response.setContentType(Objects.requireNonNullElse(mime, "application/octet-stream"));
 
         ServletOutputStream out = response.getOutputStream();
         out.write(dataBytes);

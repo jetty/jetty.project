@@ -30,6 +30,8 @@ public class MimeTypesTest
     {
         return Stream.of(
             Arguments.of("test.gz", "application/gzip"),
+            Arguments.of("test.tar.gz", "application/gzip"),
+            Arguments.of("test.tgz", "application/x-gtar"),
             Arguments.of("foo.webp", "image/webp"),
             Arguments.of("zed.avif", "image/avif"),
             // make sure that filename case isn't an issue
