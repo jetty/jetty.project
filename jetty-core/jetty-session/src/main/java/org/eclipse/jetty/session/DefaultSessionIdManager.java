@@ -68,7 +68,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     public DefaultSessionIdManager(Server server)
     {
         _server = Objects.requireNonNull(server);
-        _server.setSessionIdManager(this);
     }
 
     /**
@@ -87,7 +86,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     public void setServer(Server server)
     {
         _server = Objects.requireNonNull(server);
-        _server.setSessionIdManager(this);
     }
 
     /**
