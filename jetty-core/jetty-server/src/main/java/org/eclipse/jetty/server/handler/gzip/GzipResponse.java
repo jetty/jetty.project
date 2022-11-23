@@ -233,6 +233,13 @@ public class GzipResponse extends Response.Wrapper
             super(callback);
             _content = content;
             _last = complete;
+
+            _crc.update(_content.slice());
+
+            Deflater deflater = _deflaterEntry.get();
+            deflater.setInput(_content);
+            if (_last)
+                deflater.finish();
         }
 
         @Override
@@ -281,17 +288,15 @@ public class GzipResponse extends Response.Wrapper
                 BufferUtil.clear(_buffer);
             }
 
-            // If the deflater is not finished, then compress more data.
+            // If the deflater is not finished, then compress more data
             Deflater deflater = _deflaterEntry.get();
             if (!deflater.finished())
             {
                 if (deflater.needsInput())
                 {
-                    ByteBuffer content = _content != null ? _content : BufferUtil.EMPTY_BUFFER;
-
                     // If there is no more content available to compress,
                     // then we have either finished all content or just the current write.
-                    if (BufferUtil.isEmpty(content))
+                    if (BufferUtil.isEmpty(_content))
                     {
                         if (_last)
                         {
@@ -318,9 +323,9 @@ public class GzipResponse extends Response.Wrapper
                         // it is available in an array for the current deflater API, maybe slicing
                         // of content.
                         ByteBuffer slice;
-                        if (content.hasArray())
+                        if (_content.hasArray())
                         {
-                            slice = content;
+                            slice = _content;
                         }
                         else
                         {
@@ -329,7 +334,7 @@ public class GzipResponse extends Response.Wrapper
                             else
                                 BufferUtil.clear(_copy);
                             slice = _copy;
-                            BufferUtil.append(_copy, content);
+                            BufferUtil.append(_copy, _content);
                         }
 
                         // transfer the data from the slice to the deflater
@@ -341,7 +346,7 @@ public class GzipResponse extends Response.Wrapper
                         // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves.
                         _deflaterEntry.get().setInput(array, off, len);
                         slice.position(slice.position() + len);
-                        if (_last && _content == null && BufferUtil.isEmpty(content))
+                        if (_last && BufferUtil.isEmpty(_content))
                             deflater.finish();
                     }
                 }

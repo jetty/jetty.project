@@ -14,6 +14,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -42,14 +46,21 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class RequestTest
 {
     private Server server;
+    private ServerConnector serverConnector;
     private LocalConnector connector;
 
     @BeforeEach
     public void prepare() throws Exception
     {
         server = new Server();
+
+        serverConnector = new ServerConnector(server);
+        serverConnector.setPort(0);
+        server.addConnector(serverConnector);
+
         connector = new LocalConnector(server);
         connector.setIdleTimeout(60000);
+
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
         server.start();
@@ -257,6 +268,133 @@ public class RequestTest
             lep.addInput(request3);
             response = HttpTester.parseResponse(lep.getResponse());
             checkCookieResult(sessionId3, new String[]{sessionId1, sessionId2}, response.getContent());
+        }
+    }
+
+    /**
+     * Test for GET behavior on persistent connection (not Connection: close)
+     *
+     * @throws Exception if there is a problem
+     */
+    @Test
+    public void testGETNoConnectionClose() throws Exception
+    {
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                byte[] buf = new byte[4096];
+                Arrays.fill(buf, (byte)'x');
+                response.write(true, ByteBuffer.wrap(buf), callback);
+            }
+        });
+
+        server.start();
+
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: tester
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    /**
+     * Test for HEAD behavior on persistent connection (not Connection: close)
+     *
+     * @throws Exception if there is a problem
+     */
+    @Test
+    public void testHEADNoConnectionClose() throws Exception
+    {
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                byte[] buf = new byte[4096];
+                Arrays.fill(buf, (byte)'x');
+                response.write(true, ByteBuffer.wrap(buf), callback);
+            }
+        });
+
+        server.start();
+
+        try (Socket socket = new Socket("localhost", serverConnector.getLocalPort()))
+        {
+            socket.setSoTimeout(2000);
+            OutputStream output = socket.getOutputStream();
+            InputStream input = socket.getInputStream();
+
+            String rawRequest = """
+                HEAD / HTTP/1.1
+                Host: tester
+                            
+                """;
+
+            output.write(rawRequest.getBytes(UTF_8));
+            output.flush();
+
+            // Parse HEAD response
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        }
+    }
+
+    /**
+     * Test for HEAD behavior on persistent connection (not Connection: close)
+     *
+     * @throws Exception if there is a problem
+     */
+    @Test
+    public void testHEADWithConnectionClose() throws Exception
+    {
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                byte[] buf = new byte[4096];
+                Arrays.fill(buf, (byte)'x');
+                response.write(true, ByteBuffer.wrap(buf), callback);
+            }
+        });
+
+        server.start();
+
+        try (Socket socket = new Socket("localhost", serverConnector.getLocalPort()))
+        {
+            socket.setSoTimeout(2000);
+            OutputStream output = socket.getOutputStream();
+            InputStream input = socket.getInputStream();
+
+            String rawRequest = """
+                HEAD / HTTP/1.1
+                Host: tester
+                Connection: close
+                            
+                """;
+
+            output.write(rawRequest.getBytes(UTF_8));
+            output.flush();
+
+            // Parse HEAD response
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
         }
     }
 

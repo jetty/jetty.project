@@ -18,6 +18,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -58,6 +60,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -82,15 +85,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class GzipHandlerTest
 {
@@ -122,6 +130,7 @@ public class GzipHandlerTest
 
     public WorkDir _workDir;
     private Server _server;
+    private ServerConnector _httpConnector;
     private LocalConnector _connector;
     private GzipHandler _gzipHandler;
     private ContextHandler _contextHandler;
@@ -168,6 +177,9 @@ public class GzipHandlerTest
     public void init() throws Exception
     {
         _server = new Server();
+        _httpConnector = new ServerConnector(_server);
+        _httpConnector.setPort(0);
+        _server.addConnector(_httpConnector);
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
@@ -290,6 +302,100 @@ public class GzipHandlerTest
         assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Test a HEAD request (that is not processed by GZIP) then a GET request (which is compressed)
+     */
+    @Test
+    public void testHEADThenGETPersistent() throws Exception
+    {
+        _contextHandler.setHandler(new BufferHandler(CONTENT_BYTES));
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _httpConnector.getLocalPort()))
+        {
+            socket.setSoTimeout(2000);
+            OutputStream output = socket.getOutputStream();
+            InputStream input = socket.getInputStream();
+
+            // Send HEAD request
+            String rawHeadRequest = """
+                HEAD /ctx/buffer/test?one HTTP/1.1
+                Host: tester
+                Accept-Encoding: gzip
+            
+                """;
+
+            output.write(rawHeadRequest.getBytes(UTF_8));
+            output.flush();
+
+            // Parse HEAD response
+            HttpTester.Response response = HttpTester.parseResponse(input);
+
+            assertNotNull(response);
+
+            assertThat(response.getStatus(), is(200));
+            assertNull(response.getField("Vary")); // HEAD should not have a Vary header
+            assertThat(response.getLongField("Content-Length"), is((long)CONTENT_BYTES.length));
+            assertThat(response.getContentBytes().length, is(0));
+
+            // Send GET request
+            String rawGetRequest = """
+                GET /ctx/buffer/test?two HTTP/1.1
+                Host: tester
+                Connection: close
+                Accept-Encoding: gzip
+            
+                """;
+
+            output.write(rawGetRequest.getBytes(UTF_8));
+            output.flush();
+
+            // Parse GET response
+            response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
+            assertThat(response.getLongField("Content-Length"),
+                is(both(greaterThan(0L)).and(lessThan((long)CONTENT_BYTES.length))));
+
+            try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
+            {
+                ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+                IO.copy(testIn, testOut);
+
+                assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
+            }
+        }
+    }
+
+    @Test
+    public void testHead() throws Exception
+    {
+        _contextHandler.setHandler(new BufferHandler(CONTENT_BYTES));
+        _server.start();
+
+        // generated and parsed test
+        HttpTester.Response response;
+
+        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding header.
+        String rawRequest = """
+            HEAD /ctx/buffer/info HTTP/1.1
+            Host: tester
+            Connection: close
+            Accept-Encoding: gzip
+            
+            """;
+
+        // Parse HEAD response
+        response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
+
+        assertThat(response.getStatus(), is(200));
+        assertNull(response.getField("Vary")); // HEAD should not have a Vary header
+        assertThat(response.getLongField("Content-Length"), is((long)CONTENT_BYTES.length));
+        assertThat(response.getContentBytes().length, is(0));
+    }
+
     @Test
     public void testBufferResponse() throws Exception
     {
@@ -303,6 +409,7 @@ public class GzipHandlerTest
         String rawRequest = """
             GET /ctx/buffer/info HTTP/1.1
             Host: tester
+            Connection: close
             Accept-Encoding: gzip
             
             """;
@@ -311,6 +418,8 @@ public class GzipHandlerTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
+        assertThat(response.getLongField("Content-Length"),
+            is(both(greaterThan(0L)).and(lessThan((long)CONTENT_BYTES.length))));
 
         try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
         {
