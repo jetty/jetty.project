@@ -18,6 +18,8 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -126,15 +128,18 @@ public class TryPathsHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         for (String path : paths)
         {
             String interpolated = interpolate(request, path);
-            Request.WrapperProcessor result = new Request.WrapperProcessor(new TryPathsRequest(request, interpolated));
-            Request.Processor childProcessor = super.handle(result);
+            StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest result = new StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest(new TryPathsRequest(request, interpolated));
+            Request.Processor childProcessor = super.process(result, response, callback);
             if (childProcessor != null)
-                return result.wrapProcessor(childProcessor);
+            {
+                result._processor = childProcessor;
+                return childProcessor == null ? null : result;
+            }
         }
         return null;
     }

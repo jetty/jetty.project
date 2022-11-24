@@ -17,13 +17,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 public class HelloWorld extends Handler.Abstract
 {
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         return (req, response, callback) ->
         {

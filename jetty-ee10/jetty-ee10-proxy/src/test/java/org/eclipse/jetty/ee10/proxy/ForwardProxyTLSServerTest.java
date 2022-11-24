@@ -514,7 +514,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -526,7 +526,7 @@ public class ForwardProxyTLSServerTest
                         cbk.succeeded();
                     };
                 }
-                return super.handle(request);
+                return super.process(request, response, callback);
             }
         }, realm);
     }
@@ -539,7 +539,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -551,7 +551,7 @@ public class ForwardProxyTLSServerTest
                         res.write(true, ByteBuffer.allocate(4096), cbk);
                     };
                 }
-                return super.handle(request);
+                return super.process(request, response, callback);
             }
         }, realm);
     }
@@ -564,7 +564,7 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
@@ -576,7 +576,7 @@ public class ForwardProxyTLSServerTest
                         res.write(true, ByteBuffer.allocate(1024), cbk);
                     };
                 }
-                return super.handle(request);
+                return super.process(request, response, callback);
             }
         }, realm, true);
     }

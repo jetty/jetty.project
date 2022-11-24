@@ -393,7 +393,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -422,7 +422,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -1161,10 +1161,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new HelloHandler("Hello\n")
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 served.incrementAndGet();
-                return super.handle(request);
+                return super.process(request, response, callback);
             }
         });
 
@@ -1792,7 +1792,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             AtomicBoolean hasContent = new AtomicBoolean();
             Request.Wrapper wrapper = new Request.Wrapper(request)
@@ -1807,7 +1807,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             };
 
-            Request.Processor processor = super.handle(request);
+            Request.Processor processor = super.process(request, response, callback);
             if (processor == null)
                 return null;
 
@@ -1829,9 +1829,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Handler.Wrapper wrapper = new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Request.Processor processor = super.handle(request);
+                Request.Processor processor = super.process(request, response, callback);
                 if (processor == null)
                     return null;
                 request.setAttribute("test", "value");

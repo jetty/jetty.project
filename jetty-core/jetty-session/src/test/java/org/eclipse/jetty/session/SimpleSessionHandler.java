@@ -60,16 +60,17 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         SessionRequest sessionRequest = new SessionRequest(request);
 
-        Request.Processor processor = getHandler().handle(sessionRequest);
+        Request.Processor processor = getHandler().process(sessionRequest, response, callback);
         if (processor == null)
             return null;
 
         addSessionStreamWrapper(request);
-        return sessionRequest.wrapProcessor(processor);
+        sessionRequest._processor = processor;
+        return processor == null ? null : sessionRequest;
     }
 
     @Override
@@ -84,7 +85,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         return new SessionAPI(session);
     }
 
-    public class SessionRequest extends Request.WrapperProcessor
+    public class SessionRequest extends Request.Wrapper
     {
         private final AtomicReference<Session> _session = new AtomicReference<>();
         private String _requestedSessionId;

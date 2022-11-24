@@ -17,6 +17,8 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>{@code RewriteHandler} rewrites incoming requests through a set of {@link Rule}s.</p>
@@ -103,7 +105,7 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         if (!isStarted())
             return null;
@@ -113,9 +115,9 @@ public class RewriteHandler extends Handler.Wrapper
 
         // No rule matched, call super with the original request.
         if (output == null)
-            return super.handle(request);
+            return super.process(request, response, callback);
 
         // At least one rule matched, call super with the result of the rule applications.
-        return output.wrapProcessor(super.handle(output));
+        return output.wrapProcessor(super.process(output, response, callback));
     }
 }

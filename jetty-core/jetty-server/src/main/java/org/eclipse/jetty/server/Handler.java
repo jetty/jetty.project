@@ -108,35 +108,8 @@ import org.slf4j.LoggerFactory;
  * @see Request.Processor
  */
 @ManagedObject("Handler")
-public interface Handler extends LifeCycle, Destroyable, Invocable
+public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Processor
 {
-    /**
-     * <p>Invoked to decide whether to handle the given HTTP request.</p>
-     * <p>If the HTTP request can be handled by this {@code Handler},
-     * this method must return a non-null {@link Request.Processor}.</p>
-     * <p>Otherwise, the HTTP request is not handled by this {@code Handler}
-     * (for example, the HTTP request's URI does not match those handled
-     * by this {@code Handler}), and this method must return {@code null}.</p>
-     * <p>This method may inspect the HTTP request with the following rules:</p>
-     * <ul>
-     * <li>it may access read-only fields such as the HTTP headers, or the HTTP URI, etc.</li>
-     * <li>it may wrap the {@link Request} in a {@link Request.Wrapper}, for example
-     * to modify HTTP headers or modify the HTTP URI, etc.</li>
-     * <li>it may directly modify {@link Request#getAttribute(String) request attributes}</li>
-     * <li>it may directly add/remove request listeners supported in the {@link Request} APIs</li>
-     * <li>it must <em>not</em> read the request content (otherwise an {@link IllegalStateException}
-     * will be thrown)</li>
-     * </ul>
-     * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
-     * if present, otherwise a default HTTP 500 error is generated.</p>
-     *
-     * @param request the incoming HTTP request to analyze
-     * @return a non-null {@link Request.Processor} that processes the request/response,
-     * or null if this {@code Handler} does not handle the request
-     * @throws Exception Thrown if there is a problem handling.
-     */
-    Request.Processor handle(Request request) throws Exception;
-
     /**
      * @return the {@code Server} associated with this {@code Handler}
      */
@@ -538,10 +511,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             Handler next = getHandler();
-            return next == null ? null : next.handle(request);
+            if (next != null)
+                next.process(request, response, callback);
         }
 
         @Override
@@ -578,15 +552,14 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             for (Handler h : _handlers)
             {
-                Request.Processor processor = h.handle(request);
-                if (processor != null)
-                    return processor;
+                if (request.isAccepted())
+                    break;
+                h.process(request, response, callback);
             }
-            return null;
         }
 
         @Override
@@ -652,11 +625,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
     /**
      * <p>A {@link Handler} that itself implements {@link Request.Processor}
-     * and that returns itself from a call to {@link Handler#handle(Request)}.
+     * and that returns itself from a call to {@link Handler#process(Request, Response, Callback)}.
      * Subclasses only need to implement 
      * {@link #doProcess(Request, Response, Callback)}.</p>
      */
-    abstract class Processor extends Abstract implements Request.Processor
+    abstract class Processor extends Abstract
     {
         public Processor()
         {
@@ -669,13 +642,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            return this;
-        }
-
-        @Override
-        public final void process(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             request.accept();
             doProcess(request, response, callback);

@@ -33,9 +33,11 @@ import javax.naming.spi.ObjectFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -92,7 +94,7 @@ public class TestJNDI
             private Object testObj = new Object();
 
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 return null;
             }
@@ -146,7 +148,7 @@ public class TestJNDI
             private Object testObj = new Object();
 
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 return null;
             }

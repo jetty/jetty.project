@@ -110,7 +110,7 @@ public class TryPathsHandlerTest
         resourceHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 if (!Request.getPathInContext(request).startsWith("/forward"))
                     return null;
@@ -187,7 +187,7 @@ public class TryPathsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 return new Processor()
                 {
@@ -205,7 +205,7 @@ public class TryPathsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 return new Handler.Processor()
                 {

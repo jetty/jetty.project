@@ -334,10 +334,10 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     /**
-     * Start request handling by returning a Runnable that will call {@link Handler#handle(Request)}.
+     * Start request handling by returning a Runnable that will call {@link Handler#process(Request, Response, Callback)}.
      *
      * @param request The request metadata to handle.
-     * @return A Runnable that will call {@link Handler#handle(Request)}.  Unlike all other {@link Runnable}s
+     * @return A Runnable that will call {@link Handler#process(Request, Response, Callback)}.  Unlike all other {@link Runnable}s
      * returned by HttpChannel methods, this runnable should not be mutually excluded or serialized. Specifically
      * other {@link Runnable}s returned by methods on this class can be run concurrently with the {@link Runnable}
      * returned from this method.
@@ -633,7 +633,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
 
-                processor = server.handle(customized);
+                processor = server.process(customized, response, callback);
                 if (processor == null)
                     processor = (req, res, cb) -> Response.writeError(req, res, cb, HttpStatus.NOT_FOUND_404);
             }

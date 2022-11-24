@@ -79,9 +79,11 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
@@ -1000,7 +1002,7 @@ public class RequestTest
         org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
                 {
@@ -1011,7 +1013,7 @@ public class RequestTest
                     }
                 };
 
-                org.eclipse.jetty.server.Request.WrapperProcessor wrapper = new org.eclipse.jetty.server.Request.WrapperProcessor(request)
+                StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest wrapper = new org.eclipse.jetty.server.Request.ToBeRemovedProcessor(request)
                 {
                     @Override
                     public ConnectionMetaData getConnectionMetaData()
@@ -1020,7 +1022,9 @@ public class RequestTest
                     }
                 };
 
-                return wrapper.wrapProcessor(super.handle(wrapper));
+                org.eclipse.jetty.server.Request.Processor processor = super.process(wrapper, response, callback);
+                wrapper._processor = processor;
+                return processor == null ? null : wrapper;
             }
         };
 

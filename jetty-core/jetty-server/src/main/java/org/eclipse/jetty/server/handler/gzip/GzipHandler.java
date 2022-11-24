@@ -28,8 +28,10 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.AsciiLowerCaseSet;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.compression.DeflaterPool;
@@ -521,7 +523,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         final String path = Request.getPathInContext(request);
 
@@ -604,7 +606,9 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         {
             LOG.debug("{} already intercepting {}", this, request);
             HeaderWrappingRequest wrappedRequest = new HeaderWrappingRequest(request, newFields);
-            return wrappedRequest.wrapProcessor(super.handle(wrappedRequest));
+            Request.Processor processor = super.process(wrappedRequest, response, callback);
+            wrappedRequest._processor = processor;
+            return processor == null ? null : wrappedRequest;
         }
 
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
@@ -612,7 +616,9 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         {
             LOG.debug("{} excluded by method {}", this, request);
             HeaderWrappingRequest wrappedRequest = new HeaderWrappingRequest(request, newFields);
-            return wrappedRequest.wrapProcessor(super.handle(wrappedRequest));
+            Request.Processor processor = super.process(wrappedRequest, response, callback);
+            wrappedRequest._processor = processor;
+            return processor == null ? null : wrappedRequest;
         }
 
         // If not a supported URI- no Vary because no matter what client, this URI is always excluded
@@ -621,7 +627,9 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         {
             LOG.debug("{} excluded by path {}", this, request);
             HeaderWrappingRequest wrappedRequest = new HeaderWrappingRequest(request, newFields);
-            return wrappedRequest.wrapProcessor(super.handle(wrappedRequest));
+            Request.Processor processor = super.process(wrappedRequest, response, callback);
+            wrappedRequest._processor = processor;
+            return processor == null ? null : wrappedRequest;
         }
 
         // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
@@ -634,12 +642,16 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
                 LOG.debug("{} excluded by path suffix mime type {}", this, request);
                 // handle normally without setting vary header
                 HeaderWrappingRequest wrappedRequest = new HeaderWrappingRequest(request, newFields);
-                return wrappedRequest.wrapProcessor(super.handle(wrappedRequest));
+                Request.Processor processor = super.process(wrappedRequest, response, callback);
+                wrappedRequest._processor = processor;
+                return processor == null ? null : wrappedRequest;
             }
         }
 
         gzipRequest = new GzipRequest(request, this, inflated, newFields);
-        return gzipRequest.wrapProcessor(super.handle(gzipRequest));
+        Request.Processor processor = super.process(gzipRequest, response, callback);
+        gzipRequest._processor = processor;
+        return processor == null ? null : gzipRequest;
     }
 
     /**

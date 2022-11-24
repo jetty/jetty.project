@@ -304,7 +304,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 return null;
             }
@@ -357,7 +357,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 return null;
             }

@@ -30,7 +30,9 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -132,17 +134,17 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
             // try another handler
-            return super.handle(request);
+            return super.process(request, response, callback);
         }
 
         HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
-            return super.handle(request); // no content - try other handlers
+            return super.process(request, response, callback); // no content - try other handlers
 
         return (rq, rs, cb) -> _resourceService.doGet(rq, rs, cb, content);
     }

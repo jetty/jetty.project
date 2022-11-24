@@ -16,12 +16,14 @@ package org.eclipse.jetty.demo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 public class HelloHandler extends Handler.Abstract
 {
     @Override
-    public Request.Processor handle(Request req)
+    public void process(Request req, Response response, Callback callback)
     {
         return (request, response, callback) ->
         {

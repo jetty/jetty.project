@@ -468,7 +468,7 @@ public interface Request extends Attributes, Content.Source
          * <p>The processing may be asynchronous, i.e. this method may return early and
          * complete the given callback later, possibly from a different thread.</p>
          * <p>Within an implementation of this method it is possible to read the
-         * request content (that was forbidden in {@link Handler#handle(Request)}.</p>
+         * request content (that was forbidden in {@link Handler#process(Request, Response, Callback)}.</p>
          * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
          * if present, otherwise a default HTTP 500 error is generated and the
          * callback completed while writing the error response.</p>
@@ -673,55 +673,6 @@ public interface Request extends Attributes, Content.Source
         if (originalRequest instanceof HttpChannelState.ChannelRequest channelRequest)
             return channelRequest.getContentBytesRead();
         return -1;
-    }
-
-    /**
-     * <p>A {@code Request.Wrapper} that is a {@code Request.Processor}.</p>
-     * <p>This class wraps both a {@code Request} and a {@code Processor}
-     * with the same instance.</p>
-     * <p>Typical usage:</p>
-     * <pre>
-     * class YourHandler extends Handler.Wrapper
-     * {
-     *     public Processor handle(Request request)
-     *     {
-     *         // Wrap the request.
-     *         WrapperProcessor wrapped = new YourWrapperProcessor(request);
-     *
-     *         // Delegate processing using the wrapped request to wrap a Processor.
-     *         return wrapped.wrapProcessor(super.handle(wrapped));
-     *     }
-     * }
-     * </pre>
-     */
-    class WrapperProcessor extends Wrapper implements Processor
-    {
-        private volatile Processor _processor;
-
-        public WrapperProcessor(Request request)
-        {
-            super(request);
-        }
-
-        /**
-         * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
-         *
-         * @param processor the {@code Processor} to wrap
-         * @return this instance
-         */
-        public WrapperProcessor wrapProcessor(Processor processor)
-        {
-            _processor = processor;
-            return processor == null ? null : this;
-        }
-
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
-        {
-            Processor processor = _processor;
-            if (processor != null)
-                processor.process(this, response, callback);
-        }
     }
 
     /**

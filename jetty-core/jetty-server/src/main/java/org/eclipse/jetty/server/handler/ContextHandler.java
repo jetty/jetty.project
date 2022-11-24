@@ -641,13 +641,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
-        if (getHandler() == null)
-            return null;
+        Handler handler = getHandler();
+        if (handler == null)
+            return;
 
         if (!checkVirtualHost(request))
-            return null;
+            return;
 
         // The root context handles all requests.
         if (!_rootContext)
@@ -655,45 +656,61 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             // Otherwise match the path.
             String path = request.getHttpURI().getCanonicalPath();
             if (path == null || !path.startsWith(_contextPath))
-                return null;
+                return;
 
             if (path.length() == _contextPath.length())
             {
                 if (!getAllowNullPathInContext())
-                    return this::processMovedPermanently;
+                {
+                    request.accept();
+                    processMovedPermanently(request, response, callback);
+                    return;
+                }
             }
             else
             {
                 if (path.charAt(_contextPath.length()) != '/')
-                    return null;
+                    return;
             }
         }
 
         // TODO check availability and maybe return a 503
         if (!isAvailable() && isStarted())
-            return this::processUnavailable;
+        {
+            request.accept();
+            processUnavailable(request, response, callback);
+            return;
+        }
 
-        ContextRequest contextRequest = wrap(request);
         // wrap might fail (eg ServletContextHandler could not match a servlet)
+        ContextRequest contextRequest = wrapRequest(request);
         if (contextRequest == null)
-            return null;
+            return;
 
         // Does this handler want to process the request itself?
+        // TODO this can be done without a dynamic Processor
         Request.Processor processor = processByContextHandler(contextRequest);
         if (processor != null)
-            return processor;
+        {
+            request.accept();
+            processor.process(request, response, callback);
+            return;
+        }
 
         ClassLoader lastLoader = enterScope(contextRequest);
+        ContextResponse contextResponse = wrapResponse(contextRequest, response);
         try
         {
-            processor = getHandler().handle(contextRequest);
+            handler.process(contextRequest, contextResponse, callback);
+        }
+        catch (Throwable t)
+        {
+            Response.writeError(contextRequest, contextResponse, callback, t);
         }
         finally
         {
             exitScope(contextRequest, request.getContext(), lastLoader);
         }
-
-        return contextRequest.wrapProcessor(processor);
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -829,9 +846,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _errorProcessor = errorProcessor;
     }
 
-    protected ContextRequest wrap(Request request)
+    protected ContextRequest wrapRequest(Request request)
     {
         return new ContextRequest(this, _context, request);
+    }
+
+    protected ContextResponse wrapResponse(Request request, Response response)
+    {
+        return new ContextResponse(_context, request, response);
     }
 
     @Override

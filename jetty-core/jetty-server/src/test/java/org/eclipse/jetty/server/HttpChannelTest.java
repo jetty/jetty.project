@@ -398,7 +398,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 return null;
             }
@@ -429,7 +429,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 throw new UnsupportedOperationException("testing");
             }
@@ -1224,7 +1224,7 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -1235,7 +1235,7 @@ public class HttpChannelTest
                         super.succeeded();
                     }
                 });
-                return super.handle(request);
+                return super.process(request, response, callback);
             }
         };
         _server.setHandler(echoHandler);

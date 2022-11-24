@@ -18,7 +18,9 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
@@ -96,10 +98,10 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = _handler;
-        return next == null ? null : next.handle(request);
+        return next == null ? null : next.process(request, response, callback);
     }
 
     @Override

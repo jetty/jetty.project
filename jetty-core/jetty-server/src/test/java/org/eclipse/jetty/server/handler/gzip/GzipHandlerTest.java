@@ -1834,9 +1834,9 @@ public class GzipHandlerTest
     public static class CheckHandler extends Handler.Wrapper
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.handle(request);
+            Request.Processor processor = super.process(request, response, callback);
             if (processor == null)
                 return null;
 

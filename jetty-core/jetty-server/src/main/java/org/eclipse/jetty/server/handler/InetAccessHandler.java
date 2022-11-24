@@ -21,6 +21,8 @@ import java.net.SocketAddress;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
@@ -203,13 +205,13 @@ public class InetAccessHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
         if (socketAddress instanceof InetSocketAddress inetSocketAddress &&
             !isAllowed(inetSocketAddress.getAddress(), request))
             return null;
-        return super.handle(request);
+        return super.process(request, response, callback);
     }
 
     /**

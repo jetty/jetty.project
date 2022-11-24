@@ -186,7 +186,7 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
@@ -210,7 +210,7 @@ public class ConnectHandler extends Handler.Wrapper
                 return (req, res, cbk) -> Response.writeError(req, res, cbk, HttpStatus.NOT_IMPLEMENTED_501);
             }
         }
-        return super.handle(request);
+        return super.process(request, response, callback);
     }
 
     /**

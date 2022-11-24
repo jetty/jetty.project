@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
-public class GzipRequest extends Request.WrapperProcessor
+public class GzipRequest extends Request.Wrapper
 {
     // TODO: use InflaterPool from somewhere.
     private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);

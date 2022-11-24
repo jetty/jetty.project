@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
@@ -118,7 +119,7 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         List<Handler> handlers = getHandlers();
         //
@@ -127,13 +128,13 @@ public class ContextHandlerCollection extends Handler.Collection
             return null;
 
         if (!(handlers instanceof Mapping))
-            return super.handle(request);
+            return super.process(request, response, callback);
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-            return handlers.get(0).handle(request);
+            return handlers.get(0).process(request, response, callback);
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
@@ -143,7 +144,7 @@ public class ContextHandlerCollection extends Handler.Collection
         String path = Request.getPathInContext(request);
         if (!path.startsWith("/"))
         {
-            super.handle(request);
+            super.process(request, response, callback);
             return null;
         }
 
@@ -164,7 +165,7 @@ public class ContextHandlerCollection extends Handler.Collection
                 {
                     try
                     {
-                        Request.Processor processor = branch.getHandler().handle(request);
+                        Request.Processor processor = branch.getHandler().process(request, response, callback);
                         if (processor != null)
                             return processor;
                     }

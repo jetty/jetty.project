@@ -39,7 +39,7 @@ public class HandlerDocs
     public static class HelloHandler0 extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             return (req, response, callback) ->
             {
@@ -53,7 +53,7 @@ public class HandlerDocs
     public static class HelloHandler1 extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             return this::process;
         }
@@ -162,7 +162,7 @@ public class HandlerDocs
     public static class DescriminatingGreeterHandler extends Handler.Processor.NonBlocking
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (HttpMethod.GET.is(request.getMethod()) &&
                 "greeting".equals(Request.getPathInContext(request)))
@@ -198,7 +198,7 @@ public class HandlerDocs
     public static class RootHandler extends Handler.Collection
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             final StringBuilder index = new StringBuilder();
             index.append("<h2>Handler Demos</h2>\n<ul>\n");
@@ -209,7 +209,7 @@ public class HandlerDocs
                 String path = "/" + name;
                 if (Request.getPathInContext(request).equals(name))
                 {
-                    Request.Processor processor = handler.handle(request);
+                    Request.Processor processor = handler.process(request, response, callback);
                     if (processor != null)
                         return processor;
                 }

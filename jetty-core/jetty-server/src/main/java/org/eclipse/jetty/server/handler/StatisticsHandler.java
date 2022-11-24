@@ -52,7 +52,7 @@ public class StatisticsHandler extends Handler.Wrapper
     private final LongAdder _responses5xx = new LongAdder();
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         long beginNanoTime = NanoTime.now();
         _handleStats.increment();
@@ -60,15 +60,87 @@ public class StatisticsHandler extends Handler.Wrapper
 
         try
         {
-            return statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
+            statisticsRequest._processStartNanoTime = NanoTime.now();
+            _processStats.increment();
+            _requestStats.increment();
+
+            String id = statisticsRequest.getConnectionMetaData().getId();
+            if (_connectionStats.add(id))
+            {
+                // TODO test this with localconnector endpoint that has multiple requests per connection.
+                statisticsRequest.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
+                {
+                    @Override
+                    public void onClosed(Connection connection)
+                    {
+                        _connectionStats.remove(id);
+                    }
+                });
+            }
+
+            statisticsRequest.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+            {
+                @Override
+                public void send(MetaData.Request request1, MetaData.Response response11, boolean last, ByteBuffer content, Callback callback11)
+                {
+                    if (response11 != null)
+                    {
+                        switch (response11.getStatus() / 100)
+                        {
+                            case 1 -> _responses1xx.increment();
+                            case 2 -> _responses2xx.increment();
+                            case 3 -> _responses3xx.increment();
+                            case 4 -> _responses4xx.increment();
+                            case 5 -> _responses5xx.increment();
+                        }
+                    }
+
+                    statisticsRequest._bytesWritten.add(BufferUtil.length(content));
+
+                    super.send(request1, response11, last, content, callback11);
+                }
+
+                @Override
+                public Content.Chunk read()
+                {
+                    Content.Chunk chunk =  super.read();
+                    if (chunk != null)
+                        statisticsRequest._bytesRead.add(chunk.remaining());
+                    return chunk;
+                }
+
+                @Override
+                public void succeeded()
+                {
+                    _requestStats.decrement();
+                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
+                    super.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    _requestStats.decrement();
+                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
+                    super.failed(x);
+                }
+            });
+
+            super.process(statisticsRequest, response, callback);
+
+            // TODO do we need to null stats if the request is not accepted?
+            //      Or maybe we only start counters once it is accepted?
         }
         catch (Throwable t)
         {
+            _processingErrors.increment();
             _handlingErrors.increment();
             throw t;
         }
         finally
         {
+            _processStats.decrement();
+            _processTimeStats.record(NanoTime.since(statisticsRequest._processStartNanoTime));
             _handleStats.decrement();
             _handleTimeStats.record(NanoTime.since(beginNanoTime));
         }
@@ -249,7 +321,7 @@ public class StatisticsHandler extends Handler.Wrapper
         return _processTimeStats.getStdDev();
     }
 
-    private class StatisticsRequest extends Request.WrapperProcessor
+    private class StatisticsRequest extends Request.Wrapper
     {
         private final LongAdder _bytesRead = new LongAdder();
         private final LongAdder _bytesWritten = new LongAdder();
@@ -384,7 +456,7 @@ public class StatisticsHandler extends Handler.Wrapper
             _minimumWriteRate = minimumWriteRate;
         }
 
-        private class MinimumDataRateRequest extends Request.WrapperProcessor
+        private class MinimumDataRateRequest extends Request.Wrapper
         {
             private StatisticsRequest _statisticsRequest;
             private Content.Chunk.Error _errorContent;
@@ -423,11 +495,11 @@ public class StatisticsHandler extends Handler.Wrapper
                 return _errorContent != null ? _errorContent : super.read();
             }
 
-            @Override
-            public WrapperProcessor wrapProcessor(Processor processor)
+            public MinimumDataRateRequest wrapProcessor(Processor processor)
             {
                 _statisticsRequest = (StatisticsRequest)processor;
-                return super.wrapProcessor(processor);
+                _processor = processor;
+                return processor == null ? null : this;
             }
 
             @Override
@@ -467,13 +539,14 @@ public class StatisticsHandler extends Handler.Wrapper
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             MinimumDataRateRequest minimumDataRateRequest = new MinimumDataRateRequest(request);
-            Request.Processor processor = super.handle(minimumDataRateRequest);
+            Request.Processor processor = super.process(minimumDataRateRequest, response, callback);
             if (processor == null)
                 return null;
-            return minimumDataRateRequest.wrapProcessor(processor);
+            minimumDataRateRequest._processor = processor;
+            return processor == null ? null : minimumDataRateRequest;
         }
     }
 }

@@ -17,12 +17,11 @@ import java.util.function.Predicate;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextRequest extends Request.WrapperProcessor implements Invocable
+public class ContextRequest extends Request.Wrapper implements Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final ContextHandler _contextHandler;
@@ -33,26 +32,6 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
         super(wrapped);
         _contextHandler = contextHandler;
         _context = context;
-    }
-
-    @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        assert this.getWrapped() == request;
-        ContextResponse contextResponse = newContextResponse(this, response);
-        ClassLoader lastLoader = _contextHandler.enterScope(this);
-        try
-        {
-            super.process(this, contextResponse, callback);
-        }
-        catch (Throwable t)
-        {
-            Response.writeError(this, contextResponse, callback, t);
-        }
-        finally
-        {
-            _contextHandler.exitScope(this, request.getContext(), lastLoader);
-        }
     }
 
     protected ContextResponse newContextResponse(Request request, Response response)

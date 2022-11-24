@@ -2432,7 +2432,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
+        protected ContextRequest wrapRequest(org.eclipse.jetty.server.Request request)
         {
             HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
             if (httpChannel == null)
@@ -2503,7 +2503,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
                 return CoreContextHandler.this;
             }

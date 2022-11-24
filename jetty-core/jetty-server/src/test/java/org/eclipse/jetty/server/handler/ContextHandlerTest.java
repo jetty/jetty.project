@@ -246,11 +246,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
-                return super.handle(request);
+                return super.process(request, response, callback);
             }
 
             @Override

@@ -448,9 +448,9 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
     }
     
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
-        final Request.Processor processor = super.handle(request);
+        final Request.Processor processor = super.process(request, response, callback);
         if (processor == null)
             return null; //not handling this
         

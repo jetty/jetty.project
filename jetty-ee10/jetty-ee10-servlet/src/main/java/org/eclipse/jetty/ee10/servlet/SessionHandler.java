@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -714,7 +715,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         ServletContextRequest.ServletApiRequest servletApiRequest =
@@ -722,7 +723,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         if (servletApiRequest == null)
             throw new IllegalStateException("Request is not a valid ServletContextRequest");
 
-        Request.Processor processor = getHandler().handle(request);
+        Request.Processor processor = getHandler().process(request, response, callback);
         if (processor == null)
             return null;
 

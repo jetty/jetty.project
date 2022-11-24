@@ -22,13 +22,14 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
@@ -65,7 +66,7 @@ public class ManyHandlers
     public static class ParamHandler extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             return (req, response, callback) ->
             {
@@ -83,9 +84,9 @@ public class ManyHandlers
     {
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.handle(request);
+            Request.Processor processor = super.process(request, response, callback);
             if (processor == null)
                 return null;
 

@@ -1147,7 +1147,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ServletContextRequest wrap(Request request)
+    protected ServletContextRequest wrapRequest(Request request)
     {
         // Need to ask directly to the Context for the pathInContext, rather than using
         // Request.getPathInContext(), as the request is not yet wrapped in this Context.

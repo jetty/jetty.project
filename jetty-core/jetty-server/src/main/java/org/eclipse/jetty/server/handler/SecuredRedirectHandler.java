@@ -19,6 +19,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -57,12 +58,12 @@ public class SecuredRedirectHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         if (request.isSecure())
         {
             // Nothing to do here.
-            return super.handle(request);
+            return super.process(request, response, callback);
         }
 
         return (rq, rs, cb) ->

@@ -79,7 +79,7 @@ public class WebSocketProxyTest
         public boolean blockServerUpgradeRequests = false;
 
         @Override
-        public Request.Processor handle(Request request)
+        public void process(Request request, Response response, Callback callback)
         {
             if (request.getHeaders().get("Upgrade") != null)
             {

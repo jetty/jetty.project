@@ -652,7 +652,7 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/dump"))
                 return null;
@@ -677,7 +677,7 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class RedirectHandler extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/redirect"))
                 return null;
@@ -694,11 +694,11 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class ErrorMsgHandler extends Handler.Processor
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/error"))
                 return null;
-            return super.handle(request);
+            return super.process(request, response, callback);
         }
 
         @Override

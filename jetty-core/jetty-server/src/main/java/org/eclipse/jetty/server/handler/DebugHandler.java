@@ -22,6 +22,8 @@ import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 
@@ -39,10 +41,10 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     private PrintStream _print;
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         // TODO
-        return super.handle(request);
+        return super.process(request, response, callback);
     }
 
     /*

@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
@@ -156,9 +157,9 @@ public class ThreadLimitHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor baseProcessor = super.handle(request);
+        Request.Processor baseProcessor = super.process(request, response, callback);
         if (baseProcessor == null)
         {
             // if no wrapped handler, do not handle

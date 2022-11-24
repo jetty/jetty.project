@@ -607,7 +607,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 barrier[0].await();
                 barrier[1].await();
@@ -666,7 +666,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 throw new IllegalStateException("expected");
             }
@@ -703,7 +703,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 return (req, resp, cp) ->
                 {
@@ -971,7 +971,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 barrier[0].await();
                 Thread.sleep(handleTime);
@@ -1098,11 +1098,12 @@ public class StatisticsHandlerTest
         private volatile CountDownLatch _latch = new CountDownLatch(1);
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             CountDownLatch latch = _latch;
-            Request.Processor wrappedProcessor = super.handle(request);
-            return new Request.WrapperProcessor(request).wrapProcessor((rq, rs, callback) ->
+            Request.Processor wrappedProcessor = super.process(request, response, callback);
+            StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest toBeRemovedProcessor = new StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest(request);
+            Request.Processor processor = (rq, rs, callback) ->
             {
                 try
                 {
@@ -1112,7 +1113,9 @@ public class StatisticsHandlerTest
                 {
                     latch.countDown();
                 }
-            });
+            };
+            toBeRemovedProcessor._processor = processor;
+            return processor == null ? null : toBeRemovedProcessor;
         }
 
         private void reset()

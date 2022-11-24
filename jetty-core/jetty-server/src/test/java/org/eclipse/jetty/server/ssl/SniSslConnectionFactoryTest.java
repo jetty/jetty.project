@@ -100,9 +100,9 @@ public class SniSslConnectionFactoryTest
         Handler.Wrapper xCertHandler = new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Request.Processor processor = getHandler().handle(request);
+                Request.Processor processor = getHandler().process(request, response, callback);
                 if (processor == null)
                     return null;
                 return (ignored, response, callback) ->

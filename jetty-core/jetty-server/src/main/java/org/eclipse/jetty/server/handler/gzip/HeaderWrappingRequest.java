@@ -16,7 +16,7 @@ package org.eclipse.jetty.server.handler.gzip;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Request;
 
-public class HeaderWrappingRequest extends Request.WrapperProcessor
+public class HeaderWrappingRequest extends Request.Wrapper
 {
     private final HttpFields _fields;
 

@@ -61,7 +61,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
 
                 try
                 {
-                    Request.Processor processor = _handler.handle(wrapper);
+                    Request.Processor processor = _handler.process(wrapper, response, callback);
                     if (processor != null)
                     {
                         response.setStatus(200);

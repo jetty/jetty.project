@@ -209,14 +209,14 @@ public class FastCGIProxyHandlerTest
         proxyContext.insertHandler(new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/remote/"))
                 {
                     request.setAttribute(pathAttribute, originalPath);
                     request.setAttribute(queryAttribute, originalQuery);
                 }
-                return super.handle(request);
+                return super.process(request, response, callback);
             }
         });
         proxyContext.start();
