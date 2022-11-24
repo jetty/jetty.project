@@ -201,9 +201,16 @@ public abstract class EventSourceServlet extends HttpServlet
             }
             catch (IOException x)
             {
-                // The other peer closed the connection
-                close();
-                eventSource.onClose();
+                try
+                {
+                    // The other peer closed the connection
+                    close();
+                    eventSource.onClose();
+                }
+                catch (Throwable t)
+                {
+                    t.printStackTrace();
+                }
             }
         }
 

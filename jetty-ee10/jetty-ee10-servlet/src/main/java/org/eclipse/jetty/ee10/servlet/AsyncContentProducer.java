@@ -38,7 +38,7 @@ class AsyncContentProducer implements ContentProducer
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
     private static final Content.Chunk.Error RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"));
 
-    private final AutoLock _lock = new AutoLock();
+    final AutoLock _lock;
     private final ServletChannel _servletChannel;
     private HttpInput.Interceptor _interceptor;
     private Content.Chunk _rawChunk;
@@ -47,15 +47,14 @@ class AsyncContentProducer implements ContentProducer
     private long _firstByteNanoTime = Long.MIN_VALUE;
     private long _rawBytesArrived;
 
-    AsyncContentProducer(ServletChannel servletChannel)
+    /**
+     * @param servletChannel The ServletChannel to produce input from.
+     * @param lock The lock of the HttpInput, shared with this instance
+     */
+    AsyncContentProducer(ServletChannel servletChannel, AutoLock lock)
     {
         _servletChannel = servletChannel;
-    }
-
-    @Override
-    public AutoLock lock()
-    {
-        return _lock.lock();
+        _lock = lock;
     }
 
     @Override
@@ -225,7 +224,7 @@ class AsyncContentProducer implements ContentProducer
 
     private boolean consumeAvailableChunks()
     {
-        ServletContextRequest request = _servletChannel.getRequest();
+        ServletContextRequest request = _servletChannel.getServletContextRequest();
         while (true)
         {
             Content.Chunk chunk = request.read();
@@ -288,7 +287,7 @@ class AsyncContentProducer implements ContentProducer
         }
 
         _servletChannel.getState().onReadUnready();
-        _servletChannel.getRequest().demand(() ->
+        _servletChannel.getServletContextRequest().demand(() ->
         {
             if (_servletChannel.getHttpInput().onContentProducible())
                 _servletChannel.handle();
@@ -481,7 +480,7 @@ class AsyncContentProducer implements ContentProducer
 
     private Content.Chunk produceRawChunk()
     {
-        Content.Chunk chunk = _servletChannel.getRequest().read();
+        Content.Chunk chunk = _servletChannel.getServletContextRequest().read();
         if (chunk != null)
         {
             _rawBytesArrived += chunk.remaining();
@@ -523,7 +522,7 @@ class AsyncContentProducer implements ContentProducer
     }
 
     /**
-     * A semaphore that assumes working under {@link AsyncContentProducer#lock()} scope.
+     * A semaphore that assumes working under the same locked scope.
      */
     class LockedSemaphore
     {

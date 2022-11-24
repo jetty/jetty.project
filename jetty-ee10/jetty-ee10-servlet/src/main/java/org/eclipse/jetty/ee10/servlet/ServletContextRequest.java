@@ -79,7 +79,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
@@ -105,7 +104,7 @@ public class ServletContextRequest extends ContextRequest
 
         Object channel = request.getAttribute(ServletChannel.class.getName());
         if (channel instanceof ServletChannel)
-            return ((ServletChannel)channel).getRequest();
+            return ((ServletChannel)channel).getServletContextRequest();
 
         while (request instanceof ServletRequestWrapper)
         {
@@ -143,7 +142,7 @@ public class ServletContextRequest extends ContextRequest
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
-        _httpInput = new HttpInput(_servletChannel); // TODO recycle
+        _httpInput = _servletChannel.getHttpInput();
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
@@ -152,13 +151,6 @@ public class ServletContextRequest extends ContextRequest
     public String getPathInContext()
     {
         return _pathInContext;
-    }
-
-    @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        _servletChannel.setCallback(callback);
-        super.process(request, response, callback);
     }
 
     @Override
