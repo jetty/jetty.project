@@ -273,6 +273,7 @@ public class MimeTypes
     {
         public Mutable()
         {
+            this(DEFAULTS);
         }
 
         public Mutable(MimeTypes defaults)
@@ -302,6 +303,80 @@ public class MimeTypes
         public String addAssumed(String contentType, String encoding)
         {
             return _assumedEncodings.put(contentType, encoding);
+        }
+    }
+
+    public static class Wrapper extends Mutable
+    {
+        private MimeTypes _wrapped;
+
+        public Wrapper()
+        {
+            super(null);
+        }
+
+        public MimeTypes getWrapped()
+        {
+            return _wrapped;
+        }
+
+        public void setWrapped(MimeTypes wrapped)
+        {
+            _wrapped = wrapped;
+        }
+
+        @Override
+        public String getMimeForExtension(String extension)
+        {
+            String mime = super.getMimeForExtension(extension);
+            return mime == null && _wrapped != null ? _wrapped.getMimeForExtension(extension) : mime;
+        }
+
+        @Override
+        public String getCharsetInferredFromContentType(String contentType)
+        {
+            String charset = super.getCharsetInferredFromContentType(contentType);
+            return charset == null && _wrapped != null ? _wrapped.getCharsetInferredFromContentType(contentType) : charset;
+        }
+
+        @Override
+        public String getCharsetAssumedFromContentType(String contentType)
+        {
+            String charset = super.getCharsetAssumedFromContentType(contentType);
+            return charset == null && _wrapped != null ? _wrapped.getCharsetAssumedFromContentType(contentType) : charset;
+        }
+
+        @Override
+        public Map<String, String> getMimeMap()
+        {
+            Map<String, String> map = super.getMimeMap();
+            if (_wrapped == null || map.isEmpty())
+                return map;
+            map = new HashMap<>(map);
+            map.putAll(_wrapped.getMimeMap());
+            return Collections.unmodifiableMap(map);
+        }
+
+        @Override
+        public Map<String, String> getInferredMap()
+        {
+            Map<String, String> map = super.getInferredMap();
+            if (_wrapped == null || map.isEmpty())
+                return map;
+            map = new HashMap<>(map);
+            map.putAll(_wrapped.getInferredMap());
+            return Collections.unmodifiableMap(map);
+        }
+
+        @Override
+        public Map<String, String> getAssumedMap()
+        {
+            Map<String, String> map = super.getAssumedMap();
+            if (_wrapped == null || map.isEmpty())
+                return map;
+            map = new HashMap<>(map);
+            map.putAll(_wrapped.getAssumedMap());
+            return Collections.unmodifiableMap(map);
         }
     }
 

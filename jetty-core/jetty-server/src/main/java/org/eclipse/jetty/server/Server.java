@@ -70,6 +70,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
+    private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
@@ -139,6 +140,11 @@ public class Server extends Handler.Wrapper implements Attributes
     public Context getContext()
     {
         return _serverContext;
+    }
+
+    public MimeTypes.Mutable getMimeTypes()
+    {
+        return _mimeTypes;
     }
 
     @Override
@@ -729,7 +735,7 @@ public class Server extends Handler.Wrapper implements Attributes
         @Override
         public MimeTypes getMimeTypes()
         {
-            return MimeTypes.DEFAULTS;
+            return _mimeTypes;
         }
 
         @Override
