@@ -109,7 +109,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      */
     private final ScopedContext _context;
     private final Attributes _persistentAttributes = new Mapped();
-    private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
+    private final MimeTypes.Wrapper _mimeTypes = new MimeTypes.Wrapper();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -167,11 +167,23 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
     }
 
+    @Override
+    public void setServer(Server server)
+    {
+        super.setServer(server);
+        _mimeTypes.setWrapped(server.getMimeTypes());
+    }
+    
     protected ScopedContext newContext()
     {
         return new ScopedContext();
     }
 
+    /**
+     * @return A mutable MimeTypes that wraps the {@link Server#getMimeTypes()}
+     *         once {@link ContextHandler#setServer(Server)} has been called.
+     * @see MimeTypes.Wrapper
+     */
     public MimeTypes.Mutable getMimeTypes()
     {
         return _mimeTypes;
