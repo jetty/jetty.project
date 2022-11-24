@@ -62,7 +62,7 @@ public class WebSocketServerComponents extends WebSocketComponents
      */
     public static WebSocketComponents ensureWebSocketComponents(Server server, ContextHandler contextHandler)
     {
-        ContextHandler.Context context = contextHandler.getContext();
+        ContextHandler.ScopedContext context = contextHandler.getContext();
         WebSocketComponents components = (WebSocketComponents)context.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components != null)
             return components;
