@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.server.Request;
 
 /**
  * <p>Abstract rule that uses the Servlet pattern syntax via
@@ -46,7 +45,7 @@ public abstract class PatternRule extends Rule
     }
 
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
     {
         if (ServletPathSpec.match(_pattern, input.getHttpURI().getPath()))
             return apply(input);
@@ -60,7 +59,7 @@ public abstract class PatternRule extends Rule
      * @return the possibly wrapped {@code Request} and {@code Processor}
      * @throws IOException if applying the rule failed
      */
-    protected abstract Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException;
+    protected abstract RuleProcessor apply(RuleProcessor input) throws IOException;
 
     @Override
     public String toString()

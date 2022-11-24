@@ -77,12 +77,12 @@ public class RedirectPatternRule extends PatternRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    public RuleProcessor apply(RuleProcessor input) throws IOException
     {
-        return new Request.WrapperProcessor(input)
+        return new RuleProcessor(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback)
+            public void process(Response response, Callback callback)
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());

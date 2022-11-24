@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.server.Request;
-
 /**
  * <p>Abstract rule that uses the regular expression syntax for path pattern matching.</p>
  */
@@ -54,7 +52,7 @@ public abstract class RegexRule extends Rule
     }
 
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
     {
         String target = input.getHttpURI().getPathQuery();
         Matcher matcher = _regex.matcher(target);
@@ -71,7 +69,7 @@ public abstract class RegexRule extends Rule
      * @return the possibly wrapped {@code Request} and {@code Processor}
      * @throws IOException if applying the rule failed
      */
-    protected abstract Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException;
+    protected abstract RuleProcessor apply(RuleProcessor input, Matcher matcher) throws IOException;
 
     @Override
     public String toString()

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
 
 /**
  * <p>Sets the request URI scheme, by default {@code https}.</p>
@@ -34,16 +33,9 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
     }
 
     @Override
-    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, String value)
+    protected RuleProcessor apply(RuleProcessor input, String value)
     {
         HttpURI newURI = HttpURI.build(input.getHttpURI()).scheme(getScheme());
-        return new Request.WrapperProcessor(input)
-        {
-            @Override
-            public HttpURI getHttpURI()
-            {
-                return newURI;
-            }
-        };
+        return new UriRuleProcessor(input, newURI);
     }
 }

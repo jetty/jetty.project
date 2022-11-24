@@ -76,12 +76,12 @@ public class RedirectRegexRule extends RegexRule
     }
 
     @Override
-    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
+    protected RuleProcessor apply(RuleProcessor input, Matcher matcher) throws IOException
     {
-        return new Request.WrapperProcessor(input)
+        return new RuleProcessor(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback)
+            public void process(Response response, Callback callback)
             {
                 String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);

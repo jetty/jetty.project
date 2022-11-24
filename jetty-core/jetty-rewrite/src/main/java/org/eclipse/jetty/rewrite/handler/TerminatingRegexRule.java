@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.regex.Matcher;
 
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -41,7 +40,7 @@ public class TerminatingRegexRule extends RegexRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
+    public RuleProcessor apply(RuleProcessor input, Matcher matcher) throws IOException
     {
         return input;
     }
