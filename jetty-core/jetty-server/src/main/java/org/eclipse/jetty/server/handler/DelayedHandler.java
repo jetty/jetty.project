@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpField;
@@ -33,31 +34,58 @@ import org.eclipse.jetty.util.Fields;
 
 public abstract class DelayedHandler extends Handler.Wrapper
 {
-    @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        Request.Processor processor = super.process(request, response, callback);
-        if (processor == null)
-            return null;
-        return delayed(request, processor);
-    }
-
-    protected abstract Request.Processor delayed(Request request, Request.Processor processor);
-
     public static class UntilContent extends DelayedHandler
     {
         @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            // TODO remove this setting from HttpConfig?
-            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-                return processor;
-            if (request.getLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-                return processor;
-            // TODO: add logic to not delay if it's a CONNECT request.
-            // TODO: also add logic to not delay if it's a request that expects 100 Continue.
+            Handler next = getHandler();
+            if (next == null)
+                return;
 
-            return new UntilContentProcessor(request, processor);
+            if (request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent() &&
+                (request.getLength() > 0 || request.getHeaders().contains(HttpHeader.CONTENT_TYPE)))
+            {
+                // TODO: add logic to not delay if it's a CONNECT request.
+                // TODO: also add logic to not delay if it's a request that expects 100 Continue.
+                request.accept();
+                new UntilContentRequest(request).process(response, callback);
+
+                try
+                {
+                    next.process(delayed, response, callback);
+                    if (!delayed.isAccepted())
+                    {
+                        Response.writeError(request, response, callback, t);
+                    }
+                }
+                catch (Throwable t)
+                {
+                    Response.writeError(request, response, callback, t);
+                }
+            }
+            else
+            {
+                next.process(request, response, callback);
+            }
+        }
+    }
+
+    private static class UntilContentRequest extends Request.Wrapper
+    {
+        private final AtomicReference<Content.Chunk> _chunk = new AtomicReference<>();
+
+        public UntilContentRequest(Request wrapped)
+        {
+            super(wrapped);
+        }
+
+        static void process(Response response, Callback callback) throws Exception
+        {
+            Content.Chunk chunk = request.read();
+            if (chunk != null)
+
+
         }
     }
 
