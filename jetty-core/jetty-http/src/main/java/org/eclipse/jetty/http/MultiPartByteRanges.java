@@ -246,9 +246,10 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
     {
         private final PathContentSource content;
 
-        public Part(String contentType, Path path, ByteRange byteRange)
+        public Part(String contentType, Path path, ByteRange byteRange, long contentLength)
         {
-            this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType), path, byteRange);
+            this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
+                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), path, byteRange);
         }
 
         public Part(HttpFields headers, Path path, ByteRange byteRange)
