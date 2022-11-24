@@ -115,7 +115,7 @@ public class SslUploadTest
     private static class EmptyHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
             response.write(true, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()), callback);

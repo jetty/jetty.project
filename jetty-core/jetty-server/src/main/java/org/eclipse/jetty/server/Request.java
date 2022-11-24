@@ -120,6 +120,10 @@ public interface Request extends Attributes, Content.Source
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
 
+    void accept();
+
+    boolean isAccepted();
+
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
@@ -221,7 +225,7 @@ public interface Request extends Attributes, Content.Source
      * <p>Adds a listener for asynchronous errors.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
      * that the function has completed (either successfully or with a failure) the callback
-     * received from {@link Handler.Processor#process(Request, Response, Callback)}, or
+     * received from {@link Handler.Processor#doProcess(Request, Response, Callback)}, or
      * {@code false} otherwise.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}
      * stops the processing of subsequent listeners, which are therefore not invoked.</p>
@@ -501,6 +505,18 @@ public interface Request extends Attributes, Content.Source
         public Wrapper(Request wrapped)
         {
             super(wrapped);
+        }
+
+        @Override
+        public void accept()
+        {
+            getWrapped().accept();
+        }
+
+        @Override
+        public boolean isAccepted()
+        {
+            return getWrapped().isAccepted();
         }
 
         @Override

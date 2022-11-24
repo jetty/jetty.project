@@ -117,7 +117,7 @@ public class TryPathsHandlerTest
 
                 return new Handler.Processor()
                 {
-                    public void process(Request request, Response response, Callback callback)
+                    public void doProcess(Request request, Response response, Callback callback)
                     {
                         assertThat(Request.getPathInContext(request), equalTo("/forward"));
                         assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
@@ -192,7 +192,7 @@ public class TryPathsHandlerTest
                 return new Processor()
                 {
                     @Override
-                    public void process(Request request, Response response, Callback callback)
+                    public void doProcess(Request request, Response response, Callback callback)
                     {
                         response.setStatus(HttpStatus.OK_200);
                         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
@@ -209,7 +209,7 @@ public class TryPathsHandlerTest
             {
                 return new Handler.Processor()
                 {
-                    public void process(Request request, Response response, Callback callback)
+                    public void doProcess(Request request, Response response, Callback callback)
                     {
                         assertThat(Request.getPathInContext(request), equalTo("/forward"));
                         assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
@@ -277,7 +277,7 @@ public class TryPathsHandlerTest
         start(List.of("$path"), new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals("https", httpURI.getScheme());

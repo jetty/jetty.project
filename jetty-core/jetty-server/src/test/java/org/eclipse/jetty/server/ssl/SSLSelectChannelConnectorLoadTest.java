@@ -319,7 +319,7 @@ public class SSLSelectChannelConnectorLoadTest
     private static class TestHandler extends Handler.Processor.Blocking
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
             response.write(true, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()), callback);

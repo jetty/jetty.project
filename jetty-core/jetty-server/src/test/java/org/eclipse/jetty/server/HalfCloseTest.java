@@ -141,7 +141,7 @@ public class HalfCloseTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);
@@ -168,7 +168,7 @@ public class HalfCloseTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);

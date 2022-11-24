@@ -73,7 +73,7 @@ public class MultiPartFormDataHandlerTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -122,7 +122,7 @@ public class MultiPartFormDataHandlerTest
         delayedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 processLatch.countDown();
                 MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
@@ -185,7 +185,7 @@ public class MultiPartFormDataHandlerTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -248,7 +248,7 @@ public class MultiPartFormDataHandlerTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String boundary = "A1B2C3";
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));

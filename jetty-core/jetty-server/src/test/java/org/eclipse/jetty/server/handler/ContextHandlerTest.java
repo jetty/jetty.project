@@ -211,7 +211,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -254,7 +254,7 @@ public class ContextHandlerTest
             }
 
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -332,7 +332,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demand(() ->
@@ -385,7 +385,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -494,7 +494,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }
@@ -561,7 +561,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, null, callback);

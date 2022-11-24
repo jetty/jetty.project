@@ -76,7 +76,7 @@ public class BadURITest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 handlerLatch.countDown();
                 callback.succeeded();

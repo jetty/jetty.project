@@ -242,7 +242,7 @@ public class ThreadStarvationTest
     protected static class ReadHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);
@@ -356,7 +356,7 @@ public class ThreadStarvationTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);

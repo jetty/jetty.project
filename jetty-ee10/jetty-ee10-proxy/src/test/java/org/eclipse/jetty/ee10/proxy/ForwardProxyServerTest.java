@@ -236,7 +236,7 @@ public class ForwardProxyServerTest
         startServer(null, http, new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
@@ -274,7 +274,7 @@ public class ForwardProxyServerTest
         startServer(null, http, new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));

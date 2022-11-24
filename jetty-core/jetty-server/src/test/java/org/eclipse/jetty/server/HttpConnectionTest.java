@@ -867,7 +867,7 @@ public class HttpConnectionTest
         _server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(false, null, callback);
@@ -1142,7 +1142,7 @@ public class HttpConnectionTest
         _server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", longstr);
@@ -1191,7 +1191,7 @@ public class HttpConnectionTest
         _server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", longstr);
@@ -1303,7 +1303,7 @@ public class HttpConnectionTest
         _server.setHandler(new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 while (true)
                 {

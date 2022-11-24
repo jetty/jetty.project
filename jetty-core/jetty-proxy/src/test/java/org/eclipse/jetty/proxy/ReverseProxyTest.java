@@ -47,7 +47,7 @@ public class ReverseProxyTest extends AbstractProxyTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 String requestContent = Content.Source.asString(request);
                 assertEquals(clientContent, requestContent);
@@ -96,7 +96,7 @@ public class ReverseProxyTest extends AbstractProxyTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 assertEquals("", request.getHeaders().get(emptyHeaderName));
                 response.getHeaders().put(emptyHeaderName, "");

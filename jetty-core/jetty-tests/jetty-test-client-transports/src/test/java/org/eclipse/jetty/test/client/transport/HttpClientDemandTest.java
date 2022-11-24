@@ -62,7 +62,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -121,7 +121,7 @@ public class HttpClientDemandTest extends AbstractTest
         startServer(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
@@ -203,7 +203,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -278,7 +278,7 @@ public class HttpClientDemandTest extends AbstractTest
         startServer(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
@@ -355,7 +355,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response)))
@@ -399,7 +399,7 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);

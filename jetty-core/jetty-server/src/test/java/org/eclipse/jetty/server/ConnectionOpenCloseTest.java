@@ -63,7 +63,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 throw new IllegalStateException();
             }
@@ -112,7 +112,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -183,7 +183,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }

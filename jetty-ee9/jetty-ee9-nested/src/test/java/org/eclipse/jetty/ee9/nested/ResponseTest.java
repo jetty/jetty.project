@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -2255,6 +2256,7 @@ public class ResponseTest
         private final MetaData.Request _reqMeta;
         private final long _now;
         private final Context _context;
+        private final AtomicBoolean _accepted = new AtomicBoolean();
 
         public MockRequest(MetaData.Request reqMeta, long now)
         {
@@ -2266,6 +2268,19 @@ public class ResponseTest
             _reqMeta = reqMeta;
             _now = now;
             _context = context == null ? _server.getContext() : context;
+        }
+
+        @Override
+        public void accept()
+        {
+            if (!_accepted.compareAndSet(false, true))
+                throw new IllegalStateException("Already accepted");
+        }
+
+        @Override
+        public boolean isAccepted()
+        {
+            return _accepted.get();
         }
 
         @Override

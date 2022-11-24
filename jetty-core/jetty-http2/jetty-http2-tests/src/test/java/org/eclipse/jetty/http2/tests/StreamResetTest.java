@@ -265,7 +265,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
                 byte[] data = "AFTER RESET".getBytes(charset);
@@ -349,7 +349,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
                 ByteBuffer data = charset.encode("AFTER RESET");
@@ -427,7 +427,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the data to be sent.
                 assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
@@ -476,7 +476,7 @@ public class StreamResetTest extends AbstractTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 requestOnServer.get().countDown();
 
@@ -584,7 +584,7 @@ public class StreamResetTest extends AbstractTest
             start(new Handler.Processor()
             {
                 @Override
-                public void process(Request request, Response response, Callback callback) throws Exception
+                public void doProcess(Request request, Response response, Callback callback) throws Exception
                 {
                     // Wait to let the data sent by the client to be queued.
                     Thread.sleep(1000);
@@ -629,7 +629,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 new Thread(() ->
                 {
@@ -690,7 +690,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 try
                 {
@@ -748,7 +748,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[10 * windowSize]), Callback.from(callback::succeeded, x ->
                 {
@@ -798,7 +798,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -847,7 +847,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 flusherRef.set(((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint()).getWriteFlusher());
                 flusherLatch.countDown();
@@ -925,7 +925,7 @@ public class StreamResetTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals("/1"))

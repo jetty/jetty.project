@@ -39,7 +39,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put("X-Path", request.getHttpURI().getPath());
                 callback.succeeded();

@@ -43,7 +43,7 @@ public class HttpInterimResponseTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Reading the request content immediately
                 // issues an implicit 100 Continue response.
@@ -67,7 +67,7 @@ public class HttpInterimResponseTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
                     .thenCompose(ignored -> Callback.Completable.with(c -> Content.Source.consumeAll(request, c)))

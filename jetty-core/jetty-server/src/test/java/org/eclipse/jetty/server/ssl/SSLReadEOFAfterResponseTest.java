@@ -78,7 +78,7 @@ public class SSLReadEOFAfterResponseTest
         server.setHandler(new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // First: read the whole content exactly
                 int length = bytes.length;

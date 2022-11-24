@@ -131,10 +131,10 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                super.process(request, response, callback);
+                super.doProcess(request, response, callback);
             }
         });
         _server.start();
@@ -177,10 +177,10 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                super.process(request, response, callback);
+                super.doProcess(request, response, callback);
             }
         });
         _server.start();
@@ -228,11 +228,11 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 processing.incrementAndGet();
                 semaphore.acquire();
-                super.process(request, response, Callback.from(callback, complete::countDown));
+                super.doProcess(request, response, Callback.from(callback, complete::countDown));
             }
 
             @Override
@@ -399,7 +399,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
                 Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);

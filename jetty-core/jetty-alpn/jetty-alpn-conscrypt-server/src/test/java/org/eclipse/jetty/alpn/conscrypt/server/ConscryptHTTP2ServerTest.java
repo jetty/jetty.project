@@ -108,7 +108,7 @@ public class ConscryptHTTP2ServerTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }

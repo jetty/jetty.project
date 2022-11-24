@@ -41,7 +41,7 @@ public class TerminatingPatternRuleTest extends AbstractRuleTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.CREATED_201);
                 callback.succeeded();

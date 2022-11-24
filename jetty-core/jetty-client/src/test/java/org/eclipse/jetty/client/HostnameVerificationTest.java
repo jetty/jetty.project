@@ -75,7 +75,7 @@ public class HostnameVerificationTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 try (Blocker.Callback blocker = Blocker.callback())
                 {

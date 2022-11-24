@@ -516,7 +516,7 @@ public class StopTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             callback.succeeded(); // TODO should the be after the countdown?
             latch.countDown();
@@ -529,7 +529,7 @@ public class StopTest
         final CountDownLatch latchB = new CountDownLatch(1);
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             response.setContentLength(2);

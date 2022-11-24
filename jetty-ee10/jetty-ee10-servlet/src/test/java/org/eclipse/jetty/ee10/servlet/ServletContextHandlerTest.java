@@ -1919,7 +1919,7 @@ public class ServletContextHandlerTest
         list.addHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 Response.writeError(request, response, callback, 404, "Fell Through");
             }

@@ -1625,7 +1625,7 @@ public class GzipHandlerTest
     public static class MicroHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put("ETag", CONTENT_ETAG);
             String ifnm = request.getHeaders().get("If-None-Match");
@@ -1641,7 +1641,7 @@ public class GzipHandlerTest
     public static class MicroChunkedHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             Content.Sink.write(response, false, MICRO, callback);
         }
@@ -1650,7 +1650,7 @@ public class GzipHandlerTest
     public static class MimeTypeContentHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             String pathInfo = Request.getPathInContext(request);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
@@ -1675,7 +1675,7 @@ public class GzipHandlerTest
     public static class TestHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             if (HttpMethod.DELETE.is(request.getMethod()))
             {
@@ -1711,7 +1711,7 @@ public class GzipHandlerTest
     public static class WriteHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             Fields parameters = Request.extractQueryParameters(request);
 
@@ -1785,7 +1785,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, byteBuffer.remaining());
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
@@ -1796,7 +1796,7 @@ public class GzipHandlerTest
     public static class EchoHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
             if (contentType != null)
@@ -1809,7 +1809,7 @@ public class GzipHandlerTest
     public static class DumpHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 

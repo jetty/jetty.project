@@ -47,7 +47,7 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }
@@ -91,7 +91,7 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }

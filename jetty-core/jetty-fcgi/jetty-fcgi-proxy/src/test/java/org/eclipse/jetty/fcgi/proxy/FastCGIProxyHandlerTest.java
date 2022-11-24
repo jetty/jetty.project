@@ -149,7 +149,7 @@ public class FastCGIProxyHandlerTest
         start(sendStatus200, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
                 assertEquals(path, Request.getPathInContext(request));
@@ -194,7 +194,7 @@ public class FastCGIProxyHandlerTest
         start(sendStatus200, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), startsWith(originalPath));
                 assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
@@ -241,7 +241,7 @@ public class FastCGIProxyHandlerTest
         start(true, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
             }

@@ -104,7 +104,7 @@ public class DefaultHandler extends Handler.Processor
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public void doProcess(Request request, Response response, Callback callback) throws Exception
     {
         String method = request.getMethod();
 

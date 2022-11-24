@@ -136,7 +136,7 @@ public class SniSslConnectionFactoryTest
         xCertHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put("X-URL", Request.getPathInContext(request));

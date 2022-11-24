@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.Callback;
 public class EmptyServerHandler extends Handler.Processor
 {
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public void doProcess(Request request, Response response, Callback callback) throws Exception
     {
         callback.succeeded();
     }

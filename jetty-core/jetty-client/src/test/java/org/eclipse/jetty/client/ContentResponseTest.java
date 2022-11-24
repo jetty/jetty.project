@@ -42,7 +42,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
             }
@@ -68,7 +68,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, mediaType);
                 Content.Sink.write(response, true, content, callback);
@@ -97,7 +97,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
                 response.write(true, ByteBuffer.wrap(content.getBytes(encoding)), callback);
@@ -126,7 +126,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
                 response.write(true, ByteBuffer.wrap(content.getBytes(encoding)), callback);

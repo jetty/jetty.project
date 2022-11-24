@@ -71,7 +71,7 @@ public class ErrorProcessorTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String pathInContext = Request.getPathInContext(request);
                 if (pathInContext.startsWith("/badmessage/"))
@@ -667,7 +667,7 @@ public class ErrorProcessorTest
         context.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 Response.writeError(request, response, callback, 444);
             }

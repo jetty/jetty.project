@@ -453,7 +453,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 long contentLength = request.getLength();
                 long read = 0;
@@ -1126,7 +1126,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -1337,7 +1337,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public EndPoint _endp;
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.getHeaders().put("test", "value");
@@ -1566,7 +1566,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback)
+        public void doProcess(Request request, Response response, Callback callback)
         {
             response.setStatus(304);
             response.write(false, BufferUtil.toBuffer("yuck"), callback);
@@ -1576,7 +1576,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public static class NoopHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback)
+        public void doProcess(Request request, Response response, Callback callback)
         {
             //don't read the input, just send something back
             response.setStatus(200);
@@ -1681,7 +1681,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
                 {

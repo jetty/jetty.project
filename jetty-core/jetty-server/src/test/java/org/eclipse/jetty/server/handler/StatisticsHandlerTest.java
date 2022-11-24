@@ -86,14 +86,14 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        request.demand(() -> process(request, response, callback));
+                        request.demand(() -> doProcess(request, response, callback));
                         return;
                     }
                     chunk.release();
@@ -137,7 +137,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -215,14 +215,14 @@ public class StatisticsHandlerTest
         mdrh.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        request.demand(() -> process(request, response, callback));
+                        request.demand(() -> doProcess(request, response, callback));
                         return;
                     }
 
@@ -277,7 +277,7 @@ public class StatisticsHandlerTest
         mdrh.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -1148,7 +1148,7 @@ public class StatisticsHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             try
             {

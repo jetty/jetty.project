@@ -654,7 +654,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
      * <p>A {@link Handler} that itself implements {@link Request.Processor}
      * and that returns itself from a call to {@link Handler#handle(Request)}.
      * Subclasses only need to implement 
-     * {@link #process(Request, Response, Callback)}.</p>
+     * {@link #doProcess(Request, Response, Callback)}.</p>
      */
     abstract class Processor extends Abstract implements Request.Processor
     {
@@ -673,6 +673,15 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             return this;
         }
+
+        @Override
+        public final void process(Request request, Response response, Callback callback) throws Exception
+        {
+            request.accept();
+            doProcess(request, response, callback);
+        }
+
+        protected abstract void doProcess(Request request, Response response, Callback callback) throws Exception;
 
         public abstract static class Blocking extends Processor
         {

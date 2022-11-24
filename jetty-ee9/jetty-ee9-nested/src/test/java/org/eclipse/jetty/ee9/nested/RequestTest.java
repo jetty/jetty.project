@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -2259,12 +2260,26 @@ public class RequestTest
         private final ConnectionMetaData _connectionMetaData;
         private final String _uri;
         private final HttpFields.Mutable _fields;
+        private final AtomicBoolean _accepted = new AtomicBoolean();
 
         public TestCoreRequest(String uri, HttpFields.Mutable fields)
         {
             _uri = uri;
             _fields = fields;
             _connectionMetaData = new MockConnectionMetaData();
+        }
+
+        @Override
+        public void accept()
+        {
+            if (!_accepted.compareAndSet(false, true))
+                throw new IllegalStateException("Already accepted");
+        }
+
+        @Override
+        public boolean isAccepted()
+        {
+            return _accepted.get();
         }
 
         @Override

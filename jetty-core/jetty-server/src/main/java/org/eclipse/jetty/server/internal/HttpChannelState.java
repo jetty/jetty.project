@@ -786,6 +786,19 @@ public class HttpChannelState implements HttpChannel, Components
             _lock = httpChannel._lock;
         }
 
+        @Override
+        public void accept()
+        {
+            // TODO
+        }
+
+        @Override
+        public boolean isAccepted()
+        {
+            // TODO
+            return false;
+        }
+
         public void setLoggedRequest(Request request)
         {
             _loggedRequest = request;

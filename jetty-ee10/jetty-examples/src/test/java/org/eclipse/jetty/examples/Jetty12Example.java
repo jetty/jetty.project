@@ -40,9 +40,9 @@ public class Jetty12Example
                 new org.eclipse.jetty.server.handler.ContextHandler("/embedded");
         embedded.setHandler(new org.eclipse.jetty.server.Handler.Processor()
         {
-            public void process(org.eclipse.jetty.server.Request request,
-                                org.eclipse.jetty.server.Response response,
-                                Callback callback) throws Exception
+            public void doProcess(org.eclipse.jetty.server.Request request,
+                                  org.eclipse.jetty.server.Response response,
+                                  Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
