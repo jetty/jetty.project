@@ -51,6 +51,8 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
         }
         finally
         {
+            // We exit scope here, even though process is asynchronous, as we have wrapped
+            // all our callbacks to re-enter the scope.
             _contextHandler.exitScope(this, request.getContext(), lastLoader);
         }
     }
