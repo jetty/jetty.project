@@ -91,7 +91,7 @@ public abstract class Rule
          * @param response The response
          * @param callback The callback
          * @throws Exception If there is a problem processing
-         * @see #wrapProcessor(Processor).
+         * @see #wrapProcessor(Processor)
          */
         protected void process(Response response, Callback callback) throws Exception
         {
