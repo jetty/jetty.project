@@ -80,7 +80,6 @@ public abstract class Rule
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            assert getWrapped() == request;
             process(response, callback);
         }
 
@@ -110,12 +109,7 @@ public abstract class Rule
         public Processor wrapProcessor(Processor processor)
         {
             _processor = processor;
-            return processor == null ? null : this::processWithWrappers;
-        }
-
-        protected void processWithWrappers(Request ignored, Response response, Callback callback) throws Exception
-        {
-            process(response, callback);
+            return processor == null ? null : this;
         }
     }
 
