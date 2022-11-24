@@ -49,13 +49,13 @@ public class RewriteRegexRule extends RegexRule
     }
 
     @Override
-    public RuleProcessor apply(RuleProcessor input, Matcher matcher) throws IOException
+    public Processor apply(Processor input, Matcher matcher) throws IOException
     {
         HttpURI httpURI = input.getHttpURI();
         String replacedPath = matcher.replaceAll(replacement);
 
         HttpURI newURI = HttpURI.build(httpURI, replacedPath);
-        return new UriRuleProcessor(input, newURI);
+        return new HttpURIProcessor(input, newURI);
     }
 
     @Override

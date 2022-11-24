@@ -55,7 +55,7 @@ public class VirtualHostRuleContainer extends RuleContainer
     }
 
     @Override
-    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         if (_virtualHosts.isEmpty())
             return super.matchAndApply(input);

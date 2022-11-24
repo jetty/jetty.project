@@ -74,7 +74,7 @@ public class InvalidURIRule extends Rule
     }
 
     @Override
-    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         String path = input.getHttpURI().getDecodedPath();
 
@@ -90,9 +90,9 @@ public class InvalidURIRule extends Rule
         return null;
     }
 
-    private RuleProcessor apply(RuleProcessor input)
+    private Processor apply(Processor input)
     {
-        return new RuleProcessor(input)
+        return new Processor(input)
         {
             @Override
             public void process(Response response, Callback callback)

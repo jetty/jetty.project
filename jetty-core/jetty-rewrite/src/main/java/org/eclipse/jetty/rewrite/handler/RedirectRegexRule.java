@@ -76,9 +76,9 @@ public class RedirectRegexRule extends RegexRule
     }
 
     @Override
-    protected RuleProcessor apply(RuleProcessor input, Matcher matcher) throws IOException
+    protected Processor apply(Processor input, Matcher matcher) throws IOException
     {
-        return new RuleProcessor(input)
+        return new Processor(input)
         {
             @Override
             public void process(Response response, Callback callback)

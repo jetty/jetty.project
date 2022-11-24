@@ -37,7 +37,7 @@ public class TerminatingPatternRule extends PatternRule
     }
 
     @Override
-    protected RuleProcessor apply(RuleProcessor input) throws IOException
+    protected Processor apply(Processor input) throws IOException
     {
         return input;
     }

@@ -157,7 +157,7 @@ public class PatternRuleTest extends AbstractRuleTest
         }
 
         @Override
-        public RuleProcessor apply(RuleProcessor input)
+        public Processor apply(Processor input)
         {
             _applied = true;
             return input;

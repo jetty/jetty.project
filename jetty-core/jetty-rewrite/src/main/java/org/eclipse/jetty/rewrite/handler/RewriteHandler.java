@@ -110,8 +110,8 @@ public class RewriteHandler extends Handler.Wrapper
         if (!isStarted())
             return null;
 
-        Rule.RuleProcessor input = new Rule.RuleProcessor(request);
-        Rule.RuleProcessor output = _rules.matchAndApply(input);
+        Rule.Processor input = new Rule.Processor(request);
+        Rule.Processor output = _rules.matchAndApply(input);
 
         // No rule matched, call super with the original request.
         if (output == null)

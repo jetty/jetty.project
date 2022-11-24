@@ -63,7 +63,7 @@ public class RewritePatternRule extends PatternRule
     }
 
     @Override
-    public RuleProcessor apply(RuleProcessor input) throws IOException
+    public Processor apply(Processor input) throws IOException
     {
         HttpURI httpURI = input.getHttpURI();
         String newQuery = URIUtil.addQueries(httpURI.getQuery(), _query);
@@ -71,7 +71,7 @@ public class RewritePatternRule extends PatternRule
         HttpURI newURI = HttpURI.build(httpURI, newPath, httpURI.getParam(), newQuery);
         if (LOG.isDebugEnabled())
             LOG.debug("rewriting {} to {}", httpURI, newURI);
-        return new UriRuleProcessor(input, newURI);
+        return new HttpURIProcessor(input, newURI);
     }
 
     @Override

@@ -43,7 +43,7 @@ public class ForceRequestHeaderValueRule extends Rule
     }
 
     @Override
-    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         HttpFields headers = input.getHeaders();
         String existingValue = headers.get(headerName);
@@ -59,7 +59,7 @@ public class ForceRequestHeaderValueRule extends Rule
         HttpFields.Mutable newHeaders = HttpFields.build(headers);
         newHeaders.remove(headerName);
         newHeaders.add(headerName, headerValue);
-        return new RuleProcessor(input)
+        return new Processor(input)
         {
             @Override
             public HttpFields getHeaders()

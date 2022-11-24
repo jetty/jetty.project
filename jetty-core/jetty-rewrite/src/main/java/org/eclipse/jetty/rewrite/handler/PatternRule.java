@@ -45,7 +45,7 @@ public abstract class PatternRule extends Rule
     }
 
     @Override
-    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         if (ServletPathSpec.match(_pattern, input.getHttpURI().getPath()))
             return apply(input);
@@ -59,7 +59,7 @@ public abstract class PatternRule extends Rule
      * @return the possibly wrapped {@code Request} and {@code Processor}
      * @throws IOException if applying the rule failed
      */
-    protected abstract RuleProcessor apply(RuleProcessor input) throws IOException;
+    protected abstract Processor apply(Processor input) throws IOException;
 
     @Override
     public String toString()
