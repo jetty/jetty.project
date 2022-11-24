@@ -15,8 +15,9 @@ package org.eclipse.jetty.server.handler;
 
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
+import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpField;
@@ -49,20 +50,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
                 // TODO: add logic to not delay if it's a CONNECT request.
                 // TODO: also add logic to not delay if it's a request that expects 100 Continue.
                 request.accept();
-                new UntilContentRequest(request).process(response, callback);
-
-                try
-                {
-                    next.process(delayed, response, callback);
-                    if (!delayed.isAccepted())
-                    {
-                        Response.writeError(request, response, callback, t);
-                    }
-                }
-                catch (Throwable t)
-                {
-                    Response.writeError(request, response, callback, t);
-                }
+                request.demand(new UntilContentRequest(next, request, response, callback));
             }
             else
             {
@@ -71,21 +59,47 @@ public abstract class DelayedHandler extends Handler.Wrapper
         }
     }
 
-    private static class UntilContentRequest extends Request.Wrapper
+    private static class UntilContentRequest extends Request.Wrapper implements Runnable
     {
-        private final AtomicReference<Content.Chunk> _chunk = new AtomicReference<>();
+        private final AtomicBoolean _accepted = new AtomicBoolean();
+        private final Handler _handler;
+        private final Response _response;
+        private final Callback _callback;
 
-        public UntilContentRequest(Request wrapped)
+        public UntilContentRequest(Handler handler, Request wrapped, Response response, Callback callback)
         {
             super(wrapped);
+            _handler = Objects.requireNonNull(handler);
+            _response = Objects.requireNonNull(response);
+            _callback = Objects.requireNonNull(callback);
         }
 
-        static void process(Response response, Callback callback) throws Exception
+        @Override
+        public void accept()
         {
-            Content.Chunk chunk = request.read();
-            if (chunk != null)
+            if (!_accepted.compareAndSet(false, true))
+                throw new IllegalStateException("already accepted");
+        }
 
+        @Override
+        public boolean isAccepted()
+        {
+            return _accepted.get();
+        }
 
+        @Override
+        public void run()
+        {
+            try
+            {
+                _handler.process(this, _response, _callback);
+                if (!isAccepted())
+                    Response.writeError(getWrapped(), _response, _callback, 404);
+            }
+            catch (Throwable t)
+            {
+                Response.writeError(getWrapped(), _response, _callback, t);
+            }
         }
     }
 
