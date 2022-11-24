@@ -33,9 +33,9 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
     }
 
     @Override
-    protected RuleProcessor apply(RuleProcessor input, String value)
+    protected Processor apply(Processor input, String value)
     {
         HttpURI newURI = HttpURI.build(input.getHttpURI()).scheme(getScheme());
-        return new UriRuleProcessor(input, newURI);
+        return new HttpURIProcessor(input, newURI);
     }
 }

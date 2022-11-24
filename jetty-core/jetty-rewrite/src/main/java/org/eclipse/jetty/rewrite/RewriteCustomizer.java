@@ -35,7 +35,7 @@ public class RewriteCustomizer extends RuleContainer implements Customizer
         try
         {
             // TODO: rule are able to complete the request/response, but customizers cannot.
-            RuleProcessor input = new RuleProcessor(request);
+            Processor input = new Processor(request);
             return matchAndApply(input);
         }
         catch (IOException e)

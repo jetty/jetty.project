@@ -124,7 +124,7 @@ public class RegexRuleTest extends AbstractRuleTest
         }
 
         @Override
-        public RuleProcessor apply(RuleProcessor input, Matcher matcher)
+        public Processor apply(Processor input, Matcher matcher)
         {
             _applied = true;
             return input;

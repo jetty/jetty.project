@@ -35,7 +35,7 @@ public abstract class Rule
      * @return the possibly wrapped {@code Request} and {@code Processor}, or {@code null} if the rule did not match
      * @throws IOException if applying the rule failed
      */
-    public abstract RuleProcessor matchAndApply(RuleProcessor input) throws IOException;
+    public abstract Processor matchAndApply(Processor input) throws IOException;
 
     /**
      * @return when {@code true}, rules after this one are not processed
@@ -60,19 +60,19 @@ public abstract class Rule
     }
 
     /**
-     * A tuple of a {@link Request.Wrapper} and is also a {@link org.eclipse.jetty.server.Request.Processor},
-     * that is used to chain a sequence of {@link Rule}s together.
+     * <p>A {@link Request.Wrapper} that is also a {@link org.eclipse.jetty.server.Request.Processor},
+     * used to chain a sequence of {@link Rule}s together.
      * The tuple is initialized with only the request, then the processor is
      * then passed to a chain of rules before the ultimate processor is
      * passed in {@link #wrapProcessor(Processor)}. Finally, the response
      * and callback are provided in a call to {@link #process(Request, Response, Callback)},
-     * which calls the {@link #process(Response, Callback)}.
+     * which calls the {@link #process(Response, Callback)}.</p>
      */
-    public static class RuleProcessor extends Request.Wrapper implements Request.Processor
+    public static class Processor extends Request.Wrapper implements Request.Processor
     {
         private volatile Processor _processor;
 
-        public RuleProcessor(Request request)
+        public Processor(Request request)
         {
             super(request);
         }
@@ -84,10 +84,11 @@ public abstract class Rule
             process(response, callback);
         }
 
-        /** Process this wrapped request together with the passed response and
+        /**
+         * <p>Processes this wrapped request together with the passed response and
          * callback, using the processor set in {@link #wrapProcessor(Processor)}.
          * This method should be extended if additional processing of the wrapped
-         * request is required.
+         * request is required.</p>
          * @param response The response
          * @param callback The callback
          * @throws Exception If there is a problem processing
@@ -109,43 +110,20 @@ public abstract class Rule
         public Processor wrapProcessor(Processor processor)
         {
             _processor = processor;
-            return processor == null ? null : this::wrappedProcess;
+            return processor == null ? null : this::processWithWrappers;
         }
 
-        protected Request wrapRequest(Request request)
+        protected void processWithWrappers(Request ignored, Response response, Callback callback) throws Exception
         {
-            return request;
-        }
-
-        protected Response wrapResponse(Request request, Response response)
-        {
-            return response;
-        }
-
-        private void wrappedProcess(Request request, Response response, Callback callback) throws Exception
-        {
-            Request wrapped = this.getWrapped();
-            while (wrapped != null)
-            {
-                if (request == wrapped)
-                {
-                    process(wrapResponse(this, response), callback);
-                    return;
-                }
-                wrapped = wrapped instanceof Request.Wrapper w ? w.getWrapped() : null;
-            }
-
-            // We need a new instance of the wrapper
-            Request wrapper = wrapRequest(request);
-            process(wrapResponse(wrapper, response), callback);
+            process(response, callback);
         }
     }
 
-    public static class UriRuleProcessor extends RuleProcessor
+    public static class HttpURIProcessor extends Processor
     {
         private final HttpURI _uri;
 
-        public UriRuleProcessor(Request request, HttpURI uri)
+        public HttpURIProcessor(Request request, HttpURI uri)
         {
             super(request);
             _uri = uri;
@@ -155,19 +133,6 @@ public abstract class Rule
         public HttpURI getHttpURI()
         {
             return _uri;
-        }
-
-        @Override
-        protected Request wrapRequest(Request request)
-        {
-            return new Request.Wrapper(request)
-            {
-                @Override
-                public HttpURI getHttpURI()
-                {
-                    return _uri;
-                }
-            };
         }
     }
 }

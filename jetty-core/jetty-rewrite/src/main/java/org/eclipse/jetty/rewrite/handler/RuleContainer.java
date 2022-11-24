@@ -103,7 +103,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
      * or {@code null} if no rule matched
      */
     @Override
-    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         String originalPathAttribute = getOriginalPathAttribute();
         if (originalPathAttribute != null)
@@ -120,7 +120,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("applying {}", rule);
-            RuleProcessor output = rule.matchAndApply(input);
+            Processor output = rule.matchAndApply(input);
             if (output == null)
             {
                 if (LOG.isDebugEnabled())

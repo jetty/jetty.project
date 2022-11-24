@@ -73,9 +73,9 @@ public class HeaderPatternRule extends PatternRule
     }
 
     @Override
-    public RuleProcessor apply(RuleProcessor input) throws IOException
+    public Processor apply(Processor input) throws IOException
     {
-        return new RuleProcessor(input)
+        return new Processor(input)
         {
             @Override
             public void process(Response response, Callback callback) throws Exception

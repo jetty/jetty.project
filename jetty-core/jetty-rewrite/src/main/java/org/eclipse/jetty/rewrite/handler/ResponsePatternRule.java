@@ -75,12 +75,12 @@ public class ResponsePatternRule extends PatternRule
     }
 
     @Override
-    public RuleProcessor apply(RuleProcessor input) throws IOException
+    public Processor apply(Processor input) throws IOException
     {
         if (getCode() < HttpStatus.CONTINUE_100)
             return null;
 
-        return new RuleProcessor(input)
+        return new Processor(input)
         {
             @Override
             public void process(Response response, Callback callback)

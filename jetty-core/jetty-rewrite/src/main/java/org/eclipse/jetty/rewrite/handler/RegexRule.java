@@ -52,7 +52,7 @@ public abstract class RegexRule extends Rule
     }
 
     @Override
-    public RuleProcessor matchAndApply(RuleProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         String target = input.getHttpURI().getPathQuery();
         Matcher matcher = _regex.matcher(target);
@@ -69,7 +69,7 @@ public abstract class RegexRule extends Rule
      * @return the possibly wrapped {@code Request} and {@code Processor}
      * @throws IOException if applying the rule failed
      */
-    protected abstract RuleProcessor apply(RuleProcessor input, Matcher matcher) throws IOException;
+    protected abstract Processor apply(Processor input, Matcher matcher) throws IOException;
 
     @Override
     public String toString()
