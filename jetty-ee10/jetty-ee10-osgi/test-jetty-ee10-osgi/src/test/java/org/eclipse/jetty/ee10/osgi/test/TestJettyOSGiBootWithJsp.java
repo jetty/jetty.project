@@ -38,8 +38,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */
-@Disabled //TODO
-//@RunWith(PaxExam.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJsp
 {
     @Inject
@@ -64,7 +63,7 @@ public class TestJettyOSGiBootWithJsp
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(CoreOptions.cleanCaches(true));
         
-        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         return options.toArray(new Option[0]);
     }
 
@@ -81,8 +80,9 @@ public class TestJettyOSGiBootWithJsp
 
             String port = System.getProperty("boot.jsp.port");
             assertNotNull(port);
-            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/demo-jsp/jstl.jsp");
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/ee10-demo-jsp/jstl.jsp");
 
+            System.err.println(response.getContentAsString());
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
             assertTrue(content.contains("JSTL Example"));

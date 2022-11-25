@@ -26,6 +26,7 @@ import javax.inject.Inject;
 import aQute.bnd.osgi.Constants;
 import org.eclipse.jetty.ee10.annotations.ClassInheritanceHandler;
 import org.eclipse.jetty.ee10.osgi.annotations.AnnotationParser;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
@@ -88,10 +89,9 @@ public class TestJettyOSGiAnnotationParser
         //test the osgi annotation parser ignore the module-info.class file in the fake bundle
         //Get a reference to the deployed fake bundle
         Bundle b = TestOSGiUtil.getBundle(bundleContext, "bundle.with.module.info");
-        AnnotationParser parser = new AnnotationParser(0);
-        parser.indexBundle(b);
+        AnnotationParser parser = new AnnotationParser();
+        parser.indexBundle(ResourceFactory.root(), b);
         ClassInheritanceHandler handler = new ClassInheritanceHandler(new ConcurrentHashMap<>());
         parser.parse(Collections.singleton(handler), b);
-
     }
 }

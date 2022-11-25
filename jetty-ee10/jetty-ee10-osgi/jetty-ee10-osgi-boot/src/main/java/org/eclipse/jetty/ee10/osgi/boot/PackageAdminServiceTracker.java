@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.osgi.boot.utils.internal;
+package org.eclipse.jetty.ee10.osgi.boot;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -35,7 +35,7 @@ import org.osgi.service.startlevel.StartLevel;
  * When the PackageAdmin service is activated we can look for the fragments
  * attached to this bundle and do a fake "activate" on them.
  * <p>
- * See particularly the jetty-ee10-osgi-boot-jsp fragment bundle that uses this
+ * See particularly the jetty-ee9-osgi-boot-jsp fragment bundle that uses this
  * facility.
  */
 public class PackageAdminServiceTracker implements ServiceListener
@@ -281,6 +281,7 @@ public class PackageAdminServiceTracker implements ServiceListener
         for (Bundle frag : fragments)
         {
             // find a convention to look for a class inside the fragment.
+            System.err.println("FRAG: " + frag.getSymbolicName());
             try
             {
                 String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";

@@ -22,15 +22,13 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.ee10.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
-import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.BundleContext;

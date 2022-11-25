@@ -17,9 +17,8 @@
     <pax.url.version>2.6.2</pax.url.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
-    <spifly.version>1.3.4</spifly.version>
-    <!-- TODO -->
-    <skipTests>true</skipTests>
+    <spifly.version>1.3.6-SNAPSHOT</spifly.version>
+    <injection.bundle.version>1.2</injection.bundle.version>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
   <dependencies>
@@ -138,17 +137,43 @@
       <version>1.2</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.promise</artifactId>
+      <version>${osgi-util-promise-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.measurement</artifactId>
+      <version>${osgi-util-measurement-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.position</artifactId>
+      <version>${osgi-util-position-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.xml</artifactId>
+      <version>${osgi-util-xml-version}</version>
+      <scope>test</scope>
+    </dependency>
     <!-- Jetty OSGi Deps -->
     <dependency>
        <groupId>org.slf4j</groupId>
        <artifactId>slf4j-api</artifactId>
        <scope>test</scope>
      </dependency>
+    <!--
     <dependency>
        <groupId>org.slf4j</groupId>
        <artifactId>slf4j-simple</artifactId>
        <scope>test</scope>
      </dependency>
+     -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
@@ -187,8 +212,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
+     <groupId>jakarta.servlet</groupId>
+     <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.inject</groupId>
@@ -257,6 +282,11 @@
     <!-- Jetty Deps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-jndi</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-annotations</artifactId>
       <scope>runtime</scope>
     </dependency>
@@ -306,32 +336,32 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jetty-api</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jetty-common</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-servlet</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
       <scope>runtime</scope>
     </dependency>
@@ -341,7 +371,7 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
       <scope>runtime</scope>
     </dependency>
@@ -352,12 +382,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>jetty-http2-hpack</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
-      <artifactId>jetty-ee10-osgi-alpn</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -374,28 +398,28 @@
     <!-- Eclipse OSGi Deps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>demo-jsp-webapp</artifactId>
+      <artifactId>jetty-ee10-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>demo-jetty-webapp</artifactId>
+      <artifactId>jetty-ee10-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>demo-spec-webapp</artifactId>
+      <artifactId>jetty-ee10-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>demo-container-initializer</artifactId>
+      <artifactId>jetty-ee10-demo-container-initializer</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -420,7 +444,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>demo-mock-resources</artifactId>
+      <artifactId>jetty-ee10-demo-mock-resources</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

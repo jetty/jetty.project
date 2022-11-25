@@ -22,7 +22,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MultiPart;
 import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
@@ -114,8 +116,9 @@ public class TestJettyOSGiBootWithAnnotations
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
             MultiPartRequestContent multiPart = new MultiPartRequestContent();
-            multiPart.addFieldPart("field", new StringRequestContent("foo"), null);
+            multiPart.addPart(new MultiPart.ContentSourcePart("field", null, HttpFields.EMPTY, new StringRequestContent("foo")));
             multiPart.close();
+
             response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
                 .body(multiPart).send();
             assertEquals(HttpStatus.OK_200, response.getStatus());

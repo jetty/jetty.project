@@ -14,21 +14,14 @@
 package org.eclipse.jetty.ee10.osgi.annotations;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.ee10.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
 
 /**
  *
@@ -42,22 +35,28 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
     private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Bundle, URI> _bundleToUri = new ConcurrentHashMap<>();
 
-    public AnnotationParser(int javaPlatform)
+    public AnnotationParser()
     {
-        super(javaPlatform);
+        super();
+    }
+    
+    public AnnotationParser(int platform)
+    {
+        super(platform);
     }
 
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.
      *
+     *@param resourceFactory the ResourceFactory to convert bundle location
      * @param bundle the bundle to index
      * @return the resource for the bundle
      * @throws Exception if unable to create the resource reference
      */
-    public Resource indexBundle(Bundle bundle) throws Exception
+    public Resource indexBundle(ResourceFactory resourceFactory, Bundle bundle) throws Exception
     {
         File bundleFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
-        Resource resource = Resource.newResource(bundleFile.toURI());
+        Resource resource = resourceFactory.newResource(bundleFile.toURI());
         URI uri = resource.getURI();
         _uriToBundle.putIfAbsent(uri, bundle);
         _bundleToUri.putIfAbsent(bundle, uri);
@@ -81,42 +80,20 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
         return _resourceToBundle.get(resource);
     }
 
-    /**
-     *
-     */
-    @Override
-    public void parse(Set<? extends Handler> handlers, URI[] uris)
-        throws Exception
-    {
-        for (URI uri : uris)
-        {
-            Bundle associatedBundle = _uriToBundle.get(uri);
-            if (associatedBundle == null)
-            {
-                if (!_alreadyParsed.add(uri))
-                {
-                    continue;
-                }
-                //a jar in WEB-INF/lib or the WEB-INF/classes
-                //use the behavior of the super class for a standard jar.
-                super.parse(handlers, new URI[]{uri});
-            }
-            else
-            {
-                parse(handlers, associatedBundle);
-            }
-        }
-    }
-
     public void parse(Set<? extends Handler> handlers, Bundle bundle)
         throws Exception
     {
-        URI uri = _bundleToUri.get(bundle);
-        if (!_alreadyParsed.add(uri))
-        {
-            return;
-        }
 
+        Resource bundleResource = _bundleToResource.get(bundle);
+        if (bundleResource == null)
+            return;
+
+        if (!_alreadyParsed.add(_bundleToUri.get(bundle)))
+            return;
+
+
+        parse(handlers, bundleResource);
+        /*
         String bundleClasspath = (String)bundle.getHeaders().get(Constants.BUNDLE_CLASSPATH);
         if (bundleClasspath == null)
         {
@@ -160,29 +137,15 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
                 paths.add(token);
             }
         }
-        //support the development environment: maybe the classes are inside bin or target/classes
-        //this is certainly not useful in production.
-        //however it makes our life so much easier during development.
-        if (bundle.getEntry("/.classpath") != null)
-        {
-            if (bundle.getEntry("/bin/") != null)
-            {
-                paths.add("/bin/");
-            }
-            else if (bundle.getEntry("/target/classes/") != null)
-            {
-                paths.add("/target/classes/");
-            }
-        }
+
         @SuppressWarnings("rawtypes")
-        Enumeration classes = bundle.findEntries("/", "*.class", true);
+        Enumeration<URL> classes = bundle.findEntries("/", "*.class", true);
         if (classes == null)
-        {
             return;
-        }
+
         while (classes.hasMoreElements())
         {
-            URL classUrl = (URL)classes.nextElement();
+            URL classUrl = classes.nextElement();
             String path = classUrl.getPath();
             //remove the longest path possible:
             String name = null;
@@ -221,5 +184,6 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
                 scanClass(handlers, getResource(bundle), classInputStream);
             }
         }
+        */
     }
 }
