@@ -154,55 +154,31 @@ public interface Response
         void onContent(Response response, ByteBuffer content);
 
         @Override
-        default void onContent(Response response, ByteBuffer content, Callback callback)
+        default void onContent(Response response, Content.Chunk chunk, Runnable demander)
         {
+            boolean demand = false;
             try
             {
-                onContent(response, content);
-                callback.succeeded();
+                onContent(response, chunk.getByteBuffer());
+                chunk.release();
+                demand = true;
             }
             catch (Throwable x)
             {
-                callback.failed(x);
+                chunk.release();
+                response.abort(x);
             }
+            if (demand)
+                demander.run();
         }
     }
 
     /**
      * Asynchronous listener for the response content events.
      *
-     * @see DemandedContentListener
-     * @deprecated Use {@link SimpleContentSourceListener} instead.
+     * @see ContentSourceListener
      */
-    @Deprecated
-    interface AsyncContentListener extends DemandedContentListener
-    {
-        /**
-         * Callback method invoked when the response content has been received, parsed and there is demand.
-         * The {@code callback} object should be succeeded to signal that the
-         * {@code content} buffer has been consumed and to demand more content.
-         *
-         * @param response the response containing the response line data and the headers
-         * @param content the content bytes received
-         * @param callback the callback to call when the content is consumed and to demand more content
-         */
-        void onContent(Response response, ByteBuffer content, Callback callback);
-
-        @Override
-        default void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-        {
-            onContent(response, content, Callback.from(() ->
-            {
-                callback.succeeded();
-                demand.accept(1);
-            }, callback::failed));
-        }
-    }
-
-    /**
-     * Replacement for AsyncContentListener, intermediate between ContentListener and ContentSourceListener
-     */
-    interface SimpleContentSourceListener extends ContentSourceListener
+    interface AsyncContentListener extends ContentSourceListener
     {
         void onContent(Response response, Content.Chunk chunk, Runnable demander);
 
@@ -220,6 +196,8 @@ public interface Response
                 response.abort(error.getCause());
                 return;
             }
+            if (chunk.isTerminal())
+                return;
 
             onContent(response, chunk, () -> contentSource.demand(() -> onContentSource(response, contentSource)));
         }

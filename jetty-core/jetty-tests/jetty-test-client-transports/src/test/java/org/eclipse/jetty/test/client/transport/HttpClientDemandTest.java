@@ -91,15 +91,15 @@ public class HttpClientDemandTest extends AbstractTest
                 private final AtomicInteger chunks = new AtomicInteger();
 
                 @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+                public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
-                    callback.succeeded();
+                    chunk.release();
                     if (chunks.incrementAndGet() == 1)
                         contentLatch.countDown();
                     // Need to demand also after the second
                     // chunk to allow the parser to proceed
                     // and complete the response.
-                    demand.accept(1);
+                    demander.run();
                 }
 
                 @Override
@@ -140,20 +140,18 @@ public class HttpClientDemandTest extends AbstractTest
         client.setResponseBufferSize(bufferSize);
         client.start();
 
-        Queue<LongConsumer> demandQueue = new ConcurrentLinkedQueue<>();
-        Queue<ByteBuffer> contentQueue = new ConcurrentLinkedQueue<>();
-        Queue<Callback> callbackQueue = new ConcurrentLinkedQueue<>();
+        Queue<Runnable> demandQueue = new ConcurrentLinkedQueue<>();
+        Queue<Content.Chunk> contentQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
             .send(new BufferingResponseListener()
             {
                 @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+                public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
                     // Don't demand and don't succeed callbacks.
-                    demandQueue.offer(demand);
-                    contentQueue.offer(content);
-                    callbackQueue.offer(callback);
+                    demandQueue.offer(demander);
+                    contentQueue.offer(chunk);
                 }
 
                 @Override
@@ -171,30 +169,28 @@ public class HttpClientDemandTest extends AbstractTest
         Thread.sleep(1000);
         assertEquals(1, demandQueue.size());
         assertEquals(1, contentQueue.size());
-        assertEquals(1, callbackQueue.size());
 
         // Demand one more buffer.
-        LongConsumer demand = demandQueue.poll();
+        Runnable demand = demandQueue.poll();
         assertNotNull(demand);
-        demand.accept(1);
+        demand.run();
         // The client should have received just `count` more buffers.
         Thread.sleep(1000);
         assertEquals(1, demandQueue.size());
         assertEquals(2, contentQueue.size());
-        assertEquals(2, callbackQueue.size());
 
         // Demand all the rest.
         demand = demandQueue.poll();
         assertNotNull(demand);
         long begin = NanoTime.now();
         // Spin on demand until content.length bytes have been read.
-        while (content.length > contentQueue.stream().mapToInt(Buffer::remaining).sum())
+        while (content.length > contentQueue.stream().map(Content.Chunk::getByteBuffer).mapToInt(Buffer::remaining).sum())
         {
             if (NanoTime.millisSince(begin) > 5000L)
                 fail("Failed to demand all content");
-            demand.accept(1);
+            demand.run();
         }
-        demand.accept(1); // Demand one last time to get EOF.
+        demand.run(); // Demand one last time to get EOF.
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
 
         byte[] received = new byte[content.length];
@@ -206,7 +202,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         assertArrayEquals(content, received);
 
-        callbackQueue.forEach(Callback::succeeded);
+        contentQueue.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest

@@ -304,17 +304,10 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                super.onContent(response, content, new Callback()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        latch.countDown();
-                        callback.failed(x);
-                    }
-                });
+                latch.countDown();
+                super.onContent(response, chunk, demander);
             }
         };
         client.newRequest(newURI(transport))
@@ -357,18 +350,17 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                super.onContent(response, content, new Callback()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        failedLatch.countDown();
-                        callback.failed(x);
-                    }
-                });
                 contentLatch.countDown();
+                super.onContent(response, chunk, demander);
+            }
+
+            @Override
+            public void onFailure(Response response, Throwable failure)
+            {
+                failedLatch.countDown();
+                super.onFailure(response, failure);
             }
         };
         client.newRequest(newURI(transport))
@@ -408,18 +400,17 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                super.onContent(response, content, new Callback()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        failedLatch.countDown();
-                        callback.failed(x);
-                    }
-                });
                 contentLatch.countDown();
+                super.onContent(response, chunk, demander);
+            }
+
+            @Override
+            public void onFailure(Response response, Throwable failure)
+            {
+                failedLatch.countDown();
+                super.onFailure(response, failure);
             }
         };
         client.newRequest(newURI(transport))

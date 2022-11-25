@@ -199,8 +199,9 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void onContent(Response proxyResponse, ByteBuffer content, Callback callback)
+        public void onContent(Response proxyResponse, Content.Chunk chunk, Runnable demander)
         {
+            ByteBuffer content = chunk.getByteBuffer();
             byte[] buffer;
             int offset;
             int length = content.remaining();
@@ -216,15 +217,16 @@ public class ProxyServlet extends AbstractProxyServlet
                 offset = 0;
             }
 
-            onResponseContent(request, response, proxyResponse, buffer, offset, length, new Callback.Nested(callback)
+            Callback callback = Callback.from(() ->
             {
-                @Override
-                public void failed(Throwable x)
-                {
-                    super.failed(x);
-                    proxyResponse.abort(x);
-                }
+                chunk.release();
+                demander.run();
+            }, (x) ->
+            {
+                chunk.release();
+                proxyResponse.abort(x);
             });
+            onResponseContent(request, response, proxyResponse, buffer, offset, length, callback);
         }
 
         @Override

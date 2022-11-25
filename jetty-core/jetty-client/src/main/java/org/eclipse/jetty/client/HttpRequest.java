@@ -52,7 +52,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
@@ -552,9 +551,9 @@ public class HttpRequest implements Request
         this.responseListeners.add(new Response.AsyncContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, org.eclipse.jetty.io.Content.Chunk chunk, Runnable demander)
             {
-                listener.onContent(response, content, callback);
+                listener.onContent(response, chunk, demander);
             }
         });
         return this;

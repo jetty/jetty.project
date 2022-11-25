@@ -160,17 +160,21 @@ public class FastCGIProxyHandlerTest
         });
 
         var request = client.newRequest("localhost", proxyConnector.getLocalPort())
-            .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, chunk, demand) ->
             {
                 try
                 {
                     if (delay > 0)
                         TimeUnit.MILLISECONDS.sleep(delay);
-                    callback.succeeded();
+                    demand.run();
                 }
                 catch (InterruptedException x)
                 {
-                    callback.failed(x);
+                    response.abort(x);
+                }
+                finally
+                {
+                    chunk.release();
                 }
             })
             .path(proxyContext.getContextPath() + path);

@@ -265,7 +265,11 @@ public class HTTPClientDocs
             .onResponseBegin(response -> { /* ... */ })
             .onResponseHeader((response, field) -> true)
             .onResponseHeaders(response -> { /* ... */ })
-            .onResponseContentAsync((response, buffer, callback) -> callback.succeeded())
+            .onResponseContentAsync((response, chunk, demand) ->
+            {
+                chunk.release();
+                demand.run();
+            })
             .onResponseFailure((response, failure) -> { /* ... */ })
             .onResponseSuccess(response -> { /* ... */ })
             // Result hook.

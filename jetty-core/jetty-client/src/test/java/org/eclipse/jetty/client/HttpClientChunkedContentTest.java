@@ -113,17 +113,18 @@ public class HttpClientChunkedContentTest
         {
             server.bind(new InetSocketAddress("localhost", 0));
 
-            final AtomicReference<Callback> callbackRef = new AtomicReference<>();
+            final AtomicReference<Runnable> demanderRef = new AtomicReference<>();
             final CountDownLatch firstContentLatch = new CountDownLatch(1);
             final AtomicReference<Result> resultRef = new AtomicReference<>();
             final CountDownLatch completeLatch = new CountDownLatch(1);
             client.newRequest("localhost", server.getLocalPort())
-                .onResponseContentAsync((response, content, callback) ->
+                .onResponseContentAsync((response, chunk, demander) ->
                 {
-                    if (callbackRef.compareAndSet(null, callback))
+                    chunk.release();
+                    if (demanderRef.compareAndSet(null, demander))
                         firstContentLatch.countDown();
                     else
-                        callback.succeeded();
+                        demander.run();
                 })
                 .timeout(5, TimeUnit.SECONDS)
                 .send(result ->
@@ -151,7 +152,7 @@ public class HttpClientChunkedContentTest
                 // Simulate a delay in consuming the content.
                 assertTrue(firstContentLatch.await(5, TimeUnit.SECONDS));
                 Thread.sleep(1000);
-                callbackRef.get().succeeded();
+                demanderRef.get().run();
 
                 // Wait for the client to read 0 and become idle.
                 Thread.sleep(1000);
