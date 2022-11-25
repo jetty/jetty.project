@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -457,18 +457,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(MetaData.Request request)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean isCommitted()
     {
         return committed;
@@ -503,12 +491,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
     }
 
-    public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)
+    public void onIdleTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
     {
         Runnable runnable = httpChannel.onFailure(failure);
-        if (runnable != null)
-            consumer.accept(runnable);
-        return !httpChannel.isRequestHandled();
+        boolean idle = !httpChannel.isRequestHandled();
+        consumer.accept(runnable, idle);
     }
 
     public Runnable onFailure(Throwable failure)

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.UUID;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
@@ -75,6 +76,8 @@ public class SessionDump extends HttpServlet
                 session.setAttribute("test", "value");
                 session.setAttribute("obj", new ObjectAttributeValue(System.currentTimeMillis()));
                 session.setAttribute("WEBCL", new MultiMap<>());
+                UUID uuid = UUID.randomUUID();
+                session.setAttribute("uuid", uuid);
             }
             else if (session != null)
             {

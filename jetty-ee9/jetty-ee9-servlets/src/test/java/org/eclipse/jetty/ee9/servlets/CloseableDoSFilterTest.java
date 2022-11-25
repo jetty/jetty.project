@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee9.servlets;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(WorkDirExtension.class)
@@ -27,5 +29,13 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
     public void setUp() throws Exception
     {
         startServer(workDir, CloseableDoSFilter.class);
+    }
+
+    @Override
+    @Test
+    @Tag("flaky")
+    public void testUnavailableIP() throws Exception
+    {
+        super.testUnavailableIP();
     }
 }

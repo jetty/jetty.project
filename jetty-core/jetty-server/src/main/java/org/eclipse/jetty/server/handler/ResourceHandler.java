@@ -13,18 +13,23 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.time.Duration;
 import java.util.List;
 
-import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -49,6 +54,7 @@ public class ResourceHandler extends Handler.Wrapper
 {
     private final ResourceService _resourceService;
 
+    private ByteBufferPool _byteBufferPool;
     private Resource _resourceBase;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
@@ -61,45 +67,67 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
         if (_resourceBase == null)
         {
-            Context context = ContextHandler.getCurrentContext();
             if (context != null)
                 _resourceBase = context.getBaseResource();
         }
 
-// TODO
-//            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
+        _mimeTypes = context == null ? MimeTypes.DEFAULTS : context.getMimeTypes();
 
-        setupContentFactory();
-
-        if (_resourceService.getStylesheet() == null)
-            _resourceService.setStylesheet(getServer().getDefaultStyleSheet());
+        _byteBufferPool = getByteBufferPool(context);
+        _resourceService.setHttpContentFactory(newHttpContentFactory());
+        _resourceService.setWelcomeFactory(setupWelcomeFactory());
+        if (_resourceService.getStyleSheet() == null)
+            setStyleSheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
     }
 
-    private void setupContentFactory()
+    private static ByteBufferPool getByteBufferPool(ContextHandler.Context context)
     {
-        HttpContent.ContentFactory contentFactory = new CachingContentFactory(new ResourceContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes, _resourceService.getPrecompressedFormats()));
-        _resourceService.setContentFactory(contentFactory);
-        _resourceService.setWelcomeFactory(request ->
+        if (context == null)
+            return new NoopByteBufferPool();
+        Server server = context.getContextHandler().getServer();
+        if (server == null)
+            return new NoopByteBufferPool();
+        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
+        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+    }
+
+    public HttpContent.Factory getHttpContentFactory()
+    {
+        return _resourceService.getHttpContentFactory();
+    }
+
+    protected HttpContent.Factory newHttpContentFactory()
+    {
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
+        return contentFactory;
+    }
+
+    protected ResourceService.WelcomeFactory setupWelcomeFactory()
+    {
+        return request ->
         {
             if (_welcomes == null)
                 return null;
 
             for (String welcome : _welcomes)
             {
-                String welcomeInContext = URIUtil.addPaths(request.getPathInContext(), welcome);
-                Resource welcomePath = _resourceBase.resolve(request.getPathInContext()).resolve(welcome);
+                String pathInContext = Request.getPathInContext(request);
+                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
+                Resource welcomePath = _resourceBase.resolve(pathInContext).resolve(welcome);
                 if (Resources.isReadableFile(welcomePath))
                     return welcomeInContext;
             }
             // not found
             return null;
-        });
+        };
     }
 
     @Override
@@ -111,17 +139,11 @@ public class ResourceHandler extends Handler.Wrapper
             return super.handle(request);
         }
 
-        HttpContent content = _resourceService.getContent(request.getPathInContext(), request);
+        HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
             return super.handle(request); // no content - try other handlers
 
         return (rq, rs, cb) -> _resourceService.doGet(rq, rs, cb, content);
-    }
-
-    // for testing only
-    HttpContent.ContentFactory getContentFactory()
-    {
-        return _resourceService.getContentFactory();
     }
 
     /**
@@ -156,9 +178,9 @@ public class ResourceHandler extends Handler.Wrapper
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStylesheet()
+    public Resource getStyleSheet()
     {
-        return _resourceService.getStylesheet();
+        return _resourceService.getStyleSheet();
     }
 
     public List<String> getWelcomeFiles()
@@ -226,6 +248,17 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
+     * @param base The resourceBase to server content from. If null the
+     * context resource base is used.  If non-null the {@link Resource} is created
+     * from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)} for
+     * this context.
+     */
+    public void setBaseResourceAsString(String base)
+    {
+        setBaseResource(base == null ? null : ResourceFactory.of(this).newResource(base));
+    }
+
+    /**
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
@@ -285,11 +318,6 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceService.getEncodingCacheSize();
     }
 
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
-    }
-
     /**
      * @param redirectWelcome If true, welcome files are redirected rather than forwarded to.
      * redirection is always used if the ResourceHandler is not scoped by
@@ -301,11 +329,11 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
+     * @param styleSheet The location of the style sheet to be used as a String.
      */
-    public void setStylesheet(Resource stylesheet)
+    public void setStyleSheet(Resource styleSheet)
     {
-        _resourceService.setStylesheet(stylesheet);
+        _resourceService.setStyleSheet(styleSheet);
     }
 
     public void setWelcomeFiles(String... welcomeFiles)

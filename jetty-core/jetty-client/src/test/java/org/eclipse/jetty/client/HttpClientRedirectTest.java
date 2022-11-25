@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -162,6 +163,49 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         assertEquals(200, response.getStatus());
         assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
         assertArrayEquals(data, response.getContent());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void test303WithRequestContentNotReproducible(Scenario scenario) throws Exception
+    {
+        start(scenario, new RedirectHandler());
+
+        byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        AsyncRequestContent body = new AsyncRequestContent(ByteBuffer.wrap(data));
+        body.close();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .path("/303/localhost/done")
+            .body(body)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
+        assertEquals(0, response.getContent().length);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void test307WithRequestContentNotReproducible(Scenario scenario) throws Exception
+    {
+        start(scenario, new RedirectHandler());
+
+        byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        AsyncRequestContent body = new AsyncRequestContent(ByteBuffer.wrap(data));
+        body.close();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .path("/307/localhost/done")
+            .body(body)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(307, response.getStatus());
+        assertTrue(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -445,7 +489,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             @Override
             public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getPathInContext().startsWith("/redirect"))
+                if (Request.getPathInContext(request).startsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
@@ -537,7 +581,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if ("/one".equals(target))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
@@ -588,7 +632,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 String serverURI = scenario.getScheme() + "://localhost:" + connector.getLocalPort();
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 if ("/one".equals(target))
                 {
                     Thread.sleep(timeout);
@@ -676,7 +720,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             {
                 Fields fields = Request.extractQueryParameters(request);
 
-                String[] paths = request.getPathInContext().split("/", 4);
+                String[] paths = Request.getPathInContext(request).split("/", 4);
 
                 int status = Integer.parseInt(paths[1]);
                 response.setStatus(status);

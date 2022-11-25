@@ -73,7 +73,6 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -81,7 +80,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -193,7 +191,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    protected MimeTypes _mimeTypes; // TODO move to core context?
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private Logger _logger;
@@ -282,12 +279,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         // Link the handlers
         relinkHandlers();
-
-        /*
-        TODO: error handling.
-        if (errorHandler != null)
-            setErrorHandler(errorHandler);
-        */
     }
     
     public ServletContextApi newServletContextApi()
@@ -656,24 +647,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    /**
-     * @return Returns the mimeTypes.
-     */
-    public MimeTypes getMimeTypes()
-    {
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
-        return _mimeTypes;
-    }
-
-    /**
-     * @param mimeTypes The mimeTypes to set.
-     */
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
-    }
-
     public void setWelcomeFiles(String[] files)
     {
         _welcomeFiles = files;
@@ -786,7 +759,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
-        if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
+        if (pathInContext == null || !pathInContext.startsWith("/"))
             throw new MalformedURLException(pathInContext);
 
         Resource baseResource = getBaseResource();
@@ -838,8 +811,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             Resource resource = getResource(path);
 
-            if (!path.endsWith(URIUtil.SLASH))
-                path = path + URIUtil.SLASH;
+            if (!path.endsWith("/"))
+                path = path + "/";
 
             HashSet<String> set = new HashSet<>();
             for (Resource item: resource.list())
@@ -1001,8 +974,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             setSecurityHandler((SecurityHandler)handler);
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
-        else if (handler instanceof GzipHandler)
-            setGzipHandler((GzipHandler)handler);
         else
         {
             if (handler != null)
@@ -1019,7 +990,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             wrapper.setHandler(handler);
     }
 
-    // TODO: review this.
     private void relinkHandlers()
     {
         Handler.Nested handler = this;
@@ -1086,12 +1056,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
-        // TODO who uses this???
         if (getServer() != null)
             _servletContext.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
-
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
 
         _durableListeners.addAll(getEventListeners());
 
@@ -1115,7 +1081,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         ClassLoader oldWebapploader = null;
         Thread currentThread = null;
 
-        // TODO: Review.
         enterScope(null);
 
         Context context = getContext();
@@ -1138,12 +1103,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             // retain only durable listeners
             setEventListeners(_durableListeners);
             _durableListeners.clear();
-
-            /*
-            TODO:
-            if (_errorHandler != null)
-                _errorHandler.stop();
-            */
 
             for (EventListener l : _programmaticListeners)
             {
@@ -1185,8 +1144,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ServletContextRequest wrap(Request request, String pathInContext)
+    protected ServletContextRequest wrap(Request request)
     {
+        // Need to ask directly to the Context for the pathInContext, rather than using
+        // Request.getPathInContext(), as the request is not yet wrapped in this Context.
+        String pathInContext = getContext().getPathInContext(request.getHttpURI().getCanonicalPath());
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
         if (matchedResource == null)
             return null;
@@ -1216,7 +1178,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
-        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(request.getPathInContext()))
+        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getPathInContext()))
             return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpServletResponse.SC_NOT_FOUND, null);
 
         return super.processByContextHandler(request);
@@ -1685,18 +1647,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         replaceHandler(_servletHandler, servletHandler);
         _servletHandler = servletHandler;
         relinkHandlers();
-    }
-
-    /**
-     * @param gzipHandler the GzipHandler for this ServletContextHandler
-     * @deprecated use {@link #insertHandler(Handler.Nested)} instead
-     */
-    @Deprecated
-    public void setGzipHandler(GzipHandler gzipHandler)
-    {
-        // TODO remove
-        insertHandler(gzipHandler);
-        LOG.warn("ServletContextHandler.setGzipHandler(GzipHandler) is deprecated, use insertHandler(HandlerWrapper) instead.");
     }
 
     /**
@@ -2838,9 +2788,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         @Override
         public String getMimeType(String file)
         {
-            if (_mimeTypes == null)
-                return null;
-            return _mimeTypes.getMimeByExtension(file);
+            return getContext().getMimeTypes().getMimeByExtension(file);
         }
 
         @Override
@@ -2886,9 +2834,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             if (path == null)
                 return null;
             if (path.length() == 0)
-                path = URIUtil.SLASH;
+                path = "/";
             else if (path.charAt(0) != '/')
-                path = URIUtil.SLASH + path;
+                path = "/" + path;
 
             try
             {

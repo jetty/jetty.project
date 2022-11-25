@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -106,7 +105,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
     }
     
     @Override
-    protected void configureWebApp() throws AbstractMojoExecutionException
+    protected void configureWebApp() throws Exception
     {
         super.configureWebApp();
         try

@@ -605,7 +605,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (!HttpMethod.PRI.is(request.getMethod()) &&
                     !HttpMethod.CONNECT.is(request.getMethod()) &&
-                    !_request.getPathInContext().startsWith("/") &&
+                    !Request.getPathInContext(_request).startsWith("/") &&
                     !HttpMethod.OPTIONS.is(request.getMethod()))
                 {
                     _processState = ProcessState.PROCESSING;
@@ -796,7 +796,7 @@ public class HttpChannelState implements HttpChannel, Components
             return _loggedRequest == null ? this : _loggedRequest;
         }
 
-        HttpStream getStream()
+        HttpStream getHttpStream()
         {
             return getHttpChannel()._stream;
         }
@@ -904,12 +904,6 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public String getPathInContext()
-        {
-            return _metaData.getURI().getCanonicalPath();
-        }
-
-        @Override
         public HttpFields getHeaders()
         {
             return _metaData.getFields();
@@ -1005,15 +999,9 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public boolean isPushSupported()
+        public void push(MetaData.Request resource)
         {
-            return true;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getStream().push(request);
+            getHttpStream().push(resource);
         }
 
         @Override
@@ -1047,7 +1035,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public TunnelSupport getTunnelSupport()
         {
-            return getStream().getTunnelSupport();
+            return getHttpStream().getTunnelSupport();
         }
 
         @Override
@@ -1468,7 +1456,7 @@ public class HttpChannelState implements HttpChannel, Components
         public InvocationType getInvocationType()
         {
             // TODO review this as it is probably not correct
-            return _request.getStream().getInvocationType();
+            return _request.getHttpStream().getInvocationType();
         }
     }
 

@@ -585,7 +585,7 @@ public class HttpClientTransportDynamicTest
         int proxyPort = connector.getLocalPort();
         // The proxy speaks both http/1.1 and h2c.
         Origin.Protocol proxyProtocol = new Origin.Protocol(List.of("http/1.1", "h2c"), false);
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, proxyProtocol));
+        client.getProxyConfiguration().addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), false, proxyProtocol));
 
         // Make an upgrade request from HTTP/1.1 to H2C.
         int serverPort = proxyPort + 1; // Any port will do.

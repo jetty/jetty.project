@@ -12,7 +12,7 @@
 //
 
 [[og-jmx]]
-=== Eclipse Jetty Monitoring & Management
+=== JMX Monitoring & Management
 
 Monitoring and management of a Jetty server is important because it allows you to monitor the status of the server (_"Is the server processing requests?"_) and to manage -- i.e. read and possibly change -- its configuration.
 

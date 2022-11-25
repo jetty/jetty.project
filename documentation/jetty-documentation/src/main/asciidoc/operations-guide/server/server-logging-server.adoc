@@ -1,0 +1,227 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-server-logging-server]]
+===== Server Logging
+
+The Jetty code uses the link:http://slf4j.org/[SLF4J] API for its logging.
+
+Thanks to the SLF4J library, the logging of the Jetty server can therefore be directed to the implementation (called SLF4J _binding_) of your choice.
+
+The Jetty project provides an SLF4J binding (via the `jetty-slf4j-impl` Maven artifact) that is used as the default SLF4J binding.
+
+The logging of the Jetty server itself is enabled by default with the `logging` Jetty module, which is a transitive dependency of the `server` module and therefore it is typically always enabled.
+
+The `logging` Jetty module is a _virtual_ module (see xref:og-modules-names[this section]) and its default implementation is provided by the `logging-jetty` Jetty module, which uses the Jetty SLF4J binding.
+
+[[og-server-logging-server-default]]
+====== Default Configuration
+
+The Jetty SLF4J binding is configured with an appender (`org.eclipse.jetty.logging.StdErrAppender`) that directs the logging to `System.err`, and reads its configuration from a file named `jetty-logging.properties` that must be found in the class-path.
+
+The `StdErrAppender` format is:
+
+----
+<datetime>:<level>:<logger name>:<thread name>:<message>
+----
+
+where `<datetime>=yyyy-MM-dd HH:mm:ss.SSS`.
+
+You can configure `StdErrAppender` by specifying the following properties in `jetty-logging.properties`:
+
+org.eclipse.jetty.logging.appender.NAME_CONDENSE=<boolean>::
+Specifies whether to condense logger names, so that for example `org.eclipse.jetty.util.QueuedThreadPool` becomes `oeju.QueuedThreadPool`.
+Default value is `true`.
+
+org.eclipse.jetty.logging.appender.MESSAGE_ALIGN=<integer>::
+Specifies the column at which the logging `<message>` should be printed.
+The value `0` specifies no alignment.
+Default value is `0`.
+
+org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE=<boolean>::
+Specifies whether to escape ISO control characters such as `\r` or `\n` present in the message.
+Character `\r` is replaced with `<` and character `\n` is replaced with `|`; all other ISO control characters are replaced with `?`.
+Default value is `false`.
+
+org.eclipse.jetty.logging.appender.ZONE_ID=<timezone id>::
+Specifies the timezone ID (such as `PST`, or `America/Los_Angeles` or `GMT-8:00`) for the `<datetime>` part of the logging line.
+The empty string specifies the `UTC` timezone.
+Default value is the local timezone.
+
+The `logging-jetty` Jetty module, enabled transitively, provides the configuration file `$JETTY_BASE/resources/jetty-logging.properties` to configure the logging levels, for example:
+
+----
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
+----
+
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    └── http.ini
+----
+
+.jetty-logging.properties
+[source,properties]
+----
+# Do not condense logger names.
+org.eclipse.jetty.logging.appender.NAME_CONDENSE=false
+
+# By default, log at INFO level all Jetty loggers.
+org.eclipse.jetty.LEVEL=INFO
+
+# However, the Jetty client loggers log at DEBUG level.
+org.eclipse.jetty.client.LEVEL=DEBUG
+----
+
+The logging levels that you can specify in the `jetty-logging.properties` file are the usual SLF4J logging levels, `TRACE`, `DEBUG`, `INFO`, `WARN` and `ERROR`, plus two additional levels:
+
+* `ALL`, which is an alias for `TRACE`
+* `OFF`, which disables entirely the logging (not even `ERROR` level messages are logged)
+
+When using the Jetty SLF4J binding, the logging levels can be dynamically changed via JMX, see xref:og-troubleshooting-logging[the troubleshooting section] for more information.
+
+[[og-server-logging-server-default-rolling]]
+====== Capturing Logs to a Rolling File
+
+Having the logging output on `System.err` may be fine at development time, but you typically want the logs to be captured in a file so that they can be looked at even if you don't have a terminal (for example, you started Jetty as a service).
+
+The `console-capture` Jetty module allows you to capture what is written to `System.out` and `System.err` and write it to a log file, by default under the `$JETTY_BASE/logs/` directory.
+
+The `console-capture` Jetty module defines a number of properties that you can customize to control the log directory, the number of days rolled files are retained, etc.
+See the xref:og-module-console-capture[`console-capture` module] for more information.
+
+[NOTE]
+====
+The `console-capture` Jetty module should be used only in conjunction with the `logging-jetty` module, as other SLF4J bindings such as LogBack or Log4j2 have their own, more sophisticated, rolling file appenders.
+====
+
+[[og-server-logging-server-custom]]
+====== Custom Configuration
+
+You can use a different SLF4J binding if you are more familiar with other logging libraries, or if you need custom logging appenders.
+There are a number of out-of-the-box Jetty modules that you can use:
+
+* `logging-logback`, to use the link:http://logback.qos.ch/[LogBack] binding
+* `logging-log4j2`, to use the link:https://logging.apache.org/log4j/2.x/[Log4j2] binding
+* `logging-log4j1`, to use the link:https://logging.apache.org/log4j/1.2/[Log4j1] binding (note that Log4j 1.x is end-of-life)
+* `logging-jul`, to use the `java.util.logging` binding
+* `logging-noop`, to use the SLF4J no-operation binding (discards all logging)
+
+[[og-server-logging-server-custom-logback]]
+====== Logging with LogBack
+
+You can enable, for example, the `logging-logback` Jetty module in this way (from the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=logging-logback,http
+----
+
+Since LogBack is released under a license that is different from Jetty's, you will be prompted to accept the LogBack license.
+Once you accept the LogBack license, you will have the following directory structure:
+
+----
+$JETTY_BASE
+├── lib
+│   └── logging
+│       ├── logback-classic-<version>.jar
+│       └── logback-core-<version>.jar
+├── resources
+│   └── logback.xml
+└── start.d
+    ├── http.ini
+    └── logging-logback.ini
+----
+
+As you can see, the Jetty module system downloaded the required LogBack `+*.jar+` files, and created a `$JETTY_BASE/resources/logback.xml` file that you can configure to customize your LogBack logging.
+Please refer to the link:http://logback.qos.ch/manual/configuration.html[LogBack configuration manual] for more information about how to configure LogBack.
+
+[[og-server-logging-server-custom-log4j2]]
+====== Logging with Log4j2
+
+Similarly to xref:og-server-logging-server-custom-logback[logging with LogBack], you can enable the `logging-log4j2` Jetty module in this way (from the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=logging-log4j2,http
+----
+
+After accepting the Log4j2 license, you will have the following directory structure:
+
+----
+$JETTY_BASE
+├── lib
+│   └── logging
+│       ├── log4j-api-<version>.jar
+│       ├── log4j-core-<version>.jar
+│       └── log4j-slf4j2-impl-<version>.jar
+├── resources
+│   └── log4j2.xml
+└── start.d
+    ├── http.ini
+    └── logging-log4j2.ini
+----
+
+The Jetty module system downloaded the required Log4j2 `+*.jar+` files, and created a `$JETTY_BASE/resources/log4j2.xml` file that you can configure to customize your Log4j2 logging.
+
+[[og-server-logging-server-bridges]]
+====== Bridging Logging to SLF4J
+
+When you use libraries that provide the features you need (for example, JDBC drivers), it may be possible that those libraries use a different logging framework than SLF4J.
+
+SLF4J provides link:http://www.slf4j.org/legacy.html[bridges for legacy logging APIs] that allows you to bridge logging from one of these legacy logging frameworks to SLF4J.
+Once the logging is bridged to SLF4J, you can use the xref:og-server-logging-server-default[default configuration] or the xref:og-server-logging-server-custom[custom configuration] so that your logging is centralized in one place only.
+
+Jetty provides out-of-the-box modules that you can enable to bridge logging from other logging frameworks to SLF4J.
+
+[[og-server-logging-server-bridge-jul]]
+====== Bridging `java.util.logging`
+
+For libraries that use `java.util.logging` as their logging framework you can enable the `logging-jul-capture` Jetty module.
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=logging-jul-capture
+----
+
+The `logging-jul-capture` Jetty module implies `--exec` and therefore spawns a second JVM (see xref:og-start-start[this section]) because it needs to provide the system property `java.util.logging.config.file` (so that `java.util.logging` can read the configuration from the specified file), and because it needs to make available on the System ClassLoader the class `org.slf4j.bridge.SLF4JBridgeHandler`.
+
+For example, a library that uses `java.util.logging` as its logging library is the Postgresql JDBC driver.
+With the `logging-jul-capture` Jetty module, the logging follows this diagram:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant "Postgresql JDBC" as postgresql
+participant java.util.logging
+participant SLF4JBridgeHandler
+participant Jetty
+participant SLF4J
+participant "Jetty SLF4J Binding" as binding
+
+
+postgresql -> java.util.logging
+java.util.logging -> SLF4JBridgeHandler
+SLF4JBridgeHandler -> SLF4J
+SLF4J -> binding
+Jetty -> SLF4J
+SLF4J -> binding
+----
+
+Note how Jetty logs directly to SLF4J, while the Postgresql JDBC driver logs to SLF4J through the `SLF4JBridgeHandler`.
+They both arrive to the SLF4J binding, in this case the Jetty SLF4J binding (but could be any other SLF4J binding such as LogBack).
+
+// TODO: add the other bridges

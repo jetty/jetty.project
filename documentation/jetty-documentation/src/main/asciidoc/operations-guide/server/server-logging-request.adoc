@@ -1,0 +1,62 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-logging-request]]
+===== Request Logging
+
+HTTP requests and responses can be logged to provide data that can be later analyzed with other tools, that can provide information such as the most frequently accessed request URIs, the response status codes, the request/response content lengths, geographical information about the clients, etc.
+
+Request logging is enabled by enabling the `requestlog` Jetty module.
+In the example below, both the `http` Jetty module and the `requestlog` module are enabled, so that you can make HTTP requests to the server and have them logged:
+
+----
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,requestlog
+----
+
+The `$JETTY_BASE` directory looks like this:
+
+[source]
+----
+$JETTY_BASE
+├── logs
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── requestlog.ini
+----
+
+The `$JETTY_BASE/start.d/requestlog.ini` file is the Jetty module configuration file that allows you to configure the `requestlog` module, see xref:og-module-requestlog[this section] for more details.
+
+By default the `requestlog` Jetty module produces the `$JETTY_BASE/logs/yyyy_MM_dd.request.log`, where the pattern `yyyy_MM_dd` is replaced with the current date, for example `2020_01_31`.
+
+The format of the request log lines is the result of a _format string_ that uses formatting symbols to log relevant request/response data.
+
+The default format is the link:https://en.wikipedia.org/wiki/Common_Log_Format[NCSA Format] extended with referrer data and user-agent data.
+A typical log line looks like this:
+
+[source,options=nowrap]
+----
+192.168.0.100 - - [31/Jan/2020:20:30:40 +0000] "GET / HTTP/1.1" 200 6789 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36"
+----
+
+The line above (that uses fake values) shows `192.168.0.100` for the client IP address, a hard-coded `-` for the identity, `-` for the authenticated user name, `[31/Jan/2020:20:30:40 +0000]` for the date and time with timezone, `"GET / HTTP/1.1"` for the HTTP request line, `200` for the HTTP response status code, `6789` for the HTTP response content length, `"-"` for the referrer and `"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36"` for the user-agent.
+
+The format string can be customized as described in xref:og-module-requestlog[this section].
+Request log files are rolled every day, and retained for customizable number of days, by default 90 days.
+
+[NOTE]
+====
+When Jetty is behind a load balancer, you want to log the remote client IP address, not the load balancer IP address. Refer to xref:og-protocols-proxy[this section] to configure the load balancer and Jetty to retain the remote client IP address information.
+====

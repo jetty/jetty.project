@@ -26,9 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MavenWebInfConfiguration
+ * MavenMetaInfConfiguration
  *
- * WebInfConfiguration to take account of overlaid wars expressed as project dependencies and
+ * MetaInfConfiguration to take account of overlaid wars expressed as project dependencies and
  * potential configured via the maven-war-plugin.
  */
 public class MavenMetaInfConfiguration extends MetaInfConfiguration
@@ -101,6 +101,8 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
                 {
                     try
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Adding {}", file.toURI());
                         list.add(context.getResourceFactory().newResource(file.toURI()));
                     }
                     catch (Exception e)

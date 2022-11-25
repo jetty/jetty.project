@@ -68,7 +68,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     {
         _methods.include(HttpMethod.GET.asString());
         _methods.include(HttpMethod.POST.asString());
-        for (String type : MimeTypes.getKnownMimeTypes())
+        for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
             if ("image/svg+xml".equals(type))
                 _paths.exclude("*.svgz");
@@ -523,7 +523,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        final String path = request.getPathInContext();
+        final String path = Request.getPathInContext(request);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle {}", this, request);
@@ -624,9 +624,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             return wrappedRequest.wrapProcessor(super.handle(wrappedRequest));
         }
 
-        // TODO: get mimetype from context.
         // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
-        String mimeType = MimeTypes.getDefaultMimeByExtension(path);
+        String mimeType = request.getContext().getMimeTypes().getMimeByExtension(path);
         if (mimeType != null)
         {
             mimeType = HttpField.valueParameters(mimeType, null);

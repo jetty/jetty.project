@@ -23,6 +23,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -138,7 +139,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         PathSpec pathSpec,
         MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request, pathInContext);
+        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -146,6 +147,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
+    }
+
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override
@@ -806,8 +812,75 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public PushBuilder newPushBuilder()
         {
-            // TODO NYI
-            return null;
+            if (!getConnectionMetaData().isPushSupported())
+                return null;
+
+            HttpFields.Mutable pushHeaders = HttpFields.build(ServletContextRequest.this.getHeaders(), EnumSet.of(
+                HttpHeader.IF_MATCH,
+                HttpHeader.IF_RANGE,
+                HttpHeader.IF_UNMODIFIED_SINCE,
+                HttpHeader.RANGE,
+                HttpHeader.EXPECT,
+                HttpHeader.IF_NONE_MATCH,
+                HttpHeader.IF_MODIFIED_SINCE)
+            );
+
+            String referrer = getRequestURL().toString();
+            String query = getQueryString();
+            if (query != null)
+                referrer += "?" + query;
+            pushHeaders.put(HttpHeader.REFERER, referrer);
+
+            // Any Set-Cookie in the response should be present in the push.
+            HttpFields.Mutable responseHeaders = getResponse().getHeaders();
+            List<String> setCookies = new ArrayList<>(responseHeaders.getValuesList(HttpHeader.SET_COOKIE));
+            setCookies.addAll(responseHeaders.getValuesList(HttpHeader.SET_COOKIE2));
+            String cookies = pushHeaders.get(HttpHeader.COOKIE);
+            if (!setCookies.isEmpty())
+            {
+                StringBuilder pushCookies = new StringBuilder();
+                if (cookies != null)
+                    pushCookies.append(cookies);
+                for (String setCookie : setCookies)
+                {
+                    Map<String, String> cookieFields = HttpCookie.extractBasics(setCookie);
+                    String cookieName = cookieFields.get("name");
+                    String cookieValue = cookieFields.get("value");
+                    String cookieMaxAge = cookieFields.get("max-age");
+                    long maxAge = cookieMaxAge != null ? Long.parseLong(cookieMaxAge) : -1;
+                    if (maxAge > 0)
+                    {
+                        if (pushCookies.length() > 0)
+                            pushCookies.append("; ");
+                        pushCookies.append(cookieName).append("=").append(cookieValue);
+                    }
+                }
+                pushHeaders.put(HttpHeader.COOKIE, pushCookies.toString());
+            }
+
+            String sessionId;
+            HttpSession httpSession = getSession(false);
+            if (httpSession != null)
+            {
+                try
+                {
+                    // Check that the session is valid;
+                    httpSession.getLastAccessedTime();
+                    sessionId = httpSession.getId();
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("invalid HTTP session", x);
+                    sessionId = getRequestedSessionId();
+                }
+            }
+            else
+            {
+                sessionId = getRequestedSessionId();
+            }
+
+            return new PushBuilderImpl(ServletContextRequest.this, pushHeaders, sessionId);
         }
 
         @Override
@@ -1151,16 +1224,22 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
             if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
             {
-                final ServletInputStream in = getInputStream();
+                ServletInputStream in = getInputStream();
                 _readerEncoding = encoding;
                 _reader = new BufferedReader(new InputStreamReader(in, encoding))
                 {
                     @Override
                     public void close() throws IOException
                     {
+                        // Do not call super to avoid marking this reader as closed,
+                        // but do close the ServletInputStream that can be reopened.
                         in.close();
                     }
                 };
+            }
+            else if (_servletChannel.isExpecting100Continue())
+            {
+                _servletChannel.continue100(_httpInput.available());
             }
             _inputState = INPUT_READER;
             return _reader;

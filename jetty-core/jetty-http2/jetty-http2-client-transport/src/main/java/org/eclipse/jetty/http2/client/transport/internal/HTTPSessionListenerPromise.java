@@ -83,11 +83,22 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
     }
 
     @Override
+    public void onGoAway(Session session, GoAwayFrame frame)
+    {
+        if (!failConnectionPromise(new ClosedChannelException()))
+        {
+            HttpConnectionOverHTTP2 connection = getConnection();
+            if (connection != null)
+                connection.remove();
+        }
+    }
+
+    @Override
     public void onClose(Session session, GoAwayFrame frame, Callback callback)
     {
         if (!failConnectionPromise(new ClosedChannelException()))
         {
-            HttpConnectionOverHTTP2 connection = this.connection.getReference();
+            HttpConnectionOverHTTP2 connection = getConnection();
             if (connection != null)
                 onClose(connection, frame);
         }
@@ -106,7 +117,7 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
         TimeoutException failure = new TimeoutException("Idle timeout expired: " + idleTimeout + " ms");
         if (failConnectionPromise(failure))
             return true;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
+        HttpConnectionOverHTTP2 connection = getConnection();
         if (connection != null)
             return connection.onIdleTimeout(idleTimeout, failure);
         return true;
@@ -117,7 +128,7 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
     {
         if (!failConnectionPromise(failure))
         {
-            HttpConnectionOverHTTP2 connection = this.connection.getReference();
+            HttpConnectionOverHTTP2 connection = getConnection();
             if (connection != null)
                 connection.close(failure);
         }
@@ -130,5 +141,10 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
         if (result)
             httpConnectionPromise().failed(failure);
         return result;
+    }
+
+    private HttpConnectionOverHTTP2 getConnection()
+    {
+        return connection.getReference();
     }
 }

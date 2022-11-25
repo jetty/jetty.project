@@ -25,11 +25,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.handler.ReHandlingErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -71,21 +73,22 @@ public class ErrorProcessorTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                if (request.getPathInContext().startsWith("/badmessage/"))
+                String pathInContext = Request.getPathInContext(request);
+                if (pathInContext.startsWith("/badmessage/"))
                 {
-                    int code = Integer.parseInt(request.getPathInContext().substring(request.getPathInContext().lastIndexOf('/') + 1));
+                    int code = Integer.parseInt(pathInContext.substring(pathInContext.lastIndexOf('/') + 1));
                     throw new BadMessageException(code);
                 }
 
                 // produce an exception with an JSON formatted cause message
-                if (request.getPathInContext().startsWith("/jsonmessage/"))
+                if (pathInContext.startsWith("/jsonmessage/"))
                 {
                     String message = "\"}, \"glossary\": {\n \"title\": \"example\"\n }\n {\"";
                     throw new TestException(message);
                 }
 
                 // produce an exception with an XML cause message
-                if (request.getPathInContext().startsWith("/xmlmessage/"))
+                if (pathInContext.startsWith("/xmlmessage/"))
                 {
                     String message =
                         "<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n" +
@@ -96,19 +99,30 @@ public class ErrorProcessorTest
                 }
 
                 // produce an exception with an HTML cause message
-                if (request.getPathInContext().startsWith("/htmlmessage/"))
+                if (pathInContext.startsWith("/htmlmessage/"))
                 {
                     String message = "<hr/><script>alert(42)</script>%3Cscript%3E";
                     throw new TestException(message);
                 }
 
                 // produce an exception with a UTF-8 cause message
-                if (request.getPathInContext().startsWith("/utf8message/"))
+                if (pathInContext.startsWith("/utf8message/"))
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
                     String message = "Euro is &euro; and \u20AC and %E2%82%AC";
                     // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
                     throw new TestException(message);
+                }
+
+                // 200 response
+                if (pathInContext.startsWith("/ok/"))
+                {
+                    Content.Sink.write(
+                        response,
+                        true,
+                        "%s Error %s : %s%n".formatted(pathInContext, request.getAttribute(ErrorProcessor.ERROR_STATUS), request.getAttribute(ErrorProcessor.ERROR_MESSAGE)),
+                        callback);
+                    return;
                 }
 
                 Response.writeError(request, response, callback, 404);
@@ -687,6 +701,104 @@ public class ErrorProcessorTest
         response = connection.getResponse();
         assertThat(response, containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, containsString("Server Error"));
+    }
+
+    @Test
+    public void testRootReHandlingErrorProcessor() throws Exception
+    {
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
+        errorProcessor.put(400, "/ok/badMessage");
+        server.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /no/host HTTP/1.1
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("/ok/badMessage Error 400 : No Host"));
+    }
+
+    @Test
+    public void testRootReHandlingErrorProcessorLoop() throws Exception
+    {
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
+        errorProcessor.put(404, "/not/found");
+        server.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /not/found HTTP/1.1
+                Host: localhost
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(404));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<title>Error 404 Not Found</title>"));
+    }
+
+    @Test
+    public void testRootReHandlingErrorProcessorExceptionLoop() throws Exception
+    {
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(server);
+        errorProcessor.put(444, "/badmessage/444");
+        server.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /badmessage/444 HTTP/1.1
+                Host: localhost
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(444));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<title>Error 444</title>"));
+    }
+
+    @Test
+    public void testContextReHandlingErrorProcessor() throws Exception
+    {
+        server.stop();
+
+        ContextHandler context = new ContextHandler("/ctx");
+        context.setHandler(server.getHandler());
+
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        contexts.addHandler(context);
+        server.setHandler(contexts);
+
+        server.setErrorProcessor(new ErrorProcessor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+               throw new UnsupportedOperationException();
+            }
+        });
+
+        server.start();
+        ReHandlingErrorProcessor.ByHttpStatus errorProcessor = new ReHandlingErrorProcessor.ByHttpStatus(context);
+        errorProcessor.put(444, "/ok/badMessage");
+        context.setErrorProcessor(errorProcessor);
+
+        String rawResponse = connector.getResponse("""
+                GET /ctx/badmessage/444 HTTP/1.1
+                Host: localhost
+                
+                """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("/ok/badMessage Error 444"));
     }
 
     static class TestException extends RuntimeException implements QuietException

@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -712,7 +713,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
     private static class DynamicErrorProcessor extends ErrorProcessor {}
 
-    private class ServerContext extends Attributes.Wrapper implements Context
+    class ServerContext extends Attributes.Wrapper implements Context
     {
         private ServerContext()
         {
@@ -723,6 +724,12 @@ public class Server extends Handler.Wrapper implements Attributes
         public String getContextPath()
         {
             return null;
+        }
+
+        @Override
+        public MimeTypes getMimeTypes()
+        {
+            return MimeTypes.DEFAULTS;
         }
 
         @Override
@@ -784,6 +791,12 @@ public class Server extends Handler.Wrapper implements Attributes
             DecoratedObjectFactory factory = Server.this.getBean(DecoratedObjectFactory.class);
             if (factory != null)
                 factory.destroy(o);
+        }
+
+        @Override
+        public String getPathInContext(String fullPath)
+        {
+            return fullPath;
         }
     }
 

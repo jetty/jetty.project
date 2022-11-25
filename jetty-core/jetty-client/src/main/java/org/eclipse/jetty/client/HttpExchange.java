@@ -19,6 +19,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,7 +223,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         return result;
     }
 
-    public boolean abort(Throwable failure)
+    public void abort(Throwable failure, Promise<Boolean> promise)
     {
         // Atomically change the state of this exchange to be completed.
         // This will avoid that this exchange can be associated to a channel.
@@ -238,7 +239,10 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             LOG.debug("Failed {}: req={}/rsp={} {}", this, abortRequest, abortResponse, failure);
 
         if (!abortRequest && !abortResponse)
-            return false;
+        {
+            promise.succeeded(false);
+            return;
+        }
 
         // We failed this exchange, deal with it.
 
@@ -254,7 +258,8 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborting while queued {}: {}", this, failure);
             notifyFailureComplete(failure);
-            return true;
+            promise.succeeded(true);
+            return;
         }
 
         HttpChannel channel = getHttpChannel();
@@ -264,16 +269,16 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             // Because this exchange is failed, when associate() is called
             // it will return false, and the caller will dispose the channel.
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborted before association {}: {}", this, failure);
+                LOG.debug("Aborting before association {}: {}", this, failure);
             notifyFailureComplete(failure);
-            return true;
+            promise.succeeded(true);
+            return;
         }
 
         // Case #3: exchange was already associated.
-        boolean aborted = channel.abort(this, abortRequest ? failure : null, abortResponse ? failure : null);
         if (LOG.isDebugEnabled())
-            LOG.debug("Aborted ({}) while active {}: {}", aborted, this, failure);
-        return aborted;
+            LOG.debug("Aborting while active {}: {}", this, failure);
+        channel.abort(this, abortRequest ? failure : null, abortResponse ? failure : null, promise);
     }
 
     private void notifyFailureComplete(Throwable failure)

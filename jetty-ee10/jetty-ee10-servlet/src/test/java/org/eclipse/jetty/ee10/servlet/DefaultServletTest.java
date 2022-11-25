@@ -44,11 +44,11 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
@@ -115,7 +115,7 @@ public class DefaultServletTest
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
 
         context = new ServletContextHandler();
-        context.setBaseResource(docRoot);
+        context.setBaseResourceAsPath(docRoot);
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
         context.setClassLoader(extraClassLoader);
@@ -358,7 +358,7 @@ public class DefaultServletTest
         FS.ensureDirExists(docRoot.resolve("three"));
 
         String resBasePath = docRoot.toAbsolutePath().toString();
-        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("baseResource", resBasePath);
 
         String req1 = """
             GET /context/one/deep/ HTTP/1.1\r
@@ -1703,7 +1703,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
 
-        ResourceContentFactory factory = (ResourceContentFactory)context.getServletContext().getAttribute("resourceCache");
+        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
 
         /*
         TODO: fix after HttpContent changes.
@@ -2155,7 +2155,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2174,7 +2173,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2312,7 +2310,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2432,7 +2429,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2451,7 +2447,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2575,7 +2570,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
-        assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
         assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
@@ -2829,6 +2823,7 @@ public class DefaultServletTest
         defholder.setInitParameter("maxCacheSize", "4096");
         defholder.setInitParameter("maxCachedFileSize", "25");
         defholder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("cacheValidationTime", "0");
 
         String rawResponse;
         HttpTester.Response response;

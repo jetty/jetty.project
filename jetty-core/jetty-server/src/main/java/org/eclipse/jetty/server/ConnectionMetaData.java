@@ -46,6 +46,14 @@ public interface ConnectionMetaData extends Attributes
     boolean isSecure();
 
     /**
+     * @return whether the functionality of pushing resources is supported
+     */
+    default boolean isPushSupported()
+    {
+        return false;
+    }
+
+    /**
      * @return The address of the remote end of this connection.  By default, this is the first hop of the underlying
      *         network connection, but it may be wrapped to represent a more remote end point.
      */
@@ -78,83 +86,87 @@ public interface ConnectionMetaData extends Attributes
 
     class Wrapper extends Attributes.Wrapper implements ConnectionMetaData
     {
-        private final ConnectionMetaData _wrapped;
-
         public Wrapper(ConnectionMetaData wrapped)
         {
             super(wrapped);
-            _wrapped = wrapped;
         }
 
-        protected ConnectionMetaData getWrappedConnectionMetaData()
+        @Override
+        public ConnectionMetaData getWrapped()
         {
-            return _wrapped;
+            return (ConnectionMetaData)super.getWrapped();
         }
 
         @Override
         public String getId()
         {
-            return _wrapped.getId();
+            return getWrapped().getId();
         }
 
         @Override
         public HttpConfiguration getHttpConfiguration()
         {
-            return _wrapped.getHttpConfiguration();
+            return getWrapped().getHttpConfiguration();
         }
 
         @Override
         public HttpVersion getHttpVersion()
         {
-            return _wrapped.getHttpVersion();
+            return getWrapped().getHttpVersion();
         }
 
         @Override
         public String getProtocol()
         {
-            return _wrapped.getProtocol();
+            return getWrapped().getProtocol();
         }
 
         @Override
         public Connection getConnection()
         {
-            return _wrapped.getConnection();
+            return getWrapped().getConnection();
         }
 
         @Override
         public Connector getConnector()
         {
-            return _wrapped.getConnector();
+            return getWrapped().getConnector();
         }
 
         @Override
         public boolean isPersistent()
         {
-            return _wrapped.isPersistent();
+            return getWrapped().isPersistent();
         }
 
         @Override
         public boolean isSecure()
         {
-            return _wrapped.isSecure();
+            return getWrapped().isSecure();
+        }
+
+        @Override
+        public boolean isPushSupported()
+        {
+            return getWrapped().isPushSupported();
         }
 
         @Override
         public SocketAddress getRemoteSocketAddress()
         {
-            return _wrapped.getRemoteSocketAddress();
+            return getWrapped().getRemoteSocketAddress();
         }
 
         @Override
         public SocketAddress getLocalSocketAddress()
         {
-            return _wrapped.getLocalSocketAddress();
+            return getWrapped().getLocalSocketAddress();
         }
 
         @Override
         public HostPort getServerAuthority()
         {
-            return _wrapped.getServerAuthority();
+            return getWrapped().getServerAuthority();
         }
     }
 }

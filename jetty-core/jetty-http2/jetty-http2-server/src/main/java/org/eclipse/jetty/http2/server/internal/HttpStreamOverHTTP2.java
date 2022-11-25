@@ -14,7 +14,7 @@
 package org.eclipse.jetty.http2.server.internal;
 
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -431,37 +431,31 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public boolean isPushSupported()
-    {
-        return _stream.getSession().isPushEnabled();
-    }
-
-    @Override
-    public void push(MetaData.Request request)
+    public void push(MetaData.Request resource)
     {
         if (!_stream.getSession().isPushEnabled())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("HTTP/2 push disabled for {}", request);
+                LOG.debug("HTTP/2 push disabled for {}", resource);
             return;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP/2 push {}", request);
+            LOG.debug("HTTP/2 push {}", resource);
 
-        _stream.push(new PushPromiseFrame(_stream.getId(), request), new Promise<>()
+        _stream.push(new PushPromiseFrame(_stream.getId(), resource), new Promise<>()
         {
             @Override
             public void succeeded(Stream pushStream)
             {
-                _connection.push((HTTP2Stream)pushStream, request);
+                _connection.push((HTTP2Stream)pushStream, resource);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not HTTP/2 push {}", request, x);
+                    LOG.debug("Could not HTTP/2 push {}", resource, x);
             }
         }, null); // TODO: handle reset from the client ?
     }
@@ -470,6 +464,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         try
         {
+            _requestMetaData = request;
             Runnable task = _httpChannel.onRequest(request);
             _httpChannel.getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
 
@@ -545,12 +540,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
+    public void onTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
     {
-        Runnable runnable = _httpChannel.onFailure(failure);
-        if (runnable != null)
-            consumer.accept(runnable);
-        return !_httpChannel.isRequestHandled();
+        Runnable task = _httpChannel.onFailure(failure);
+        boolean idle = !_httpChannel.isRequestHandled();
+        consumer.accept(task, idle);
     }
 
     @Override

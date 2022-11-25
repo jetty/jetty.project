@@ -22,9 +22,11 @@ import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -420,6 +422,22 @@ public interface Request
     Request onResponseFailure(Response.FailureListener listener);
 
     /**
+     * <p>Sets a handler for pushed resources.</p>
+     * <p>When resources are pushed from the server, the given {@code pushHandler}
+     * is invoked for every pushed resource.
+     * The parameters to the {@code BiFunction} are this request and the
+     * synthesized request for the pushed resource.
+     * The {@code BiFunction} should return a {@code CompleteListener} that
+     * may also implement other listener interfaces to be notified of various
+     * response events, or {@code null} to signal that the pushed resource
+     * should be canceled.</p>
+     *
+     * @param pushHandler a handler for pushed resource events
+     * @return this request object
+     */
+    Request onPush(BiFunction<Request, Request, Response.CompleteListener> pushHandler);
+
+    /**
      * @param listener a listener for complete event
      * @return this request object
      */
@@ -463,7 +481,7 @@ public interface Request
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
      */
-    boolean abort(Throwable cause);
+    CompletableFuture<Boolean> abort(Throwable cause);
 
     /**
      * @return the abort cause passed to {@link #abort(Throwable)},

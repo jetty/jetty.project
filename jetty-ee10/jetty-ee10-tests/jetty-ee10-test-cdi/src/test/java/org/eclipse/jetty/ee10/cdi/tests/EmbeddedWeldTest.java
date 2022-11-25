@@ -70,7 +70,7 @@ public class EmbeddedWeldTest
         server.addConnector(new LocalConnector(server));
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        context.setBaseResource(Paths.get("src", "test", "weldtest"));
+        context.setBaseResourceAsPath(Paths.get("src", "test", "weldtest"));
         server.setHandler(context);
 
         // Setup context
@@ -189,7 +189,7 @@ public class EmbeddedWeldTest
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setBaseResource(Paths.get("src", "test", "weldtest"));
+        webapp.setBaseResourceAsPath(Paths.get("src", "test", "weldtest"));
         server.setHandler(webapp);
 
         webapp.setInitParameter(org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.ee10.cdi.CdiDecoratingListener.MODE);
@@ -222,7 +222,7 @@ public class EmbeddedWeldTest
         server.addConnector(new LocalConnector(server));
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setBaseResource(Paths.get("src", "test", "weldtest"));
+        webapp.setBaseResourceAsPath(Paths.get("src", "test", "weldtest"));
         server.setHandler(webapp);
 
         // Need the AnnotationConfiguration to detect SCIs

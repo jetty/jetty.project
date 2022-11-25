@@ -179,7 +179,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
@@ -234,7 +234,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
@@ -290,7 +290,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
@@ -346,7 +346,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
@@ -403,7 +403,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
@@ -462,7 +462,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
@@ -528,7 +528,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
@@ -598,7 +598,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response)
             {
-                String target = request.getPathInContext();
+                String target = Request.getPathInContext(request);
                 int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {

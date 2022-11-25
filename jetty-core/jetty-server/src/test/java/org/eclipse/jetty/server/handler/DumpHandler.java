@@ -150,7 +150,7 @@ public class DumpHandler extends Handler.Processor.Blocking
         writer.write("<pre>httpURI.path=" + httpURI.getPath() + "</pre><br/>\n");
         writer.write("<pre>httpURI.query=" + httpURI.getQuery() + "</pre><br/>\n");
         writer.write("<pre>httpURI.pathQuery=" + httpURI.getPathQuery() + "</pre><br/>\n");
-        writer.write("<pre>pathInContext=" + request.getPathInContext() + "</pre><br/>\n");
+        writer.write("<pre>pathInContext=" + Request.getPathInContext(request) + "</pre><br/>\n");
         writer.write("<pre>contentType=" + request.getHeaders().get(HttpHeader.CONTENT_TYPE) + "</pre><br/>\n");
         writer.write("<pre>servername=" + Request.getServerName(request) + "</pre><br/>\n");
         writer.write("<pre>local=" + Request.getLocalAddr(request) + ":" + Request.getLocalPort(request) + "</pre><br/>\n");

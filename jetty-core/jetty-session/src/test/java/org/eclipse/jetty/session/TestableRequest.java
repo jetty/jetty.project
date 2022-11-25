@@ -97,12 +97,6 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public String getPathInContext()
-    {
-        return null;
-    }
-
-    @Override
     public HttpFields getHeaders()
     {
         return null;
@@ -157,17 +151,6 @@ public class TestableRequest implements Request
     public boolean addErrorListener(Predicate<Throwable> onError)
     {
         return false;
-    }
-
-    @Override
-    public boolean isPushSupported()
-    {
-        return false;
-    }
-
-    @Override
-    public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {
     }
 
     @Override

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.InetAddress;
+
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
@@ -49,9 +51,12 @@ public class HostPort
                 if (close < 0)
                     throw new IllegalArgumentException("Bad IPv6 host");
                 _host = authority.substring(0, close + 1);
+                if (!isValidIpAddress(_host))
+                    throw new IllegalArgumentException("Bad IPv6 host");
 
                 if (authority.length() > close + 1)
                 {
+                    // ipv6 with port
                     if (authority.charAt(close + 1) != ':')
                         throw new IllegalArgumentException("Bad IPv6 port");
                     _port = parsePort(authority.substring(close + 2));
@@ -67,21 +72,29 @@ public class HostPort
                 int c = authority.lastIndexOf(':');
                 if (c >= 0)
                 {
-                    // ipv6address
                     if (c != authority.indexOf(':'))
                     {
+                        // ipv6address no port
                         _host = "[" + authority + "]";
+                        if (!isValidIpAddress(_host))
+                            throw new IllegalArgumentException("Bad IPv6 host");
                         _port = 0;
                     }
                     else
                     {
+                        // host/ipv4 with port
                         _host = authority.substring(0, c);
+                        if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                            throw new IllegalArgumentException("Bad Authority");
                         _port = parsePort(authority.substring(c + 1));
                     }
                 }
                 else
                 {
+                    // host/ipv4 without port
                     _host = authority;
+                    if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                        throw new IllegalArgumentException("Bad Authority");
                     _port = 0;
                 }
             }
@@ -94,6 +107,26 @@ public class HostPort
         {
             throw new IllegalArgumentException("Bad HostPort", ex);
         }
+    }
+
+    protected boolean isValidIpAddress(String ip)
+    {
+        try
+        {
+            // Per javadoc, If a literal IP address is supplied, only the validity of the
+            // address format is checked.
+            InetAddress.getByName(ip);
+            return true;
+        }
+        catch (Throwable ignore)
+        {
+            return false;
+        }
+    }
+
+    protected boolean isValidHostName(String name)
+    {
+        return URIUtil.isValidHostRegisteredName(name);
     }
 
     /**

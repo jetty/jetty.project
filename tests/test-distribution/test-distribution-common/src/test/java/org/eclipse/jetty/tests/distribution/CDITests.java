@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;

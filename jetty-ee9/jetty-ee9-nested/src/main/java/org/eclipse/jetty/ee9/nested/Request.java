@@ -243,7 +243,7 @@ public class Request implements HttpServletRequest
 
     public boolean isPushSupported()
     {
-        return !isPush() && getCoreRequest().isPushSupported();
+        return !isPush() && getCoreRequest().getConnectionMetaData().isPushSupported();
     }
 
     private static final EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
@@ -274,7 +274,7 @@ public class Request implements HttpServletRequest
         String id;
         try
         {
-            HttpSession session = getSession();
+            HttpSession session = getSession(false);
             if (session != null)
             {
                 session.getLastAccessedTime(); // checks if session is valid
@@ -343,8 +343,12 @@ public class Request implements HttpServletRequest
             fields.add(new HttpField(HttpHeader.COOKIE, buff.toString()));
         }
 
-        PushBuilder builder = new PushBuilderImpl(this, fields, getMethod(), getQueryString(), id);
-        builder.addHeader("referer", getRequestURL().toString());
+        String query = getQueryString();
+        PushBuilder builder = new PushBuilderImpl(this, fields, getMethod(), query, id);
+        String referrer = getRequestURL().toString();
+        if (query != null)
+            referrer += "?" + query;
+        builder.addHeader("referer", referrer);
 
         return builder;
     }
@@ -1069,16 +1073,22 @@ public class Request implements HttpServletRequest
 
         if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
         {
-            final ServletInputStream in = getInputStream();
+            ServletInputStream in = getInputStream();
             _readerEncoding = encoding;
             _reader = new BufferedReader(new InputStreamReader(in, encoding))
             {
                 @Override
                 public void close() throws IOException
                 {
+                    // Do not call super to avoid marking this reader as closed,
+                    // but do close the ServletInputStream that can be reopened.
                     in.close();
                 }
             };
+        }
+        else if (_channel.isExpecting100Continue())
+        {
+            _channel.send100Continue(_input.available());
         }
         _inputState = INPUT_READER;
         return _reader;
@@ -1545,9 +1555,10 @@ public class Request implements HttpServletRequest
         _method = coreRequest.getMethod();
         _uri = coreRequest.getHttpURI();
 
+        String pathInContext = org.eclipse.jetty.server.Request.getPathInContext(coreRequest);
         _pathInContext = _context.getContextHandler().isCanonicalEncodingURIs()
-            ? coreRequest.getPathInContext()
-            : URIUtil.decodePath(coreRequest.getPathInContext());
+            ? pathInContext
+            : URIUtil.decodePath(pathInContext);
         _httpFields = coreRequest.getHeaders();
 
         setSecure(coreRequest.isSecure());

@@ -65,7 +65,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
     public BufferedResponseHandler()
     {
         _methods.include(HttpMethod.GET.asString());
-        for (String type : MimeTypes.getKnownMimeTypes())
+        for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
             if (type.startsWith("image/") ||
                 type.startsWith("audio/") ||
@@ -129,7 +129,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         if (processor == null)
             return null;
 
-        final String path = request.getPathInContext();
+        final String path = Request.getPathInContext(request);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle {} in {}", this, request, request.getContext());
@@ -151,7 +151,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         }
 
         // If the mime type is known from the path then apply mime type filtering.
-        String mimeType = MimeTypes.getDefaultMimeByExtension(path); // TODO context specicif mimetypes : context.getMimeType(path);
+        String mimeType = request.getContext().getMimeTypes().getMimeByExtension(path);
         if (mimeType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);

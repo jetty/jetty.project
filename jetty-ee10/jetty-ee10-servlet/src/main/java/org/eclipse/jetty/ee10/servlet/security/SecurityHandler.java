@@ -514,7 +514,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
 
                         if (isAuthMandatory)
                         {
-                            boolean authorized = checkWebResourcePermissions(request.getPathInContext(), request, response, roleInfo, userAuth.getUserIdentity());
+                            boolean authorized = checkWebResourcePermissions(Request.getPathInContext(request), request, response, roleInfo, userAuth.getUserIdentity());
                             if (!authorized)
                             {
                                 Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN, "!role");

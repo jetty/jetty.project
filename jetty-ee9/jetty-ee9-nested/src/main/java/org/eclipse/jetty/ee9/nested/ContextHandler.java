@@ -194,7 +194,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
@@ -624,9 +623,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             setErrorHandler(new ErrorHandler());
 
         setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
-
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
 
         _durableListeners.addAll(getEventListeners());
 
@@ -1102,6 +1098,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * @return Returns the resourceBase.
      */
+    @ManagedAttribute("document root for context")
     public Resource getBaseResource()
     {
         return _coreContextHandler.getBaseResource();
@@ -1109,8 +1106,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /**
      * @return Returns the base resource as a string.
+     * @deprecated use #getBaseResource()
      */
-    @ManagedAttribute("document root for context")
+    @Deprecated
     public String getResourceBase()
     {
         Resource resourceBase = _coreContextHandler.getBaseResource();
@@ -1121,7 +1119,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Set the base resource for this context.
      *
      * @param base The resource used as the base for all static content of this context.
-     * @see #setResourceBase(String)
      */
     public void setBaseResource(Resource base)
     {
@@ -1132,11 +1129,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Set the base resource for this context.
      *
      * @param base The resource used as the base for all static content of this context.
-     * @see #setResourceBase(String)
+     * @see #setBaseResource(Resource)
      */
-    public void setBaseResource(Path base)
+    public void setBaseResourceAsPath(Path base)
     {
-        _coreContextHandler.setBaseResource(base);
+        _coreContextHandler.setBaseResourceAsPath(base);
+    }
+
+    /**
+     * Set the base resource for this context.
+     *
+     * @param base The resource used as the base for all static content of this context.
+     * @see #setBaseResource(Resource)
+     */
+    public void setBaseResourceAsString(String base)
+    {
+        _coreContextHandler.setBaseResourceAsString(base);
     }
 
     /**
@@ -1170,19 +1178,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * @return Returns the mimeTypes.
      */
-    public MimeTypes getMimeTypes()
+    public MimeTypes.Mutable getMimeTypes()
     {
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
-        return _mimeTypes;
-    }
-
-    /**
-     * @param mimeTypes The mimeTypes to set.
-     */
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
+        return _coreContextHandler.getMimeTypes();
     }
 
     public void setWelcomeFiles(String[] files)
@@ -1372,7 +1370,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
-        if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
+        if (pathInContext == null || !pathInContext.startsWith("/"))
             throw new MalformedURLException(pathInContext);
 
         Resource baseResource = _coreContextHandler.getBaseResource();
@@ -1449,13 +1447,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Convert a URL or path to a Resource. The default implementation is a wrapper for {@link ResourceFactory#newResource(String)}.
      *
-     * @param urlOrPath The URL or path to convert
+     * @param uriOrPath The URL or path to convert
      * @return The Resource for the URL/path
      * @throws IOException The Resource could not be created.
      */
-    public Resource newResource(String urlOrPath) throws IOException
+    public Resource newResource(String uriOrPath) throws IOException
     {
-        return ResourceFactory.of(this).newResource(urlOrPath);
+        return ResourceFactory.of(this).newResource(uriOrPath);
     }
 
     public Set<String> getResourcePaths(String path)
@@ -1464,8 +1462,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             Resource resource = getResource(path);
 
-            if (!path.endsWith(URIUtil.SLASH))
-                path = path + URIUtil.SLASH;
+            if (!path.endsWith("/"))
+                path = path + "/";
 
             HashSet<String> set = new HashSet<>();
 
@@ -1754,9 +1752,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getMimeType(String file)
         {
-            if (_mimeTypes == null)
-                return null;
-            return _mimeTypes.getMimeByExtension(file);
+            return _coreContext.getMimeTypes().getMimeByExtension(file);
         }
 
         @Override
@@ -1802,9 +1798,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (path == null)
                 return null;
             if (path.length() == 0)
-                path = URIUtil.SLASH;
+                path = "/";
             else if (path.charAt(0) != '/')
-                path = URIUtil.SLASH + path;
+                path = "/" + path;
 
             try
             {
@@ -2353,10 +2349,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
                                      org.eclipse.jetty.server.handler.ContextHandler.Context context,
                                      org.eclipse.jetty.server.Request wrapped,
-                                     String pathInContext,
                                      HttpChannel httpChannel)
         {
-            super(contextHandler, context, wrapped, pathInContext);
+            super(contextHandler, context, wrapped);
             _httpChannel = httpChannel;
         }
 
@@ -2370,14 +2365,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         CoreContextHandler()
         {
-            super.setHandler(new Handler.Abstract()
-            {
-                @Override
-                public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
-                {
-                    return CoreContextHandler.this;
-                }
-            });
+            super.setHandler(new CoreToNestedHandler());
             addBean(ContextHandler.this, true);
         }
 
@@ -2444,7 +2432,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected ContextRequest wrap(org.eclipse.jetty.server.Request request, String pathInContext)
+        protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
         {
             HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().get(HttpChannel.class.getName());
             if (httpChannel == null)
@@ -2462,7 +2450,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
             }
 
-            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, pathInContext, httpChannel);
+            CoreContextRequest coreContextRequest = new CoreContextRequest(this, this.getContext(), request, httpChannel);
             httpChannel.onRequest(coreContextRequest);
             return coreContextRequest;
         }
@@ -2509,6 +2497,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             public APIContext getAPIContext()
             {
                 return _apiContext;
+            }
+        }
+
+        private class CoreToNestedHandler extends Abstract
+        {
+            @Override
+            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            {
+                return CoreContextHandler.this;
             }
         }
     }

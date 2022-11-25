@@ -121,6 +121,7 @@ public interface Request extends Attributes, Content.Source
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
+     *
      * @see HttpStream#getId()
      */
     String getId();
@@ -142,6 +143,8 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * @return the HTTP URI of this request
+     * @see #getContextPath(Request)
+     * @see #getPathInContext(Request)
      */
     HttpURI getHttpURI();
 
@@ -151,10 +154,31 @@ public interface Request extends Attributes, Content.Source
     Context getContext();
 
     /**
-     * TODO see discussion in #7713, as this path should probably be canonically encoded - ie everything but %25 and %2F decoded
-     * @return The part of the decoded path of the URI after any context path prefix has been removed.
+     * <p>Returns the context path of this Request.</p>
+     * <p>This is equivalent to {@code request.getContext().getContextPath()}.</p>
+     *
+     * @param request The request to get the context path from.
+     * @return The contextPath of the request.
+     * @see Context#getContextPath()
      */
-    String getPathInContext();
+    static String getContextPath(Request request)
+    {
+        return request.getContext().getContextPath();
+    }
+
+    /**
+     * <p>Returns the canonically encoded path of the URI, scoped to the current context.</p>
+     * <p>For example, when the request has a {@link Context} with {@code contextPath=/ctx} and the request's
+     * {@link HttpURI} canonical path is {@code canonicalPath=/ctx/foo}, then {@code pathInContext=/foo}.</p>
+     *
+     * @return The part of the canonically encoded path of the URI after any context path prefix has been removed.
+     * @see HttpURI#getCanonicalPath()
+     * @see Context#getContextPath()
+     */
+    static String getPathInContext(Request request)
+    {
+        return request.getContext().getPathInContext(request.getHttpURI().getCanonicalPath());
+    }
 
     /**
      * @return the HTTP headers of this request
@@ -179,13 +203,17 @@ public interface Request extends Attributes, Content.Source
     @Override
     Content.Chunk read();
 
-    // TODO should this be on the connectionMetaData?
-    default boolean isPushSupported()
+    /**
+     * <p>Pushes the given {@code resource} to the client.</p>
+     *
+     * @param resource the resource to push
+     * @throws UnsupportedOperationException if the push functionality is not supported
+     * @see ConnectionMetaData#isPushSupported()
+     */
+    default void push(MetaData.Request resource)
     {
-        return false; // TODO
+        throw new UnsupportedOperationException();
     }
-
-    void push(MetaData.Request request); // TODO
 
     /**
      * <p>Adds a listener for asynchronous errors.</p>
@@ -510,12 +538,6 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public String getPathInContext()
-        {
-            return getWrapped().getPathInContext();
-        }
-
-        @Override
         public HttpFields getHeaders()
         {
             return getWrapped().getHeaders();
@@ -564,15 +586,9 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public boolean isPushSupported()
+        public void push(MetaData.Request resource)
         {
-            return getWrapped().isPushSupported();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getWrapped().push(request);
+            getWrapped().push(resource);
         }
 
         @Override
@@ -688,5 +704,22 @@ public interface Request extends Attributes, Content.Source
             if (processor != null)
                 processor.process(this, response, callback);
         }
+    }
+
+    /**
+     * <p>Creates a new {@link HttpURI} from the given Request's HttpURI and the given path in context.</p>
+     * <p>For example, for {@code contextPath=/ctx}, {@code request.httpURI=http://host/ctx/path?a=b}, and
+     * {@code newPathInContext=/newPath}, the returned HttpURI is {@code http://host/ctx/newPath?a=b}.</p>
+     *
+     * @param request The request to base the new HttpURI on.
+     * @param newPathInContext The new path in context for the new HttpURI
+     * @return A new immutable HttpURI with the path in context replaced, but query string and path
+     * parameters retained.
+     */
+    static HttpURI newHttpURIFrom(Request request, String newPathInContext)
+    {
+        return HttpURI.build(request.getHttpURI())
+            .path(URIUtil.addPaths(getContextPath(request), newPathInContext))
+            .asImmutable();
     }
 }

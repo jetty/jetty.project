@@ -35,7 +35,7 @@ public class OneServletContextWithSession
         ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setBaseResource(baseResource.getPath());
+        context.setBaseResource(baseResource);
         server.setHandler(context);
 
         // Access the SessionHandler from the context.

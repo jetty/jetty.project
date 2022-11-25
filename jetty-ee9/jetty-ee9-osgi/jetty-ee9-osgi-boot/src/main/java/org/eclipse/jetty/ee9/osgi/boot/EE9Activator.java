@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -588,6 +589,9 @@ public class EE9Activator implements BundleActivator
         //track jetty Server instances
         _tracker = new ServiceTracker(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(context.getBundle()));
         _tracker.open();
+
+        //register for bundleresource: url resource handling
+        ResourceFactory.registerResourceFactory("bundleresource", new URLResourceFactory());
     }
 
     /**

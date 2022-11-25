@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -43,7 +44,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
@@ -113,7 +113,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        ResourceCollection getExtraClasspath();
+        List<Resource> getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
@@ -179,8 +179,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (_parent == null)
             throw new IllegalArgumentException("no parent classloader!");
 
-        _extensions.add(".jar");
-        _extensions.add(".zip");
+        _extensions.add("jar");
+        _extensions.add("zip");
 
         // TODO remove this system property
         String extensions = System.getProperty(WebAppClassLoader.class.getName() + ".extensions");
@@ -193,13 +193,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             }
         }
 
-        if (context.getExtraClasspath() != null)
-        {
-            for (Resource resource : context.getExtraClasspath().getResources())
-            {
-                addClassPath(resource);
-            }
-        }
+        for (Resource extra : context.getExtraClasspath())
+            addClassPath(extra);
     }
 
     /**
@@ -224,16 +219,23 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
-     * @param resources The resources to add to the classpath
-     * @throws IOException if unable to add classpath from resource
+     * @param resource The resources to add to the classpath
      */
-    public void addClassPath(Resource resources)
-        throws IOException
+    public void addClassPath(Resource resource)
     {
-        for (Resource resource: resources)
+        for (Resource r : resource)
         {
-            if (Resources.exists(resource))
-                addURL(resource.getURI().toURL());
+            if (resource.exists())
+            {
+                try
+                {
+                    addURL(r.getURI().toURL());
+                }
+                catch (MalformedURLException e)
+                {
+                    throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
+                }
+            }
             else
             {
                 if (LOG.isDebugEnabled())

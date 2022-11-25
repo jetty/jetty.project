@@ -16,8 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -26,10 +25,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -47,12 +54,13 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
+    private ByteBufferPool _byteBufferPool;
     Resource _baseResource;
     ContextHandler _context;
-    Resource _defaultStylesheet;
+    Resource _defaultStyleSheet;
     MimeTypes _mimeTypes;
     private final ResourceService _resourceService;
-    Resource _stylesheet;
+    Resource _styleSheet;
     String[] _welcomes = {"index.html"};
 
     public ResourceHandler(ResourceService resourceService)
@@ -69,7 +77,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             {
             }
         });
-        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[]{".svgz"})));
+        _resourceService.setGzipEquivalentFileExtensions(List.of(".svgz"));
     }
 
     @Override
@@ -78,9 +86,9 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_welcomes == null)
             return null;
 
-        for (int i = 0; i < _welcomes.length; i++)
+        for (String s : _welcomes)
         {
-            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
+            String welcomeInContext = URIUtil.addPaths(pathInContext, s);
             Resource welcome = newResource(welcomeInContext);
             if (welcome.exists())
                 return welcomeInContext;
@@ -95,12 +103,39 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         APIContext scontext = ContextHandler.getCurrentContext();
         _context = (scontext == null ? null : scontext.getContextHandler());
         if (_mimeTypes == null)
-            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
+            _mimeTypes = _context == null ? MimeTypes.DEFAULTS : _context.getMimeTypes();
 
-        _resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats()));
+        _byteBufferPool = getByteBufferPool(_context);
+        if (_resourceService.getHttpContentFactory() == null)
+            _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(this);
 
         super.doStart();
+    }
+
+    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    {
+        if (contextHandler == null)
+            return new NoopByteBufferPool();
+        Server server = contextHandler.getServer();
+        if (server == null)
+            return new NoopByteBufferPool();
+        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
+        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+    }
+
+    public HttpContent.Factory getHttpContentFactory()
+    {
+        return _resourceService.getHttpContentFactory();
+    }
+
+    protected HttpContent.Factory newHttpContentFactory()
+    {
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
+        return contentFactory;
     }
 
     /**
@@ -154,7 +189,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
 
         if (Resources.missing(r) && path.endsWith("/jetty-dir.css"))
-            r = getStylesheet();
+            r = getStyleSheet();
 
         if (r == null)
         {
@@ -182,7 +217,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
 
         if ((r == null || !r.exists()) && uri.getPath().endsWith("/jetty-dir.css"))
-            r = getStylesheet();
+            r = getStyleSheet();
 
         if (r == null)
         {
@@ -206,19 +241,19 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStylesheet()
+    public Resource getStyleSheet()
     {
-        if (_stylesheet != null)
+        if (_styleSheet != null)
         {
-            return _stylesheet;
+            return _styleSheet;
         }
         else
         {
-            if (_defaultStylesheet == null)
+            if (_defaultStyleSheet == null)
             {
-                _defaultStylesheet = getServer().getDefaultStyleSheet();
+                _defaultStyleSheet = getServer().getDefaultStyleSheet();
             }
-            return _defaultStylesheet;
+            return _defaultStyleSheet;
         }
     }
 
@@ -412,35 +447,44 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     @Deprecated
     public void setResourceBase(String resourceBase)
     {
+        setBaseResourceAsString(resourceBase);
+    }
+
+    /**
+     * @param baseResource The base resource as a string.
+     * @deprecated use {@link #setBaseResource(Resource)}
+     */
+    public void setBaseResourceAsString(String baseResource)
+    {
         try
         {
-            setBaseResource(ResourceFactory.of(this).newResource(resourceBase));
+            setBaseResource(ResourceFactory.of(this).newResource(baseResource));
         }
         catch (Exception e)
         {
-            LOG.warn("Invalid Base Resource reference: {}", resourceBase, e);
-            throw new IllegalArgumentException(resourceBase);
+            LOG.warn("Invalid Base Resource reference: {}", baseResource, e);
+            throw new IllegalArgumentException(baseResource);
         }
     }
 
     /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
+     * @param styleSheet The location of the style sheet to be used as a String.
      */
-    public void setStylesheet(String stylesheet)
+    public void setStyleSheet(String styleSheet)
     {
         try
         {
-            _stylesheet = ResourceFactory.of(this).newResource(stylesheet);
-            if (!_stylesheet.exists())
+            _styleSheet = ResourceFactory.of(this).newResource(styleSheet);
+            if (!_styleSheet.exists())
             {
-                LOG.warn("unable to find custom stylesheet: {}", stylesheet);
-                _stylesheet = null;
+                LOG.warn("unable to find custom styleSheet: {}", styleSheet);
+                _styleSheet = null;
             }
         }
         catch (Exception e)
         {
-            LOG.warn("Invalid StyleSheet reference: {}", stylesheet, e);
-            throw new IllegalArgumentException(stylesheet);
+            LOG.warn("Invalid StyleSheet reference: {}", styleSheet, e);
+            throw new IllegalArgumentException(styleSheet);
         }
     }
 

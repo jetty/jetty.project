@@ -480,7 +480,7 @@ public abstract class ProxyHandler extends Handler.Processor
      * <p>Forward proxies are configured in client applications that use
      * {@link HttpClient} in this way:</p>
      * <pre>{@code
-     * httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
+     * httpClient.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
      * }</pre>
      *
      * @see org.eclipse.jetty.client.ProxyConfiguration

@@ -110,6 +110,10 @@
             <servletApiVersion>${jetty.servlet.api.version}</servletApiVersion>
           </scriptVariables>
           <settingsFile>src/it/settings.xml</settingsFile>
+          <pomExcludes>
+            <!-- enable when normalization of METAINF_RESOURCES is fixed -->
+            <pomExclude>jetty-effective-web-xml-it/pom.xml</pomExclude>
+          </pomExcludes>
           <goals>
             <goal>clean</goal>
           </goals>

@@ -792,13 +792,16 @@ public class Response implements HttpServletResponse
         if (_mimeType != null && _mimeType.isCharsetAssumed())
             return _mimeType.getCharsetString();
 
+        // Get MimeTypes from context
+        MimeTypes mimeTypes = _channel.getRequest().getCoreRequest().getContext().getMimeTypes();
+
         // Try charset assumed from content type (assumed charsets are not added to content type header).
-        encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+        encoding = mimeTypes.getCharsetAssumedFromContentType(_contentType);
         if (encoding != null)
             return encoding;
 
         // Try char set inferred from content type.
-        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+        encoding = mimeTypes.getCharsetInferredFromContentType(_contentType);
         if (encoding != null)
         {
             if (setContentType)

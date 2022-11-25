@@ -38,7 +38,7 @@ public class FileServerXml
         Resource fileServerXml = resourceFactory.newSystemResource("fileserver.xml");
         Resource baseResource = resourceFactory.newResource(basePath);
         XmlConfiguration configuration = new XmlConfiguration(fileServerXml);
-        configuration.getIdMap().put("fileserver.baseResource", baseResource);
+        configuration.getProperties().put("fileserver.baseResource", baseResource.toString());
         configuration.getProperties().put("http.port", Integer.toString(port));
         Server server = (Server)configuration.configure();
         server.addBean(resourceFactory, true);

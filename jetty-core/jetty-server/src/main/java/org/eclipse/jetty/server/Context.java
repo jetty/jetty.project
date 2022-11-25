@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.resource.Resource;
@@ -35,7 +36,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public interface Context extends Attributes, Decorator, Executor
 {
     /**
-     * @return The URI path prefix of the context, which may be null for the server context, or "/" for the root context.
+     * @return the context path of this Context
      */
     String getContextPath();
 
@@ -47,6 +48,8 @@ public interface Context extends Attributes, Decorator, Executor
 
     List<String> getVirtualHosts();
 
+    MimeTypes getMimeTypes();
+
     @Override
     /** execute runnable in container thread scoped to context */
     void execute(Runnable runnable);
@@ -56,4 +59,15 @@ public interface Context extends Attributes, Decorator, Executor
     
     /** scope the calling thread to the context and request and run the runnable. */
     void run(Runnable runnable, Request request);
+
+    /**
+     * <p>Returns a URI path scoped to this Context.</p>
+     * <p>For example, if the context path is {@code /ctx} then a
+     * full path of {@code /ctx/foo/bar} will return {@code /foo/bar}.</p>
+     *
+     * @param fullPath A full URI path
+     * @return The URI path scoped to this Context, or {@code null} if the full path does not match this Context.
+     *         The empty string is returned if the full path is exactly the context path.
+     */
+    String getPathInContext(String fullPath);
 }

@@ -28,6 +28,7 @@ import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,16 +142,17 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public boolean onIdleTimeout(Stream.Server stream, Throwable failure)
+        public void onIdleTimeout(Stream.Server stream, Throwable failure, Promise<Boolean> promise)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            return getConnection().onIdleTimeout((HTTP3Stream)stream, failure, task ->
+            getConnection().onIdleTimeout((HTTP3Stream)stream, failure, (task, timedOut) ->
             {
                 if (task != null)
                 {
                     ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                     protocolSession.offer(task, true);
                 }
+                promise.succeeded(timedOut);
             });
         }
 

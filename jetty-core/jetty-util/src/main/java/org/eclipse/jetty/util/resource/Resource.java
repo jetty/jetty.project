@@ -17,13 +17,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
@@ -33,9 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -47,9 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Resource implements Iterable<Resource>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-    private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
     public static String dump(Resource resource)
     {
@@ -57,43 +49,6 @@ public abstract class Resource implements Iterable<Resource>
             return "null exists=false directory=false lm=-1";
         return "%s exists=%b directory=%b lm=%s"
             .formatted(resource.toString(), resource.exists(), resource.isDirectory(), resource.lastModified());
-    }
-
-    /**
-     * Construct a resource from a uri.
-     *
-     * @param uri A URI.
-     * @return A Resource object.
-     */
-    static Resource create(URI uri)
-    {
-        try
-        {
-            // If the URI is not absolute
-            if (!uri.isAbsolute())
-            {
-                // If it is an absolute path,
-                if (uri.toString().startsWith("/"))
-                    // just add the scheme
-                    uri = new URI("file", uri.toString(), null);
-                else
-                    // otherwise resolve against the current directory
-                    uri = Paths.get("").toAbsolutePath().toUri().resolve(uri);
-
-                // Correct any `file:/path` to `file:///path` mistakes
-                uri = URIUtil.correctFileURI(uri);
-            }
-
-            // If the scheme is allowed by PathResource, we can build a non-mounted PathResource.
-            if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-                return PathResource.of(uri);
-
-            return MountedPathResource.of(uri);
-        }
-        catch (URISyntaxException | ProviderNotFoundException | IOException ex)
-        {
-            throw new IllegalArgumentException(ex);
-        }
     }
 
     /**
@@ -113,11 +68,8 @@ public abstract class Resource implements Iterable<Resource>
     public abstract boolean isContainedIn(Resource r);
 
     /**
-     * Return an Iterator of all Resource's referenced in this Resource.
-     *
-     * <p>
-     *     This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator.
-     * </p>
+     * <p>Return an Iterator of all Resource's referenced in this Resource.</p>
+     * <p>This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator of this resource.</p>
      *
      * @return the iterator of Resources.
      */
@@ -198,32 +150,40 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Creates a new input stream to the resource.
      *
-     * @return an input stream to the resource
-     * @throws IOException if unable to open the input stream
+     * @return an input stream to the resource or null if one is not available.
+     * @throws IOException if there is a problem opening the input stream
      */
     public InputStream newInputStream() throws IOException
     {
-        return Files.newInputStream(getPath(), StandardOpenOption.READ);
+        Path path = getPath();
+        if (path == null)
+            return null;
+        return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
     /**
      * Readable ByteChannel for the resource.
      *
-     * @return an readable bytechannel to the resource or null if one is not available.
+     * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
      */
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
+        Path path = getPath();
+        if (path == null)
+            return null;
         return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
 
     /**
-     * <p>List of existing Resources contained in the given resource.</p>
+     * <p>List of contents of a directory {@link Resource}.</p>
      *
-     * <p>Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.</p>
+     * <p>Ordering is {@link java.nio.file.FileSystem} dependent, so callers may wish to sort the return value to ensure deterministic behavior.</p>
      *
-     * @return a mutable list of resources contained in the tracked resource,
-     * or an empty immutable list if unable to build the list.
+     * @return a mutable list of resources contained in the directory resource,
+     * or an empty immutable list if unable to build the list  (e.g. the resource is not a directory or not readable).
+     * @see Resource#isDirectory()
+     * @see Resource#isReadable()
      */
     public List<Resource> list()
     {

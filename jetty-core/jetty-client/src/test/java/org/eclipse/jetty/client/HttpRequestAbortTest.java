@@ -87,8 +87,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 @Override
                 public void onQueued(Request request)
                 {
-                    aborted.set(request.abort(cause));
-                    latch.countDown();
+                    request.abort(cause).thenAccept(b ->
+                    {
+                        aborted.set(b);
+                        latch.countDown();
+                    });
                 }
 
                 @Override
@@ -130,8 +133,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 @Override
                 public void onBegin(Request request)
                 {
-                    aborted.set(request.abort(cause));
-                    latch.countDown();
+                    request.abort(cause).thenAccept(b ->
+                    {
+                        aborted.set(b);
+                        latch.countDown();
+                    });
                 }
 
                 @Override
@@ -172,8 +178,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 @Override
                 public void onHeaders(Request request)
                 {
-                    aborted.set(request.abort(cause));
-                    latch.countDown();
+                    request.abort(cause).thenAccept(b ->
+                    {
+                        aborted.set(b);
+                        latch.countDown();
+                    });
                 }
 
                 @Override
@@ -214,8 +223,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             request.onRequestCommit(r ->
             {
-                aborted.set(r.abort(cause));
-                latch.countDown();
+                r.abort(cause).thenAccept(b ->
+                {
+                    aborted.set(b);
+                    latch.countDown();
+                });
             }).timeout(5, TimeUnit.SECONDS).send();
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -253,8 +265,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             request.onRequestCommit(r ->
             {
-                aborted.set(r.abort(cause));
-                latch.countDown();
+                r.abort(cause).thenAccept(b ->
+                {
+                    aborted.set(b);
+                    latch.countDown();
+                });
             }).body(new ByteBufferRequestContent(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
             {
                 @Override
@@ -309,8 +324,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             {
                 request.onRequestContent((r, c) ->
                 {
-                    aborted.set(r.abort(cause));
-                    latch.countDown();
+                    r.abort(cause).thenAccept(b ->
+                    {
+                        aborted.set(b);
+                        latch.countDown();
+                    });
                 }).body(new ByteBufferRequestContent(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
                 {
                     @Override
@@ -395,8 +413,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             try
             {
                 TimeUnit.MILLISECONDS.sleep(delay);
-                aborted.set(request.abort(cause));
-                latch.countDown();
+                request.abort(cause).thenAccept(b ->
+                {
+                    aborted.set(b);
+                    latch.countDown();
+                });
             }
             catch (InterruptedException x)
             {
@@ -464,7 +485,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                if ("/done".equals(request.getPathInContext()))
+                if ("/done".equals(org.eclipse.jetty.server.Request.getPathInContext(request)))
                     callback.succeeded();
                 else
                     Response.sendRedirect(request, response, callback, "/done");
@@ -488,8 +509,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 // Abort the request after the 3xx response but before issuing the next request
                 if (!result.isFailed())
                 {
-                    aborted.set(result.getRequest().abort(cause));
-                    latch.countDown();
+                    result.getRequest().abort(cause).thenAccept(b ->
+                    {
+                        aborted.set(b);
+                        latch.countDown();
+                    });
                 }
                 super.onComplete(result);
             }

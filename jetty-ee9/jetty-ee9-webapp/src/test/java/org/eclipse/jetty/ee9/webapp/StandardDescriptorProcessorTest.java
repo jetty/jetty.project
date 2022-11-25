@@ -55,7 +55,7 @@ public class StandardDescriptorProcessorTest
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
         Path docroot = workDir.getEmptyPathDir();
-        wac.setBaseResource(docroot);
+        wac.setBaseResourceAsPath(docroot);
         wac.setDescriptor(webXml.toUri().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));

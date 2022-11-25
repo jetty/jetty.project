@@ -50,6 +50,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentest4j.TestAbortedException;
@@ -268,7 +269,8 @@ public class HttpClientTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoUnixDomain")
+    @MethodSource("transportsTCP")
+    @Tag("external")
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -276,7 +278,8 @@ public class HttpClientTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoUnixDomain")
+    @MethodSource("transportsTCP")
+    @Tag("external")
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
@@ -285,8 +288,9 @@ public class HttpClientTimeoutTest extends AbstractTest
 
     private void testConnectTimeoutFailsRequest(Transport transport, boolean blocking) throws Exception
     {
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -308,14 +312,16 @@ public class HttpClientTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsTCP")
+    @Tag("external")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
         Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
 
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        String host = "example.com";
+        int port = 81;
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -339,14 +345,16 @@ public class HttpClientTimeoutTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsTCP")
+    @Tag("external")
     public void testRetryAfterConnectTimeout(Transport transport) throws Exception
     {
         // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
         Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
 
-        final String host = "10.255.255.1";
-        final int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        String host = "example.com";
+        int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -424,7 +432,7 @@ public class HttpClientTimeoutTest extends AbstractTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getPathInContext().startsWith("/one"))
+                if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     Thread.sleep(3 * timeout);
                 callback.succeeded();
             }
@@ -460,7 +468,7 @@ public class HttpClientTimeoutTest extends AbstractTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                if (request.getPathInContext().startsWith("/one"))
+                if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     serverLatch.await();
                 callback.succeeded();
             }

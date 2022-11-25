@@ -40,6 +40,7 @@ import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,11 +149,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     {
         try
         {
-            upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, this::responseFailure));
+            upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, failure -> responseFailure(failure, Promise.noop())));
         }
         catch (Throwable x)
         {
-            responseFailure(x);
+            responseFailure(x, Promise.noop());
         }
     }
 
@@ -167,7 +168,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
-        BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushListener();
+        BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushHandler();
         if (pushListener != null)
         {
             Response.CompleteListener listener = pushListener.apply(request, pushRequest);
@@ -209,8 +210,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
                 {
                     data.release();
-                    if (responseFailure(x))
-                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                    responseFailure(x, Promise.from(failed ->
+                    {
+                        if (failed)
+                            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                    }, f -> stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
                 });
 
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
@@ -252,18 +256,18 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
-    public boolean onTimeout(Throwable failure)
+    public void onTimeout(Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-        return !exchange.abort(failure);
+        if (exchange != null)
+            exchange.abort(failure, Promise.from(aborted -> promise.succeeded(!aborted), promise::failed));
+        else
+            promise.succeeded(false);
     }
 
     @Override
     public void onFailure(Throwable failure, Callback callback)
     {
-        responseFailure(failure);
-        callback.succeeded();
+        responseFailure(failure, Promise.from(failed -> callback.succeeded(), callback::failed));
     }
 }

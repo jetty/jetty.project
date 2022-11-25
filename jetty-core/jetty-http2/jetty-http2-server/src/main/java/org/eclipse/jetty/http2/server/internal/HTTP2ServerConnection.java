@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData
@@ -145,13 +146,24 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
-    public boolean onStreamTimeout(Stream stream, Throwable failure)
+    public void onStreamTimeout(Stream stream, Throwable failure, Promise<Boolean> promise)
     {
-        HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
-        boolean result = channel != null && channel.onTimeout(failure, task -> offerTask(task, true));
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
-        return result;
+            LOG.debug("Idle timeout on {}: {}", stream, failure);
+        HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
+        if (channel != null)
+        {
+            channel.onTimeout(failure, (task, timedOut) ->
+            {
+                if (task != null)
+                    offerTask(task, true);
+                promise.succeeded(timedOut);
+            });
+        }
+        else
+        {
+            promise.succeeded(false);
+        }
     }
 
     public void onStreamFailure(Stream stream, Throwable failure, Callback callback)
@@ -375,6 +387,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public boolean isSecure()
     {
         return getEndPoint() instanceof SslConnection.DecryptedEndPoint;
+    }
+
+    @Override
+    public boolean isPushSupported()
+    {
+        return getSession().isPushEnabled();
     }
 
     @Override

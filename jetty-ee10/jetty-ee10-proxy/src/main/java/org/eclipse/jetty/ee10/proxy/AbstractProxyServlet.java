@@ -638,12 +638,15 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void onClientRequestFailure(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, Throwable failure)
     {
-        boolean aborted = proxyRequest.abort(failure);
-        if (!aborted)
+        proxyRequest.abort(failure).whenComplete((aborted, x) ->
         {
-            int status = clientRequestStatus(failure);
-            sendProxyResponseError(clientRequest, proxyResponse, status);
-        }
+            // The variable 'aborted' could be null.
+            if (aborted == Boolean.FALSE)
+            {
+                int status = clientRequestStatus(failure);
+                sendProxyResponseError(clientRequest, proxyResponse, status);
+            }
+        });
     }
 
     protected int clientRequestStatus(Throwable failure)
@@ -663,7 +666,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 continue;
 
             String newHeaderValue = filterServerResponseHeader(clientRequest, serverResponse, headerName, field.getValue());
-            if (newHeaderValue == null || newHeaderValue.trim().length() == 0)
+            if (newHeaderValue == null)
                 continue;
 
             proxyResponse.addHeader(headerName, newHeaderValue);

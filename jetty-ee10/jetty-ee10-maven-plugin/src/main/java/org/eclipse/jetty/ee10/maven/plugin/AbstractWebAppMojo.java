@@ -782,7 +782,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @throws AbstractMojoExecutionException
      */
     protected void configureWebApp()
-        throws AbstractMojoExecutionException
+        throws Exception
     {
         if (webApp == null)
             webApp = new MavenWebAppContext();

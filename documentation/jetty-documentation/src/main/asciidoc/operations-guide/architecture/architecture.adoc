@@ -19,11 +19,11 @@
 
 Jetty is an HTTP server and Servlet Container, and supports deployments of web applications.
 
-The Jetty _server_ listens on one or more network ports using one or more __connector__s.
+The xref:og-server[Jetty server] listens on one or more network ports using one or more xref:og-protocols[protocol connectors].
 
 Clients send HTTP requests for specific URIs, such as `+https://host/store/cart+`.
 
-The HTTP requests arrive to the connectors through the network; the Jetty server processes the requests and, based on their URIs, forwards them to the appropriate web application.
+The HTTP requests arrive to the connectors through the network; the Jetty server processes the requests and, based on their URIs, forwards them to the appropriate xref:og-deploy[deployed web application].
 
 [plantuml]
 ----

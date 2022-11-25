@@ -42,12 +42,13 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -912,7 +913,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             // Override the property on the command line with the correct password.
             try (JettyHomeTester.Run run2 = distribution.start(pathProperty + "=cmdline"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 5, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertThat("${jetty.base}/cmdline", jettyBase.resolve("cmdline"), PathMatchers.isRegularFile());
                 assertThat("${jetty.base}/modbased", jettyBase.resolve("modbased"), not(PathMatchers.exists()));
             }
@@ -1012,7 +1013,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci")
+    @Tag("flaky")
     public void testH3() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -1125,7 +1126,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/php</Set>
-                  <Set name="baseResource">
+                  <Set name="baseResourceAsPath">
                     <Call class="java.nio.file.Path" name="of">
                       <Arg>$R</Arg>
                     </Call>
@@ -1168,6 +1169,35 @@ public class DistributionTests extends AbstractJettyHomeTest
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/test.txt");
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 assertThat(response.getContentAsString(), is(testFileContent));
+            }
+        }
+    }
+
+    @Test
+    @DisabledForJreRange(max = JRE.JAVA_18)
+    public void testVirtualThreadPool() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=threadpool-virtual-preview,http"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int httpPort = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.selectors=1", "jetty.http.port=" + httpPort)))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.newRequest("localhost", httpPort)
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             }
         }
     }

@@ -104,8 +104,8 @@ public class FileSystemPool implements Dumpable
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (PathResource.ALLOWED_SCHEMES.contains(uri.getScheme()))
-            throw new IllegalArgumentException("not an allowed scheme: " + uri);
+        if (!uri.getScheme().equalsIgnoreCase("jar"))
+            throw new IllegalArgumentException("not an supported scheme: " + uri);
 
         FileSystem fileSystem = null;
         try (AutoLock ignore = poolLock.lock())
@@ -128,7 +128,7 @@ public class FileSystemPool implements Dumpable
             }
             // use root FS URI so that pool key/release/sweep is sane
             URI rootURI = fileSystem.getPath("/").toUri();
-            Mount mount = new Mount(rootURI, Resource.create(uri));
+            Mount mount = new Mount(rootURI, new MountedPathResource(uri));
             retain(rootURI, fileSystem, mount);
             return mount;
         }

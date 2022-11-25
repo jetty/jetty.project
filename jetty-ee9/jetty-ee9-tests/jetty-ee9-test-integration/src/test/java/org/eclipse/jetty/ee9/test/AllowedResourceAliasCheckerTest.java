@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee9.test;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -29,33 +27,26 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.AfterAll;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class AllowedResourceAliasCheckerTest
 {
-    private static Server _server;
-    private static ServerConnector _connector;
-    private static HttpClient _client;
-    private static ServletContextHandler _context;
-    private static File _baseDir;
-
-    private static Path getResourceDir() throws Exception
-    {
-        URL url = AllowedResourceAliasCheckerTest.class.getClassLoader().getResource(".");
-        assertNotNull(url);
-        return new File(url.toURI()).toPath();
-    }
+    private Server _server;
+    private ServerConnector _connector;
+    private HttpClient _client;
+    private ServletContextHandler _context;
+    private Path _baseDir;
 
     public void start() throws Exception
     {
@@ -63,8 +54,8 @@ public class AllowedResourceAliasCheckerTest
         _client.start();
     }
 
-    @BeforeAll
-    public static void beforeAll() throws Exception
+    @BeforeEach
+    public void prepare(WorkDir workDir)
     {
         _client = new HttpClient();
         _server = new Server();
@@ -76,46 +67,39 @@ public class AllowedResourceAliasCheckerTest
         _context.addServlet(DefaultServlet.class, "/");
         _server.setHandler(_context);
 
-        _baseDir = getResourceDir().resolve("baseDir").toFile();
-        _baseDir.deleteOnExit();
-        assertFalse(_baseDir.exists());
-        _context.setResourceBase(_baseDir.getAbsolutePath());
-    }
-
-    @AfterAll
-    public static void afterAll() throws Exception
-    {
-        _client.stop();
-        _server.stop();
+        _baseDir = workDir.getEmptyPathDir().resolve("baseDir");
+        _context.setBaseResource(new PathResource(_baseDir));
     }
 
     @AfterEach
-    public void afterEach()
+    public void dispose()
     {
-        IO.delete(_baseDir);
+        LifeCycle.stop(_client);
+        LifeCycle.stop(_server);
     }
 
     public void createBaseDir() throws IOException
     {
-        assertFalse(_baseDir.exists());
-        assertTrue(_baseDir.mkdir());
+        FS.ensureDirExists(_baseDir);
 
         // Create a file in the baseDir.
-        File file = _baseDir.toPath().resolve("file.txt").toFile();
-        file.deleteOnExit();
-        assertTrue(file.createNewFile());
-        try (FileWriter fileWriter = new FileWriter(file))
+        Path file = Files.writeString(_baseDir.resolve("file.txt"), "this is a file in the baseDir");
+
+        boolean symlinkSupported;
+        try
         {
-            fileWriter.write("this is a file in the baseDir");
+            // Create a symlink to that file.
+            // Symlink to a directory inside the webroot.
+            Path symlink = _baseDir.resolve("symlink");
+            Files.createSymbolicLink(symlink, file);
+            symlinkSupported = true;
+        }
+        catch (UnsupportedOperationException | FileSystemException e)
+        {
+            symlinkSupported = false;
         }
 
-        // Create a symlink to that file.
-        // Symlink to a directory inside of the webroot.
-        File symlink = _baseDir.toPath().resolve("symlink").toFile();
-        symlink.deleteOnExit();
-        Files.createSymbolicLink(symlink.toPath(), file.toPath());
-        assertTrue(symlink.exists());
-
+        assumeTrue(symlinkSupported, "Symlink not supported");
     }
 
     @Test

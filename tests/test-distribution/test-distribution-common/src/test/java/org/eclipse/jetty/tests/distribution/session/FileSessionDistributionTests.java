@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.testcontainers.junit.jupiter.Testcontainers;
