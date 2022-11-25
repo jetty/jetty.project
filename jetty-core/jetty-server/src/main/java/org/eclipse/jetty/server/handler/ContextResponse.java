@@ -22,9 +22,9 @@ import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContextResponse extends Response.Wrapper
 {
-    private final ContextHandler.Context _context;
+    private final ContextHandler.ScopedContext _context;
 
-    public ContextResponse(ContextHandler.Context context, Request request, Response response)
+    public ContextResponse(ContextHandler.ScopedContext context, Request request, Response response)
     {
         super(request, response);
         _context = context;

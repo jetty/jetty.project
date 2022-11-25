@@ -86,7 +86,7 @@ public class WebSocketServerComponentsTest
     @Test
     public void testCompressionPoolsManagedByContext() throws Exception
     {
-        ContextHandler.Context context = contextHandler.getContext();
+        ContextHandler.ScopedContext context = contextHandler.getContext();
 
         // Use a custom InflaterPool and DeflaterPool that are not started or managed.
         InflaterPool inflaterPool = new InflaterPool(333, false);

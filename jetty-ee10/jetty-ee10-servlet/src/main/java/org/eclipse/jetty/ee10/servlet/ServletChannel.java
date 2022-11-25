@@ -73,7 +73,7 @@ public class ServletChannel
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
     private final ServletRequestState _state;
-    private final ServletContextHandler.Context _context;
+    private final ServletContextHandler.ServletScopedContext _context;
     private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
@@ -109,6 +109,11 @@ public class ServletChannel
         _callback = callback;
     }
 
+    public Callback getCallback()
+    {
+        return _callback;
+    }
+
     /**
      * Associate this channel with a specific request.
      * @param servletContextRequest The request to associate
@@ -128,7 +133,7 @@ public class ServletChannel
                 _state);
     }
 
-    public ServletContextHandler.Context getContext()
+    public ServletContextHandler.ServletScopedContext getContext()
     {
         return _context;
     }
@@ -488,7 +493,7 @@ public class ServletChannel
                             // by then.
                             Response.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
 
-                            ContextHandler.Context context = (ContextHandler.Context)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no processor, then create a minimal error response.

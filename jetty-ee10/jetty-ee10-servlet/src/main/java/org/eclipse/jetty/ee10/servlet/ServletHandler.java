@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -156,11 +157,11 @@ public class ServletHandler extends Handler.Wrapper
     {
         try (AutoLock ignored = lock())
         {
-            ContextHandler.Context context = ContextHandler.getCurrentContext();
-            if (!(context instanceof ServletContextHandler.Context))
+            Context context = ContextHandler.getCurrentContext();
+            if (!(context instanceof ServletContextHandler.ServletScopedContext))
                 throw new IllegalStateException("Cannot use ServletHandler without ServletContextHandler");
-            _servletContext = ((ServletContextHandler.Context)context).getServletContext();
-            _servletContextHandler = ((ServletContextHandler.Context)context).getServletContextHandler();
+            _servletContext = ((ServletContextHandler.ServletScopedContext)context).getServletContext();
+            _servletContextHandler = ((ServletContextHandler.ServletScopedContext)context).getServletContextHandler();
 
             if (_servletContextHandler != null)
             {
