@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -50,20 +49,13 @@ public class RewriteRegexRule extends RegexRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
+    public Processor apply(Processor input, Matcher matcher) throws IOException
     {
         HttpURI httpURI = input.getHttpURI();
         String replacedPath = matcher.replaceAll(replacement);
 
         HttpURI newURI = HttpURI.build(httpURI, replacedPath);
-        return new Request.WrapperProcessor(input)
-        {
-            @Override
-            public HttpURI getHttpURI()
-            {
-                return newURI;
-            }
-        };
+        return new HttpURIProcessor(input, newURI);
     }
 
     @Override
