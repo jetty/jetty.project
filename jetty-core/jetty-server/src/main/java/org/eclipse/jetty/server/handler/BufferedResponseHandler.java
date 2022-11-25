@@ -125,11 +125,9 @@ public class BufferedResponseHandler extends Handler.Wrapper
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor processor = super.process(request, response, callback);
-        if (processor == null)
-            return null;
-
-        final String path = Request.getPathInContext(request);
+        Handler next = getHandler();
+        if (next == null)
+            return;
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle {} in {}", this, request, request.getContext());
@@ -139,15 +137,16 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by method {}", this, request);
-            return processor;
+            return;
         }
 
         // If not a supported path this URI is always excluded.
+        final String path = Request.getPathInContext(request);
         if (!isPathBufferable(path))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by path {}", this, request);
-            return processor;
+            return;
         }
 
         // If the mime type is known from the path then apply mime type filtering.
@@ -161,16 +160,13 @@ public class BufferedResponseHandler extends Handler.Wrapper
                     LOG.debug("{} excluded by path suffix mime type {}", this, request);
 
                 // handle normally without setting vary header
-                return processor;
+                return;
             }
         }
 
         // Install buffered interceptor and handle.
-        return (rq, rs, callback) ->
-        {
-            BufferedResponse bufferedResponse = new BufferedResponse(rq, rs, callback);
-            processor.process(rq, bufferedResponse, bufferedResponse);
-        };
+        BufferedResponse bufferedResponse = new BufferedResponse(request, response, callback);
+        next.process(request, bufferedResponse, bufferedResponse);
     }
 
     private class BufferedResponse extends Response.Wrapper implements Callback

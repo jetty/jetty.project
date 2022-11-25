@@ -2379,7 +2379,7 @@ public class ResponseTest
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
         }
     }

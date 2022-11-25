@@ -500,7 +500,7 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
         }
 

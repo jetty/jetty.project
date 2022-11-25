@@ -237,7 +237,7 @@ public interface Request extends Attributes, Content.Source
 
     TunnelSupport getTunnelSupport();
 
-    void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
+    void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
 
     static String getLocalAddr(Request request)
     {
@@ -622,7 +622,7 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getWrapped().addHttpStreamWrapper(wrapper);
         }

@@ -1052,7 +1052,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getHttpChannel().addHttpStreamWrapper(wrapper);
         }

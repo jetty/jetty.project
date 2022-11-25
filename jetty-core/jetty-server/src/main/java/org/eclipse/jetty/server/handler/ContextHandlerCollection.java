@@ -122,30 +122,35 @@ public class ContextHandlerCollection extends Handler.Collection
     public void process(Request request, Response response, Callback callback) throws Exception
     {
         List<Handler> handlers = getHandlers();
-        //
-        // Handle no contexts
+
         if (handlers == null || handlers.isEmpty())
-            return null;
+            return;
 
         if (!(handlers instanceof Mapping))
-            return super.process(request, response, callback);
+        {
+            super.process(request, response, callback);
+            return;
+        }
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-            return handlers.get(0).process(request, response, callback);
+        {
+            handlers.get(0).process(request, response, callback);
+            return;
+        }
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
         if (pathBranches == null)
-            return null;
+            return;
 
         String path = Request.getPathInContext(request);
         if (!path.startsWith("/"))
         {
             super.process(request, response, callback);
-            return null;
+            return;
         }
 
         int limit = path.length() - 1;
@@ -165,9 +170,9 @@ public class ContextHandlerCollection extends Handler.Collection
                 {
                     try
                     {
-                        Request.Processor processor = branch.getHandler().process(request, response, callback);
-                        if (processor != null)
-                            return processor;
+                        branch.getHandler().process(request, response, callback);
+                        if (request.isAccepted())
+                            return;
                     }
                     catch (Throwable t)
                     {
@@ -178,7 +183,6 @@ public class ContextHandlerCollection extends Handler.Collection
 
             limit = l - 2;
         }
-        return null;
     }
 
     /**
@@ -186,8 +190,7 @@ public class ContextHandlerCollection extends Handler.Collection
      * <p>
      * This method is the equivalent of {@link #addHandler(Handler)},
      * but its execution is non-blocking and mutually excluded from all
-     * other calls to {@link #deployHandler(Handler, Callback)} and
-     * {@link #undeployHandler(Handler, Callback)}.
+     * other callers to itself and {@link #undeployHandler(Handler, Callback)}.
      * The handler may be added after this call returns.
      * </p>
      *
@@ -219,8 +222,7 @@ public class ContextHandlerCollection extends Handler.Collection
      * This method is the equivalent of {@link #removeHandler(Handler)},
      * but its execution is non-block and mutually excluded from all
      * other calls to {@link #deployHandler(Handler, Callback)} and
-     * {@link #undeployHandler(Handler, Callback)}.
-     * The handler may be removed after this call returns.
+     * itself. The handler may be removed after this call returns.
      * </p>
      *
      * @param handler The handler to undeploy
@@ -287,11 +289,6 @@ public class ContextHandlerCollection extends Handler.Collection
             return false;
         }
 
-        List<ContextHandler> getContextHandlers()
-        {
-            return _contexts;
-        }
-
         Handler getHandler()
         {
             return _handler;
@@ -306,7 +303,6 @@ public class ContextHandlerCollection extends Handler.Collection
 
     private static class Mapping extends ArrayList<Handler>
     {
-        private final Map<ContextHandler, Handler> _contextBranches;
         private final Index<Map.Entry<String, Branch[]>> _pathBranches;
 
         private Mapping(List<Handler> handlers, Map<String, Branch[]> path2Branches)
@@ -324,20 +320,6 @@ public class ContextHandlerCollection extends Handler.Collection
                     return result;
                 })
                 .build();
-
-            // add new context branches to map
-            Map<ContextHandler, Handler> contextBranches = new HashMap<>();
-            for (Branch[] branches : path2Branches.values())
-            {
-                for (Branch branch : branches)
-                {
-                    for (ContextHandler context : branch.getContextHandlers())
-                    {
-                        contextBranches.put(context, branch.getHandler());
-                    }
-                }
-            }
-            _contextBranches = Collections.unmodifiableMap(contextBranches);
         }
     }
 }

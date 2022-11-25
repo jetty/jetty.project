@@ -176,7 +176,7 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+    public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
     {
     }
 }
