@@ -629,7 +629,7 @@ public class ResourceService
         String boundary = MultiPart.generateBoundary(null, 24);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
-        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range)));
+        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range, contentLength)));
         byteRanges.close();
         Content.copy(byteRanges, response, callback);
     }
