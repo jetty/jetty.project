@@ -82,6 +82,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -1175,14 +1176,18 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected Request.Processor processByContextHandler(ContextRequest request)
+    protected void processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
         if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getPathInContext()))
-            return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpServletResponse.SC_NOT_FOUND, null);
+        {
+            request.accept();
+            Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
+            return;
+        }
 
-        return super.processByContextHandler(request);
+        super.processByContextHandler(pathInContext, request, response, callback);
     }
 
     @Override

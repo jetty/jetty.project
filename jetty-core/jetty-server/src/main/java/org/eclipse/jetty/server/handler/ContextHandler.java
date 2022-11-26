@@ -598,7 +598,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     @Override
     protected void doStop() throws Exception
     {
-        // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
         _context.call(super::doStop, null);
     }
 
@@ -656,58 +655,41 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     public void process(Request request, Response response, Callback callback) throws Exception
     {
         Handler handler = getHandler();
-        if (handler == null)
+        if (handler == null || !isStarted())
             return;
 
         if (!checkVirtualHost(request))
             return;
 
-        // The root context handles all requests.
-        if (!_rootContext)
-        {
-            // Otherwise match the path.
-            String path = request.getHttpURI().getCanonicalPath();
-            if (path == null || !path.startsWith(_contextPath))
-                return;
+        // check the path matches the context path
+        String path = request.getHttpURI().getCanonicalPath();
+        String pathInContext = _context.getPathInContext(path);
+        if (pathInContext == null)
+            return;
 
-            if (path.length() == _contextPath.length())
-            {
-                if (!getAllowNullPathInContext())
-                {
-                    request.accept();
-                    processMovedPermanently(request, response, callback);
-                    return;
-                }
-            }
-            else
-            {
-                if (path.charAt(_contextPath.length()) != '/')
-                    return;
-            }
-        }
-
-        // TODO check availability and maybe return a 503
-        if (!isAvailable() && isStarted())
+        if (!isAvailable())
         {
             request.accept();
             processUnavailable(request, response, callback);
             return;
         }
 
+        if (pathInContext.length() == 0 && !getAllowNullPathInContext())
+        {
+            request.accept();
+            processMovedPermanently(request, response, callback);
+            return;
+        }
+
+
         // wrap might fail (eg ServletContextHandler could not match a servlet)
         ContextRequest contextRequest = wrapRequest(request);
         if (contextRequest == null)
             return;
 
-        // Does this handler want to process the request itself?
-        // TODO this can be done without a dynamic Processor
-        Request.Processor processor = processByContextHandler(contextRequest);
-        if (processor != null)
-        {
-            request.accept();
-            processor.process(request, response, callback);
+        processByContextHandler(pathInContext, contextRequest, response, callback);
+        if (request.isAccepted())
             return;
-        }
 
         ClassLoader lastLoader = enterScope(contextRequest);
         ContextResponse contextResponse = wrapResponse(contextRequest, response);
@@ -723,6 +705,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         {
             exitScope(contextRequest, request.getContext(), lastLoader);
         }
+    }
+
+    protected void processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    {
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -741,23 +727,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected void processUnavailable(Request request, Response response, Callback callback)
     {
         Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, null);
-    }
-
-    protected Request.Processor processByContextHandler(ContextRequest contextRequest)
-    {
-        if (!_allowNullPathInContext && StringUtil.isEmpty(Request.getPathInContext(contextRequest)))
-        {
-            return (request, response, callback) ->
-            {
-                // context request must end with /
-                String queryString = request.getHttpURI().getQuery();
-                Response.sendRedirect(request, response, callback,
-                    HttpStatus.MOVED_TEMPORARILY_302,
-                    request.getHttpURI().getPath() + (queryString == null ? "/" : ("/?" + queryString)),
-                    true);
-            };
-        }
-        return null;
     }
 
     /**
