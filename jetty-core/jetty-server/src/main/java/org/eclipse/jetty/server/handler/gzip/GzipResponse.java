@@ -30,12 +30,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
-public class GzipResponse extends Response.Wrapper
+public class GzipResponse extends Response.Wrapper implements Callback, Invocable
 {
     public static Logger LOG = LoggerFactory.getLogger(GzipResponse.class);
     private static final byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
@@ -50,6 +51,8 @@ public class GzipResponse extends Response.Wrapper
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
 
+    private final GzipRequest _gzipRequest;
+    private final Callback _callback;
     private final GzipFactory _factory;
     private final HttpField _vary;
     private final int _bufferSize;
@@ -58,14 +61,48 @@ public class GzipResponse extends Response.Wrapper
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponse(Request request, Response wrapped, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
+    public GzipResponse(GzipRequest request, Response wrapped, Callback callback, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
     {
         super(request, wrapped);
 
+        _gzipRequest = request;
+        _callback = callback;
         _factory = factory;
         _vary = vary;
         _bufferSize = bufferSize;
         _syncFlush = syncFlush;
+    }
+
+    @Override
+    public void succeeded()
+    {
+        try
+        {
+            _callback.succeeded();
+        }
+        finally
+        {
+            _gzipRequest.destroy(this);
+        }
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        try
+        {
+            _callback.failed(x);
+        }
+        finally
+        {
+            _gzipRequest.destroy(this);
+        }
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return _callback.getInvocationType();
     }
 
     @Override

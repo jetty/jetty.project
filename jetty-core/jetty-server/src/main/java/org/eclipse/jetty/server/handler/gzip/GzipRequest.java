@@ -22,7 +22,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -33,8 +32,8 @@ public class GzipRequest extends Request.Wrapper
     private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);
 
     private final boolean _inflateInput;
-    private Decoder _decoder;
-    private GzipTransformer gzipTransformer;
+    private final Decoder _decoder;
+    private final GzipTransformer _gzipTransformer;
     private final int _inflateBufferSize;
     private final GzipHandler _gzipHandler;
     private final HttpFields _fields;
@@ -46,6 +45,18 @@ public class GzipRequest extends Request.Wrapper
         _inflateInput = inflateInput;
         _inflateBufferSize = gzipHandler.getInflateBufferSize();
         _fields = fields;
+
+        if (inflateInput)
+        {
+            Components components = request.getComponents();
+            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
+            _gzipTransformer = new GzipTransformer(request);
+        }
+        else
+        {
+            _decoder = null;
+            _gzipTransformer = null;
+        }
     }
 
     @Override
@@ -57,26 +68,10 @@ public class GzipRequest extends Request.Wrapper
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        if (_inflateInput)
-        {
-            Components components = request.getComponents();
-            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
-            gzipTransformer = new GzipTransformer(request);
-        }
-
-        int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        GzipResponse gzipResponse = new GzipResponse(this, response, _gzipHandler, _gzipHandler.getVary(), outputBufferSize, _gzipHandler.isSyncFlush());
-        Callback cb = Callback.from(() -> destroy(gzipResponse), callback);
-        super.process(this, gzipResponse, cb);
-    }
-
-    @Override
     public Content.Chunk read()
     {
         if (_inflateInput)
-            return gzipTransformer.read();
+            return _gzipTransformer.read();
         return super.read();
     }
 
@@ -84,22 +79,19 @@ public class GzipRequest extends Request.Wrapper
     public void demand(Runnable demandCallback)
     {
         if (_inflateInput)
-            gzipTransformer.demand(demandCallback);
+            _gzipTransformer.demand(demandCallback);
         else
             super.demand(demandCallback);
     }
 
-    private void destroy(GzipResponse response)
+    void destroy(GzipResponse response)
     {
         // We need to do this to intercept the committing of the response
         // and possibly change headers in case write is never called.
         response.write(true, null, Callback.NOOP);
 
         if (_decoder != null)
-        {
             _decoder.destroy();
-            _decoder = null;
-        }
     }
 
     private class GzipTransformer extends ContentSourceTransformer
