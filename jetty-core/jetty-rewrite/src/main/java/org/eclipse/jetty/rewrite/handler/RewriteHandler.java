@@ -108,16 +108,19 @@ public class RewriteHandler extends Handler.Wrapper
     public void process(Request request, Response response, Callback callback) throws Exception
     {
         if (!isStarted())
-            return null;
+            return;
 
         Rule.Processor input = new Rule.Processor(request);
         Rule.Processor output = _rules.matchAndApply(input);
 
         // No rule matched, call super with the original request.
         if (output == null)
-            return super.process(request, response, callback);
-
-        // At least one rule matched, call super with the result of the rule applications.
-        return output.wrapProcessor(super.process(output, response, callback));
+            super.process(request, response, callback);
+        else
+        {
+            // At least one rule matched, call super with the result of the rule applications.
+            output.setProcessor(getHandler());
+            output.process(output, response, callback);
+        }
     }
 }

@@ -125,12 +125,13 @@ public class HttpChannelState implements HttpChannel, Components
         /** Idle state */
         IDLE,
 
-        /** The HandlerInvoker Runnable has been executed */
+        /** The HandlerInvoker Runnable has been executed and is calling Handler.process */
         HANDLING,
 
-        /** A Request.Processor has been called.
+        /**
+         * The Request.accept() method has been called.
          * Any calls to {@link #onFailure(Throwable)} will fail the callback. */
-        PROCESSING,
+        ACCEPTED,
 
         /** The Request.Processor call has returned prior to callback completion.
          * The Content APIs are enabled. */
@@ -506,7 +507,7 @@ public class HttpChannelState implements HttpChannel, Components
         return task;
     }
 
-    public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> onStreamEvent)
+    public void addHttpStreamWrapper(Function<HttpStream, HttpStream> onStreamEvent)
     {
         while (true)
         {
@@ -517,8 +518,8 @@ public class HttpChannelState implements HttpChannel, Components
             }
             if (_stream == null)
                 throw new IllegalStateException("No active stream");
-            HttpStream.Wrapper combined = onStreamEvent.apply(stream);
-            if (combined == null || combined.getWrapped() != stream)
+            HttpStream combined = onStreamEvent.apply(stream);
+            if (combined == null)
                 throw new IllegalArgumentException("Cannot remove stream");
             try (AutoLock ignored = _lock.lock())
             {
@@ -598,8 +599,8 @@ public class HttpChannelState implements HttpChannel, Components
                 LOG.debug("invoking handler in {}", HttpChannelState.this);
             Server server = _connectionMetaData.getConnector().getServer();
 
-            Request.Processor processor;
             Request customized = request;
+            boolean accepted;
             Throwable failure = null;
             try
             {
@@ -608,7 +609,7 @@ public class HttpChannelState implements HttpChannel, Components
                     !Request.getPathInContext(_request).startsWith("/") &&
                     !HttpMethod.OPTIONS.is(request.getMethod()))
                 {
-                    _processState = ProcessState.PROCESSING;
+                    _processState = ProcessState.ACCEPTED;
                     throw new BadMessageException("Bad URI path");
                 }
 
@@ -620,7 +621,7 @@ public class HttpChannelState implements HttpChannel, Components
                         throw new BadMessageException(badMessage);
                 }
 
-                // Customize before accepting.
+                // Customize before processing.
                 HttpConfiguration configuration = getHttpConfiguration();
 
                 HttpFields.Mutable responseHeaders = request._response.getHeaders();
@@ -633,25 +634,25 @@ public class HttpChannelState implements HttpChannel, Components
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
 
-                processor = server.process(customized, response, callback);
-                if (processor == null)
-                    processor = (req, res, cb) -> Response.writeError(req, res, cb, HttpStatus.NOT_FOUND_404);
+                server.process(customized, request._response, request._callback);
             }
             catch (Throwable t)
             {
-                processor = null;
                 failure = t;
             }
-
-            try (AutoLock ignored1 = _lock.lock())
+            finally
             {
-                _processState = ProcessState.PROCESSING;
+                try (AutoLock ignored1 = _lock.lock())
+                {
+                    accepted = _processState == ProcessState.ACCEPTED;
+                    _processState = ProcessState.PROCESSED;
+                }
             }
 
             try
             {
-                if (processor != null)
-                    processor.process(customized, request._response, request._callback);
+                if (failure == null && !accepted)
+                    Response.writeError(request, _request._response, request._callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable x)
             {
@@ -665,8 +666,6 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _lock.lock())
             {
-                _processState = ProcessState.PROCESSED;
-
                 if (_failure != null)
                 {
                     if (failure != null)
@@ -789,14 +788,22 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void accept()
         {
-            // TODO
+            try (AutoLock ignore = _lock.lock())
+            {
+                if (_httpChannel._processState == ProcessState.HANDLING)
+                    _httpChannel._processState = ProcessState.ACCEPTED;
+                else
+                    throw new IllegalStateException(_httpChannel._processState.toString());
+            }
         }
 
         @Override
         public boolean isAccepted()
         {
-            // TODO
-            return false;
+            try (AutoLock ignore = _lock.lock())
+            {
+                return _httpChannel._processState.ordinal() >= ProcessState.ACCEPTED.ordinal();
+            }
         }
 
         public void setLoggedRequest(Request request)
@@ -958,7 +965,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (error != null)
                     return error;
 
-                if (httpChannel._processState.ordinal() < ProcessState.PROCESSING.ordinal())
+                if (httpChannel._processState.ordinal() < ProcessState.ACCEPTED.ordinal())
                     return Content.Chunk.from(new IllegalStateException("not processing"));
 
                 stream = httpChannel._stream;
@@ -987,7 +994,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 HttpChannelState httpChannel = lockedGetHttpChannel();
 
-                error = httpChannel._error != null || httpChannel._processState.ordinal() < ProcessState.PROCESSING.ordinal();
+                error = httpChannel._error != null || httpChannel._processState.ordinal() < ProcessState.ACCEPTED.ordinal();
                 if (!error)
                 {
                     if (httpChannel._onContentAvailable != null)
@@ -1142,7 +1149,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (httpChannel._writeCallback != null)
                     failure = new IllegalStateException("write pending");
-                else if (httpChannel._processState.ordinal() < ProcessState.PROCESSING.ordinal())
+                else if (httpChannel._processState.ordinal() < ProcessState.ACCEPTED.ordinal())
                     failure = new IllegalStateException("not processing");
                 else if (httpChannel._error != null)
                     failure = httpChannel._error.getCause();

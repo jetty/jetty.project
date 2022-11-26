@@ -106,10 +106,9 @@ public abstract class Rule
          * @param processor the {@code Processor} to wrap
          * @return this instance
          */
-        public Processor wrapProcessor(Processor processor)
+        public void setProcessor(Processor processor)
         {
             _processor = processor;
-            return processor == null ? null : this;
         }
     }
 

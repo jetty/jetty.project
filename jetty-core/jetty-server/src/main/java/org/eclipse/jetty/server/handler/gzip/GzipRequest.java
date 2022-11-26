@@ -39,9 +39,9 @@ public class GzipRequest extends Request.Wrapper
     private final GzipHandler _gzipHandler;
     private final HttpFields _fields;
 
-    public GzipRequest(Request wrapped, GzipHandler gzipHandler, boolean inflateInput, HttpFields fields)
+    public GzipRequest(Request request, GzipHandler gzipHandler, boolean inflateInput, HttpFields fields)
     {
-        super(wrapped);
+        super(request);
         _gzipHandler = gzipHandler;
         _inflateInput = inflateInput;
         _inflateBufferSize = gzipHandler.getInflateBufferSize();
