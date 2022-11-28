@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,7 +67,7 @@ public interface Response extends Content.Sink
 
     /**
      * <p>Return a representation of the response as a chunk handler suitable for being
-     * passed to the {@link Content#copy(Content.Source, Content.Sink, BiPredicate, Callback)}
+     * passed to the {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
      * method.  Specifically, as a chunk handler that will handle {@link Trailers} chunks
      * by adding the chunk fields to the {@link HttpFields} supplied by
      * {@link Response#getTrailersSupplier()}.</p>
@@ -78,11 +77,13 @@ public interface Response extends Content.Sink
      *   Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
      * </pre>
      * @param response The response for which to process trailer chunks.
+     *                 If the {@link Response#setTrailersSupplier(Supplier)}
+     *                 method has not been called prior to this method, then a noop processor is returned.
      * @return A chunk handler that will add trailer chunks to the response's trailer supplied fields.
-     * @see Content#copy(Content.Source, Content.Sink, BiPredicate, Callback)
+     * @see Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)
      * @see Trailers
      */
-    static BiPredicate<Content.Chunk, Callback> asTrailerChunkHandler(Response response)
+    static Content.Chunk.Processor newTrailersChunkProcessor(Response response)
     {
         Supplier<HttpFields> supplier = response.getTrailersSupplier();
         if (supplier == null)

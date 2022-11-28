@@ -48,7 +48,7 @@ public class EchoHandler extends Handler.Processor.NonBlocking
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
 
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
-            Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
+            Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
         else
             callback.succeeded();
     }

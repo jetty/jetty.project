@@ -415,7 +415,7 @@ public class TrailersTest extends AbstractTest
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);
-                Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
+                Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
             }
         });
 
