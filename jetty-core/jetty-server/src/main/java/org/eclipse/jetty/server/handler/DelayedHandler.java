@@ -57,16 +57,18 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
 
     protected static class DelayedRequest extends Request.Wrapper implements Runnable
     {
+        private final AtomicBoolean _accepted = new AtomicBoolean();
         private final Handler _handler;
         private final Response _response;
         private final Callback _callback;
 
-        public DelayedRequest(Handler handler, Request wrapped, Response response, Callback callback)
+        public DelayedRequest(Handler handler, Request request, Response response, Callback callback)
         {
-            super(wrapped);
+            super(request);
             _handler = Objects.requireNonNull(handler);
             _response = Objects.requireNonNull(response);
             _callback = Objects.requireNonNull(callback);
+            request.accept();
         }
 
         protected Handler getHandler()
@@ -84,33 +86,9 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
             return _callback;
         }
 
-        @Override
-        public void run()
-        {
-            try
-            {
-                process();
-            }
-            catch (Throwable t)
-            {
-                Response.writeError(getWrapped(), getResponse(), getCallback(), t);
-            }
-        }
-
         protected void process() throws Exception
         {
             _handler.process(this, getResponse(), getCallback());
-        }
-    }
-
-    protected static class AcceptingDelayedRequest extends DelayedRequest
-    {
-        private final AtomicBoolean _accepted = new AtomicBoolean();
-
-        public AcceptingDelayedRequest(Handler handler, Request wrapped, Response response, Callback callback)
-        {
-            super(handler, wrapped, response, callback);
-            wrapped.accept();
         }
 
         @Override
@@ -158,10 +136,10 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
         }
     }
 
-    public static class UntilContent extends DelayedHandler<AcceptingDelayedRequest>
+    public static class UntilContent extends DelayedHandler<DelayedRequest>
     {
         @Override
-        protected AcceptingDelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
+        protected DelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
         {
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return null;
@@ -169,11 +147,11 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
             if (request.getLength() == 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return null;
 
-            return new AcceptingDelayedRequest(next, request, response, callback);
+            return new DelayedRequest(next, request, response, callback);
         }
 
         @Override
-        protected void delay(AcceptingDelayedRequest request)
+        protected void delay(DelayedRequest request)
         {
             request.getWrapped().demand(request);
         }
@@ -319,16 +297,16 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
         @Override
         protected void delay(QoSDelayedRequest request)
         {
-            boolean accepted;
+            boolean permitted;
             synchronized (QualityOfService.this)
             {
-                accepted = _permits < _maxPermits;
-                if (accepted)
+                permitted = _permits < _maxPermits;
+                if (permitted)
                     _permits++;
                 else
                     _queue.add(request);
             }
-            if (accepted)
+            if (permitted)
                 request.run();
         }
 
@@ -348,7 +326,7 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
             @Override
             protected void process() throws Exception
             {
-                getHandler().process(this, getResponse(), this);
+                super.process();
                 if (!getWrapped().isAccepted())
                     release();
             }
