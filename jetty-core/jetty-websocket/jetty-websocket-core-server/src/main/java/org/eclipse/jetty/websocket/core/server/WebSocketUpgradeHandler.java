@@ -64,10 +64,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor processor = super.process(request, response, callback);
-        if (processor == null)
-            return null;
-
         String target = Request.getPathInContext(request);
         WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
         {
@@ -77,35 +73,21 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         });
 
         if (negotiator == null)
-            return processor;
-        return new WebSocketProcessor(processor, negotiator);
-    }
-
-    private class WebSocketProcessor implements Request.Processor
-    {
-        private final Request.Processor _processor;
-        private final WebSocketNegotiator _negotiator;
-
-        public WebSocketProcessor(Request.Processor processor, WebSocketNegotiator negotiator)
         {
-            _processor = processor;
-            _negotiator = negotiator;
+            super.process(request, response, callback);
+            return;
         }
 
-        @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        try
         {
-            try
-            {
-                if (mappings.upgrade(_negotiator, request, response, callback, customizer))
-                    return;
+            if (mappings.upgrade(negotiator, request, response, callback, customizer))
+                return;
 
-                _processor.process(request, response, callback);
-            }
-            catch (Throwable t)
-            {
-                callback.failed(t);
-            }
+            super.process(request, response, callback);
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
         }
     }
 }
