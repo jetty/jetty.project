@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,19 +23,12 @@ import org.slf4j.LoggerFactory;
 public class ContextRequest extends Request.Wrapper implements Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
-    private final ContextHandler _contextHandler;
     private final ContextHandler.ScopedContext _context;
 
-    protected ContextRequest(ContextHandler contextHandler, ContextHandler.ScopedContext context, Request wrapped)
+    protected ContextRequest(ContextHandler.ScopedContext context, Request wrapped)
     {
         super(wrapped);
-        _contextHandler = contextHandler;
         _context = context;
-    }
-
-    protected ContextResponse newContextResponse(Request request, Response response)
-    {
-        return new ContextResponse(_context, request, response);
     }
 
     @Override

@@ -829,7 +829,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     protected ContextRequest wrapRequest(Request request)
     {
-        return new ContextRequest(this, _context, request);
+        return new ContextRequest(_context, request);
     }
 
     protected ContextResponse wrapResponse(Request request, Response response)
