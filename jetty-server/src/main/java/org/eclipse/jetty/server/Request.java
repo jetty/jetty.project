@@ -242,6 +242,11 @@ public class Request implements HttpServletRequest
 
     public HttpFields getHttpFields()
     {
+        return getHeaders();
+    }
+
+    public HttpFields getHeaders()
+    {
         return _httpFields;
     }
 

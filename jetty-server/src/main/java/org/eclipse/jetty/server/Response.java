@@ -1387,6 +1387,11 @@ public class Response implements HttpServletResponse
 
     public HttpFields.Mutable getHttpFields()
     {
+        return getHeaders();
+    }
+
+    public HttpFields.Mutable getHeaders()
+    {
         return _fields;
     }
 
