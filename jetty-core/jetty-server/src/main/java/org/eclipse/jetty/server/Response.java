@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -65,24 +66,46 @@ public interface Response extends Content.Sink
 
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
-    // TODO: make it static, otherwise we must override it in Wrapper.
-    default boolean writeTrailers(Content.Chunk chunk, Callback ignored)
+    /**
+     * <p>Return a representation of the response as a chunk handler suitable for being
+     * passed to the {@link Content#copy(Content.Source, Content.Sink, BiPredicate, Callback)}
+     * method.  Specifically, as a chunk handler that will handle {@link Trailers} chunks
+     * by adding the chunk fields to the {@link HttpFields} supplied by
+     * {@link Response#getTrailersSupplier()}.</p>
+     * <p>This is specifically useful for writing chunks that have been received via
+     * the {@link Content.Source#read()} API, for example when echoing a request to a response:</p>
+     * <pre>
+     *   Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
+     * </pre>
+     * @param response The response for which to process trailer chunks.
+     * @return A chunk handler that will add trailer chunks to the response's trailer supplied fields.
+     * @see Content#copy(Content.Source, Content.Sink, BiPredicate, Callback)
+     * @see Trailers
+     */
+    static BiPredicate<Content.Chunk, Callback> asTrailerChunkHandler(Response response)
     {
-        if (chunk instanceof Trailers trailers)
+        Supplier<HttpFields> supplier = response.getTrailersSupplier();
+        if (supplier == null)
+            return (chunk, callback) -> false;
+
+        return (chunk, callback) ->
         {
-            HttpFields requestTrailers = trailers.getTrailers();
-            if (requestTrailers != null)
+            if (chunk instanceof Trailers trailers)
             {
-                Supplier<HttpFields> supplier = getTrailersSupplier();
-                if (supplier != null)
+                HttpFields requestTrailers = trailers.getTrailers();
+                if (requestTrailers != null)
                 {
                     HttpFields responseTrailers = supplier.get();
                     if (responseTrailers instanceof HttpFields.Mutable mutable)
+                    {
                         mutable.add(requestTrailers);
+                        callback.succeeded();
+                        return true;
+                    }
                 }
             }
-        }
-        return false;
+            return false;
+        };
     }
 
     @SuppressWarnings("unchecked")
