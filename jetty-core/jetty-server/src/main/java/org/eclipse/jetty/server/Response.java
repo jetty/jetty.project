@@ -95,6 +95,7 @@ public interface Response extends Content.Sink
                 HttpFields requestTrailers = trailers.getTrailers();
                 if (requestTrailers != null)
                 {
+                    // Call supplier in lambda to get latest responseTrailers
                     HttpFields responseTrailers = supplier.get();
                     if (responseTrailers instanceof HttpFields.Mutable mutable)
                     {
