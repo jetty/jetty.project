@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.resource.Resource;
@@ -46,6 +47,8 @@ public interface Context extends Attributes, Decorator, Executor
     Request.Processor getErrorProcessor();
 
     List<String> getVirtualHosts();
+
+    MimeTypes getMimeTypes();
 
     @Override
     /** execute runnable in container thread scoped to context */

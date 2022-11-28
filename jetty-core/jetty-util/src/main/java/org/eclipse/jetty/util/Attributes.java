@@ -125,7 +125,6 @@ public interface Attributes
         };
     }
 
-
     /**
      * Clear all attribute names
      */
@@ -225,6 +224,7 @@ public interface Attributes
         {
             return getWrapped().equals(obj);
         }
+
     }
 
     /**
@@ -232,15 +232,23 @@ public interface Attributes
      */
     class Mapped implements Attributes
     {
-        private final java.util.concurrent.ConcurrentMap<String, Object> _map = new ConcurrentHashMap<>();
-        private final Set<String> _names = Collections.unmodifiableSet(_map.keySet());
+        private final Map<String, Object> _map;
+        private final Set<String> _names;
 
         public Mapped()
         {
+            this(new ConcurrentHashMap<>());
+        }
+
+        public Mapped(Map<String, Object> map)
+        {
+            _map = Objects.requireNonNull(map);
+            _names = Collections.unmodifiableSet(_map.keySet());
         }
 
         public Mapped(Mapped attributes)
         {
+            this();
             _map.putAll(attributes._map);
         }
 
@@ -567,4 +575,42 @@ public interface Attributes
             return false;
         }
     }
+
+    Attributes NULL = new Attributes()
+    {
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return null;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return Collections.emptyMap();
+        }
+    };
 }

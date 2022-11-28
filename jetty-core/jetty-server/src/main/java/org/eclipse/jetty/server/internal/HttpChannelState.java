@@ -169,7 +169,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Callback _writeCallback;
     private Content.Chunk.Error _error;
     private Predicate<Throwable> _onError;
-    private Map<String, Object> _cache;
+    private Attributes _cache;
 
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
@@ -321,14 +321,14 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     @Override
-    public Map<String, Object> getCache()
+    public Attributes getCache()
     {
         if (_cache == null)
         {
             if (getConnectionMetaData().isPersistent())
-                _cache = new HashMap<>();
+                _cache = new Attributes.Mapped(new HashMap<>());
             else
-                _cache = NULL_CACHE;
+                _cache = Attributes.NULL;
         }
         return _cache;
     }

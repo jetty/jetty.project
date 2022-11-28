@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
@@ -115,7 +116,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         //load all classnames
         classes.addAll(resolveStartupClasses());
 
-        ServletContextHandler.Context ctx = null;
+        ServletContextHandler.ServletScopedContext ctx = null;
         if (getServletHandler() != null)
         {
             ctx = getServletHandler().getServletContextHandler().getContext();
@@ -123,9 +124,9 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
 
         if (ctx == null)
         {
-            ContextHandler.Context currentContext = ContextHandler.getCurrentContext();
-            if (currentContext instanceof ServletContextHandler.Context)
-                ctx = (ServletContextHandler.Context)currentContext;
+            Context currentContext = ContextHandler.getCurrentContext();
+            if (currentContext instanceof ServletContextHandler.ServletScopedContext)
+                ctx = (ServletContextHandler.ServletScopedContext)currentContext;
         }
         if (ctx == null)
             throw new IllegalStateException("No Context");

@@ -15,20 +15,12 @@ package org.eclipse.jetty.ee10.servlet;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * ContentProducer is the bridge between {@link HttpInput} and {@link Content.Source}.
  */
 public interface ContentProducer
 {
-    /**
-     * Lock this instance. The lock must be held before any of this instance's
-     * method can be called, and must be released afterward.
-     * @return the lock that is guarding this instance.
-     */
-    AutoLock lock();
-
     /**
      * Clear the interceptor and call {@link Destroyable#destroy()} on it if it implements {@link Destroyable}.
      * A recycled {@link ContentProducer} will only produce special content with a non-null error until

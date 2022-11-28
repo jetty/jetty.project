@@ -11,31 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.rewrite.handler;
+package org.eclipse.jetty.util.resource;
 
-import org.eclipse.jetty.http.HttpURI;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-/**
- * <p>Sets the request URI scheme, by default {@code https}.</p>
- */
-public class ForwardedSchemeHeaderRule extends HeaderRule
+public class PathResourceFactory implements ResourceFactory
 {
-    private String _scheme = "https";
-
-    public String getScheme()
-    {
-        return _scheme;
-    }
-
-    public void setScheme(String scheme)
-    {
-        _scheme = scheme;
-    }
-
     @Override
-    protected Processor apply(Processor input, String value)
+    public Resource newResource(URI uri)
     {
-        HttpURI newURI = HttpURI.build(input.getHttpURI()).scheme(getScheme());
-        return new HttpURIProcessor(input, newURI);
+        Path path = Paths.get(uri.normalize());
+        if (!Files.exists(path))
+            return null;
+        return new PathResource(path, uri, false);
     }
 }

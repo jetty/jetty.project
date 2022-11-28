@@ -79,7 +79,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
@@ -87,7 +86,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServletContextRequest extends ContextRequest implements Runnable
+public class ServletContextRequest extends ContextRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
@@ -105,7 +104,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
         Object channel = request.getAttribute(ServletChannel.class.getName());
         if (channel instanceof ServletChannel)
-            return ((ServletChannel)channel).getRequest();
+            return ((ServletChannel)channel).getServletContextRequest();
 
         while (request instanceof ServletRequestWrapper)
         {
@@ -143,7 +142,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
-        _httpInput = new HttpInput(_servletChannel); // TODO recycle
+        _httpInput = _servletChannel.getHttpInput();
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
@@ -152,13 +151,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public String getPathInContext()
     {
         return _pathInContext;
-    }
-
-    @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        _servletChannel.setCallback(callback);
-        super.process(request, response, callback);
     }
 
     @Override
@@ -190,9 +182,9 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     @Override
-    public ServletContextHandler.Context getContext()
+    public ServletContextHandler.ServletScopedContext getContext()
     {
-        return (ServletContextHandler.Context)super.getContext();
+        return (ServletContextHandler.ServletScopedContext)super.getContext();
     }
 
     public HttpInput getHttpInput()
@@ -262,10 +254,10 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     /**
-     * @return The current {@link ContextHandler.Context context} used for this error handling for this request.  If the request is asynchronous,
+     * @return The current {@link ContextHandler.ScopedContext context} used for this error handling for this request.  If the request is asynchronous,
      * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
      */
-    public ServletContextHandler.Context getErrorContext()
+    public ServletContextHandler.ServletScopedContext getErrorContext()
     {
         // TODO: review.
         return _servletChannel.getContext();
@@ -304,12 +296,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public String getServletName()
     {
         return _mappedServlet.getServletHolder().getName();
-    }
-
-    Runnable onContentAvailable()
-    {
-        // TODO not sure onReadReady is right method or at least could be renamed.
-        return getState().onReadReady() ? this : null;
     }
 
     public void addEventListener(final EventListener listener)
@@ -743,7 +729,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             //do the authentication
             if (_authentication instanceof Authentication.Deferred)
             {
-                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this, getResponse(), getCallback()));
+                setAuthentication(((Authentication.Deferred)_authentication)
+                    .authenticate(ServletContextRequest.this, getResponse(), getRequest().getServletChannel().getCallback()));
             }
 
             //if the authentication did not succeed
@@ -1317,7 +1304,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public RequestDispatcher getRequestDispatcher(String path)
         {
-            ServletContextHandler.Context context = ServletContextRequest.this.getContext();
+            ServletContextHandler.ServletScopedContext context = ServletContextRequest.this.getContext();
             if (path == null || context == null)
                 return null;
 

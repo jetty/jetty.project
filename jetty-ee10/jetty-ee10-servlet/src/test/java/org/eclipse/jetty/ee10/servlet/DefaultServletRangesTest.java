@@ -28,7 +28,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -36,7 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletRangesTest
 {
@@ -45,7 +43,6 @@ public class DefaultServletRangesTest
 
     private Server server;
     private LocalConnector connector;
-    private ServletContextHandler context;
 
     @BeforeEach
     public void init() throws Exception
@@ -55,7 +52,7 @@ public class DefaultServletRangesTest
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
-        context = new ServletContextHandler();
+        ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
 
@@ -142,7 +139,7 @@ public class DefaultServletRangesTest
                 "Connection: close\r\n" +
                 "Range: bytes=0-9,20-29,40-49\r\n" +
                 "\r\n");
-        int start = response.indexOf("--jetty");
+        int start = response.indexOf("--");
         String body = response.substring(start);
         String boundary = body.substring(0, body.indexOf("\r\n"));
         assertResponseContains("206 Partial", response);
@@ -186,9 +183,9 @@ public class DefaultServletRangesTest
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
-                "Range: bytes=" + stringBuilder.toString() + "0-2\r\n" +
+                "Range: bytes=" + stringBuilder + "0-2\r\n" +
                 "\r\n");
-        int start = response.indexOf("--jetty");
+        int start = response.indexOf("--");
         String body = response.substring(start);
         String boundary = body.substring(0, body.indexOf("\r\n"));
         assertResponseContains("206 Partial", response);

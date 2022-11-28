@@ -157,7 +157,9 @@ public class FileID
      * for the extension (if any), including the dot, lower-cased.
      *
      * @param filename The string path
-     * @return The last segment extension, or null if not a file, or null if there is no extension present
+     * @return The last segment extension excluding the leading dot;
+     *         or null if not a file;
+     *         or null if there is no extension present
      */
     public static String getExtension(String filename)
     {

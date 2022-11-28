@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;

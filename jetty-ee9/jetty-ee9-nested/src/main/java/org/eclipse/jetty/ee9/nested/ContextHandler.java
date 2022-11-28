@@ -194,7 +194,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
@@ -624,9 +623,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             setErrorHandler(new ErrorHandler());
 
         setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
-
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
 
         _durableListeners.addAll(getEventListeners());
 
@@ -1182,19 +1178,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * @return Returns the mimeTypes.
      */
-    public MimeTypes getMimeTypes()
+    public MimeTypes.Mutable getMimeTypes()
     {
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
-        return _mimeTypes;
-    }
-
-    /**
-     * @param mimeTypes The mimeTypes to set.
-     */
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
+        return _coreContextHandler.getMimeTypes();
     }
 
     public void setWelcomeFiles(String[] files)
@@ -1693,7 +1679,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public class APIContext implements ServletContext
     {
-        private final org.eclipse.jetty.server.handler.ContextHandler.Context _coreContext;
+        private final org.eclipse.jetty.server.handler.ContextHandler.ScopedContext _coreContext;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
@@ -1766,9 +1752,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getMimeType(String file)
         {
-            if (_mimeTypes == null)
-                return null;
-            return _mimeTypes.getMimeByExtension(file);
+            return _coreContext.getMimeTypes().getMimeByExtension(file);
         }
 
         @Override
@@ -2363,7 +2347,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         private final HttpChannel _httpChannel;
 
         protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
-                                     org.eclipse.jetty.server.handler.ContextHandler.Context context,
+                                     org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context,
                                      org.eclipse.jetty.server.Request wrapped,
                                      HttpChannel httpChannel)
         {
@@ -2450,11 +2434,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
         {
-            HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().get(HttpChannel.class.getName());
+            HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
             if (httpChannel == null)
             {
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
-                request.getComponents().getCache().put(HttpChannel.class.getName(), httpChannel);
+                request.getComponents().getCache().setAttribute(HttpChannel.class.getName(), httpChannel);
             }
             else if (httpChannel.getContextHandler() == ContextHandler.this)
             {
@@ -2472,10 +2456,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected void enterScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyEnterScope(org.eclipse.jetty.server.Request coreRequest)
         {
             __context.set(_apiContext);
-            super.enterScope(coreRequest);
+            super.notifyEnterScope(coreRequest);
             Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
                 ? coreContextRequest.getHttpChannel().getRequest()
                 : null;
@@ -2492,7 +2476,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected void exitScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyExitScope(org.eclipse.jetty.server.Request coreRequest)
         {
             try
             {
@@ -2500,7 +2484,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     ? coreContextRequest.getHttpChannel().getRequest()
                     : null;
                 ContextHandler.this.exitScope(request);
-                super.exitScope(coreRequest);
+                super.notifyExitScope(coreRequest);
             }
             finally
             {
@@ -2508,7 +2492,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        class CoreContext extends org.eclipse.jetty.server.handler.ContextHandler.Context
+        class CoreContext extends ScopedContext
         {
             public APIContext getAPIContext()
             {

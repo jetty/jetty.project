@@ -156,7 +156,7 @@ public interface ResourceFactory
         try
         {
             URI uri = url.toURI();
-            return Resource.create(uri);
+            return newResource(uri);
         }
         catch (URISyntaxException e)
         {
@@ -242,6 +242,26 @@ public interface ResourceFactory
         if (!uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + uri);
         return newResource(URIUtil.toJarFileUri(uri));
+    }
+
+    static void registerResourceFactory(String scheme, ResourceFactory resource)
+    {
+        ResourceFactoryInternals.RESOURCE_FACTORIES.put(scheme, resource);
+    }
+
+    static ResourceFactory unregisterResourceFactory(String scheme)
+    {
+        return ResourceFactoryInternals.RESOURCE_FACTORIES.remove(scheme);
+    }
+
+    static ResourceFactory byScheme(String scheme)
+    {
+        return ResourceFactoryInternals.RESOURCE_FACTORIES.get(scheme);
+    }
+
+    static ResourceFactory getBestByScheme(String str)
+    {
+        return ResourceFactoryInternals.RESOURCE_FACTORIES.getBest(str);
     }
 
     static ResourceFactory root()

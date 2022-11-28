@@ -20,21 +20,17 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.MimeTypes;
 
 /**
  * Test servlet for testing against unusual minGzip configurable.
  */
-@SuppressWarnings("serial")
 public class TestMinGzipSizeServlet extends AbstractFileContentServlet
 {
-    private MimeTypes mimeTypes;
 
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
-        mimeTypes = new MimeTypes();
     }
 
     @Override
@@ -52,7 +48,7 @@ public class TestMinGzipSizeServlet extends AbstractFileContentServlet
         }
         else
         {
-            String mime = mimeTypes.getMimeByExtension(fileName);
+            String mime = request.getServletContext().getMimeType(fileName);
             if (mime != null)
                 response.setContentType(mime);
         }
