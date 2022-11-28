@@ -162,7 +162,7 @@ public class ContextFactory implements ObjectFactory
                 LOG.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
             try (AutoLock l = __lock.lock())
             {
-                loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
+                loader = ContextHandler.getCurrentContext().getClassLoader();
                 ctx = (Context)__contextMap.get(loader);
 
                 if (ctx == null && loader != null)

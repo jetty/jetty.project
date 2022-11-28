@@ -1679,7 +1679,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public class APIContext implements ServletContext
     {
-        private final org.eclipse.jetty.server.handler.ContextHandler.Context _coreContext;
+        private final org.eclipse.jetty.server.handler.ContextHandler.ScopedContext _coreContext;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
@@ -2347,7 +2347,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         private final HttpChannel _httpChannel;
 
         protected CoreContextRequest(org.eclipse.jetty.server.handler.ContextHandler contextHandler,
-                                     org.eclipse.jetty.server.handler.ContextHandler.Context context,
+                                     org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context,
                                      org.eclipse.jetty.server.Request wrapped,
                                      HttpChannel httpChannel)
         {
@@ -2434,11 +2434,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
         {
-            HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().get(HttpChannel.class.getName());
+            HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
             if (httpChannel == null)
             {
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
-                request.getComponents().getCache().put(HttpChannel.class.getName(), httpChannel);
+                request.getComponents().getCache().setAttribute(HttpChannel.class.getName(), httpChannel);
             }
             else if (httpChannel.getContextHandler() == ContextHandler.this)
             {
@@ -2456,10 +2456,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected void enterScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyEnterScope(org.eclipse.jetty.server.Request coreRequest)
         {
             __context.set(_apiContext);
-            super.enterScope(coreRequest);
+            super.notifyEnterScope(coreRequest);
             Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
                 ? coreContextRequest.getHttpChannel().getRequest()
                 : null;
@@ -2476,7 +2476,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected void exitScope(org.eclipse.jetty.server.Request coreRequest)
+        protected void notifyExitScope(org.eclipse.jetty.server.Request coreRequest)
         {
             try
             {
@@ -2484,7 +2484,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     ? coreContextRequest.getHttpChannel().getRequest()
                     : null;
                 ContextHandler.this.exitScope(request);
-                super.exitScope(coreRequest);
+                super.notifyExitScope(coreRequest);
             }
             finally
             {
@@ -2492,7 +2492,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        class CoreContext extends org.eclipse.jetty.server.handler.ContextHandler.Context
+        class CoreContext extends ScopedContext
         {
             public APIContext getAPIContext()
             {

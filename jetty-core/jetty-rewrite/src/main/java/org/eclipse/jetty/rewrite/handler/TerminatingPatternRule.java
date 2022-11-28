@@ -15,8 +15,6 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.server.Request;
-
 /**
  * <p>If this rule matches, terminates the processing of other rules, allowing
  * the request to be processed by the handlers after the {@link RewriteHandler}.</p>
@@ -39,7 +37,7 @@ public class TerminatingPatternRule extends PatternRule
     }
 
     @Override
-    protected Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    protected Processor apply(Processor input) throws IOException
     {
         return input;
     }

@@ -27,6 +27,18 @@
     </resources>
     <plugins>
       <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <configuration>
+          <fail>false</fail>
+          <rules>
+            <requireJavaVersion>
+              <version>[19,)</version>
+              <message>[ERROR] OLD JDK [${java.version}] in use. Jetty documentation ${project.version} MUST use JDK 19 or newer</message>
+            </requireJavaVersion>
+          </rules>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <dependencies>

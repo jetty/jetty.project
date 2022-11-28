@@ -179,8 +179,6 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
-
-
     }
 
     private void assertInContext(Request request)
