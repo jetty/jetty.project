@@ -133,15 +133,10 @@ public class TryPathsHandler extends Handler.Wrapper
         for (String path : paths)
         {
             String interpolated = interpolate(request, path);
-            StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest result = new StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest(new TryPathsRequest(request, interpolated));
-            Request.Processor childProcessor = super.process(result, response, callback);
-            if (childProcessor != null)
-            {
-                result._processor = childProcessor;
-                return childProcessor == null ? null : result;
-            }
+            super.process(new TryPathsRequest(request, interpolated), response, callback);
+            if (request.isAccepted())
+                return;
         }
-        return null;
     }
 
     private String interpolate(Request request, String value)

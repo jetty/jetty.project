@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -631,6 +632,29 @@ public interface Request extends Attributes, Content.Source
         public Request getWrapped()
         {
             return (Request)super.getWrapped();
+        }
+    }
+
+    class AcceptingWrapper extends Wrapper
+    {
+        private final AtomicBoolean _accepted = new AtomicBoolean();
+
+        public AcceptingWrapper(Request wrapped)
+        {
+            super(wrapped);
+        }
+
+        @Override
+        public void accept()
+        {
+            if (!_accepted.compareAndSet(false, true))
+                throw new IllegalStateException("already accepted");
+        }
+
+        @Override
+        public boolean isAccepted()
+        {
+            return _accepted.get();
         }
     }
 

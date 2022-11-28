@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class EchoHandler extends Handler.Processor.NonBlocking
 {
     @Override
-    public void doProcess(Request request, Response response, Callback callback)
+    public void doProcess(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);

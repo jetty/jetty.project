@@ -655,22 +655,20 @@ public class HttpConfigurationAuthorityOverrideTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/dump"))
-                return null;
-            return (rq, rs, cb) ->
+                return;
+            request.accept();
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+            try (StringWriter stringWriter = new StringWriter();
+                 PrintWriter out = new PrintWriter(stringWriter))
             {
-                rs.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                try (StringWriter stringWriter = new StringWriter();
-                     PrintWriter out = new PrintWriter(stringWriter))
-                {
-                    out.printf("ServerName=[%s]%n", Request.getServerName(rq));
-                    out.printf("ServerPort=[%d]%n", Request.getServerPort(rq));
-                    out.printf("LocalAddr=[%s]%n", Request.getLocalAddr(rq));
-                    out.printf("LocalName=[%s]%n", Request.getLocalAddr(rq));
-                    out.printf("LocalPort=[%s]%n", Request.getLocalPort(rq));
-                    out.printf("HttpURI=[%s]%n", rq.getHttpURI());
-                    Content.Sink.write(rs, true, stringWriter.getBuffer().toString(), cb);
-                }
-            };
+                out.printf("ServerName=[%s]%n", Request.getServerName(request));
+                out.printf("ServerPort=[%d]%n", Request.getServerPort(request));
+                out.printf("LocalAddr=[%s]%n", Request.getLocalAddr(request));
+                out.printf("LocalName=[%s]%n", Request.getLocalAddr(request));
+                out.printf("LocalPort=[%s]%n", Request.getLocalPort(request));
+                out.printf("HttpURI=[%s]%n", request.getHttpURI());
+                Content.Sink.write(response, true, stringWriter.getBuffer().toString(), callback);
+            }
         }
     }
 
@@ -680,14 +678,13 @@ public class HttpConfigurationAuthorityOverrideTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/redirect"))
-                return null;
+                return;
 
-            return (rq, rs, cb) ->
-            {
-                rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                rs.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
-                cb.succeeded();
-            };
+            request.accept();
+
+            response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
+            response.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
+            callback.succeeded();
         }
     }
 
@@ -697,8 +694,8 @@ public class HttpConfigurationAuthorityOverrideTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/error"))
-                return null;
-            return super.process(request, response, callback);
+                return;
+            super.process(request, response, callback);
         }
 
         @Override

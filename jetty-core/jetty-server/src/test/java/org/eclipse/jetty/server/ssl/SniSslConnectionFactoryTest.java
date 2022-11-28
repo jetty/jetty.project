@@ -102,20 +102,14 @@ public class SniSslConnectionFactoryTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Request.Processor processor = getHandler().process(request, response, callback);
-                if (processor == null)
-                    return null;
-                return (ignored, response, callback) ->
-                {
-                    EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-                    SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
-                    SslConnection sslConnection = sslEndPoint.getSslConnection();
-                    SSLEngine sslEngine = sslConnection.getSSLEngine();
-                    SSLSession session = sslEngine.getSession();
-                    for (Certificate c : session.getLocalCertificates())
-                        response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
-                    processor.process(request, response, callback);
-                };
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
+                SslConnection sslConnection = sslEndPoint.getSslConnection();
+                SSLEngine sslEngine = sslConnection.getSSLEngine();
+                SSLSession session = sslEngine.getSession();
+                for (Certificate c : session.getLocalCertificates())
+                    response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                getHandler().process(request, response, callback);
             }
         };
 

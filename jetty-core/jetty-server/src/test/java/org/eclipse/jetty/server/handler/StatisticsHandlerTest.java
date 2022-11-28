@@ -370,7 +370,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getAccepted());
         assertEquals(1, _statsHandler.getProcessings());
         assertEquals(1, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -382,7 +382,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getAccepted());
         assertEquals(1, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -404,7 +404,7 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getAccepted());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(1, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -417,7 +417,7 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getAccepted());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -447,7 +447,7 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getAccepted());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(2, _statsHandler.getProcessingsActive());
         assertEquals(2, _statsHandler.getProcessingsMax());
@@ -459,7 +459,7 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getAccepted());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(2, _statsHandler.getProcessingsMax());
@@ -611,13 +611,15 @@ public class StatisticsHandlerTest
             {
                 barrier[0].await();
                 barrier[1].await();
-                return (rq, rs, callback) ->
-                {
-                    barrier[2].await();
-                    barrier[3].await();
-                    callback.succeeded();
-                    barrier[4].await();
-                };
+
+                request.accept();
+                
+                barrier[2].await();
+                barrier[3].await();
+                
+                callback.succeeded();
+                
+                barrier[4].await();
             }
         });
         _server.start();
@@ -630,7 +632,7 @@ public class StatisticsHandlerTest
         barrier[0].await();
 
         assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getAccepted());
         assertEquals(0, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(0, _statsHandler.getProcessings());
@@ -642,7 +644,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getAccepted());
         assertEquals(1, _statsHandler.getProcessings());
         assertEquals(1, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -654,7 +656,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getAccepted());
         assertEquals(1, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -682,7 +684,7 @@ public class StatisticsHandlerTest
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
-        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getAccepted());
         assertEquals(0, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(0, _statsHandler.getRequestsActiveMax());
@@ -705,10 +707,8 @@ public class StatisticsHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                return (req, resp, cp) ->
-                {
-                    throw new IllegalStateException("expected");
-                };
+                request.accept();
+                throw new IllegalStateException("expected");
             }
         });
         _server.start();
@@ -722,7 +722,7 @@ public class StatisticsHandlerTest
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
-        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getAccepted());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
@@ -975,26 +975,24 @@ public class StatisticsHandlerTest
             {
                 barrier[0].await();
                 Thread.sleep(handleTime);
-                return (rq, rs, callback) ->
+                request.accept();
+                try
+                {
+                    barrier[1].await();
+                    Thread.sleep(processTime);
+                    callback.succeeded();
+                }
+                finally
                 {
                     try
                     {
-                        barrier[1].await();
-                        Thread.sleep(processTime);
-                        callback.succeeded();
+                        barrier[2].await();
                     }
-                    finally
+                    catch (Throwable x)
                     {
-                        try
-                        {
-                            barrier[2].await();
-                        }
-                        catch (Throwable x)
-                        {
-                            callback.failed(x);
-                        }
+                        callback.failed(x);
                     }
-                };
+                }
             }
         });
         _server.start();
@@ -1030,17 +1028,17 @@ public class StatisticsHandlerTest
         assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
         assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
 
-        assertThat(_statsHandler.getHandlingTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 5)));
-        assertTrue(_statsHandler.getHandlingTimeTotal() < _statsHandler.getRequestTimeTotal());
-        assertEquals(_statsHandler.getHandlingTimeTotal(), _statsHandler.getHandlingTimeMax());
-        assertEquals(_statsHandler.getHandlingTimeTotal(), _statsHandler.getHandlingTimeMean(), 1.0);
+        assertThat(_statsHandler.getAcceptedTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 5)));
+        assertTrue(_statsHandler.getAcceptedTimeTotal() < _statsHandler.getRequestTimeTotal());
+        assertEquals(_statsHandler.getAcceptedTimeTotal(), _statsHandler.getAcceptedTimeMax());
+        assertEquals(_statsHandler.getAcceptedTimeTotal(), _statsHandler.getAcceptedTimeMean(), 1.0);
 
         assertThat(_statsHandler.getProcessingTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 5)));
         assertTrue(_statsHandler.getProcessingTimeTotal() < _statsHandler.getRequestTimeTotal());
         assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMax());
         assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMean(), 1.0);
 
-        assertThat(_statsHandler.getRequestTimeTotal(), greaterThan(_statsHandler.getHandlingTimeTotal() + _statsHandler.getProcessingTimeTotal()));
+        assertThat(_statsHandler.getRequestTimeTotal(), greaterThan(_statsHandler.getAcceptedTimeTotal() + _statsHandler.getProcessingTimeTotal()));
     }
 //
 //    @Test
@@ -1101,21 +1099,14 @@ public class StatisticsHandlerTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             CountDownLatch latch = _latch;
-            Request.Processor wrappedProcessor = super.process(request, response, callback);
-            StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest toBeRemovedProcessor = new StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest(request);
-            Request.Processor processor = (rq, rs, callback) ->
+            try
             {
-                try
-                {
-                    wrappedProcessor.process(rq, rs, callback);
-                }
-                finally
-                {
-                    latch.countDown();
-                }
-            };
-            toBeRemovedProcessor._processor = processor;
-            return processor == null ? null : toBeRemovedProcessor;
+                super.process(request, response, callback);
+            }
+            finally
+            {
+                latch.countDown();
+            }
         }
 
         private void reset()

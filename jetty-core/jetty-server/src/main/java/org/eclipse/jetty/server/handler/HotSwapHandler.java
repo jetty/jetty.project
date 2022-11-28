@@ -101,7 +101,8 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     public void process(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = _handler;
-        return next == null ? null : next.process(request, response, callback);
+        if (next != null)
+            next.process(request, response, callback);
     }
 
     @Override

@@ -67,18 +67,12 @@ public class IdleTimeoutHandler extends Handler.Wrapper
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor processor = super.process(request, response, callback);
-        if (processor == null)
-            return null;
-
-        return (rq, rs, cb) ->
+        long idleTimeout = 0; // TODO rq.getHttpChannel().getIdleTimeout();
+        // TODO rq.getHttpChannel().setIdleTimeout(_idleTimeoutMs);
+        super.process(request, response, Callback.from(callback, () ->
         {
-            long idleTimeout = 0; // TODO rq.getHttpChannel().getIdleTimeout();
-            // TODO rq.getHttpChannel().setIdleTimeout(_idleTimeoutMs);
-            processor.process(rq, rs, Callback.from(cb, () ->
-            {
-                // TODO rq.getHttpChannel().setIdleTimeout(idleTimeout)
-            }));
-        };
+            // TODO rq.getHttpChannel().setIdleTimeout(idleTimeout)
+        }));
+
     }
 }

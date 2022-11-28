@@ -42,6 +42,8 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  */
 public class InetAccessHandler extends Handler.Wrapper
 {
+    // TODO replace this handler with a general conditional handler wrapper.
+
     private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
 
     /**
@@ -210,8 +212,8 @@ public class InetAccessHandler extends Handler.Wrapper
         SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
         if (socketAddress instanceof InetSocketAddress inetSocketAddress &&
             !isAllowed(inetSocketAddress.getAddress(), request))
-            return null;
-        return super.process(request, response, callback);
+            return;
+        super.process(request, response, callback);
     }
 
     /**

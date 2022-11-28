@@ -51,13 +51,17 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
         }
     }
 
-    protected abstract R newDelayedRequest(Handler next, Request request, Response response, Callback callback);
-
-    protected abstract void delay(R request);
-
-    protected static class DelayedRequest extends Request.Wrapper implements Runnable
+    protected R newDelayedRequest(Handler next, Request request, Response response, Callback callback)
     {
-        private final AtomicBoolean _accepted = new AtomicBoolean();
+        @SuppressWarnings("unchecked")
+        R r = (R) new DelayedRequest(next, request, response, callback);
+        return r;
+    }
+
+    protected abstract void delay(R request) throws Exception;
+
+    protected static class DelayedRequest extends Request.AcceptingWrapper implements Runnable
+    {
         private final Handler _handler;
         private final Response _response;
         private final Callback _callback;
@@ -120,19 +124,6 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
             {
                 Response.writeError(getWrapped(), getResponse(), getCallback(), t);
             }
-        }
-
-        @Override
-        public void accept()
-        {
-            if (!_accepted.compareAndSet(false, true))
-                throw new IllegalStateException("already accepted");
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            return _accepted.get();
         }
     }
 

@@ -195,22 +195,21 @@ public class ConnectHandler extends Handler.Wrapper
             {
                 if (tunnelSupport.getProtocol() == null)
                 {
-                    return (req, res, cbk) ->
-                    {
-                        HttpURI httpURI = req.getHttpURI();
-                        String serverAddress = httpURI.getAuthority();
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("CONNECT request for {}", serverAddress);
-                        handleConnect(req, res, cbk, serverAddress);
-                    };
+                    HttpURI httpURI = request.getHttpURI();
+                    String serverAddress = httpURI.getAuthority();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("CONNECT request for {}", serverAddress);
+                    handleConnect(request, response, callback, serverAddress);
+                    return;
                 }
             }
             else
             {
-                return (req, res, cbk) -> Response.writeError(req, res, cbk, HttpStatus.NOT_IMPLEMENTED_501);
+                Response.writeError(request, response, callback, HttpStatus.NOT_IMPLEMENTED_501);
+                return;
             }
         }
-        return super.process(request, response, callback);
+        super.process(request, response, callback);
     }
 
     /**

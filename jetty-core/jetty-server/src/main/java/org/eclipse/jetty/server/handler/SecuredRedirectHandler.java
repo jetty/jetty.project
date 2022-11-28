@@ -63,27 +63,26 @@ public class SecuredRedirectHandler extends Handler.Wrapper
         if (request.isSecure())
         {
             // Nothing to do here.
-            return super.process(request, response, callback);
+            super.process(request, response, callback);
+            return;
         }
 
-        return (rq, rs, cb) ->
-        {
-            HttpConfiguration httpConfig = rq.getConnectionMetaData().getHttpConfiguration();
+        request.accept();
+        HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
 
-            int securePort = httpConfig.getSecurePort();
-            if (securePort > 0)
-            {
-                String secureScheme = httpConfig.getSecureScheme();
-                String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
-                // TODO need a utility for this
-                rs.getHeaders().put(HttpHeader.LOCATION, url);
-                rs.setStatus(_redirectCode);
-                rs.write(true, null, cb);
-            }
-            else
-            {
-                Response.writeError(rq, rs, cb, HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
-            }
-        };
+        int securePort = httpConfig.getSecurePort();
+        if (securePort > 0)
+        {
+            String secureScheme = httpConfig.getSecureScheme();
+            String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            // TODO need a utility for this
+            response.getHeaders().put(HttpHeader.LOCATION, url);
+            response.setStatus(_redirectCode);
+            response.write(true, null, callback);
+        }
+        else
+        {
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
+        }
     }
 }

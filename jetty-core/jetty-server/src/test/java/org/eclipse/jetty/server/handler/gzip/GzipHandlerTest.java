@@ -1836,18 +1836,12 @@ public class GzipHandlerTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.process(request, response, callback);
-            if (processor == null)
-                return null;
+            if (request.getHeaders().get("X-Content-Encoding") != null)
+                assertEquals(-1, request.getLength());
+            else if (request.getLength() >= 0)
+                MatcherAssert.assertThat(request.getHeaders().get("X-Content-Encoding"), nullValue());
+            super.process(request, response, callback);
 
-            return (req, res, cb) ->
-            {
-                if (req.getHeaders().get("X-Content-Encoding") != null)
-                    assertEquals(-1, req.getLength());
-                else if (req.getLength() >= 0)
-                    MatcherAssert.assertThat(req.getHeaders().get("X-Content-Encoding"), nullValue());
-                processor.process(req, res, cb);
-            };
         }
     }
 }

@@ -180,7 +180,6 @@ public class ShutdownHandler extends Handler.Wrapper
         doShutdown(baseRequest, response);
 
          */
-        return null;
     }
 
     /* TODO

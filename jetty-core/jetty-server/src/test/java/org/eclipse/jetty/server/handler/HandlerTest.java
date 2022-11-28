@@ -271,7 +271,6 @@ public class HandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                return null;
             }
         });
 
@@ -289,7 +288,6 @@ public class HandlerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                return null;
             }
         };
 
@@ -312,7 +310,6 @@ public class HandlerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                return null;
             }
         };
 

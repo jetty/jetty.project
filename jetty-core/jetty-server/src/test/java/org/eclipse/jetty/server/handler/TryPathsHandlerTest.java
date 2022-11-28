@@ -113,18 +113,14 @@ public class TryPathsHandlerTest
             public void process(Request request, Response response, Callback callback)
             {
                 if (!Request.getPathInContext(request).startsWith("/forward"))
-                    return null;
+                    return;
 
-                return new Handler.Processor()
-                {
-                    public void doProcess(Request request, Response response, Callback callback)
-                    {
-                        assertThat(Request.getPathInContext(request), equalTo("/forward"));
-                        assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
-                        response.setStatus(HttpStatus.NO_CONTENT_204);
-                        callback.succeeded();
-                    }
-                };
+                request.accept();
+
+                assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
             }
         });
 
@@ -184,39 +180,26 @@ public class TryPathsHandlerTest
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), resourceHandler);
-        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
-                return new Processor()
-                {
-                    @Override
-                    public void doProcess(Request request, Response response, Callback callback)
-                    {
-                        response.setStatus(HttpStatus.OK_200);
-                        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                        String message = "PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
-                        Content.Sink.write(response, true, message, callback);
-                    }
-                };
+                response.setStatus(HttpStatus.OK_200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+                String message = "PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
+                Content.Sink.write(response, true, message, callback);
             }
         });
-        pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
+        pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
-                return new Handler.Processor()
-                {
-                    public void doProcess(Request request, Response response, Callback callback)
-                    {
-                        assertThat(Request.getPathInContext(request), equalTo("/forward"));
-                        assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
-                        response.setStatus(HttpStatus.NO_CONTENT_204);
-                        callback.succeeded();
-                    }
-                };
+                assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
             }
         });
 

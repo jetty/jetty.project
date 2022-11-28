@@ -400,7 +400,6 @@ public class HttpChannelTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                return null;
             }
         };
         _server.setHandler(handler);
@@ -1235,7 +1234,7 @@ public class HttpChannelTest
                         super.succeeded();
                     }
                 });
-                return super.process(request, response, callback);
+                super.process(request, response, callback);
             }
         };
         _server.setHandler(echoHandler);

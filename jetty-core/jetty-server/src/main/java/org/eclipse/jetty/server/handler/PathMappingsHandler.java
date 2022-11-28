@@ -96,10 +96,10 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("No match on pathInContext of {}", pathInContext);
-            return null;
+            return;
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Matched pathInContext of {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), matchedResource.getResource());
-        return matchedResource.getResource().process(request, response, callback);
+        matchedResource.getResource().process(request, response, callback);
     }
 }

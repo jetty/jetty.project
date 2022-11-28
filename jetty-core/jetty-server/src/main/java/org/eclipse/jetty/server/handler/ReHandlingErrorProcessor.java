@@ -57,22 +57,19 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
             {
                 request.setAttribute(ReHandlingErrorProcessor.class.getName(), pathInContext);
                 HttpURI uri = Request.newHttpURIFrom(request, pathInContext);
-                Request.Wrapper wrapper = new ReHandleRequestWrapper(request, uri);
+                ReHandleRequestWrapper reRequest = new ReHandleRequestWrapper(request, uri);
 
                 try
                 {
-                    Request.Processor processor = _handler.process(wrapper, response, callback);
-                    if (processor != null)
-                    {
-                        response.setStatus(200);
-                        processor.process(wrapper, response, callback);
+                    response.setStatus(200);
+                    _handler.process(reRequest, response, callback);
+                    if (reRequest.isAccepted())
                         return;
-                    }
                 }
                 catch (Exception e)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Unable to process error {}", wrapper, e);
+                        LOG.debug("Unable to process error {}", reRequest, e);
                     if (cause != null && ExceptionUtil.areNotAssociated(cause, e))
                         cause.addSuppressed(e);
                     response.setStatus(code);
@@ -118,7 +115,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
         }
     }
 
-    private static class ReHandleRequestWrapper extends Request.Wrapper
+    private static class ReHandleRequestWrapper extends Request.AcceptingWrapper
     {
         private final HttpURI _uri;
 
@@ -133,6 +130,5 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
         {
             return _uri;
         }
-
     }
 }

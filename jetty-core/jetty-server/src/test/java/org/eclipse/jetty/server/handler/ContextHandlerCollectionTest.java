@@ -404,22 +404,22 @@ public class ContextHandlerCollectionTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.process(request, response, callback);
-            if (processor == null)
-                return null;
-
-            return (req, resp, callback) ->
+            super.process(new Request.Wrapper(request)
             {
-                if (resp.getHeaders().contains("Wrapped"))
-                    resp.getHeaders().put("Wrapped", "ASYNC");
-                else
-                    resp.getHeaders().put("Wrapped", "TRUE");
-                processor.process(req, resp, callback);
-            };
+                @Override
+                public void accept()
+                {
+                    super.accept();
+                    if (response.getHeaders().contains("Wrapped"))
+                        response.getHeaders().put("Wrapped", "ASYNC");
+                    else
+                        response.getHeaders().put("Wrapped", "TRUE");
+                }
+            }, response, callback);
         }
     }
 
-    private static final class IsHandledHandler extends Handler.Abstract
+    private static final class IsHandledHandler extends Handler.Processor
     {
         private boolean handled;
         private final String name;
@@ -435,15 +435,12 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback)
+        public void doProcess(Request request, Response response, Callback callback)
         {
-            return (req, resp, callback) ->
-            {
-                this.handled = true;
-                resp.getHeaders().put("X-IsHandled-Name", name);
-                ByteBuffer nameBuffer = BufferUtil.toBuffer(name, StandardCharsets.UTF_8);
-                resp.write(true, nameBuffer, callback);
-            };
+            this.handled = true;
+            response.getHeaders().put("X-IsHandled-Name", name);
+            ByteBuffer nameBuffer = BufferUtil.toBuffer(name, StandardCharsets.UTF_8);
+            response.write(true, nameBuffer, callback);
         }
 
         public void reset()

@@ -218,7 +218,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         startServer(new EchoHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {

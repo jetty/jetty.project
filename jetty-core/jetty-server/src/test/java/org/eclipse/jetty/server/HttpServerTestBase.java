@@ -1164,7 +1164,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 served.incrementAndGet();
-                return super.process(request, response, callback);
+                super.process(request, response, callback);
             }
         });
 
@@ -1807,18 +1807,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             };
 
-            Request.Processor processor = super.process(request, response, callback);
-            if (processor == null)
-                return null;
-
-            return (ignored, response, callback) ->
-                processor.process(wrapper, response, Callback.from(() ->
-                {
-                    if (_mustHaveContent && !hasContent.get())
-                        callback.failed(new IllegalStateException("No Test Content"));
-                    else
-                        callback.succeeded();
-                }, callback::failed));
+            super.process(wrapper, response, Callback.from(() ->
+            {
+                if (_mustHaveContent && !hasContent.get())
+                    callback.failed(new IllegalStateException("No Test Content"));
+                else
+                    callback.succeeded();
+            }, callback::failed));
         }
     }
 
@@ -1831,16 +1826,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Request.Processor processor = super.process(request, response, callback);
-                if (processor == null)
-                    return null;
                 request.setAttribute("test", "value");
-
-                return (req, resp, callback) ->
-                {
-                    processor.process(req, resp, callback);
-                    result.set(String.valueOf(req.getAttribute("test")));
-                };
+                super.process(request, response, callback);
+                result.set(String.valueOf(request.getAttribute("test")));
             }
         };
 

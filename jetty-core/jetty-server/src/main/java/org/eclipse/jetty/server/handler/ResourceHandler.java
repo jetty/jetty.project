@@ -139,14 +139,18 @@ public class ResourceHandler extends Handler.Wrapper
         if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
             // try another handler
-            return super.process(request, response, callback);
+            super.process(request, response, callback);
+            return;
         }
 
         HttpContent content = _resourceService.getContent(Request.getPathInContext(request), request);
         if (content == null)
-            return super.process(request, response, callback); // no content - try other handlers
+        {
+            super.process(request, response, callback); // no content - try other handlers
+            return;
+        }
 
-        return (rq, rs, cb) -> _resourceService.doGet(rq, rs, cb, content);
+        _resourceService.doGet(request, response, callback, content);
     }
 
     /**

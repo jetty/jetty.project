@@ -248,7 +248,7 @@ public class ContextHandlerTest
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
-                return super.process(request, response, callback);
+                super.process(request, response, callback);
             }
 
             @Override

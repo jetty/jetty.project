@@ -59,7 +59,7 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             }
         };
 
-        StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest wrapper = new Request.ToBeRemovedProcessor(request)
+        super.process(new Request.Wrapper(request)
         {
             @Override
             public HttpURI getHttpURI()
@@ -73,9 +73,6 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             {
                 return proxiedFor;
             }
-        };
-        Request.Processor processor = super.process(wrapper, response, callback);
-        wrapper._processor = processor;
-        return processor == null ? null : wrapper;
+        }, response, callback);
     }
 }

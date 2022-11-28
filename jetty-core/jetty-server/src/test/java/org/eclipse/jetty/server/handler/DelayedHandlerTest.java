@@ -70,12 +70,18 @@ public class DelayedHandlerTest
     @Test
     public void testNotDelayed() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler()
+        DelayedHandler<DelayedHandler.DelayedRequest> delayedHandler = new DelayedHandler<>()
         {
             @Override
-            protected Request.Processor delayed(Request request, Request.Processor processor)
+            protected DelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
             {
-                return processor;
+                return null;
+            }
+
+            @Override
+            protected void delay(DelayedRequest request)
+            {
+                throw new UnsupportedOperationException();
             }
         };
 
@@ -107,22 +113,19 @@ public class DelayedHandlerTest
     public void testDelayed() throws Exception
     {
         Exchanger<Runnable> handleEx = new Exchanger<>();
-        DelayedHandler delayedHandler = new DelayedHandler()
+        DelayedHandler<DelayedHandler.DelayedRequest> delayedHandler = new DelayedHandler<>()
         {
             @Override
-            protected Request.Processor delayed(Request request, Request.Processor processor)
+            protected DelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
             {
-                return (ignored, response, callback) -> handleEx.exchange(() ->
-                {
-                    try
-                    {
-                        processor.process(request, response, callback);
-                    }
-                    catch (Throwable e)
-                    {
-                        Response.writeError(request, response, callback, e);
-                    }
-                });
+                return new DelayedRequest(next, request, response, callback);
+            }
+
+            @Override
+            protected void delay(DelayedRequest request) throws InterruptedException
+            {
+                handleEx.exchange(request);
+
             }
         };
 
@@ -280,20 +283,20 @@ public class DelayedHandlerTest
     @Test
     public void testDelayed404() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler()
+        DelayedHandler<DelayedHandler.DelayedRequest> delayedHandler = new DelayedHandler<>()
         {
             @Override
-            protected Request.Processor delayed(Request request, Request.Processor processor)
+            protected void delay(DelayedRequest request) throws Exception
             {
-                return (ignored, response, callback) -> request.getContext().execute(() ->
+                request.getContext().execute(() ->
                 {
                     try
                     {
-                        processor.process(request, response, callback);
+                        getHandler().process(request, request.getResponse(), request.getCallback());
                     }
                     catch (Throwable t)
                     {
-                        Response.writeError(request, response, callback, t);
+                        Response.writeError(request, request.getResponse(), request.getCallback(), t);
                     }
                 });
             }
@@ -306,7 +309,6 @@ public class DelayedHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                return null;
             }
         });
 
@@ -335,20 +337,20 @@ public class DelayedHandlerTest
     @Test
     public void testDelayedDefault() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler()
+        DelayedHandler<DelayedHandler.DelayedRequest> delayedHandler = new DelayedHandler<>()
         {
             @Override
-            protected Request.Processor delayed(Request request, Request.Processor processor)
+            protected void delay(DelayedRequest request) throws Exception
             {
-                return (ignored, response, callback) -> request.getContext().execute(() ->
+                request.getContext().execute(() ->
                 {
                     try
                     {
-                        processor.process(request, response, callback);
+                        getHandler().process(request, request.getResponse(), request.getCallback());
                     }
                     catch (Throwable t)
                     {
-                        Response.writeError(request, response, callback, t);
+                        Response.writeError(request, request.getResponse(), request.getCallback(), t);
                     }
                 });
             }
@@ -359,7 +361,6 @@ public class DelayedHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                return null;
             }
         });
 
