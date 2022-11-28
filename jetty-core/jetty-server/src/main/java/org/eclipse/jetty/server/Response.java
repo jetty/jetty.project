@@ -66,12 +66,12 @@ public interface Response extends Content.Sink
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
     /**
-     * <p>Return a representation of the response as a chunk handler suitable for being
-     * passed to the {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
-     * method.  Specifically, as a chunk handler that will handle {@link Trailers} chunks
-     * by adding the chunk fields to the {@link HttpFields} supplied by
+     * <p>Return chunk processor suitable to be passed to the
+     * {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
+     * method, that will handles {@link Trailers} chunks
+     * by adding the their fields to the {@link HttpFields} supplied by
      * {@link Response#getTrailersSupplier()}.</p>
-     * <p>This is specifically useful for writing chunks that have been received via
+     * <p>This is specifically useful for writing trailer that have been received via
      * the {@link Content.Source#read()} API, for example when echoing a request to a response:</p>
      * <pre>
      *   Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
@@ -79,7 +79,7 @@ public interface Response extends Content.Sink
      * @param response The response for which to process trailer chunks.
      *                 If the {@link Response#setTrailersSupplier(Supplier)}
      *                 method has not been called prior to this method, then a noop processor is returned.
-     * @return A chunk handler that will add trailer chunks to the response's trailer supplied fields.
+     * @return A chunk processor that will add trailer chunks to the response's trailer supplied fields.
      * @see Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)
      * @see Trailers
      */
