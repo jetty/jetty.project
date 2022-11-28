@@ -76,7 +76,7 @@
     <junit.version>5.9.0</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.19.0</log4j2.version>
-    <logback.version>1.4.4</logback.version>
+    <logback.version>1.4.5</logback.version>
     <mariadb.version>3.0.8</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.4</maven.deps.version>
@@ -91,7 +91,7 @@
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.5.0</plexus-utils.version>
-    <slf4j.version>2.0.2</slf4j.version>
+    <slf4j.version>2.0.5</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <testcontainers.version>1.17.5</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
