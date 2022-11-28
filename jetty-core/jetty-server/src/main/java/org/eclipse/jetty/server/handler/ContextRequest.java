@@ -25,9 +25,9 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final ContextHandler.ScopedContext _context;
 
-    protected ContextRequest(ContextHandler.ScopedContext context, Request wrapped)
+    protected ContextRequest(ContextHandler.ScopedContext context, Request request)
     {
-        super(wrapped);
+        super(request);
         _context = context;
     }
 
