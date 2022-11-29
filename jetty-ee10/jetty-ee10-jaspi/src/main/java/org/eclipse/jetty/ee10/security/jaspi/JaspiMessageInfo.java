@@ -98,7 +98,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         if (!(response instanceof ServletResponse))
             throw new IllegalStateException("Not a ServletResponse");
-        _response = ServletContextResponse.getBaseResponse((ServletResponse)response);
+        _response = ServletContextResponse.getServletContextResponse((ServletResponse)response);
     }
 
     public String getAuthMethod()

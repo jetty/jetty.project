@@ -126,7 +126,7 @@ public class Dispatcher implements RequestDispatcher
     {
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
-        ServletContextResponse baseResponse = ServletContextResponse.getBaseResponse(response);
+        ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(response);
 
         try
         {
@@ -134,7 +134,7 @@ public class Dispatcher implements RequestDispatcher
         }
         finally
         {
-            baseResponse.included();
+            servletContextResponse.included();
         }
     }
 
