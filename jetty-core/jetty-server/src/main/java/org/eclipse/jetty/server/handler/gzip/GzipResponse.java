@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler.gzip;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
@@ -37,6 +38,7 @@ import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
 public class GzipResponse extends Response.Wrapper
 {
+    public static final int TRAILER_SIZE = 8;
     public static Logger LOG = LoggerFactory.getLogger(GzipResponse.class);
     private static final byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
 
@@ -44,7 +46,7 @@ public class GzipResponse extends Response.Wrapper
 
     private enum GZState
     {
-        MIGHT_COMPRESS, NOT_COMPRESSING, COMMITTING, COMPRESSING, FINISHED
+        MIGHT_COMPRESS, NOT_COMPRESSING, COMMITTING, COMPRESSING, FINISHING, FINISHED
     }
 
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
@@ -83,8 +85,10 @@ public class GzipResponse extends Response.Wrapper
 
     private void addTrailer()
     {
-        BufferUtil.putIntLittleEndian(_buffer, (int)_crc.getValue());
-        BufferUtil.putIntLittleEndian(_buffer, _deflaterEntry.get().getTotalIn());
+        if (LOG.isDebugEnabled())
+            LOG.debug("addTrailer: _crc={}, _totalIn={})", _crc.getValue(), _deflaterEntry.get().getTotalIn());
+        _buffer.putInt((int)_crc.getValue());
+        _buffer.putInt(_deflaterEntry.get().getTotalIn());
     }
 
     private void gzip(boolean complete, final Callback callback, ByteBuffer content)
@@ -97,6 +101,9 @@ public class GzipResponse extends Response.Wrapper
 
     protected void commit(boolean last, Callback callback, ByteBuffer content)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("commit(last={}, callback={}, content={})", last, callback, BufferUtil.toDetailString(content));
+
         // Are we excluding because of status?
         Response response = GzipResponse.this;
         Request request = response.getRequest();
@@ -224,7 +231,6 @@ public class GzipResponse extends Response.Wrapper
 
     private class GzipBufferCB extends IteratingNestedCallback
     {
-        private ByteBuffer _copy;
         private final ByteBuffer _content;
         private final boolean _last;
 
@@ -234,12 +240,15 @@ public class GzipResponse extends Response.Wrapper
             _content = content;
             _last = complete;
 
-            _crc.update(_content.slice());
+            if (_content != null)
+            {
+                _crc.update(_content.slice());
+                Deflater deflater = _deflaterEntry.get();
+                deflater.setInput(_content);
+            }
 
-            Deflater deflater = _deflaterEntry.get();
-            deflater.setInput(_content);
-            if (_last)
-                deflater.finish();
+            if (LOG.isDebugEnabled())
+                LOG.debug("GzipBufferCB(complete={}, callback={}, content={})", complete, callback, BufferUtil.toDetailString(content));
         }
 
         @Override
@@ -256,134 +265,164 @@ public class GzipResponse extends Response.Wrapper
         @Override
         protected Action process() throws Exception
         {
-            // If we have no deflater
-            if (_deflaterEntry == null)
+            if (LOG.isDebugEnabled())
+                LOG.debug("GzipBufferCB.process(): _last={}, _buffer={}, _content={}", _last, BufferUtil.toDetailString(_buffer), BufferUtil.toDetailString(_content));
+
+            GZState gzstate = _state.get();
+
+            // Are we finished?
+            if (gzstate == GZState.FINISHED)
             {
                 // then the trailer has been generated and written below.
                 // We have finished compressing the entire content, so
                 // cleanup and succeed.
-                if (_buffer != null)
-                {
-                    getRequest().getComponents().getByteBufferPool().release(_buffer);
-                    _buffer = null;
-                }
-                if (_copy != null)
-                {
-                    getRequest().getComponents().getByteBufferPool().release(_copy);
-                    _copy = null;
-                }
+                cleanup();
                 return Action.SUCCEEDED;
             }
 
             // If we have no buffer
             if (_buffer == null)
             {
-                // allocate a buffer and add the gzip header.
                 _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
-                BufferUtil.fill(_buffer, GZIP_HEADER, 0, GZIP_HEADER.length);
+                // Per RFC-1952, GZIP is LITTLE_ENDIAN
+                _buffer.order(ByteOrder.LITTLE_ENDIAN);
+                BufferUtil.flipToFill(_buffer);
+                // Add GZIP Header
+                _buffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
             }
             else
             {
                 // otherwise clear the buffer as previous writes will always fully consume.
-                BufferUtil.clear(_buffer);
+                BufferUtil.clearToFill(_buffer);
             }
 
-            // If the deflater is not finished, then compress more data
             Deflater deflater = _deflaterEntry.get();
-            if (!deflater.finished())
+
+            return switch (gzstate)
             {
-                if (deflater.needsInput())
-                {
-                    // If there is no more content available to compress,
-                    // then we have either finished all content or just the current write.
-                    if (BufferUtil.isEmpty(_content))
-                    {
-                        if (_last)
-                        {
-                            deflater.finish();
-                        }
-                        else if (BufferUtil.isEmpty(_buffer))
-                        {
-                            return Action.SUCCEEDED;
-                        }
-                        else
-                        {
-                            GzipResponse.super.write(false, _buffer, this);
-                            return Action.SCHEDULED;
-                        }
-                    }
-                    else
-                    {
-                        // TODO: this part is wrong, as there is a ByteBuffer Deflater API
-                        //  and we don't want to copy direct ByteBuffers.
-                        //  The comment below about CRC32.update() is IMHO wrong, as
-                        //  in Jetty 10 we use it without problems.
+                case COMPRESSING -> compressing(deflater, _buffer);
+                case FINISHING -> finishing(deflater, _buffer);
+                default -> throw new IllegalStateException("Unexpected state [" + _state.get() + "]");
+            };
+        }
 
-                        // If there is more content available to compress, we have to make sure
-                        // it is available in an array for the current deflater API, maybe slicing
-                        // of content.
-                        ByteBuffer slice;
-                        if (_content.hasArray())
-                        {
-                            slice = _content;
-                        }
-                        else
-                        {
-                            if (_copy == null)
-                                _copy = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
-                            else
-                                BufferUtil.clear(_copy);
-                            slice = _copy;
-                            BufferUtil.append(_copy, _content);
-                        }
-
-                        // transfer the data from the slice to the deflater
-                        byte[] array = slice.array();
-                        int off = slice.arrayOffset() + slice.position();
-                        int len = slice.remaining();
-                        _crc.update(array, off, len);
-                        // Ideally we would want to use the ByteBuffer API for Deflaters. However, due to the ByteBuffer implementation
-                        // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves.
-                        _deflaterEntry.get().setInput(array, off, len);
-                        slice.position(slice.position() + len);
-                        if (_last && BufferUtil.isEmpty(_content))
-                            deflater.finish();
-                    }
-                }
-
-                // deflate the content into the available space in the buffer
-                int off = _buffer.arrayOffset() + _buffer.limit();
-                int len = BufferUtil.space(_buffer);
-                int produced = deflater.deflate(_buffer.array(), off, len, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
-                _buffer.limit(_buffer.limit() + produced);
-            }
-
-            // If we have finished deflation and there is room for the trailer.
-            if (deflater.finished() && BufferUtil.space(_buffer) >= 8)
+        private void cleanup()
+        {
+            if (_deflaterEntry != null)
             {
-                // add the trailer and recycle the deflator to flag that we will have had completeSuccess when
-                // the write below completes.
-                addTrailer();
                 _deflaterEntry.release();
                 _deflaterEntry = null;
             }
 
-            // write the compressed buffer.
-            GzipResponse.super.write(_deflaterEntry == null, _buffer, this);
+            if (_buffer != null)
+            {
+                getRequest().getComponents().getByteBufferPool().release(_buffer);
+                _buffer = null;
+            }
+        }
+
+        private int getFlushMode()
+        {
+            return _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
+        }
+
+        private Action compressing(Deflater deflater, ByteBuffer outputBuffer)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("compressing() deflater={}, outputBuffer={}", deflater, BufferUtil.toDetailString(outputBuffer));
+
+            if (!deflater.finished())
+            {
+                if (!deflater.needsInput())
+                {
+                    int len = deflater.deflate(outputBuffer, getFlushMode());
+                    if (len > 0)
+                    {
+                        write(false, outputBuffer);
+                        return Action.SCHEDULED;
+                    }
+                    // Optimization to (hopefully) preserve Content-Length.
+                    // Has the entire last content been consumed?
+                    else if (BufferUtil.isEmpty(_content) && _last)
+                    {
+                        _state.set(GZState.FINISHING);
+                        deflater.finish();
+                        return finishing(deflater, outputBuffer);
+                    }
+                }
+            }
+
+            if (outputBuffer.position() > 0)
+            {
+                write(false, outputBuffer);
+                return Action.SCHEDULED;
+            }
+
+            if (_last)
+            {
+                _state.set(GZState.FINISHING);
+                deflater.finish();
+                write(false, null);
+                return Action.SCHEDULED;
+            }
+
+            if (BufferUtil.isEmpty(_content))
+                return Action.SUCCEEDED; // this GzipBufferCB is fully consumed as input to the Deflater instance
+
             return Action.SCHEDULED;
+        }
+
+        private Action finishing(Deflater deflater, ByteBuffer outputBuffer)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("finishing() deflater={}, outputBuffer={}", deflater, BufferUtil.toDetailString(outputBuffer));
+            if (!deflater.finished())
+            {
+                int len = deflater.deflate(outputBuffer, getFlushMode());
+                if (deflater.finished() && len <= outputBuffer.remaining() - TRAILER_SIZE)
+                {
+                    _state.set(GZState.FINISHED);
+                    addTrailer();
+                    write(true, outputBuffer);
+                    return Action.SCHEDULED;
+                }
+
+                if (len > 0)
+                {
+                    write(false, outputBuffer);
+                    return Action.SCHEDULED;
+                }
+            }
+            else
+            {
+                _state.set(GZState.FINISHED);
+                addTrailer();
+                write(true, outputBuffer);
+                return Action.SCHEDULED;
+            }
+
+            return Action.SCHEDULED;
+        }
+
+        private void write(boolean last, ByteBuffer outputBuffer)
+        {
+            if (outputBuffer != null)
+                BufferUtil.flipToFlush(outputBuffer, 0);
+            if (LOG.isDebugEnabled())
+                LOG.debug("write() last={}, outputBuffer={}", last, BufferUtil.toDetailString(outputBuffer));
+            GzipResponse.super.write(last, outputBuffer, this);
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s[content=%s last=%b copy=%s buffer=%s deflate=%s %s]",
+            return String.format("%s[content=%s last=%b buffer=%s deflate=%s %s]",
                 super.toString(),
                 BufferUtil.toDetailString(_content),
                 _last,
-                BufferUtil.toDetailString(_copy),
                 BufferUtil.toDetailString(_buffer),
                 _deflaterEntry,
-                _deflaterEntry != null && _deflaterEntry.get().finished() ? "(finished)" : "");
+                _state.get());
         }
     }
 }
