@@ -497,11 +497,6 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         return _minGzipSize;
     }
 
-    protected HttpField getVaryField()
-    {
-        return _vary;
-    }
-
     /**
      * Get the size (in bytes) of the {@link java.util.zip.Inflater} buffer used to inflate
      * compressed requests.
@@ -542,17 +537,22 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         }
 
         final String path = Request.getPathInContext(request);
-        if (!isPathInflatable(path) && !(isPathGzipable(path) && isPathMimeTypeGzipable(request.getContext().getMimeTypes(), path)))
+        boolean tryInflate = getInflateBufferSize() >= 0 && isPathInflatable(path);
+        boolean tryDeflate = _methods.test(request.getMethod()) && isPathGzipable(path) && isPathMimeTypeGzipable(request.getContext().getMimeTypes(), path);
+
+        // Can we skip looking at the request and wrapping request or response?
+        if (!tryInflate && !tryDeflate)
         {
             next.process(request, response, callback);
             return;
         }
 
         HttpFields fields = request.getHeaders();
-        boolean inflate = false;
-        boolean deflateable = false;
+        boolean inflatable = false;
+        boolean deflatable = false;
         boolean etagMatches = false;
 
+        // Look for inflate and deflate headers
         for (HttpField field : fields)
         {
             HttpHeader header = field.getHeader();
@@ -560,15 +560,14 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
                 continue;
             switch (header)
             {
-                case CONTENT_ENCODING -> inflate = getInflateBufferSize() > 0 && isPathInflatable(path) && field.contains("gzip");
-                case ACCEPT_ENCODING -> deflateable = _methods.test(request.getMethod()) && isPathGzipable(path) && field.contains("gzip");
+                case CONTENT_ENCODING -> inflatable = field.contains("gzip");
+                case ACCEPT_ENCODING -> deflatable = field.contains("gzip");
                 case IF_MATCH, IF_NONE_MATCH -> etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);
             }
         }
 
-        _inflateBufferSize = inflate ? getInflateBufferSize() : -1;
-
-        if (inflate || etagMatches)
+        // Do we need to adjust request headers?
+        if (inflatable && tryInflate || etagMatches)
         {
             HttpFields.Mutable newFields = HttpFields.build(fields.size());
 
@@ -585,7 +584,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
                 {
                     case CONTENT_ENCODING ->
                     {
-                        if (inflate)
+                        if (inflatable)
                         {
                             if (field.getValue().equalsIgnoreCase("gzip"))
                             {
@@ -616,21 +615,25 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
                         }
                         newFields.add(field);
                     }
-                    case CONTENT_LENGTH -> newFields.add(inflate ? new HttpField("X-Content-Length", field.getValue()) : field);
+                    case CONTENT_LENGTH -> newFields.add(inflatable ? new HttpField("X-Content-Length", field.getValue()) : field);
                     default -> newFields.add(field);
                 }
             }
             fields = newFields.takeAsImmutable();
         }
-        else if (!deflateable)
+        else if (!deflatable || !tryDeflate)
         {
+            // No need to wrap request
+            if (tryDeflate && _vary != null)
+                response.getHeaders().ensureField(_vary);
             next.process(request, response, callback);
             return;
         }
 
-        GzipRequest gzipRequest = new GzipRequest(request, this, inflate, fields);
+        GzipRequest gzipRequest = new GzipRequest(request, this, inflatable, fields);
 
-        if (deflateable)
+        // Do we need to wrap the response and callback?
+        if (deflatable && tryDeflate)
         {
             int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
             GzipResponse gzipResponse = new GzipResponse(gzipRequest, response, callback, this, getVary(), outputBufferSize, isSyncFlush());
@@ -638,6 +641,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             return;
         }
 
+        if (tryDeflate && _vary != null)
+            response.getHeaders().ensureField(_vary);
         next.process(gzipRequest, response, callback);
     }
 

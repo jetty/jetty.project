@@ -78,6 +78,9 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
     {
         try
         {
+            // We need to write nothing here to intercept the committing of the response
+            // and possibly change headers in case write is never called.
+            write(true, null, Callback.NOOP);
             _callback.succeeded();
         }
         finally

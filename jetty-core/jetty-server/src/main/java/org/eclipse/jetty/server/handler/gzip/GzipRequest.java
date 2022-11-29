@@ -23,7 +23,6 @@ import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
 public class GzipRequest extends Request.Wrapper
@@ -86,10 +85,6 @@ public class GzipRequest extends Request.Wrapper
 
     void destroy(GzipResponse response)
     {
-        // We need to do this to intercept the committing of the response
-        // and possibly change headers in case write is never called.
-        response.write(true, null, Callback.NOOP);
-
         if (_decoder != null)
             _decoder.destroy();
     }

@@ -82,6 +82,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -1475,7 +1476,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), not(containsString("gzip")));
         assertThat(response.get("ETag"), is(CONTENT_ETAG));
-        assertThat(response.getCSV("Vary", false), contains("Other", "Accept-Encoding"));
+        assertThat(response.getCSV("Vary", false), containsInAnyOrder("Other", "Accept-Encoding"));
 
         InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();

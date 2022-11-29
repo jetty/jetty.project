@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpField;
@@ -45,16 +44,13 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
         if (delayed == null)
             next.process(request, response, callback);
         else
-        {
-            request.accept();
             delay(delayed);
-        }
     }
 
     protected R newDelayedRequest(Handler next, Request request, Response response, Callback callback)
     {
         @SuppressWarnings("unchecked")
-        R r = (R) new DelayedRequest(next, request, response, callback);
+        R r = (R)new DelayedRequest(next, request, response, callback);
         return r;
     }
 
@@ -369,7 +365,7 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
             @Override
             public InvocationType getInvocationType()
             {
-                return getCallback().getInvocationType();
+                return super.getCallback().getInvocationType();
             }
         }
     }
