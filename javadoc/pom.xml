@@ -72,7 +72,7 @@
             </goals>
             <configuration>
               <target>
-                <delete dir="${sources-directory}" />
+                <delete dir="${sources-directory}" failonerror="false" />
               </target>
             </configuration>
           </execution>
