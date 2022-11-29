@@ -53,7 +53,7 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>init-jetty-sources-dir</id>
+            <id>create-sources-dir</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>run</goal>
@@ -61,6 +61,18 @@
             <configuration>
               <target>
                 <mkdir dir="${sources-directory}" />
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>delete-sources-dir</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <delete dir="${sources-directory}" />
               </target>
             </configuration>
           </execution>
