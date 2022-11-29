@@ -64,7 +64,7 @@
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.schemas.version>3.1.2</jetty.schemas.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jmh.version>1.35</jmh.version>
+    <jmh.version>1.36</jmh.version>
     <jna.version>5.12.1</jna.version>
     <jnr-constants.version>0.10.3</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
@@ -76,8 +76,8 @@
     <junit.version>5.9.1</junit.version>
     <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.2.11</logback.version>
-    <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
-    <maven.resolver.version>1.8.2</maven.resolver.version>
+    <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
+    <maven.resolver.version>1.9.2</maven.resolver.version>
     <maven.version>3.8.6</maven.version>
     <mongodb.version>2.14.3</mongodb.version>
     <osgi.annotation.version>8.1.0</osgi.annotation.version>
@@ -85,7 +85,7 @@
     <osgi.util.function.version>1.2.0</osgi.util.function.version>
     <osgi.util.promise.version>1.2.0</osgi.util.promise.version>
     <plexus-container.version>2.1.1</plexus-container.version>
-    <plexus-utils.version>3.4.2</plexus-utils.version>
+    <plexus-utils.version>3.5.0</plexus-utils.version>
     <slf4j.version>1.7.36</slf4j.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
@@ -111,7 +111,7 @@
     <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
     <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
-    <maven.checkstyle.plugin.version>3.1.0</maven.checkstyle.plugin.version>
+    <maven.checkstyle.plugin.version>3.2.0</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.3.0</maven.dependency.plugin.version>
@@ -120,15 +120,15 @@
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.3.1</maven.jxr.plugin.version>
-    <maven.plugin.plugin.version>3.6.4</maven.plugin.plugin.version>
+    <maven.plugin.plugin.version>3.7.0</maven.plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources.plugin.version>3.0.0</maven.remote-resources.plugin.version>
-    <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
+    <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.4.1</maven.shade.plugin.version>
     <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <maven.install.plugin.version>3.0.1</maven.install.plugin.version>
+    <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0</maven.deploy.plugin.version>
     <servicemix-depends.plugin.version>1.4.0</servicemix-depends.plugin.version>
     <versions.plugin.version>2.11.0</versions.plugin.version>
@@ -475,7 +475,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.2</version>
+        <version>3.2.0</version>
         <configuration>
           <configLocation>jetty-checkstyle.xml</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
