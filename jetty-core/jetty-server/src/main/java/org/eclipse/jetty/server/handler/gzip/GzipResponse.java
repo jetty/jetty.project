@@ -283,6 +283,7 @@ public class GzipResponse extends Response.Wrapper
                 // We have finished compressing the entire content, so
                 // cleanup and succeed.
                 cleanup();
+                _state.set(GZState.FINISHED);
                 return Action.SUCCEEDED;
             }
 
