@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.ArrayDeque;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpField;
@@ -260,112 +258,6 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
                     super.run();
                 else
                     _formData.whenComplete(this);
-            }
-        }
-    }
-
-    public static class QualityOfService extends DelayedHandler<QualityOfService.QoSDelayedRequest>
-    {
-        private final int _maxPermits;
-        private final Queue<QoSDelayedRequest> _queue = new ArrayDeque<>();
-        private int _permits;
-
-        public QualityOfService(int permits)
-        {
-            _maxPermits = permits;
-        }
-
-        @Override
-        protected QoSDelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
-        {
-            return new QoSDelayedRequest(next, request, response, callback);
-        }
-
-        @Override
-        protected void delay(QoSDelayedRequest request)
-        {
-            boolean permitted;
-            synchronized (QualityOfService.this)
-            {
-                permitted = _permits < _maxPermits;
-                if (permitted)
-                    _permits++;
-                else
-                    _queue.add(request);
-            }
-            if (permitted)
-                request.run();
-        }
-
-        protected class QoSDelayedRequest extends DelayedRequest implements Callback
-        {
-            public QoSDelayedRequest(Handler handler, Request wrapped, Response response, Callback callback)
-            {
-                super(handler, wrapped, response, callback);
-            }
-
-            @Override
-            protected Callback getCallback()
-            {
-                return this;
-            }
-
-            @Override
-            protected void process() throws Exception
-            {
-                super.process();
-                if (!getWrapped().isAccepted())
-                    release();
-            }
-
-            @Override
-            public void succeeded()
-            {
-                try
-                {
-                    if (!isAccepted())
-                        throw new IllegalStateException("!accepted");
-                    getCallback().succeeded();
-                }
-                finally
-                {
-                    release();
-                }
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                try
-                {
-                    if (!isAccepted())
-                        throw new IllegalStateException("!accepted");
-                    getCallback().failed(x);
-                }
-                finally
-                {
-                    release();
-                }
-            }
-
-            private void release()
-            {
-                QoSDelayedRequest request;
-                synchronized (QualityOfService.this)
-                {
-                    request = _queue.poll();
-                    if (request == null)
-                        _permits--;
-                }
-
-                if (request != null)
-                    request.run();
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return super.getCallback().getInvocationType();
             }
         }
     }

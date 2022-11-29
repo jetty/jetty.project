@@ -18,9 +18,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpStatus;
@@ -39,7 +37,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -217,70 +214,6 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testQualityOfService() throws Exception
-    {
-        final int QOS = 3;
-        final int EXTRA = 2;
-
-        DelayedHandler delayedHandler = new DelayedHandler.QualityOfService(QOS);
-        _server.setHandler(delayedHandler);
-
-        AtomicInteger processing = new AtomicInteger();
-        Semaphore semaphore = new Semaphore(0);
-        CountDownLatch complete = new CountDownLatch(QOS + EXTRA);
-        delayedHandler.setHandler(new HelloHandler()
-        {
-            @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
-            {
-                processing.incrementAndGet();
-                semaphore.acquire();
-                super.doProcess(request, response, Callback.from(callback, complete::countDown));
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return InvocationType.BLOCKING;
-            }
-        });
-        _server.start();
-
-        Socket[] socket = new Socket[QOS + EXTRA];
-        for (int i = 0; i < socket.length; i++)
-        {
-            socket[i] = new Socket("localhost", _connector.getLocalPort());
-            String request = "GET /p" + i + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
-            OutputStream output = socket[i].getOutputStream();
-            output.write(request.getBytes(StandardCharsets.UTF_8));
-            output.flush();
-        }
-
-        await().atMost(5, TimeUnit.SECONDS).until(processing::get, equalTo(QOS));
-
-        for (int i = 0; i < socket.length; i++)
-        {
-            semaphore.release();
-            int count = i + 1;
-            await().atMost(5, TimeUnit.SECONDS).until(processing::get, equalTo(QOS + Math.min(EXTRA, count)));
-        }
-
-        assertTrue(complete.await(5, TimeUnit.SECONDS));
-
-        for (Socket value : socket)
-        {
-            HttpTester.Input input = HttpTester.from(value.getInputStream());
-            HttpTester.Response response = HttpTester.parseResponse(input);
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
-            assertThat(content, containsString("Hello"));
-        }
-    }
-
-    @Test
     public void testDelayed404() throws Exception
     {
         DelayedHandler<DelayedHandler.DelayedRequest> delayedHandler = new DelayedHandler<>()
@@ -293,6 +226,8 @@ public class DelayedHandlerTest
                     try
                     {
                         getHandler().process(request, request.getResponse(), request.getCallback());
+                        if (!request.isAccepted())
+                            Response.writeError(request.getWrapped(), request.getResponse(), request.getCallback(), 404);
                     }
                     catch (Throwable t)
                     {
@@ -331,62 +266,6 @@ public class DelayedHandlerTest
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
             assertThat(content, containsString("<tr><th>MESSAGE:</th><td>Not Found</td></tr>"));
-        }
-    }
-
-    @Test
-    public void testDelayedDefault() throws Exception
-    {
-        DelayedHandler<DelayedHandler.DelayedRequest> delayedHandler = new DelayedHandler<>()
-        {
-            @Override
-            protected void delay(DelayedRequest request) throws Exception
-            {
-                request.getContext().execute(() ->
-                {
-                    try
-                    {
-                        getHandler().process(request, request.getResponse(), request.getCallback());
-                    }
-                    catch (Throwable t)
-                    {
-                        Response.writeError(request, request.getResponse(), request.getCallback(), t);
-                    }
-                });
-            }
-        };
-
-        delayedHandler.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public void process(Request request, Response response, Callback callback)
-            {
-            }
-        });
-
-        Handler.Collection handlers = new Handler.Collection();
-        handlers.setHandlers(delayedHandler, new DefaultHandler());
-        _server.setHandler(handlers);
-
-        _server.start();
-
-        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
-        {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
-            OutputStream output = socket.getOutputStream();
-            output.write(request.getBytes(StandardCharsets.UTF_8));
-            output.flush();
-
-            HttpTester.Input input = HttpTester.from(socket.getInputStream());
-            HttpTester.Response response = HttpTester.parseResponse(input);
-            assertNotNull(response);
-            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
-            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
-            assertThat(content, containsString("<p>No context on this server matched or handled this request.</p>"));
         }
     }
 
