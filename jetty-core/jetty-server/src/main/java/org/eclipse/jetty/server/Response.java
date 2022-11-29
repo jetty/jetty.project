@@ -66,7 +66,7 @@ public interface Response extends Content.Sink
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
     /**
-     * <p>Return chunk processor suitable to be passed to the
+     * <p>Returns a chunk processor suitable to be passed to the
      * {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
      * method, that will handles {@link Trailers} chunks
      * by adding the their fields to the {@link HttpFields} supplied by
