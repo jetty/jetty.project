@@ -348,28 +348,18 @@ public class GzipResponse extends Response.Wrapper
                         write(false, outputBuffer);
                         return Action.SCHEDULED;
                     }
-                    // Optimization to (hopefully) preserve Content-Length.
-                    // Has the entire last content been consumed?
-                    else if (BufferUtil.isEmpty(_content) && _last)
-                    {
-                        _state.set(GZState.FINISHING);
-                        deflater.finish();
-                        return finishing(deflater, outputBuffer);
-                    }
                 }
-            }
-
-            if (outputBuffer.position() > 0)
-            {
-                write(false, outputBuffer);
-                return Action.SCHEDULED;
             }
 
             if (_last)
             {
                 _state.set(GZState.FINISHING);
                 deflater.finish();
-                write(false, null);
+                return finishing(deflater, outputBuffer);
+            }
+            else if (outputBuffer.position() > 0)
+            {
+                write(false, outputBuffer);
                 return Action.SCHEDULED;
             }
 
