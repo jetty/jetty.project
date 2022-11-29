@@ -71,7 +71,7 @@ public interface Response extends Content.Sink
      * method, that will handle {@link Trailers} chunks
      * by adding their fields to the {@link HttpFields} supplied by
      * {@link Response#getTrailersSupplier()}.</p>
-     * <p>This is specifically useful for writing trailer that have been received via
+     * <p>This is specifically useful for writing trailers that have been received via
      * the {@link Content.Source#read()} API, for example when echoing a request to a response:</p>
      * <pre>
      *   Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
