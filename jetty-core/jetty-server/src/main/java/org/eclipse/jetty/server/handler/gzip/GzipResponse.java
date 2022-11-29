@@ -48,7 +48,6 @@ public class GzipResponse extends Response.Wrapper
     // Per RFC-1952, the GZIP trailer is 8 bytes
     public static final int GZIP_TRAILER_SIZE = 8;
 
-
     public static final HttpField VARY_ACCEPT_ENCODING = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
     private enum GZState
