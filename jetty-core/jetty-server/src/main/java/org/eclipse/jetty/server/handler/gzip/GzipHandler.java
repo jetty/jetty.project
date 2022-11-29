@@ -543,6 +543,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         // Can we skip looking at the request and wrapping request or response?
         if (!tryInflate && !tryDeflate)
         {
+            // No need for a Vary header, as we will never deflate
             next.process(request, response, callback);
             return;
         }
@@ -624,6 +625,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         else if (!deflatable || !tryDeflate)
         {
             // No need to wrap request
+            // We need a Vary header if we could try to deflate
             if (tryDeflate && _vary != null)
                 response.getHeaders().ensureField(_vary);
             next.process(request, response, callback);
@@ -641,6 +643,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             return;
         }
 
+        // We need a Vary header if we could try to deflate
         if (tryDeflate && _vary != null)
             response.getHeaders().ensureField(_vary);
         next.process(gzipRequest, response, callback);
@@ -648,8 +651,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
 
     protected boolean isPathMimeTypeGzipable(MimeTypes mimeTypes, String requestURI)
     {
-        // TODO: get mimetype from context.
-        // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
+        // Exclude non-compressible mime-types known from URI extension
         String mimeType = mimeTypes.getMimeByExtension(requestURI);
         if (mimeType != null)
         {
