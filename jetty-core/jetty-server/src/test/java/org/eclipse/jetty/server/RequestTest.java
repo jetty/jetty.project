@@ -188,9 +188,11 @@ public class RequestTest
                 int half = bufferSize / 2;
                 ByteBuffer halfBuf = bbuf.slice();
                 halfBuf.limit(half);
-                response.write(false, halfBuf, Callback.NOOP);
-                bbuf.position(half);
-                response.write(true, bbuf, callback);
+                response.write(false, halfBuf, Callback.from(() ->
+                {
+                    bbuf.position(half);
+                    response.write(true, bbuf, callback);
+                }));
             }
         });
         server.start();
