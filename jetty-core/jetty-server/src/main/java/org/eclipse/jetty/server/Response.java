@@ -76,7 +76,7 @@ public interface Response extends Content.Sink
      * <pre>
      *   Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
      * </pre>
-     * @param response The response for which to process trailer chunks.
+     * @param response The response for which to process a trailers chunk.
      *                 If the {@link Response#setTrailersSupplier(Supplier)}
      *                 method has not been called prior to this method, then a noop processor is returned.
      * @return A chunk processor that will add trailer chunks to the response's trailer supplied fields.
