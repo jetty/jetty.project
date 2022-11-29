@@ -636,8 +636,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         if (deflatable && tryDeflate)
         {
             int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-            GzipResponse gzipResponse = new GzipResponse(gzipRequest, response, callback, this, getVary(), outputBufferSize, isSyncFlush());
-            next.process(gzipRequest, gzipResponse, gzipResponse);
+            GzipResponse gzipResponseAndCallback = new GzipResponse(gzipRequest, response, callback, this, getVary(), outputBufferSize, isSyncFlush());
+            next.process(gzipRequest, gzipResponseAndCallback, gzipResponseAndCallback);
             return;
         }
 
