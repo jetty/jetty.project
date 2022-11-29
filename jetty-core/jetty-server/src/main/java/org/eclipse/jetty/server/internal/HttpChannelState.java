@@ -118,27 +118,6 @@ public class HttpChannelState implements HttpChannel, Components
     };
 
     /**
-     * State of the processing of the request
-     */
-    enum ProcessStateX
-    {
-        /** Idle state */
-        IDLE,
-
-        /** The HandlerInvoker Runnable has been executed and is calling Handler.process */
-        HANDLING,
-
-        /**
-         * The Request.accept() method has been called.
-         * Any calls to {@link #onFailure(Throwable)} will fail the callback. */
-        ACCEPTED,
-
-        /** The Request.Processor call has returned prior to callback completion.
-         * The Content APIs are enabled. */
-        PROCESSED,
-    }
-
-    /**
      * The state of the written response
      */
     enum WriteState
