@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
@@ -85,7 +88,28 @@ public class StatisticsHandler extends Handler.Wrapper
                 _requestStats.decrement();
         }
     }
-    
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent,
+            new DumpableCollection("connectionStats", _connectionStats),
+            Dumpable.named("requestStats", _requestStats),
+            Dumpable.named("requestTimeStats", _requestTimeStats),
+            Dumpable.named("processStats", _processStats),
+            Dumpable.named("processTimeStats", _processTimeStats),
+            Dumpable.named("acceptedStats", _acceptedStats),
+            Dumpable.named("acceptedTimeStats", _acceptedTimeStats),
+            Dumpable.named("processingErrors", _processingErrors),
+            Dumpable.named("acceptedErrors", _acceptedErrors),
+            Dumpable.named("1xxResponses", _responses1xx),
+            Dumpable.named("2xxResponses", _responses2xx),
+            Dumpable.named("3xxResponses", _responses3xx),
+            Dumpable.named("4xxResponses", _responses4xx),
+            Dumpable.named("5xxResponses", _responses5xx)
+        );
+    }
+
     protected StatisticsRequest newStatisticsRequest(Request request)
     {
         return new StatisticsRequest(request);
@@ -406,7 +430,13 @@ public class StatisticsHandler extends Handler.Wrapper
             _minimumReadRate = minimumReadRate;
             _minimumWriteRate = minimumWriteRate;
         }
-        
+
+        @Override
+        protected StatisticsRequest newStatisticsRequest(Request request)
+        {
+            return new MinimumDataRateRequest(request);
+        }
+
         protected class MinimumDataRateRequest extends StatisticsRequest
         {
             private Content.Chunk.Error _errorContent;

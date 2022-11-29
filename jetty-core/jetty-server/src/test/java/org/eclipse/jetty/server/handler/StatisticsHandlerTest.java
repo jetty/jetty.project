@@ -601,7 +601,7 @@ public class StatisticsHandlerTest
 //    }
 //
     @Test
-    public void testHandlingsIncrementThenProcessingsIncrement() throws Exception
+    public void testProcessingIncrementThenAcceptingIncrement() throws Exception
     {
         CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
@@ -627,39 +627,42 @@ public class StatisticsHandlerTest
         String request = "GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "\r\n";
-        _connector.executeRequest(request);
+        try (LocalConnector.LocalEndPoint endp = _connector.executeRequest(request))
+        {
+            barrier[0].await();
 
-        barrier[0].await();
+            assertEquals(1, _statistics.getConnections());
+            assertEquals(0, _statsHandler.getAccepted());
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(1, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getProcessings());
+            assertEquals(1, _statsHandler.getProcessingsActive());
+            assertEquals(1, _statsHandler.getProcessingsMax());
+            barrier[1].await();
+            barrier[2].await();
 
-        assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getAccepted());
-        assertEquals(0, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(0, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(0, _statsHandler.getProcessingsMax());
-        barrier[1].await();
-        barrier[2].await();
+            assertEquals(1, _statistics.getConnections());
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(1, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getAccepted());
+            assertEquals(1, _statsHandler.getProcessings());
+            assertEquals(1, _statsHandler.getProcessingsActive());
+            assertEquals(1, _statsHandler.getProcessingsMax());
+            barrier[3].await();
+            barrier[4].await();
 
-        assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getAccepted());
-        assertEquals(1, _statsHandler.getProcessings());
-        assertEquals(1, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
-        barrier[3].await();
-        barrier[4].await();
+            String response = endp.getResponse();
+            assertThat(response, containsString(" 200 OK"));
+            await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
 
-        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
-
-        assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getAccepted());
-        assertEquals(1, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
+            assertEquals(1, _statistics.getConnections());
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(0, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getAccepted());
+            assertEquals(1, _statsHandler.getProcessings());
+            assertEquals(0, _statsHandler.getProcessingsActive());
+            assertEquals(1, _statsHandler.getProcessingsMax());
+        }
     }
 
     @Test
@@ -969,8 +972,11 @@ public class StatisticsHandlerTest
     @Test
     public void testHandlingProcessingTime() throws Exception
     {
-        final long handleTime = 10;
-        final long processTime = 35;
+        final long acceptingTime = 250;
+        final long acceptedTime = 500;
+        final long wastedTime = 250;
+        final long requestTime = acceptingTime + acceptedTime;
+        final long processTime = acceptingTime + acceptedTime + wastedTime;
         final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
 
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
@@ -979,12 +985,12 @@ public class StatisticsHandlerTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 barrier[0].await();
-                Thread.sleep(handleTime);
+                Thread.sleep(acceptingTime);
                 request.accept();
                 try
                 {
                     barrier[1].await();
-                    Thread.sleep(processTime);
+                    Thread.sleep(acceptedTime);
                     callback.succeeded();
                 }
                 finally
@@ -992,6 +998,7 @@ public class StatisticsHandlerTest
                     try
                     {
                         barrier[2].await();
+                        Thread.sleep(wastedTime);
                     }
                     catch (Throwable x)
                     {
@@ -1005,45 +1012,52 @@ public class StatisticsHandlerTest
         String request = "GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "\r\n";
-        _connector.executeRequest(request);
+        try (LocalConnector.LocalEndPoint endp = _connector.executeRequest(request))
+        {
+            barrier[0].await();
 
-        barrier[0].await();
+            assertEquals(1, _statistics.getConnections());
 
-        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
+            barrier[1].await();
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(1, _statsHandler.getRequestsActive());
+            barrier[2].await();
+            assertTrue(_latchHandler.await());
+            await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
+            String response = endp.getResponse();
+            assertThat(response, containsString(" 200 OK"));
 
-        barrier[1].await();
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsActive());
-        barrier[2].await();
-        assertTrue(_latchHandler.await());
-        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(0, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getResponses2xx());
 
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//        assertEquals(1, _statsHandler.getAsyncRequests());
-//        assertEquals(0, _statsHandler.getAsyncDispatches());
-//        assertEquals(0, _statsHandler.getExpires());
-        assertEquals(1, _statsHandler.getResponses2xx());
+            _statsHandler.dumpStdErr();
 
-        assertThat(_statsHandler.getRequestTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 5)));
-        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
-        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
+            // TODO currently the wasted time is included in the request time and the accepted time, because those
+            //      timers are stopped in the stream completion (rather than the callback completion), which is
+            //      serialized on the return of the call to process.   Perhaps we should wrap the callback for
+            //      those times?
 
-        assertThat(_statsHandler.getAcceptedTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 5)));
-        assertTrue(_statsHandler.getAcceptedTimeTotal() < _statsHandler.getRequestTimeTotal());
-        assertEquals(_statsHandler.getAcceptedTimeTotal(), _statsHandler.getAcceptedTimeMax());
-        assertEquals(_statsHandler.getAcceptedTimeTotal(), _statsHandler.getAcceptedTimeMean(), 1.0);
+            assertThat(_statsHandler.getRequestTimeTotal(), allOf(
+                greaterThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 3 / 4),
+                lessThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 5 / 4)));
+            assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
+            assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
 
-        assertThat(_statsHandler.getProcessingTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 5)));
-        assertTrue(_statsHandler.getProcessingTimeTotal() < _statsHandler.getRequestTimeTotal());
-        assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMax());
-        assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMean(), 1.0);
+            assertThat(_statsHandler.getAcceptedTimeTotal(), allOf(
+                greaterThan(TimeUnit.MILLISECONDS.toNanos(acceptedTime + wastedTime) * 3 / 4),
+                lessThan(TimeUnit.MILLISECONDS.toNanos(acceptedTime + wastedTime) * 5 / 4)));
+            assertTrue(_statsHandler.getAcceptedTimeTotal() < _statsHandler.getRequestTimeTotal());
+            assertEquals(_statsHandler.getAcceptedTimeTotal(), _statsHandler.getAcceptedTimeMax());
+            assertEquals(_statsHandler.getAcceptedTimeTotal(), _statsHandler.getAcceptedTimeMean(), 1.0);
 
-        assertThat(_statsHandler.getRequestTimeTotal(), greaterThan(_statsHandler.getAcceptedTimeTotal() + _statsHandler.getProcessingTimeTotal()));
+            assertThat(_statsHandler.getProcessingTimeTotal(), allOf(
+                greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 3 / 4),
+                lessThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 5 / 4)));
+            assertTrue(_statsHandler.getProcessingTimeTotal() < _statsHandler.getRequestTimeTotal());
+            assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMax());
+            assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMean(), 1.0);
+        }
     }
 //
 //    @Test
