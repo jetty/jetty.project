@@ -38,9 +38,16 @@ import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
 public class GzipResponse extends Response.Wrapper
 {
-    public static final int TRAILER_SIZE = 8;
     public static Logger LOG = LoggerFactory.getLogger(GzipResponse.class);
-    private static final byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
+
+    // Per RFC-1952 this is the "unknown" OS value byte.
+    private static final byte OS_UNKNOWN = (byte)0xFF;
+    private static final byte[] GZIP_HEADER = new byte[]{
+        (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, OS_UNKNOWN
+    };
+    // Per RFC-1952, the GZIP trailer is 8 bytes
+    public static final int GZIP_TRAILER_SIZE = 8;
+
 
     public static final HttpField VARY_ACCEPT_ENCODING = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
@@ -379,7 +386,7 @@ public class GzipResponse extends Response.Wrapper
             if (!deflater.finished())
             {
                 int len = deflater.deflate(outputBuffer, getFlushMode());
-                if (deflater.finished() && len <= outputBuffer.remaining() - TRAILER_SIZE)
+                if (deflater.finished() && len <= outputBuffer.remaining() - GZIP_TRAILER_SIZE)
                 {
                     _state.set(GZState.FINISHED);
                     addTrailer();
