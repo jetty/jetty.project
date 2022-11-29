@@ -64,9 +64,9 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>6.0</jetty.test.version>
     <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
-    <jmh.version>1.34</jmh.version>
-    <jna.version>5.10.0</jna.version>
-    <jnr-constants.version>0.10.3</jnr-constants.version>
+    <jmh.version>1.36</jmh.version>
+    <jna.version>5.12.1</jna.version>
+    <jnr-constants.version>0.10.4</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
     <jnr-ffi.version>2.2.11</jnr-ffi.version>
     <jnr-posix.version>3.1.15</jnr-posix.version>
@@ -81,7 +81,7 @@
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.4</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.8.2</maven.resolver.version>
+    <maven.resolver.version>1.9.2</maven.resolver.version>
     <maven.version>3.8.6</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -121,12 +121,12 @@
     <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.0.1</maven.install.plugin.version>
+    <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
-    <maven-plugin.plugin.version>3.6.2</maven-plugin.plugin.version>
+    <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
+    <maven-plugin.plugin.version>3.7.0</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.0</maven.resources.plugin.version>
