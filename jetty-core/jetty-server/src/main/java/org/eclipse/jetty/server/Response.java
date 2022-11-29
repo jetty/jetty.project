@@ -69,7 +69,7 @@ public interface Response extends Content.Sink
      * <p>Returns a chunk processor suitable to be passed to the
      * {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
      * method, that will handle {@link Trailers} chunks
-     * by adding the their fields to the {@link HttpFields} supplied by
+     * by adding their fields to the {@link HttpFields} supplied by
      * {@link Response#getTrailersSupplier()}.</p>
      * <p>This is specifically useful for writing trailer that have been received via
      * the {@link Content.Source#read()} API, for example when echoing a request to a response:</p>
