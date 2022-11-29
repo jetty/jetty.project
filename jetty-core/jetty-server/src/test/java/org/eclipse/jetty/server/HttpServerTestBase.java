@@ -519,7 +519,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFullHeader() throws Exception
     {
-
         startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());

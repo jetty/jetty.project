@@ -38,9 +38,9 @@ public interface HttpChannel extends Invocable
     void setHttpStream(HttpStream httpStream);
 
     /**
-     * @return whether the request has been passed to the root {@link Handler}.
+     * @return whether the request has been accepted.
      */
-    boolean isRequestHandled();
+    boolean isRequestAccepted();
 
     /**
      * <p>{@link HttpStream} invokes this method when the metadata of an HTTP

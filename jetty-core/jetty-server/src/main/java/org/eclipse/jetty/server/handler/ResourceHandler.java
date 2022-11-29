@@ -150,6 +150,7 @@ public class ResourceHandler extends Handler.Wrapper
             return;
         }
 
+        request.accept();
         _resourceService.doGet(request, response, callback, content);
     }
 

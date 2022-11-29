@@ -121,6 +121,13 @@ public interface Request extends Attributes, Content.Source
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
 
+    /**
+     * <p>This method must be called withing the scope of a call to
+     * {@link Handler#process(Request, Response, Callback)} to indicate that the request
+     * has been accepted for processing and that the callback will ultimately be called, once the
+     * response has been generated. Until accept has been called, the body of the request cannot
+     * be read, nor the response body written, nor the callback called.
+     */
     void accept();
 
     boolean isAccepted();

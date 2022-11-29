@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -55,32 +54,21 @@ public class StatisticsHandler extends Handler.Wrapper
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        _requestStats.increment();
         Handler next = getHandler();
         if (next == null)
-        {
-            _requestStats.decrement();
-            _requestTimeStats.record(TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - request.getTimeStamp()));
             return;
-        }
 
-        _processStats.increment();
         StatisticsRequest statisticsRequest = newStatisticsRequest(request);
         try
         {
-            request.addHttpStreamWrapper(statisticsRequest::asHttpStream);
+            _processStats.increment();
+            _requestStats.increment();
 
             String id = statisticsRequest.getConnectionMetaData().getId();
             if (_connectionStats.add(id))
                 statisticsRequest.getConnectionMetaData().getConnection().addEventListener(statisticsRequest);
 
             next.process(statisticsRequest, response, callback);
-
-            if (!request.isAccepted())
-            {
-                _requestStats.decrement();
-                _requestTimeStats.record(TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - request.getTimeStamp()));
-            }
         }
         catch (Throwable t)
         {
@@ -93,6 +81,8 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             _processStats.decrement();
             _processTimeStats.record(NanoTime.since(statisticsRequest._startNanoTime));
+            if (!request.isAccepted())
+                _requestStats.decrement();
         }
     }
     
@@ -184,6 +174,18 @@ public class StatisticsHandler extends Handler.Wrapper
     public int getAccepted()
     {
         return (int)_acceptedStats.getTotal();
+    }
+
+    @ManagedAttribute("")
+    public int getAcceptedActive()
+    {
+        return (int)_acceptedStats.getCurrent();
+    }
+
+    @ManagedAttribute("")
+    public int getAcceptedActiveMax()
+    {
+        return (int)_acceptedStats.getMax();
     }
 
     @ManagedAttribute("")
@@ -293,6 +295,7 @@ public class StatisticsHandler extends Handler.Wrapper
         public void accept()
         {
             super.accept();
+            addHttpStreamWrapper(this::asHttpStream);
             _acceptedStats.increment();
             _acceptAtNanos = System.nanoTime();
         }
@@ -374,21 +377,21 @@ public class StatisticsHandler extends Handler.Wrapper
             @Override
             public void succeeded()
             {
-                super.succeeded();
                 _acceptedStats.decrement();
                 _acceptedTimeStats.record(NanoTime.since(_acceptAtNanos));
                 _requestStats.decrement();
                 _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
+                super.succeeded();
             }
 
             @Override
             public void failed(Throwable x)
             {
-                super.failed(x);
                 _acceptedStats.decrement();
                 _acceptedTimeStats.record(NanoTime.since(_acceptAtNanos));
                 _requestStats.decrement();
                 _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
+                super.failed(x);
             }
         }
     }
@@ -403,7 +406,6 @@ public class StatisticsHandler extends Handler.Wrapper
             _minimumReadRate = minimumReadRate;
             _minimumWriteRate = minimumWriteRate;
         }
-
         
         protected class MinimumDataRateRequest extends StatisticsRequest
         {

@@ -663,7 +663,7 @@ public class StatisticsHandlerTest
     }
 
     @Test
-    public void testThrownHandles() throws Exception
+    public void testThrownInProcessBeforeAccept() throws Exception
     {
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
@@ -684,10 +684,12 @@ public class StatisticsHandlerTest
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
-        assertEquals(1, _statsHandler.getAccepted());
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(0, _statsHandler.getRequestsActiveMax());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+        assertEquals(0, _statsHandler.getAccepted());
+        assertEquals(0, _statsHandler.getAcceptedActive());
+        assertEquals(0, _statsHandler.getAcceptedActiveMax());
 
         // We get no recorded status, but we get a recorded thrown response.
         assertEquals(0, _statsHandler.getResponses1xx());
@@ -695,12 +697,12 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(0, _statsHandler.getResponses5xx());
-        assertEquals(1, _statsHandler.getAcceptedErrors());
-        assertEquals(0, _statsHandler.getProcessingErrors());
+        assertEquals(0, _statsHandler.getAcceptedErrors());
+        assertEquals(1, _statsHandler.getProcessingErrors());
     }
 
     @Test
-    public void testThrownProcesses() throws Exception
+    public void testThrownInProcessAfterAccept() throws Exception
     {
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
@@ -726,6 +728,9 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
+        assertEquals(1, _statsHandler.getAccepted());
+        assertEquals(0, _statsHandler.getAcceptedActive());
+        assertEquals(1, _statsHandler.getAcceptedActiveMax());
 
         // We get no recorded status, but we get a recorded thrown response.
         assertEquals(0, _statsHandler.getResponses1xx());
@@ -733,7 +738,7 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(1, _statsHandler.getResponses5xx());
-        assertEquals(0, _statsHandler.getAcceptedErrors());
+        assertEquals(1, _statsHandler.getAcceptedErrors());
         assertEquals(1, _statsHandler.getProcessingErrors());
     }
 
