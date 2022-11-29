@@ -21,7 +21,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.Flow;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
@@ -80,12 +79,12 @@ public class Content
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
-     * @param chunkHandler a (possibly {@code null}) predicate to handle the current chunk and its callback
+     * @param chunkProcessor a (possibly {@code null}) predicate to handle the current chunk and its callback
      * @param callback the callback to notify when the copy is complete
      */
-    public static void copy(Source source, Sink sink, BiPredicate<Chunk, Callback> chunkHandler, Callback callback)
+    public static void copy(Source source, Sink sink, Chunk.Processor chunkProcessor, Callback callback)
     {
-        new ContentCopier(source, sink, chunkHandler, callback).iterate();
+        new ContentCopier(source, sink, chunkProcessor, callback).iterate();
     }
 
     /**
@@ -682,6 +681,22 @@ public class Content
             {
                 return true;
             }
+        }
+
+        /**
+         * <p>Implementations of this interface may process {@link Chunk}s being copied by the
+         * {@link Content#copy(Source, Sink, Processor, Callback)} method, so that
+         * {@link Chunk}s of unknown types can be copied.
+         * @see Content#copy(Source, Sink, Processor, Callback)
+         */
+        interface Processor
+        {
+            /**
+             * @param chunk The chunk to be considered for processing.
+             * @param callback The callback that will be called once the accepted chunk is processed.
+             * @return True if the chunk will be process and the callback will be called (or may have already been called), false otherwise.
+             */
+            boolean process(Chunk chunk, Callback callback);
         }
     }
 }
