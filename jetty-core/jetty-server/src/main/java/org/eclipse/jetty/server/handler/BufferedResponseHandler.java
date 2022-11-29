@@ -137,6 +137,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by method {}", this, request);
+            super.process(request, response, callback);
             return;
         }
 
@@ -146,6 +147,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} excluded by path {}", this, request);
+            super.process(request, response, callback);
             return;
         }
 
@@ -159,7 +161,8 @@ public class BufferedResponseHandler extends Handler.Wrapper
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} excluded by path suffix mime type {}", this, request);
 
-                // handle normally without setting vary header
+                // handle normally
+                super.process(request, response, callback);
                 return;
             }
         }
