@@ -17,6 +17,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
@@ -180,6 +181,8 @@ public class ThreadLimitHandler extends Handler.Wrapper
             return;
         }
 
+        // We accept the request and will always process it.
+        request.accept();
         LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
         limitedRequest.process();
     }
@@ -297,7 +300,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
             _handler = Objects.requireNonNull(handler);
             _response = new LimitedResponse(this, response);
             _callback = Objects.requireNonNull(callback);
-            request.accept();
         }
 
         protected Handler getHandler()
@@ -318,13 +320,14 @@ public class ThreadLimitHandler extends Handler.Wrapper
         protected void process() throws Exception
         {
             CompletableFuture<Closeable> futurePermit = _remote.acquire();
+            Callback callback = Callback.from(_callback, () -> getAndClose(futurePermit));
+
             // Did we get a permit?
             if (futurePermit.isDone())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Threadpermitted {}", _remote);
-                _handler.process(this, _response, Callback.from(_callback, () -> getAndClose(futurePermit)));
-                return;
+                process(callback);
             }
             else
             {
@@ -334,7 +337,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
                 {
                     try
                     {
-                        _handler.process(this, _response, Callback.from(_callback, () -> getAndClose(futurePermit)));
+                        process(callback);
                     }
                     catch (Throwable x)
                     {
@@ -342,8 +345,16 @@ public class ThreadLimitHandler extends Handler.Wrapper
                     }
                 });
             }
+        }
 
-            _handler.process(this, getResponse(), getCallback());
+        protected void process(Callback callback) throws Exception
+        {
+            _handler.process(this, _response, callback);
+            if (!isAccepted())
+            {
+                accept();
+                Response.writeError(this, _response, callback, 404);
+            }
         }
 
         @Override
@@ -359,6 +370,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         {
             if (!isAccepted())
                 throw new IllegalStateException("!accepted");
+            // TODO the demand callback needs to re acquire a permit ( IFF in is not called back in scope )
             super.demand(demandCallback);
         }
 
@@ -383,6 +395,13 @@ public class ThreadLimitHandler extends Handler.Wrapper
         public LimitedResponse(LimitedRequest limitedRequest, Response response)
         {
             super(limitedRequest, response);
+        }
+
+        @Override
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+            // TODO the callback needs to re-acquire a permit (IFF not callback in scope).
+            super.write(last, byteBuffer, callback);
         }
     }
 
