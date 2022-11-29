@@ -88,9 +88,9 @@
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>6.0</jetty.test.version>
-    <jmh.version>1.35</jmh.version>
+    <jmh.version>1.36</jmh.version>
     <jna.version>5.12.1</jna.version>
-    <jnr-constants.version>0.10.3</jnr-constants.version>
+    <jnr-constants.version>0.10.4</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
     <jnr-ffi.version>2.2.12</jnr-ffi.version>
     <jnr-posix.version>3.1.15</jnr-posix.version>
@@ -145,11 +145,11 @@
     <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.0.1</maven.install.plugin.version>
+    <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.0.0</maven.remote-resources-plugin.version>
