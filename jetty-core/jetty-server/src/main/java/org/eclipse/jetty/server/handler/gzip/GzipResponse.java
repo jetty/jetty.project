@@ -72,7 +72,7 @@ public class GzipResponse extends Response.Wrapper
 
         _factory = factory;
         _vary = vary;
-        _bufferSize = bufferSize;
+        _bufferSize = Math.max(GZIP_HEADER.length + GZIP_TRAILER_SIZE, bufferSize);
         _syncFlush = syncFlush;
     }
 
@@ -89,12 +89,12 @@ public class GzipResponse extends Response.Wrapper
         }
     }
 
-    private void addTrailer()
+    private void addTrailer(ByteBuffer outputBuffer)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("addTrailer: _crc={}, _totalIn={})", _crc.getValue(), _deflaterEntry.get().getTotalIn());
-        _buffer.putInt((int)_crc.getValue());
-        _buffer.putInt(_deflaterEntry.get().getTotalIn());
+        outputBuffer.putInt((int)_crc.getValue());
+        outputBuffer.putInt(_deflaterEntry.get().getTotalIn());
     }
 
     private void gzip(boolean complete, final Callback callback, ByteBuffer content)
@@ -283,7 +283,6 @@ public class GzipResponse extends Response.Wrapper
                 // We have finished compressing the entire content, so
                 // cleanup and succeed.
                 cleanup();
-                _state.set(GZState.FINISHED);
                 return Action.SUCCEEDED;
             }
 
@@ -345,6 +344,7 @@ public class GzipResponse extends Response.Wrapper
                     int len = deflater.deflate(outputBuffer, getFlushMode());
                     if (len > 0)
                     {
+                        BufferUtil.flipToFlush(outputBuffer, 0);
                         write(false, outputBuffer);
                         return Action.SCHEDULED;
                     }
@@ -357,16 +357,20 @@ public class GzipResponse extends Response.Wrapper
                 deflater.finish();
                 return finishing(deflater, outputBuffer);
             }
-            else if (outputBuffer.position() > 0)
+
+            BufferUtil.flipToFlush(outputBuffer, 0);
+            if (outputBuffer.hasRemaining())
             {
                 write(false, outputBuffer);
                 return Action.SCHEDULED;
             }
 
+            // the content held by GzipBufferCB is fully consumed as input to the Deflater instance, we are done
             if (BufferUtil.isEmpty(_content))
-                return Action.SUCCEEDED; // this GzipBufferCB is fully consumed as input to the Deflater instance
+                return Action.SUCCEEDED;
 
-            return Action.SCHEDULED;
+            // No progress made on deflate, but the _content wasn't consumed, we shouldn't be able to reach this.
+            throw new AssertionError("No progress on deflate made for " + this);
         }
 
         private Action finishing(Deflater deflater, ByteBuffer outputBuffer)
@@ -376,35 +380,38 @@ public class GzipResponse extends Response.Wrapper
             if (!deflater.finished())
             {
                 int len = deflater.deflate(outputBuffer, getFlushMode());
-                if (deflater.finished() && len <= outputBuffer.remaining() - GZIP_TRAILER_SIZE)
+                // try to preserve single write if possible (header + compressed content + trailer)
+                if (deflater.finished() && outputBuffer.remaining() >= GZIP_TRAILER_SIZE)
                 {
                     _state.set(GZState.FINISHED);
-                    addTrailer();
+                    addTrailer(outputBuffer);
+                    BufferUtil.flipToFlush(outputBuffer, 0);
                     write(true, outputBuffer);
                     return Action.SCHEDULED;
                 }
 
                 if (len > 0)
                 {
+                    BufferUtil.flipToFlush(outputBuffer, 0);
                     write(false, outputBuffer);
                     return Action.SCHEDULED;
                 }
+
+                // No progress made on deflate, deflater not finished, we shouldn't be able to reach this.
+                throw new AssertionError("No progress on deflate made for " + this);
             }
             else
             {
                 _state.set(GZState.FINISHED);
-                addTrailer();
+                addTrailer(outputBuffer);
+                BufferUtil.flipToFlush(outputBuffer, 0);
                 write(true, outputBuffer);
                 return Action.SCHEDULED;
             }
-
-            return Action.SCHEDULED;
         }
 
         private void write(boolean last, ByteBuffer outputBuffer)
         {
-            if (outputBuffer != null)
-                BufferUtil.flipToFlush(outputBuffer, 0);
             if (LOG.isDebugEnabled())
                 LOG.debug("write() last={}, outputBuffer={}", last, BufferUtil.toDetailString(outputBuffer));
             GzipResponse.super.write(last, outputBuffer, this);
