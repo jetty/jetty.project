@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -246,19 +245,20 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
-     * @param classPath Comma or semicolon separated path of filenames or URLs
+     * @param classPathList Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
      * @throws IOException if unable to add classpath
      */
-    public void addClassPath(String classPath)
+    public void addClassPath(String classPathList)
         throws IOException
     {
-        if (classPath == null)
+        if (classPathList == null)
             return;
 
-        List<URI> uris = URIUtil.split(classPath);
-        addClassPath(_resourceFactory.newResource(uris));
+        URIUtil.split(classPathList).stream()
+            .map(_resourceFactory::newResource)
+            .forEach(this::addClassPath);
     }
 
     /**
@@ -292,26 +292,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             try (Stream<Path> streamEntries = Files.list(dir))
             {
-                List<Path> jars = streamEntries
+                streamEntries
                     .filter(Files::isRegularFile)
                     .filter(this::isFileSupported)
                     .sorted(Comparator.naturalOrder())
-                    .toList();
-
-                for (Path jar : jars)
-                {
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("addJar - {}", jar);
-                        URI jarUri = URIUtil.toJarFileUri(jar.toUri());
-                        addClassPath(jarUri.toASCIIString());
-                    }
-                    catch (Exception ex)
-                    {
-                        LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
-                    }
-                }
+                    .map(Path::toUri)
+                    .map(URIUtil::toJarFileUri)
+                    .map(_resourceFactory::newResource)
+                    .forEach(this::addClassPath);
             }
             catch (IOException e)
             {
