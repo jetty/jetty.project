@@ -27,12 +27,10 @@ public class HelloWorld extends Handler.Abstract
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        return (req, response, callback) ->
-        {
-            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.write(true, BufferUtil.toBuffer("<h1>Hello World</h1>"), callback);
-        };
+        request.accept();
+        response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.write(true, BufferUtil.toBuffer("<h1>Hello World</h1>"), callback);
     }
 
     public static void main(String[] args) throws Exception

@@ -68,12 +68,10 @@ public class ManyHandlers
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            return (req, response, callback) ->
-            {
-                response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.write(true, BufferUtil.toBuffer(new JSON().toJSON(req.getAttributeNameSet())), callback);
-            };
+            request.accept();
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.write(true, BufferUtil.toBuffer(new JSON().toJSON(request.getAttributeNameSet())), callback);
         }
     }
 
@@ -82,15 +80,12 @@ public class ManyHandlers
      */
     public static class WelcomeWrapHandler extends Handler.Wrapper
     {
-
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.process(request, response, callback);
-            if (processor == null)
-                return null;
-
-            return (rq, rs, cb) -> rs.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+            // TODO this looks wrong. Neither wrapper nor callback called?
+            request.accept();
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
         }
     }
 

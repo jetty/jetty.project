@@ -83,7 +83,6 @@ public class FastFileServer
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            return null;
             // TODO
 //            return (req, response, callback) ->
 //            {

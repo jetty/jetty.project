@@ -1806,7 +1806,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             };
 
-            super.process(wrapper, response, Callback.from(() ->
+            super.doProcess(wrapper, response, Callback.from(() ->
             {
                 if (_mustHaveContent && !hasContent.get())
                     callback.failed(new IllegalStateException("No Test Content"));

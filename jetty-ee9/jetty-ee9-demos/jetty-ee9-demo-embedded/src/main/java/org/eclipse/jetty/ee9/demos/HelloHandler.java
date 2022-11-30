@@ -45,18 +45,14 @@ public class HelloHandler extends Handler.Abstract
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
-        return (req, response, callback) ->
+        request.accept();
+        response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
+        response.setStatus(HttpServletResponse.SC_OK);
+
+        response.write(true, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"), callback);
+        if (body != null)
         {
-            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
-
-            response.write(true, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"), callback);
-            if (body != null)
-            {
-                response.write(true, BufferUtil.toBuffer(body), callback);
-            }
-
-        };
-
+            response.write(true, BufferUtil.toBuffer(body), callback);
+        }
     }
 }

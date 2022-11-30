@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -204,9 +205,19 @@ public interface Request extends Attributes, Content.Source
      */
     HttpFields getTrailers();
 
+    /**
+     * @return The timestamp that the request was received/created in milliseconds, relative to the "wall clock" given
+     * by {@link System#currentTimeMillis()}.
+     */
     long getTimeStamp();
 
-    long getNanoTimeStamp();
+    /**
+     * @return The timestamp that the request was received/created in nanoseconds, relative to {@link System#nanoTime()}.
+     */
+    default long getNanoTimeStamp()
+    {
+        return System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
+    }
 
     // TODO: see above.
     boolean isSecure();
