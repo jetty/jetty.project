@@ -1160,10 +1160,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new HelloHandler("Hello\n")
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 served.incrementAndGet();
-                super.process(request, response, callback);
+                super.doProcess(request, response, callback);
             }
         });
 
@@ -1791,7 +1791,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             AtomicBoolean hasContent = new AtomicBoolean();
             Request.Wrapper wrapper = new Request.Wrapper(request)

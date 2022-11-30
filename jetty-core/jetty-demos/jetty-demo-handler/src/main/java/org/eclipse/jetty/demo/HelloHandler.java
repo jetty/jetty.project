@@ -23,13 +23,11 @@ import org.eclipse.jetty.util.Callback;
 public class HelloHandler extends Handler.Abstract
 {
     @Override
-    public void process(Request req, Response response, Callback callback)
+    public void process(Request request, Response response, Callback callback)
     {
-        return (request, response, callback) ->
-        {
-            response.setStatus(200);
-            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-            response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
-        };
+        request.accept();
+        response.setStatus(200);
+        response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+        response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
     }
 }

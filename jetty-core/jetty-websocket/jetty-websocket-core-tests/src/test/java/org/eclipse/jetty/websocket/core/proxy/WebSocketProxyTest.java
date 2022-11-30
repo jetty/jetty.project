@@ -85,11 +85,10 @@ public class WebSocketProxyTest
             {
                 if (blockServerUpgradeRequests && Request.getPathInContext(request).startsWith("/server"))
                 {
-                    return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    request.accept();
+                    Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
                 }
             }
-
-            return null;
         }
     }
 

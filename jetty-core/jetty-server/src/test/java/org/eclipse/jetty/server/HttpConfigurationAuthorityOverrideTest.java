@@ -688,19 +688,15 @@ public class HttpConfigurationAuthorityOverrideTest
         }
     }
 
-    private static class ErrorMsgHandler extends Handler.Processor
+    private static class ErrorMsgHandler extends Handler.Abstract
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/error"))
                 return;
-            super.process(request, response, callback);
-        }
+            request.accept();
 
-        @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
-        {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
             Content.Sink.write(response, true, "Generic Error Page.", callback);
         }

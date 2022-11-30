@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -379,6 +378,22 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
                 throw new IllegalStateException(getState());
             super.destroy();
         }
+
+        public abstract static class Blocking extends Abstract
+        {
+            public Blocking()
+            {
+                super(InvocationType.BLOCKING);
+            }
+        }
+
+        public abstract static class NonBlocking extends Abstract
+        {
+            public NonBlocking()
+            {
+                super(InvocationType.NON_BLOCKING);
+            }
+        }
     }
 
     /**
@@ -642,7 +657,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public final void process(Request request, Response response, Callback callback) throws Exception
         {
             request.accept();
             doProcess(request, response, callback);

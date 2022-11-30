@@ -120,7 +120,6 @@ public class GzipHandlerIsHandledTest
         public void process(Request request, Response response, Callback callback)
         {
             events.offer(action);
-            return null;
         }
     }
 }

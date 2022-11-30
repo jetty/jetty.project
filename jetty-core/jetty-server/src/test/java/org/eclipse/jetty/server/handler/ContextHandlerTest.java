@@ -241,19 +241,16 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
-                super.process(request, response, callback);
-            }
 
-            @Override
-            public void doProcess(Request request, Response response, Callback callback)
-            {
+                request.accept();
+
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
                     @Override

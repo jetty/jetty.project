@@ -1061,7 +1061,7 @@ public class HttpClientTest extends AbstractTest
         }
 
         @Override
-        public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 

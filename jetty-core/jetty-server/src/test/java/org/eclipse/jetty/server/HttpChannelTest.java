@@ -1223,7 +1223,7 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -1234,7 +1234,7 @@ public class HttpChannelTest
                         super.succeeded();
                     }
                 });
-                super.process(request, response, callback);
+                super.doProcess(request, response, callback);
             }
         };
         _server.setHandler(echoHandler);

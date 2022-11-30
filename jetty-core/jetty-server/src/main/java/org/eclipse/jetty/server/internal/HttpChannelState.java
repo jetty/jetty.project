@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -927,6 +928,16 @@ public class HttpChannelState implements HttpChannel, Components
         public long getTimeStamp()
         {
             return _timeStamp;
+        }
+
+        @Override
+        public long getNanoTimeStamp()
+        {
+            HttpStream stream = _httpChannel.getHttpStream();
+            if (stream != null)
+                return stream.getNanoTimeStamp();
+
+            return System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
         }
 
         @Override

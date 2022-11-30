@@ -206,6 +206,8 @@ public interface Request extends Attributes, Content.Source
 
     long getTimeStamp();
 
+    long getNanoTimeStamp();
+
     // TODO: see above.
     boolean isSecure();
 
@@ -579,6 +581,12 @@ public interface Request extends Attributes, Content.Source
         public long getTimeStamp()
         {
             return getWrapped().getTimeStamp();
+        }
+
+        @Override
+        public long getNanoTimeStamp()
+        {
+            return getWrapped().getNanoTimeStamp();
         }
 
         @Override

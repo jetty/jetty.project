@@ -216,7 +216,7 @@ public class FastCGIProxyHandlerTest
                     request.setAttribute(pathAttribute, originalPath);
                     request.setAttribute(queryAttribute, originalQuery);
                 }
-                return super.process(request, response, callback);
+                super.process(request, response, callback);
             }
         });
         proxyContext.start();

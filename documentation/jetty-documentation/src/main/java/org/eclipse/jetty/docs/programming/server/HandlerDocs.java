@@ -41,24 +41,17 @@ public class HandlerDocs
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            return (req, response, callback) ->
-            {
-                response.setStatus(200);
-                response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
-                response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
-            };
+            request.accept();
+            response.setStatus(200);
+            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
+            response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
         }
     }
 
-    public static class HelloHandler1 extends Handler.Abstract
+    public static class HelloHandler1 extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
-        {
-            return this::process;
-        }
-
-        private void process(Request request, Response response, Callback callback)
+        public void doProcess(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -159,20 +152,16 @@ public class HandlerDocs
         }
     }
 
-    public static class DescriminatingGreeterHandler extends Handler.Processor.NonBlocking
+    public static class DiscriminatingGreeterHandler extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback)
         {
-            if (HttpMethod.GET.is(request.getMethod()) &&
-                "greeting".equals(Request.getPathInContext(request)))
-                return this;
-            return null;
-        }
+            if (!HttpMethod.GET.is(request.getMethod()) || !"greeting".equals(Request.getPathInContext(request)))
+                return;
 
-        @Override
-        public void doProcess(Request request, Response response, Callback callback)
-        {
+            request.accept();
+
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
@@ -209,9 +198,9 @@ public class HandlerDocs
                 String path = "/" + name;
                 if (Request.getPathInContext(request).equals(name))
                 {
-                    Request.Processor processor = handler.process(request, response, callback);
-                    if (processor != null)
-                        return processor;
+                    handler.process(request, response, callback);
+                    if (request.isAccepted())
+                        return;
                 }
                 index.append("<li><a href=\"")
                     .append(URIUtil.addPaths(request.getContext().getContextPath(), path))
@@ -221,12 +210,10 @@ public class HandlerDocs
             }
 
             index.append("</ul>");
-            return (req, res, callback) ->
-            {
-                res.setStatus(200);
-                res.getHeaders().add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_UTF_8.asString());
-                Content.Sink.write(res, true, index.toString(), callback);
-            };
+            request.accept();
+            response.setStatus(200);
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_UTF_8.asString());
+            Content.Sink.write(response, true, index.toString(), callback);
         }
     }
 }

@@ -519,14 +519,13 @@ public class ForwardProxyTLSServerTest
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    return (req, res, cbk) ->
-                    {
-                        res.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                        res.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                        cbk.succeeded();
-                    };
+                    request.accept();
+                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                    callback.succeeded();
+                    return;
                 }
-                return super.process(request, response, callback);
+                super.process(request, response, callback);
             }
         }, realm);
     }
@@ -544,14 +543,13 @@ public class ForwardProxyTLSServerTest
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    return (req, res, cbk) ->
-                    {
-                        res.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                        res.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                        res.write(true, ByteBuffer.allocate(4096), cbk);
-                    };
+                    request.accept();
+                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                    response.write(true, ByteBuffer.allocate(4096), callback);
+                    return;
                 }
-                return super.process(request, response, callback);
+                super.process(request, response, callback);
             }
         }, realm);
     }
@@ -569,14 +567,13 @@ public class ForwardProxyTLSServerTest
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    return (req, res, cbk) ->
-                    {
-                        res.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                        res.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                        res.write(true, ByteBuffer.allocate(1024), cbk);
-                    };
+                    request.accept();
+                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                    response.write(true, ByteBuffer.allocate(1024), callback);
+                    return;
                 }
-                return super.process(request, response, callback);
+                super.process(request, response, callback);
             }
         }, realm, true);
     }
