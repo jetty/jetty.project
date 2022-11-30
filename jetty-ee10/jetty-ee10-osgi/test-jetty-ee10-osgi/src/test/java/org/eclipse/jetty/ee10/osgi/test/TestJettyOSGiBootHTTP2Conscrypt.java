@@ -75,7 +75,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
         //deploy a test webapp
-        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-client").versionAsInProject().start());
@@ -152,7 +152,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
 
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:" + port + "/demo-jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/ee10-demo-jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
         }

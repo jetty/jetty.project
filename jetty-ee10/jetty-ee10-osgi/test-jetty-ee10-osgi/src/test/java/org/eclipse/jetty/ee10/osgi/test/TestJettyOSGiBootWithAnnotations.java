@@ -43,8 +43,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */
-@Disabled //TODO
-//@RunWith(PaxExam.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithAnnotations
 {
     @Inject
@@ -71,17 +70,17 @@ public class TestJettyOSGiBootWithAnnotations
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         options.addAll(annotationDependencies());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee10-osgi-fragment").versionAsInProject().noStart());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("test-jetty-ee10-osgi-fragment").versionAsInProject().noStart());
         return options.toArray(new Option[0]);
     }
 
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-container-initializer").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-mock-resources").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-container-initializer").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-mock-resources").versionAsInProject());
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-spec-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-spec-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
@@ -98,20 +97,20 @@ public class TestJettyOSGiBootWithAnnotations
             String port = System.getProperty("boot.annotations.port");
             assertNotNull(port);
 
-            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/index.html");
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/ee10-demo-spec/index.html");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "Demo Specification WebApp");
 
-            Request req = client.POST("http://127.0.0.1:" + port + "/test");
+            Request req = client.POST("http://127.0.0.1:" + port + "/ee10-demo-spec/test");
             response = req.send();
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content,
                 "<p><b>Result: <span class=\"pass\">PASS</span></p>");
 
-            response = client.GET("http://127.0.0.1:" + port + "/frag.html");
+            response = client.GET("http://127.0.0.1:" + port + "/ee10-demo-spec/frag.html");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
@@ -119,7 +118,7 @@ public class TestJettyOSGiBootWithAnnotations
             multiPart.addPart(new MultiPart.ContentSourcePart("field", null, HttpFields.EMPTY, new StringRequestContent("foo")));
             multiPart.close();
 
-            response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
+            response = client.newRequest("http://127.0.0.1:" + port + "/ee10-demo-spec/multi").method("POST")
                 .body(multiPart).send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }

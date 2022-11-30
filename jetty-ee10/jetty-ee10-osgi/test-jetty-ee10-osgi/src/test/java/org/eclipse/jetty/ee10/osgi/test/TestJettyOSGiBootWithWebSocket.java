@@ -22,7 +22,6 @@ import javax.inject.Inject;
 import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -37,8 +36,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 /**
  *
  */
-@Disabled //TODO
-//@RunWith(PaxExam.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithWebSocket
 {
     @Inject
@@ -70,7 +68,7 @@ public class TestJettyOSGiBootWithWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-jetty-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
@@ -88,7 +86,7 @@ public class TestJettyOSGiBootWithWebSocket
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 
-        URI uri = new URI("ws://127.0.0.1:" + port + "/ws/foo");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ee10-demo-webapp/ws/foo");
         WebSocketClient client = new WebSocketClient();
         try
         {

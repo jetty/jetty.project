@@ -22,7 +22,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -46,8 +45,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */
-@Disabled //TODO
-//@RunWith(PaxExam.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWebAppAsService
 {
     @Inject
@@ -83,10 +81,10 @@ public class TestJettyOSGiBootWebAppAsService
 
         // a bundle that registers a webapp as a service for the jetty osgi core
         // to pick up and deploy
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee10-osgi-webapp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("test-jetty-ee10-osgi-webapp").versionAsInProject().start());
 
         //a bundle that registers a new named Server instance
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee10-osgi-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("test-jetty-ee10-osgi-server").versionAsInProject().start());
 
         return res;
     }

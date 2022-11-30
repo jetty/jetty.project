@@ -21,7 +21,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -44,8 +43,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  *
  * Tests the ServiceContextProvider.
  */
-@Disabled //TODO
-//@RunWith(PaxExam.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootContextAsService
 {
     @Inject
@@ -66,7 +64,7 @@ public class TestJettyOSGiBootContextAsService
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         // a bundle that registers a webapp as a service for the jetty osgi core to pick up and deploy
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee10-osgi-context").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("test-jetty-ee10-osgi-context").versionAsInProject().start());
 
         options.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(System.getProperty("mavenRepoPath")));
 

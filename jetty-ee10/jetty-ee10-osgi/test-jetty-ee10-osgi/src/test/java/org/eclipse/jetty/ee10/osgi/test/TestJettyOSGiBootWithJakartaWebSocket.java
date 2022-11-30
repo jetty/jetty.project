@@ -25,7 +25,6 @@ import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -42,8 +41,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 /**
  * Test using websocket in osgi
  */
-@Disabled //TODO
-//@RunWith(PaxExam.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJakartaWebSocket
 {
     @Inject
@@ -77,7 +75,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
 
@@ -93,10 +91,10 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.common");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.client");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.server");
-        startBundle(bundleContext, "org.eclipse.jetty.demos.webapp");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.websocket.jakarta.common");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.websocket.jakarta.client");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.websocket.jakarta.server");
+        startBundle(bundleContext, "org.eclipse.jetty.ee10.demos.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
@@ -110,7 +108,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         Logger log = Logger.getLogger(this.getClass().getName());
 
         SimpleJakartaWebSocket socket = new SimpleJakartaWebSocket();
-        URI uri = new URI("ws://127.0.0.1:" + port + "/jakarta.websocket/");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ee10-demo-webapp/jakarta.websocket/");
         log.info("Attempting to connect to " + uri);
         try (Session session = container.connectToServer(socket, uri))
         {
