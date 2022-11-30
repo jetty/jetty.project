@@ -56,6 +56,12 @@ public class OSGiApp extends App
     protected String _contextPath;
     protected Resource _bundleResource;
 
+    /**
+     * Get the install location of a Bundle as a Path
+     * @param bundle the Bundle whose location to return
+     * @return the installed location of the Bundle as a Path
+     * @throws Exception
+     */
     private static Path getBundlePath(Bundle bundle) throws Exception
     {
         String bundleOverrideLocation = bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
@@ -122,7 +128,6 @@ public class OSGiApp extends App
      * @param manager the DeploymentManager to which to deploy
      * @param provider the provider that discovered the context/webapp
      * @param bundle the bundle associated with the context/webapp
-     * @param path the path to the bundle
      */
     public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle)
     throws Exception

@@ -87,7 +87,7 @@ public class OSGiServerConstants
     public static final String SERVER_CLASSLOADER = "org.eclipse.jetty.osgi.server.classLoader";
     
     /**
-     * Name of server attribute that stores a List<Bundle> of bundles on the server classpath that must be scanned
+     * Name of server attribute that stores a List of Bundles on the server classpath that must be scanned
      */
     public static final String SERVER_CLASSPATH_BUNDLES = "org.eclipse.jetty.osgi.server.classpathBundles";
     
