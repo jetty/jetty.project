@@ -79,7 +79,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -1004,6 +1003,7 @@ public class RequestTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
+
                 ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
                 {
                     @Override
@@ -1013,7 +1013,7 @@ public class RequestTest
                     }
                 };
 
-                StatisticsHandler.MinimumDataRateHandler.MinimumDataRateRequest wrapper = new org.eclipse.jetty.server.Request.ToBeRemovedProcessor(request)
+                org.eclipse.jetty.server.Request wrapper = new org.eclipse.jetty.server.Request.Wrapper(request)
                 {
                     @Override
                     public ConnectionMetaData getConnectionMetaData()
@@ -1022,9 +1022,7 @@ public class RequestTest
                     }
                 };
 
-                org.eclipse.jetty.server.Request.Processor processor = super.process(wrapper, response, callback);
-                wrapper._processor = processor;
-                return processor == null ? null : wrapper;
+                super.process(wrapper, response, callback);
             }
         };
 

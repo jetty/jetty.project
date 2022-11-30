@@ -119,9 +119,6 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             @Override
             public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
-                org.eclipse.jetty.server.Request.Processor processor = super.process(request, response, callback);
-                if (processor == null)
-                    return null;
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
                     @Override
@@ -138,7 +135,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         super.failed(x);
                     }
                 });
-                return processor;
+                super.process(request, response, callback);
             }
         };
         _server.insertHandler(terminateHandler);

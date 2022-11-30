@@ -64,7 +64,7 @@ public abstract class Rule
      * used to chain a sequence of {@link Rule}s together.
      * The tuple is initialized with only the request, then the processor is
      * then passed to a chain of rules before the ultimate processor is
-     * passed in {@link #wrapProcessor(Processor)}. Finally, the response
+     * passed in {@link #setProcessor(Processor)}. Finally, the response
      * and callback are provided in a call to {@link #process(Request, Response, Callback)},
      * which calls the {@link #process(Response, Callback)}.</p>
      */
@@ -85,13 +85,13 @@ public abstract class Rule
 
         /**
          * <p>Processes this wrapped request together with the passed response and
-         * callback, using the processor set in {@link #wrapProcessor(Processor)}.
+         * callback, using the processor set in {@link #setProcessor(Processor)}.
          * This method should be extended if additional processing of the wrapped
          * request is required.</p>
          * @param response The response
          * @param callback The callback
          * @throws Exception If there is a problem processing
-         * @see #wrapProcessor(Processor)
+         * @see #setProcessor(Processor)
          */
         protected void process(Response response, Callback callback) throws Exception
         {
@@ -104,7 +104,6 @@ public abstract class Rule
          * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
          *
          * @param processor the {@code Processor} to wrap
-         * @return this instance
          */
         public void setProcessor(Processor processor)
         {

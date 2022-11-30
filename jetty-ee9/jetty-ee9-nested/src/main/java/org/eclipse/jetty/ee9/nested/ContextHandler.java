@@ -2351,7 +2351,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                                      org.eclipse.jetty.server.Request wrapped,
                                      HttpChannel httpChannel)
         {
-            super(contextHandler, context, wrapped);
+            super(context, wrapped);
             _httpChannel = httpChannel;
         }
 
@@ -2467,15 +2467,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        public void process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
-        {
-            HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-            httpChannel.onProcess(response, callback);
-
-            httpChannel.handle();
-        }
-
-        @Override
         protected void notifyExitScope(org.eclipse.jetty.server.Request coreRequest)
         {
             try
@@ -2503,9 +2494,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public void process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
             {
-                return CoreContextHandler.this;
+                coreRequest.accept();
+                HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
+                httpChannel.onProcess(response, callback);
+                httpChannel.handle();
             }
         }
     }
