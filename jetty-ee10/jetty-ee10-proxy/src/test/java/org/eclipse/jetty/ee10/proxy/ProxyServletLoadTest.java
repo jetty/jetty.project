@@ -156,7 +156,7 @@ public class ProxyServletLoadTest
         // Start clients
         for (int i = 0; i < clientCount; i++)
         {
-            ClientLoop r = new ClientLoop(activeClientLatch, success, client, "localhost", serverConnector.getLocalPort(), iterations);
+            ClientLoop r = new ClientLoop(activeClientLatch, success, client, "localhost", serverConnector.getLocalPort(), iterations, i);
             String name = "client-" + i;
             Thread thread = new Thread(r, name);
             thread.start();
@@ -174,8 +174,9 @@ public class ProxyServletLoadTest
         private final String host;
         private final int port;
         private int iterations;
+        private final int idx;
 
-        public ClientLoop(CountDownLatch activeClientLatch, AtomicBoolean success, HttpClient client, String serverHost, int serverPort, int iterations)
+        public ClientLoop(CountDownLatch activeClientLatch, AtomicBoolean success, HttpClient client, String serverHost, int serverPort, int iterations, int idx)
         {
             this.active = activeClientLatch;
             this.success = success;
@@ -183,6 +184,7 @@ public class ProxyServletLoadTest
             this.host = serverHost;
             this.port = serverPort;
             this.iterations = iterations;
+            this.idx = idx;
         }
 
         @Override
@@ -198,12 +200,12 @@ public class ProxyServletLoadTest
 
                     byte[] content = new byte[1024];
                     new Random().nextBytes(content);
-                    ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).body(new BytesRequestContent(content))
+                    ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).path("/" + iterations + "-" + idx).body(new BytesRequestContent(content))
                         .timeout(5, TimeUnit.SECONDS).send();
 
                     if (response.getStatus() != 200)
                     {
-                        LOG.warn("Got response <{}>, expecting <{}> iteration={}", response.getStatus(), 200, iterations);
+                        LOG.warn("Got response <{}>, expecting <{}> iteration={}-{}", response.getStatus(), 200, iterations, idx);
                         // allow all ClientLoops to finish
                         success.set(false);
                     }
@@ -216,7 +218,7 @@ public class ProxyServletLoadTest
             }
             catch (Throwable x)
             {
-                LOG.warn("Error processing request {}", iterations, x);
+                LOG.warn("Error processing request {}-{}", iterations, idx, x);
                 success.set(false);
             }
             finally

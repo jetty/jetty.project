@@ -65,24 +65,49 @@ public interface Response extends Content.Sink
 
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
-    // TODO: make it static, otherwise we must override it in Wrapper.
-    default boolean writeTrailers(Content.Chunk chunk, Callback ignored)
+    /**
+     * <p>Returns a chunk processor suitable to be passed to the
+     * {@link Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)}
+     * method, that will handle {@link Trailers} chunks
+     * by adding their fields to the {@link HttpFields} supplied by
+     * {@link Response#getTrailersSupplier()}.</p>
+     * <p>This is specifically useful for writing trailers that have been received via
+     * the {@link Content.Source#read()} API, for example when echoing a request to a response:</p>
+     * <pre>
+     *   Content.copy(request, response, Response.asTrailerChunkHandler(response), callback);
+     * </pre>
+     * @param response The response for which to process a trailers chunk.
+     *                 If the {@link Response#setTrailersSupplier(Supplier)}
+     *                 method has not been called prior to this method, then a noop processor is returned.
+     * @return A chunk processor that will add trailer chunks to the response's trailer supplied fields.
+     * @see Content#copy(Content.Source, Content.Sink, Content.Chunk.Processor, Callback)
+     * @see Trailers
+     */
+    static Content.Chunk.Processor newTrailersChunkProcessor(Response response)
     {
-        if (chunk instanceof Trailers trailers)
+        Supplier<HttpFields> supplier = response.getTrailersSupplier();
+        if (supplier == null)
+            return (chunk, callback) -> false;
+
+        return (chunk, callback) ->
         {
-            HttpFields requestTrailers = trailers.getTrailers();
-            if (requestTrailers != null)
+            if (chunk instanceof Trailers trailers)
             {
-                Supplier<HttpFields> supplier = getTrailersSupplier();
-                if (supplier != null)
+                HttpFields requestTrailers = trailers.getTrailers();
+                if (requestTrailers != null)
                 {
+                    // Call supplier in lambda to get latest responseTrailers
                     HttpFields responseTrailers = supplier.get();
                     if (responseTrailers instanceof HttpFields.Mutable mutable)
+                    {
                         mutable.add(requestTrailers);
+                        callback.succeeded();
+                        return true;
+                    }
                 }
             }
-        }
-        return false;
+            return false;
+        };
     }
 
     @SuppressWarnings("unchecked")

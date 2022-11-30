@@ -422,6 +422,12 @@ public interface Request
     Request onResponseFailure(Response.FailureListener listener);
 
     /**
+     * @param listener a listener for driving {@link org.eclipse.jetty.io.Content.Source}
+     * @return this request object
+     */
+    Request onResponseContentSource(Response.ContentSourceListener listener);
+
+    /**
      * <p>Sets a handler for pushed resources.</p>
      * <p>When resources are pushed from the server, the given {@code pushHandler}
      * is invoked for every pushed resource.

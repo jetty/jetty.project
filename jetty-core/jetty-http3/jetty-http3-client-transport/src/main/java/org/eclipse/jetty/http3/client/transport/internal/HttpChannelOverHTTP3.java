@@ -40,6 +40,11 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         receiver = new HttpReceiverOverHTTP3(this);
     }
 
+    public HttpConnectionOverHTTP3 getHttpConnection()
+    {
+        return connection;
+    }
+
     public HTTP3SessionClient getSession()
     {
         return session;

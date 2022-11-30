@@ -14,13 +14,12 @@
 package org.eclipse.jetty.test.client.transport;
 
 import java.io.InterruptedIOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,16 +37,22 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpClientDemandTest extends AbstractTest
 {
@@ -166,21 +171,28 @@ public class HttpClientDemandTest extends AbstractTest
         assertEquals(1, contentQueue.size());
         assertEquals(1, callbackQueue.size());
 
-        // Demand more buffers.
-        int count = 2;
+        // Demand one more buffer.
         LongConsumer demand = demandQueue.poll();
         assertNotNull(demand);
-        demand.accept(count);
+        demand.accept(1);
         // The client should have received just `count` more buffers.
         Thread.sleep(1000);
-        assertEquals(count, demandQueue.size());
-        assertEquals(1 + count, contentQueue.size());
-        assertEquals(1 + count, callbackQueue.size());
+        assertEquals(1, demandQueue.size());
+        assertEquals(2, contentQueue.size());
+        assertEquals(2, callbackQueue.size());
 
         // Demand all the rest.
         demand = demandQueue.poll();
         assertNotNull(demand);
-        demand.accept(Long.MAX_VALUE);
+        long begin = NanoTime.now();
+        // Spin on demand until content.length bytes have been read.
+        while (content.length > contentQueue.stream().mapToInt(Buffer::remaining).sum())
+        {
+            if (NanoTime.millisSince(begin) > 5000L)
+                fail("Failed to demand all content");
+            demand.accept(1);
+        }
+        demand.accept(1); // Demand one last time to get EOF.
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
 
         byte[] received = new byte[content.length];
@@ -273,15 +285,15 @@ public class HttpClientDemandTest extends AbstractTest
     public void testTwoListenersWithDifferentDemand(Transport transport) throws Exception
     {
         int bufferSize = 1536;
-        byte[] content = new byte[10 * bufferSize];
-        new Random().nextBytes(content);
+        byte[] bytes = new byte[10 * bufferSize];
+        new Random().nextBytes(bytes);
         startServer(transport, new Handler.Processor()
         {
             @Override
             public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, bytes.length);
+                response.write(true, ByteBuffer.wrap(bytes), callback);
             }
         });
         startClient(transport);
@@ -290,22 +302,25 @@ public class HttpClientDemandTest extends AbstractTest
         client.setResponseBufferSize(bufferSize);
         client.start();
 
-        AtomicInteger chunks = new AtomicInteger();
-        Response.DemandedContentListener listener1 = (response, demand, content1, callback) ->
+        AtomicInteger listener1Chunks = new AtomicInteger();
+        AtomicInteger listener1ContentSize = new AtomicInteger();
+        AtomicReference<LongConsumer> listener1DemandRef = new AtomicReference<>();
+        Response.DemandedContentListener listener1 = (response, demand, content, callback) ->
         {
+            listener1Chunks.incrementAndGet();
+            listener1ContentSize.addAndGet(content.remaining());
             callback.succeeded();
-            // The first time, demand infinitely.
-            if (chunks.incrementAndGet() == 1)
-                demand.accept(Long.MAX_VALUE);
+            listener1DemandRef.set(demand);
         };
-        BlockingQueue<ByteBuffer> contentQueue = new LinkedBlockingQueue<>();
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
-        AtomicReference<CountDownLatch> demandLatch = new AtomicReference<>(new CountDownLatch(1));
-        Response.DemandedContentListener listener2 = (response, demand, content12, callback) ->
+        AtomicInteger listener2Chunks = new AtomicInteger();
+        AtomicInteger listener2ContentSize = new AtomicInteger();
+        AtomicReference<LongConsumer> listener2DemandRef = new AtomicReference<>();
+        Response.DemandedContentListener listener2 = (response, demand, content, callback) ->
         {
-            assertTrue(contentQueue.offer(content12));
-            demandRef.set(demand);
-            demandLatch.get().countDown();
+            listener2Chunks.incrementAndGet();
+            listener2ContentSize.addAndGet(content.remaining());
+            callback.succeeded();
+            listener2DemandRef.set(demand);
         };
 
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -320,28 +335,27 @@ public class HttpClientDemandTest extends AbstractTest
                 resultLatch.countDown();
             });
 
-        assertTrue(demandLatch.get().await(5, TimeUnit.SECONDS));
-        LongConsumer demand = demandRef.get();
-        assertNotNull(demand);
-        assertEquals(1, contentQueue.size());
-        assertNotNull(contentQueue.poll());
+        await().atMost(5, TimeUnit.SECONDS).until(listener1DemandRef::get, not(nullValue()));
+        await().atMost(5, TimeUnit.SECONDS).until(listener2DemandRef::get, not(nullValue()));
 
-        // Must not get additional content because listener2 did not demand.
-        assertNull(contentQueue.poll(1, TimeUnit.SECONDS));
+        // Make both listeners progress in locksteps.
+        int i = 0;
+        while (resultLatch.getCount() > 0)
+        {
+            i++;
 
-        // Now demand, we should get content in both listeners.
-        demandLatch.set(new CountDownLatch(1));
-        demand.accept(1);
+            // Assert that no listener can progress for as long as both listeners did not demand.
+            assertThat(listener1Chunks.get(), is(i));
+            assertThat(listener2Chunks.get(), is(i));
+            listener2DemandRef.get().accept(1);
+            assertThat(listener1Chunks.get(), is(i));
+            assertThat(listener2Chunks.get(), is(i));
+            listener1DemandRef.get().accept(1);
+        }
 
-        assertNotNull(contentQueue.poll(5, TimeUnit.SECONDS));
-        assertEquals(2, chunks.get());
-
-        // Demand the rest and verify the result.
-        assertTrue(demandLatch.get().await(5, TimeUnit.SECONDS));
-        demand = demandRef.get();
-        assertNotNull(demand);
-        demand.accept(Long.MAX_VALUE);
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+        assertThat(listener1ContentSize.get(), is(bytes.length));
+        assertThat(listener2ContentSize.get(), is(bytes.length));
     }
 
     @ParameterizedTest
