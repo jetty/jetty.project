@@ -683,7 +683,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
 
         // wrap might fail (eg ServletContextHandler could not match a servlet)
-        ContextRequest contextRequest = wrapRequest(request);
+        ContextRequest contextRequest = wrapRequest(request, response);
         if (contextRequest == null)
             return;
 
@@ -699,6 +699,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
         catch (Throwable t)
         {
+            if (!request.isAccepted())
+                request.accept();
             Response.writeError(contextRequest, contextResponse, callback, t);
         }
         finally
@@ -827,12 +829,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _errorProcessor = errorProcessor;
     }
 
-    protected ContextRequest wrapRequest(Request request)
+    protected ContextRequest wrapRequest(Request request, Response response)
     {
         return new ContextRequest(_context, request);
     }
 
-    protected ContextResponse wrapResponse(Request request, Response response)
+    protected ContextResponse wrapResponse(ContextRequest request, Response response)
     {
         return new ContextResponse(_context, request, response);
     }

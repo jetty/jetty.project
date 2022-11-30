@@ -717,41 +717,36 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
+        Handler next = getHandler();
+        if (next == null)
+            return;
+
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         ServletContextRequest.ServletApiRequest servletApiRequest =
             (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
         if (servletApiRequest == null)
             throw new IllegalStateException("Request is not a valid ServletContextRequest");
 
-        Request.Processor processor = getHandler().process(request, response, callback);
-        if (processor == null)
-            return null;
-
         addSessionStreamWrapper(request);
 
-        // TODO rather than wrapping the processor yet again here, we could just inject the
-        //      SessionManager to the servletContextRequest, which already has the ability to
-        //      extend the processor as the ContextRequest is-a Request.WrapperProcessor
-        return (req, res, callback) ->
+
+        // find and set the session if one exists
+        RequestedSession requestedSession = resolveRequestedSessionId(request);
+
+        servletApiRequest.setCoreSession(requestedSession.session());
+        servletApiRequest.setSessionManager(this);
+        servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
+        servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
+
+        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
+
+        // Handle changed ID or max-age refresh, but only if this is not a redispatched request
+        if (cookie != null)
         {
-            // find and set the session if one exists
-            RequestedSession requestedSession = resolveRequestedSessionId(req);
+            ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+            Response.replaceCookie(servletContextResponse, cookie);
+        }
 
-            servletApiRequest.setCoreSession(requestedSession.session());
-            servletApiRequest.setSessionManager(this);
-            servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
-            servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
-
-            HttpCookie cookie = access(requestedSession.session(), req.getConnectionMetaData().isSecure());
-
-            // Handle changed ID or max-age refresh, but only if this is not a redispatched request
-            if (cookie != null)
-            {
-                ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
-                Response.replaceCookie(servletContextResponse, cookie);
-            }
-
-            processor.process(req, res, callback);
-        };
+        next.process(request, response, callback);
     }
 }

@@ -108,9 +108,8 @@ public class ErrorPageTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/noop"))
-                    return null;
-                else
-                    return super.process(request, response, callback);
+                    return;
+                super.process(request, response, callback);
             }
         };
         _context.insertHandler(noopHandler);

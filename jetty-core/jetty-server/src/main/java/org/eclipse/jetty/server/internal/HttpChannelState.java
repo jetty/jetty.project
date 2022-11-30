@@ -954,7 +954,7 @@ public class HttpChannelState implements HttpChannel, Components
                     return error;
 
                 if (!httpChannel._accepted)
-                    return Content.Chunk.from(new IllegalStateException("not processing"));
+                    return Content.Chunk.from(new IllegalStateException("not accepted"));
 
                 stream = httpChannel._stream;
             }

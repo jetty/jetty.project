@@ -268,12 +268,12 @@ public class StatisticsServlet extends HttpServlet
         requests.put("requestsTimeMax", _statsHandler.getRequestTimeMax());
         requests.put("requestsTimeStdDev", _statsHandler.getRequestTimeStdDev());
 
-        requests.put("handlings", _statsHandler.getHandlings());
+        requests.put("handlings", _statsHandler.getAccepted());
         requests.put("handlingThrows", _statsHandler.getAcceptedErrors());
-        requests.put("handlingTimeTotal", _statsHandler.getHandlingTimeTotal());
-        requests.put("handlingTimeMax", _statsHandler.getHandlingTimeMax());
-        requests.put("handlingTimeMean", _statsHandler.getHandlingTimeMean());
-        requests.put("handlingTimeStdDev", _statsHandler.getHandlingTimeStdDev());
+        requests.put("handlingTimeTotal", _statsHandler.getAcceptedTimeTotal());
+        requests.put("handlingTimeMax", _statsHandler.getAcceptedTimeMax());
+        requests.put("handlingTimeMean", _statsHandler.getAcceptedTimeMean());
+        requests.put("handlingTimeStdDev", _statsHandler.getAcceptedTimeStdDev());
 
         requests.put("processings", _statsHandler.getProcessings());
         requests.put("processingsActive", _statsHandler.getProcessingsActive());

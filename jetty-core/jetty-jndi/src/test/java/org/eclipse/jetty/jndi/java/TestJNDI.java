@@ -96,7 +96,6 @@ public class TestJNDI
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                return null;
             }
 
             @Override
@@ -150,7 +149,6 @@ public class TestJNDI
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                return null;
             }
 
             @Override
