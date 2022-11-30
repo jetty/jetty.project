@@ -31,6 +31,7 @@
     <dependency>
       <groupId>jakarta.inject</groupId>
       <artifactId>jakarta.inject-api</artifactId>
+      <version>1.0.5</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
