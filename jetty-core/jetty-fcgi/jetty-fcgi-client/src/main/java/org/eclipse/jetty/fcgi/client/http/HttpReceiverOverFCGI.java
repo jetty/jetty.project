@@ -13,20 +13,103 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
 
 public class HttpReceiverOverFCGI extends HttpReceiver
 {
+    private Content.Chunk chunk;
+
     public HttpReceiverOverFCGI(HttpChannel channel)
     {
         super(channel);
+    }
+
+    void receive()
+    {
+        if (!hasContent())
+        {
+            HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+            boolean setFillInterest = httpConnection.parseAndFill();
+            if (!hasContent() && setFillInterest)
+                httpConnection.fillInterested();
+        }
+        else
+        {
+            responseContentAvailable();
+        }
+    }
+
+    @Override
+    public void onInterim()
+    {
+        receive();
+    }
+
+    @Override
+    public Content.Chunk read(boolean fillInterestIfNeeded)
+    {
+        Content.Chunk chunk = consumeChunk();
+        if (chunk != null)
+            return chunk;
+        HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+        boolean needFillInterest = httpConnection.parseAndFill();
+        chunk = consumeChunk();
+        if (chunk != null)
+            return chunk;
+        if (needFillInterest && fillInterestIfNeeded)
+            httpConnection.fillInterested();
+        return null;
+    }
+
+    private Content.Chunk consumeChunk()
+    {
+        Content.Chunk chunk = this.chunk;
+        this.chunk = null;
+        return chunk;
+    }
+
+    @Override
+    public void failAndClose(Throwable failure)
+    {
+        responseFailure(failure, Promise.from(failed ->
+        {
+            if (failed)
+                getHttpChannel().getHttpConnection().close(failure);
+        }, x -> getHttpChannel().getHttpConnection().close(failure)));
+    }
+
+    void content(Content.Chunk chunk)
+    {
+        if (this.chunk != null)
+            throw new IllegalStateException();
+        this.chunk = chunk;
+        responseContentAvailable();
+    }
+
+    void end(HttpExchange exchange)
+    {
+        if (chunk != null)
+            throw new IllegalStateException();
+        chunk = Content.Chunk.EOF;
+        responseSuccess(exchange, this::receiveNext);
+    }
+
+    private void receiveNext()
+    {
+        if (hasContent())
+            throw new IllegalStateException();
+        if (chunk != null)
+            throw new IllegalStateException();
+
+        HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
+        boolean setFillInterest = httpConnection.parseAndFill();
+        if (!hasContent() && setFillInterest)
+            httpConnection.fillInterested();
     }
 
     @Override
@@ -36,44 +119,26 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
-    protected boolean responseBegin(HttpExchange exchange)
+    protected void responseBegin(HttpExchange exchange)
     {
-        return super.responseBegin(exchange);
+        super.responseBegin(exchange);
     }
 
     @Override
-    protected boolean responseHeader(HttpExchange exchange, HttpField field)
+    protected void responseHeader(HttpExchange exchange, HttpField field)
     {
-        return super.responseHeader(exchange, field);
+        super.responseHeader(exchange, field);
     }
 
     @Override
-    protected boolean responseHeaders(HttpExchange exchange)
+    protected void responseHeaders(HttpExchange exchange)
     {
-        return super.responseHeaders(exchange);
-    }
-
-    @Override
-    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
-    {
-        return super.responseContent(exchange, buffer, callback);
-    }
-
-    @Override
-    protected boolean responseSuccess(HttpExchange exchange)
-    {
-        return super.responseSuccess(exchange);
+        super.responseHeaders(exchange);
     }
 
     @Override
     protected void responseFailure(Throwable failure, Promise<Boolean> promise)
     {
         super.responseFailure(failure, promise);
-    }
-
-    @Override
-    protected void receive()
-    {
-        getHttpChannel().receive();
     }
 }
