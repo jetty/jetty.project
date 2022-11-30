@@ -554,6 +554,13 @@
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
+            <!-- TODO -->
+            <excludes>
+              <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
+              <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
+              <exclude>**/TestJettyOSGiBootWithJakartaWebSocket.java</exclude>
+              <exclude>**/TestJettyOSGiBootWithWebSocket.java</exclude>
+            </excludes>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
           <dependencies>
