@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.io.internal;
 
-import java.util.function.BiPredicate;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -23,16 +21,16 @@ public class ContentCopier extends IteratingNestedCallback
 {
     private final Content.Source source;
     private final Content.Sink sink;
-    private final BiPredicate<Content.Chunk, Callback> chunkHandler;
+    private final Content.Chunk.Processor chunkProcessor;
     private Content.Chunk current;
     private boolean terminated;
 
-    public ContentCopier(Content.Source source, Content.Sink sink, BiPredicate<Content.Chunk, Callback> chunkHandler, Callback callback)
+    public ContentCopier(Content.Source source, Content.Sink sink, Content.Chunk.Processor chunkProcessor, Callback callback)
     {
         super(callback);
         this.source = source;
         this.sink = sink;
-        this.chunkHandler = chunkHandler;
+        this.chunkProcessor = chunkProcessor;
     }
 
     @Override
@@ -55,7 +53,7 @@ public class ContentCopier extends IteratingNestedCallback
             return Action.IDLE;
         }
 
-        if (chunkHandler != null && chunkHandler.test(current, this))
+        if (chunkProcessor != null && chunkProcessor.process(current, this))
             return Action.SCHEDULED;
 
         if (current instanceof Error error)

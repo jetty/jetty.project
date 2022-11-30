@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -171,7 +172,9 @@ public interface Response
      * Asynchronous listener for the response content events.
      *
      * @see DemandedContentListener
+     * @deprecated Use {@link SimpleContentSourceListener} instead.
      */
+    @Deprecated
     interface AsyncContentListener extends DemandedContentListener
     {
         /**
@@ -197,9 +200,37 @@ public interface Response
     }
 
     /**
-     * Asynchronous listener for the response content events.
+     * Replacement for AsyncContentListener, intermediate between ContentListener and ContentSourceListener
      */
-    interface DemandedContentListener extends ResponseListener
+    interface SimpleContentSourceListener extends ContentSourceListener
+    {
+        void onContent(Response response, Content.Chunk chunk, Runnable demander);
+
+        @Override
+        default void onContentSource(Response response, Content.Source contentSource)
+        {
+            Content.Chunk chunk = contentSource.read();
+            if (chunk == null)
+            {
+                contentSource.demand(() -> onContentSource(response, contentSource));
+                return;
+            }
+            if (chunk instanceof Content.Chunk.Error error)
+            {
+                response.abort(error.getCause());
+                return;
+            }
+
+            onContent(response, chunk, () -> contentSource.demand(() -> onContentSource(response, contentSource)));
+        }
+    }
+
+    /**
+     * Asynchronous listener for the response content events.
+     * @deprecated Use {@link ContentSourceListener} instead.
+     */
+    @Deprecated
+    interface DemandedContentListener extends ContentSourceListener
     {
         /**
          * Callback method invoked before response content events.
@@ -229,6 +260,65 @@ public interface Response
          * @param callback the callback to call when the content is consumed
          */
         void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback);
+
+        @Override
+        default void onContentSource(Response response, Content.Source contentSource)
+        {
+            onBeforeContent(response, demand -> contentSource.demand(() -> internalOnContentSource(response, contentSource)));
+        }
+
+        private void internalOnContentSource(Response response, Content.Source contentSource)
+        {
+            Content.Chunk chunk = contentSource.read();
+            if (chunk == null)
+            {
+                contentSource.demand(() -> internalOnContentSource(response, contentSource));
+                return;
+            }
+            if (chunk instanceof Content.Chunk.Error error)
+            {
+                response.abort(error.getCause());
+                return;
+            }
+
+            Callback callback = Callback.from(chunk::release, (x) ->
+            {
+                chunk.release();
+                response.abort(x);
+            });
+
+            LongConsumer longConsumerDemand;
+            if (chunk.isLast())
+                longConsumerDemand = demand -> {};
+            else
+                longConsumerDemand = demand -> contentSource.demand(() -> internalOnContentSource(response, contentSource));
+
+            if (chunk.hasRemaining())
+            {
+                onContent(response, longConsumerDemand, chunk.getByteBuffer(), callback);
+            }
+            else
+            {
+                chunk.release();
+                longConsumerDemand.accept(1L);
+            }
+        }
+    }
+
+    /**
+     * Asynchronous listener for the response content events.
+     */
+    interface ContentSourceListener extends ResponseListener
+    {
+        /**
+         * Callback method invoked when all the response headers have been received and parsed.
+         * It is responsible for driving the {@code contentSource} instance with a read/demand loop.
+         * Note that this is not invoked for interim statuses.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param contentSource the {@link Content.Source} that must be driven to read the data
+         */
+        void onContentSource(Response response, Content.Source contentSource);
     }
 
     /**

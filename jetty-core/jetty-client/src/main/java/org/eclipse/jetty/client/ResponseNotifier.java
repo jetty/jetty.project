@@ -16,17 +16,17 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.LongConsumer;
-import java.util.function.ObjLongConsumer;
-import java.util.stream.Collectors;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,54 +100,52 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyBeforeContent(Response response, ObjLongConsumer<Object> demand, List<Response.DemandedContentListener> contentListeners)
-    {
-        for (Response.DemandedContentListener listener : contentListeners)
-        {
-            notifyBeforeContent(listener, response, d -> demand.accept(listener, d));
-        }
-    }
-
-    private void notifyBeforeContent(Response.DemandedContentListener listener, Response response, LongConsumer demand)
-    {
-        try
-        {
-            listener.onBeforeContent(response, demand);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("Exception while notifying listener {}", listener, x);
-        }
-    }
-
-    public void notifyContent(Response response, ObjLongConsumer<Object> demand, ByteBuffer buffer, Callback callback, List<Response.DemandedContentListener> contentListeners)
+    public void notifyContent(Response response, Content.Source contentSource, List<Response.ContentSourceListener> contentListeners)
     {
         int count = contentListeners.size();
         if (count == 0)
         {
-            callback.succeeded();
-            demand.accept(null, 1);
+            // Exactly 0 ContentSourceListener -> drive the read/demand loop from here
+            // with a loop that does not use while (true).
+            consumeAll(contentSource);
         }
         else if (count == 1)
         {
-            Response.DemandedContentListener listener = contentListeners.get(0);
-            notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
+            // Exactly 1 ContentSourceListener -> notify it so that it drives the read/demand loop.
+            Response.ContentSourceListener listener = contentListeners.get(0);
+            notifyContent(listener, response, contentSource);
         }
         else
         {
-            callback = new CountingCallback(callback, count);
-            for (Response.DemandedContentListener listener : contentListeners)
+            // 2+ ContentSourceListeners -> create a multiplexed content source and notify all listeners so that
+            // they drive each a read/demand loop.
+            ContentSourceDemultiplexer demultiplexer = new ContentSourceDemultiplexer(contentSource, contentListeners.size());
+            for (int i = 0; i < contentListeners.size(); i++)
             {
-                notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
+                Response.ContentSourceListener listener = contentListeners.get(i);
+                notifyContent(listener, response, demultiplexer.contentSource(i));
             }
         }
     }
 
-    private void notifyContent(Response.DemandedContentListener listener, Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
+    private static void consumeAll(Content.Source contentSource)
+    {
+        // This method must drive the read/demand loop by alternating read and demand calls
+        // otherwise if reads are always satisfied with content, and a large amount of data
+        // is being sent, it won't be possible to abort this loop as the demand callback needs
+        // to return before abort() can have any effect.
+        Content.Chunk chunk = contentSource.read();
+        if (chunk != null)
+            chunk.release();
+        if (chunk == null || !chunk.isLast())
+            contentSource.demand(() -> consumeAll(contentSource));
+    }
+
+    private void notifyContent(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
     {
         try
         {
-            listener.onContent(response, demand, buffer, callback);
+            listener.onContentSource(response, contentSource);
         }
         catch (Throwable x)
         {
@@ -252,13 +250,12 @@ public class ResponseNotifier
             byte[] content = ((ContentResponse)response).getContent();
             if (content != null && content.length > 0)
             {
-                List<Response.DemandedContentListener> contentListeners = listeners.stream()
-                    .filter(Response.DemandedContentListener.class::isInstance)
-                    .map(Response.DemandedContentListener.class::cast)
-                    .collect(Collectors.toList());
-                ObjLongConsumer<Object> demand = (context, value) -> {};
-                notifyBeforeContent(response, demand, contentListeners);
-                notifyContent(response, demand, ByteBuffer.wrap(content), Callback.NOOP, contentListeners);
+                List<Response.ContentSourceListener> contentListeners = listeners.stream()
+                    .filter(Response.ContentSourceListener.class::isInstance)
+                    .map(Response.ContentSourceListener.class::cast)
+                    .toList();
+                ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(content));
+                notifyContent(response, byteBufferContentSource, contentListeners);
             }
         }
     }
@@ -267,5 +264,220 @@ public class ResponseNotifier
     {
         forwardFailure(listeners, response, responseFailure);
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+    }
+
+    private static class ContentSourceDemultiplexer
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(ContentSourceDemultiplexer.class);
+
+        private final Content.Source originalContentSource;
+        private final ContentSource[] demultiplexerContentSources;
+        private final AtomicBiInteger counters = new AtomicBiInteger(); // HI = failures; LO = demands
+
+        private ContentSourceDemultiplexer(Content.Source originalContentSource, int size)
+        {
+            if (size < 2)
+                throw new IllegalArgumentException("Demultiplexer can only be used with a size >= 2");
+
+            this.originalContentSource = originalContentSource;
+            demultiplexerContentSources = new ContentSource[size];
+            for (int i = 0; i < size; i++)
+            {
+                demultiplexerContentSources[i] = new ContentSource(i);
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using demultiplexer with a size of {}", size);
+        }
+
+        public Content.Source contentSource(int index)
+        {
+            return demultiplexerContentSources[index];
+        }
+
+        private void onDemandCallback()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Original content source's demand calling back");
+
+            Content.Chunk chunk = originalContentSource.read();
+            // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
+            // applications can parallelize from the listeners they register if needed.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Read from original content source {}", chunk);
+            for (ContentSource demultiplexerContentSource : demultiplexerContentSources)
+            {
+                demultiplexerContentSource.onChunk(chunk);
+            }
+        }
+
+        private void registerFailure(Throwable failure)
+        {
+            while (true)
+            {
+                long encoded = counters.get();
+                int failures = AtomicBiInteger.getHi(encoded) + 1;
+                int demands = AtomicBiInteger.getLo(encoded);
+                if (demands == demultiplexerContentSources.length - failures)
+                    demands = 0;
+                if (counters.compareAndSet(encoded, failures, demands))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Registered failure; failures={} demands={}", failures, demands);
+                    if (failures == demultiplexerContentSources.length)
+                        originalContentSource.fail(failure);
+                    else if (demands == 0)
+                        originalContentSource.demand(this::onDemandCallback);
+                    break;
+                }
+            }
+        }
+
+        private void registerDemand()
+        {
+            while (true)
+            {
+                long encoded = counters.get();
+                int failures = AtomicBiInteger.getHi(encoded);
+                int demands = AtomicBiInteger.getLo(encoded) + 1;
+                if (demands == demultiplexerContentSources.length - failures)
+                    demands = 0;
+                if (counters.compareAndSet(encoded, failures, demands))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Registered demand; failures={} demands={}", failures, demands);
+                    if (demands == 0)
+                        originalContentSource.demand(this::onDemandCallback);
+                    break;
+                }
+            }
+        }
+
+        private class ContentSource implements Content.Source
+        {
+            private final int index;
+            private final AtomicReference<Runnable> demandCallbackRef = new AtomicReference<>();
+            private volatile Content.Chunk chunk;
+
+            private ContentSource(int index)
+            {
+                this.index = index;
+            }
+
+            private void onChunk(Content.Chunk chunk)
+            {
+                Content.Chunk currentChunk = this.chunk;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Registering content in multiplexed content source #{} that contains {}", index, currentChunk);
+                if (currentChunk == null || currentChunk == AlreadyReadChunk.INSTANCE)
+                    this.chunk = Content.Chunk.slice(chunk);
+                else if (!currentChunk.isLast())
+                    throw new IllegalStateException("Cannot overwrite chunk");
+                onDemandCallback();
+            }
+
+            private void onDemandCallback()
+            {
+                Runnable callback = demandCallbackRef.getAndSet(null);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content source #{} invoking demand callback {}", index, callback);
+                if (callback != null)
+                {
+                    try
+                    {
+                        callback.run();
+                    }
+                    catch (Throwable x)
+                    {
+                        fail(x);
+                    }
+                }
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                if (chunk == AlreadyReadChunk.INSTANCE)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Content source #{} already read current chunk", index);
+                    return null;
+                }
+
+                Content.Chunk result = chunk;
+                if (result != null && !result.isTerminal())
+                    chunk = AlreadyReadChunk.INSTANCE;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content source #{} reading current chunk {}", index, result);
+                return result;
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                if (!demandCallbackRef.compareAndSet(null, Objects.requireNonNull(demandCallback)))
+                    throw new IllegalStateException();
+                Content.Chunk currentChunk = this.chunk;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content source #{} demand while current chunk is {}", index, currentChunk);
+                if (currentChunk == null || currentChunk == AlreadyReadChunk.INSTANCE)
+                    registerDemand();
+                else
+                    onDemandCallback();
+            }
+
+            @Override
+            public void fail(Throwable failure)
+            {
+                Content.Chunk currentChunk = chunk;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content source #{} fail while current chunk is {}", index, currentChunk);
+                if (currentChunk instanceof Content.Chunk.Error)
+                    return;
+                if (currentChunk != null)
+                    currentChunk.release();
+                this.chunk = Content.Chunk.from(failure);
+                onDemandCallback();
+                registerFailure(failure);
+            }
+        }
+
+        private static final class AlreadyReadChunk implements Content.Chunk
+        {
+            static final AlreadyReadChunk INSTANCE = new AlreadyReadChunk();
+
+            private AlreadyReadChunk()
+            {
+            }
+
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean isLast()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void retain()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean release()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public String toString()
+            {
+                return getClass().getSimpleName();
+            }
+        }
     }
 }

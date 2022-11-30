@@ -21,7 +21,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.Flow;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
@@ -80,12 +79,12 @@ public class Content
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
-     * @param chunkHandler a (possibly {@code null}) predicate to handle the current chunk and its callback
+     * @param chunkProcessor a (possibly {@code null}) predicate to handle the current chunk and its callback
      * @param callback the callback to notify when the copy is complete
      */
-    public static void copy(Source source, Sink sink, BiPredicate<Chunk, Callback> chunkHandler, Callback callback)
+    public static void copy(Source source, Sink sink, Chunk.Processor chunkProcessor, Callback callback)
     {
-        new ContentCopier(source, sink, chunkHandler, callback).iterate();
+        new ContentCopier(source, sink, chunkProcessor, callback).iterate();
     }
 
     /**
@@ -541,6 +540,28 @@ public class Content
         }
 
         /**
+         * <p>Creates a chunk that is a slice of the given chunk.</p>
+         * <p>
+         *  The chunk slice has a byte buffer that is a slice of the original chunk's byte buffer, the last flag
+         *  copied over and the original chunk used as the retainable of the chunk slice.
+         *  Note that after this method returns, an extra Chunk instance refers to the same byte buffer,
+         *  so the original chunk is retained and is used as the {@link Retainable} for the returned chunk.
+         * </p>
+         * <p>Passing a null chunk returns null.</p>
+         * <p>Passing a terminal chunk returns it.</p>
+         *
+         * @param chunk the chunk to slice.
+         * @return the chunk slice.
+         */
+        static Chunk slice(Chunk chunk)
+        {
+            if (chunk == null || chunk.isTerminal())
+                return chunk;
+            chunk.retain();
+            return Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast(), chunk);
+        }
+
+        /**
          * @return the ByteBuffer of this Chunk
          */
         ByteBuffer getByteBuffer();
@@ -682,6 +703,28 @@ public class Content
             {
                 return true;
             }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s@%x{c=%s}", getClass().getSimpleName(), hashCode(), cause);
+            }
+        }
+
+        /**
+         * <p>Implementations of this interface may process {@link Chunk}s being copied by the
+         * {@link Content#copy(Source, Sink, Processor, Callback)} method, so that
+         * {@link Chunk}s of unknown types can be copied.
+         * @see Content#copy(Source, Sink, Processor, Callback)
+         */
+        interface Processor
+        {
+            /**
+             * @param chunk The chunk to be considered for processing.
+             * @param callback The callback that will be called once the accepted chunk is processed.
+             * @return True if the chunk will be process and the callback will be called (or may have already been called), false otherwise.
+             */
+            boolean process(Chunk chunk, Callback callback);
         }
     }
 }
