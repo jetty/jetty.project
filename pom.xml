@@ -81,7 +81,7 @@
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.4</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.9.2</maven.resolver.version>
+    <maven.resolver.version>1.8.2</maven.resolver.version>
     <maven.version>3.8.6</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
