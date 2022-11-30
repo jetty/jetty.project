@@ -40,12 +40,10 @@ public class FragmentActivator implements BundleActivator
     @Override
     public void start(BundleContext context) throws Exception
     {
-        System.err.println("STARTING EE10 JSP FRAGMENT ACTIVATOR");
         //Register a class that will provide the identity of bundles that 
         //contain TLDs and therefore need to be scanned.
         _tldClasspathContributor = new TLDServerClasspathContributor();
         EE10Activator.registerServerClasspathContributor(_tldClasspathContributor);
-        System.err.println("REGISTERED " + _tldClasspathContributor);
     }
 
     @Override

@@ -28,6 +28,8 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.startlevel.StartLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PackageAdminServiceTracker
@@ -40,6 +42,7 @@ import org.osgi.service.startlevel.StartLevel;
  */
 public class PackageAdminServiceTracker implements ServiceListener
 {
+    private static Logger LOG = LoggerFactory.getLogger(PackageAdminServiceTracker.class);
     private BundleContext _context;
 
     private List<BundleActivator> _activatedFragments = new ArrayList<>();
@@ -55,19 +58,13 @@ public class PackageAdminServiceTracker implements ServiceListener
     public static PackageAdminServiceTracker INSTANCE = null;
 
     public PackageAdminServiceTracker(BundleContext context)
+        throws Exception
     {
         INSTANCE = this;
         _context = context;
         if (!setup())
         {
-            try
-            {
-                _context.addServiceListener(this, "(objectclass=" + PackageAdmin.class.getName() + ")");
-            }
-            catch (InvalidSyntaxException e)
-            {
-                e.printStackTrace(); // won't happen
-            }
+            _context.addServiceListener(this, "(objectclass=" + PackageAdmin.class.getName() + ")");
         }
     }
 
@@ -75,6 +72,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      * @return true if the fragments were activated by this method.
      */
     private boolean setup()
+    throws Exception
     {
         ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
         _fragmentsWereActivated = sr != null;
@@ -111,7 +109,14 @@ public class PackageAdminServiceTracker implements ServiceListener
     {
         if (event.getType() == ServiceEvent.REGISTERED)
         {
-            invokeFragmentActivators(event.getServiceReference());
+            try
+            {
+                invokeFragmentActivators(event.getServiceReference());
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Error invoking fragment activators", e);
+            }
         }
     }
 
@@ -271,6 +276,7 @@ public class PackageAdminServiceTracker implements ServiceListener
     }
 
     private void invokeFragmentActivators(ServiceReference sr)
+    throws Exception
     {
         PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         Bundle[] fragments = admin.getFragments(_context.getBundle());
@@ -281,21 +287,13 @@ public class PackageAdminServiceTracker implements ServiceListener
         for (Bundle frag : fragments)
         {
             // find a convention to look for a class inside the fragment.
-            System.err.println("FRAG: " + frag.getSymbolicName());
-            try
+            String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";
+            Class<?> c = Class.forName(fragmentActivator);
+            if (c != null)
             {
-                String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";
-                Class<?> c = Class.forName(fragmentActivator);
-                if (c != null)
-                {
-                    BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
-                    bActivator.start(_context);
-                    _activatedFragments.add(bActivator);
-                }
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
+                BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
+                bActivator.start(_context);
+                _activatedFragments.add(bActivator);
             }
         }
     }

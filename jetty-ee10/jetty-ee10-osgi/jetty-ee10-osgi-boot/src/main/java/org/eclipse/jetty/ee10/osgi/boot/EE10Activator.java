@@ -95,7 +95,7 @@ public class EE10Activator implements BundleActivator
      * for deployment of EE10 contexts and webapps.
      *
      */
-    public static class ServerTracker implements ServiceTrackerCustomizer
+    public static class ServerTracker implements ServiceTrackerCustomizer<Server, Object>
     {
         private Bundle _myBundle = null;
         
@@ -105,13 +105,10 @@ public class EE10Activator implements BundleActivator
         }
         
         @Override
-        public Object addingService(ServiceReference sr)
+        public Object addingService(ServiceReference<Server> sr)
         {
-
             Bundle contributor = sr.getBundle();
-            Server server = (Server)contributor.getBundleContext().getService(sr);
-            new Throwable().printStackTrace();
-            System.err.println("ADDED SERVICE" + server);
+            Server server = contributor.getBundleContext().getService(sr);
             //find bundles that should be on the container classpath and convert to URLs
             List<URL> contributedURLs = new ArrayList<>();
             List<Bundle> contributedBundles = new ArrayList<>();
@@ -119,10 +116,6 @@ public class EE10Activator implements BundleActivator
             serverClasspathContributors.stream().forEach(c -> contributedBundles.addAll(c.getScannableBundles()));
             contributedBundles.stream().forEach(b -> contributedURLs.addAll(convertBundleToURL(b)));
 
-            if (!contributedURLs.isEmpty())
-                contributedURLs.stream().forEach(System.err::println);
-            else
-                System.err.println("NO Contribub BUNDLES");
             if (!contributedURLs.isEmpty())
             {
                 //There should already be a default set up by the JettyServerFactory
@@ -139,83 +132,54 @@ public class EE10Activator implements BundleActivator
             }
 
             Optional<DeploymentManager> deployer = getDeploymentManager(server);
-            System.err.println("DEPLOYER = " + deployer.get());
             BundleWebAppProvider webAppProvider = null;
             BundleContextProvider contextProvider = null;
 
             String containerScanBundlePattern = null;
             if (contributedBundles != null)
             {
-                System.err.println("EXAMINING CONTRIB BUNDLES");
-                if (!contributedBundles.isEmpty())
-                {
-                    for (Bundle b : contributedBundles)
-                        System.err.println(b.getSymbolicName());
-                }
-                else
-                    System.err.println("EMPTY CONTRIB BUNDLES");
-
                 StringBuffer strbuff = new StringBuffer();
                 contributedBundles.stream().forEach(b -> strbuff.append(b.getSymbolicName()).append("|"));
 
-                try
-                {
-                    System.err.println("STRBUFF: " + strbuff.toString());
+                if (strbuff.length() > 0)
                     containerScanBundlePattern = strbuff.toString().substring(0, strbuff.length() - 1);
-                }
-                catch (Throwable t)
+            }
+
+            if (deployer.isPresent())
+            {
+                for (AppProvider provider : deployer.get().getAppProviders())
                 {
-                    t.printStackTrace();
+                    if (BundleContextProvider.class.isInstance(provider) && ENVIRONMENT.equalsIgnoreCase(provider.getEnvironmentName()))
+                        contextProvider = BundleContextProvider.class.cast(provider);
+                    if (BundleWebAppProvider.class.isInstance(provider) && ENVIRONMENT.equalsIgnoreCase(provider.getEnvironmentName()))
+                        webAppProvider = BundleWebAppProvider.class.cast(provider);
+                }
+                if (contextProvider == null)
+                {
+                    contextProvider = new BundleContextProvider(ENVIRONMENT, server, new EE10ContextFactory(_myBundle));
+                    deployer.get().addAppProvider(contextProvider);
+                }
+
+                if (webAppProvider == null)
+                {
+                    webAppProvider = new BundleWebAppProvider(ENVIRONMENT, server, new EE10WebAppFactory(_myBundle));
+                    deployer.get().addAppProvider(webAppProvider);
+                }
+
+                //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
+                if (containerScanBundlePattern != null)
+                {
+                    contextProvider.getProperties().put(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
+                    webAppProvider.getProperties().put(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
                 }
             }
             else
-                System.err.println("NO CONTRIB BUNDLES");
+                LOG.info("No DeploymentManager for Server {}", server);
 
-            try
-            {
-                if (deployer.isPresent())
-                {
-                    System.err.println("DEPLOYER PRESENT, GETTING PROVIDERS");
-                    for (AppProvider provider : deployer.get().getAppProviders())
-                    {
-                        System.err.println("PROVIDER: " + provider);
-                        if (BundleContextProvider.class.isInstance(provider) && ENVIRONMENT.equalsIgnoreCase(provider.getEnvironmentName()))
-                            contextProvider = BundleContextProvider.class.cast(provider);
-                        if (BundleWebAppProvider.class.isInstance(provider) && ENVIRONMENT.equalsIgnoreCase(provider.getEnvironmentName()))
-                            webAppProvider = BundleWebAppProvider.class.cast(provider);
-                    }
-                    if (contextProvider == null)
-                    {
-                        contextProvider = new BundleContextProvider(ENVIRONMENT, server, new EE10ContextFactory(_myBundle));
-                        deployer.get().addAppProvider(contextProvider);
-                    }
-
-                    if (webAppProvider == null)
-                    {
-                        webAppProvider = new BundleWebAppProvider(ENVIRONMENT, server, new EE10WebAppFactory(_myBundle));
-                        deployer.get().addAppProvider(webAppProvider);
-                    }
-
-                    System.err.println(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN + " is " + containerScanBundlePattern);
-                    //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
-                    if (containerScanBundlePattern != null)
-                    {
-                        contextProvider.getProperties().put(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
-                        webAppProvider.getProperties().put(OSGiMetaInfConfiguration.CONTAINER_BUNDLE_PATTERN, containerScanBundlePattern);
-                    }
-                }
-                else
-                    LOG.info("No DeploymentManager for Server {}", server);
-            }
-            catch (Throwable t)
-            {
-                t.printStackTrace();
-            }
             try
             {
                 if (!server.isStarted())
                     server.start();
-                System.err.println("SERVER STARTED" + server);
             }
             catch (Exception e)
             {
@@ -225,14 +189,14 @@ public class EE10Activator implements BundleActivator
         }
 
         @Override
-        public void modifiedService(ServiceReference reference, Object service)
+        public void modifiedService(ServiceReference<Server> reference, Object service)
         {
             removedService(reference, service);
             addingService(reference);
         }
 
         @Override
-        public void removedService(ServiceReference reference, Object service)
+        public void removedService(ServiceReference<Server> reference, Object service)
         {
         }
 
@@ -290,7 +254,6 @@ public class EE10Activator implements BundleActivator
         
         public EE10ContextFactory(Bundle bundle)
         {
-            System.err.println("Created EE10ContextFactory");
             _myBundle = bundle;
         }
         
@@ -384,7 +347,6 @@ public class EE10Activator implements BundleActivator
         
         public EE10WebAppFactory(Bundle bundle)
         {
-            System.err.println("EE10WebAppFactory");
             _myBundle = bundle;
         }
         
@@ -431,7 +393,7 @@ public class EE10Activator implements BundleActivator
             webApp.setConfigurations(Configurations.getKnown().stream()
                 .filter(c -> c.isEnabledByDefault())
                 .toArray(Configuration[]::new));
-            
+
             //Make a webapp classloader
             OSGiWebappClassLoader webAppLoader = new OSGiWebappClassLoader(environmentLoader, webApp, osgiApp.getBundle());
 
@@ -439,6 +401,7 @@ public class EE10Activator implements BundleActivator
             //This is a comma separated list of names of bundles that contain tlds that this webapp uses.
             //We add them to the webapp classloader.
             String requireTldBundles = (String)osgiApp.getProperties().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
+
             List<Path> pathsToTldBundles = Util.getPathsToBundlesBySymbolicNames(requireTldBundles, osgiApp.getBundle().getBundleContext());
             for (Path p : pathsToTldBundles)
                 webAppLoader.addClassPath(p.toUri().toString());
@@ -611,7 +574,7 @@ public class EE10Activator implements BundleActivator
     }
     
     private PackageAdminServiceTracker _packageAdminServiceTracker;
-    private ServiceTracker _tracker;
+    private ServiceTracker<Server, Object> _tracker;
 
     /**
      * Track jetty Server instances and add ability to deploy EE10 contexts/webapps
@@ -626,13 +589,11 @@ public class EE10Activator implements BundleActivator
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
         //track jetty Server instances
-        _tracker = new ServiceTracker(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(context.getBundle()));
+        _tracker = new ServiceTracker<Server, Object>(context, context.createFilter("(objectclass=" + Server.class.getName() + ")"), new ServerTracker(context.getBundle()));
         _tracker.open();
 
         //register for bundleresource: url resource handling
         ResourceFactory.registerResourceFactory("bundleresource", new URLResourceFactory());
-        
-        System.err.println("STARTED EE10ACTIVATOR");
     }
 
     /**

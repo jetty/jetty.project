@@ -81,8 +81,6 @@ public class TestJettyOSGiBootWithJsp
             String port = System.getProperty("boot.jsp.port");
             assertNotNull(port);
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/ee10-demo-jsp/jstl.jsp");
-
-            System.err.println(response.getContentAsString());
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
             assertTrue(content.contains("JSTL Example"));

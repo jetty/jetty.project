@@ -10,7 +10,7 @@
   <description>Jetty OSGi Boot JSP bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.osgi.boot.jasper.*,org.eclipse.jetty.ee10.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -73,7 +73,6 @@
             <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
             <Bundle-Classpath />
             <Fragment-Host>org.eclipse.jetty.ee10.osgi.boot</Fragment-Host>
-            <Export-Package>!org.eclipse.jetty.ee10.osgi.boot.*</Export-Package>
             <Import-Package>
               ${osgi.slf4j.import.packages},
               org.eclipse.jdt.*;resolution:=optional,
@@ -82,7 +81,7 @@
               com.sun.el.lang;resolution:=optional,
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
-              jakarta.el;version="[4.0,5.0)",
+              jakarta.el;version="[5.0,6.0)",
               jakarta.servlet;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
               jakarta.servlet.resources;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
               jakarta.servlet.jsp.resources;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
@@ -100,6 +99,7 @@
               org.apache.el.parser;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.apache.jasper;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.apache.jasper.compiler;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
+              org.apache.jasper.compiler.util;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.apache.jasper.compiler.tagplugin;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.apache.jasper.runtime;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.apache.jasper.security;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,

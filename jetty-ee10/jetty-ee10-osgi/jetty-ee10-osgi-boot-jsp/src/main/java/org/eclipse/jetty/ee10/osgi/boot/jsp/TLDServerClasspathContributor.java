@@ -41,7 +41,6 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
     {
         if (!isJspAvailable())
         {
-            System.err.println("JSP NOT AVAILABLE");
             return Collections.emptyList();
         }
 
