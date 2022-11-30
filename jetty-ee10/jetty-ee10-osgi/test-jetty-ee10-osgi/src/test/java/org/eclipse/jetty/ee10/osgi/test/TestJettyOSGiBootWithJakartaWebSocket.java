@@ -25,6 +25,7 @@ import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -39,8 +40,9 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
- * Test using websocket in osgi
+ * Test using jakarta websocket in osgi
  */
+@Disabled //jakarta.websocket.client-api does not have declaration for serviceloader
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJakartaWebSocket
 {

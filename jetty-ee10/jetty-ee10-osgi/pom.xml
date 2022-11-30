@@ -30,11 +30,10 @@
   </properties>
 
   <modules>
+    <module>jetty-ee10-osgi-alpn</module>
     <module>jetty-ee10-osgi-boot</module>
     <module>jetty-ee10-osgi-boot-jsp</module>
-    <module>test-jetty-ee10-osgi-webapp</module>
     <module>test-jetty-ee10-osgi-webapp-resources</module>
-    <module>test-jetty-ee10-osgi-context</module>
     <module>test-jetty-ee10-osgi-fragment</module>
     <module>test-jetty-ee10-osgi-server</module>
     <module>test-jetty-ee10-osgi</module>

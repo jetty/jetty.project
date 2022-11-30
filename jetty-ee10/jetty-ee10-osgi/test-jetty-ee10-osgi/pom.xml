@@ -394,6 +394,12 @@
       <artifactId>jetty-ee10-plus</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
+      <artifactId>jetty-ee10-osgi-alpn</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
 
     <!-- Eclipse OSGi Deps -->
     <dependency>
@@ -549,6 +555,12 @@
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
+            <!-- TODO -->
+            <excludes>
+              <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
+              <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
+              <exclude>**/TestJettyOSGiBootWithJakartaWebSocket.java</exclude>
+            </excludes>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
           <dependencies>
