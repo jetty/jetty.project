@@ -17,15 +17,12 @@ import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
-import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>{@link Response} represents an HTTP response and offers methods to retrieve status code, HTTP version
@@ -186,9 +183,10 @@ public interface Response
         default void onContentSource(Response response, Content.Source contentSource)
         {
             Content.Chunk chunk = contentSource.read();
+            Runnable demandCallback = () -> onContentSource(response, contentSource);
             if (chunk == null)
             {
-                contentSource.demand(() -> onContentSource(response, contentSource));
+                contentSource.demand(demandCallback);
                 return;
             }
             if (chunk instanceof Content.Chunk.Error error)
@@ -199,87 +197,7 @@ public interface Response
             if (chunk.isTerminal())
                 return;
 
-            onContent(response, chunk, () -> contentSource.demand(() -> onContentSource(response, contentSource)));
-        }
-    }
-
-    /**
-     * Asynchronous listener for the response content events.
-     * @deprecated Use {@link ContentSourceListener} instead.
-     */
-    @Deprecated
-    interface DemandedContentListener extends ContentSourceListener
-    {
-        /**
-         * Callback method invoked before response content events.
-         * The {@code demand} object should be used to demand content, otherwise
-         * the demand remains at zero (no demand) and
-         * {@link #onContent(Response, LongConsumer, ByteBuffer, Callback)} will
-         * not be invoked even if content has been received and parsed.
-         *
-         * @param response the response containing the response line data and the headers
-         * @param demand the object that allows to demand content buffers
-         */
-        default void onBeforeContent(Response response, LongConsumer demand)
-        {
-            demand.accept(1);
-        }
-
-        /**
-         * Callback method invoked when the response content has been received.
-         * The {@code callback} object should be succeeded to signal that the
-         * {@code content} buffer has been consumed.
-         * The {@code demand} object should be used to demand more content,
-         * similarly to {@link Flow.Subscription#request(long)}.
-         *
-         * @param response the response containing the response line data and the headers
-         * @param demand the object that allows to demand content buffers
-         * @param content the content bytes received
-         * @param callback the callback to call when the content is consumed
-         */
-        void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback);
-
-        @Override
-        default void onContentSource(Response response, Content.Source contentSource)
-        {
-            onBeforeContent(response, demand -> contentSource.demand(() -> internalOnContentSource(response, contentSource)));
-        }
-
-        private void internalOnContentSource(Response response, Content.Source contentSource)
-        {
-            Content.Chunk chunk = contentSource.read();
-            if (chunk == null)
-            {
-                contentSource.demand(() -> internalOnContentSource(response, contentSource));
-                return;
-            }
-            if (chunk instanceof Content.Chunk.Error error)
-            {
-                response.abort(error.getCause());
-                return;
-            }
-
-            Callback callback = Callback.from(chunk::release, (x) ->
-            {
-                chunk.release();
-                response.abort(x);
-            });
-
-            LongConsumer longConsumerDemand;
-            if (chunk.isLast())
-                longConsumerDemand = demand -> {};
-            else
-                longConsumerDemand = demand -> contentSource.demand(() -> internalOnContentSource(response, contentSource));
-
-            if (chunk.hasRemaining())
-            {
-                onContent(response, longConsumerDemand, chunk.getByteBuffer(), callback);
-            }
-            else
-            {
-                chunk.release();
-                longConsumerDemand.accept(1L);
-            }
+            onContent(response, chunk, () -> contentSource.demand(demandCallback));
         }
     }
 

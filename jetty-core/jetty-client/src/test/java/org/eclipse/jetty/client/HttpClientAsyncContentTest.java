@@ -19,10 +19,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
+import java.util.function.BiConsumer;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -31,7 +30,9 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
@@ -216,7 +217,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentDemanded((response, demand, content, callback) -> response.abort(new Throwable()))
+            .onResponseContentSource((response, cs) -> response.abort(new Throwable()))
             .send(result ->
             {
                 if (result.isFailed())
@@ -243,21 +244,24 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             }
         });
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch errorContentLatch = new CountDownLatch(1);
+        CountDownLatch successLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentDemanded((response, demand, content, callback) ->
+            .onResponseContentSource((response, contentSource) -> response.abort(new Throwable()).whenComplete((failed, x) ->
             {
-                response.abort(new Throwable());
-                demand.accept(1);
-            })
+                Content.Chunk chunk = contentSource.read();
+                assertInstanceOf(Content.Chunk.Error.class, chunk);
+                errorContentLatch.countDown();
+            }))
             .send(result ->
             {
                 if (result.isFailed())
-                    latch.countDown();
+                    successLatch.countDown();
             });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(errorContentLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -278,26 +282,16 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             }
         });
 
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
         CountDownLatch headersLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentDemanded(new Response.DemandedContentListener()
+            .onResponseContentSource((response, contentSource) ->
             {
-                @Override
-                public void onBeforeContent(Response response, LongConsumer demand)
-                {
-                    // Don't demand yet.
-                    demandRef.set(demand);
-                    headersLatch.countDown();
-                }
-
-                @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-                {
-                    demand.accept(1);
-                }
+                // Don't demand yet.
+                contentSourceRef.set(contentSource);
+                headersLatch.countDown();
             })
             .send(result ->
             {
@@ -308,7 +302,8 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         // Wait to make sure the demand is really delayed.
         Thread.sleep(500);
-        demandRef.get().accept(1);
+        Content.Source cs = contentSourceRef.get();
+        cs.demand(() -> Content.Source.consumeAll(cs, Callback.NOOP));
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }

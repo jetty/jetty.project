@@ -214,36 +214,33 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 
 Finally, let's look at the advanced usage of the response content handling.
 
-The response content is provided by the `HttpClient` implementation to application listeners following a reactive model similar to that of `java.util.concurrent.Flow`.
+The response content is provided by the `HttpClient` implementation to application listeners following the read/demand model of `org.eclipse.jetty.io.Content.Source`.
 
-The listener that follows this model is `Response.DemandedContentListener`.
+The listener that follows this model is `Response.ContentSourceListener`.
 
-After the response headers have been processed by the `HttpClient` implementation, `Response.DemandedContentListener.onBeforeContent(response, demand)` is invoked.
-This allows the application to control whether to demand the first content or not.
-The default implementation of this method calls `demand.accept(1)`, which demands one chunk of content to the implementation.
-The implementation will deliver the chunk of content as soon as it is available.
+After the response headers have been processed by the `HttpClient` implementation, `Response.ContentSourceListener.onContentSource(response, contentSource)` is invoked once and only once.
+This allows the application to control precisely the read/demand loop: when to read a chunk, how to handle it and when to demand the next one.
 
-The chunks of content are delivered to the application by invoking `Response.DemandedContentListener.onContent(response, demand, buffer, callback)`.
-Applications implement this method to process the content bytes in the `buffer`.
-Succeeding the `callback` signals to the implementation that the application has consumed the `buffer` so that the implementation can dispose/recycle the `buffer`.
-Failing the `callback` signals to the implementation to fail the response (no more content will be delivered, and the _response failed_ event will be emitted).
+A `org.eclipse.jetty.io.Content.Source` read/demand implementation akin to the idiomatic one must be provided: reading a `Content.Chunk` from the `contentSource`, demanding the next one if it is null, reporting if it is an error, processing its `buffer` then releasing it, and finally demanding the next one again if it is not terminal.
 
-IMPORTANT: Succeeding the `callback` must be done only after the `buffer` bytes have been consumed.
-When the `callback` is succeeded, the `HttpClient` implementation may reuse the `buffer` and overwrite the bytes with different bytes; if the application looks at the `buffer` _after_ having succeeded the `callback` is may see other, unrelated, bytes.
+IMPORTANT: releasing the `Content.Chunk` must be done only after the bytes in the `buffer` returned by `getByteBuffer()` have been consumed.
+When the `Content.Chunk` is released, the `HttpClient` implementation may reuse the `buffer` and overwrite the bytes with different bytes; if the application looks at the `buffer` _after_ having released the `Content.Chunk` is may see other, unrelated, bytes.
 
+Applications will typically read just one `Content.Chunk` via `contentSource.read()` then demand the next one via `contentSource.demand(() -> onContentSource(request, contentSource))`, but may decide to call `contentSource.read()` until it returns `null`.
 The application uses the `demand` object to demand more content chunks.
 Applications will typically demand for just one more content via `demand.accept(1)`, but may decide to demand for more via `demand.accept(2)` or demand "infinitely" once via `demand.accept(Long.MAX_VALUE)`.
-Applications that demand for more than 1 chunk of content must be prepared to receive all the content that they have demanded.
+
+Applications that call `contentSource.read()` more than once must remember that the request will not be aborted (in case of a timeout or an async call to `request.abort(Throwable)`) for as long as `onContentSource(request, contentSource)` or the callback passed to `contentSource.demand(Runnable callback)` has not returned.
 
 Demanding for content and consuming the content are orthogonal activities.
 
-An application can demand "infinitely" and store aside the pairs `(buffer, callback)` to consume them later.
+An application can read/demand and store aside the `Content.Chunk` objects to consume them later.
 If not done carefully, this may lead to excessive memory consumption, since the ``buffer``s are not consumed.
-Succeeding the ``callback``s will result in the ``buffer``s to be disposed/recycled and may be performed at any time.
+Releasing the `Content.Chunk`s will result in the ``buffer``s to be disposed/recycled and may be performed at any time.
 
-An application can also demand one chunk of content, consume it (by succeeding the associated `callback`) and then _not_ demand for more content until a later time.
+An application can also read one chunk of content, consume it (by releasing it) and then _not_ demand for more content until a later time.
 
-Subclass `Response.AsyncContentListener` overrides the behavior of `Response.DemandedContentListener`; when an application implementing its `onContent(response, buffer, callback)` succeeds the `callback`, it will have _both_ the effect of disposing/recycling the `buffer` _and_ the effect of demanding one more chunk of content.
+Subclass `Response.AsyncContentListener` overrides the behavior of `Response.ContentSourceListener`; when an application implements `onContent(response, chunk, demander)`, it can control the disposing/recycling the `buffer` by releasing the `chunk` _and_ it can control when to demand one more chunk of content by calling `demander.run()`.
 
 Subclass `Response.ContentListener` overrides the behavior of `Response.AsyncContentListener`; when an application implementing its `onContent(response, buffer)` returns from the method itself, it will _both_ the effect of disposing/recycling the `buffer` _and_ the effect of demanding one more chunk of content.
 
@@ -253,5 +250,5 @@ An application that implements a forwarder between two servers can be implemente
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=demandedContentListener]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=contentSourceListener]
 ----

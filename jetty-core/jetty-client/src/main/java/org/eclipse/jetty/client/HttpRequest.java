@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -52,7 +51,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
@@ -554,26 +552,6 @@ public class HttpRequest implements Request
             public void onContent(Response response, org.eclipse.jetty.io.Content.Chunk chunk, Runnable demander)
             {
                 listener.onContent(response, chunk, demander);
-            }
-        });
-        return this;
-    }
-
-    @Override
-    public Request onResponseContentDemanded(Response.DemandedContentListener listener)
-    {
-        this.responseListeners.add(new Response.DemandedContentListener()
-        {
-            @Override
-            public void onBeforeContent(Response response, LongConsumer demand)
-            {
-                listener.onBeforeContent(response, demand);
-            }
-
-            @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-            {
-                listener.onContent(response, demand, content, callback);
             }
         });
         return this;
