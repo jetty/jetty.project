@@ -47,13 +47,61 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     private Runnable demandCallback;
     private long length = UNDETERMINED_LENGTH;
 
+    /**
+     * {@inheritDoc}
+     * <p>The write completes when the {@link Content.Chunk} returned by {@link #read()}
+     * that wraps {@code byteBuffer} is released.</p>
+     */
     @Override
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        write(Content.Chunk.from(byteBuffer, last, callback::succeeded), callback);
+        Content.Chunk chunk;
+        if (byteBuffer.hasRemaining())
+            chunk = Content.Chunk.from(byteBuffer, last, callback::succeeded);
+        else
+            chunk = last ? Content.Chunk.EOF : Content.Chunk.EMPTY;
+        offer(chunk, callback);
     }
 
+    /**
+     * <p>Writes the given {@link Content.Chunk}, notifying the {@link Callback} when the
+     * write is complete.</p>
+     * <p>The callback completes:</p>
+     * <ul>
+     * <li>immediately with a failure when the written chunk is an instance of {@link Content.Chunk.Error}</li>
+     * <li>successfully when the {@link Content.Chunk} returned by {@link #read()} is released</li>
+     * <li>successfully just before the {@link Content.Chunk} is returned if the latter {@link Content.Chunk#hasRemaining() has no remaining byte}</li>
+     * </ul>
+     *
+     * @param chunk the Content.Chunk to write
+     * @param callback the callback to notify when the write operation is complete
+     */
     public void write(Content.Chunk chunk, Callback callback)
+    {
+        Content.Chunk c;
+        if (chunk.isTerminal())
+        {
+            c = chunk;
+        }
+        else if (!chunk.hasRemaining())
+        {
+            c = Content.Chunk.EMPTY;
+        }
+        else
+        {
+            c = Content.Chunk.from(chunk.getByteBuffer(), chunk.isLast(), () ->
+            {
+                chunk.release();
+                callback.succeeded();
+            });
+        }
+        offer(c, callback);
+    }
+
+    /**
+     * The callback is only ever going to be succeeded if the chunk is terminal.
+     */
+    private void offer(Content.Chunk chunk, Callback callback)
     {
         Throwable failure = null;
         boolean wasEmpty = false;
@@ -109,7 +157,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                     if (writeClosed && chunks.size() == 1)
                     {
                         Content.Chunk chunk = chunks.peek().chunk();
-                        if (chunk.isLast() && !chunk.hasRemaining())
+                        if (chunk.isTerminal())
                             return;
                     }
                     l.await();
@@ -166,6 +214,8 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             if (chunks.isEmpty())
                 l.signal();
         }
+        if (!current.chunk().hasRemaining())
+            current.callback().succeeded();
         return current.chunk();
     }
 

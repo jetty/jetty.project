@@ -444,7 +444,9 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
-            return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+            if (byteBuffer.hasRemaining())
+               return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+            return last ? EOF : EMPTY;
         }
 
         /**
@@ -453,11 +455,15 @@ public class Content
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
+         * @param releaser the code to run when this Chunk is released
          * @return a new Chunk
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
         {
-            return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
+            if (byteBuffer.hasRemaining())
+                return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
+            releaser.run();
+            return last ? EOF : EMPTY;
         }
 
         /**
@@ -471,7 +477,10 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
         {
-            return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
+            if (byteBuffer.hasRemaining())
+                return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
+            releaser.accept(byteBuffer);
+            return last ? EOF : EMPTY;
         }
 
         /**
@@ -486,7 +495,10 @@ public class Content
          */
         static Chunk from(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
-            return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+            if (byteBuffer.hasRemaining())
+                return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+            retainable.release();
+            return last ? EOF : EMPTY;
         }
 
         /**
@@ -540,28 +552,6 @@ public class Content
         }
 
         /**
-         * <p>Creates a chunk that is a slice of the given chunk.</p>
-         * <p>
-         *  The chunk slice has a byte buffer that is a slice of the original chunk's byte buffer, the last flag
-         *  copied over and the original chunk used as the retainable of the chunk slice.
-         *  Note that after this method returns, an extra Chunk instance refers to the same byte buffer,
-         *  so the original chunk is retained and is used as the {@link Retainable} for the returned chunk.
-         * </p>
-         * <p>Passing a null chunk returns null.</p>
-         * <p>Passing a terminal chunk returns it.</p>
-         *
-         * @param chunk the chunk to slice.
-         * @return the chunk slice.
-         */
-        static Chunk slice(Chunk chunk)
-        {
-            if (chunk == null || chunk.isTerminal())
-                return chunk;
-            chunk.retain();
-            return Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast(), chunk);
-        }
-
-        /**
          * @return the ByteBuffer of this Chunk
          */
         ByteBuffer getByteBuffer();
@@ -572,8 +562,37 @@ public class Content
         boolean isLast();
 
         /**
+         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
+         * {@code ByteBuffer} of the source {@code Chunk} unless the source
+         * {@link #hasRemaining() has no remaining byte} in which case:</p>
+         * <ul>
+         * <li>{@code this} is returned if it is an instance of {@link Error}</li>
+         * <li>{@link #EOF} is returned if {@link #isLast()} is {@code true}</li>
+         * <li>{@link #EMPTY} is returned if {@link #isLast()} is {@code false}</li>
+         * </ul>
+         * <p>If the source has remaining bytes, the returned {@code Chunk} retains
+         * the source {@code Chunk} and it is linked to it via
+         * {@link #from(ByteBuffer, boolean, Retainable)}.</p>
+         *
+         * @return a new {@code Chunk} retained from the source {@code Chunk} with a slice
+         * of the source {@code Chunk}'s {@code ByteBuffer}
+         */
+        default Chunk slice()
+        {
+            if (isTerminal())
+                return this;
+            if (!hasRemaining())
+                return EMPTY;
+            retain();
+            return from(getByteBuffer().slice(), isLast(), this);
+        }
+
+        /**
          * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice, with the given
-         * position and limit, of the {@code ByteBuffer} of the source {@code Chunk}.</p>
+         * position and limit, of the {@code ByteBuffer} of the source {@code Chunk} unless the
+         * source is {@link #isTerminal() terminal} in which case {@code this} is returned, or
+         * if {@code position == limit} in which case {@link #EOF} or {@link #EMPTY} is
+         * returned depending on the value of {@code last}.</p>
          * <p>The returned {@code Chunk} retains the source {@code Chunk} and it is linked
          * to it via {@link #from(ByteBuffer, boolean, Retainable)}.</p>
          *
@@ -587,6 +606,8 @@ public class Content
         {
             if (isTerminal())
                 return this;
+            if (position == limit)
+                return last ? EOF : EMPTY;
             ByteBuffer sourceBuffer = getByteBuffer();
             int sourceLimit = sourceBuffer.limit();
             sourceBuffer.limit(limit);
@@ -649,20 +670,27 @@ public class Content
 
         /**
          * <p>Returns whether this Chunk is a <em>terminal</em> chunk.</p>
-         * <p>A terminal chunk is either an {@link Error error chunk},
-         * or a Chunk that {@link #isLast()} is true and has no remaining
-         * bytes.</p>
+         * <p>A terminal chunk is a Chunk that {@link #isLast()} is true
+         * and has no remaining bytes.</p>
+         * <p><em>Terminal</em> chunks cannot be lifecycled using the
+         * {@link Retainable} contract like other chunks: they always throw
+         * {@link UnsupportedOperationException} on {@link #retain()} and
+         * always return {@code true} on {@link #release()}. As such, they
+         * cannot contain a recyclable buffer and calling their
+         * {@link #release()} method isn't necessary, although harmless.
+         * </p>
          *
          * @return whether this Chunk is a terminal chunk
          */
         default boolean isTerminal()
         {
-            return this instanceof Error || isLast() && !hasRemaining();
+            return isLast() && !hasRemaining();
         }
 
         /**
          * <p>A chunk that wraps a failure.</p>
-         * <p>Error Chunks are always last and have no bytes to read.</p>
+         * <p>Error Chunks are always last and have no bytes to read,
+         * as such they are <em>terminal</em> Chunks.</p>
          *
          * @see #from(Throwable)
          */

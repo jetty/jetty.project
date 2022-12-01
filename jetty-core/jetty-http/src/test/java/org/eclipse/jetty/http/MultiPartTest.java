@@ -58,7 +58,7 @@ public class MultiPartTest
 
         assertEquals(0, listener.events.size());
 
-        parser.parse(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, true));
+        parser.parse(Content.Chunk.EOF);
 
         assertEquals(1, listener.events.size());
         assertEquals("complete", listener.events.poll());

@@ -216,7 +216,7 @@ public class MultiPartFormDataTest
     public void testNoBody() throws Exception
     {
         MultiPartFormData formData = new MultiPartFormData("boundary");
-        formData.parse(Content.Chunk.from(ByteBuffer.allocate(0), true));
+        formData.parse(Content.Chunk.EOF);
 
         formData.handle((parts, failure) ->
         {
