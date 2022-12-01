@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.examples</groupId>
     <artifactId>examples-parent</artifactId>
-    <version>9.4.50.v20221201</version>
+    <version>9.4.51-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
