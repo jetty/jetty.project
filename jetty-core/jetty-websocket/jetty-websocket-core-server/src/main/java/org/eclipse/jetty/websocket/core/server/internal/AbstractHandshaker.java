@@ -67,7 +67,9 @@ public abstract class AbstractHandshaker implements Handshaker
             return false;
 
         // From this point on, we can only return true or throw.
-        request.accept();
+        // This code can be run either from ee9 (always accepted) or core/ee10 (not accepted)
+        if (!request.isAccepted())
+            request.accept();
 
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation.getRequest(), negotiation.getResponse(), negotiation.getCallback());
