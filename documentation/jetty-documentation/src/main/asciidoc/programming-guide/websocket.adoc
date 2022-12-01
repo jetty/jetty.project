@@ -40,15 +40,15 @@ This default configuration is applied to all Sessions during the WebSocket upgra
 
 Settings which can be configured include:
 
-* Max Binary Message Size - The maximum size of a binary message which can be received.
-* Max Text Message Size - The maximum size of a text message which can be received.
-* Max Frame Size - The maximum payload size of any WebSocket Frame which can be received.
-* Input Buffer Size - The input (read from network layer) buffer size. This is the raw read operation buffer size, before the parsing of the websocket frames.
-* Output Buffer Size - The output (write to network layer) buffer size. This is the raw write operation buffer size and has no relationship to the websocket frame.
-* Auto Fragment - If set to true, frames are automatically fragmented to respect the maximum frame size.
-* Idle Timeout - The duration that a websocket may be idle before being closed by the implementation.
-* Write Timeout - The maximum time a frame may be waiting to be sent.
-* Max Outgoing Frames - Set the maximum number of data frames allowed to be waiting to be sent at any one time.
+* Max Binary Message Size, the maximum size of a binary message which can be received.
+* Max Text Message Size, the maximum size of a text message which can be received.
+* Max Frame Size, the maximum payload size of any WebSocket Frame which can be received.
+* Input Buffer Size, the input (read from network layer) buffer size. This is the raw read operation buffer size, before the parsing of the websocket frames.
+* Output Buffer Size, the output (write to network layer) buffer size. This is the raw write operation buffer size and has no relationship to the websocket frame.
+* Auto Fragment, if set to true, frames are automatically fragmented to respect the maximum frame size.
+* Idle Timeout, the duration that a websocket may be idle before being closed by the implementation.
+* Write Timeout, the maximum time a frame may be waiting to be sent.
+* Max Outgoing Frames, set the maximum number of data frames allowed to be waiting to be sent at any one time.
 
 The default values for this configuration is defined in link:{javadoc-url}/org/eclipse/jetty/websocket/core/WebSocketConstants.html[`WebSocketConstants`].
 
