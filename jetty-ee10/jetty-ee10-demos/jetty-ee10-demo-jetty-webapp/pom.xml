@@ -64,7 +64,7 @@
             <Export-Package>!org.example*</Export-Package>
             <!-- the test webapp is configured via a jetty xml file
             in order to add the security handler. -->
-            <Web-ContextPath>/ee10-demo-webapp</Web-ContextPath>
+            <Web-ContextPath>/ee10-demo-jetty</Web-ContextPath>
             <!-- in fact the '.' must not be there
             but Felix-BND has a bug:
             http://www.mail-archive.com/users@felix.apache.org/msg04730.html

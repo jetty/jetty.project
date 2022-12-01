@@ -75,7 +75,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.demos").artifactId("jetty-ee9-demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
         return res;
     }
 
@@ -91,7 +91,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.jakarta.common");
+        startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.common");
         startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.client");
         startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.server");
         startBundle(bundleContext, "org.eclipse.jetty.ee9.demos.webapp");
@@ -108,7 +108,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         Logger log = Logger.getLogger(this.getClass().getName());
 
         SimpleJakartaWebSocket socket = new SimpleJakartaWebSocket();
-        URI uri = new URI("ws://127.0.0.1:" + port + "/jakarta.websocket/");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ee9-demo-jetty/jakarta.websocket/");
         log.info("Attempting to connect to " + uri);
         try (Session session = container.connectToServer(socket, uri))
         {

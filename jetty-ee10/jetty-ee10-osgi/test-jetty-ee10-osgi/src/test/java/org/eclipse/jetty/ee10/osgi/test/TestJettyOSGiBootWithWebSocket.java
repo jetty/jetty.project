@@ -86,7 +86,7 @@ public class TestJettyOSGiBootWithWebSocket
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 
-        URI uri = new URI("ws://127.0.0.1:" + port + "/ee10-demo-webapp/ws/foo");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ee10-demo-jetty/ws/foo");
         WebSocketClient client = new WebSocketClient();
         try
         {

@@ -73,11 +73,6 @@ public class TestJettyOSGiBootWithWebSocket
         return res;
     }
 
-    public void debugBundles()
-    {
-
-    }
-
     @Test
     public void testWebsocket() throws Exception
     {
@@ -87,7 +82,7 @@ public class TestJettyOSGiBootWithWebSocket
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 
-        URI uri = new URI("ws://127.0.0.1:" + port + "/ws/foo");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ee9-demo-jetty/ws/foo");
         WebSocketClient client = new WebSocketClient();
         try
         {
