@@ -199,12 +199,14 @@ public class ConnectHandler extends Handler.Wrapper
                     String serverAddress = httpURI.getAuthority();
                     if (LOG.isDebugEnabled())
                         LOG.debug("CONNECT request for {}", serverAddress);
+                    request.accept();
                     handleConnect(request, response, callback, serverAddress);
                     return;
                 }
             }
             else
             {
+                request.accept();
                 Response.writeError(request, response, callback, HttpStatus.NOT_IMPLEMENTED_501);
                 return;
             }
