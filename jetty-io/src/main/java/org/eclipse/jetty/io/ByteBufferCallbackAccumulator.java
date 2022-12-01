@@ -89,20 +89,14 @@ public class ByteBufferCallbackAccumulator
 
     public void fail(Throwable t)
     {
-        for (Entry entry : _entries)
-        {
-            entry.callback.failed(t);
-        }
+        _entries.forEach(entry -> entry.callback.failed(t));
         _entries.clear();
         _length = 0;
     }
 
     public void close()
     {
-        for (Entry entry : _entries)
-        {
-            entry.callback.succeeded();
-        }
+        _entries.forEach(entry -> entry.callback.succeeded());
         _entries.clear();
         _length = 0;
     }

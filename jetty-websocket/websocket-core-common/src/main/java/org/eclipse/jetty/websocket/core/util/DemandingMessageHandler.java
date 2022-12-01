@@ -24,7 +24,6 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
@@ -34,9 +33,9 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
  * calling {@link #onText(String, Callback)} or {@link #onBinary(ByteBuffer, Callback)}.
  * </p>
  * <p>
- * This is a demanding frame handler, meaning {@link FrameHandler#isDemanding()} returns true.
- * This means that flow control is by not automatic, so implementations of this must always call {@link #demand()} to
- * receive the next WebSocket frame. This is done by this class for non-final data frames, but the implementations of
+ * This class does not implicitly demand more frames when the Callback passed to either onText() or onBinary() is succeeded.
+ * Implementations of this must always call {@link #demand()} to receive the next WebSocket frame.
+ * This is done by this class for non-final data frames, but the implementations of
  * {@link #onText(String, Callback)} and {@link #onBinary(ByteBuffer, Callback)} must call {@link #demand()} manually.
  * </p>
  * <p>
