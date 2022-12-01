@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.content.AsyncContent;
@@ -26,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -123,6 +130,158 @@ public class AsyncContentSourceTest
             assertNotNull(chunk);
             assertThat(chunk, instanceOf(Content.Chunk.Error.class));
             assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(error));
+        }
+    }
+
+    @Test
+    public void testChunkReleaseSucceedsWriteCallback()
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            AtomicInteger successCounter = new AtomicInteger();
+            AtomicReference<Throwable> failureRef = new AtomicReference<>();
+
+            async.write(false, ByteBuffer.wrap(new byte[1]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+
+            Content.Chunk chunk = async.read();
+            assertThat(successCounter.get(), is(0));
+            chunk.retain();
+            assertThat(chunk.release(), is(false));
+            assertThat(successCounter.get(), is(0));
+            assertThat(chunk.release(), is(true));
+            assertThat(successCounter.get(), is(1));
+            assertThat(failureRef.get(), is(nullValue()));
+        }
+    }
+
+    @Test
+    public void testEmptyChunkReadSucceedsWriteCallback()
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            AtomicInteger successCounter = new AtomicInteger();
+            AtomicReference<Throwable> failureRef = new AtomicReference<>();
+
+            async.write(false, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+
+            Content.Chunk chunk = async.read();
+            assertThat(successCounter.get(), is(1));
+            assertThat(chunk.isTerminal(), is(false));
+            assertThat(chunk.release(), is(true));
+            assertThat(successCounter.get(), is(1));
+            assertThat(failureRef.get(), is(nullValue()));
+        }
+    }
+
+    @Test
+    public void testLastEmptyChunkReadSucceedsWriteCallback()
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            AtomicInteger successCounter = new AtomicInteger();
+            AtomicReference<Throwable> failureRef = new AtomicReference<>();
+
+            async.write(true, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+
+            Content.Chunk chunk = async.read();
+            assertThat(successCounter.get(), is(1));
+            assertThat(chunk.isTerminal(), is(true));
+            assertThat(chunk.release(), is(true));
+            assertThat(successCounter.get(), is(1));
+            assertThat(failureRef.get(), is(nullValue()));
+        }
+    }
+
+    @Test
+    public void testWriteAndReadErrors()
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            AssertingCallback callback = new AssertingCallback();
+
+            Exception error1 = new Exception("error1");
+            async.write(Content.Chunk.from(error1), callback);
+            callback.assertSingleFailureSameInstanceNoSuccess(error1);
+
+            Content.Chunk chunk = async.read();
+            assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(error1));
+            chunk = async.read();
+            assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(error1));
+            callback.assertNoFailureNoSuccess();
+
+            Exception error2 = new Exception("error2");
+            async.write(Content.Chunk.from(error2), callback);
+            callback.assertSingleFailureSameInstanceNoSuccess(error1);
+
+            async.write(Content.Chunk.from(ByteBuffer.wrap(new byte[1]), false), callback);
+            callback.assertSingleFailureSameInstanceNoSuccess(error1);
+        }
+    }
+
+    @Test
+    public void testCloseAfterWritingEof()
+    {
+        AssertingCallback callback = new AssertingCallback();
+        try (AsyncContent async = new AsyncContent())
+        {
+            async.write(Content.Chunk.EOF, callback);
+            callback.assertNoFailureNoSuccess();
+
+            Content.Chunk chunk = async.read();
+            assertThat(chunk.isTerminal(), is(true));
+            callback.assertNoFailureWithSuccesses(1);
+
+            chunk = async.read();
+            assertThat(chunk.isTerminal(), is(true));
+            callback.assertNoFailureWithSuccesses(0);
+
+            async.write(Content.Chunk.EOF, callback);
+            callback.assertSingleFailureIsInstanceNoSuccess(IOException.class);
+        }
+        callback.assertNoFailureNoSuccess();
+    }
+
+    private static class AssertingCallback implements Callback
+    {
+        private final AtomicInteger successCounter = new AtomicInteger();
+        private final List<Throwable> throwables = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void succeeded()
+        {
+            successCounter.incrementAndGet();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            throwables.add(x);
+        }
+
+        public void assertNoFailureNoSuccess()
+        {
+            assertThat(successCounter.get(), is(0));
+            assertThat(throwables.isEmpty(), is(true));
+        }
+
+        public void assertNoFailureWithSuccesses(int successCount)
+        {
+            assertThat(successCounter.getAndSet(0), is(successCount));
+            assertThat(throwables.isEmpty(), is(true));
+        }
+
+        public void assertSingleFailureSameInstanceNoSuccess(Throwable x)
+        {
+            assertThat(successCounter.get(), is(0));
+            assertThat(throwables.size(), is(1));
+            assertThat(throwables.remove(0), sameInstance(x));
+        }
+
+        public void assertSingleFailureIsInstanceNoSuccess(Class<? extends Throwable> clazz)
+        {
+            assertThat(successCounter.get(), is(0));
+            assertThat(throwables.size(), is(1));
+            assertThat(throwables.remove(0), instanceOf(clazz));
         }
     }
 }

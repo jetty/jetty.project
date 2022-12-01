@@ -354,6 +354,38 @@ public class ResponseNotifier
 
         private class ContentSource implements Content.Source
         {
+            private static final Content.Chunk ALREADY_READ_CHUNK = new Content.Chunk()
+            {
+                @Override
+                public ByteBuffer getByteBuffer()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean isLast()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void retain()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean release()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "ALREADY_READ_CHUNK";
+                }
+            };
             private final int index;
             private final AtomicReference<Runnable> demandCallbackRef = new AtomicReference<>();
             private volatile Content.Chunk chunk;
@@ -368,8 +400,8 @@ public class ResponseNotifier
                 Content.Chunk currentChunk = this.chunk;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Registering content in multiplexed content source #{} that contains {}", index, currentChunk);
-                if (currentChunk == null || currentChunk == AlreadyReadChunk.INSTANCE)
-                    this.chunk = Content.Chunk.slice(chunk);
+                if (currentChunk == null || currentChunk == ALREADY_READ_CHUNK)
+                    this.chunk = chunk.slice();
                 else if (!currentChunk.isLast())
                     throw new IllegalStateException("Cannot overwrite chunk");
                 onDemandCallback();
@@ -396,7 +428,7 @@ public class ResponseNotifier
             @Override
             public Content.Chunk read()
             {
-                if (chunk == AlreadyReadChunk.INSTANCE)
+                if (chunk == ALREADY_READ_CHUNK)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Content source #{} already read current chunk", index);
@@ -405,7 +437,7 @@ public class ResponseNotifier
 
                 Content.Chunk result = chunk;
                 if (result != null && !result.isTerminal())
-                    chunk = AlreadyReadChunk.INSTANCE;
+                    chunk = ALREADY_READ_CHUNK;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} reading current chunk {}", index, result);
                 return result;
@@ -419,7 +451,7 @@ public class ResponseNotifier
                 Content.Chunk currentChunk = this.chunk;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} demand while current chunk is {}", index, currentChunk);
-                if (currentChunk == null || currentChunk == AlreadyReadChunk.INSTANCE)
+                if (currentChunk == null || currentChunk == ALREADY_READ_CHUNK)
                     registerDemand();
                 else
                     onDemandCallback();
@@ -438,45 +470,6 @@ public class ResponseNotifier
                 this.chunk = Content.Chunk.from(failure);
                 onDemandCallback();
                 registerFailure(failure);
-            }
-        }
-
-        private static final class AlreadyReadChunk implements Content.Chunk
-        {
-            static final AlreadyReadChunk INSTANCE = new AlreadyReadChunk();
-
-            private AlreadyReadChunk()
-            {
-            }
-
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean isLast()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void retain()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean release()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public String toString()
-            {
-                return getClass().getSimpleName();
             }
         }
     }

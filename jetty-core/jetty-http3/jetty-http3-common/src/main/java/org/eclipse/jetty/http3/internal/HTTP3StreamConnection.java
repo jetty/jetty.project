@@ -425,8 +425,16 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (frame.isLast())
                 shutdownInput();
 
-            networkBuffer.retain();
-            StreamData data = new StreamData(frame, networkBuffer);
+            Stream.Data data;
+            if (!frame.getByteBuffer().hasRemaining() && frame.isLast())
+            {
+                data = Stream.Data.EOF;
+            }
+            else
+            {
+                networkBuffer.retain();
+                data = new StreamData(frame, networkBuffer);
+            }
 
             Runnable existing = action.getAndSet(() ->
             {
