@@ -441,12 +441,6 @@ public class EE10Activator implements BundleActivator
             // apply any META-INF/context.xml file that is found to configure
             // the webapp first
             //First try looking for one in /META-INF
-        
-            System.err.println("osgiApp.getPath()=" + osgiApp.getPath());
-            System.err.println("osgiApp.getBundleResource()=" + osgiApp.getBundleResource());
-            System.err.println("osgiApp.getPathToResourceBase()=" + osgiApp.getPathToResourceBase());
-
-            
             URI tmpUri = null;
 
             URL contextXmlURL = Util.getLocalizedEntry("/META-INF/jetty-webapp-context.xml", osgiApp.getBundle());
@@ -457,12 +451,10 @@ public class EE10Activator implements BundleActivator
             if (contextXmlURL == null)
             {
                 String tmp = osgiApp.getProperties().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
-                System.err.println("CONTEXT FILE  = " +  tmp);
                 if (tmp != null)
                 {
                     String[] filenames = tmp.split("[,;]");
                     tmpUri = Util.resolvePathAsLocalizedURI(filenames[0], osgiApp.getBundle(), jettyHomePath);
-                    System.err.println("RESOLVED TO " + tmpUri);
                 }
             }
 
