@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -242,23 +241,24 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     LOG.debug("Check resource exists and is not a nested jar: {}", resource);
                 throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
             }
-        };
+        }
     }
 
     /**
-     * @param classPath Comma or semicolon separated path of filenames or URLs
+     * @param classPathList Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
      * @throws IOException if unable to add classpath
      */
-    public void addClassPath(String classPath)
+    public void addClassPath(String classPathList)
         throws IOException
     {
-        if (classPath == null)
+        if (classPathList == null)
             return;
 
-        List<URI> uris = URIUtil.split(classPath);
-        addClassPath(_resourceFactory.newResource(uris));
+        URIUtil.split(classPathList).stream()
+            .map(_resourceFactory::newResource)
+            .forEach(this::addClassPath);
     }
 
     /**
@@ -279,7 +279,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * Add elements to the class path for the context from the jar and zip files found
      * in the specified resource.
      *
-     * @param libs the resource that contains the jar and/or zip files.
+     * @param libs the directory resource that contains the jar and/or zip files.
      */
     public void addJars(Resource libs)
     {
@@ -292,26 +292,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             try (Stream<Path> streamEntries = Files.list(dir))
             {
-                List<Path> jars = streamEntries
+                streamEntries
                     .filter(Files::isRegularFile)
                     .filter(this::isFileSupported)
                     .sorted(Comparator.naturalOrder())
-                    .toList();
-
-                for (Path jar: jars)
-                {
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("addJar - {}", jar);
-                        URI jarUri = URIUtil.toJarFileUri(jar.toUri());
-                        addClassPath(jarUri.toASCIIString());
-                    }
-                    catch (Exception ex)
-                    {
-                        LOG.warn("Unable to load WEB-INF/lib JAR {}", jar, ex);
-                    }
-                }
+                    .map(Path::toUri)
+                    .map(URIUtil::toJarFileUri)
+                    .map(_resourceFactory::newResource)
+                    .forEach(this::addClassPath);
             }
             catch (IOException e)
             {
