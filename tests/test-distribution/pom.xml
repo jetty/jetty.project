@@ -25,25 +25,21 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-home</artifactId>
-        <type>zip</type>
-        <exclusions>
-          <exclusion>
-            <groupId>-org.eclipse.jetty.ee10</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>-org.eclipse.jetty.ee9</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>-org.eclipse.jetty.ee8</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
+        <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>jetty-home-tester</artifactId>
+        <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>1.0.5</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-slf4j-impl</artifactId>
+        <scope>test</scope>
+      </dependency>
+        <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
         <artifactId>test-distribution-common</artifactId>
         <version>${project.version}</version>
