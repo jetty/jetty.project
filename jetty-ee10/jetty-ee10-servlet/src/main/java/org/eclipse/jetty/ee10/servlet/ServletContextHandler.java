@@ -1185,7 +1185,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected void processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected void tryProcessByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
@@ -1196,7 +1196,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return;
         }
 
-        super.processByContextHandler(pathInContext, request, response, callback);
+        super.tryProcessByContextHandler(pathInContext, request, response, callback);
     }
 
     @Override

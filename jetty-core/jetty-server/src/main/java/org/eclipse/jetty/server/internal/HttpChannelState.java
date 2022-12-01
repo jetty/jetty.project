@@ -117,6 +117,14 @@ public class HttpChannelState implements HttpChannel, Components
         {
         }
     };
+    private static final Throwable ACCEPTED = new Throwable()
+    {
+        @Override
+        public Throwable fillInStackTrace()
+        {
+            return this;
+        }
+    };
 
     /**
      * The state of the written response
@@ -140,7 +148,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
     private Thread _processing;
-    private boolean _accepted;
+    private Throwable _accepted;
     private WriteState _writeState = WriteState.NOT_LAST;
     private boolean _callbackCompleted = false;
     private Throwable _failure;
@@ -223,7 +231,7 @@ public class HttpChannelState implements HttpChannel, Components
             _requestAttributes.clearAttributes();
             _responseHeaders.reset();
             _processing = null;
-            _accepted = false;
+            _accepted = null;
             _writeState = WriteState.NOT_LAST;
             _callbackCompleted = false;
             _failure = null;
@@ -371,7 +379,7 @@ public class HttpChannelState implements HttpChannel, Components
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _accepted;
+            return _accepted != null;
         }
     }
 
@@ -448,15 +456,15 @@ public class HttpChannelState implements HttpChannel, Components
             Runnable invokeCallback = () ->
             {
                 // Only fail the callback if the request was not accepted.
-                boolean accepted;
+                Throwable accepted;
                 try (AutoLock ignore = _lock.lock())
                 {
                     accepted = _accepted;
                 }
-                if (accepted)
+                if (accepted != null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("already accepted, skipping failing callback in {}", HttpChannelState.this);
+                        LOG.debug("already accepted, skipping failing callback in {}", HttpChannelState.this, accepted);
                 }
                 else
                 {
@@ -572,7 +580,7 @@ public class HttpChannelState implements HttpChannel, Components
             ChannelRequest request;
             try (AutoLock ignored = _lock.lock())
             {
-                assert _processing == null && !_accepted;
+                assert _processing == null && _accepted == null;
                 _processing = Thread.currentThread();
                 request = _request;
             }
@@ -625,8 +633,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 try (AutoLock ignored1 = _lock.lock())
                 {
-                    wasAccepted = _accepted;
-                    _accepted = true;
+                    wasAccepted = _accepted != null;
+                    if (_accepted == null)
+                        _accepted = LOG.isDebugEnabled() ? new Throwable("Accept") : ACCEPTED;
                 }
             }
 
@@ -676,7 +685,7 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _lock.lock())
             {
-                if (!_accepted)
+                if (_accepted == null)
                     throw new IllegalStateException("!accepted");
                 _writeState = WriteState.LAST_WRITE_COMPLETED;
                 assert _callbackCompleted;
@@ -698,7 +707,7 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream;
             try (AutoLock ignored = _lock.lock())
             {
-                if (!_accepted)
+                if (_accepted == null)
                     throw new IllegalStateException("!accepted");
                 _writeState = WriteState.LAST_WRITE_COMPLETED;
                 assert _callbackCompleted;
@@ -778,11 +787,10 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignore = _lock.lock())
             {
                 if (_httpChannel._processing != Thread.currentThread())
-                    throw new IllegalStateException(_httpChannel._processing == null
-                    ? "Not processing" : "Not processing by current thread");
-                if (_httpChannel._accepted)
-                    throw new IllegalStateException("already accepted");
-                _httpChannel._accepted = true;
+                    throw new IllegalStateException(_httpChannel._processing == null ? "Not processing" : "Not processing by current thread");
+                if (_httpChannel._accepted != null)
+                    throw new IllegalStateException("already accepted", _httpChannel._accepted);
+                _httpChannel._accepted = LOG.isDebugEnabled() ? new Throwable("Accept") : ACCEPTED;
             }
         }
 
@@ -791,7 +799,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             try (AutoLock ignore = _lock.lock())
             {
-                return _httpChannel._accepted;
+                return _httpChannel._accepted != null;
             }
         }
 
@@ -964,7 +972,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (error != null)
                     return error;
 
-                if (!httpChannel._accepted)
+                if (httpChannel._accepted == null)
                     return Content.Chunk.from(new IllegalStateException("not accepted"));
 
                 stream = httpChannel._stream;
@@ -993,7 +1001,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 HttpChannelState httpChannel = lockedGetHttpChannel();
 
-                error = httpChannel._error != null || !httpChannel._accepted;
+                error = httpChannel._error != null || httpChannel._accepted == null;
                 if (!error)
                 {
                     if (httpChannel._onContentAvailable != null)
@@ -1148,7 +1156,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (httpChannel._writeCallback != null)
                     failure = new IllegalStateException("write pending");
-                else if (!httpChannel._accepted)
+                else if (httpChannel._accepted == null)
                     failure = new IllegalStateException("not accepted");
                 else if (httpChannel._error != null)
                     failure = httpChannel._error.getCause();
@@ -1348,7 +1356,7 @@ public class HttpChannelState implements HttpChannel, Components
                     return;
                 httpChannelState = _request._httpChannel;
                 completeStream =
-                    httpChannelState._accepted &&
+                    httpChannelState._accepted != null &&
                     httpChannelState._processing == null &&
                     httpChannelState._writeState == WriteState.LAST_WRITE_COMPLETED;
 
@@ -1428,7 +1436,8 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     // Cannot log or recycle just yet, since we need to generate the error response.
                     _request._response._status = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                    httpChannelState._accepted = true;
+                    if (httpChannelState._accepted == null)
+                        httpChannelState._accepted = LOG.isDebugEnabled() ? new Throwable("Accept") : ACCEPTED;
                     httpChannelState._responseHeaders.reset();
                     httpChannelState._writeState = WriteState.NOT_LAST;
                 }

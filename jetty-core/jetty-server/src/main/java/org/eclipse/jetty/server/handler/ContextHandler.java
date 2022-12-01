@@ -681,16 +681,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return;
         }
 
-
-        // wrap might fail (eg ServletContextHandler could not match a servlet)
         ContextRequest contextRequest = wrapRequest(request, response);
+
+        // wrap might return null (eg ServletContextHandler could not match a servlet)
         if (contextRequest == null)
             return;
 
-        processByContextHandler(pathInContext, contextRequest, response, callback);
+        tryProcessByContextHandler(pathInContext, contextRequest, response, callback);
         if (request.isAccepted())
             return;
 
+        // Past this point we are calling the downstream handler in scope.
         ClassLoader lastLoader = enterScope(contextRequest);
         ContextResponse contextResponse = wrapResponse(contextRequest, response);
         try
@@ -709,7 +710,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
-    protected void processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected void tryProcessByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
     }
 
