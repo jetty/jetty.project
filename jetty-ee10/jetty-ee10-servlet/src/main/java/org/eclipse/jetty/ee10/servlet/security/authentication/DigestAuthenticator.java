@@ -180,7 +180,9 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         if (!DeferredAuthentication.isDeferred(res))
         {
-            req.accept();
+            // We may already be accepted if called from HttpServletRequest.authenticate
+            if (!req.isAccepted())
+                req.accept();
             String domain = req.getContext().getContextPath();
             if (domain == null)
                 domain = "/";

@@ -344,7 +344,9 @@ public class FormAuthenticator extends LoginAuthenticator
             return Authentication.UNAUTHENTICATED;
         }
 
-        req.accept();
+        // We may already be accepted if called from HttpServletRequest.authenticate. TODO ???
+        if (!req.isAccepted())
+            req.accept();
 
         // remember the current URI
         session = (session != null ? session : servletApiRequest.getSession(true));

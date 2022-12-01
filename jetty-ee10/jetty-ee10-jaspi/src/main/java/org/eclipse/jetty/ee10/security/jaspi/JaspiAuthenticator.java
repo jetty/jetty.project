@@ -243,6 +243,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             }
             if (authStatus == AuthStatus.FAILURE)
             {
+                messageInfo.getBaseRequest().accept();
                 Response.writeError(messageInfo.getBaseRequest(), messageInfo.getBaseResponse(), messageInfo.getCallback(), HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
             }
