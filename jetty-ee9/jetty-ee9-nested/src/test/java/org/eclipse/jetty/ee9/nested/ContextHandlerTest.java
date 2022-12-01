@@ -699,8 +699,6 @@ public class ContextHandlerTest
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), containsString("Hello"));
 
-        history.forEach(System.err::println);
-
         assertThat(history, contains(
             // Enter for process(request, response, callback)
             "Core enter http://0.0.0.0/",
