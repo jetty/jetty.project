@@ -85,6 +85,7 @@ public class ResponsePatternRule extends PatternRule
             @Override
             public void process(Response response, Callback callback)
             {
+                accept();
                 String message = getMessage();
                 if (StringUtil.isBlank(message))
                 {

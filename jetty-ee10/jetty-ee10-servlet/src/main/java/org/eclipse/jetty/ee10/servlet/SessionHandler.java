@@ -729,7 +729,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
 
         addSessionStreamWrapper(request);
 
-
         // find and set the session if one exists
         RequestedSession requestedSession = resolveRequestedSessionId(request);
 

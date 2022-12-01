@@ -97,6 +97,7 @@ public class InvalidURIRule extends Rule
             @Override
             public void process(Response response, Callback callback)
             {
+                accept();
                 String message = getMessage();
                 if (StringUtil.isBlank(message))
                 {
