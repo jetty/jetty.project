@@ -700,9 +700,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
         catch (Throwable t)
         {
-            if (!request.isAccepted())
-                request.accept();
-            Response.writeError(contextRequest, contextResponse, callback, t);
+            if (request.isAccepted())
+                Response.writeError(contextRequest, contextResponse, callback, t);
+            else
+                throw t;
         }
         finally
         {

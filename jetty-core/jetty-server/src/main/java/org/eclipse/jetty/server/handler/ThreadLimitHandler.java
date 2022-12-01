@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
@@ -320,40 +321,35 @@ public class ThreadLimitHandler extends Handler.Wrapper
         protected void process() throws Exception
         {
             CompletableFuture<Closeable> futurePermit = _remote.acquire();
-            Callback callback = Callback.from(_callback, () -> getAndClose(futurePermit));
 
             // Did we get a permit?
             if (futurePermit.isDone())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Threadpermitted {}", _remote);
-                process(callback);
+                process(futurePermit);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Threadlimited {}", _remote);
-                futurePermit.thenAccept(c ->
-                {
-                    try
-                    {
-                        process(callback);
-                    }
-                    catch (Throwable x)
-                    {
-                        _callback.failed(x);
-                    }
-                });
+                futurePermit.thenAccept(c -> process(futurePermit));
             }
         }
 
-        protected void process(Callback callback) throws Exception
+        protected void process(CompletableFuture<Closeable> futurePermit)
         {
-            _handler.process(this, _response, callback);
-            if (!isAccepted())
+            Callback callback = Callback.from(_callback, () -> getAndClose(futurePermit));
+
+            try
             {
-                accept();
-                Response.writeError(this, _response, callback, 404);
+                _handler.process(this, _response, callback);
+                if (!isAccepted())
+                    getAndClose(futurePermit);
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
             }
         }
 
@@ -366,12 +362,43 @@ public class ThreadLimitHandler extends Handler.Wrapper
         }
 
         @Override
-        public void demand(Runnable demandCallback)
+        public void demand(Runnable onContent)
         {
             if (!isAccepted())
                 throw new IllegalStateException("!accepted");
-            // TODO the demand callback needs to re acquire a permit ( IFF in is not called back in scope )
-            super.demand(demandCallback);
+
+            Runnable permittedDemand = () ->
+            {
+                CompletableFuture<Closeable> futurePermit = _remote.acquire();
+
+                if (futurePermit.isDone())
+                {
+                    try
+                    {
+                        onContent.run();
+                    }
+                    finally
+                    {
+                        getAndClose(futurePermit);
+                    }
+                }
+                else
+                {
+                    futurePermit.thenAccept(c ->
+                    {
+                        try
+                        {
+                            onContent.run();
+                        }
+                        finally
+                        {
+                            IO.close(c);
+                        }
+                    });
+                }
+            };
+
+            super.demand(permittedDemand);
         }
 
         @Override
@@ -392,16 +419,92 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
     private static class LimitedResponse extends Response.Wrapper
     {
+        private final Remote _remote;
+
         public LimitedResponse(LimitedRequest limitedRequest, Response response)
         {
             super(limitedRequest, response);
+            _remote = limitedRequest._remote;
         }
 
         @Override
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
-            // TODO the callback needs to re-acquire a permit (IFF not callback in scope).
-            super.write(last, byteBuffer, callback);
+            if (!getRequest().isAccepted())
+                throw new IllegalStateException("!accepted");
+
+            Callback permittedCallback = new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    CompletableFuture<Closeable> futurePermit = _remote.acquire();
+                    if (futurePermit.isDone())
+                    {
+                        try
+                        {
+                            callback.succeeded();
+                        }
+                        finally
+                        {
+                            getAndClose(futurePermit);
+                        }
+                    }
+                    else
+                    {
+                        futurePermit.thenAccept(c ->
+                        {
+                            try
+                            {
+                                callback.succeeded();
+                            }
+                            finally
+                            {
+                                IO.close(c);
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    CompletableFuture<Closeable> futurePermit = _remote.acquire();
+                    if (futurePermit.isDone())
+                    {
+                        try
+                        {
+                            callback.failed(x);
+                        }
+                        finally
+                        {
+                            getAndClose(futurePermit);
+                        }
+                    }
+                    else
+                    {
+                        futurePermit.thenAccept(c ->
+                        {
+                            try
+                            {
+                                callback.failed(x);
+                            }
+                            finally
+                            {
+                                IO.close(c);
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return callback.getInvocationType();
+                }
+            };
+
+            super.write(last, byteBuffer, permittedCallback);
         }
     }
 
