@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
-public class GzipResponse extends Response.Wrapper implements Callback, Invocable
+public class GzipResponseAndCallback extends Response.Wrapper implements Callback, Invocable
 {
-    public static Logger LOG = LoggerFactory.getLogger(GzipResponse.class);
+    public static Logger LOG = LoggerFactory.getLogger(GzipResponseAndCallback.class);
     private static final byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
 
     public static final HttpField VARY_ACCEPT_ENCODING = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
@@ -60,15 +60,14 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponse(Request request, Response wrapped, Callback callback, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
+    public GzipResponseAndCallback(Request request, Response wrapped, Callback callback, GzipHandler handler)
     {
         super(request, wrapped);
-
         _callback = callback;
-        _factory = factory;
-        _vary = vary;
-        _bufferSize = bufferSize;
-        _syncFlush = syncFlush;
+        _factory = handler;
+        _vary = handler.getVary();
+        _bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        _syncFlush = handler.isSyncFlush();
     }
 
     @Override
@@ -138,7 +137,7 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
     protected void commit(boolean last, Callback callback, ByteBuffer content)
     {
         // Are we excluding because of status?
-        Response response = GzipResponse.this;
+        Response response = GzipResponseAndCallback.this;
         Request request = response.getRequest();
         if (!request.isAccepted())
             throw new IllegalStateException("!accepted");
@@ -346,7 +345,7 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
                         }
                         else
                         {
-                            GzipResponse.super.write(false, _buffer, this);
+                            GzipResponseAndCallback.super.write(false, _buffer, this);
                             return Action.SCHEDULED;
                         }
                     }
@@ -407,7 +406,7 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
             }
 
             // write the compressed buffer.
-            GzipResponse.super.write(_deflaterEntry == null, _buffer, this);
+            GzipResponseAndCallback.super.write(_deflaterEntry == null, _buffer, this);
             return Action.SCHEDULED;
         }
 

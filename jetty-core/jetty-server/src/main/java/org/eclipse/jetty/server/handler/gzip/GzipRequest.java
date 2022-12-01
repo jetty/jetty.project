@@ -14,9 +14,14 @@
 package org.eclipse.jetty.server.handler.gzip;
 
 import java.nio.ByteBuffer;
+import java.util.regex.Pattern;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.GZIPContentDecoder;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
@@ -27,6 +32,9 @@ import org.eclipse.jetty.util.compression.InflaterPool;
 
 public class GzipRequest extends Request.Wrapper
 {
+    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
+    private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
+
     // TODO: use InflaterPool from somewhere.
     private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);
 
@@ -35,11 +43,67 @@ public class GzipRequest extends Request.Wrapper
     private Decoder _decoder;
     private GzipTransformer _gzipTransformer;
 
-    public GzipRequest(Request request, int inflateBufferSize, HttpFields fields)
+    public GzipRequest(Request request, int inflateBufferSize)
     {
         super(request);
         _inflateBufferSize = inflateBufferSize;
-        _fields = fields;
+        _fields = updateRequestFields(request, _inflateBufferSize > 0);
+    }
+
+    private HttpFields updateRequestFields(Request request, boolean inflatable)
+    {
+        HttpFields fields = request.getHeaders();
+        HttpFields.Mutable newFields = HttpFields.build(fields.size());
+        for (HttpField field : fields)
+        {
+            HttpHeader header = field.getHeader();
+            if (header == null)
+            {
+                newFields.add(field);
+                continue;
+            }
+
+            switch (header)
+            {
+                case CONTENT_ENCODING ->
+                {
+                    if (inflatable)
+                    {
+                        if (field.getValue().equalsIgnoreCase("gzip"))
+                        {
+                            newFields.add(X_CE_GZIP);
+                            continue;
+                        }
+
+                        if (COMMA_GZIP.matcher(field.getValue()).matches())
+                        {
+                            String v = field.getValue();
+                            v = v.substring(0, v.lastIndexOf(','));
+                            newFields.add(X_CE_GZIP);
+                            newFields.add(new HttpField(HttpHeader.CONTENT_ENCODING, v));
+                            continue;
+                        }
+                    }
+                    newFields.add(field);
+                }
+                case IF_MATCH, IF_NONE_MATCH ->
+                {
+                    String etags = field.getValue();
+                    String etagsNoSuffix = CompressedContentFormat.GZIP.stripSuffixes(etags);
+                    if (!etagsNoSuffix.equals(etags))
+                    {
+                        newFields.add(new HttpField(field.getHeader(), etagsNoSuffix));
+                        request.setAttribute(GzipHandler.GZIP_HANDLER_ETAGS, etags);
+                        continue;
+                    }
+                    newFields.add(field);
+                }
+                case CONTENT_LENGTH -> newFields.add(inflatable ? new HttpField("X-Content-Length", field.getValue()) : field);
+                default -> newFields.add(field);
+            }
+        }
+        fields = newFields.takeAsImmutable();
+        return fields;
     }
 
     @Override

@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.util.EnumSet;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -42,15 +39,12 @@ import org.slf4j.LoggerFactory;
 
 public class GzipHandler extends Handler.Wrapper implements GzipFactory
 {
-    public static final EnumSet<HttpHeader> ETAG_HEADERS = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
     public static final String GZIP_HANDLER_ETAGS = "o.e.j.s.h.gzip.GzipHandler.etag";
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public static final int DEFAULT_MIN_GZIP_SIZE = 32;
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
     private static final Logger LOG = LoggerFactory.getLogger(GzipHandler.class);
-    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
-    private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
     private InflaterPool _inflaterPool;
     private DeflaterPool _deflaterPool;
@@ -62,7 +56,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     private final IncludeExclude<String> _inflatePaths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
-    private HttpField _vary = GzipResponse.VARY_ACCEPT_ENCODING;
+    private HttpField _vary = GzipResponseAndCallback.VARY_ACCEPT_ENCODING;
 
     /**
      * Instantiates a new GzipHandler.
@@ -568,67 +562,14 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         // We need to wrap the request IFF we are inflating or have seen etags with compression separators
         if (inflatable && tryInflate || etagMatches)
         {
-            HttpFields.Mutable newFields = HttpFields.build(fields.size());
-
-            for (HttpField field : fields)
-            {
-                HttpHeader header = field.getHeader();
-                if (header == null)
-                {
-                    newFields.add(field);
-                    continue;
-                }
-
-                switch (header)
-                {
-                    case CONTENT_ENCODING ->
-                    {
-                        if (inflatable)
-                        {
-                            if (field.getValue().equalsIgnoreCase("gzip"))
-                            {
-                                newFields.add(X_CE_GZIP);
-                                continue;
-                            }
-
-                            if (COMMA_GZIP.matcher(field.getValue()).matches())
-                            {
-                                String v = field.getValue();
-                                v = v.substring(0, v.lastIndexOf(','));
-                                newFields.add(X_CE_GZIP);
-                                newFields.add(new HttpField(HttpHeader.CONTENT_ENCODING, v));
-                                continue;
-                            }
-                        }
-                        newFields.add(field);
-                    }
-                    case IF_MATCH, IF_NONE_MATCH ->
-                    {
-                        String etags = field.getValue();
-                        String etagsNoSuffix = CompressedContentFormat.GZIP.stripSuffixes(etags);
-                        if (!etagsNoSuffix.equals(etags))
-                        {
-                            newFields.add(new HttpField(field.getHeader(), etagsNoSuffix));
-                            request.setAttribute(GzipHandler.GZIP_HANDLER_ETAGS, etags);
-                            continue;
-                        }
-                        newFields.add(field);
-                    }
-                    case CONTENT_LENGTH -> newFields.add(inflatable ? new HttpField("X-Content-Length", field.getValue()) : field);
-                    default -> newFields.add(field);
-                }
-            }
-            fields = newFields.takeAsImmutable();
-
             // Wrap the request to update the fields and do any inflation
-            request = new GzipRequest(request, inflatable && tryInflate ? getInflateBufferSize() : -1, fields);
+            request = new GzipRequest(request, inflatable && tryInflate ? getInflateBufferSize() : -1);
         }
 
         // Wrap the response and callback IFF we can be deflated and will try to deflate
         if (deflatable && tryDeflate)
         {
-            int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-            GzipResponse gzipResponseAndCallback = new GzipResponse(request, response, callback, this, getVary(), outputBufferSize, isSyncFlush());
+            GzipResponseAndCallback gzipResponseAndCallback = new GzipResponseAndCallback(request, response, callback, this);
             response = gzipResponseAndCallback;
             callback = gzipResponseAndCallback;
         }
