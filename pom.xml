@@ -114,7 +114,7 @@
     <maven.checkstyle.plugin.version>3.2.0</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.3.0</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.4.0</maven.dependency.plugin.version>
     <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
