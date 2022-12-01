@@ -51,7 +51,6 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
 
-    private final GzipRequest _gzipRequest;
     private final Callback _callback;
     private final GzipFactory _factory;
     private final HttpField _vary;
@@ -61,11 +60,10 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponse(GzipRequest request, Response wrapped, Callback callback, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
+    public GzipResponse(Request request, Response wrapped, Callback callback, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
     {
         super(request, wrapped);
 
-        _gzipRequest = request;
         _callback = callback;
         _factory = factory;
         _vary = vary;
@@ -85,7 +83,8 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
         }
         finally
         {
-            _gzipRequest.destroy(this);
+            if (getRequest() instanceof GzipRequest gzipRequest)
+                gzipRequest.destroy();
         }
     }
 
@@ -98,7 +97,8 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
         }
         finally
         {
-            _gzipRequest.destroy(this);
+            if (getRequest() instanceof GzipRequest gzipRequest)
+                gzipRequest.destroy();
         }
     }
 
@@ -140,6 +140,9 @@ public class GzipResponse extends Response.Wrapper implements Callback, Invocabl
         // Are we excluding because of status?
         Response response = GzipResponse.this;
         Request request = response.getRequest();
+        if (!request.isAccepted())
+            throw new IllegalStateException("!accepted");
+
         int sc = response.getStatus();
         if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))
         {

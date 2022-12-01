@@ -30,31 +30,28 @@ public class GzipRequest extends Request.Wrapper
     // TODO: use InflaterPool from somewhere.
     private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);
 
-    private final boolean _inflateInput;
-    private final Decoder _decoder;
-    private final GzipTransformer _gzipTransformer;
     private final int _inflateBufferSize;
-    private final GzipHandler _gzipHandler;
     private final HttpFields _fields;
+    private Decoder _decoder;
+    private GzipTransformer _gzipTransformer;
 
-    public GzipRequest(Request request, GzipHandler gzipHandler, boolean inflateInput, HttpFields fields)
+    public GzipRequest(Request request, int inflateBufferSize, HttpFields fields)
     {
         super(request);
-        _gzipHandler = gzipHandler;
-        _inflateInput = inflateInput;
-        _inflateBufferSize = gzipHandler.getInflateBufferSize();
+        _inflateBufferSize = inflateBufferSize;
         _fields = fields;
+    }
 
-        if (inflateInput)
+    @Override
+    public void accept()
+    {
+        super.accept();
+
+        if (_inflateBufferSize > 0)
         {
-            Components components = request.getComponents();
+            Components components = getComponents();
             _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
-            _gzipTransformer = new GzipTransformer(request);
-        }
-        else
-        {
-            _decoder = null;
-            _gzipTransformer = null;
+            _gzipTransformer = new GzipTransformer(getWrapped());
         }
     }
 
@@ -69,7 +66,7 @@ public class GzipRequest extends Request.Wrapper
     @Override
     public Content.Chunk read()
     {
-        if (_inflateInput)
+        if (_gzipTransformer != null)
             return _gzipTransformer.read();
         return super.read();
     }
@@ -77,13 +74,13 @@ public class GzipRequest extends Request.Wrapper
     @Override
     public void demand(Runnable demandCallback)
     {
-        if (_inflateInput)
+        if (_gzipTransformer != null)
             _gzipTransformer.demand(demandCallback);
         else
             super.demand(demandCallback);
     }
 
-    void destroy(GzipResponse response)
+    void destroy()
     {
         if (_decoder != null)
             _decoder.destroy();

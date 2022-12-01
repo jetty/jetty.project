@@ -528,7 +528,6 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         if (next == null)
             return;
 
-        // TODO: do we need this?
         // Are we already being gzipped?
         if (Request.as(request, GzipRequest.class) != null)
         {
@@ -548,12 +547,11 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             return;
         }
 
+        // Look for inflate and deflate headers
         HttpFields fields = request.getHeaders();
         boolean inflatable = false;
         boolean deflatable = false;
         boolean etagMatches = false;
-
-        // Look for inflate and deflate headers
         for (HttpField field : fields)
         {
             HttpHeader header = field.getHeader();
@@ -567,7 +565,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             }
         }
 
-        // Do we need to adjust request headers?
+        // We need to wrap the request IFF we are inflating or have seen etags with compression separators
         if (inflatable && tryInflate || etagMatches)
         {
             HttpFields.Mutable newFields = HttpFields.build(fields.size());
@@ -621,32 +619,31 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
                 }
             }
             fields = newFields.takeAsImmutable();
-        }
-        else if (!deflatable || !tryDeflate)
-        {
-            // No need to wrap request
-            // We need a Vary header if we could try to deflate
-            if (tryDeflate && _vary != null)
-                response.getHeaders().ensureField(_vary);
-            next.process(request, response, callback);
-            return;
+
+            // Wrap the request to update the fields and do any inflation
+            request = new GzipRequest(request, inflatable && tryInflate ? getInflateBufferSize() : -1, fields);
         }
 
-        GzipRequest gzipRequest = new GzipRequest(request, this, inflatable, fields);
-
-        // Do we need to wrap the response and callback?
+        // Wrap the response and callback IFF we can be deflated and will try to deflate
         if (deflatable && tryDeflate)
         {
             int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-            GzipResponse gzipResponseAndCallback = new GzipResponse(gzipRequest, response, callback, this, getVary(), outputBufferSize, isSyncFlush());
-            next.process(gzipRequest, gzipResponseAndCallback, gzipResponseAndCallback);
-            return;
+            GzipResponse gzipResponseAndCallback = new GzipResponse(request, response, callback, this, getVary(), outputBufferSize, isSyncFlush());
+            response = gzipResponseAndCallback;
+            callback = gzipResponseAndCallback;
+        }
+        else if (tryDeflate && _vary != null)
+        {
+            // We are not wrapping the response, but could have if request accepted, so we add a Vary header.
+            response.getHeaders().ensureField(_vary);
         }
 
-        // We need a Vary header if we could try to deflate
-        if (tryDeflate && _vary != null)
-            response.getHeaders().ensureField(_vary);
-        next.process(gzipRequest, response, callback);
+        // Call the process with the possibly wrapped request, response and callback
+        next.process(request, response, callback);
+
+        // If the request was not accepted, destroy any gzipRequest wrapper
+        if (!request.isAccepted() && request instanceof GzipRequest gzipRequest)
+            gzipRequest.destroy();
     }
 
     protected boolean isPathMimeTypeGzipable(MimeTypes mimeTypes, String requestURI)
