@@ -14,6 +14,7 @@
 package org.eclipse.jetty.osgi.util;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,35 +45,61 @@ public class Util
      * against jetty home.
      * 
      * @param path the path to resolve
-     * @param bundlePath the path to the bundle install location
+     * @param bundle the bundle
      * @param jettyHome the path to jetty home
-     * @return the resolved path or null if the path does not exist
+     * @return the URI within the bundle as a usable URI
      */
-    public static Path resolvePath(String path, Path bundlePath, Path jettyHome)
+    public static URI resolvePathAsLocalizedURI(String path, Bundle bundle, Path jettyHome)
+    throws Exception
     {
         if (StringUtil.isBlank(path))
             return null;
 
         if (path.startsWith("/") || path.startsWith("file:/")) //absolute location
-            return Paths.get(path);
+            return Paths.get(path).toUri();
         
         //relative location
         //try inside the bundle first
-        if (bundlePath != null)
+        if (bundle != null)
         {
-            Path p = bundlePath.resolve(path);
-            if (Files.exists(p))
-                return p;
+            URL url = bundle.getEntry(path);
+            if (url != null)
+            {
+                return BundleFileLocatorHelper.DEFAULT.getLocalURL(url).toURI();
+            }
         }
 
+        //try resolving against jetty.home
         if (jettyHome != null)
         {
             Path p = jettyHome.resolve(path);
             if (Files.exists(p))
-                return p;
+                return p.toUri();
         }
 
-        return null;
+        return null;  
+    }
+    
+    public static URL getLocalURL(URL url)
+    throws Exception
+    {
+        if (url == null)
+            return null;
+        
+        return BundleFileLocatorHelper.DEFAULT.getLocalURL(url);
+    }
+    
+    public static URL getLocalizedEntry(String file, Bundle bundle)
+    throws Exception
+    {
+        if (file == null || bundle == null)
+            return null;
+        
+        URL url = bundle.getEntry(file);
+        if (url == null)
+            return null;
+        
+        return BundleFileLocatorHelper.DEFAULT.getLocalURL(url);
     }
     
     /**

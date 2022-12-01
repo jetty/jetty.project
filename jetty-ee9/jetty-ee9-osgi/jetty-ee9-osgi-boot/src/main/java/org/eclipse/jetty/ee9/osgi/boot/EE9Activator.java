@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.osgi.boot;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -283,9 +284,9 @@ public class EE9Activator implements BundleActivator
 
             //Apply any context xml file
             String tmp = osgiApp.getProperties().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
-            final Path contextXmlPath = Util.resolvePath(tmp, osgiApp.getPath(), jettyHomePath);
+            final URI contextXmlURI = Util.resolvePathAsLocalizedURI(tmp, osgiApp.getBundle(), jettyHomePath);
 
-            if (contextXmlPath != null)
+            if (contextXmlURI != null)
             {
                 ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
                 try
@@ -293,7 +294,7 @@ public class EE9Activator implements BundleActivator
                     Thread.currentThread().setContextClassLoader(contextHandler.getClassLoader());
                     WebAppClassLoader.runWithServerClassAccess(() ->
                     {
-                        XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(contextHandler).newResource(contextXmlPath));
+                        XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(contextHandler).newResource(contextXmlURI));
                         WebAppClassLoader.runWithServerClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
@@ -437,13 +438,12 @@ public class EE9Activator implements BundleActivator
 
             // apply any META-INF/context.xml file that is found to configure
             // the webapp first
-            //First try looking for one in /META-INF
-        
-            Path tmpPath = null;
-            
-            URL contextXmlURL = osgiApp.getBundle().getEntry("/META-INF/jetty-webapp-context.xml");
+            //First try looking for one in /META-INF            
+            URI tmpUri = null;
+
+            URL contextXmlURL = Util.getLocalizedEntry("/META-INF/jetty-webapp-context.xml", osgiApp.getBundle());
             if (contextXmlURL != null)
-                tmpPath = Paths.get(contextXmlURL.toURI());
+                tmpUri = contextXmlURL.toURI();
 
             //Then look in the property OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH and apply the first one
             if (contextXmlURL == null)
@@ -452,21 +452,21 @@ public class EE9Activator implements BundleActivator
                 if (tmp != null)
                 {
                     String[] filenames = tmp.split("[,;]");
-                    tmpPath = Util.resolvePath(filenames[0], osgiApp.getPath(), jettyHomePath);
+                    tmpUri = Util.resolvePathAsLocalizedURI(filenames[0], osgiApp.getBundle(), jettyHomePath);
                 }
             }
 
             //apply a context xml if there is one
-            if (tmpPath != null)
+            if (tmpUri != null)
             {
-                final Path contextXmlPath = tmpPath;
+                final URI contextXmlUri = tmpUri;
                 ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
                 try
                 {
                     Thread.currentThread().setContextClassLoader(webApp.getClassLoader());
                     WebAppClassLoader.runWithServerClassAccess(() ->
                     {
-                        XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(webApp).newResource(contextXmlPath));
+                        XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(webApp).newResource(contextXmlUri));
                         WebAppClassLoader.runWithServerClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
@@ -551,19 +551,19 @@ public class EE9Activator implements BundleActivator
             String tmp = osgiApp.getProperties().get(OSGiWebappConstants.JETTY_WEB_XML_PATH);
             if (!StringUtil.isBlank(tmp))
             {
-                Path webXml = Util.resolvePath(tmp, bundlePath, jettyHomePath);
+                URI webXml = Util.resolvePathAsLocalizedURI(tmp, osgiApp.getBundle(), jettyHomePath);
                 if (webXml != null)
-                    webApp.setDescriptor(webXml.toUri().toString());
+                    webApp.setDescriptor(webXml.toString());
             }
 
             // webdefault-ee9.xml
             tmp = osgiApp.getProperties().get(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
             if (tmp != null)
             {
-                Path defaultWebXml = Util.resolvePath(tmp, bundlePath, jettyHomePath);
+                URI defaultWebXml = Util.resolvePathAsLocalizedURI(tmp, osgiApp.getBundle(), jettyHomePath);
                 if (defaultWebXml != null)
                 {
-                    webApp.setDefaultsDescriptor(defaultWebXml.toUri().toString());
+                    webApp.setDefaultsDescriptor(defaultWebXml.toString());
                 }
             }
             

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.osgi;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -173,9 +174,6 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             return false;
 
         //is the bundle destined for my environment?
-        
-        
-        
         String jettyHome = (String)getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
         Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
         
@@ -185,10 +183,10 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         for (String contextFile : tmp)
         {            
             OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
-            Path contextFilePath = Util.resolvePath(contextFile, app.getPath(), jettyHomePath);
+            URI contextFilePath = Util.resolvePathAsLocalizedURI(contextFile, app.getBundle(), jettyHomePath);
             
             //set up the single context file for this deployment
-            app.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toUri().toString());
+            app.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toString());
             
             _appMap.put(app.getPath(), app);
             List<App> apps = _bundleMap.get(bundle);

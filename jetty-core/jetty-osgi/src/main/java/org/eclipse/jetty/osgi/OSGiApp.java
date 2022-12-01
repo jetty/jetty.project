@@ -86,10 +86,6 @@ public class OSGiApp extends App
         File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
         //Fix some osgiPaths.get( locations which point to an archive, but that doesn't end in .jar 
         URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toURI().toURL());
-        URI uri = url.toURI();
-        Path p = Paths.get(uri);
-        if (!FileID.isArchive(p) && !Files.isDirectory(p))
-            url = new URL("jar:" + uri + "!/");
         
         return ResourceFactory.root().newResource(url);
     }
@@ -137,7 +133,7 @@ public class OSGiApp extends App
         _bundle = Objects.requireNonNull(bundle);
         _bundleResource = getBundleAsResource(bundle);
         
-        //copy all bundle headers into the properties
+        //copy selected bundle headers into the properties
         Dictionary<String, String> headers = bundle.getHeaders();
         Enumeration<String> keys = headers.keys();
         while (keys.hasMoreElements())
@@ -151,6 +147,10 @@ public class OSGiApp extends App
                 getProperties().put(Deployable.DEFAULTS_DESCRIPTOR, val);
             }
             else if (OSGiWebappConstants.JETTY_WEB_XML_PATH.equalsIgnoreCase(key))
+            {
+                getProperties().put(key, val);
+            }
+            else if (OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH.equalsIgnoreCase(key))
             {
                 getProperties().put(key, val);
             }
