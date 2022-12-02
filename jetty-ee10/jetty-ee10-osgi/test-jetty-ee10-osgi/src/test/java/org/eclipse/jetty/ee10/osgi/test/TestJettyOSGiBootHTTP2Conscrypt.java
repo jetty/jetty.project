@@ -48,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
-@Disabled //TODO
+@Disabled //wrappedBundle mismatch version of bndutils
 //@RunWith(PaxExam.class)
 //@ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2Conscrypt
@@ -96,7 +96,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             .exports("org.conscrypt;version=" + System.getProperty("conscrypt-version"))
             .instructions("Bundle-NativeCode=META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so")
             .start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-ee10-osgi-alpn").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("jetty-ee10-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
 
@@ -104,11 +104,6 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-hpack").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-server").versionAsInProject().start());
         return res;
-    }
-
-    public void assertAllBundlesActiveOrResolved()
-    {
-
     }
 
     @Test

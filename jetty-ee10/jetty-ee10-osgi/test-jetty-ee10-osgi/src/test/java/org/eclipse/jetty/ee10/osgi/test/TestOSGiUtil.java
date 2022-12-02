@@ -79,6 +79,8 @@ public class TestOSGiUtil
             options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
             xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
             xmlConfigs.append(";");
+            xmlConfigs.append(new File(etc, "jetty-ssl-context.xml").toURI());
+            xmlConfigs.append(";");
             xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
             xmlConfigs.append(";");
             xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
