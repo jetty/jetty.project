@@ -516,7 +516,8 @@ public class ForwardProxyTLSServerTest
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    request.accept();
+                    if (!request.isAccepted())
+                        request.accept();
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
                     callback.succeeded();
@@ -537,12 +538,11 @@ public class ForwardProxyTLSServerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                super.process(request, response, callback);
-
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    request.accept();
+                    if (!request.isAccepted())
+                        request.accept();
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
                     response.write(true, ByteBuffer.allocate(4096), callback);
@@ -566,7 +566,8 @@ public class ForwardProxyTLSServerTest
                 String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
                 if (proxyAuth == null)
                 {
-                    request.accept();
+                    if (!request.isAccepted())
+                        request.accept();
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
                     response.write(true, ByteBuffer.allocate(1024), callback);
