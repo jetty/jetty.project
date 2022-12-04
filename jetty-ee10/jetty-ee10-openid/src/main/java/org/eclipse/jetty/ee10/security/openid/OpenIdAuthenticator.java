@@ -249,6 +249,9 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     @Override
     public void logout(Request request)
     {
+        if (!request.isAccepted())
+            request.accept();
+
         attemptLogoutRedirect(request);
         super.logout(request);
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
@@ -280,6 +283,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
      */
     private void attemptLogoutRedirect(Request request)
     {
+        assert request.isAccepted();
+
         try
         {
             ServletContextRequest baseRequest = Request.as(request, ServletContextRequest.class);
@@ -462,6 +467,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 response.setContentLength(0);
                 int redirectCode = req.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                     ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER;
+                if (!req.isAccepted())
+                    req.accept();
                 Response.sendRedirect(req, res, cb, redirectCode, uriRedirectInfo.getUri(), true);
                 return openIdAuth;
             }
@@ -532,6 +539,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
             int redirectCode = req.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
                 ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER;
+            if (!req.isAccepted())
+                req.accept();
             Response.sendRedirect(req, res, cb, redirectCode, challengeUri, true);
 
             return Authentication.SEND_CONTINUE;
@@ -553,6 +562,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
      */
     private void sendError(Request request, Response response, Callback callback, String message) throws IOException
     {
+        if (!request.isAccepted())
+            request.accept();
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         final HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
         final HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
