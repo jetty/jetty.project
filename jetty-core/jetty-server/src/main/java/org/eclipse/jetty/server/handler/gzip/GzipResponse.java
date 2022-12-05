@@ -13,18 +13,7 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.channels.WritePendingException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.CRC32;
-import java.util.zip.Deflater;
-
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -33,6 +22,13 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.WritePendingException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.CRC32;
+import java.util.zip.Deflater;
 
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
@@ -52,7 +48,18 @@ public class GzipResponse extends Response.Wrapper
 
     private enum GZState
     {
-        MIGHT_COMPRESS, NOT_COMPRESSING, COMMITTING, COMPRESSING, FINISHING, FINISHED
+        // first state, indicating that content might be compressed, pending the state of the response
+        MIGHT_COMPRESS,
+        // the response is not being compressed (this is a final state)
+        NOT_COMPRESSING,
+        // The response is being committed (no changes to compress state can be made at this point)
+        COMMITTING,
+        // The response is compressing its body content
+        COMPRESSING,
+        // The last content has is being compressed and deflater is being flushed
+        FINISHING,
+        // The content has finished compressing and trailers have been sent (this is a final state)
+        FINISHED
     }
 
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
@@ -332,6 +339,10 @@ public class GzipResponse extends Response.Wrapper
             return _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
         }
 
+        /**
+         * This method is called directly from {@link #process()} to perform the compressing of
+         * the content this {@link GzipBufferCB} represents.
+         */
         private Action compressing(Deflater deflater, ByteBuffer outputBuffer)
         {
             if (LOG.isDebugEnabled())
@@ -373,6 +384,10 @@ public class GzipResponse extends Response.Wrapper
             throw new AssertionError("No progress on deflate made for " + this);
         }
 
+        /**
+         * This method is called by {@link #compressing(Deflater, ByteBuffer)}, once the last chunk is compressed;
+         * or directly from {@link #process()} if an earlier call to {@link #finishing(Deflater, ByteBuffer)} finishing was unable to complete.
+         */
         private Action finishing(Deflater deflater, ByteBuffer outputBuffer)
         {
             if (LOG.isDebugEnabled())
