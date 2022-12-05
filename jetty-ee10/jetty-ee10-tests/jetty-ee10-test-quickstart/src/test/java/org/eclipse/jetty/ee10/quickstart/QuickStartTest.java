@@ -140,12 +140,20 @@ public class QuickStartTest
         server.setHandler(webapp);
         server.start();
 
-        URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
+        //test static content added by fragment
+        URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/fragmentA/index.html");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+        assertEquals(200, connection.getResponseCode());
+        String content = IO.toString((InputStream)connection.getContent());
+        assertThat(content, Matchers.containsString("Welcome to a Fragment"));
+
+        //test annotations etc
+        url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
+        connection = (HttpURLConnection)url.openConnection();
         connection.setRequestMethod("POST");
         
         assertEquals(200, connection.getResponseCode());
-        String content = IO.toString((InputStream)connection.getContent());
+        content = IO.toString((InputStream)connection.getContent());
         assertThat(content, Matchers.containsString("Results"));
         assertThat(content, Matchers.not(Matchers.containsString("FAIL")));
         server.stop();
