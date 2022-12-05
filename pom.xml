@@ -2473,6 +2473,25 @@
         <spotbugs.skip>true</spotbugs.skip>
       </properties>
     </profile>
+    <profile>
+      <id>jdk19</id>
+      <activation>
+        <jdk>19</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-invoker-plugin</artifactId>
+              <configuration>
+                <skipInvocation>true</skipInvocation>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
   </profiles>
 
   <issueManagement>
