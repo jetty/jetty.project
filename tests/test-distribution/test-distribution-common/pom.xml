@@ -17,6 +17,8 @@
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>jetty-home-tester</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -70,6 +72,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -14,9 +14,12 @@
 package org.eclipse.jetty.http3.tests;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -25,6 +28,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.util.HostPort;
 import org.junit.jupiter.api.Disabled;
@@ -38,7 +42,28 @@ public class ExternalServerTest
 {
     @Test
     @Tag("external")
-    public void testExternalServer() throws Exception
+    public void testExternalServerWithHttpClient() throws Exception
+    {
+        HTTP3Client client = new HTTP3Client();
+        HttpClientTransportOverHTTP3 transport = new HttpClientTransportOverHTTP3(client);
+        HttpClient httpClient = new HttpClient(transport);
+        httpClient.start();
+        try
+        {
+            URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
+            ContentResponse response = httpClient.newRequest(uri).send();
+            System.err.println("response = " + response);
+            System.err.println(response.getContentAsString());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    @Tag("external")
+    public void testExternalServerWithHTTP3Client() throws Exception
     {
         HTTP3Client client = new HTTP3Client();
         client.start();
