@@ -46,6 +46,14 @@ public interface ConnectionMetaData extends Attributes
     boolean isSecure();
 
     /**
+     * @return whether the functionality of pushing resources is supported
+     */
+    default boolean isPushSupported()
+    {
+        return false;
+    }
+
+    /**
      * @return The address of the remote end of this connection.  By default, this is the first hop of the underlying
      *         network connection, but it may be wrapped to represent a more remote end point.
      */
@@ -135,6 +143,12 @@ public interface ConnectionMetaData extends Attributes
         public boolean isSecure()
         {
             return getWrapped().isSecure();
+        }
+
+        @Override
+        public boolean isPushSupported()
+        {
+            return getWrapped().isPushSupported();
         }
 
         @Override

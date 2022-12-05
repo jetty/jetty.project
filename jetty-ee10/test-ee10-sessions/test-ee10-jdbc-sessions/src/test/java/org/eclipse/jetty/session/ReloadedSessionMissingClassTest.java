@@ -44,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * ReloadedSessionMissingClassTest
  */
 //TODO
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 public class ReloadedSessionMissingClassTest

@@ -52,6 +52,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
@@ -84,7 +85,7 @@ public class HttpRequest implements Request
     private List<HttpCookie> cookies;
     private Map<String, Object> attributes;
     private List<RequestListener> requestListeners;
-    private BiFunction<Request, Request, Response.CompleteListener> pushListener;
+    private BiFunction<Request, Request, Response.CompleteListener> pushHandler;
     private Supplier<HttpFields> trailers;
     private String upgradeProtocol;
     private Object tag;
@@ -580,6 +581,20 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request onResponseContentSource(Response.ContentSourceListener listener)
+    {
+        this.responseListeners.add(new Response.ContentSourceListener()
+        {
+            @Override
+            public void onContentSource(Response response, org.eclipse.jetty.io.Content.Source contentSource)
+            {
+                listener.onContentSource(response, contentSource);
+            }
+        });
+        return this;
+    }
+
+    @Override
     public Request onResponseSuccess(final Response.SuccessListener listener)
     {
         this.responseListeners.add(new Response.SuccessListener()
@@ -608,6 +623,13 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request onPush(BiFunction<Request, Request, Response.CompleteListener> pushHandler)
+    {
+        this.pushHandler = pushHandler;
+        return this;
+    }
+
+    @Override
     public Request onComplete(final Response.CompleteListener listener)
     {
         this.responseListeners.add(new Response.CompleteListener()
@@ -618,26 +640,6 @@ public class HttpRequest implements Request
                 listener.onComplete(result);
             }
         });
-        return this;
-    }
-
-    /**
-     * <p>Sets a listener for pushed resources.</p>
-     * <p>When resources are pushed from the server, the given {@code listener}
-     * is invoked for every pushed resource.
-     * The parameters to the {@code BiFunction} are this request and the
-     * synthesized request for the pushed resource.
-     * The {@code BiFunction} should return a {@code CompleteListener} that
-     * may also implement other listener interfaces to be notified of various
-     * response events, or {@code null} to signal that the pushed resource
-     * should be canceled.</p>
-     *
-     * @param listener a listener for pushed resource events
-     * @return this request object
-     */
-    public Request pushListener(BiFunction<Request, Request, Response.CompleteListener> listener)
-    {
-        this.pushListener = listener;
         return this;
     }
 
@@ -800,9 +802,9 @@ public class HttpRequest implements Request
         return responseListeners;
     }
 
-    public BiFunction<Request, Request, Response.CompleteListener> getPushListener()
+    public BiFunction<Request, Request, Response.CompleteListener> getPushHandler()
     {
-        return pushListener;
+        return pushHandler;
     }
 
     @Override

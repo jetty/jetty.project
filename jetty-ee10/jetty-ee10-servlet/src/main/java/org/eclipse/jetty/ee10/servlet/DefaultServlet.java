@@ -61,6 +61,7 @@ import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
@@ -337,12 +338,12 @@ public class DefaultServlet extends HttpServlet
         if (servletContext instanceof ServletContextHandler.ServletContextApi api)
             return api.getContext().getServletContextHandler();
 
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
-        if (context != null)
-            return context.getContextHandler();
+        Context context = ContextHandler.getCurrentContext();
+        if (context instanceof ContextHandler.ScopedContext scopedContext)
+            return scopedContext.getContextHandler();
 
         throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-            servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
+            servletContext.getClass().getName() + " is not " + ContextHandler.ScopedContext.class.getName());
     }
 
     protected boolean isPathInfoOnly()

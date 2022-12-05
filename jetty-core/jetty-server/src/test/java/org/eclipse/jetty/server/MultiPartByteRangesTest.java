@@ -86,7 +86,7 @@ public class MultiPartByteRangesTest
                 String boundary = "boundary";
                 try (MultiPartByteRanges.ContentSource content = new MultiPartByteRanges.ContentSource(boundary))
                 {
-                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part("text/plain", resourcePath, range)));
+                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part("text/plain", resourcePath, range, content.getLength())));
                     content.close();
 
                     response.setStatus(HttpStatus.PARTIAL_CONTENT_206);

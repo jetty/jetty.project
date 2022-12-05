@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -75,7 +74,7 @@ public class InvalidURIRule extends Rule
     }
 
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         String path = input.getHttpURI().getDecodedPath();
 
@@ -91,12 +90,12 @@ public class InvalidURIRule extends Rule
         return null;
     }
 
-    private Request.WrapperProcessor apply(Request.WrapperProcessor input)
+    private Processor apply(Processor input)
     {
-        return new Request.WrapperProcessor(input)
+        return new Processor(input)
         {
             @Override
-            public void process(Request ignored, Response response, Callback callback)
+            public void process(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))

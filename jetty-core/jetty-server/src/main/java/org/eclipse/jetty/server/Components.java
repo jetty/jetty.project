@@ -13,15 +13,13 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Map;
-
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * Components made available via a {@link Request}
- * TODO flesh out this idea... maybe better name?
+ * Common components made available via a {@link Request}
  */
 public interface Components
 {
@@ -36,12 +34,13 @@ public interface Components
      * The cache will have a life cycle limited by the connection, i.e. no cache map will live
      * longer that the connection associated with it.  However, a cache may have a shorter life
      * than a connection (e.g. it may be discarded for implementation reasons).  A cache map is
-     * guaranteed to be give to only a single request concurrently, so objects saved there do not
+     * guaranteed to be given to only a single request concurrently (scoped by
+     * {@link org.eclipse.jetty.server.internal.HttpChannelState}), so objects saved there do not
      * need to be made safe from access by simultaneous request.
-     * If the connection is known to be none-persistent then the cache may be a noop cache and discard
-     * all items set on it.
+     * If the connection is known to be none-persistent then the cache may be a noop
+     * cache and discard all items set on it.
+     *
      * @return A Map, which may be an empty map that discards all items.
-     * TODO This should be Attributes like everything else.
      */
-    Map<String, Object> getCache();
+    Attributes getCache();
 }

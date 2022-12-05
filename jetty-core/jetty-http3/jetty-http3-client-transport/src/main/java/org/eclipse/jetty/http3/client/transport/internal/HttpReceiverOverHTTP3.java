@@ -20,14 +20,11 @@ import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,23 +38,49 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     }
 
     @Override
-    protected HttpChannelOverHTTP3 getHttpChannel()
+    protected void onInterim()
     {
-        return (HttpChannelOverHTTP3)super.getHttpChannel();
     }
 
     @Override
-    protected void receive()
+    protected void reset()
     {
-        // Called when the application resumes demand of content.
+        super.reset();
+    }
+
+    @Override
+    public Content.Chunk read(boolean fillInterestIfNeeded)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("resuming response processing on {}", this);
+            LOG.debug("Reading, fillInterestIfNeeded={} in {}", fillInterestIfNeeded, this);
+        Stream stream = getHttpChannel().getStream();
+        Stream.Data data = stream.readData();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Read stream data {} in {}", data, this);
+        if (data == null)
+        {
+            if (fillInterestIfNeeded)
+                stream.demand();
+            return null;
+        }
+        ByteBuffer byteBuffer = data.getByteBuffer();
+        boolean last = !byteBuffer.hasRemaining() && data.isLast();
+        if (last)
+            responseSuccess(getHttpExchange(), null);
+        return Content.Chunk.from(byteBuffer, last, data);
+    }
 
-        HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return;
+    @Override
+    public void failAndClose(Throwable failure)
+    {
+        responseFailure(failure, Promise.from(failed -> getHttpChannel().getHttpConnection().close(failure),
+            x -> getHttpChannel().getHttpConnection().close(failure)));
+    }
 
-        getHttpChannel().getStream().demand();
+    @Override
+    protected HttpChannelOverHTTP3 getHttpChannel()
+    {
+        return (HttpChannelOverHTTP3)super.getHttpChannel();
     }
 
     @Override
@@ -71,82 +94,34 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
         httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
-        if (responseBegin(exchange))
+        responseBegin(exchange);
+        if (exchange.isResponseComplete())
+            return;
+
+        HttpFields headers = response.getFields();
+        for (HttpField header : headers)
         {
-            HttpFields headers = response.getFields();
-            for (HttpField header : headers)
-            {
-                if (!responseHeader(exchange, header))
-                    return;
-            }
-
-            // TODO: add support for HttpMethod.CONNECT.
-
-            if (responseHeaders(exchange))
-            {
-                int status = response.getStatus();
-                if (frame.isLast() || HttpStatus.isInterim(status))
-                    responseSuccess(exchange);
-                else
-                    stream.demand();
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("stalling response processing, no demand after headers on {}", this);
-            }
+            responseHeader(exchange, header);
+            if (exchange.isResponseComplete())
+                return;
         }
+
+        // TODO: add support for HttpMethod.CONNECT.
+
+        responseHeaders(exchange);
     }
 
     @Override
     public void onDataAvailable(Stream.Client stream)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Data available notification in {}", this);
+
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return;
 
-        Stream.Data data = stream.readData();
-        if (data != null)
-        {
-            ByteBuffer byteBuffer = data.getByteBuffer();
-            if (byteBuffer.hasRemaining())
-            {
-                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
-                {
-                    data.release();
-                    responseFailure(x, Promise.from(failed ->
-                    {
-                        if (failed)
-                            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-                    }, f -> stream.reset(HTTP3ErrorCode.INTERNAL_ERROR.code(), x)));
-                });
-                boolean proceed = responseContent(exchange, byteBuffer, callback);
-                if (proceed)
-                {
-                    if (data.isLast())
-                        responseSuccess(exchange);
-                    else
-                        stream.demand();
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("stalling response processing, no demand after {} on {}", data, this);
-                }
-            }
-            else
-            {
-                data.release();
-                if (data.isLast())
-                    responseSuccess(exchange);
-                else
-                    stream.demand();
-            }
-        }
-        else
-        {
-            stream.demand();
-        }
+        responseContentAvailable();
     }
 
     @Override
@@ -159,7 +134,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
 
-        responseSuccess(exchange);
+        responseSuccess(exchange, null);
     }
 
     @Override

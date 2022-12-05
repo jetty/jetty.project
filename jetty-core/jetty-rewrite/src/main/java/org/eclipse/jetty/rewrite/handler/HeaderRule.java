@@ -15,8 +15,6 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.server.Request;
-
 /**
  * <p>Abstract rule that matches against request headers.</p>
  */
@@ -50,7 +48,7 @@ public abstract class HeaderRule extends Rule
     }
 
     @Override
-    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
+    public Processor matchAndApply(Processor input) throws IOException
     {
         String value = input.getHeaders().get(getHeaderName());
         if (value == null)
@@ -69,7 +67,7 @@ public abstract class HeaderRule extends Rule
      * @return the possibly wrapped {@code Request} and {@code Processor}
      * @throws IOException if applying the rule failed
      */
-    protected abstract Request.WrapperProcessor apply(Request.WrapperProcessor input, String value) throws IOException;
+    protected abstract Processor apply(Processor input, String value) throws IOException;
 
     @Override
     public String toString()

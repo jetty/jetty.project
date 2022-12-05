@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * and, if virtual threads are supported, to start virtual threads.</p>
  *
  * @see #areSupported()
- * @see #executeOnVirtualThread(Runnable)
+ * @see #getVirtualThreadsExecutor(Executor)
  * @see #isVirtualThread()
  */
 public class VirtualThreads
@@ -58,6 +58,11 @@ public class VirtualThreads
         }
     }
 
+    private static Method getIsVirtualThreadMethod()
+    {
+        return isVirtualThread;
+    }
+
     private static void warn()
     {
         LOG.warn("Virtual thread support is not available (or not enabled via --enable-preview) in the current Java runtime ({})", System.getProperty("java.version"));
@@ -78,14 +83,16 @@ public class VirtualThreads
      *
      * @param task the task to execute in a virtual thread
      * @see #areSupported()
+     * @deprecated use {@link #getVirtualThreadsExecutor(Executor)} instead
      */
+    @Deprecated(forRemoval = true)
     public static void executeOnVirtualThread(Runnable task)
     {
         try
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting in virtual thread: {}", task);
-            executor.execute(task);
+            getDefaultVirtualThreadsExecutor().execute(task);
         }
         catch (Throwable x)
         {
@@ -101,13 +108,32 @@ public class VirtualThreads
     {
         try
         {
-            return (Boolean)isVirtualThread.invoke(Thread.currentThread());
+            return (Boolean)getIsVirtualThreadMethod().invoke(Thread.currentThread());
         }
         catch (Throwable x)
         {
             warn();
             return false;
         }
+    }
+
+    /**
+     * @return a default virtual thread per task {@code Executor}
+     */
+    public static Executor getDefaultVirtualThreadsExecutor()
+    {
+        return executor;
+    }
+
+    /**
+     * @param executor the {@code Executor} to obtain a virtual threads {@code Executor} from
+     * @return a virtual threads {@code Executor} obtained from the given {@code Executor}
+     */
+    public static Executor getVirtualThreadsExecutor(Executor executor)
+    {
+        if (executor instanceof Configurable)
+            return ((Configurable)executor).getVirtualThreadsExecutor();
+        return null;
     }
 
     /**
@@ -121,7 +147,7 @@ public class VirtualThreads
     public static boolean isUseVirtualThreads(Executor executor)
     {
         if (executor instanceof Configurable)
-            return ((Configurable)executor).isUseVirtualThreads();
+            return ((Configurable)executor).getVirtualThreadsExecutor() != null;
         return false;
     }
 
@@ -129,30 +155,53 @@ public class VirtualThreads
      * <p>Implementations of this interface can be configured to use virtual threads.</p>
      * <p>Whether virtual threads are actually used depends on whether the runtime
      * supports virtual threads and, if the runtime supports them, whether they are
-     * configured to be used via {@link #setUseVirtualThreads(boolean)}.</p>
+     * configured to be used via {@link #setVirtualThreadsExecutor(Executor)}.</p>
      */
     public interface Configurable
     {
         /**
-         * @return whether to use virtual threads
+         * @return the {@code Executor} to use to execute tasks in virtual threads
          */
+        default Executor getVirtualThreadsExecutor()
+        {
+            return null;
+        }
+
+        /**
+         *
+         * @param executor the {@code Executor} to use to execute tasks in virtual threads
+         * @throws UnsupportedOperationException if the runtime does not support virtual threads
+         * @see #areSupported()
+         */
+        default void setVirtualThreadsExecutor(Executor executor)
+        {
+            if (executor != null && !VirtualThreads.areSupported())
+            {
+                warn();
+                throw new UnsupportedOperationException();
+            }
+        }
+
+        /**
+         * @return whether to use virtual threads
+         * @deprecated use {@link #getVirtualThreadsExecutor()} instead
+         */
+        @Deprecated(forRemoval = true)
         default boolean isUseVirtualThreads()
         {
-            return false;
+            return getVirtualThreadsExecutor() != null;
         }
 
         /**
          * @param useVirtualThreads whether to use virtual threads
          * @throws UnsupportedOperationException if the runtime does not support virtual threads
          * @see #areSupported()
+         * @deprecated use {@link #setVirtualThreadsExecutor(Executor)} instead
          */
+        @Deprecated(forRemoval = true)
         default void setUseVirtualThreads(boolean useVirtualThreads)
         {
-            if (useVirtualThreads && !VirtualThreads.areSupported())
-            {
-                warn();
-                throw new UnsupportedOperationException();
-            }
+            setVirtualThreadsExecutor(useVirtualThreads ? executor : null);
         }
     }
 

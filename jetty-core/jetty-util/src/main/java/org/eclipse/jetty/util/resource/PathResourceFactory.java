@@ -11,13 +11,21 @@
 // ========================================================================
 //
 
-[[og-logging]]
-=== Logging
+package org.eclipse.jetty.util.resource;
 
-There are two types of logging that can be configured in Jetty:
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-* The logging of Jetty itself, that logs the server activity
-* The HTTP request logging, that logs information about HTTP requests and responses processed by Jetty
-
-include::logging-server.adoc[]
-include::logging-request.adoc[]
+public class PathResourceFactory implements ResourceFactory
+{
+    @Override
+    public Resource newResource(URI uri)
+    {
+        Path path = Paths.get(uri.normalize());
+        if (!Files.exists(path))
+            return null;
+        return new PathResource(path, uri, false);
+    }
+}

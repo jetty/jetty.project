@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
@@ -67,16 +68,14 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public void doStart() throws Exception
     {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        Context context = ContextHandler.getCurrentContext();
         if (_resourceBase == null)
         {
             if (context != null)
                 _resourceBase = context.getBaseResource();
         }
 
-        // TODO: _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
-        if (_mimeTypes == null)
-            _mimeTypes = new MimeTypes();
+        _mimeTypes = context == null ? MimeTypes.DEFAULTS : context.getMimeTypes();
 
         _byteBufferPool = getByteBufferPool(context);
         _resourceService.setHttpContentFactory(newHttpContentFactory());
@@ -87,11 +86,11 @@ public class ResourceHandler extends Handler.Wrapper
         super.doStart();
     }
 
-    private static ByteBufferPool getByteBufferPool(ContextHandler.Context context)
+    private ByteBufferPool getByteBufferPool(Context context)
     {
         if (context == null)
             return new NoopByteBufferPool();
-        Server server = context.getContextHandler().getServer();
+        Server server = getServer();
         if (server == null)
             return new NoopByteBufferPool();
         ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
@@ -318,11 +317,6 @@ public class ResourceHandler extends Handler.Wrapper
     public int getEncodingCacheSize()
     {
         return _resourceService.getEncodingCacheSize();
-    }
-
-    public void setMimeTypes(MimeTypes mimeTypes)
-    {
-        _mimeTypes = mimeTypes;
     }
 
     /**

@@ -43,6 +43,8 @@ updates:
         versions: [ ">=3.0.0" ]
       - dependency-name: "org.glassfish.jaxb:*"
         versions: [ ">=3.0.0"]
+      - dependency-name: "ch.qos.logback:*"
+        versions: [ ">=1.4.0"]
 
   - package-ecosystem: "maven"
     directory: "/"

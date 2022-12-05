@@ -354,7 +354,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         finally
         {
             if (wake)
-                _servletChannel.execute(_servletChannel); // TODO review in jetty-10 if execute is needed
+                _servletChannel.execute(_servletChannel::handle);
         }
     }
 
@@ -1390,7 +1390,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             wake = _servletChannel.getState().onWritePossible();
         }
         if (wake)
-            _servletChannel.execute(_servletChannel);
+            _servletChannel.execute(_servletChannel::handle);
     }
 
     @Override

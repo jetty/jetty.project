@@ -43,8 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * ReloadedSessionMissingClassTest
  */
-//TODO
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 public class ReloadedSessionMissingClassTest
@@ -115,6 +113,7 @@ public class ReloadedSessionMissingClassTest
                 assertNotNull(sessionId);
 
                 //Stop the webapp
+                webApp.get().stop();
                 webApp.stop();
 
                 webApp.setClassLoader(loaderWithoutFoo);

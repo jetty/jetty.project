@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -29,19 +28,19 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.http2.internal.HTTP2Stream;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,23 +54,57 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
-    protected HttpChannelOverHTTP2 getHttpChannel()
+    protected void onInterim()
     {
-        return (HttpChannelOverHTTP2)super.getHttpChannel();
     }
 
     @Override
-    protected void receive()
+    protected void reset()
     {
-        // Called when the application resumes demand of content.
+        super.reset();
+    }
+
+    @Override
+    public Content.Chunk read(boolean fillInterestIfNeeded)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("Resuming response processing on {}", this);
+            LOG.debug("Reading, fillInterestIfNeeded={} in {}", fillInterestIfNeeded, this);
+        Stream stream = getHttpChannel().getStream();
+        Stream.Data data = stream.readData();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Read stream data {} in {}", data, this);
+        if (data == null)
+        {
+            if (fillInterestIfNeeded)
+                stream.demand();
+            return null;
+        }
+        DataFrame frame = data.frame();
+        boolean last = frame.remaining() == 0 && frame.isEndStream();
+        if (last)
+            responseSuccess(getHttpExchange(), null);
+        return Content.Chunk.from(frame.getData(), last, data);
+    }
 
-        HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return;
+    @Override
+    public void failAndClose(Throwable failure)
+    {
+        Stream stream = getHttpChannel().getStream();
+        responseFailure(failure, Promise.from(failed ->
+        {
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            getHttpChannel().getHttpConnection().close(failure);
+        }, x ->
+        {
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            getHttpChannel().getHttpConnection().close(failure);
+        }));
+    }
 
-        getHttpChannel().getStream().demand();
+    @Override
+    protected HttpChannelOverHTTP2 getHttpChannel()
+    {
+        return (HttpChannelOverHTTP2)super.getHttpChannel();
     }
 
     void onHeaders(Stream stream, HeadersFrame frame)
@@ -93,46 +126,36 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpResponse httpResponse = exchange.getResponse();
         httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
-        if (responseBegin(exchange))
+        responseBegin(exchange);
+        if (exchange.isResponseComplete())
+            return;
+
+        HttpFields headers = response.getFields();
+        for (HttpField header : headers)
         {
-            HttpFields headers = response.getFields();
-            for (HttpField header : headers)
-            {
-                if (!responseHeader(exchange, header))
-                    return;
-            }
-
-            HttpRequest httpRequest = exchange.getRequest();
-            if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
-            {
-                ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((HTTP2Stream)stream);
-                long idleTimeout = httpRequest.getIdleTimeout();
-                if (idleTimeout > 0)
-                    endPoint.setIdleTimeout(idleTimeout);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
-                ((HTTP2Stream)stream).setAttachment(endPoint);
-                HttpConversation conversation = httpRequest.getConversation();
-                conversation.setAttribute(EndPoint.class.getName(), endPoint);
-                HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
-                if (upgrader != null)
-                    upgrade(upgrader, httpResponse, endPoint);
-            }
-
-            if (responseHeaders(exchange))
-            {
-                int status = response.getStatus();
-                if (frame.isEndStream() || HttpStatus.isInterim(status))
-                    responseSuccess(exchange);
-                else
-                    stream.demand();
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Stalling response processing, no demand after headers on {}", this);
-            }
+            responseHeader(exchange, header);
+            if (exchange.isResponseComplete())
+                return;
         }
+
+        HttpRequest httpRequest = exchange.getRequest();
+        if (MetaData.isTunnel(httpRequest.getMethod(), httpResponse.getStatus()))
+        {
+            ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((HTTP2Stream)stream);
+            long idleTimeout = httpRequest.getIdleTimeout();
+            if (idleTimeout > 0)
+                endPoint.setIdleTimeout(idleTimeout);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Successful HTTP2 tunnel on {} via {} in {}", stream, endPoint, this);
+            ((HTTP2Stream)stream).setAttachment(endPoint);
+            HttpConversation conversation = httpRequest.getConversation();
+            conversation.setAttribute(EndPoint.class.getName(), endPoint);
+            HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
+            if (upgrader != null)
+                upgrade(upgrader, httpResponse, endPoint);
+        }
+
+        responseHeaders(exchange);
     }
 
     private void onTrailer(HeadersFrame frame)
@@ -168,7 +191,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
-        BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushListener();
+        BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushHandler();
         if (pushListener != null)
         {
             Response.CompleteListener listener = pushListener.apply(request, pushRequest);
@@ -196,54 +219,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (exchange == null)
             return;
 
-        Stream stream = getHttpChannel().getStream();
-        if (stream == null)
-            return;
-
-        Stream.Data data = stream.readData();
-        if (data != null)
-        {
-            ByteBuffer byteBuffer = data.frame().getData();
-            boolean endStream = data.frame().isEndStream();
-            if (byteBuffer.hasRemaining())
-            {
-                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::release, x ->
-                {
-                    data.release();
-                    responseFailure(x, Promise.from(failed ->
-                    {
-                        if (failed)
-                            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-                    }, f -> stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
-                });
-
-                boolean proceed = responseContent(exchange, byteBuffer, callback);
-                if (proceed)
-                {
-                    if (endStream)
-                        responseSuccess(exchange);
-                    else
-                        stream.demand();
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Stalling response processing, no demand after {} on {}", data, this);
-                }
-            }
-            else
-            {
-                data.release();
-                if (endStream)
-                    responseSuccess(exchange);
-                else
-                    stream.demand();
-            }
-        }
-        else
-        {
-            stream.demand();
-        }
+        responseContentAvailable();
     }
 
     void onReset(ResetFrame frame)

@@ -51,7 +51,7 @@ public class ClientCrossContextSessionTest
     {
         String contextA = "/contextA";
         String contextB = "/contextB";
-        String servletMapping = "/server";
+        String servletPath = "/server";
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
@@ -62,11 +62,11 @@ public class ClientCrossContextSessionTest
         TestServletA servletA = new TestServletA();
         ServletHolder holderA = new ServletHolder(servletA);
         ServletContextHandler ctxA = server.addContext(contextA);
-        ctxA.addServlet(holderA, servletMapping);
+        ctxA.addServlet(holderA, servletPath);
         ServletContextHandler ctxB = server.addContext(contextB);
         TestServletB servletB = new TestServletB();
         ServletHolder holderB = new ServletHolder(servletB);
-        ctxB.addServlet(holderB, servletMapping);
+        ctxB.addServlet(holderB, servletPath);
 
         try
         {
@@ -78,15 +78,15 @@ public class ClientCrossContextSessionTest
             try
             {
                 // Perform a request to contextA
-                ContentResponse response = client.GET("http://localhost:" + port + contextA + servletMapping);
+                ContentResponse responseA = client.GET("http://localhost:" + port + contextA + servletPath);
 
-                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-                String sessionCookie = response.getHeaders().get("Set-Cookie");
+                assertEquals(HttpServletResponse.SC_OK, responseA.getStatus());
+                String sessionCookie = responseA.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
                 String sessionId = SessionTestSupport.extractSessionId(sessionCookie);
 
                 // Perform a request to contextB with the same session cookie
-                Request request = client.newRequest("http://localhost:" + port + contextB + servletMapping);
+                Request request = client.newRequest("http://localhost:" + port + contextB + servletPath);
                 HttpField cookie = new HttpField("Cookie", "JSESSIONID=" + sessionId);
                 request.headers(headers -> headers.put(cookie));
                 ContentResponse responseB = request.send();
@@ -131,7 +131,7 @@ public class ClientCrossContextSessionTest
     public static class TestServletB extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
-        public String sessionId;
+        public volatile String sessionId;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException

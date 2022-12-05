@@ -49,7 +49,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -446,7 +445,7 @@ public class ResponseTest
     public void testLocaleAndContentTypeEncoding() throws Exception
     {
         _server.stop();
-        MimeTypes.getInferredEncodings().put("text/html", "iso-8859-1");
+        _context.getMimeTypes().addInferred("text/html", "iso-8859-1");
         _context.addLocaleEncoding("ja", "euc-jp");
         _context.addLocaleEncoding("zh_CN", "gb18030");
         _server.start();
@@ -2349,17 +2348,6 @@ public class ResponseTest
 
         @Override
         public void fail(Throwable failure)
-        {
-        }
-
-        @Override
-        public boolean isPushSupported()
-        {
-            return false;
-        }
-
-        @Override
-        public void push(MetaData.Request request)
         {
         }
 

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpChannel;
@@ -25,9 +24,10 @@ import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IdleTimeout;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +52,11 @@ public class HttpChannelOverFCGI extends HttpChannel
         this.sender = new HttpSenderOverFCGI(this);
         this.receiver = new HttpReceiverOverFCGI(this);
         this.idle = new FCGIIdleTimeout(connection, idleTimeout);
+    }
+
+    public HttpConnectionOverFCGI getHttpConnection()
+    {
+        return connection;
     }
 
     protected int getRequest()
@@ -81,11 +86,6 @@ public class HttpChannelOverFCGI extends HttpChannel
         return sender.isFailed() || receiver.isFailed();
     }
 
-    void receive()
-    {
-        connection.process();
-    }
-
     @Override
     public void send(HttpExchange exchange)
     {
@@ -100,43 +100,45 @@ public class HttpChannelOverFCGI extends HttpChannel
         connection.release(this);
     }
 
-    protected boolean responseBegin(int code, String reason)
+    protected void responseBegin(int code, String reason)
     {
         idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return false;
+            return;
         exchange.getResponse().version(version).status(code).reason(reason);
-        return receiver.responseBegin(exchange);
+        receiver.responseBegin(exchange);
     }
 
-    protected boolean responseHeader(HttpField field)
+    protected void responseHeader(HttpField field)
     {
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseHeader(exchange, field);
+        if (exchange != null)
+            receiver.responseHeader(exchange, field);
     }
 
-    protected boolean responseHeaders()
-    {
-        idle.notIdle();
-        HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseHeaders(exchange);
-    }
-
-    protected boolean content(ByteBuffer buffer, Callback callback)
+    protected void responseHeaders()
     {
         idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-            return receiver.responseContent(exchange, buffer, callback);
-        callback.succeeded();
-        return false;
+            receiver.responseHeaders(exchange);
     }
 
-    protected boolean responseSuccess()
+    protected void content(Content.Chunk chunk)
     {
+        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseSuccess(exchange);
+        if (exchange != null)
+            receiver.content(chunk);
+    }
+
+    protected void end()
+    {
+        idle.notIdle();
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            receiver.end(exchange);
     }
 
     protected void responseFailure(Throwable failure, Promise<Boolean> promise)
@@ -163,6 +165,11 @@ public class HttpChannelOverFCGI extends HttpChannel
     protected void flush(Generator.Result... results)
     {
         flusher.flush(results);
+    }
+
+    void receive()
+    {
+        receiver.receive();
     }
 
     private class FCGIIdleTimeout extends IdleTimeout

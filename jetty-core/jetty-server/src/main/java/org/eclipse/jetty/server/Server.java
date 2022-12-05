@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -69,6 +70,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
+    private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
@@ -138,6 +140,11 @@ public class Server extends Handler.Wrapper implements Attributes
     public Context getContext()
     {
         return _serverContext;
+    }
+
+    public MimeTypes.Mutable getMimeTypes()
+    {
+        return _mimeTypes;
     }
 
     @Override
@@ -723,6 +730,12 @@ public class Server extends Handler.Wrapper implements Attributes
         public String getContextPath()
         {
             return null;
+        }
+
+        @Override
+        public MimeTypes getMimeTypes()
+        {
+            return _mimeTypes;
         }
 
         @Override

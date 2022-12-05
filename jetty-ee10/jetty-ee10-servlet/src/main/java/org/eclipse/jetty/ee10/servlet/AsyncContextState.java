@@ -116,7 +116,7 @@ public class AsyncContextState implements AsyncContext
         ServletRequest servletRequest = getRequest();
         ServletResponse servletResponse = getResponse();
         ServletChannel servletChannel = _state.getServletChannel();
-        HttpServletRequest originalHttpServletRequest = servletChannel.getRequest().getHttpServletRequest();
+        HttpServletRequest originalHttpServletRequest = servletChannel.getServletContextRequest().getHttpServletRequest();
         HttpServletResponse originalHttpServletResponse = servletChannel.getResponse().getHttpServletResponse();
         return (servletRequest == originalHttpServletRequest && servletResponse == originalHttpServletResponse);
     }

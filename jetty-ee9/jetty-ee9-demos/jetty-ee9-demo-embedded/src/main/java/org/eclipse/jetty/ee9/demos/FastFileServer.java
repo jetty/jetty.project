@@ -15,19 +15,13 @@ package org.eclipse.jetty.ee9.demos;
 
 import java.io.File;
 
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * Fast FileServer.
@@ -80,18 +74,15 @@ public class FastFileServer
 
     static class FastFileHandler extends Handler.Abstract
     {
-        private final MimeTypes mimeTypes = new MimeTypes();
-        private final File dir;
-
         private FastFileHandler(File dir)
         {
-            this.dir = dir;
         }
 
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
             return null;
+            // TODO
 //            return (req, response, callback) ->
 //            {
 //                response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");

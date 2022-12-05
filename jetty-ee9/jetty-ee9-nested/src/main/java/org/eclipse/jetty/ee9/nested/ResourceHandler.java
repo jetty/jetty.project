@@ -103,7 +103,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         APIContext scontext = ContextHandler.getCurrentContext();
         _context = (scontext == null ? null : scontext.getContextHandler());
         if (_mimeTypes == null)
-            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
+            _mimeTypes = _context == null ? MimeTypes.DEFAULTS : _context.getMimeTypes();
 
         _byteBufferPool = getByteBufferPool(_context);
         if (_resourceService.getHttpContentFactory() == null)

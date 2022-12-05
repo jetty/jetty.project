@@ -117,6 +117,8 @@ import org.eclipse.jetty.util.thread.Invocable;
 public interface Request extends Attributes, Content.Source
 {
     List<Locale> __defaultLocale = Collections.singletonList(Locale.getDefault());
+    String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
+    String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
 
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
@@ -203,13 +205,17 @@ public interface Request extends Attributes, Content.Source
     @Override
     Content.Chunk read();
 
-    // TODO should this be on the connectionMetaData?
-    default boolean isPushSupported()
+    /**
+     * <p>Pushes the given {@code resource} to the client.</p>
+     *
+     * @param resource the resource to push
+     * @throws UnsupportedOperationException if the push functionality is not supported
+     * @see ConnectionMetaData#isPushSupported()
+     */
+    default void push(MetaData.Request resource)
     {
-        return false; // TODO
+        throw new UnsupportedOperationException();
     }
-
-    void push(MetaData.Request request); // TODO
 
     /**
      * <p>Adds a listener for asynchronous errors.</p>
@@ -384,21 +390,21 @@ public interface Request extends Attributes, Content.Source
     static List<HttpCookie> getCookies(Request request)
     {
         // TODO modify Request and HttpChannel to be optimised for the known attributes
-        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(Request.class.getCanonicalName() + ".Cookies");
+        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(COOKIE_ATTRIBUTE);
         if (cookies != null)
             return cookies;
 
         // TODO: review whether to store the cookie cache at the connection level, or whether to cache them at all.
-        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().get(Request.class.getCanonicalName() + ".CookieCache");
+        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(CACHE_ATTRIBUTE);
         if (cookieCache == null)
         {
             // TODO compliance listeners?
             cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
-            request.getComponents().getCache().put(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
+            request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
         }
 
         cookies = cookieCache.getCookies(request.getHeaders());
-        request.setAttribute(Request.class.getCanonicalName() + ".Cookies", cookies);
+        request.setAttribute(COOKIE_ATTRIBUTE, cookies);
         return cookies;
     }
 
@@ -582,15 +588,9 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public boolean isPushSupported()
+        public void push(MetaData.Request resource)
         {
-            return getWrapped().isPushSupported();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getWrapped().push(request);
+            getWrapped().push(resource);
         }
 
         @Override

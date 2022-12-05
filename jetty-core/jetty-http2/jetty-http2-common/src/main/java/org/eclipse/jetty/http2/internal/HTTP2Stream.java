@@ -371,6 +371,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
 
+        boolean offered = false;
+        if (frame.isEndStream())
+        {
+            // Offer EOF for either the request, the response or the trailers
+            // in case the application calls readData() or demand().
+            offered = offer(Data.eof(getId()));
+        }
+
         // Requests are notified to a Session.Listener,
         // here only handle responses and trailers.
         if (metaData.isResponse() || !metaData.isRequest())
@@ -381,12 +389,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 getSession().removeStream(this);
         }
 
-        if (frame.isEndStream())
-        {
-            // Offer EOF for either the request, the response or the trailers
-            // in case the application calls readData() or demand().
-            offerAndProcess(Data.eof(getId()));
-        }
+        if (offered)
+            processData();
 
         callback.succeeded();
     }
@@ -426,10 +430,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             }
         }
 
-        offerAndProcess(data);
+        if (offer(data))
+            processData();
     }
 
-    private void offerAndProcess(Data data)
+    private boolean offer(Data data)
     {
         boolean process;
         try (AutoLock ignored = lock.lock())
@@ -439,8 +444,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
-        if (process)
-            processData();
+        return process;
     }
 
     @Override
