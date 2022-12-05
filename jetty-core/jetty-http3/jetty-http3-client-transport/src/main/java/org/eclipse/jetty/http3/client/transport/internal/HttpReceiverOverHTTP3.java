@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -73,8 +74,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     @Override
     public void failAndClose(Throwable failure)
     {
-        responseFailure(failure, Promise.from(failed -> getHttpChannel().getHttpConnection().close(failure),
-            x -> getHttpChannel().getHttpConnection().close(failure)));
+        Stream stream = getHttpChannel().getStream();
+        responseFailure(failure, Promise.from(failed ->
+        {
+            if (failed)
+                stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
+        }, x -> stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure)));
     }
 
     @Override
@@ -95,15 +100,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
         responseBegin(exchange);
-        if (exchange.isResponseComplete())
-            return;
 
         HttpFields headers = response.getFields();
         for (HttpField header : headers)
         {
             responseHeader(exchange, header);
-            if (exchange.isResponseComplete())
-                return;
         }
 
         // TODO: add support for HttpMethod.CONNECT.
