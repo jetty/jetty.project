@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.util.resource;
 
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.Dumpable;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-
-import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * ResourceFactory.
@@ -237,8 +236,6 @@ public interface ResourceFactory
 
     default Resource newJarFileResource(URI uri)
     {
-        if (!FileID.isArchive(uri))
-            throw new IllegalArgumentException("Path is not a Java Archive: " + uri);
         if (!uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + uri);
         return newResource(URIUtil.toJarFileUri(uri));
