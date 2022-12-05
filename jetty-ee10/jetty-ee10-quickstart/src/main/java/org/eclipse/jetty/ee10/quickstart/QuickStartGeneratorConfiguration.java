@@ -58,6 +58,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.AttributeNormalizer;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlAppendable;
 import org.slf4j.Logger;
@@ -165,9 +166,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             out.tag("display-name", context.getDisplayName());
 
         // Set some special context parameters
-
-        // The location of the war file on disk
-        AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
+        Resource base = context.getBaseResource();
+        base = (base != null ? base.iterator().next() : null);
+        AttributeNormalizer normalizer = new AttributeNormalizer(base);
 
         // The library order
         addContextParamFromAttribute(context, out, ServletContext.ORDERED_LIBS);
