@@ -198,7 +198,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
     private Logger _logger;
-    private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _compactPath = false;
@@ -238,6 +237,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                              String contextPath)
     {
         _coreContextHandler = new CoreContextHandler();
+        addBean(_coreContextHandler, false);
         _apiContext = context == null ? new APIContext() : context;
         _initParams = new HashMap<>();
         if (contextPath != null)
@@ -274,7 +274,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @ManagedAttribute("Checks if the /context is not redirected to /context/")
     public boolean getAllowNullPathInfo()
     {
-        return _allowNullPathInfo;
+        return _coreContextHandler.getAllowNullPathInContext();
     }
 
     // TODO this is a thought bubble
@@ -294,7 +294,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setAllowNullPathInfo(boolean allowNullPathInfo)
     {
-        _allowNullPathInfo = allowNullPathInfo;
+        _coreContextHandler.setAllowNullPathInContext(allowNullPathInfo);
     }
 
     @Override
@@ -612,10 +612,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         // we need to run ourselves in the core context
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
-            _coreContextHandler.getContext().call(this::doStart, null);
-            return;
+            _coreContextHandler.unmanage(this);
+            _coreContextHandler.start();
+            _coreContextHandler.manage(this);
         }
 
+        _coreContextHandler.getContext().call(this::doStartInContext, null);
+    }
+
+    protected void doStartInContext() throws Exception
+    {
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
@@ -629,6 +635,57 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         // allow the call to super.doStart() to be deferred by extended implementations.
         startContext();
         contextInitialized();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        // If we are being stopped directly (rather than via a start of the CoreContextHandler), then
+        // we need to stop ourselves in the core context
+        if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
+        {
+            _coreContextHandler.unmanage(this);
+            _coreContextHandler.stop();
+            _coreContextHandler.manage(this);
+        }
+        _coreContextHandler.getContext().call(this::doStopInContext, null);
+    }
+
+    protected void doStopInContext() throws Exception
+    {
+        try
+        {
+            stopContext();
+            contextDestroyed();
+
+            // retain only durable listeners
+            setEventListeners(_durableListeners);
+            _durableListeners.clear();
+
+            if (_errorHandler != null)
+                _errorHandler.stop();
+
+            for (EventListener l : _programmaticListeners)
+            {
+                removeEventListener(l);
+                if (l instanceof ContextScopeListener)
+                {
+                    try
+                    {
+                        ((ContextScopeListener)l).exitScope(_apiContext, null);
+                    }
+                    catch (Throwable e)
+                    {
+                        LOG.warn("Unable to exit scope", e);
+                    }
+                }
+            }
+            _programmaticListeners.clear();
+        }
+        finally
+        {
+            _contextStatus = ContextStatus.NOTSET;
+        }
     }
 
     private String getLogNameSuffix()
@@ -768,44 +825,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (LOG.isDebugEnabled())
             LOG.debug("contextDestroyed: {}->{}", e, l);
         l.contextDestroyed(e);
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        try
-        {
-            stopContext();
-            contextDestroyed();
-
-            // retain only durable listeners
-            setEventListeners(_durableListeners);
-            _durableListeners.clear();
-
-            if (_errorHandler != null)
-                _errorHandler.stop();
-
-            for (EventListener l : _programmaticListeners)
-            {
-                removeEventListener(l);
-                if (l instanceof ContextScopeListener)
-                {
-                    try
-                    {
-                        ((ContextScopeListener)l).exitScope(_apiContext, null);
-                    }
-                    catch (Throwable e)
-                    {
-                        LOG.warn("Unable to exit scope", e);
-                    }
-                }
-            }
-            _programmaticListeners.clear();
-        }
-        finally
-        {
-            _contextStatus = ContextStatus.NOTSET;
-        }
     }
 
     @Override
@@ -1279,20 +1298,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         StringBuilder b = new StringBuilder();
 
-        Package pkg = getClass().getPackage();
-        if (pkg != null)
-        {
-            String p = pkg.getName();
-            if (p.length() > 0)
-            {
-                String[] ss = p.split("\\.");
-                for (String s : ss)
-                {
-                    b.append(s.charAt(0)).append('.');
-                }
-            }
-        }
-        b.append(getClass().getSimpleName()).append('@').append(Integer.toString(hashCode(), 16));
+        b.append(TypeUtil.toShortName(getClass())).append('@').append(Integer.toString(hashCode(), 16));
         b.append('{');
         if (getDisplayName() != null)
             b.append(getDisplayName()).append(',');

@@ -490,7 +490,7 @@ public class WebAppContextTest
         // On Unix / Linux this should have no issue.
         // On Windows with fully qualified paths such as "E:\mybase\webapps\dump.war" the
         // resolution of the Resource can trigger various URI issues with the "E:" portion of the provided String.
-        context.setResourceBase(warPath.toString());
+        context.setBaseResourceAsString(warPath.toString());
 
         server.setHandler(context);
         server.start();
