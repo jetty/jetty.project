@@ -307,7 +307,7 @@ public class HttpClientTimeoutTest extends AbstractTest
                     latch.countDown();
             });
 
-        assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 
@@ -380,7 +380,7 @@ public class HttpClientTimeoutTest extends AbstractTest
                 }
             });
 
-        assertTrue(latch.await(3 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 
