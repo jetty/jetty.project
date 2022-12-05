@@ -617,6 +617,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _coreContextHandler.manage(this);
         }
 
+        _coreContextHandler.getContext().call(this::doStartInContext, null);
+    }
+
+    protected void doStartInContext() throws Exception
+    {
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
@@ -643,7 +648,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _coreContextHandler.stop();
             _coreContextHandler.manage(this);
         }
+        _coreContextHandler.getContext().call(this::doStopInContext, null);
+    }
 
+    protected void doStopInContext() throws Exception
+    {
         try
         {
             stopContext();
