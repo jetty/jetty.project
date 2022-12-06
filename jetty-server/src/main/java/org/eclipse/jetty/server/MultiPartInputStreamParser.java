@@ -941,7 +941,7 @@ public class MultiPartInputStreamParser
                 _pos = 0;
             }
 
-            return _buffer[_pos++];
+            return _buffer[_pos++] & 0xFF;
         }
     }
 }
