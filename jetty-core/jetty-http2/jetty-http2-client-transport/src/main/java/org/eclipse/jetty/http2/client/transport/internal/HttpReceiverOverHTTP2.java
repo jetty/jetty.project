@@ -59,12 +59,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
-    protected void reset()
-    {
-        super.reset();
-    }
-
-    @Override
     public Content.Chunk read(boolean fillInterestIfNeeded)
     {
         if (LOG.isDebugEnabled())

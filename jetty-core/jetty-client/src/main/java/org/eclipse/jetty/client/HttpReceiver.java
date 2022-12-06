@@ -302,7 +302,7 @@ public abstract class HttpReceiver
                         {
                             if (factory.getEncoding().equalsIgnoreCase(encoding))
                             {
-                                contentSource = new DecodingContentSource(contentSource, factory.newContentDecoder());
+                                contentSource = new DecodingContentSource(contentSource, factory.newContentDecoder(), invoker);
                                 break both;
                             }
                         }
@@ -562,11 +562,11 @@ public abstract class HttpReceiver
 
         private final NotifiableContentSource _rawSource;
         private final ContentDecoder _decoder;
-        private Content.Chunk _chunk;
+        private volatile Content.Chunk _chunk;
 
-        public DecodingContentSource(NotifiableContentSource rawSource, ContentDecoder decoder)
+        public DecodingContentSource(NotifiableContentSource rawSource, ContentDecoder decoder, SerializedInvoker invoker)
         {
-            super(rawSource);
+            super(rawSource, invoker);
             _rawSource = rawSource;
             _decoder = decoder;
         }

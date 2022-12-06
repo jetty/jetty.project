@@ -44,12 +44,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     }
 
     @Override
-    protected void reset()
-    {
-        super.reset();
-    }
-
-    @Override
     public Content.Chunk read(boolean fillInterestIfNeeded)
     {
         if (LOG.isDebugEnabled())
