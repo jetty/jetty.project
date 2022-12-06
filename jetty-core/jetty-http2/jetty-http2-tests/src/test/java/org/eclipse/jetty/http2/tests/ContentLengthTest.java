@@ -130,7 +130,7 @@ public class ContentLengthTest extends AbstractTest
         gzipHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 // Write a single buffer, with a Content-Length
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
