@@ -50,18 +50,23 @@ import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
- * <p>A {@code Request} instance is given to a {@link Handler}, that decides whether it handles
- * the request or not.</p>
- * <p>During the handling phase, the {@code Request} APIs can be used, but its content cannot be read.
- * Attempting to read the {@code Request} content during the handling phase results in an
+ * <p>A {@code Request} instance is given to a {@link Handler#process(Request, Response, Callback)}
+ * method and the {@link #accept()} method must be called if that {@code Handler} (or its descendants)
+ * will handle the request.</p>
+ * <p>Prior to calling {@link #accept()}, only the idempotent {@code Request} APIs can be used, which excludes
+ * the methods used to read content.
+ * Attempting to read (or demand) the {@code Request} content prior to a call to {@link #accept()} causes an
  * {@link IllegalStateException} to be thrown.</p>
- * <p>A {@code Handler} that handles the request returns a {@link Processor}, that is then invoked
- * to process the request and the response (the processing phase).</p>
- * <p>Only during the processing phase the {@code Request} content can be read.</p>
  * <p>The typical idiom to read request content is the following:</p>
  * <pre>{@code
  * public void process(Request request, Response response, Callback callback)
  * {
+ *     // reject requests not appropriate for this handler
+ *     if (!request.getHttpURI().getPath().startsWith("/yourPath"))
+ *         return;
+ *
+ *     // accept the request to activate the read APIs
+ *     request.accept();
  *     while (true)
  *     {
  *         Content.Chunk chunk = request.read();
@@ -128,9 +133,24 @@ public interface Request extends Attributes, Content.Source
      * has been accepted for processing and that the callback will ultimately be called, once the
      * response has been generated. Until accept has been called, the body of the request cannot
      * be read, nor the response body written, nor the callback called.
+     * @throws IllegalStateException if the request has already been accepted; or the caller is
+     *                               not within the scope of a call to the
+     *                               {@link Handler#process(Request, Response, Callback)}
      */
     void accept();
 
+    /**
+     * <p>Test if the request has been accepted.</p>
+     * <p>Note that since {@link #accept()} may only be called from a thread within the scope of
+     * a call to the associated{@link Handler#process(Request, Response, Callback)}, then it is
+     * thread safe to write code conditional on {@code isAccepted} within the same scope. For
+     * example there is no race in the following code:</p>
+     * <pre>{@code
+     *     if (!request.isAccepted())
+     *         request.accept();
+     * }</pre>
+     * @return True if the request has been accepted.
+     */
     boolean isAccepted();
 
     /**
