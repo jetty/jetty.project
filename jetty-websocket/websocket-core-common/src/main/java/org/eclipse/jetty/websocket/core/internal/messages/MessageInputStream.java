@@ -87,7 +87,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             if (len < 0) // EOF
                 return -1;
             if (len > 0) // did read something
-                return buf[0];
+                return buf[0] & 0xFF;
             // reading nothing (len == 0) tries again
         }
     }
