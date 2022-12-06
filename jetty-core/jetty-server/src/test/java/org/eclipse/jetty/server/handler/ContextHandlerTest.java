@@ -142,6 +142,44 @@ public class ContextHandlerTest
     }
 
     @Test
+    public void testNullPath() throws Exception
+    {
+        HelloHandler helloHandler = new HelloHandler();
+        _contextHandler.setHandler(helloHandler);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+        MockHttpStream stream = new MockHttpStream(channel);
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+        task.run();
+
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(301));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.LOCATION), equalTo("/ctx/"));
+
+        _contextHandler.stop();
+        _contextHandler.setAllowNullPathInContext(true);
+        _contextHandler.start();
+
+        stream = new MockHttpStream(channel);
+        fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        task = channel.onRequest(request);
+        task.run();
+
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        // The original fields have been recycled.
+        assertThat(stream.getResponse().getFields().size(), equalTo(0));
+        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+    }
+
+    @Test
     public void testSetAvailable() throws Exception
     {
         HelloHandler helloHandler = new HelloHandler();
