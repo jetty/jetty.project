@@ -192,7 +192,7 @@ public class BadAppTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();
