@@ -85,7 +85,7 @@ public class ServletContextResponse extends ContextResponse
     private long _contentLength = -1;
     private Supplier<Map<String, String>> _trailers;
 
-    public static ServletContextResponse getBaseResponse(ServletResponse response)
+    public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
         if (response instanceof ServletApiResponse)
             return ((ServletApiResponse)response).getResponse();
@@ -98,7 +98,7 @@ public class ServletContextResponse extends ContextResponse
         if (response instanceof ServletApiResponse)
             return ((ServletApiResponse)response).getResponse();
 
-        return null;
+        throw new IllegalStateException("could not find %s for %s".formatted(ServletContextResponse.class.getSimpleName(), response));
     }
 
     public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
