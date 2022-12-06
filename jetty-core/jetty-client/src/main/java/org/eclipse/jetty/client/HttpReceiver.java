@@ -472,7 +472,9 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Invoking abort with {} on {}", failure, this);
 
-        assert exchange.isResponseComplete();
+        // This method should be called only after calling HttpExchange.responseComplete().
+        if (!exchange.isResponseComplete())
+            throw new IllegalStateException();
 
         invoker.run(() ->
         {
@@ -674,7 +676,8 @@ public abstract class HttpReceiver
                 if (currentChunk != null)
                 {
                     // There was a concurrent call to fail().
-                    current.release();
+                    if (current != null)
+                        current.release();
                     return currentChunk;
                 }
                 currentChunk = Content.Chunk.next(current);
@@ -764,6 +767,8 @@ public abstract class HttpReceiver
         @Override
         public void fail(Throwable failure)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failing {}", this);
             boolean failed = error(failure);
             if (failed)
                 HttpReceiver.this.failAndClose(failure);
@@ -774,8 +779,7 @@ public abstract class HttpReceiver
         public boolean error(Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Failing {}", this);
-
+                LOG.debug("Erroring {}", this);
             try (AutoLock ignored = lock.lock())
             {
                 if (currentChunk instanceof Content.Chunk.Error)
@@ -784,7 +788,6 @@ public abstract class HttpReceiver
                     currentChunk.release();
                 currentChunk = Content.Chunk.from(failure);
             }
-
             return true;
         }
 
