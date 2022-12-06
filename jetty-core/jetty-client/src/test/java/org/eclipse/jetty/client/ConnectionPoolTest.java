@@ -399,7 +399,7 @@ public class ConnectionPoolTest
     @MethodSource("pools")
     public void testConcurrentRequestsAllBlockedOnServerWithLargeConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
-        int count = 50;
+        int count = 10;
         testConcurrentRequestsAllBlockedOnServer(factory, count, 2 * count);
     }
 
@@ -407,7 +407,7 @@ public class ConnectionPoolTest
     @MethodSource("pools")
     public void testConcurrentRequestsAllBlockedOnServerWithExactConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
-        int count = 50;
+        int count = 10;
         testConcurrentRequestsAllBlockedOnServer(factory, count, count);
     }
 
@@ -454,10 +454,12 @@ public class ConnectionPoolTest
                 {
                     if (result.isSucceeded())
                         latch.countDown();
+                    else
+                        result.getFailure().printStackTrace();
                 }));
         }
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS), "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
+        assertTrue(latch.await(15, TimeUnit.SECONDS), "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
         List<Destination> destinations = client.getDestinations();
         assertEquals(1, destinations.size());
         // The max duration connection pool aggressively closes expired connections upon release, which interferes with this assertion.
