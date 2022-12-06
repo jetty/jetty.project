@@ -23,15 +23,14 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ContentTest
 {
     @Test
     public void testFromEmptyByteBufferWithoutReleaser()
     {
-        assertThrows(IllegalArgumentException.class, () -> Content.Chunk.from(ByteBuffer.wrap(new byte[0]), true));
-        assertThrows(IllegalArgumentException.class, () -> Content.Chunk.from(ByteBuffer.wrap(new byte[0]), false));
+        assertThat(Content.Chunk.from(ByteBuffer.wrap(new byte[0]), true), sameInstance(Content.Chunk.EOF));
+        assertThat(Content.Chunk.from(ByteBuffer.wrap(new byte[0]), false), sameInstance(Content.Chunk.EMPTY));
     }
 
     @Test
