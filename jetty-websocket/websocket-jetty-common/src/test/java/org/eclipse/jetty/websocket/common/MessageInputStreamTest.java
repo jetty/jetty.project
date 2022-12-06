@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
@@ -278,5 +279,24 @@ public class MessageInputStreamTest
                 assertThat("Message", message, is("Hello World"));
             }
         });
+    }
+
+    @Test
+    public void testReadSingleByteIsNotSigned() throws Exception
+    {
+        try (MessageInputStream stream = new MessageInputStream())
+        {
+            // Byte must be greater than 127.
+            int theByte = 200;
+            // Append a single message (simple, short)
+            Frame frame = new Frame(OpCode.BINARY);
+            frame.setPayload(new byte[]{(byte)theByte});
+            frame.setFin(true);
+            stream.accept(frame, Callback.NOOP);
+
+            // Single byte read must not return a signed byte.
+            int read = stream.read();
+            assertEquals(theByte, read);
+        }
     }
 }
