@@ -264,6 +264,11 @@ public class KeyStoreScannerTest
 
         start(sslContextFactory ->
         {
+            // What we want is ..
+            // (link) ssl/keystore -> opt/keystore
+            // (link) opt/keystore -> opt/keystore.1
+            // (file) opt/keystore.1 (actual certificate)
+
             FS.ensureEmpty(sslDir);
             FS.ensureEmpty(optDir);
             Files.copy(oldKeyStoreSrc, optKeystore1);
@@ -314,9 +319,9 @@ public class KeyStoreScannerTest
         start(sslContextFactory ->
         {
             // What we want is ..
-            // ssl/keystore.p12 -> data/keystore.p12
-            // ssl/data/ -> 2022-11/
-            // ssl/2022-11/keystore.p12 (file)
+            // (link) keystore.p12 -> data/keystore.p12
+            // (link) data/ -> 2022-11/
+            // (file) 2022-11/keystore.p12 (actual certificate)
 
             FS.ensureEmpty(sslDir);
             FS.ensureEmpty(timestampNovDir);
@@ -340,9 +345,11 @@ public class KeyStoreScannerTest
         X509Certificate cert1 = getCertificateFromServer();
         assertThat(getExpiryYear(cert1), is(2015));
 
-        // Change the data/ symlink to 2022-12/ which points to a newer certificate
+        // Replace keystore link
         Files.delete(dataDir);
         Files.createSymbolicLink(dataDir, timestampDecDir.getFileName());
+        // (link) data/ -> 2022-12/
+        // now keystore.p12 points to data/keystore.p12 which points to 2022-12/keystore.p12
         System.err.println("### Triggering scan");
         keyStoreScanner.scan(5000);
 
