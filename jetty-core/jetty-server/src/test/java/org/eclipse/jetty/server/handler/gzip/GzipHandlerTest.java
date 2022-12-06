@@ -57,6 +57,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -78,19 +79,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.platform.commons.util.StringUtils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class GzipHandlerTest
 {
@@ -112,14 +118,16 @@ public class GzipHandlerTest
 
     private static final byte[] CONTENT_BYTES = CONTENT.getBytes(StandardCharsets.UTF_8);
 
-    // Content that is sized under the GzipHandler.minGzipSize default
-    private static final String MICRO = CONTENT.substring(0, 10);
+    // Content that is sized under the GzipHandler.minGzipSize
+    private static final String MICRO = "abc-abc-abc";
+    private static final String MICRO_ETAG = String.format("W/\"%x\"", MICRO.hashCode());
 
     private static final String CONTENT_ETAG = String.format("W/\"%x\"", CONTENT.hashCode());
     private static final String CONTENT_ETAG_GZIP = String.format("W/\"%x" + CompressedContentFormat.GZIP.getEtagSuffix() + "\"", CONTENT.hashCode());
 
     public WorkDir _workDir;
     private Server _server;
+    private ServerConnector _httpConnector;
     private LocalConnector _connector;
     private GzipHandler _gzipHandler;
     private ContextHandler _contextHandler;
@@ -166,6 +174,9 @@ public class GzipHandlerTest
     public void init() throws Exception
     {
         _server = new Server();
+        _httpConnector = new ServerConnector(_server);
+        _httpConnector.setPort(0);
+        _server.addConnector(_httpConnector);
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
@@ -288,33 +299,117 @@ public class GzipHandlerTest
         assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Test a HEAD request (that is not processed by GZIP) then a GET request (which is compressed)
+     */
     @Test
-    public void testBufferResponse() throws Exception
+    public void testHEADThenGETPersistent() throws Exception
     {
-        _contextHandler.setHandler(new BufferHandler(CONTENT_BYTES));
+        _contextHandler.setHandler(new SingleWriteHandler(CONTENT_BYTES));
+        _server.start();
+
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connect())
+        {
+            // Send HEAD Request
+            String rawHeadRequest = """
+                HEAD /ctx/buffer/test?one HTTP/1.1
+                Host: tester
+                Accept-Encoding: gzip
+            
+                """;
+            localEndPoint.addInput(BufferUtil.toBuffer(rawHeadRequest, UTF_8));
+            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(true, 2, TimeUnit.SECONDS));
+
+            assertThat(response.getStatus(), is(200));
+            assertNull(response.getField("Vary")); // HEAD should not have a Vary header
+            assertThat(response.getLongField("Content-Length"), is((long)CONTENT_BYTES.length));
+            assertThat(response.getContentBytes().length, is(0));
+
+            // Send GET Request
+            String rawGetRequest = """
+                GET /ctx/buffer/test?two HTTP/1.1
+                Host: tester
+                Connection: close
+                Accept-Encoding: gzip
+            
+                """;
+
+            localEndPoint.addInput(BufferUtil.toBuffer(rawGetRequest, UTF_8));
+            response = HttpTester.parseResponse(localEndPoint.getResponse(false, 2, TimeUnit.SECONDS));
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
+            assertThat(response.getLongField("Content-Length"),
+                is(both(greaterThan(0L)).and(lessThan((long)CONTENT_BYTES.length))));
+
+            try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
+            {
+                ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+                IO.copy(testIn, testOut);
+
+                assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
+            }
+        }
+    }
+
+    @Test
+    public void testHead() throws Exception
+    {
+        _contextHandler.setHandler(new SingleWriteHandler(CONTENT_BYTES));
         _server.start();
 
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
-        request.setMethod("GET");
-        request.setURI("/ctx/buffer/info");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host", "tester");
-        request.setHeader("accept-encoding", "gzip");
+        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding header.
+        String rawRequest = """
+            HEAD /ctx/buffer/info HTTP/1.1
+            Host: tester
+            Connection: close
+            Accept-Encoding: gzip
+            
+            """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        // Parse HEAD response
+        response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertNull(response.getField("Vary")); // HEAD should not have a Vary header
+        assertThat(response.getLongField("Content-Length"), is((long)CONTENT_BYTES.length));
+        assertThat(response.getContentBytes().length, is(0));
+    }
+
+    @Test
+    public void testBufferResponse() throws Exception
+    {
+        _contextHandler.setHandler(new SingleWriteHandler(CONTENT_BYTES));
+        _server.start();
+
+        // generated and parsed test
+        HttpTester.Response response;
+
+        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding header.
+        String rawRequest = """
+            GET /ctx/buffer/info HTTP/1.1
+            Host: tester
+            Connection: close
+            Accept-Encoding: gzip
+            
+            """;
+
+        response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
+
+        assertThat(response.getStatus(), is(200));
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
+        assertThat(response.getLongField("Content-Length"),
+            is(both(greaterThan(0L)).and(lessThan((long)CONTENT_BYTES.length))));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
+        try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
+        {
+            ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+            IO.copy(testIn, testOut);
 
-        assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
+            assertEquals(CONTENT, testOut.toString(StandardCharsets.UTF_8));
+        }
     }
 
     @Test
@@ -406,7 +501,7 @@ public class GzipHandlerTest
     @Test
     public void testEmptyResponseDefaultMinGzipSize() throws Exception
     {
-        _contextHandler.setHandler(new BufferHandler(new byte[0]));
+        _contextHandler.setHandler(new SingleWriteHandler(new byte[0]));
         _server.start();
 
         // don't set minGzipSize, use default
@@ -561,9 +656,9 @@ public class GzipHandlerTest
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         byte[] buffer = generateContent(fileSize);
-        BufferHandler bufferHandler = new BufferHandler(buffer, "text/plain");
+        SingleWriteHandler singleWriteHandler = new SingleWriteHandler(buffer, "text/plain");
         String expectedSha1Sum = Sha1Sum.calculate(buffer);
-        _contextHandler.setHandler(bufferHandler);
+        _contextHandler.setHandler(singleWriteHandler);
 
         _server.start();
 
@@ -652,9 +747,9 @@ public class GzipHandlerTest
         // Prepare Buffer
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         byte[] buffer = generateContent(fileSize);
-        BufferHandler bufferHandler = new BufferHandler(buffer, "text/wibble; charset=utf-8");
+        SingleWriteHandler singleWriteHandler = new SingleWriteHandler(buffer, "text/wibble; charset=utf-8");
         String expectedSha1Sum = Sha1Sum.calculate(buffer);
-        _contextHandler.setHandler(bufferHandler);
+        _contextHandler.setHandler(singleWriteHandler);
 
         _server.start();
 
@@ -853,7 +948,8 @@ public class GzipHandlerTest
 
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 8;
         byte[] buffer = generateContent(fileSize);
-        _contextHandler.setHandler(new BufferHandler(buffer));
+        _gzipHandler.setMinGzipSize(DEFAULT_OUTPUT_BUFFER_SIZE / 2);
+        _contextHandler.setHandler(new SingleWriteHandler(buffer));
         String expectedSha1Sum = Sha1Sum.calculate(buffer);
 
         _server.start();
@@ -877,17 +973,22 @@ public class GzipHandlerTest
 
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
-        assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
 
-        // A HEAD request should have similar headers, but no body
-        if (!method.equals("HEAD"))
+        // We expect Content-Length regardless of the HTTP Method used
+        assertThat("Response[Content-Length]", response.getLongField("Content-Length"),
+            is(both(greaterThan(0L)).and(lessThan((long)fileSize))));
+
+        if (method.equals("HEAD"))
         {
-            assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
-            // Response Content checks
-            UncompressedMetadata metadata = parseResponseContent(response);
-            assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
-            assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
+            // Don't assert Response body content on HEAD requests.
+            return;
         }
+
+
+        // Response Content checks
+        UncompressedMetadata metadata = parseResponseContent(response);
+        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
+        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
     }
 
     @Test
@@ -1104,10 +1205,18 @@ public class GzipHandlerTest
         }
     }
 
+    /**
+     * Compress a micro sized response (10 bytes), that is sent using chunked.
+     * Since jetty-core doesn't aggregate the writes, the size of the eventual
+     * response body output cannot be used to determine if GzipHandler should
+     * be compressing the content or not, so that means all chunked responses
+     * are compressed, regardless of how big the response eventually is.
+     */
     @Test
-    public void testMicroResponseChunkedNotCompressed() throws Exception
+    public void testMicroResponseChunkedCompressed() throws Exception
     {
-        _contextHandler.setHandler(new MicroChunkedHandler());
+        _gzipHandler.setMinGzipSize(MICRO.length() * 4);
+        _contextHandler.setHandler(new ChunkedWriteHandler(MICRO));
         _server.start();
 
         // generated and parsed test
@@ -1121,7 +1230,6 @@ public class GzipHandlerTest
         request.setHeader("Accept-Encoding", "gzip");
 
         ByteBuffer rawresponse = _connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(rawresponse));
         response = HttpTester.parseResponse(rawresponse);
 
         assertThat(response.getStatus(), is(200));
@@ -1129,17 +1237,24 @@ public class GzipHandlerTest
         assertThat(response.get("Content-Encoding"), containsString("gzip"));
         assertThat(response.get("Vary"), is("Accept-Encoding"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(MICRO, testOut.toString(StandardCharsets.UTF_8));
+        try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
+        {
+            ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+            IO.copy(testIn, testOut);
+            assertEquals(MICRO, testOut.toString(StandardCharsets.UTF_8));
+        }
     }
 
+    /**
+     * Compress a micro sized response (10 bytes), that is sent using a single write (last == true, not chunked).
+     * This should not be compressed, as the GzipHandler can see the total response body size and determine
+     * that the size is under the minGzipSize.
+     */
     @Test
     public void testMicroResponseNotCompressed() throws Exception
     {
-        _contextHandler.setHandler(new MicroHandler());
+        _gzipHandler.setMinGzipSize(MICRO.length() * 4);
+        _contextHandler.setHandler(new SingleWriteHandler(MICRO).setEtag(MICRO_ETAG));
         _server.start();
 
         // generated and parsed test
@@ -1148,7 +1263,7 @@ public class GzipHandlerTest
 
         request.setMethod("GET");
         request.setURI("/ctx/micro");
-        request.setVersion("HTTP/1.0");
+        request.setVersion("HTTP/1.1");
         request.setHeader("Host", "tester");
         request.setHeader("Accept-Encoding", "gzip");
 
@@ -1156,7 +1271,7 @@ public class GzipHandlerTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), not(containsString("gzip")));
-        assertThat(response.get("ETag"), is(CONTENT_ETAG));
+        assertThat(response.get("ETag"), is(MICRO_ETAG));
         assertThat(response.get("Vary"), is("Accept-Encoding"));
 
         InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
@@ -1639,15 +1754,6 @@ public class GzipHandlerTest
         }
     }
 
-    public static class MicroChunkedHandler extends Handler.Processor
-    {
-        @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
-        {
-            Content.Sink.write(response, false, MICRO, callback);
-        }
-    }
-
     public static class MimeTypeContentHandler extends Handler.Processor
     {
         @Override
@@ -1769,28 +1875,99 @@ public class GzipHandlerTest
         }
     }
 
-    public static class BufferHandler extends Handler.Processor
+    /**
+     * Handler that will write a ByteBuffer in two writes, causing a Transfer-Encoding: chunked.
+     */
+    public static class ChunkedWriteHandler extends Handler.Processor
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
+        private String etag;
 
-        public BufferHandler(byte[] bytes)
+        public ChunkedWriteHandler(String content)
+        {
+            this(content.getBytes(UTF_8), "text/plain");
+        }
+
+        public ChunkedWriteHandler(byte[] bytes)
         {
             this(bytes, "text/plain");
         }
 
-        public BufferHandler(byte[] bytes, String contentType)
+        public ChunkedWriteHandler(byte[] bytes, String contentType)
         {
             this.byteBuffer = BufferUtil.toBuffer(bytes).asReadOnlyBuffer();
             this.contentType = contentType;
         }
 
+        public ChunkedWriteHandler setEtag(String etag)
+        {
+            this.etag = etag;
+            return this;
+        }
+
         @Override
         public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
-            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, byteBuffer.remaining());
+            if (StringUtils.isNotBlank(etag))
+            {
+                response.getHeaders().put("ETag", etag);
+                String ifnm = request.getHeaders().get("If-None-Match");
+                if (ifnm != null && ifnm.equals(etag))
+                    Response.writeError(request, response, callback, 304);
+            }
+
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
-            response.write(true, byteBuffer, callback);
+            response.write(false, byteBuffer.slice(), Callback.from(() -> response.write(true, null, callback)));
+        }
+    }
+
+    /**
+     * Handler that will write a ByteBuffer in a single write, resulting in a Content-Length response header.
+     */
+    public static class SingleWriteHandler extends Handler.Processor
+    {
+        private final ByteBuffer byteBuffer;
+        private final String contentType;
+        private String etag;
+
+        public SingleWriteHandler(String content)
+        {
+            this(content.getBytes(UTF_8), "text/plain");
+        }
+
+        public SingleWriteHandler(byte[] bytes)
+        {
+            this(bytes, "text/plain");
+        }
+
+        public SingleWriteHandler(byte[] bytes, String contentType)
+        {
+            this.byteBuffer = BufferUtil.toBuffer(bytes).asReadOnlyBuffer();
+            this.contentType = contentType;
+        }
+
+        public SingleWriteHandler setEtag(String etag)
+        {
+            this.etag = etag;
+            return this;
+        }
+
+        @Override
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        {
+            if (StringUtils.isNotBlank(etag))
+            {
+                response.getHeaders().put("ETag", etag);
+                String ifnm = request.getHeaders().get("If-None-Match");
+                if (ifnm != null && ifnm.equals(etag))
+                    Response.writeError(request, response, callback, 304);
+            }
+
+            ByteBuffer slice = byteBuffer.slice();
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, slice.remaining());
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
+            response.write(true, slice, callback);
         }
     }
 

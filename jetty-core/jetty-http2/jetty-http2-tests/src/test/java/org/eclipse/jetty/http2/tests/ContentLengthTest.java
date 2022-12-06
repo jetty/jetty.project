@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -29,14 +30,15 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentLengthTest extends AbstractTest
 {
@@ -116,37 +118,33 @@ public class ContentLengthTest extends AbstractTest
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
-    // TODO
     @ParameterizedTest
     @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
-    @Disabled("enable when GzipHandler is implemented")
     public void testGzippedContentLengthAddedByServer(String method) throws Exception
     {
-        fail();
+        byte[] data = new byte[4096];
 
-//        byte[] data = new byte[4096];
-//
-//        GzipHandler gzipHandler = new GzipHandler();
-//        gzipHandler.addIncludedMethods(method);
-//        gzipHandler.setMinGzipSize(data.length / 2);
-//        gzipHandler.setHandler(new EmptyServerHandler()
-//        {
-//            @Override
-//            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-//            {
-//                response.setContentLength(data.length);
-//                response.write(true, callback, ByteBuffer.wrap(data));
-//            }
-//        });
-//
-//        start(gzipHandler);
-//
-//        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-//            .method(method)
-//            .send();
-//
-//        HttpFields responseHeaders = response.getHeaders();
-//        long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH.asString());
-//        assertTrue(0 < contentLength && contentLength < data.length);
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.addIncludedMethods(method);
+        gzipHandler.setMinGzipSize(data.length / 2);
+        gzipHandler.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                // Write a single buffer, with a Content-Length
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
+                response.write(true, ByteBuffer.wrap(data), callback);
+            }
+        });
+
+        start(gzipHandler);
+
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .method(method)
+            .send();
+
+        if (!HttpMethod.HEAD.is(method))
+            assertThat(response.getContent().length, is(data.length));
     }
 }

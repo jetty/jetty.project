@@ -384,6 +384,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
         if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
         {
+            if (!hasContent)
+                content = BufferUtil.EMPTY_BUFFER;
             if (lastContent)
             {
                 HttpFields trailers = retrieveTrailers();

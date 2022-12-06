@@ -1175,6 +1175,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
     @Test
     @DisabledForJreRange(max = JRE.JAVA_18)
+    @Tag("flaky")
     public void testVirtualThreadPool() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");

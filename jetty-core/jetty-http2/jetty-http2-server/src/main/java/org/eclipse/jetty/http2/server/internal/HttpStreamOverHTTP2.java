@@ -383,6 +383,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
         if (hasContent || (last && !isTunnel(request, _responseMetaData)))
         {
+            if (!hasContent)
+                content = BufferUtil.EMPTY_BUFFER;
             if (last)
             {
                 HttpFields trailers = retrieveTrailers();
