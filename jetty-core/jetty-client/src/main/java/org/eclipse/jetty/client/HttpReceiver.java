@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -266,6 +267,9 @@ public abstract class HttpReceiver
             List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
             notifier.notifyHeaders(responseListeners, response);
 
+            if (exchange.isResponseComplete())
+                return;
+
             if (HttpStatus.isInterim(response.getStatus()))
             {
                 if (LOG.isDebugEnabled())
@@ -338,24 +342,18 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Invoking responseSuccess on {}", this);
 
-        NotifiableContentSource contentSource = this.contentSource;
-        if (contentSource != null)
-        {
-            this.contentSource = null;
-            contentSource.eof();
-        }
+        // Mark atomically the response as completed, with respect
+        // to concurrency between response success and response failure.
+        if (!exchange.responseComplete(null))
+            return;
 
         invoker.run(() ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseSuccess on {}", this);
 
-            // Mark atomically the response as completed, with respect
-            // to concurrency between response success and response failure.
-            if (!exchange.responseComplete(null))
-                return;
-
             responseState = ResponseState.IDLE;
+
             reset();
 
             HttpResponse response = exchange.getResponse();
@@ -385,34 +383,26 @@ public abstract class HttpReceiver
     protected void responseFailure(Throwable failure, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseFailure with {} on {}", failure, this);
+            LOG.debug("Failing with {} on {}", failure, this);
 
-        invoker.run(() ->
+        HttpExchange exchange = getHttpExchange();
+        // In case of a response error, the failure has already been notified
+        // and it is possible that a further attempt to read in the receive
+        // loop throws an exception that reenters here but without exchange;
+        // or, the server could just have timed out the connection.
+        if (exchange == null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Executing responseFailure on {}", this);
+            promise.succeeded(false);
+            return;
+        }
 
-            HttpExchange exchange = getHttpExchange();
-            // In case of a response error, the failure has already been notified
-            // and it is possible that a further attempt to read in the receive
-            // loop throws an exception that reenters here but without exchange;
-            // or, the server could just have timed out the connection.
-            if (exchange == null)
-            {
-                promise.succeeded(false);
-                return;
-            }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response failure {}", exchange.getResponse(), failure);
-
-            // Mark atomically the response as completed, with respect
-            // to concurrency between response success and response failure.
-            if (exchange.responseComplete(failure))
-                abort(exchange, failure, promise);
-            else
-                promise.succeeded(false);
-        });
+        // Mark atomically the response as completed, with respect
+        // to concurrency between response success and response failure.
+        boolean completed = exchange.responseComplete(failure);
+        if (completed)
+            abort(exchange, failure, promise);
+        else
+            promise.succeeded(false);
     }
 
     private void terminateResponse(HttpExchange exchange)
@@ -482,10 +472,14 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Invoking abort with {} on {}", failure, this);
 
+        // This method should be called only after calling HttpExchange.responseComplete().
+        if (!exchange.isResponseComplete())
+            throw new IllegalStateException();
+
         invoker.run(() ->
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Executing abort on {}", this);
+                LOG.debug("Executing abort with {} on {}", failure, this);
 
             if (responseState == ResponseState.FAILURE)
             {
@@ -496,7 +490,7 @@ public abstract class HttpReceiver
             responseState = ResponseState.FAILURE;
             this.failure = failure;
             if (contentSource != null)
-                contentSource.fail(failure);
+                contentSource.error(failure);
             dispose();
 
             HttpResponse response = exchange.getResponse();
@@ -557,7 +551,7 @@ public abstract class HttpReceiver
 
     private interface NotifiableContentSource extends Content.Source
     {
-        void eof();
+        boolean error(Throwable failure);
 
         void onDataAvailable();
     }
@@ -575,12 +569,6 @@ public abstract class HttpReceiver
             super(rawSource);
             _rawSource = rawSource;
             _decoder = decoder;
-        }
-
-        @Override
-        public void eof()
-        {
-            _rawSource.eof();
         }
 
         @Override
@@ -643,6 +631,15 @@ public abstract class HttpReceiver
                 }
             }
         }
+
+        @Override
+        public boolean error(Throwable failure)
+        {
+            if (_chunk != null)
+                _chunk.release();
+            _chunk = null;
+            return _rawSource.error(failure);
+        }
     }
 
     /**
@@ -654,42 +651,37 @@ public abstract class HttpReceiver
         private static final Logger LOG = LoggerFactory.getLogger(ContentSource.class);
 
         private final AtomicReference<Runnable> demandCallbackRef = new AtomicReference<>();
-        private volatile Content.Chunk currentChunk;
+        private final AutoLock lock = new AutoLock();
+        private Content.Chunk currentChunk;
 
         @Override
         public Content.Chunk read()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Reading from {}", this);
-            Content.Chunk chunk = consumeCurrentChunk();
-            if (chunk != null)
-                return chunk;
-            currentChunk = HttpReceiver.this.read(false);
-            return consumeCurrentChunk();
-        }
 
-        @Override
-        public void eof()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Setting EOF on {}", this);
-            if (currentChunk != null)
-                throw new IllegalStateException();
-            currentChunk = Content.Chunk.EOF;
-
-            Runnable demandCallback = demandCallbackRef.getAndSet(null);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Calling demand callback on {}", this);
-            if (demandCallback != null)
+            Content.Chunk current;
+            try (AutoLock ignored = lock.lock())
             {
-                try
+                current = currentChunk;
+                currentChunk = Content.Chunk.next(current);
+                if (current != null)
+                    return current;
+            }
+
+            current = HttpReceiver.this.read(false);
+
+            try (AutoLock ignored = lock.lock())
+            {
+                if (currentChunk != null)
                 {
-                    demandCallback.run();
+                    // There was a concurrent call to fail().
+                    if (current != null)
+                        current.release();
+                    return currentChunk;
                 }
-                catch (Throwable x)
-                {
-                    fail(x);
-                }
+                currentChunk = Content.Chunk.next(current);
+                return current;
             }
         }
 
@@ -701,15 +693,6 @@ public abstract class HttpReceiver
             // The demandCallback will call read() that will itself call
             // HttpReceiver.read(boolean) so it must be called by the invoker.
             invokeDemandCallback(true);
-        }
-
-        private Content.Chunk consumeCurrentChunk()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Consuming current chunk from {}", this);
-            Content.Chunk chunk = currentChunk;
-            currentChunk = Content.Chunk.next(chunk);
-            return chunk;
         }
 
         @Override
@@ -731,12 +714,30 @@ public abstract class HttpReceiver
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing demand on {}", this);
 
-            if (currentChunk == null)
+            Content.Chunk current;
+            try (AutoLock ignored = lock.lock())
             {
-                currentChunk = HttpReceiver.this.read(true);
-                if (currentChunk == null)
-                    return;
+                current = currentChunk;
             }
+
+            if (current == null)
+            {
+                current = HttpReceiver.this.read(true);
+                if (current == null)
+                    return;
+
+                try (AutoLock ignored = lock.lock())
+                {
+                    if (currentChunk != null)
+                    {
+                        // There was a concurrent call to fail().
+                        current.release();
+                        return;
+                    }
+                    currentChunk = current;
+                }
+            }
+
             // The processDemand method is only ever called by the
             // invoker so there is no need to use the latter here.
             invokeDemandCallback(false);
@@ -768,17 +769,40 @@ public abstract class HttpReceiver
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Failing {}", this);
-            if (currentChunk != null)
-                currentChunk.release();
-            if (currentChunk == null || !(currentChunk instanceof Content.Chunk.Error))
+            boolean failed = error(failure);
+            if (failed)
                 HttpReceiver.this.failAndClose(failure);
-            currentChunk = Content.Chunk.from(failure);
+            invokeDemandCallback(true);
+        }
+
+        @Override
+        public boolean error(Throwable failure)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Erroring {}", this);
+            try (AutoLock ignored = lock.lock())
+            {
+                if (currentChunk instanceof Content.Chunk.Error)
+                    return false;
+                if (currentChunk != null)
+                    currentChunk.release();
+                currentChunk = Content.Chunk.from(failure);
+            }
+            return true;
+        }
+
+        private Content.Chunk chunk()
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                return currentChunk;
+            }
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x{c=%s,d=%s}", getClass().getSimpleName(), hashCode(), currentChunk, demandCallbackRef);
+            return String.format("%s@%x{c=%s,d=%s}", getClass().getSimpleName(), hashCode(), chunk(), demandCallbackRef);
         }
     }
 }

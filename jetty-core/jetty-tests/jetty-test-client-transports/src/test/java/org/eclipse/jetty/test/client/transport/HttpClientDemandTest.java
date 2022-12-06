@@ -335,22 +335,22 @@ public class HttpClientDemandTest extends AbstractTest
                 resultLatch.countDown();
             });
 
-        await().atMost(5, TimeUnit.SECONDS).until(listener1DemandRef::get, not(nullValue()));
-        await().atMost(5, TimeUnit.SECONDS).until(listener2DemandRef::get, not(nullValue()));
-
         // Make both listeners progress in locksteps.
         int i = 0;
         while (resultLatch.getCount() > 0)
         {
             i++;
 
+            await().atMost(5, TimeUnit.SECONDS).until(listener1DemandRef::get, not(nullValue()));
+            await().atMost(5, TimeUnit.SECONDS).until(listener2DemandRef::get, not(nullValue()));
+
             // Assert that no listener can progress for as long as both listeners did not demand.
             assertThat(listener1Chunks.get(), is(i));
             assertThat(listener2Chunks.get(), is(i));
-            listener2DemandRef.get().accept(1);
+            listener2DemandRef.getAndSet(null).accept(1);
             assertThat(listener1Chunks.get(), is(i));
             assertThat(listener2Chunks.get(), is(i));
-            listener1DemandRef.get().accept(1);
+            listener1DemandRef.getAndSet(null).accept(1);
         }
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));

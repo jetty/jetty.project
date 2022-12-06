@@ -92,13 +92,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         Stream stream = getHttpChannel().getStream();
         responseFailure(failure, Promise.from(failed ->
         {
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            getHttpChannel().getHttpConnection().close(failure);
-        }, x ->
-        {
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            getHttpChannel().getHttpConnection().close(failure);
-        }));
+            if (failed)
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        }, x -> stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP)));
     }
 
     @Override
@@ -127,15 +123,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
         responseBegin(exchange);
-        if (exchange.isResponseComplete())
-            return;
 
         HttpFields headers = response.getFields();
         for (HttpField header : headers)
         {
             responseHeader(exchange, header);
-            if (exchange.isResponseComplete())
-                return;
         }
 
         HttpRequest httpRequest = exchange.getRequest();

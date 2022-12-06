@@ -244,7 +244,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Failed {}: req={}/rsp={} {}", this, abortRequest, abortResponse, failure);
+            LOG.debug("Failed {}: req={}/rsp={}", this, abortRequest, abortResponse, failure);
 
         if (!abortRequest && !abortResponse)
         {
