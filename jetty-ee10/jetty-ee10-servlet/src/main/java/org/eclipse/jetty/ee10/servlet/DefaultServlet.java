@@ -740,7 +740,7 @@ public class DefaultServlet extends HttpServlet
         {
             _coreRequest = coreRequest;
             _response = response;
-            _coreResponse = ServletContextResponse.getBaseResponse(response);
+            _coreResponse = ServletContextResponse.getServletContextResponse(response);
             _httpFields = new HttpServletResponseHttpFields(response);
         }
 
