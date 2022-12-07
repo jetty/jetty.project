@@ -1,3 +1,5 @@
+jetty-10.0.14-SNAPSHOT
+
 jetty-10.0.13 - 07 December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
  + 7286 WebSocket write can time out even if the frame / callback has not been
