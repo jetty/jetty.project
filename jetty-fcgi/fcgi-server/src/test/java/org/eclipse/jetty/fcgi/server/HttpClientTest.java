@@ -14,6 +14,7 @@
 package org.eclipse.jetty.fcgi.server;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -351,7 +352,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testPOSTWithContentTracksProgress() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(baseRequest.getInputStream(), OutputStream.nullOutputStream());
+            }
+        });
 
         AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
