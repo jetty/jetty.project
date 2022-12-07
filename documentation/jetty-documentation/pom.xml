@@ -10,12 +10,10 @@
   <artifactId>jetty-documentation</artifactId>
   <name>Jetty :: Documentation</name>
   <packaging>jar</packaging>
-  <properties>
-    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
-  </properties>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
+    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
   </properties>
 
   <build>
