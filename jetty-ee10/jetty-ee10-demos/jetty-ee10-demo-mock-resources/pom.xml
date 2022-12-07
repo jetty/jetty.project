@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10.demos</groupId>
     <artifactId>jetty-ee10-demos</artifactId>
-    <version>12.0.0-SNAPSHOT</version>
+    <version>12.0.0.alpha3</version>
   </parent>
   <name>EE10 :: Jetty Demo :: Mock Resources</name>
   <artifactId>jetty-ee10-demo-mock-resources</artifactId>
