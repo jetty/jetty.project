@@ -15,7 +15,9 @@ package org.eclipse.jetty.server;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
@@ -31,9 +33,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class RequestTest
 {
@@ -125,6 +130,87 @@ public class RequestTest
     }
 
     /**
+     * Test to ensure that response.write() will add Content-Length on HTTP/1.1 responses.
+     */
+    @Test
+    public void testContentLengthNotSetOneWrites() throws Exception
+    {
+        final int bufferSize = 4096;
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                byte[] buf = new byte[bufferSize];
+                Arrays.fill(buf, (byte)'x');
+
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                response.write(true, ByteBuffer.wrap(buf), Callback.NOOP);
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /foo HTTP/1.1\r
+                Host: local\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
+        String responseBody = response.getContent();
+        assertThat(responseBody.length(), is(bufferSize));
+    }
+
+    /**
+     * Test to ensure that multiple response.write() will use
+     * Transfer-Encoding chunked on HTTP/1.1 responses.
+     */
+    @Test
+    public void testContentLengthNotSetTwoWrites() throws Exception
+    {
+        final int bufferSize = 4096;
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                byte[] buf = new byte[bufferSize];
+                Arrays.fill(buf, (byte)'x');
+
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+
+                ByteBuffer bbuf = ByteBuffer.wrap(buf);
+                int half = bufferSize / 2;
+                ByteBuffer halfBuf = bbuf.slice();
+                halfBuf.limit(half);
+                response.write(false, halfBuf, Callback.from(() ->
+                {
+                    bbuf.position(half);
+                    response.write(true, bbuf, callback);
+                }));
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /foo HTTP/1.1\r
+                Host: local\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertNull(response.getField(HttpHeader.CONTENT_LENGTH));
+        assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
+        String responseBody = response.getContent();
+        assertThat(responseBody.length(), is(bufferSize));
+    }
+
+    /**
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.
      * 
@@ -137,7 +223,7 @@ public class RequestTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -175,6 +261,114 @@ public class RequestTest
             response = HttpTester.parseResponse(lep.getResponse());
             checkCookieResult(sessionId3, new String[]{sessionId1, sessionId2}, response.getContent());
         }
+    }
+
+    /**
+     * Test for GET behavior on persistent connection (not Connection: close)
+     *
+     * @throws Exception if there is a problem
+     */
+    @Test
+    public void testGETNoConnectionClose() throws Exception
+    {
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                byte[] buf = new byte[4096];
+                Arrays.fill(buf, (byte)'x');
+                response.write(true, ByteBuffer.wrap(buf), callback);
+            }
+        });
+
+        server.start();
+
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: tester
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    /**
+     * Test for HEAD behavior on persistent connection (not Connection: close)
+     *
+     * @throws Exception if there is a problem
+     */
+    @Test
+    public void testHEADNoConnectionClose() throws Exception
+    {
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                byte[] buf = new byte[4096];
+                Arrays.fill(buf, (byte)'x');
+                response.write(true, ByteBuffer.wrap(buf), callback);
+            }
+        });
+
+        server.start();
+
+        String rawRequest = """
+                HEAD / HTTP/1.1
+                Host: tester
+
+                """;
+
+        LocalConnector.LocalEndPoint localEndPoint = connector.executeRequest(rawRequest);
+
+        ByteBuffer rawResponse = localEndPoint.waitForResponse(true, 2, TimeUnit.SECONDS);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    /**
+     * Test for HEAD behavior on persistent connection (not Connection: close)
+     *
+     * @throws Exception if there is a problem
+     */
+    @Test
+    public void testHEADWithConnectionClose() throws Exception
+    {
+        server.stop();
+        server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                byte[] buf = new byte[4096];
+                Arrays.fill(buf, (byte)'x');
+                response.write(true, ByteBuffer.wrap(buf), callback);
+            }
+        });
+
+        server.start();
+
+        String rawRequest = """
+                HEAD / HTTP/1.1
+                Host: tester
+                Connection: close
+                            
+                """;
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
     private static void checkCookieResult(String containedCookie, String[] notContainedCookies, String response)

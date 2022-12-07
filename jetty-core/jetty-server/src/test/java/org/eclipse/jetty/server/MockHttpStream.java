@@ -33,7 +33,32 @@ import org.eclipse.jetty.util.NanoTime;
 public class MockHttpStream implements HttpStream
 {
     private static final Throwable SUCCEEDED = new Throwable();
-    private static final Content.Chunk DEMAND = Content.Chunk.from(BufferUtil.EMPTY_BUFFER, false);
+    private static final Content.Chunk DEMAND = new Content.Chunk()
+    {
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+
+        @Override
+        public boolean isLast()
+        {
+            return false;
+        }
+
+        @Override
+        public void retain()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return true;
+        }
+    };
     private final long _nanoTime = NanoTime.now();
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
@@ -65,7 +90,7 @@ public class MockHttpStream implements HttpStream
 
     public Runnable addContent(ByteBuffer buffer, boolean last)
     {
-        return addContent((last && BufferUtil.isEmpty(buffer)) ? Content.Chunk.EOF : Content.Chunk.from(buffer, last));
+        return addContent(Content.Chunk.from(buffer, last));
     }
 
     public Runnable addContent(String content, boolean last)

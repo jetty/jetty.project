@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -39,6 +40,8 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -183,7 +186,7 @@ public class StreamCloseTest extends AbstractTest
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(stream.isClosed());
-        assertEquals(0, stream.getSession().getStreams().size());
+        await().atMost(Duration.ofSeconds(5)).until(() -> stream.getSession().getStreams().size(), equalTo(0));
     }
 
     @Test

@@ -40,6 +40,8 @@ import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -61,6 +63,7 @@ public class TypeUtil
     public static final Class<?>[] NO_ARGS = new Class[]{};
     public static final int CR = '\r';
     public static final int LF = '\n';
+    private static final  Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
 
@@ -253,7 +256,12 @@ public class TypeUtil
             {
                 String[] ss = p.split("\\.");
                 for (String s : ss)
+                {
                     b.append(s.charAt(0));
+                    Matcher matcher = TRAILING_DIGITS.matcher(s);
+                    if (matcher.matches())
+                        b.append(matcher.group(1));
+                }
             }
             b.append('.');
         }

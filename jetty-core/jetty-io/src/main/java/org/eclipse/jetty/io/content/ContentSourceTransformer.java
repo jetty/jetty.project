@@ -29,16 +29,22 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
  */
 public abstract class ContentSourceTransformer implements Content.Source
 {
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker;
     private final Content.Source rawSource;
     private Content.Chunk rawChunk;
     private Content.Chunk transformedChunk;
     private volatile boolean needsRawRead;
     private volatile Runnable demandCallback;
 
-    public ContentSourceTransformer(Content.Source rawSource)
+    protected ContentSourceTransformer(Content.Source rawSource)
+    {
+        this(rawSource, new SerializedInvoker());
+    }
+
+    protected ContentSourceTransformer(Content.Source rawSource, SerializedInvoker invoker)
     {
         this.rawSource = rawSource;
+        this.invoker = invoker;
     }
 
     @Override

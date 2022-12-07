@@ -51,6 +51,17 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
+    protected void reset()
+    {
+        super.reset();
+        if (chunk != null)
+        {
+            chunk.release();
+            chunk = null;
+        }
+    }
+
+    @Override
     public Content.Chunk read(boolean fillInterestIfNeeded)
     {
         Content.Chunk chunk = consumeChunk();

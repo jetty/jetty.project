@@ -523,6 +523,9 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
+        if (getHandler() == null)
+            return null;
+
         final String path = Request.getPathInContext(request);
 
         if (LOG.isDebugEnabled())
@@ -615,8 +618,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             return wrappedRequest.wrapProcessor(super.handle(wrappedRequest));
         }
 
-        // If not a supported URI- no Vary because no matter what client, this URI is always excluded
-        // Use pathInfo because this is be
+        // If not a supported URI - no Vary because no matter what client, this URI is always excluded
         if (!isPathGzipable(path))
         {
             LOG.debug("{} excluded by path {}", this, request);

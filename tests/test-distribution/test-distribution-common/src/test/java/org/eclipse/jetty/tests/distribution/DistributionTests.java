@@ -1175,6 +1175,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
     @Test
     @DisabledForJreRange(max = JRE.JAVA_18)
+    @Tag("flaky")
     public void testVirtualThreadPool() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -1191,7 +1192,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int httpPort = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.selectors=1", "jetty.http.port=" + httpPort)))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.newRequest("localhost", httpPort)
