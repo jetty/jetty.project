@@ -27,6 +27,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 public interface Retainable
 {
     /**
+     * <p>Test if the implementation actually supports {@link Retainable} calls</p>
+     *
+     * @return
+     */
+    default boolean isRetainable()
+    {
+        return true;
+    }
+
+    /**
      * <p>Retains this resource, incrementing the reference count.</p>
      */
     void retain();
@@ -43,10 +53,12 @@ public interface Retainable
     class Wrapper implements Retainable
     {
         private final Retainable wrapped;
+        private final Retainable retainable;
 
         public Wrapper(Retainable wrapped)
         {
             this.wrapped = Objects.requireNonNull(wrapped);
+            this.retainable = wrapped.isRetainable() ? wrapped : new ReferenceCounter();
         }
 
         public Retainable getWrapped()
@@ -57,13 +69,13 @@ public interface Retainable
         @Override
         public void retain()
         {
-            getWrapped().retain();
+            retainable.retain();
         }
 
         @Override
         public boolean release()
         {
-            return getWrapped().release();
+            return retainable.release();
         }
 
         @Override

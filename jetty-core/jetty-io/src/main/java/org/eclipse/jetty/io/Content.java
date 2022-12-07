@@ -721,6 +721,12 @@ public class Content
             }
 
             @Override
+            public boolean isRetainable()
+            {
+                return false;
+            }
+
+            @Override
             public void retain()
             {
                 throw new UnsupportedOperationException();
@@ -753,6 +759,29 @@ public class Content
              * @return True if the chunk will be process and the callback will be called (or may have already been called), false otherwise.
              */
             boolean process(Chunk chunk, Callback callback);
+        }
+
+        class Wrapper extends Retainable.Wrapper implements Chunk
+        {
+            private final Chunk _chunk;
+
+            public Wrapper(Chunk chunk)
+            {
+                super(chunk);
+                _chunk = Objects.requireNonNull(chunk);
+            }
+
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return _chunk.getByteBuffer();
+            }
+
+            @Override
+            public boolean isLast()
+            {
+                return _chunk.isLast();
+            }
         }
     }
 }

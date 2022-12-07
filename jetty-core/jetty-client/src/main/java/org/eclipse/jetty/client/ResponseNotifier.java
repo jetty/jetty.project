@@ -369,6 +369,12 @@ public class ResponseNotifier
                 }
 
                 @Override
+                public boolean isRetainable()
+                {
+                    return false;
+                }
+
+                @Override
                 public void retain()
                 {
                     throw new UnsupportedOperationException();
