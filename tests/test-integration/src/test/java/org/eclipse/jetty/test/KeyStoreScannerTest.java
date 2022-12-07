@@ -298,10 +298,59 @@ public class KeyStoreScannerTest
     }
 
     /**
+     * Test a keystore, where the monitored directory is a symlink.
+     */
+    @Test
+    public void testSymlinkedMonitoredDirectory() throws Exception
+    {
+        assumeFileSystemSupportsSymlink();
+        Path oldKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("oldKeyStore");
+        Path newKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("newKeyStore");
+
+        Path dataLinkDir = keystoreDir.resolve("data_symlink");
+        Path dataDir = keystoreDir.resolve("data");
+        Path etcDir = keystoreDir.resolve("etc");
+        Path dataLinkKeystore = dataLinkDir.resolve("keystore");
+        Path dataKeystore = dataDir.resolve("keystore");
+        Path etcKeystore = etcDir.resolve("keystore");
+
+        start(sslContextFactory ->
+        {
+            // What we want is ..
+            // (link) data_symlink/ -> data/
+            // (link) data/keystore -> etc/keystore
+            // (file) etc/keystore (actual certificate)
+
+            FS.ensureEmpty(etcDir);
+            FS.ensureEmpty(dataDir);
+            Files.copy(oldKeyStoreSrc, etcKeystore);
+            Files.createSymbolicLink(dataLinkDir, dataDir);
+            Files.createSymbolicLink(dataKeystore, etcKeystore);
+
+            sslContextFactory.setKeyStorePath(dataLinkKeystore.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+        });
+
+        // Check the original certificate expiry.
+        X509Certificate cert1 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert1), is(2015));
+
+        // Update etc/keystore
+        Files.copy(newKeyStoreSrc, etcKeystore, StandardCopyOption.REPLACE_EXISTING);
+        System.err.println("### Triggering scan");
+        keyStoreScanner.scan(5000);
+
+        // The scanner should have detected the updated keystore, expiry should be renewed.
+        X509Certificate cert2 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    /**
      * Test a doubly-linked keystore, and refreshing by only modifying the middle symlink.
      */
     @Test
-    public void testDoublySymlinked() throws Exception
+    public void testDoublySymlinkedTimestampedDir() throws Exception
     {
         assumeFileSystemSupportsSymlink();
         Path oldKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("oldKeyStore");
