@@ -1,3 +1,5 @@
+jetty-12.0.0-SNAPSHOT
+
 jetty-12.0.0.alpha3 - 07 December 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
    clearly
