@@ -20,6 +20,13 @@
         <groupId>org.eclipse.tycho</groupId>
         <artifactId>tycho-p2-repository-plugin</artifactId>
         <version>${tycho-version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.platform</groupId>
+            <artifactId>org.eclipse.equinox.p2.core</artifactId>
+            <version>2.6.200</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <configuration>
