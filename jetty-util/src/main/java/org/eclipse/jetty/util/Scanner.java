@@ -422,7 +422,7 @@ public class Scanner extends ContainerLifeCycle
 
         try
         {
-            // Always follow links when check ultimate type of the path
+            // Check status of the real path
             Path real = path.toRealPath(_linkOptions);
             if (!Files.exists(real) || Files.isDirectory(real))
                 throw new IllegalStateException("Not file or doesn't exist: " + path);
