@@ -14,6 +14,10 @@
     <asciidoctor.skip>${skipTests}</asciidoctor.skip>
   </properties>
 
+  <properties>
+    <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
+  </properties>
+
   <build>
     <resources>
       <!-- include something so that a asciidoctor.skip won't break assembly -->
