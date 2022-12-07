@@ -48,8 +48,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -90,11 +88,6 @@ public class KeyStoreScannerTest
     }
 
     public void start(Configuration configuration) throws Exception
-    {
-        start(configuration, true);
-    }
-
-    public void start(Configuration configuration, boolean resolveAlias) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         configuration.configure(sslContextFactory);
@@ -200,7 +193,7 @@ public class KeyStoreScannerTest
             sslContextFactory.setKeyStorePath(symlinkKeystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
-        }, false);
+        });
 
         // Check the original certificate expiry.
         X509Certificate cert1 = getCertificateFromServer();
@@ -363,8 +356,6 @@ public class KeyStoreScannerTest
         Path targetNov = timestampNovDir.resolve("keystore.p12");
         Path targetDec = timestampDecDir.resolve("keystore.p12");
 
-        boolean followLinks = false; // follow keystore links
-
         start(sslContextFactory ->
         {
             // What we want is ..
@@ -388,7 +379,7 @@ public class KeyStoreScannerTest
             sslContextFactory.setKeyStorePath(keystoreLink.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
-        }, followLinks);
+        });
 
         // Check the original certificate expiry.
         X509Certificate cert1 = getCertificateFromServer();
