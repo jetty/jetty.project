@@ -653,6 +653,11 @@
               <scope>runtime</scope>
               <version>${groovy.version}</version>
             </dependency>
+            <dependency>
+              <groupId>org.apache.ant</groupId>
+              <artifactId>ant</artifactId>
+              <version>${ant.version}</version>
+            </dependency>
           </dependencies>
           <configuration>
             <mergeUserSettings>${invoker.mergeUserSettings}</mergeUserSettings>
@@ -677,13 +682,6 @@
               <localRepo>${localRepoPath}</localRepo>
             </filterProperties>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.ant</groupId>
-              <artifactId>ant</artifactId>
-              <version>${ant.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
