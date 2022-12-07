@@ -284,9 +284,9 @@ public class KeyStoreScannerTest
         X509Certificate cert1 = getCertificateFromServer();
         assertThat(getExpiryYear(cert1), is(2015));
 
-        // Create a new keystore file
+        // Create a new keystore file opt/keystore.2 with new expiry
         Files.copy(newKeyStoreSrc, optKeystore2);
-        // Change (middle) link to new keystore
+        // Change (link) opt/keystore -> opt/keystore.2
         Files.delete(optKeystoreLink);
         Files.createSymbolicLink(optKeystoreLink, optKeystore2);
         System.err.println("### Triggering scan");
