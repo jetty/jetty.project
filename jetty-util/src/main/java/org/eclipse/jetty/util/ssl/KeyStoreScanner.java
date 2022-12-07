@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.ssl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -44,11 +45,6 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
 
     public KeyStoreScanner(SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory, true);
-    }
-
-    public KeyStoreScanner(SslContextFactory sslContextFactory, boolean followLinks)
-    {
         this.sslContextFactory = sslContextFactory;
         try
         {
@@ -58,12 +54,6 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
                 throw new IllegalArgumentException("keystore file does not exist");
             if (monitoredFile.isDirectory())
                 throw new IllegalArgumentException("expected keystore file not directory");
-
-            if (followLinks && keystoreResource.isAlias())
-            {
-                // This resource has an alias, so monitor the target of the alias.
-                monitoredFile = new File(keystoreResource.getAlias());
-            }
 
             keystoreFile = monitoredFile;
             if (LOG.isDebugEnabled())
@@ -78,7 +68,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         if (!parentFile.exists() || !parentFile.isDirectory())
             throw new IllegalArgumentException("error obtaining keystore dir");
 
-        _scanner = new Scanner(null, followLinks);
+        _scanner = new Scanner(null, false);
         _scanner.addDirectory(parentFile.toPath());
         _scanner.setScanInterval(1);
         _scanner.setReportDirs(false);
@@ -88,11 +78,23 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         addBean(_scanner);
     }
 
+    private Path getRealKeyStorePath()
+    {
+        try
+        {
+            return keystoreFile.toPath().toRealPath();
+        }
+        catch (IOException e)
+        {
+            return keystoreFile.toPath();
+        }
+    }
+
     @Override
     public void fileAdded(String filename)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("added {}", filename);
+            LOG.debug("fileAdded {} - keystoreFile.toReal {}", filename, getRealKeyStorePath());
 
         if (keystoreFile.toPath().toString().equals(filename))
             reload();
@@ -102,7 +104,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
     public void fileChanged(String filename)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("changed {}", filename);
+            LOG.debug("fileChanged {} - keystoreFile.toReal {}", filename, getRealKeyStorePath());
 
         if (keystoreFile.toPath().toString().equals(filename))
             reload();
@@ -112,7 +114,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
     public void fileRemoved(String filename)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("removed {}", filename);
+            LOG.debug("fileRemoved {} - keystoreFile.toReal {}", filename, getRealKeyStorePath());
 
         if (keystoreFile.toPath().toString().equals(filename))
             reload();
