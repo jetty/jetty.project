@@ -11,6 +11,10 @@
   <name>Jetty :: Documentation :: AsciiDoctor Extensions</name>
   <packaging>jar</packaging>
 
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.asciidoctor.extensions</bundle-symbolic-name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.asciidoctor</groupId>
