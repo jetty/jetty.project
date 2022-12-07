@@ -22,6 +22,3 @@ The module properties are:
 ----
 include::{JETTY_HOME}/modules/ssl-reload.mod[tags=documentation]
 ----
-
-The `followLinks` property is used to specify whether symlinks should be resolved in the path of the KeyStore.
-If set to false and the path of the KeyStore is a symbolic link, the scanner will monitor the symbolic link file for changes instead of its target.

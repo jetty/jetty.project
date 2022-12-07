@@ -18,6 +18,7 @@ import java.net.URL;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
@@ -88,11 +89,6 @@ public class KeyStoreScannerTest
 
     public void start(Configuration configuration) throws Exception
     {
-        start(configuration, true);
-    }
-
-    public void start(Configuration configuration, boolean resolveAlias) throws Exception
-    {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         configuration.configure(sslContextFactory);
 
@@ -105,7 +101,7 @@ public class KeyStoreScannerTest
         server.addConnector(connector);
 
         // Configure Keystore Reload.
-        keyStoreScanner = new KeyStoreScanner(sslContextFactory, resolveAlias);
+        keyStoreScanner = new KeyStoreScanner(sslContextFactory);
         keyStoreScanner.setScanInterval(0);
         server.addBean(keyStoreScanner);
 
@@ -197,7 +193,7 @@ public class KeyStoreScannerTest
             sslContextFactory.setKeyStorePath(symlinkKeystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
-        }, false);
+        });
 
         // Check the original certificate expiry.
         X509Certificate cert1 = getCertificateFromServer();
@@ -237,6 +233,163 @@ public class KeyStoreScannerTest
 
         // Change the target file of the symlink to the newKeyStore which has a later expiry date.
         Files.copy(newKeyStoreSrc, target, StandardCopyOption.REPLACE_EXISTING);
+        System.err.println("### Triggering scan");
+        keyStoreScanner.scan(5000);
+
+        // The scanner should have detected the updated keystore, expiry should be renewed.
+        X509Certificate cert2 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    @Test
+    public void testReloadChangingLinkTargetOfSymbolicLink() throws Exception
+    {
+        assumeFileSystemSupportsSymlink();
+        Path oldKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("oldKeyStore");
+        Path newKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("newKeyStore");
+
+        Path sslDir = keystoreDir.resolve("ssl");
+        Path optDir = keystoreDir.resolve("opt");
+        Path optKeystoreLink = optDir.resolve("keystore");
+        Path optKeystore1 = optDir.resolve("keystore.1");
+        Path optKeystore2 = optDir.resolve("keystore.2");
+        Path keystoreFile = sslDir.resolve("keystore");
+
+        start(sslContextFactory ->
+        {
+            // What we want is ..
+            // (link) ssl/keystore -> opt/keystore
+            // (link) opt/keystore -> opt/keystore.1
+            // (file) opt/keystore.1 (actual certificate)
+
+            FS.ensureEmpty(sslDir);
+            FS.ensureEmpty(optDir);
+            Files.copy(oldKeyStoreSrc, optKeystore1);
+            Files.createSymbolicLink(optKeystoreLink, optKeystore1);
+            Files.createSymbolicLink(keystoreFile, optKeystoreLink);
+
+            sslContextFactory.setKeyStorePath(keystoreFile.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+        });
+
+        // Check the original certificate expiry.
+        X509Certificate cert1 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert1), is(2015));
+
+        // Create a new keystore file opt/keystore.2 with new expiry
+        Files.copy(newKeyStoreSrc, optKeystore2);
+        // Change (link) opt/keystore -> opt/keystore.2
+        Files.delete(optKeystoreLink);
+        Files.createSymbolicLink(optKeystoreLink, optKeystore2);
+        System.err.println("### Triggering scan");
+        keyStoreScanner.scan(5000);
+
+        // The scanner should have detected the updated keystore, expiry should be renewed.
+        X509Certificate cert2 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    /**
+     * Test a keystore, where the monitored directory is a symlink.
+     */
+    @Test
+    public void testSymlinkedMonitoredDirectory() throws Exception
+    {
+        assumeFileSystemSupportsSymlink();
+        Path oldKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("oldKeyStore");
+        Path newKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("newKeyStore");
+
+        Path dataLinkDir = keystoreDir.resolve("data_symlink");
+        Path dataDir = keystoreDir.resolve("data");
+        Path etcDir = keystoreDir.resolve("etc");
+        Path dataLinkKeystore = dataLinkDir.resolve("keystore");
+        Path dataKeystore = dataDir.resolve("keystore");
+        Path etcKeystore = etcDir.resolve("keystore");
+
+        start(sslContextFactory ->
+        {
+            // What we want is ..
+            // (link) data_symlink/ -> data/
+            // (link) data/keystore -> etc/keystore
+            // (file) etc/keystore (actual certificate)
+
+            FS.ensureEmpty(etcDir);
+            FS.ensureEmpty(dataDir);
+            Files.copy(oldKeyStoreSrc, etcKeystore);
+            Files.createSymbolicLink(dataLinkDir, dataDir);
+            Files.createSymbolicLink(dataKeystore, etcKeystore);
+
+            sslContextFactory.setKeyStorePath(dataLinkKeystore.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+        });
+
+        // Check the original certificate expiry.
+        X509Certificate cert1 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert1), is(2015));
+
+        // Update etc/keystore
+        Files.copy(newKeyStoreSrc, etcKeystore, StandardCopyOption.REPLACE_EXISTING);
+        System.err.println("### Triggering scan");
+        keyStoreScanner.scan(5000);
+
+        // The scanner should have detected the updated keystore, expiry should be renewed.
+        X509Certificate cert2 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    /**
+     * Test a doubly-linked keystore, and refreshing by only modifying the middle symlink.
+     */
+    @Test
+    public void testDoublySymlinkedTimestampedDir() throws Exception
+    {
+        assumeFileSystemSupportsSymlink();
+        Path oldKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("oldKeyStore");
+        Path newKeyStoreSrc = MavenTestingUtils.getTestResourcePathFile("newKeyStore");
+
+        Path sslDir = keystoreDir.resolve("ssl");
+        Path dataDir = sslDir.resolve("data");
+        Path timestampNovDir = sslDir.resolve("2022-11");
+        Path timestampDecDir = sslDir.resolve("2022-12");
+        Path targetNov = timestampNovDir.resolve("keystore.p12");
+        Path targetDec = timestampDecDir.resolve("keystore.p12");
+
+        start(sslContextFactory ->
+        {
+            // What we want is ..
+            // (link) keystore.p12 -> data/keystore.p12
+            // (link) data/ -> 2022-11/
+            // (file) 2022-11/keystore.p12 (actual certificate)
+
+            FS.ensureEmpty(sslDir);
+            FS.ensureEmpty(timestampNovDir);
+            FS.ensureEmpty(timestampDecDir);
+            Files.copy(oldKeyStoreSrc, targetNov);
+            Files.copy(newKeyStoreSrc, targetDec);
+
+            // Create symlink of data/ to 2022-11/
+            Files.createSymbolicLink(dataDir, timestampNovDir.getFileName());
+
+            // Create symlink of keystore.p12 to data/keystore.p12
+            Path keystoreLink = sslDir.resolve("keystore.p12");
+            Files.createSymbolicLink(keystoreLink, Paths.get("data/keystore.p12"));
+
+            sslContextFactory.setKeyStorePath(keystoreLink.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+        });
+
+        // Check the original certificate expiry.
+        X509Certificate cert1 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert1), is(2015));
+
+        // Replace keystore link
+        Files.delete(dataDir);
+        Files.createSymbolicLink(dataDir, timestampDecDir.getFileName());
+        // (link) data/ -> 2022-12/
+        // now keystore.p12 points to data/keystore.p12 which points to 2022-12/keystore.p12
         System.err.println("### Triggering scan");
         keyStoreScanner.scan(5000);
 
