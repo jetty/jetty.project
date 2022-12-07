@@ -386,23 +386,19 @@ public abstract class HttpReceiver
             LOG.debug("Failing with {} on {}", failure, this);
 
         HttpExchange exchange = getHttpExchange();
-        // In case of a response error, the failure has already been notified
-        // and it is possible that a further attempt to read in the receive
-        // loop throws an exception that reenters here but without exchange;
-        // or, the server could just have timed out the connection.
-        if (exchange == null)
-        {
-            promise.succeeded(false);
-            return;
-        }
 
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
-        boolean completed = exchange.responseComplete(failure);
-        if (completed)
+        if (exchange != null && exchange.responseComplete(failure))
+        {
             abort(exchange, failure, promise);
+        }
         else
+        {
+            // The response was already completed (either successfully
+            // or with a failure) by a previous event, bail out.
             promise.succeeded(false);
+        }
     }
 
     private void terminateResponse(HttpExchange exchange)
