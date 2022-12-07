@@ -50,6 +50,11 @@ public interface Retainable
      */
     boolean release();
 
+    static Retainable asRetainable(Retainable retainable)
+    {
+        return retainable.isRetainable() ? retainable : new Wrapper(retainable);
+    }
+
     class Wrapper implements Retainable
     {
         private final Retainable wrapped;
