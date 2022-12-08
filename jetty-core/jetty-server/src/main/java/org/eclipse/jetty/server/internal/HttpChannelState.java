@@ -666,17 +666,7 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignored = _lock.lock())
             {
                 _processState = ProcessState.PROCESSED;
-
-                if (_failure != null)
-                {
-                    if (failure != null)
-                    {
-                        if (ExceptionUtil.areNotAssociated(failure, _failure))
-                            _failure.addSuppressed(failure);
-                    }
-                    failure = _failure;
-                }
-
+                failure = ExceptionUtil.combine(_failure, failure);
                 completeStream = _completed && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
                 stream = _stream;
             }
