@@ -37,16 +37,15 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AsyncContentSourceTest
+public class AsyncContentTest
 {
     // TODO make an OutputStreamContentSource version of this test
 
-    // TODO add a test to actually read some content!
-
     @Test
-    public void testOfferInvokesDemandCallback() throws Exception
+    public void testWriteInvokesDemandCallback() throws Exception
     {
         try (AsyncContent async = new AsyncContent())
         {
@@ -239,6 +238,49 @@ public class AsyncContentSourceTest
             callback.assertSingleFailureIsInstanceNoSuccess(IOException.class);
         }
         callback.assertNoFailureNoSuccess();
+    }
+
+    @Test
+    public void testFailFailsCallbacks()
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            AssertingCallback callback1 = new AssertingCallback();
+            async.write(false, ByteBuffer.wrap(new byte[1]), callback1);
+            AssertingCallback callback2 = new AssertingCallback();
+            async.write(false, ByteBuffer.wrap(new byte[2]), callback2);
+            AssertingCallback callback3 = new AssertingCallback();
+            async.write(false, ByteBuffer.wrap(new byte[3]), callback3);
+
+            Content.Chunk chunk = async.read();
+            callback1.assertNoFailureNoSuccess();
+            assertThat(chunk.getByteBuffer().remaining(), is(1));
+            assertThat(chunk.release(), is(true));
+            callback1.assertNoFailureWithSuccesses(1);
+
+            Exception error1 = new Exception("test1");
+            async.fail(error1);
+
+            chunk = async.read();
+            assertSame(error1, ((Content.Chunk.Error)chunk).getCause());
+
+            callback2.assertSingleFailureSameInstanceNoSuccess(error1);
+            callback3.assertSingleFailureSameInstanceNoSuccess(error1);
+        }
+    }
+
+    @Test
+    public void testWriteAfterFailImmediatelyFailsCallback()
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            Exception error = new Exception("test1");
+            async.fail(error);
+
+            AssertingCallback callback = new AssertingCallback();
+            async.write(false, ByteBuffer.wrap(new byte[1]), callback);
+            callback.assertSingleFailureSameInstanceNoSuccess(error);
+        }
     }
 
     private static class AssertingCallback implements Callback
