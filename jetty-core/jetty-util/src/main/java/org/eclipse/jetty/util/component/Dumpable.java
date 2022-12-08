@@ -101,12 +101,14 @@ public interface Dumpable
                 s = StringUtil.replace(s, "\r\n", "|");
                 s = StringUtil.replace(s, '\n', '|');
             }
-            else if (o instanceof Collection)
-                s = String.format("%s@%x(size=%d)", TypeUtil.toShortName(o.getClass()), o.hashCode(), ((Collection)o).size());
+            else if (o instanceof Collection collection)
+                s = String.format("%s@%x(size=%d)", TypeUtil.toShortName(o.getClass()), o.hashCode(), collection.size());
             else if (o.getClass().isArray())
                 s = String.format("%s@%x[size=%d]", o.getClass().getComponentType(), o.hashCode(), Array.getLength(o));
-            else if (o instanceof Map)
-                s = String.format("%s@%x{size=%d}", TypeUtil.toShortName(o.getClass()), o.hashCode(), ((Map<?, ?>)o).size());
+            else if (o instanceof Map map)
+                s = String.format("%s@%x{size=%d}", TypeUtil.toShortName(o.getClass()), o.hashCode(), map.size());
+            else if (o instanceof Map.Entry<?, ?> entry)
+                s = String.format("%s=%s", entry.getKey(), entry.getValue());
             else
             {
                 s = String.valueOf(o);
@@ -161,7 +163,7 @@ public interface Dumpable
         {
             dumpMapEntries(out, indent, (Map<?, ?>)object, extras == 0);
         }
-
+        
         if (extras == 0)
             return;
 
