@@ -583,7 +583,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         next.process(request, response, callback);
 
         // If the request was not accepted, destroy any gzipRequest wrapper
-        if (!request.isAccepted() && request instanceof GzipRequest gzipRequest)
+        if (request instanceof GzipRequest gzipRequest && request.isAccepted())
             gzipRequest.destroy();
     }
 

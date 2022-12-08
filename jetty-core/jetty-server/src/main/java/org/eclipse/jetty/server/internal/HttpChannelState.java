@@ -634,7 +634,7 @@ public class HttpChannelState implements HttpChannel, Components
             HttpStream stream;
             boolean completeStream = false;
 
-            try (AutoLock ignored1 = _lock.lock())
+            try (AutoLock ignored = _lock.lock())
             {
                 stream = _stream;
                 accepted = _accepted != null;
