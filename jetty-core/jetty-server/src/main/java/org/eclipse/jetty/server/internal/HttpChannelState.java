@@ -590,7 +590,6 @@ public class HttpChannelState implements HttpChannel, Components
             Server server = _connectionMetaData.getConnector().getServer();
 
             Request customized = request;
-            boolean wasAccepted;
             Throwable failure = null;
             try
             {
@@ -629,47 +628,52 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 failure = t;
             }
-            finally
-            {
-                try (AutoLock ignored1 = _lock.lock())
-                {
-                    wasAccepted = _accepted != null;
-                    if (_accepted == null)
-                        _accepted = LOG.isDebugEnabled() ? new Throwable("Accept") : ACCEPTED;
-                }
-            }
 
-            try
-            {
-                if (failure == null && !wasAccepted)
-                    Response.writeError(request, _request._response, request._callback, HttpStatus.NOT_FOUND_404);
-            }
-            catch (Throwable x)
-            {
-                failure = x;
-            }
-
-            if (failure != null)
-                _request._callback.failed(failure);
-
+            boolean accepted;
+            boolean complete;
             HttpStream stream;
-            boolean completeStream;
-            try (AutoLock ignored = _lock.lock())
-            {
-                _processing = null;
+            boolean completeStream = false;
 
-                if (_failure != null)
+            try (AutoLock ignored1 = _lock.lock())
+            {
+                stream = _stream;
+                accepted = _accepted != null;
+                if (!accepted)
+                    _accepted = LOG.isDebugEnabled() ? new Throwable("Accept") : ACCEPTED;
+
+                complete = accepted && failure == null;
+                if (complete)
                 {
-                    if (failure != null)
+                    _processing = null;
+                    failure = ExceptionUtil.combine(_failure, failure);
+                    completeStream = _callbackCompleted && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
+                }
+            }
+
+            if (!complete)
+            {
+                if (failure == null)
+                {
+                    try
                     {
-                        if (ExceptionUtil.areNotAssociated(failure, _failure))
-                            _failure.addSuppressed(failure);
+                        Response.writeError(request, request._response, request._callback, HttpStatus.NOT_FOUND_404);
                     }
-                    failure = _failure;
+                    catch (Throwable x)
+                    {
+                        failure = x;
+                    }
                 }
 
-                completeStream = _callbackCompleted && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
-                stream = _stream;
+                if (failure != null)
+                    request._callback.failed(failure);
+
+                try (AutoLock ignored = _lock.lock())
+                {
+                    _processing = null;
+
+                    failure = ExceptionUtil.combine(_failure, failure);
+                    completeStream = _callbackCompleted && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
+                }
             }
             if (completeStream)
                 completeStream(stream, failure);
