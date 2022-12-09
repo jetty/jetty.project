@@ -48,10 +48,10 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler1 extends Handler.Processor
+    public static class HelloHandler1 extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -59,10 +59,10 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler2 extends Handler.Processor.NonBlocking
+    public static class HelloHandler2 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -70,10 +70,10 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler3 extends Handler.Processor.NonBlocking
+    public static class HelloHandler3 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws IOException
+        public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -92,10 +92,10 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler4 extends Handler.Processor.Blocking
+    public static class HelloHandler4 extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws IOException
+        public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -112,10 +112,10 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler5 extends Handler.Processor.NonBlocking
+    public static class HelloHandler5 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws IOException
+        public void process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -168,10 +168,10 @@ public class HandlerDocs
         }
     }
 
-    public static class EchoHandler extends Handler.Processor.NonBlocking
+    public static class EchoHandler extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, request.getHeaders().get(HttpHeader.CONTENT_TYPE));

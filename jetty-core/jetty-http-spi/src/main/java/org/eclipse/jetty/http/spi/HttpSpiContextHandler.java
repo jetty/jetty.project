@@ -45,10 +45,10 @@ public class HttpSpiContextHandler extends ContextHandler
     {
         this._httpContext = httpContext;
         this._httpHandler = httpHandler;
-        super.setHandler(new Handler.Processor()
+        super.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 try (HttpExchange jettyHttpExchange = request.isSecure()
                     ? new JettyHttpsExchange(_httpContext, request, response)

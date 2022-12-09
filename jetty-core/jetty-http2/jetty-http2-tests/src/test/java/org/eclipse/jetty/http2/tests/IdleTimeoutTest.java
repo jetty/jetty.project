@@ -334,10 +334,10 @@ public class IdleTimeoutTest extends AbstractTest
     {
         int idleTimeout = 1000;
         AtomicReference<Throwable> thrownByCallback = new AtomicReference<>();
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 sleep(2 * idleTimeout);
 
@@ -579,13 +579,13 @@ public class IdleTimeoutTest extends AbstractTest
     {
         int bufferSize = 8192;
         long delay = 1000;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             private Request _request;
             private Callback _callback;
 
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 _request = request;
                 _callback = callback;
@@ -665,10 +665,10 @@ public class IdleTimeoutTest extends AbstractTest
         connector.setIdleTimeout(10 * idleTimeout);
         server.addConnector(connector);
         AtomicReference<CountDownLatch> phaser = new AtomicReference<>();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 System.err.println("processing request " + request.getHttpURI().getPath());
                 phaser.get().countDown();

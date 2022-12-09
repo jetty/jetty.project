@@ -259,7 +259,7 @@ public class ThreadStarvationTest
             _server.addConnector(connector);
     
             final AtomicInteger count = new AtomicInteger(0);
-            class TheHandler extends Handler.Processor
+            class TheHandler extends Handler.Abstract
             {
                 @Override
                 public void process(Request request, Response response, Callback callback) throws Exception

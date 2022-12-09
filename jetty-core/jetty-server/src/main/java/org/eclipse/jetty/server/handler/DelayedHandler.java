@@ -54,7 +54,7 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
 
     protected abstract void delay(R request) throws Exception;
 
-    protected static class DelayedRequest extends Request.AcceptingWrapper implements Runnable
+    protected static class DelayedRequest extends Request.Wrapper implements Runnable
     {
         private final Handler _handler;
         private final Response _response;
@@ -66,7 +66,6 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
             _handler = Objects.requireNonNull(handler);
             _response = Objects.requireNonNull(response);
             _callback = Objects.requireNonNull(callback);
-            request.accept();
         }
 
         protected Handler getHandler()
@@ -92,16 +91,12 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
         @Override
         public Content.Chunk read()
         {
-            if (!isAccepted())
-                throw new IllegalStateException("!accepted");
             return super.read();
         }
 
         @Override
         public void demand(Runnable demandCallback)
         {
-            if (!isAccepted())
-                throw new IllegalStateException("!accepted");
             super.demand(demandCallback);
         }
 
@@ -111,8 +106,6 @@ public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> ex
             try
             {
                 process();
-                if (!isAccepted())
-                    Response.writeError(getWrapped(), getResponse(), getCallback(), 404);
             }
             catch (Throwable t)
             {

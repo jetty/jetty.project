@@ -63,8 +63,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
                 {
                     response.setStatus(200);
                     _handler.process(reRequest, response, callback);
-                    if (reRequest.isAccepted())
-                        return;
+                    return;
                 }
                 catch (Exception e)
                 {
@@ -115,7 +114,7 @@ public abstract class ReHandlingErrorProcessor extends ErrorProcessor
         }
     }
 
-    private static class ReHandleRequestWrapper extends Request.AcceptingWrapper
+    private static class ReHandleRequestWrapper extends Request.Wrapper
     {
         private final HttpURI _uri;
 

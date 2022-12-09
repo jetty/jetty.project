@@ -258,7 +258,7 @@ public class NotAcceptingTest
         }
     }
 
-    public static class TestHandler extends Handler.Processor
+    public static class TestHandler extends Handler.Abstract
     {
         final Exchanger<String> exchange = new Exchanger<>();
         transient int handled;
@@ -268,7 +268,7 @@ public class NotAcceptingTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             // TODO see below
         }

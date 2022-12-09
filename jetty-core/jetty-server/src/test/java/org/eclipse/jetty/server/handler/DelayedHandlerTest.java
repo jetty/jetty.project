@@ -131,10 +131,10 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                super.doProcess(request, response, callback);
+                super.process(request, response, callback);
             }
         });
         _server.start();
@@ -177,10 +177,10 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                super.doProcess(request, response, callback);
+                super.process(request, response, callback);
             }
         });
         _server.start();
@@ -226,8 +226,6 @@ public class DelayedHandlerTest
                     try
                     {
                         getHandler().process(request, request.getResponse(), request.getCallback());
-                        if (!request.isAccepted())
-                            Response.writeError(request.getWrapped(), request.getResponse(), request.getCallback(), 404);
                     }
                     catch (Throwable t)
                     {
@@ -248,6 +246,10 @@ public class DelayedHandlerTest
         });
 
         _server.start();
+
+        // TODO fix this test
+        if (_server.isStarted())
+            throw new UnsupportedOperationException();
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
@@ -276,10 +278,10 @@ public class DelayedHandlerTest
 
         _server.setHandler(delayedHandler);
         CountDownLatch processing = new CountDownLatch(2);
-        delayedHandler.setHandler(new Handler.Processor()
+        delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
                 Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);

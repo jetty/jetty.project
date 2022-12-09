@@ -27,10 +27,10 @@ import org.eclipse.jetty.util.StringUtil;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class EchoHandler extends Handler.Processor.NonBlocking
+public class EchoHandler extends Handler.Abstract.NonBlocking
 {
     @Override
-    public void doProcess(Request request, Response response, Callback callback) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);

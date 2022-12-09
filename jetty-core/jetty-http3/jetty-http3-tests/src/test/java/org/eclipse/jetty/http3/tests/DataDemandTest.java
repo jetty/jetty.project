@@ -582,10 +582,10 @@ public class DataDemandTest extends AbstractClientServerTest
     @Test
     public void testDemandAfterEOF() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, "hello", callback);
             }

@@ -654,9 +654,6 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            if (!Request.getPathInContext(request).startsWith("/dump"))
-                return;
-            request.accept();
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
             try (StringWriter stringWriter = new StringWriter();
                  PrintWriter out = new PrintWriter(stringWriter))
@@ -677,11 +674,6 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            if (!Request.getPathInContext(request).startsWith("/redirect"))
-                return;
-
-            request.accept();
-
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
             response.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
             callback.succeeded();
@@ -693,10 +685,6 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            if (!Request.getPathInContext(request).startsWith("/error"))
-                return;
-            request.accept();
-
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
             Content.Sink.write(response, true, "Generic Error Page.", callback);
         }

@@ -47,10 +47,10 @@ public class HandlerClientServerTest extends AbstractClientServerTest
     public void testGet() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 serverLatch.countDown();
                 callback.succeeded();
@@ -82,10 +82,10 @@ public class HandlerClientServerTest extends AbstractClientServerTest
     public void testPost() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
                 serverLatch.countDown();

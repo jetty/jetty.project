@@ -22,10 +22,10 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 
-public class HelloWorld extends Handler.Processor
+public class HelloWorld extends Handler.Abstract
 {
     @Override
-    public void doProcess(Request request, Response response, Callback callback) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
 
         // Declare response encoding and types

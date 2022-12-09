@@ -119,10 +119,10 @@ public class ReverseProxyTest
     @Test
     public void testHTTPVersion() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 assertEquals(HttpVersion.HTTP_1_1.asString(), request.getConnectionMetaData().getProtocol());
                 callback.succeeded();
@@ -156,10 +156,10 @@ public class ReverseProxyTest
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         byte[] content = new byte[1024 * 1024];
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), Callback.from(() ->
                 {

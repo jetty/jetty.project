@@ -1149,11 +1149,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ServletContextRequest wrapRequest(Request request, Response response)
+    protected ServletContextRequest wrapRequest(Request request, String pathInContext)
     {
         // Need to ask directly to the Context for the pathInContext, rather than using
         // Request.getPathInContext(), as the request is not yet wrapped in this Context.
-        String pathInContext = getContext().getPathInContext(request.getHttpURI().getCanonicalPath());
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(pathInContext);
         if (matchedResource == null)
             return null;
@@ -1170,7 +1169,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             cache.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
-        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext,
+        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext,
             matchedResource.getResource(), matchedResource.getPathSpec(), matchedResource.getMatchedPath());
         servletChannel.associate(servletContextRequest);
         return servletContextRequest;
@@ -1180,23 +1179,22 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     protected ContextResponse wrapResponse(ContextRequest request, Response response)
     {
         if (request instanceof ServletContextRequest servletContextRequest)
-            return servletContextRequest.getResponse();
+            return servletContextRequest.wrapResponse(response);
         throw new IllegalArgumentException();
     }
 
     @Override
-    protected void tryProcessByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected boolean tryProcessByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
         if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getPathInContext()))
         {
-            request.accept();
             Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
-            return;
+            return true;
         }
 
-        super.tryProcessByContextHandler(pathInContext, request, response, callback);
+        return super.tryProcessByContextHandler(pathInContext, request, response, callback);
     }
 
     @Override

@@ -129,10 +129,10 @@ public class PriorKnowledgeHTTP2OverTLSTest
     {
         // The client knows a priori that the server speaks h2 on a particular port.
 
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -168,10 +168,10 @@ public class PriorKnowledgeHTTP2OverTLSTest
     {
         // The client knows a priori that the server speaks h2 on a particular port.
 
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }

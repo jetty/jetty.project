@@ -189,10 +189,10 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         return !reset.get();
     }
 
-    private static class LoadHandler extends Handler.Processor
+    private static class LoadHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             switch (HttpMethod.fromString(request.getMethod()))
             {

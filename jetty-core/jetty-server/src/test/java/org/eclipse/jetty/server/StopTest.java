@@ -507,7 +507,7 @@ public class StopTest
         assertFalse(context2Started.get());
     }
 
-    static class NoopHandler extends Handler.Processor
+    static class NoopHandler extends Handler.Abstract
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -516,20 +516,20 @@ public class StopTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             callback.succeeded(); // TODO should the be after the countdown?
             latch.countDown();
         }
     }
 
-    static class ABHandler extends Handler.Processor
+    static class ABHandler extends Handler.Abstract
     {
         final CountDownLatch latchA = new CountDownLatch(1);
         final CountDownLatch latchB = new CountDownLatch(1);
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             response.setContentLength(2);

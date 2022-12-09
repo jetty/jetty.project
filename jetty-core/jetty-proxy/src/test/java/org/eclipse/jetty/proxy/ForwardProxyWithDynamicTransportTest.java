@@ -244,10 +244,10 @@ public class ForwardProxyWithDynamicTransportTest
     public void testProxy(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
     {
         int status = HttpStatus.NO_CONTENT_204;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
@@ -573,10 +573,10 @@ public class ForwardProxyWithDynamicTransportTest
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static class EmptyServerHandler extends Handler.Processor
+    private static class EmptyServerHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             callback.succeeded();
         }

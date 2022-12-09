@@ -183,7 +183,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
         }
 
         // We accept the request and will always process it.
-        request.accept();
         LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
         limitedRequest.process();
     }
@@ -285,7 +284,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
     }
 
-    private static class LimitedRequest extends Request.AcceptingWrapper implements Runnable
+    private static class LimitedRequest extends Request.Wrapper implements Runnable
     {
         // TODO apply the thread limit to demand and write callbacks
 
@@ -344,8 +343,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
             try
             {
                 _handler.process(this, _response, callback);
-                if (!isAccepted())
-                    getAndClose(futurePermit);
             }
             catch (Throwable x)
             {
@@ -356,17 +353,12 @@ public class ThreadLimitHandler extends Handler.Wrapper
         @Override
         public Content.Chunk read()
         {
-            if (!isAccepted())
-                throw new IllegalStateException("!accepted");
             return super.read();
         }
 
         @Override
         public void demand(Runnable onContent)
         {
-            if (!isAccepted())
-                throw new IllegalStateException("!accepted");
-
             Runnable permittedDemand = () ->
             {
                 CompletableFuture<Closeable> futurePermit = _remote.acquire();
@@ -407,8 +399,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
             try
             {
                 process();
-                if (!isAccepted())
-                    Response.writeError(getWrapped(), getResponse(), getCallback(), 404);
             }
             catch (Throwable t)
             {
@@ -430,9 +420,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
         @Override
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
-            if (!getRequest().isAccepted())
-                throw new IllegalStateException("!accepted");
-
             Callback permittedCallback = new Callback()
             {
                 @Override

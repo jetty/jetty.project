@@ -108,10 +108,10 @@ public class PushedResourcesTest extends AbstractTest
 
         String path1 = "/secondary1";
         String path2 = "/secondary2";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals(path1))
@@ -172,10 +172,10 @@ public class PushedResourcesTest extends AbstractTest
 
         String oldPath = "/old";
         String newPath = "/new";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals(oldPath))
@@ -221,10 +221,10 @@ public class PushedResourcesTest extends AbstractTest
         String primaryResource = "/primary.html";
         String secondaryResource = "/secondary.png";
         String secondaryData = "SECONDARY";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 String requestURI = Request.getPathInContext(request);
                 if (requestURI.endsWith(primaryResource))

@@ -53,10 +53,10 @@ public class HTTP2CServer extends Server
 //        server.start();
 //    }
 
-    private static class SimpleHandler extends Handler.Processor
+    private static class SimpleHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             Fields fields = Request.extractQueryParameters(request);
 

@@ -406,10 +406,8 @@ public class ContextHandlerCollectionTest
         {
             super.process(new Request.Wrapper(request)
             {
-                @Override
-                public void accept()
+                // TODO wrong time to do this
                 {
-                    super.accept();
                     if (response.getHeaders().contains("Wrapped"))
                         response.getHeaders().put("Wrapped", "ASYNC");
                     else
@@ -419,7 +417,7 @@ public class ContextHandlerCollectionTest
         }
     }
 
-    private static final class IsHandledHandler extends Handler.Processor
+    private static final class IsHandledHandler extends Handler.Abstract
     {
         private boolean handled;
         private final String name;
@@ -435,7 +433,7 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             this.handled = true;
             response.getHeaders().put("X-IsHandled-Name", name);

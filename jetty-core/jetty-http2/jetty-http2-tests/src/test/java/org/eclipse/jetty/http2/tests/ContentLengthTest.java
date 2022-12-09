@@ -46,10 +46,10 @@ public class ContentLengthTest extends AbstractTest
     @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
     public void testZeroContentLengthAddedByServer(String method) throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -69,10 +69,10 @@ public class ContentLengthTest extends AbstractTest
     public void testContentLengthAddedByServer(String method) throws Exception
     {
         byte[] data = new byte[512];
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
             }
@@ -92,10 +92,10 @@ public class ContentLengthTest extends AbstractTest
     public void testClientContentLengthMismatch(String method) throws Exception
     {
         byte[] data = new byte[512];
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, callback);
             }
@@ -127,10 +127,10 @@ public class ContentLengthTest extends AbstractTest
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.addIncludedMethods(method);
         gzipHandler.setMinGzipSize(data.length / 2);
-        gzipHandler.setHandler(new Handler.Processor()
+        gzipHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 // Write a single buffer, with a Content-Length
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);

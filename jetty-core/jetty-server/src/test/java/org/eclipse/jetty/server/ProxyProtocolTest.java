@@ -60,10 +60,10 @@ public class ProxyProtocolTest
     {
         final String remoteAddr = "192.168.0.0";
         final int remotePort = 12345;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
                 if (addr instanceof InetSocketAddress iAddr)
@@ -128,10 +128,10 @@ public class ProxyProtocolTest
         final byte[] customE0 = new byte[] {1, 2};
         final byte[] customE1 = new byte[] {-1, -1, -1};
 
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 if (validateEndPoint(request) &&
                     remoteAddr.equals(Request.getRemoteAddr(request)) &&
@@ -226,10 +226,10 @@ public class ProxyProtocolTest
     @Test
     public void testProxyProtocolV2Local() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }

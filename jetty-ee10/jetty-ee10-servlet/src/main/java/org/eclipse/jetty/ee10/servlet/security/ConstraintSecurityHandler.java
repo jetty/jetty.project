@@ -634,7 +634,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         if (roleInfo.isForbidden())
         {
-            request.accept();
             Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
             return false;
         }
@@ -650,7 +649,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             if (request.isSecure())
                 return true;
 
-            request.accept();
             if (httpConfig.getSecurePort() > 0)
             {
                 //Redirect to secure port

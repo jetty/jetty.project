@@ -437,7 +437,6 @@ public class ServletHandler extends Handler.Wrapper
     public void process(Request request, Response response, Callback callback) throws Exception
     {
         // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
-        request.accept();
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         servletContextRequest.getServletChannel().setCallback(callback);
         servletContextRequest.getServletChannel().handle();

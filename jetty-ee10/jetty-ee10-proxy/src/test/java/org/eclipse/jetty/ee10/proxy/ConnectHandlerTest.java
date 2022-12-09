@@ -838,10 +838,10 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
     }
 
-    private static class ServerHandler extends Handler.Processor
+    private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             String cp = Request.getPathInContext(request);
             switch (cp)

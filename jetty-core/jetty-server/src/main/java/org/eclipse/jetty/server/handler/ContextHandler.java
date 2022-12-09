@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful, AliasCheck
+public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful, AliasCheck, Handler.Conditional
 {
     // TODO where should the alias checking go?
     // TODO add protected paths to ServletContextHandler?
@@ -652,43 +652,42 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public Request handle(Request request)
     {
         Handler handler = getHandler();
         if (handler == null || !isStarted())
-            return;
-
-        if (!checkVirtualHost(request))
-            return;
+            return null;
 
         // check the path matches the context path
-        String path = request.getHttpURI().getCanonicalPath();
-        String pathInContext = _context.getPathInContext(path);
+        String pathInContext = _context.getPathInContext(request.getHttpURI().getCanonicalPath());
         if (pathInContext == null)
-            return;
+            return null;
+
+        if (!checkVirtualHost(request))
+            return null;
+
+        return wrapRequest(request, pathInContext);
+    }
+
+    @Override
+    public void process(Request request, Response response, Callback callback) throws Exception
+    {
+        ContextRequest contextRequest = Request.as(request, ContextRequest.class);
+        String pathInContext = contextRequest.getPathInContext();
 
         if (!isAvailable())
         {
-            request.accept();
             processUnavailable(request, response, callback);
             return;
         }
 
         if (pathInContext.length() == 0 && !getAllowNullPathInContext())
         {
-            request.accept();
             processMovedPermanently(request, response, callback);
             return;
         }
 
-        ContextRequest contextRequest = wrapRequest(request, response);
-
-        // wrap might return null (eg ServletContextHandler could not match a servlet)
-        if (contextRequest == null)
-            return;
-
-        tryProcessByContextHandler(pathInContext, contextRequest, response, callback);
-        if (request.isAccepted())
+        if (tryProcessByContextHandler(pathInContext, contextRequest, response, callback))
             return;
 
         // Past this point we are calling the downstream handler in scope.
@@ -696,14 +695,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         ContextResponse contextResponse = wrapResponse(contextRequest, response);
         try
         {
-            handler.process(contextRequest, contextResponse, callback);
+            getHandler().process(contextRequest, contextResponse, callback);
         }
         catch (Throwable t)
         {
-            if (request.isAccepted())
-                Response.writeError(contextRequest, contextResponse, callback, t);
-            else
-                throw t;
+            Response.writeError(contextRequest, contextResponse, callback, t);
         }
         finally
         {
@@ -711,8 +707,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
-    protected void tryProcessByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected boolean tryProcessByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
+        return false;
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -831,9 +828,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _errorProcessor = errorProcessor;
     }
 
-    protected ContextRequest wrapRequest(Request request, Response response)
+    protected ContextRequest wrapRequest(Request request, String pathInContext)
     {
-        return new ContextRequest(_context, request);
+        return new ContextRequest(_context, request, pathInContext);
     }
 
     protected ContextResponse wrapResponse(ContextRequest request, Response response)

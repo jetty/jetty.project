@@ -170,9 +170,16 @@ public class ContextHandlerCollection extends Handler.Collection
                 {
                     try
                     {
+                        if (branch.getHandler() instanceof Handler.Conditional conditional)
+                        {
+                            Request accepted = conditional.handle(request);
+                            if (accepted == null)
+                                continue;
+                            request = accepted;
+                        }
+
                         branch.getHandler().process(request, response, callback);
-                        if (request.isAccepted())
-                            return;
+                        return;
                     }
                     catch (Throwable t)
                     {

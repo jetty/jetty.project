@@ -1738,10 +1738,10 @@ public class GzipHandlerTest
         return HttpTester.parseResponse(_connector.getResponse(request.generate()));
     }
 
-    public static class MicroHandler extends Handler.Processor
+    public static class MicroHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put("ETag", CONTENT_ETAG);
             String ifnm = request.getHeaders().get("If-None-Match");
@@ -1754,10 +1754,10 @@ public class GzipHandlerTest
         }
     }
 
-    public static class MimeTypeContentHandler extends Handler.Processor
+    public static class MimeTypeContentHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             String pathInfo = Request.getPathInContext(request);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
@@ -1779,10 +1779,10 @@ public class GzipHandlerTest
         }
     }
 
-    public static class TestHandler extends Handler.Processor
+    public static class TestHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (HttpMethod.DELETE.is(request.getMethod()))
             {
@@ -1815,10 +1815,10 @@ public class GzipHandlerTest
         }
     }
 
-    public static class WriteHandler extends Handler.Processor
+    public static class WriteHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             Fields parameters = Request.extractQueryParameters(request);
 
@@ -1878,7 +1878,7 @@ public class GzipHandlerTest
     /**
      * Handler that will write a ByteBuffer in two writes, causing a Transfer-Encoding: chunked.
      */
-    public static class ChunkedWriteHandler extends Handler.Processor
+    public static class ChunkedWriteHandler extends Handler.Abstract
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1907,7 +1907,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtils.isNotBlank(etag))
             {
@@ -1925,7 +1925,7 @@ public class GzipHandlerTest
     /**
      * Handler that will write a ByteBuffer in a single write, resulting in a Content-Length response header.
      */
-    public static class SingleWriteHandler extends Handler.Processor
+    public static class SingleWriteHandler extends Handler.Abstract
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1954,7 +1954,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtils.isNotBlank(etag))
             {
@@ -1971,10 +1971,10 @@ public class GzipHandlerTest
         }
     }
 
-    public static class EchoHandler extends Handler.Processor
+    public static class EchoHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
             if (contentType != null)
@@ -1984,10 +1984,10 @@ public class GzipHandlerTest
         }
     }
 
-    public static class DumpHandler extends Handler.Processor
+    public static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 

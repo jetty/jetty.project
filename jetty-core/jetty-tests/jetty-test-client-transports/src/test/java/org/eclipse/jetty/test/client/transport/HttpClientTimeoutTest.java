@@ -427,10 +427,10 @@ public class HttpClientTimeoutTest extends AbstractTest
     public void testFirstRequestTimeoutAfterSecondRequestCompletes(Transport transport) throws Exception
     {
         long timeout = 2000;
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     Thread.sleep(3 * timeout);
@@ -463,10 +463,10 @@ public class HttpClientTimeoutTest extends AbstractTest
     {
 
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     serverLatch.await();
@@ -547,7 +547,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
     }
 
-    private static class TimeoutHandler extends Handler.Processor
+    private static class TimeoutHandler extends Handler.Abstract
     {
         private final long timeout;
 
@@ -557,7 +557,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
 
         @Override
-        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             TimeUnit.MILLISECONDS.sleep(timeout);
             Content.copy(request, response, callback);

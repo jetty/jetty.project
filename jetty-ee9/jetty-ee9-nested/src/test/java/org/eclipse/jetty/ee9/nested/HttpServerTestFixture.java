@@ -87,10 +87,10 @@ public class HttpServerTestFixture
         _serverURI = _server.getURI();
     }
 
-    protected static class OptionsHandler extends org.eclipse.jetty.server.Handler.Processor
+    protected static class OptionsHandler extends org.eclipse.jetty.server.Handler.Abstract
     {
         @Override
-        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
@@ -101,17 +101,17 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class HelloWorldHandler extends org.eclipse.jetty.server.Handler.Processor
+    protected static class HelloWorldHandler extends org.eclipse.jetty.server.Handler.Abstract
     {
         @Override
-        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             Content.Sink.write(response, true, "Hello world\r\n", callback);
         }
     }
 
-    protected static class SendErrorHandler extends org.eclipse.jetty.server.Handler.Processor
+    protected static class SendErrorHandler extends org.eclipse.jetty.server.Handler.Abstract
     {
         private final int code;
         private final String message;
@@ -123,13 +123,13 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             org.eclipse.jetty.server.Response.writeError(request, response, callback, code, message);
         }
     }
 
-    protected static class ReadExactHandler extends org.eclipse.jetty.server.Handler.Processor
+    protected static class ReadExactHandler extends org.eclipse.jetty.server.Handler.Abstract
     {
         private final int expected;
 
@@ -144,7 +144,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             long len = expected < 0 ? request.getLength() : expected;
             if (len < 0)
@@ -182,10 +182,10 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadHandler extends org.eclipse.jetty.server.Handler.Processor
+    protected static class ReadHandler extends org.eclipse.jetty.server.Handler.Abstract
     {
         @Override
-        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
@@ -195,10 +195,10 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.Processor.Blocking
+    protected static class DataHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 

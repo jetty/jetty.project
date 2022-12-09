@@ -841,10 +841,10 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new EmptyServerHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 sleep(3 * timeout);
-                super.doProcess(request, response, callback);
+                super.process(request, response, callback);
             }
         });
         startProxy(proxyTLS);
@@ -877,10 +877,10 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new EmptyServerHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 sleep(3 * timeout);
-                super.doProcess(request, response, callback);
+                super.process(request, response, callback);
             }
         });
         startProxy(proxyTLS);
@@ -1002,10 +1002,10 @@ public class ForwardProxyTLSServerTest
         }
     }
 
-    private static class ServerHandler extends Handler.Processor
+    private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))

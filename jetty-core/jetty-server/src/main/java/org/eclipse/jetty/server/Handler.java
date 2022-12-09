@@ -32,18 +32,6 @@ import org.slf4j.LoggerFactory;
  * <p>A Jetty component that handles HTTP requests, of any version (HTTP/1.1, HTTP/2 or HTTP/3).
  * A {@code Handler} is a {@link Request.Processor} with the addition of {@link LifeCycle}
  * behaviours, plus variants that allow organizing {@code Handler}s as a tree structure.</p>
- * <p>An incoming HTTP request is first delivered to the {@link Server} instance
- * (itself the root {@code Handler.Wrapper}), which forwards it to one or more children {@code Handler}s,
- * via the {@link #process(Request, Response, Callback)} method,
- * which may recursively forward it to their children {@code Handler}s, until one of them
- * calls {@link Request#accept()} to indicates that the {@code Handler} (or it's children or agents)
- * will handle the HTTP request, generate the response and ultimately call the {@link Callback} to
- * indicate success or failure. Prior to calling {@link Request#accept()}, the read methods of {@link Request},
- * the write methods of {@link Response} and the {@link Callback} passed to
- * {@link #process(Request, Response, Callback)} are all inactive and will throw an {@link IllegalStateException}
- * if called.</p>
- * <p>If none of the {@code Handler}s calls {@link Request#accept()}, then the server will accept and
- * generate a 404 response.</p>
  * <p>{@code Handler}s may wrap the {@link Request} and then forward the wrapped instance
  * to their children, so that they see modified HTTP headers or a modified HTTP URI,
  * or to intercept the read of the request content.
@@ -87,9 +75,9 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  * <p>Alternatively, the {@link Processor} variant can be used to avoid the need to
- * call {@link Request#accept()}:</p>
+ * call TODO:</p>
  * <pre>{@code
- * class SimpleHandler extends Handler.Processor.NonBlocking
+ * class SimpleHandler extends Handler.Abstract.NonBlocking
  * {
  *     @Override
  *     public void doProcess(Request request, Response response, Callback callback)
@@ -157,6 +145,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
     @Override
     void destroy();
+
+    interface Conditional extends Handler
+    {
+        Request handle(Request request);
+    }
 
     /**
      * <p>A {@code Handler} that contains one or more other {@code Handler}s.
@@ -605,9 +598,16 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         {
             for (Handler h : _handlers)
             {
-                if (request.isAccepted())
-                    break;
+                if (h instanceof Conditional conditional)
+                {
+                    Request accepted = conditional.handle(request);
+                    if (accepted == null)
+                        continue;
+                    request = accepted;
+                }
+
                 h.process(request, response, callback);
+                break;
             }
         }
 
@@ -669,57 +669,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             List<Handler> list = new ArrayList<>(getHandlers());
             if (list.remove(handler))
                 setHandlers(list);
-        }
-    }
-
-    /**
-     * <p>A {@link Handler} that always calls {@link Request#accept()} in its
-     * {@link #process(Request, Response, Callback)} implementation and then
-     * calls the abstract {@link #doProcess(Request, Response, Callback)} method.</p>
-     */
-    abstract class Processor extends Abstract
-    {
-        public Processor()
-        {
-            this(InvocationType.BLOCKING);
-        }
-
-        public Processor(InvocationType type)
-        {
-            super(type);
-        }
-
-        @Override
-        public final void process(Request request, Response response, Callback callback) throws Exception
-        {
-            request.accept();
-            doProcess(request, response, callback);
-        }
-
-        /**
-         * <p>This method is called by {@link #process(Request, Response, Callback)} after the
-         * {@link Request#accept()} method is called.</p>
-         * @param request the HTTP request to process
-         * @param response the HTTP response to process
-         * @param callback the callback to complete when the processing is complete
-         * @throws Exception if there is a failure during the processing
-         */
-        protected abstract void doProcess(Request request, Response response, Callback callback) throws Exception;
-
-        public abstract static class Blocking extends Processor
-        {
-            public Blocking()
-            {
-                super(InvocationType.BLOCKING);
-            }
-        }
-
-        public abstract static class NonBlocking extends Processor
-        {
-            public NonBlocking()
-            {
-                super(InvocationType.NON_BLOCKING);
-            }
         }
     }
 }

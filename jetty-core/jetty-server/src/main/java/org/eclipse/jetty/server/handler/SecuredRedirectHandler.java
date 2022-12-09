@@ -67,7 +67,6 @@ public class SecuredRedirectHandler extends Handler.Wrapper
             return;
         }
 
-        request.accept();
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
 
         int securePort = httpConfig.getSecurePort();

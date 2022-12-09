@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -126,34 +125,6 @@ public interface Request extends Attributes, Content.Source
     List<Locale> __defaultLocale = Collections.singletonList(Locale.getDefault());
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
-
-    /**
-     * <p>Accept the request for processing by a {@link Handler}.
-     * This method must be called withing the scope of a call to
-     * {@link Handler#process(Request, Response, Callback)} and indicates that the request
-     * has been accepted for processing by that handler and that the response will be generated and
-     * the callback will ultimately be called (possibly asynchronously by another thread).
-     * Until accept has been called, the body of the request cannot
-     * be read, nor the response body written, nor the callback succeeded.
-     * @throws IllegalStateException if the request has already been accepted; or the caller is
-     *                               not within the scope of a call to the
-     *                               {@link Handler#process(Request, Response, Callback)}
-     */
-    void accept();
-
-    /**
-     * <p>Test if the request has been accepted.</p>
-     * <p>Note that since {@link #accept()} may only be called from a thread within the scope of
-     * a call to the associated{@link Handler#process(Request, Response, Callback)}, then it is
-     * thread safe to write code conditional on {@code isAccepted} within the same scope. For
-     * example there is no race in the following code:</p>
-     * <pre>{@code
-     *     if (!request.isAccepted())
-     *         request.accept();
-     * }</pre>
-     * @return True if the request has been accepted.
-     */
-    boolean isAccepted();
 
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
@@ -268,7 +239,7 @@ public interface Request extends Attributes, Content.Source
      * <p>Adds a listener for asynchronous errors.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
      * that the function has completed (either successfully or with a failure) the callback
-     * received from {@link Handler.Processor#doProcess(Request, Response, Callback)}, or
+     * received from {@link Handler.Processor#process(Request, Response, Callback)}, or
      * {@code false} otherwise.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}
      * stops the processing of subsequent listeners, which are therefore not invoked.</p>
@@ -551,18 +522,6 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public void accept()
-        {
-            getWrapped().accept();
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            return getWrapped().isAccepted();
-        }
-
-        @Override
         public String getId()
         {
             return getWrapped().getId();
@@ -680,34 +639,6 @@ public interface Request extends Attributes, Content.Source
         public Request getWrapped()
         {
             return (Request)super.getWrapped();
-        }
-    }
-
-    /**
-     * <p>A {@link Request.Wrapper} that maintains its own accepted state.
-     * Accepting this request is only reflected in this wrappers {@link #isAccepted()}
-     * method and is not passed onto the wrapped request.</p>
-     */
-    class AcceptingWrapper extends Wrapper
-    {
-        private final AtomicBoolean _accepted = new AtomicBoolean();
-
-        public AcceptingWrapper(Request wrapped)
-        {
-            super(wrapped);
-        }
-
-        @Override
-        public void accept()
-        {
-            if (!_accepted.compareAndSet(false, true))
-                throw new IllegalStateException("already accepted");
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            return _accepted.get();
         }
     }
 

@@ -113,9 +113,9 @@ public class TryPathsHandlerTest
             public void process(Request request, Response response, Callback callback)
             {
                 if (!Request.getPathInContext(request).startsWith("/forward"))
+                    // TODO this needs to be a Conditional
                     return;
 
-                request.accept();
 
                 assertThat(Request.getPathInContext(request), equalTo("/forward"));
                 assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
@@ -180,10 +180,10 @@ public class TryPathsHandlerTest
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), resourceHandler);
-        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Processor()
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
@@ -191,10 +191,10 @@ public class TryPathsHandlerTest
                 Content.Sink.write(response, true, message, callback);
             }
         });
-        pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Processor()
+        pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 assertThat(Request.getPathInContext(request), equalTo("/forward"));
                 assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
@@ -257,10 +257,10 @@ public class TryPathsHandlerTest
     public void testSecureRequestIsForwarded() throws Exception
     {
         String path = "/secure";
-        start(List.of("$path"), new Handler.Processor()
+        start(List.of("$path"), new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals("https", httpURI.getScheme());

@@ -381,14 +381,14 @@ public class GracefulStopTest
         assertHandled(handlerB, false);
     }
 
-    static class TestHandler extends Handler.Processor
+    static class TestHandler extends Handler.Abstract
     {
         final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
         final AtomicBoolean handling = new AtomicBoolean(false);
         volatile CountDownLatch latch;
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             // Log.getRootLogger().info("Handle {} / {} ? {}", request.getContextPath(), request.getPathInfo(), request.getQueryString());
             handling.set(true);

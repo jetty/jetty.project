@@ -193,7 +193,6 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 
     private void sendChallenge(Request req, Response res, Callback callback, String token) throws ServerAuthException
     {
-        req.accept();
         setSpnegoToken(res, token);
         Response.writeError(req, res, callback, HttpServletResponse.SC_UNAUTHORIZED);
     }

@@ -62,10 +62,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConnectorTest
 {
-    public static class ReuseInfoHandler extends Handler.Processor
+    public static class ReuseInfoHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -239,10 +239,10 @@ public class ServerConnectorTest
             connector2.setPort(port);
             server.addConnector(connector2);
 
-            server.setHandler(new Handler.Processor()
+            server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void doProcess(Request request, Response response, Callback callback)
+                public void process(Request request, Response response, Callback callback)
                 {
                     callback.succeeded();
                 }

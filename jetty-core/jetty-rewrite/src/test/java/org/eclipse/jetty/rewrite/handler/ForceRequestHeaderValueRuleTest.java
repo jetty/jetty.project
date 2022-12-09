@@ -34,10 +34,10 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
     public void start(ForceRequestHeaderValueRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 for (HttpField httpField : request.getHeaders())

@@ -414,10 +414,10 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private abstract static class AbstractMultiPartHandler extends Handler.Processor
+    private abstract static class AbstractMultiPartHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             Path tmpDir = MavenTestingUtils.getTargetTestingPath();
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);

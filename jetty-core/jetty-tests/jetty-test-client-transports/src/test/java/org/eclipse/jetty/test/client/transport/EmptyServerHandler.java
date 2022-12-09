@@ -18,10 +18,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyServerHandler extends Handler.Processor
+public class EmptyServerHandler extends Handler.Abstract
 {
     @Override
-    public void doProcess(Request request, Response response, Callback callback)
+    public void process(Request request, Response response, Callback callback)
     {
         callback.succeeded();
     }

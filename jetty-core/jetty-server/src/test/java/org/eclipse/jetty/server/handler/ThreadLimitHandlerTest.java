@@ -74,10 +74,10 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -112,10 +112,10 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -154,10 +154,10 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -193,10 +193,10 @@ public class ThreadLimitHandlerTest
         AtomicInteger count = new AtomicInteger(0);
         AtomicInteger total = new AtomicInteger(0);
         CountDownLatch latch = new CountDownLatch(1);
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(HttpStatus.OK_200);
                 if (!"/other".equals(Request.getPathInContext(request)))

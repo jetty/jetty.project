@@ -137,10 +137,10 @@ public class RequestTest
     {
         final int bufferSize = 4096;
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -173,10 +173,10 @@ public class RequestTest
     {
         final int bufferSize = 4096;
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -220,10 +220,10 @@ public class RequestTest
     public void testDifferentCookies() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -272,10 +272,10 @@ public class RequestTest
     public void testGETNoConnectionClose() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -306,10 +306,10 @@ public class RequestTest
     public void testHEADNoConnectionClose() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -344,10 +344,10 @@ public class RequestTest
     public void testHEADWithConnectionClose() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");

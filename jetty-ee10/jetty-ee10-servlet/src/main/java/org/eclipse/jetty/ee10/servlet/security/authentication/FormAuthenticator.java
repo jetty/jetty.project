@@ -235,7 +235,6 @@ public class FormAuthenticator extends LoginAuthenticator
         // Handle a request for authentication.
         if (jSecurityCheck)
         {
-            req.accept();
             final String username = servletApiRequest.getParameter(__J_USERNAME);
             final String password = servletApiRequest.getParameter(__J_PASSWORD);
 
@@ -343,10 +342,6 @@ public class FormAuthenticator extends LoginAuthenticator
             LOG.debug("auth deferred {}", session == null ? null : session.getId());
             return Authentication.UNAUTHENTICATED;
         }
-
-        // We may already be accepted if called from HttpServletRequest.authenticate. TODO ???
-        if (!req.isAccepted())
-            req.accept();
 
         // remember the current URI
         session = (session != null ? session : servletApiRequest.getSession(true));

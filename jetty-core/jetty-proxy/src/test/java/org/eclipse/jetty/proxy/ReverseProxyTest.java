@@ -44,10 +44,10 @@ public class ReverseProxyTest extends AbstractProxyTest
     {
         String clientContent = "hello";
         String serverContent = "world";
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 String requestContent = Content.Source.asString(request);
                 assertEquals(clientContent, requestContent);
@@ -93,10 +93,10 @@ public class ReverseProxyTest extends AbstractProxyTest
     public void testEmptyHeaderValue(HttpVersion httpVersion) throws Exception
     {
         String emptyHeaderName = "X-Empty";
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 assertEquals("", request.getHeaders().get(emptyHeaderName));
                 response.getHeaders().put(emptyHeaderName, "");

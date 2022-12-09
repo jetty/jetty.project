@@ -81,10 +81,10 @@ public class HttpServerTestFixture
         _serverURI = _server.getURI();
     }
 
-    protected static class OptionsHandler extends Handler.Processor
+    protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
@@ -95,17 +95,17 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class HelloWorldHandler extends Handler.Processor
+    protected static class HelloWorldHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             Content.Sink.write(response, true, "Hello world\r\n", callback);
         }
     }
 
-    protected static class SendErrorHandler extends Handler.Processor
+    protected static class SendErrorHandler extends Handler.Abstract
     {
         private final int code;
         private final String message;
@@ -117,13 +117,13 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             Response.writeError(request, response, callback, code, message);
         }
     }
 
-    protected static class ReadExactHandler extends Handler.Processor
+    protected static class ReadExactHandler extends Handler.Abstract
     {
         private final int expected;
 
@@ -138,7 +138,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             long len = expected < 0 ? request.getLength() : expected;
             if (len < 0)
@@ -176,10 +176,10 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadHandler extends Handler.Processor
+    protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
@@ -189,10 +189,10 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.Processor.Blocking
+    protected static class DataHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 

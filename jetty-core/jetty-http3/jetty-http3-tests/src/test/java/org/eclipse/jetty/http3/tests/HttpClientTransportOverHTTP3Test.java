@@ -39,10 +39,10 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     @Test
     public void testRequestHasHTTP3Version() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_3 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
@@ -66,10 +66,10 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     public void testRequestResponseWithSmallContent() throws Exception
     {
         String content = "Hello, World!";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.Sink.write(response, true, content, callback);
             }
@@ -84,10 +84,10 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     @Test
     public void testDelayedClientRead() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[10 * 1024]), callback);
             }
@@ -139,10 +139,10 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     @Test
     public void testDelayDemandAfterHeaders() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -192,10 +192,10 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     @Test
     public void testDelayDemandAfterLastContentChunk() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.Sink.write(response, true, "0", callback);
             }

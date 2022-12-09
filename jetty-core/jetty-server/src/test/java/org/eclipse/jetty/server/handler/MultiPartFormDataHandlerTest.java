@@ -70,10 +70,10 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testSimpleMultiPart() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -119,10 +119,10 @@ public class MultiPartFormDataHandlerTest
     {
         DelayedHandler.UntilMultiPartFormData delayedHandler = new DelayedHandler.UntilMultiPartFormData();
         CountDownLatch processLatch = new CountDownLatch(1);
-        delayedHandler.setHandler(new Handler.Processor()
+        delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 processLatch.countDown();
                 MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
@@ -182,10 +182,10 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testEchoMultiPart() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -245,10 +245,10 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testAsyncMultiPartResponse(@TempDir Path tempDir) throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 String boundary = "A1B2C3";
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));

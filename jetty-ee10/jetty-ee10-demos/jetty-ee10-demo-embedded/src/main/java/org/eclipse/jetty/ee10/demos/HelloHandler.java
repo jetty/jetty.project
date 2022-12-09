@@ -21,7 +21,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-public class HelloHandler extends Handler.Processor
+public class HelloHandler extends Handler.Abstract
 {
     final String greeting;
     final String body;
@@ -43,7 +43,7 @@ public class HelloHandler extends Handler.Processor
     }
 
     @Override
-    public void doProcess(Request request, Response response, Callback callback) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);

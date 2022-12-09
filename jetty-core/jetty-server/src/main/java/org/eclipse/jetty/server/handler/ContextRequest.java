@@ -24,11 +24,18 @@ public class ContextRequest extends Request.Wrapper implements Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final ContextHandler.ScopedContext _context;
+    private final String _pathInContext;
 
-    protected ContextRequest(ContextHandler.ScopedContext context, Request request)
+    protected ContextRequest(ContextHandler.ScopedContext context, Request request, String pathInContext)
     {
         super(request);
         _context = context;
+        _pathInContext = pathInContext;
+    }
+
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override

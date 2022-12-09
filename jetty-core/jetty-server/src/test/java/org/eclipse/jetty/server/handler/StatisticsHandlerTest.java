@@ -83,17 +83,17 @@ public class StatisticsHandlerTest
     {
         AtomicLong readRate = new AtomicLong(-1L);
 
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        request.demand(() -> doProcess(request, response, callback));
+                        request.demand(() -> process(request, response, callback));
                         return;
                     }
                     chunk.release();
@@ -134,10 +134,10 @@ public class StatisticsHandlerTest
         AtomicLong writeRate = new AtomicLong(-1L);
         CountDownLatch latch = new CountDownLatch(1);
 
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -212,17 +212,17 @@ public class StatisticsHandlerTest
     public void testMinimumDataReadRateHandler() throws Exception
     {
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(1100, 0);
-        mdrh.setHandler(new Handler.Processor()
+        mdrh.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        request.demand(() -> doProcess(request, response, callback));
+                        request.demand(() -> process(request, response, callback));
                         return;
                     }
 
@@ -274,10 +274,10 @@ public class StatisticsHandlerTest
         CountDownLatch latch = new CountDownLatch(1);
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1100);
         int expectedContentLength = 1000;
-        mdrh.setHandler(new Handler.Processor()
+        mdrh.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -612,8 +612,8 @@ public class StatisticsHandlerTest
                 barrier[0].await();
                 barrier[1].await();
 
-                request.accept();
-                
+                // TODO broken
+
                 barrier[2].await();
                 barrier[3].await();
                 
@@ -712,7 +712,7 @@ public class StatisticsHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                request.accept();
+                // TODO probably broken
                 throw new IllegalStateException("expected");
             }
         });
@@ -986,7 +986,7 @@ public class StatisticsHandlerTest
             {
                 barrier[0].await();
                 Thread.sleep(acceptingTime);
-                request.accept();
+                // TODO probably broken
                 try
                 {
                     barrier[1].await();
@@ -1149,7 +1149,7 @@ public class StatisticsHandlerTest
      * when the second barrier is reached, the callback is succeeded;
      * when the third barrier is reached, process() is returning
      */
-    private static class TripleBarrierHandlerProcessor extends Handler.Processor.Blocking
+    private static class TripleBarrierHandlerProcessor extends Handler.Abstract.Blocking
     {
         private final CyclicBarrier[] _barriers;
 
@@ -1161,7 +1161,7 @@ public class StatisticsHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             try
             {

@@ -47,10 +47,10 @@ public class ServerQuicConnectorTest
         connector.setPort(8443);
         server.addConnector(connector);
 
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, """
                         <html>
@@ -88,10 +88,10 @@ public class ServerQuicConnectorTest
         connector.setPort(8443);
         server.addConnector(connector);
 
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 int contentLength = 16 * 1024 * 1024;
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);

@@ -68,10 +68,10 @@ public class RegexRuleTest extends AbstractRuleTest
     private void start(RegexRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }

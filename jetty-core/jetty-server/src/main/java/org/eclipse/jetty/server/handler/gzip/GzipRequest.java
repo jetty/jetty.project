@@ -38,7 +38,6 @@ public class GzipRequest extends Request.Wrapper
     // TODO: use InflaterPool from somewhere.
     private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);
 
-    private final int _inflateBufferSize;
     private final HttpFields _fields;
     private Decoder _decoder;
     private GzipTransformer _gzipTransformer;
@@ -46,8 +45,14 @@ public class GzipRequest extends Request.Wrapper
     public GzipRequest(Request request, int inflateBufferSize)
     {
         super(request);
-        _inflateBufferSize = inflateBufferSize;
-        _fields = updateRequestFields(request, _inflateBufferSize > 0);
+        _fields = updateRequestFields(request, inflateBufferSize > 0);
+
+        if (inflateBufferSize > 0)
+        {
+            Components components = getComponents();
+            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), inflateBufferSize);
+            _gzipTransformer = new GzipTransformer(getWrapped());
+        }
     }
 
     private HttpFields updateRequestFields(Request request, boolean inflatable)
@@ -104,19 +109,6 @@ public class GzipRequest extends Request.Wrapper
         }
         fields = newFields.takeAsImmutable();
         return fields;
-    }
-
-    @Override
-    public void accept()
-    {
-        super.accept();
-
-        if (_inflateBufferSize > 0)
-        {
-            Components components = getComponents();
-            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
-            _gzipTransformer = new GzipTransformer(getWrapped());
-        }
     }
 
     @Override

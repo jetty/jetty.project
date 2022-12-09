@@ -197,7 +197,7 @@ public class BufferedResponseHandlerTest
         assertThat(response, not(containsString("RESET")));
     }
 
-    public static class TestHandler extends Handler.Processor
+    public static class TestHandler extends Handler.Abstract
     {
         int _bufferSize = -1;
         String _mimeType;
@@ -213,7 +213,7 @@ public class BufferedResponseHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 

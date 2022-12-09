@@ -51,10 +51,10 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
     {
         AtomicBoolean record = new AtomicBoolean();
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 if (record.get())
                     remotePorts.add(Request.getRemotePort(request));
@@ -118,10 +118,10 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         AtomicReference<CountDownLatch> requestLatch = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(count);
         CyclicBarrier barrier = new CyclicBarrier(count + 1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 try
                 {
@@ -209,10 +209,10 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         int count = 2 * maxConnections * maxMultiplex * maxUsage;
 
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 remotePorts.add(Request.getRemotePort(request));
                 callback.succeeded();

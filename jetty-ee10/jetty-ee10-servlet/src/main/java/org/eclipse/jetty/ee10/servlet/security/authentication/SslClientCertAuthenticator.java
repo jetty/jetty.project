@@ -67,7 +67,6 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
         SslSessionData sslSessionData = (SslSessionData)req.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
         if (sslSessionData == null)
         {
-            req.accept();
             Response.writeError(req, res, callback, HttpServletResponse.SC_FORBIDDEN);
             return Authentication.SEND_FAILURE;
         }
@@ -118,7 +117,6 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
 
             if (!DeferredAuthentication.isDeferred(res))
             {
-                req.accept();
                 Response.writeError(req, res, callback, HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
             }

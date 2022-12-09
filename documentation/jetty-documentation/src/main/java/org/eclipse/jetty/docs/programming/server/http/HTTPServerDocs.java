@@ -93,10 +93,10 @@ public class HTTPServerDocs
         server.addConnector(connector);
 
         // Set a simple Handler to handle requests/responses.
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 // Succeed the callback to write the response.
                 callback.succeeded();
@@ -473,28 +473,28 @@ public class HTTPServerDocs
 
     public void handlerTree()
     {
-        class LoggingHandler extends Handler.Processor
+        class LoggingHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }
         }
 
-        class App1Handler extends Handler.Processor
+        class App1Handler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }
         }
 
-        class App2Handler extends Handler.Processor
+        class App2Handler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }
@@ -516,11 +516,11 @@ public class HTTPServerDocs
 
     public void handlerAPI()
     {
-        class MyHandler extends Handler.Processor
+        class MyHandler extends Handler.Abstract
         {
             @Override
             // tag::handlerAPI[]
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
             }
             // end::handlerAPI[]
@@ -530,10 +530,10 @@ public class HTTPServerDocs
     public void handlerHello() throws Exception
     {
         // tag::handlerHello[]
-        class HelloWorldHandler extends Handler.Processor
+        class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
@@ -566,10 +566,10 @@ public class HTTPServerDocs
 
     public void handlerFilter() throws Exception
     {
-        class HelloWorldHandler extends Handler.Processor
+        class HelloWorldHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
             }
         }
@@ -618,10 +618,10 @@ public class HTTPServerDocs
     public void contextHandler() throws Exception
     {
         // tag::contextHandler[]
-        class ShopHandler extends Handler.Processor
+        class ShopHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
             }
@@ -646,19 +646,19 @@ public class HTTPServerDocs
     public void contextHandlerCollection() throws Exception
     {
         // tag::contextHandlerCollection[]
-        class ShopHandler extends Handler.Processor
+        class ShopHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
             }
         }
 
-        class RESTHandler extends Handler.Processor
+        class RESTHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
             }
@@ -833,19 +833,19 @@ public class HTTPServerDocs
 
     public void contextGzipHandler() throws Exception
     {
-        class ShopHandler extends Handler.Processor
+        class ShopHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
             }
         }
 
-        class RESTHandler extends Handler.Processor
+        class RESTHandler extends Handler.Abstract
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
             }

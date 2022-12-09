@@ -239,10 +239,10 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class ReadHandler extends Handler.Processor
+    protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);
@@ -346,7 +346,7 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class WriteHandler extends Handler.Processor
+    protected static class WriteHandler extends Handler.Abstract
     {
         byte[] content = new byte[BUFFER_SIZE];
 
@@ -356,7 +356,7 @@ public class ThreadStarvationTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);

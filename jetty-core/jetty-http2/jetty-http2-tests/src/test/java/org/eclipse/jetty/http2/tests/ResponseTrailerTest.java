@@ -58,10 +58,10 @@ public class ResponseTrailerTest extends AbstractTest
 
     public void testEmptyTrailers(String data) throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 // Send empty response trailers.
                 response.setTrailersSupplier(() -> HttpFields.EMPTY);

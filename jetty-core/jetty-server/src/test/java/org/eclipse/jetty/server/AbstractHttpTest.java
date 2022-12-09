@@ -97,7 +97,7 @@ public abstract class AbstractHttpTest
         }
     }
 
-    protected class ThrowExceptionOnDemandHandler extends Handler.Processor
+    protected class ThrowExceptionOnDemandHandler extends Handler.Abstract
     {
         private final boolean throwException;
         private volatile Throwable failure;
@@ -108,7 +108,7 @@ public abstract class AbstractHttpTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (throwException)
                 throw new TestCommitException();

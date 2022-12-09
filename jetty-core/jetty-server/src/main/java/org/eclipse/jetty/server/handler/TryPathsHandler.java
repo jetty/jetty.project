@@ -133,9 +133,11 @@ public class TryPathsHandler extends Handler.Wrapper
         for (String path : paths)
         {
             String interpolated = interpolate(request, path);
-            super.process(new TryPathsRequest(request, interpolated), response, callback);
-            if (request.isAccepted())
-                return;
+            Request tryRequest = new TryPathsRequest(request, interpolated);
+            super.process(tryRequest, response, callback);
+
+            // TODO this handler is now broken.
+            throw new UnsupportedOperationException();
         }
     }
 

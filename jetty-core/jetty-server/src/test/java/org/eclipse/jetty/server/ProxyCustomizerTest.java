@@ -80,10 +80,10 @@ public class ProxyCustomizerTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add("preexisting.attribute", request.getAttribute("some.attribute").toString());
                 ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNameSet());

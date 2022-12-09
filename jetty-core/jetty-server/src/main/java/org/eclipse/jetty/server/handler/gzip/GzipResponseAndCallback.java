@@ -163,8 +163,6 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         // Are we excluding because of status?
         Response response = GzipResponseAndCallback.this;
         Request request = response.getRequest();
-        if (!request.isAccepted())
-            throw new IllegalStateException("!accepted");
 
         int sc = response.getStatus();
         if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))

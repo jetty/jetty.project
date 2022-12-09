@@ -81,16 +81,13 @@ public class StatisticsHandler extends Handler.Wrapper
         catch (Throwable t)
         {
             _processingErrors.increment();
-            if (request.isAccepted())
-                _acceptedErrors.increment();
+            _acceptedErrors.increment();
             throw t;
         }
         finally
         {
             _processStats.decrement();
             _processTimeStats.record(NanoTime.since(statisticsRequest._startNanoTime));
-            if (!request.isAccepted())
-                _requestStats.decrement();
         }
     }
 
@@ -318,16 +315,11 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             super(request);
             _startNanoTime = System.nanoTime();
-        }
-
-        @Override
-        public void accept()
-        {
-            super.accept();
             addHttpStreamWrapper(this::asHttpStream);
             _acceptedStats.increment();
-            _acceptAtNanos = System.nanoTime();
+            _acceptAtNanos = System.nanoTime(); // TODO get rid of this
         }
+
 
         @Override
         public void onClosed(Connection connection)

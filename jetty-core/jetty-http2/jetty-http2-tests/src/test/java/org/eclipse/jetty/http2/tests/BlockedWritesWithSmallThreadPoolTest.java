@@ -105,10 +105,10 @@ public class BlockedWritesWithSmallThreadPoolTest
     {
         int contentLength = 16 * 1024 * 1024;
         AtomicReference<AbstractEndPoint> serverEndPointRef = new AtomicReference<>();
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 serverEndPointRef.compareAndSet(null, (AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Write a large content to cause TCP congestion.

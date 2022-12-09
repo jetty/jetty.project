@@ -72,10 +72,10 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testNoPrefaceBytes() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -115,10 +115,10 @@ public class HTTP2ServerTest extends AbstractServerTest
     public void testRequestResponseNoContent() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(3);
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 latch.countDown();
                 callback.succeeded();
@@ -173,10 +173,10 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         final byte[] content = "Hello, world!".getBytes(StandardCharsets.UTF_8);
         final CountDownLatch latch = new CountDownLatch(4);
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 latch.countDown();
                 response.write(true, ByteBuffer.wrap(content), callback);
@@ -241,10 +241,10 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testBadPingWrongPayload() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -286,10 +286,10 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testBadPingWrongStreamId() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -333,10 +333,10 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         final long delay = 1000;
         final AtomicBoolean broken = new AtomicBoolean();
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the SETTINGS frames to be exchanged.
                 Thread.sleep(delay);
@@ -394,10 +394,10 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
         {
-            startServer(new Handler.Processor()
+            startServer(new Handler.Abstract()
             {
                 @Override
-                public void doProcess(Request request, Response response, Callback callback)
+                public void process(Request request, Response response, Callback callback)
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                     // Invalid header name, the connection must be closed.

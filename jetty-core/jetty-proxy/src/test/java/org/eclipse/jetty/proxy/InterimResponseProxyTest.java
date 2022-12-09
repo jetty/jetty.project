@@ -38,10 +38,10 @@ public class InterimResponseProxyTest extends AbstractProxyTest
     @Test
     public void testInterimResponses() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
                     .thenCompose(ignored -> Promise.Completable.<String>with(p -> Content.Source.asString(request, StandardCharsets.UTF_8, p)))

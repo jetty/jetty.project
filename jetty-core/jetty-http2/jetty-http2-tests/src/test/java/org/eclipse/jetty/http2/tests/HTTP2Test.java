@@ -72,10 +72,10 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestNoContentResponseNoContent() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -161,10 +161,10 @@ public class HTTP2Test extends AbstractTest
     public void testRequestNoContentResponseContent() throws Exception
     {
         byte[] content = "Hello World!".getBytes(StandardCharsets.UTF_8);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, true, ByteBuffer.wrap(content));
             }
@@ -211,10 +211,10 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestContentResponseContent() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
             }
@@ -248,10 +248,10 @@ public class HTTP2Test extends AbstractTest
     public void testMultipleRequests() throws Exception
     {
         String downloadBytes = "X-Download";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
@@ -294,10 +294,10 @@ public class HTTP2Test extends AbstractTest
     public void testCustomResponseCode() throws Exception
     {
         int status = 475;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
@@ -329,10 +329,10 @@ public class HTTP2Test extends AbstractTest
         String host = "fooBar";
         int port = 1313;
         String authority = host + ":" + port;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 assertEquals(host, Request.getServerName(request));
                 assertEquals(port, Request.getServerPort(request));
@@ -743,10 +743,10 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testClientInvalidHeader() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -767,10 +767,10 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testServerInvalidHeader() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(":custom", "special");
                 callback.succeeded();
@@ -802,10 +802,10 @@ public class HTTP2Test extends AbstractTest
     public void testServerInvalidHeaderFlushed() throws Exception
     {
         CountDownLatch serverFailure = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(":custom", "special");
                 try

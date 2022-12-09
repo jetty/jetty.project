@@ -134,10 +134,10 @@ public class ClientAuthProxyTest
 
     private void startServer() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
                 Assertions.assertNotNull(certificates);

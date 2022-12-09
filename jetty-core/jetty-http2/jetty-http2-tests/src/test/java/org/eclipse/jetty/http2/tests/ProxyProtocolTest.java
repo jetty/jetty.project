@@ -81,10 +81,10 @@ public class ProxyProtocolTest
     @Test
     public void testProxyGetV1() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 assertEquals("1.2.3.4", Request.getRemoteAddr(request));
                 assertEquals(1111, Request.getRemotePort(request));
@@ -124,10 +124,10 @@ public class ProxyProtocolTest
     @Test
     public void testProxyGetV2() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 assertEquals("10.0.0.4", Request.getRemoteAddr(request));
                 assertEquals(33824, Request.getRemotePort(request));

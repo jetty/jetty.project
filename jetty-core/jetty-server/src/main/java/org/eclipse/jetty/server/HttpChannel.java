@@ -39,8 +39,10 @@ public interface HttpChannel extends Invocable
 
     /**
      * @return whether the request has been accepted.
+     * TODO remove
      */
-    boolean isRequestAccepted();
+    @Deprecated
+    default boolean isRequestAccepted() {return true;}
 
     /**
      * <p>{@link HttpStream} invokes this method when the metadata of an HTTP

@@ -118,10 +118,10 @@ public class ChatWebSocketServer
         upgradeHandler.addMapping(new ServletPathSpec("/*"), chat::negotiate);
         context.setHandler(upgradeHandler);
 
-        upgradeHandler.setHandler(new Handler.Processor()
+        upgradeHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");

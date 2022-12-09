@@ -581,10 +581,6 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
 
         // Call the process with the possibly wrapped request, response and callback
         next.process(request, response, callback);
-
-        // If the request was not accepted, destroy any gzipRequest wrapper
-        if (request instanceof GzipRequest gzipRequest && request.isAccepted())
-            gzipRequest.destroy();
     }
 
     protected boolean isPathMimeTypeGzipable(MimeTypes mimeTypes, String requestURI)

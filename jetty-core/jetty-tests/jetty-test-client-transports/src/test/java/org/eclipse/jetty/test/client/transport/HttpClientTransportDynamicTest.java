@@ -396,10 +396,10 @@ public class HttpClientTransportDynamicTest
         // client :1234 <-> :8888 proxy :5678 <-> server :8080
         // client :2345 <-> :8888 proxy :6789 <-> server :8080
 
-        startServer(this::proxyH1H2C, new Handler.Processor()
+        startServer(this::proxyH1H2C, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
@@ -493,10 +493,10 @@ public class HttpClientTransportDynamicTest
     public void testHTTP11UpgradeToH2C() throws Exception
     {
         String content = "upgrade";
-        startServer(this::h1H2C, new Handler.Processor()
+        startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -568,10 +568,10 @@ public class HttpClientTransportDynamicTest
     public void testHTTP11UpgradeToH2CWithForwardProxy() throws Exception
     {
         String content = "upgrade";
-        startServer(this::h1H2C, new Handler.Processor()
+        startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -607,10 +607,10 @@ public class HttpClientTransportDynamicTest
     public void testHTTP11UpgradeToH2COverTLS() throws Exception
     {
         String content = "upgrade";
-        startServer(this::sslH1H2C, new Handler.Processor()
+        startServer(this::sslH1H2C, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, content, callback);
@@ -640,10 +640,10 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testHTTP11UpgradeToH2CWithRequestContentDoesNotUpgrade() throws Exception
     {
-        startServer(this::h1H2C, new Handler.Processor()
+        startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
             }
@@ -707,10 +707,10 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testHTTP11UpgradeToH2CFailedServerClose() throws Exception
     {
-        startServer(this::h1H2C, new Handler.Processor()
+        startServer(this::h1H2C, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 request.getConnectionMetaData().getConnection().getEndPoint().close();
                 callback.succeeded();

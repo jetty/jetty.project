@@ -158,10 +158,10 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         int serverPort = HttpScheme.HTTP.is(scenario.getScheme()) ? 80 : 443;
         String realm = "test_realm";
         int status = HttpStatus.NO_CONTENT_204;
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 String target = org.eclipse.jetty.server.Request.getPathInContext(request);
                 if (target.startsWith("/proxy"))

@@ -880,10 +880,10 @@ public class ForwardProxyTLSServerTest
         }
     }
 
-    private static class ServerHandler extends Handler.Processor
+    private static class ServerHandler extends Handler.Abstract
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))

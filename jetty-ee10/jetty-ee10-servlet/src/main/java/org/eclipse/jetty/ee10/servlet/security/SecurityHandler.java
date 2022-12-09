@@ -484,7 +484,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         if (isAuthMandatory && authenticator == null)
         {
             LOG.warn("No authenticator for: {}", roleInfo);
-            request.accept();
             Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -511,7 +510,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                     boolean authorized = checkWebResourcePermissions(Request.getPathInContext(request), request, response, roleInfo, userAuth.getUserIdentity());
                     if (!authorized)
                     {
-                        request.accept();
                         Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN, "!role");
                         return;
                     }
@@ -520,7 +518,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 //process the request by other handlers
                 next.process(request, response, callback);
 
-                if (request.isAccepted() && authenticator != null)
+                if (authenticator != null)
                     authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
             }
             else if (authentication instanceof Authentication.Deferred)
@@ -538,7 +536,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                     previousIdentity = deferred.getPreviousAssociation();
                 }
 
-                if (request.isAccepted() && authenticator != null)
+                if (authenticator != null)
                 {
                     Authentication auth = servletApiRequest.getAuthentication();
                     if (auth instanceof Authentication.User userAuth)
@@ -549,7 +547,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             }
             else if (isAuthMandatory)
             {
-                request.accept();
                 Response.writeError(request, response, callback, HttpServletResponse.SC_UNAUTHORIZED, "unauthenticated");
             }
             else
@@ -561,15 +558,13 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 //process the request by other handlers
                 next.process(request, response, callback);
 
-                if (request.isAccepted() && authenticator != null)
+                if (authenticator != null)
                     authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
             }
         }
         catch (ServerAuthException e)
         {
             // jaspi 3.8.3 send HTTP 500 internal server error, with message from AuthException
-            if (!request.isAccepted())
-                request.accept();
             Response.writeError(request, response, callback, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
         finally

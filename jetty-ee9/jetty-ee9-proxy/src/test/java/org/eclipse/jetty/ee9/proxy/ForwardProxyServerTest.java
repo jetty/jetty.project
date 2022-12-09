@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ConnectHandler;
@@ -233,10 +234,10 @@ public class ForwardProxyServerTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
-        startServer(null, http, new Handler.Processor()
+        startServer(null, http, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
@@ -271,10 +272,10 @@ public class ForwardProxyServerTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
-        startServer(null, http, new Handler.Processor()
+        startServer(null, http, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));

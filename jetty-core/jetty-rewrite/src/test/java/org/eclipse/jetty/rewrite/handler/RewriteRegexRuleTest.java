@@ -70,10 +70,10 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
     private void start(RewriteRegexRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 response.getHeaders().put("X-Path", httpURI.getPath());
