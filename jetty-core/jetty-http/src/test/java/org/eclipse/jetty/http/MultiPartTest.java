@@ -517,12 +517,7 @@ public class MultiPartTest
     @Test
     public void testBinaryPart() throws Exception
     {
-        byte[] random = new byte[8192];
-        ThreadLocalRandom.current().nextBytes(random);
-        // Make sure the last 2 bytes are not \r\n,
-        // otherwise the multipart parser gets confused.
-        random[random.length - 2] = 0;
-        random[random.length - 1] = 0;
+        byte[] random = randomBytes(8192);
 
         TestPartsListener listener = new TestPartsListener();
         MultiPart.Parser parser = new MultiPart.Parser("BOUNDARY", listener);
@@ -619,6 +614,17 @@ public class MultiPartTest
 
         assertNotNull(listener.failure);
         assertThat(listener.failure.getMessage(), containsStringIgnoringCase("invalid header name"));
+    }
+
+    private static byte[] randomBytes(int length)
+    {
+        byte[] random = new byte[length];
+        ThreadLocalRandom.current().nextBytes(random);
+        // Make sure the last 2 bytes are not \r\n,
+        // otherwise the multipart parser gets confused.
+        random[length - 2] = 0;
+        random[length - 1] = 0;
+        return random;
     }
 
     private static class TestListener implements MultiPart.Parser.Listener
