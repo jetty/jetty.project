@@ -1,4 +1,9 @@
-jetty-9.4.50-SNAPSHOT
+jetty-9.4.51-SNAPSHOT
+
+jetty-9.4.50.v20221201 - 01 December 2022
+ + 8774 Added SizeLimitHandler
+ + 8678 Jetty client is not responding to GO_AWAY packet received from (Jetty)
+   Server and continue to send traffic on same connection
 
 jetty-9.4.49.v20220914 - 14 September 2022
  + 8414 BlockingArrayQueue drops all contents on drain
