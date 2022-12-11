@@ -49,7 +49,7 @@ public class RewritePatternRuleTest extends AbstractRuleTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put("X-URI", request.getHttpURI().getPathQuery());
                 callback.succeeded();

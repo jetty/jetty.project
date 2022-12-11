@@ -17,8 +17,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,7 +33,9 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
@@ -156,20 +160,16 @@ public class ThreadLimitHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor baseProcessor = super.handle(request);
-        if (baseProcessor == null)
-        {
-            // if no wrapped handler, do not handle
-            return null;
-        }
+        Handler next = getHandler();
+        if (next == null)
+            return false;
 
-        // Allow ThreadLimit to be enabled dynamically without restarting server
         if (!_enabled)
         {
-            // if disabled, handle normally
-            return baseProcessor;
+            next.process(request, response, callback);
+            return false;
         }
 
         // Get the remote address of the request
@@ -177,33 +177,13 @@ public class ThreadLimitHandler extends Handler.Wrapper
         if (remote == null)
         {
             // if remote is not known, handle normally
-            return baseProcessor;
+            return next.process(request, response, callback);
         }
 
-        CompletableFuture<Closeable> futurePermit = remote.acquire();
-        // Did we get a permit?
-        if (futurePermit.isDone())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Threadpermitted {}", remote);
-            return (rq, rs, cb) -> baseProcessor.process(rq, rs, Callback.from(cb, () -> getAndClose(futurePermit)));
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Threadlimited {}", remote);
-            return (rq, rs, cb) -> futurePermit.thenAccept(c ->
-            {
-                try
-                {
-                    baseProcessor.process(rq, rs, Callback.from(cb, () -> getAndClose(futurePermit)));
-                }
-                catch (Throwable x)
-                {
-                    cb.failed(x);
-                }
-            });
-        }
+        // We accept the request and will always process it.
+        LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
+        limitedRequest.process();
+        return true;
     }
 
     private static void getAndClose(CompletableFuture<Closeable> cf)
@@ -301,6 +281,196 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
         int comma = forwardedFor.lastIndexOf(',');
         return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
+    }
+
+    private static class LimitedRequest extends Request.Wrapper
+    {
+        private final Remote _remote;
+        private final Handler _handler;
+        private final LimitedResponse _response;
+        private final Callback _callback;
+
+        public LimitedRequest(Remote remote, Handler handler, Request request, Response response, Callback callback)
+        {
+            super(request);
+            _remote = remote;
+            _handler = Objects.requireNonNull(handler);
+            _response = new LimitedResponse(this, response);
+            _callback = Objects.requireNonNull(callback);
+        }
+
+        protected Handler getHandler()
+        {
+            return _handler;
+        }
+
+        protected Response getResponse()
+        {
+            return _response;
+        }
+
+        protected Callback getCallback()
+        {
+            return _callback;
+        }
+
+        protected void process() throws Exception
+        {
+            CompletableFuture<Closeable> futurePermit = _remote.acquire();
+
+            // Did we get a permit?
+            if (futurePermit.isDone())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Threadpermitted {}", _remote);
+                process(futurePermit);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Threadlimited {}", _remote);
+                futurePermit.thenAccept(c -> process(futurePermit));
+            }
+        }
+
+        protected void process(CompletableFuture<Closeable> futurePermit)
+        {
+            Callback callback = Callback.from(_callback, () -> getAndClose(futurePermit));
+            try
+            {
+                if (!_handler.process(this, _response, callback))
+                    Response.writeError(this, _response, callback, 404);
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
+
+        @Override
+        public void demand(Runnable onContent)
+        {
+            Runnable permittedDemand = () ->
+            {
+                CompletableFuture<Closeable> futurePermit = _remote.acquire();
+
+                if (futurePermit.isDone())
+                {
+                    try
+                    {
+                        onContent.run();
+                    }
+                    finally
+                    {
+                        getAndClose(futurePermit);
+                    }
+                }
+                else
+                {
+                    futurePermit.thenAccept(c ->
+                    {
+                        try
+                        {
+                            onContent.run();
+                        }
+                        finally
+                        {
+                            IO.close(c);
+                        }
+                    });
+                }
+            };
+
+            super.demand(permittedDemand);
+        }
+    }
+
+    private static class LimitedResponse extends Response.Wrapper
+    {
+        private final Remote _remote;
+
+        public LimitedResponse(LimitedRequest limitedRequest, Response response)
+        {
+            super(limitedRequest, response);
+            _remote = limitedRequest._remote;
+        }
+
+        @Override
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+            Callback permittedCallback = new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    CompletableFuture<Closeable> futurePermit = _remote.acquire();
+                    if (futurePermit.isDone())
+                    {
+                        try
+                        {
+                            callback.succeeded();
+                        }
+                        finally
+                        {
+                            getAndClose(futurePermit);
+                        }
+                    }
+                    else
+                    {
+                        futurePermit.thenAccept(c ->
+                        {
+                            try
+                            {
+                                callback.succeeded();
+                            }
+                            finally
+                            {
+                                IO.close(c);
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    CompletableFuture<Closeable> futurePermit = _remote.acquire();
+                    if (futurePermit.isDone())
+                    {
+                        try
+                        {
+                            callback.failed(x);
+                        }
+                        finally
+                        {
+                            getAndClose(futurePermit);
+                        }
+                    }
+                    else
+                    {
+                        futurePermit.thenAccept(c ->
+                        {
+                            try
+                            {
+                                callback.failed(x);
+                            }
+                            finally
+                            {
+                                IO.close(c);
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return callback.getInvocationType();
+                }
+            };
+
+            super.write(last, byteBuffer, permittedCallback);
+        }
     }
 
     private static final class Remote implements Closeable

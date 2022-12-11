@@ -496,7 +496,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public void onIdleTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
     {
         Runnable runnable = httpChannel.onFailure(failure);
-        boolean idle = !httpChannel.isRequestHandled();
+        boolean idle = !httpChannel.isRequestAccepted();
         consumer.accept(runnable, idle);
     }
 

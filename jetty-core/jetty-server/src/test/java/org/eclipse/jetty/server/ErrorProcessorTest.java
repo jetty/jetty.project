@@ -71,7 +71,7 @@ public class ErrorProcessorTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String pathInContext = Request.getPathInContext(request);
                 if (pathInContext.startsWith("/badmessage/"))
@@ -462,6 +462,7 @@ public class ErrorProcessorTest
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
             response.write(true, null, callback);
+            return true;
         });
         String rawResponse = connector.getResponse("""
                 GET /no/host HTTP/1.1
@@ -659,15 +660,16 @@ public class ErrorProcessorTest
         context.setErrorProcessor(new ErrorProcessor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer("Context Error"), callback);
+                return true;
             }
         });
         context.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 Response.writeError(request, response, callback, 444);
             }
@@ -676,9 +678,10 @@ public class ErrorProcessorTest
         server.setErrorProcessor(new ErrorProcessor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer("Server Error"), callback);
+                return true;
             }
         });
 
@@ -777,7 +780,7 @@ public class ErrorProcessorTest
         server.setErrorProcessor(new ErrorProcessor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                throw new UnsupportedOperationException();
             }

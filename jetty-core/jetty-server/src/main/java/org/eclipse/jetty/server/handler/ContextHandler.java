@@ -598,7 +598,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     @Override
     protected void doStop() throws Exception
     {
-        // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
         _context.call(super::doStop, null);
     }
 
@@ -653,59 +652,63 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        if (getHandler() == null)
-            return null;
+        Handler handler = getHandler();
+        if (handler == null || !isStarted())
+            return false;
 
         if (!checkVirtualHost(request))
-            return null;
+            return false;
 
-        // The root context handles all requests.
-        if (!_rootContext)
+        // check the path matches the context path
+        String path = request.getHttpURI().getCanonicalPath();
+        String pathInContext = _context.getPathInContext(path);
+        if (pathInContext == null)
+            return false;
+
+        if (!isAvailable())
         {
-            // Otherwise match the path.
-            String path = request.getHttpURI().getCanonicalPath();
-            if (path == null || !path.startsWith(_contextPath))
-                return null;
-
-            if (path.length() == _contextPath.length())
-            {
-                if (!getAllowNullPathInContext())
-                    return this::processMovedPermanently;
-            }
-            else
-            {
-                if (path.charAt(_contextPath.length()) != '/')
-                    return null;
-            }
+            processUnavailable(request, response, callback);
+            return true;
         }
 
-        // TODO check availability and maybe return a 503
-        if (!isAvailable() && isStarted())
-            return this::processUnavailable;
+        if (pathInContext.length() == 0 && !getAllowNullPathInContext())
+        {
+            processMovedPermanently(request, response, callback);
+            return true;
+        }
 
-        ContextRequest contextRequest = wrap(request);
-        // wrap might fail (eg ServletContextHandler could not match a servlet)
+        ContextRequest contextRequest = wrapRequest(request, response);
+
+        // wrap might return null (eg ServletContextHandler could not match a servlet)
         if (contextRequest == null)
-            return null;
+            return false;
 
-        // Does this handler want to process the request itself?
-        Request.Processor processor = processByContextHandler(contextRequest);
-        if (processor != null)
-            return processor;
+        if (processByContextHandler(pathInContext, contextRequest, response, callback))
+            return true;
 
+        // Past this point we are calling the downstream handler in scope.
         ClassLoader lastLoader = enterScope(contextRequest);
+        ContextResponse contextResponse = wrapResponse(contextRequest, response);
         try
         {
-            processor = getHandler().handle(contextRequest);
+            return handler.process(contextRequest, contextResponse, callback);
+        }
+        catch (Throwable t)
+        {
+            Response.writeError(contextRequest, contextResponse, callback, t);
+            return true;
         }
         finally
         {
             exitScope(contextRequest, request.getContext(), lastLoader);
         }
+    }
 
-        return contextRequest.wrapProcessor(processor);
+    protected boolean processByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    {
+        return false;
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
@@ -724,23 +727,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected void processUnavailable(Request request, Response response, Callback callback)
     {
         Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, null);
-    }
-
-    protected Request.Processor processByContextHandler(ContextRequest contextRequest)
-    {
-        if (!_allowNullPathInContext && StringUtil.isEmpty(Request.getPathInContext(contextRequest)))
-        {
-            return (request, response, callback) ->
-            {
-                // context request must end with /
-                String queryString = request.getHttpURI().getQuery();
-                Response.sendRedirect(request, response, callback,
-                    HttpStatus.MOVED_TEMPORARILY_302,
-                    request.getHttpURI().getPath() + (queryString == null ? "/" : ("/?" + queryString)),
-                    true);
-            };
-        }
-        return null;
     }
 
     /**
@@ -841,9 +827,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _errorProcessor = errorProcessor;
     }
 
-    protected ContextRequest wrap(Request request)
+    protected ContextRequest wrapRequest(Request request, Response response)
     {
-        return new ContextRequest(this, _context, request);
+        return new ContextRequest(_context, request);
+    }
+
+    protected ContextResponse wrapResponse(ContextRequest request, Response response)
+    {
+        return new ContextResponse(_context, request, response);
     }
 
     @Override

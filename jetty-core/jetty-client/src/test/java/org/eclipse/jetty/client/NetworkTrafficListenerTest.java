@@ -193,7 +193,7 @@ public class NetworkTrafficListenerTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.write(true, UTF_8.encode(responseContent), callback);
             }
@@ -331,7 +331,7 @@ public class NetworkTrafficListenerTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, location);
             }

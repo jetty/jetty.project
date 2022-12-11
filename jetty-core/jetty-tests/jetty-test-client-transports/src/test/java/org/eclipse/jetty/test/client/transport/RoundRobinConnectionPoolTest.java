@@ -54,7 +54,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 if (record.get())
                     remotePorts.add(Request.getRemotePort(request));
@@ -121,7 +121,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 try
                 {
@@ -212,7 +212,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 remotePorts.add(Request.getRemotePort(request));
                 callback.succeeded();

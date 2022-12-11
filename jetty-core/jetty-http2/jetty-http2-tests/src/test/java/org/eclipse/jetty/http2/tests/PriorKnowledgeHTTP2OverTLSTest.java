@@ -132,7 +132,7 @@ public class PriorKnowledgeHTTP2OverTLSTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -171,7 +171,7 @@ public class PriorKnowledgeHTTP2OverTLSTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }

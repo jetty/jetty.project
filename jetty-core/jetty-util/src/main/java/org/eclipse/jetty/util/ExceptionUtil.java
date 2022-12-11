@@ -152,20 +152,23 @@ public class ExceptionUtil
      */
     public static boolean areNotAssociated(Throwable t1, Throwable t2)
     {
+        if (t1 == null || t2 == null)
+            return false;
         while (t1 != null)
         {
-            while (t2 != null)
+            Throwable two = t2;
+            while (two != null)
             {
-                if (t1 == t2)
+                if (t1 == two)
                     return false;
-                if (t1.getCause() == t2)
+                if (t1.getCause() == two)
                     return false;
-                if (Arrays.asList(t1.getSuppressed()).contains(t2))
+                if (Arrays.asList(t1.getSuppressed()).contains(two))
                     return false;
-                if (Arrays.asList(t2.getSuppressed()).contains(t1))
+                if (Arrays.asList(two.getSuppressed()).contains(t1))
                     return false;
 
-                t2 = t2.getCause();
+                two = two.getCause();
             }
             t1 = t1.getCause();
         }

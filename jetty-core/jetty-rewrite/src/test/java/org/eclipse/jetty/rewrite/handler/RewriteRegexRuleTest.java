@@ -73,7 +73,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 response.getHeaders().put("X-Path", httpURI.getPath());

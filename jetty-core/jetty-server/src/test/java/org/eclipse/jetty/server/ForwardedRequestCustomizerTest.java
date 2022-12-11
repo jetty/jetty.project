@@ -1350,7 +1350,7 @@ public class ForwardedRequestCustomizerTest
         private RequestTester requestTester;
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             if (requestTester != null && requestTester.check(request, response))
             {

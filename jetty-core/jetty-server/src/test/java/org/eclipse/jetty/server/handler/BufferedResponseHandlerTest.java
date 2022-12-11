@@ -213,7 +213,7 @@ public class BufferedResponseHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 

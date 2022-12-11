@@ -160,7 +160,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         startServer(new HelloWorldHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -170,7 +170,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {
                     e.printStackTrace();
                 }
-                super.process(request, response, callback);
+                super.doProcess(request, response, callback);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -218,7 +218,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         startServer(new EchoHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -228,7 +228,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {
                     e.printStackTrace();
                 }
-                super.process(request, response, callback);
+                super.doProcess(request, response, callback);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -725,7 +725,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     protected static class SlowResponseHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 
@@ -750,7 +750,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     protected static class HugeResponseHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             byte[] buffer = new byte[128 * 1024 * 1024];
@@ -767,7 +767,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     protected static class WaitHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             try

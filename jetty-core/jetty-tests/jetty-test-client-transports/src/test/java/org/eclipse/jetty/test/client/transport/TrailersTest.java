@@ -43,7 +43,7 @@ public class TrailersTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Read slowly.
                 try (InputStream input = Content.Source.asInputStream(request))

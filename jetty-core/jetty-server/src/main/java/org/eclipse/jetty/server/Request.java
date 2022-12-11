@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -48,18 +49,16 @@ import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
- * <p>A {@code Request} instance is given to a {@link Handler}, that decides whether it handles
- * the request or not.</p>
- * <p>During the handling phase, the {@code Request} APIs can be used, but its content cannot be read.
- * Attempting to read the {@code Request} content during the handling phase results in an
- * {@link IllegalStateException} to be thrown.</p>
- * <p>A {@code Handler} that handles the request returns a {@link Processor}, that is then invoked
- * to process the request and the response (the processing phase).</p>
- * <p>Only during the processing phase the {@code Request} content can be read.</p>
  * <p>The typical idiom to read request content is the following:</p>
  * <pre>{@code
  * public void process(Request request, Response response, Callback callback)
  * {
+ *     // reject requests not appropriate for this handler
+ *     if (!request.getHttpURI().getPath().startsWith("/yourPath"))
+ *         return;
+ *
+ *     // accept the request to activate the read APIs
+ *     request.accept();
  *     while (true)
  *     {
  *         Content.Chunk chunk = request.read();
@@ -192,7 +191,19 @@ public interface Request extends Attributes, Content.Source
      */
     HttpFields getTrailers();
 
+    /**
+     * @return The timestamp that the request was received/created in milliseconds, relative to the "wall clock" given
+     * by {@link System#currentTimeMillis()}.
+     */
     long getTimeStamp();
+
+    /**
+     * @return The timestamp that the request was received/created in nanoseconds, relative to {@link System#nanoTime()}.
+     */
+    default long getNanoTimeStamp()
+    {
+        return System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
+    }
 
     // TODO: see above.
     boolean isSecure();
@@ -221,7 +232,7 @@ public interface Request extends Attributes, Content.Source
      * <p>Adds a listener for asynchronous errors.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
      * that the function has completed (either successfully or with a failure) the callback
-     * received from {@link Handler.Processor#process(Request, Response, Callback)}, or
+     * received from {@link Handler.Processor#doProcess(Request, Response, Callback)}, or
      * {@code false} otherwise.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}
      * stops the processing of subsequent listeners, which are therefore not invoked.</p>
@@ -233,7 +244,7 @@ public interface Request extends Attributes, Content.Source
 
     TunnelSupport getTunnelSupport();
 
-    void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
+    void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
 
     static String getLocalAddr(Request request)
     {
@@ -459,21 +470,23 @@ public interface Request extends Attributes, Content.Source
     interface Processor extends Invocable
     {
         /**
-         * <p>Invoked to process the given HTTP request and response.</p>
-         * <p>The processing <em>must</em> be concluded by completing the given callback.</p>
-         * <p>The processing may be asynchronous, i.e. this method may return early and
-         * complete the given callback later, possibly from a different thread.</p>
+         * <p>Invoked to process the passed HTTP request and response.</p>
+         * <p>The the request is accepted by returning true, then processing <em>must</em> be concluded by
+         * completing the passed callback. The processing may be asynchronous, i.e. this method may return true and
+         * complete the given callback later, possibly from a different thread.  If this method returns false,
+         * then the callback must not be invoked and any mutation on the response reversed.</p>
          * <p>Within an implementation of this method it is possible to read the
-         * request content (that was forbidden in {@link Handler#handle(Request)}.</p>
+         * request content (that was forbidden in {@link Handler#process(Request, Response, Callback)}.</p>
          * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
          * if present, otherwise a default HTTP 500 error is generated and the
          * callback completed while writing the error response.</p>
          * <p>The simplest implementation is:</p>
          * <pre>
-         * public void process(Request request, Response response, Callback callback)
+         * public boolean process(Request request, Response response, Callback callback)
          * {
          *     // Implicitly respond with 200 OK.
          *     callback.succeeded();
+         *     return true;
          * }
          * </pre>
          * <p>A HelloWorld implementation is:</p>
@@ -482,15 +495,31 @@ public interface Request extends Attributes, Content.Source
          * {
          *     // The callback is completed when the write completes.
          *     response.write(true, callback, "hello, world!");
+         *     return true;
          * }
          * </pre>
          *
          * @param request the HTTP request to process
          * @param response the HTTP response to process
          * @param callback the callback to complete when the processing is complete
-         * @throws Exception if there is a failure during the processing
+         * @return True if an only if the request will be processed, a response generated and the callback eventually called.
+         *         The callback may be completed asynchronously before or after this method returns true..
+         * @throws Exception if there is a failure during the processing. Callers cannot assume that the callback will be
+         *                   called and thus should attempt to complete the request as if a false had been returned.
          */
-        void process(Request request, Response response, Callback callback) throws Exception;
+        boolean process(Request request, Response response, Callback callback) throws Exception;
+
+        interface Always extends Processor
+        {
+            @Override
+            default boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                doProcess(request, response, callback);
+                return true;
+            }
+
+            void doProcess(Request request, Response response, Callback callback) throws Exception;
+        }
     }
 
     /**
@@ -558,6 +587,12 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public long getNanoTimeStamp()
+        {
+            return getWrapped().getNanoTimeStamp();
+        }
+
+        @Override
         public boolean isSecure()
         {
             return getWrapped().isSecure();
@@ -606,7 +641,7 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getWrapped().addHttpStreamWrapper(wrapper);
         }
@@ -657,55 +692,6 @@ public interface Request extends Attributes, Content.Source
         if (originalRequest instanceof HttpChannelState.ChannelRequest channelRequest)
             return channelRequest.getContentBytesRead();
         return -1;
-    }
-
-    /**
-     * <p>A {@code Request.Wrapper} that is a {@code Request.Processor}.</p>
-     * <p>This class wraps both a {@code Request} and a {@code Processor}
-     * with the same instance.</p>
-     * <p>Typical usage:</p>
-     * <pre>
-     * class YourHandler extends Handler.Wrapper
-     * {
-     *     public Processor handle(Request request)
-     *     {
-     *         // Wrap the request.
-     *         WrapperProcessor wrapped = new YourWrapperProcessor(request);
-     *
-     *         // Delegate processing using the wrapped request to wrap a Processor.
-     *         return wrapped.wrapProcessor(super.handle(wrapped));
-     *     }
-     * }
-     * </pre>
-     */
-    class WrapperProcessor extends Wrapper implements Processor
-    {
-        private volatile Processor _processor;
-
-        public WrapperProcessor(Request request)
-        {
-            super(request);
-        }
-
-        /**
-         * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
-         *
-         * @param processor the {@code Processor} to wrap
-         * @return this instance
-         */
-        public WrapperProcessor wrapProcessor(Processor processor)
-        {
-            _processor = processor;
-            return processor == null ? null : this;
-        }
-
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
-        {
-            Processor processor = _processor;
-            if (processor != null)
-                processor.process(this, response, callback);
-        }
     }
 
     /**

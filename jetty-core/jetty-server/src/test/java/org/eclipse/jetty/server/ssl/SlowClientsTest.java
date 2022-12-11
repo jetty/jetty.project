@@ -73,7 +73,7 @@ public class SlowClientsTest
             server.setHandler(new Handler.Processor()
             {
                 @Override
-                public void process(Request request, Response response, Callback callback)
+                public void doProcess(Request request, Response response, Callback callback)
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.

@@ -430,7 +430,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     Thread.sleep(3 * timeout);
@@ -466,7 +466,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     serverLatch.await();
@@ -557,7 +557,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
 
         @Override
-        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             TimeUnit.MILLISECONDS.sleep(timeout);
             Content.copy(request, response, callback);

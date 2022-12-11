@@ -195,7 +195,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
@@ -220,7 +220,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Callback.Completable.with(c -> response.write(false, ByteBuffer.allocate(1), c))
                     .whenComplete((r, x) ->
@@ -387,7 +387,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
@@ -412,7 +412,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());

@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.charset.Charset;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpField;
@@ -31,55 +29,76 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 
-public abstract class DelayedHandler extends Handler.Wrapper
+public abstract class DelayedHandler<R extends DelayedHandler.DelayedRequest> extends Handler.Wrapper
 {
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor processor = super.handle(request);
-        if (processor == null)
-            return null;
-        return delayed(request, processor);
+        Handler next = getHandler();
+        if (next == null)
+            return false;
+
+        R delayed = newDelayedRequest(next, request, response, callback);
+        if (delayed == null)
+            return next.process(request, response, callback);
+
+        delay(delayed);
+        return true;
     }
 
-    protected abstract Request.Processor delayed(Request request, Request.Processor processor);
-
-    public static class UntilContent extends DelayedHandler
+    protected R newDelayedRequest(Handler next, Request request, Response response, Callback callback)
     {
-        @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
-        {
-            // TODO remove this setting from HttpConfig?
-            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-                return processor;
-            if (request.getLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-                return processor;
-            // TODO: add logic to not delay if it's a CONNECT request.
-            // TODO: also add logic to not delay if it's a request that expects 100 Continue.
-
-            return new UntilContentProcessor(request, processor);
-        }
+        @SuppressWarnings("unchecked")
+        R r = (R)new DelayedRequest(next, request, response, callback);
+        return r;
     }
 
-    private static class UntilContentProcessor implements Request.Processor, Runnable
-    {
-        private final Request.Processor _processor;
-        private final Request _request;
-        private Response _response;
-        private Callback _callback;
+    protected abstract void delay(R request) throws Exception;
 
-        public UntilContentProcessor(Request request, Request.Processor processor)
+    protected static class DelayedRequest extends Request.Wrapper implements Runnable
+    {
+        private final Handler _handler;
+        private final Response _response;
+        private final Callback _callback;
+
+        public DelayedRequest(Handler handler, Request request, Response response, Callback callback)
         {
-            _request = request;
-            _processor = processor;
+            super(request);
+            _handler = Objects.requireNonNull(handler);
+            _response = Objects.requireNonNull(response);
+            _callback = Objects.requireNonNull(callback);
+        }
+
+        protected Handler getHandler()
+        {
+            return _handler;
+        }
+
+        protected Response getResponse()
+        {
+            return _response;
+        }
+
+        protected Callback getCallback()
+        {
+            return _callback;
+        }
+
+        protected boolean process() throws Exception
+        {
+            return _handler.process(this, getResponse(), getCallback());
         }
 
         @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        public Content.Chunk read()
         {
-            _response = response;
-            _callback = callback;
-            _request.demand(this);
+            return super.read();
+        }
+
+        @Override
+        public void demand(Runnable demandCallback)
+        {
+            super.demand(demandCallback);
         }
 
         @Override
@@ -87,121 +106,122 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             try
             {
-                _processor.process(_request, _response, _callback);
+                if (!process())
+                    Response.writeError(getWrapped(), getResponse(), getCallback(), 404);
             }
             catch (Throwable t)
             {
-                Response.writeError(_request, _response, _callback, t);
+                Response.writeError(getWrapped(), getResponse(), getCallback(), t);
             }
         }
     }
 
-    public static class UntilFormFields extends DelayedHandler
+    public static class UntilContent extends DelayedHandler<DelayedRequest>
     {
         @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
+        protected DelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
         {
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-                return processor;
+                return null;
 
-            Charset charset = FormFields.getFormEncodedCharset(request);
-            if (charset == null)
-                return processor;
+            if (request.getLength() == 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
+                return null;
 
-            return new UntilFormFieldsProcessor(request, processor);
+            return new DelayedRequest(next, request, response, callback);
+        }
+
+        @Override
+        protected void delay(DelayedRequest request)
+        {
+            request.getWrapped().demand(request);
         }
     }
 
-    private static class UntilFormFieldsProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
-    {
-        private final Request _request;
-        private final Request.Processor _processor;
-        private Response _response;
-        private Callback _callback;
-
-        public UntilFormFieldsProcessor(Request request, Request.Processor processor)
-        {
-            _processor = processor;
-            _request = request;
-        }
-
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
-        {
-            _response = response;
-            _callback = callback;
-            FormFields.from(_request).whenComplete(this);
-        }
-
-        @Override
-        public void accept(Fields fields, Throwable throwable)
-        {
-            try
-            {
-                _processor.process(_request, _response, _callback);
-            }
-            catch (Throwable t)
-            {
-                Response.writeError(_request, _response, _callback, t);
-            }
-        }
-    }
-
-    public static class UntilMultiPartFormData extends DelayedHandler
+    public static class UntilFormFields extends DelayedHandler<UntilFormFields.FormDelayedRequest>
     {
         @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
+        protected FormDelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
         {
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-                return processor;
+                return null;
+            if (FormFields.getFormEncodedCharset(request) == null)
+                return null;
 
-            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-            if (contentType == null)
-                return processor;
-
-            String contentTypeValue = HttpField.valueParameters(contentType, null);
-            if (!MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
-                return processor;
-            String boundary = MultiPart.extractBoundary(contentType);
-            if (boundary == null)
-                return processor;
-
-            return new Processor(request, processor, boundary);
+            return new FormDelayedRequest(next, request, response, callback);
         }
 
-        private static class Processor implements Request.Processor, Runnable, BiConsumer<MultiPartFormData.Parts, Throwable>
+        @Override
+        protected void delay(FormDelayedRequest request)
         {
-            private final Request _request;
-            private final Request.Processor _processor;
-            private final String _boundary;
-            private Response _response;
-            private Callback _callback;
-            private MultiPartFormData _formData;
+            FormFields.from(request.getWrapped()).whenComplete(request);
+        }
 
-            private Processor(Request request, Request.Processor processor, String boundary)
+        protected static class FormDelayedRequest extends DelayedRequest implements BiConsumer<Fields, Throwable>
+        {
+            public FormDelayedRequest(Handler handler, Request wrapped, Response response, Callback callback)
             {
-                _request = request;
-                _processor = processor;
-                _boundary = boundary;
+                super(handler, wrapped, response, callback);
             }
 
             @Override
-            public void process(Request ignored, Response response, Callback callback) throws Exception
+            public void accept(Fields fields, Throwable x)
             {
-                _response = response;
-                _callback = callback;
-
-                String contentType = _request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-                _formData = new MultiPartFormData(_boundary);
-                // TODO: configure _formData.
-                _request.setAttribute(MultiPartFormData.class.getName(), _formData);
-
-                run();
-
-                if (_formData.isDone())
-                    _processor.process(_request, response, callback);
+                if (x == null)
+                    run();
                 else
-                    _formData.whenComplete(this);
+                    Response.writeError(getWrapped(), getResponse(), getCallback(), x);
+            }
+        }
+    }
+
+    public static class UntilMultiPartFormData extends DelayedHandler<UntilMultiPartFormData.MultiPartDelayedRequest>
+    {
+        @Override
+        protected MultiPartDelayedRequest newDelayedRequest(Handler next, Request request, Response response, Callback callback)
+        {
+            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
+                return null;
+
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            if (contentType == null)
+                return null;
+
+            String contentTypeValue = HttpField.valueParameters(contentType, null);
+            if (!MimeTypes.Type.MULTIPART_FORM_DATA.is(contentTypeValue))
+                return null;
+
+            String boundary = MultiPart.extractBoundary(contentType);
+            if (boundary == null)
+                return null;
+
+            return new MultiPartDelayedRequest(next, request, response, callback, boundary);
+        }
+
+        @Override
+        protected void delay(MultiPartDelayedRequest request)
+        {
+            request.run();
+            request.whenDone();
+        }
+
+        protected static class MultiPartDelayedRequest extends DelayedRequest implements BiConsumer<MultiPartFormData.Parts, Throwable>
+        {
+            private final MultiPartFormData _formData;
+
+            public MultiPartDelayedRequest(Handler handler, Request wrapped, Response response, Callback callback, String boundary)
+            {
+                super(handler, wrapped, response, callback);
+                _formData = new MultiPartFormData(boundary);
+                setAttribute(MultiPartFormData.class.getName(), _formData);
+            }
+
+            @Override
+            public void accept(MultiPartFormData.Parts parts, Throwable x)
+            {
+                if (x == null)
+                    super.run();
+                else
+                    Response.writeError(getWrapped(), getResponse(), getCallback(), x);
             }
 
             @Override
@@ -209,10 +229,10 @@ public abstract class DelayedHandler extends Handler.Wrapper
             {
                 while (true)
                 {
-                    Content.Chunk chunk = _request.read();
+                    Content.Chunk chunk = getWrapped().read();
                     if (chunk == null)
                     {
-                        _request.demand(this);
+                        getWrapped().demand(this);
                         return;
                     }
                     if (chunk instanceof Content.Chunk.Error error)
@@ -227,120 +247,12 @@ public abstract class DelayedHandler extends Handler.Wrapper
                 }
             }
 
-            @Override
-            public void accept(MultiPartFormData.Parts parts, Throwable throwable)
+            public void whenDone()
             {
-                try
-                {
-                    _processor.process(_request, _response, _callback);
-                }
-                catch (Throwable x)
-                {
-                    Response.writeError(_request, _response, _callback, x);
-                }
-            }
-        }
-    }
-
-    public static class QualityOfService extends DelayedHandler
-    {
-        private final int _maxPermits;
-        private final Queue<QualityOfServiceProcessor> _queue = new ArrayDeque<>();
-        private int _permits;
-
-        public QualityOfService(int permits)
-        {
-            _maxPermits = permits;
-        }
-
-        @Override
-        protected Request.Processor delayed(Request request, Request.Processor processor)
-        {
-            return new QualityOfServiceProcessor(request, processor);
-        }
-
-        private class QualityOfServiceProcessor implements Request.Processor, Callback
-        {
-            private final Request.Processor _processor;
-            private final Request _request;
-            private Response _response;
-            private Callback _callback;
-
-            private QualityOfServiceProcessor(Request request, Request.Processor processor)
-            {
-                _processor = processor;
-                _request = request;
-            }
-
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
-            {
-                boolean accepted;
-                synchronized (QualityOfService.this)
-                {
-                    _callback = callback;
-                    accepted = _permits < _maxPermits;
-                    if (accepted)
-                        _permits++;
-                    else
-                    {
-                        _response = response;
-                        _queue.add(this);
-                    }
-                }
-                if (accepted)
-                    _processor.process(request, response, this);
-            }
-
-            @Override
-            public void succeeded()
-            {
-                try
-                {
-                    _callback.succeeded();
-                    release();
-                }
-                finally
-                {
-                    release();
-                }
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                try
-                {
-                    _callback.failed(x);
-                    release();
-                }
-                finally
-                {
-                    release();
-                }
-            }
-
-            private void release()
-            {
-                QualityOfServiceProcessor processor;
-                synchronized (QualityOfService.this)
-                {
-                    processor = _queue.poll();
-                    if (processor == null)
-                        _permits--;
-                }
-
-                if (processor != null)
-                {
-                    try
-                    {
-                        processor._processor.process(processor._request, processor._response, processor);
-                    }
-                    catch (Throwable t)
-                    {
-                        Response.writeError(processor._request, processor._response, processor, t);
-                    }
-                }
+                if (_formData.isDone())
+                    super.run();
+                else
+                    _formData.whenComplete(this);
             }
         }
     }

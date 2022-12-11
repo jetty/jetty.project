@@ -49,7 +49,7 @@ public class ContentLengthTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -72,7 +72,7 @@ public class ContentLengthTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
             }
@@ -95,7 +95,7 @@ public class ContentLengthTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, callback);
             }
@@ -130,7 +130,7 @@ public class ContentLengthTest extends AbstractTest
         gzipHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 // Write a single buffer, with a Content-Length
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);

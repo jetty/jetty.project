@@ -31,14 +31,15 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
-public class GzipResponse extends Response.Wrapper
+public class GzipResponseAndCallback extends Response.Wrapper implements Callback, Invocable
 {
-    public static Logger LOG = LoggerFactory.getLogger(GzipResponse.class);
+    public static Logger LOG = LoggerFactory.getLogger(GzipResponseAndCallback.class);
 
     // Per RFC-1952 this is the "unknown" OS value byte.
     private static final byte OS_UNKNOWN = (byte)0xFF;
@@ -69,6 +70,7 @@ public class GzipResponse extends Response.Wrapper
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
 
+    private final Callback _callback;
     private final GzipFactory _factory;
     private final HttpField _vary;
     private final int _bufferSize;
@@ -77,14 +79,51 @@ public class GzipResponse extends Response.Wrapper
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponse(Request request, Response wrapped, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
+    public GzipResponseAndCallback(Request request, Response wrapped, Callback callback, GzipHandler handler)
     {
         super(request, wrapped);
+        _callback = callback;
+        _factory = handler;
+        _vary = handler.getVary();
+        _bufferSize = Math.max(GZIP_HEADER.length + GZIP_TRAILER_SIZE, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+        _syncFlush = handler.isSyncFlush();
+    }
 
-        _factory = factory;
-        _vary = vary;
-        _bufferSize = Math.max(GZIP_HEADER.length + GZIP_TRAILER_SIZE, bufferSize);
-        _syncFlush = syncFlush;
+    @Override
+    public void succeeded()
+    {
+        try
+        {
+            // We need to write nothing here to intercept the committing of the response
+            // and possibly change headers in case write is never called.
+            write(true, null, Callback.NOOP);
+            _callback.succeeded();
+        }
+        finally
+        {
+            if (getRequest() instanceof GzipRequest gzipRequest)
+                gzipRequest.destroy();
+        }
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        try
+        {
+            _callback.failed(x);
+        }
+        finally
+        {
+            if (getRequest() instanceof GzipRequest gzipRequest)
+                gzipRequest.destroy();
+        }
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return _callback.getInvocationType();
     }
 
     @Override
@@ -122,8 +161,9 @@ public class GzipResponse extends Response.Wrapper
             LOG.debug("commit(last={}, callback={}, content={})", last, callback, BufferUtil.toDetailString(content));
 
         // Are we excluding because of status?
-        Response response = GzipResponse.this;
+        Response response = GzipResponseAndCallback.this;
         Request request = response.getRequest();
+
         int sc = response.getStatus();
         if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))
         {
@@ -390,7 +430,7 @@ public class GzipResponse extends Response.Wrapper
 
         /**
          * This method is called by {@link #compressing(Deflater, ByteBuffer)}, once the last chunk is compressed;
-         * or directly from {@link #process()} if an earlier call to {@link #finishing(Deflater, ByteBuffer)} finishing was unable to complete.
+         * or directly from {@link #process()} if an earlier call to {@code finishing} was unable to complete.
          */
         private Action finishing(Deflater deflater, ByteBuffer outputBuffer)
         {
@@ -433,7 +473,7 @@ public class GzipResponse extends Response.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("write() last={}, outputBuffer={}", last, BufferUtil.toDetailString(outputBuffer));
-            GzipResponse.super.write(last, outputBuffer, this);
+            GzipResponseAndCallback.super.write(last, outputBuffer, this);
         }
 
         @Override

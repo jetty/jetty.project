@@ -86,7 +86,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
@@ -122,7 +122,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
                 response.write(true, ByteBuffer.wrap(bytes), callback);
@@ -165,7 +165,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
                 response.write(true, ByteBuffer.wrap(chunk2), callback);
@@ -209,7 +209,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 InputStream input = Request.asInputStream(request);
                 for (byte b : bytes)
@@ -238,7 +238,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 long sleep = 1024;
                 long total = 0;
@@ -293,7 +293,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.allocate(length), callback);
             }
@@ -373,7 +373,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 assertTrue(HttpMethod.OPTIONS.is(request.getMethod()));
                 assertEquals("*", Request.getPathInContext(request));
@@ -397,7 +397,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 if ("*".equals(Request.getPathInContext(request)))
                 {
@@ -427,7 +427,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.Sink.write(response, true, content, callback);
             }
@@ -493,7 +493,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Large write to generate multiple DATA frames.
                 response.write(true, ByteBuffer.allocate(256 * 1024), callback);
@@ -535,7 +535,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Content.Sink.write(response, true, "Jetty", callback);
             }
@@ -571,7 +571,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 String target = Request.getPathInContext(request);
                 if ("/notMapped".equals(target))
@@ -598,7 +598,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 org.eclipse.jetty.server.Response.writeError(request, response, callback, status);
             }
@@ -621,7 +621,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
                 response.write(true, ByteBuffer.allocate(length), callback);
@@ -670,7 +670,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, request.getHeaders().get(HttpHeader.HOST), callback);
@@ -726,7 +726,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI uri = request.getHttpURI();
                 assertEquals(requestHost, uri.getHost());
@@ -766,7 +766,7 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals("/1"))
@@ -1061,7 +1061,7 @@ public class HttpClientTest extends AbstractTest
         }
 
         @Override
-        public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 

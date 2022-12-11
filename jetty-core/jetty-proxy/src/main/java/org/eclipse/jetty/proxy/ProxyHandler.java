@@ -212,7 +212,7 @@ public abstract class ProxyHandler extends Handler.Processor
     }
 
     @Override
-    public void process(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    public void doProcess(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("""

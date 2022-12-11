@@ -205,7 +205,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[1024]), callback);
             }

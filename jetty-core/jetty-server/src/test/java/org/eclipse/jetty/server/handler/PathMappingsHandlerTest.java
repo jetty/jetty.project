@@ -266,7 +266,7 @@ public class PathMappingsHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback)
+        public void doProcess(Request request, Response response, Callback callback)
         {
             assertTrue(isStarted());
             response.setStatus(HttpStatus.OK_200);

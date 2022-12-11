@@ -65,7 +65,7 @@ public class ServerConnectorTest
     public static class ReuseInfoHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -242,7 +242,7 @@ public class ServerConnectorTest
             server.setHandler(new Handler.Processor()
             {
                 @Override
-                public void process(Request request, Response response, Callback callback)
+                public void doProcess(Request request, Response response, Callback callback)
                 {
                     callback.succeeded();
                 }

@@ -13,17 +13,13 @@
 
 package org.eclipse.jetty.ee9.demos;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 public class HelloHandler extends Handler.Abstract
 {
@@ -47,20 +43,16 @@ public class HelloHandler extends Handler.Abstract
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        return (req, response, callback) ->
-        {
-            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
+        response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
+        response.setStatus(HttpServletResponse.SC_OK);
 
+        if (body == null)
             response.write(true, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"), callback);
-            if (body != null)
-            {
-                response.write(true, BufferUtil.toBuffer(body), callback);
-            }
-
-        };
-
+        else
+            response.write(true, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"),
+                Callback.from(() -> response.write(true, BufferUtil.toBuffer(body), callback), callback::failed));
+        return true;
     }
 }

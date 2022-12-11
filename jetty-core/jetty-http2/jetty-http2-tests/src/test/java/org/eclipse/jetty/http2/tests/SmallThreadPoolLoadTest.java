@@ -192,7 +192,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
     private static class LoadHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             switch (HttpMethod.fromString(request.getMethod()))
             {

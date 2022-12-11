@@ -100,22 +100,16 @@ public class SniSslConnectionFactoryTest
         Handler.Wrapper xCertHandler = new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                Request.Processor processor = getHandler().handle(request);
-                if (processor == null)
-                    return null;
-                return (ignored, response, callback) ->
-                {
-                    EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-                    SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
-                    SslConnection sslConnection = sslEndPoint.getSslConnection();
-                    SSLEngine sslEngine = sslConnection.getSSLEngine();
-                    SSLSession session = sslEngine.getSession();
-                    for (Certificate c : session.getLocalCertificates())
-                        response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
-                    processor.process(request, response, callback);
-                };
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
+                SslConnection sslConnection = sslEndPoint.getSslConnection();
+                SSLEngine sslEngine = sslConnection.getSSLEngine();
+                SSLSession session = sslEngine.getSession();
+                for (Certificate c : session.getLocalCertificates())
+                    response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                return getHandler().process(request, response, callback);
             }
         };
 
@@ -136,7 +130,7 @@ public class SniSslConnectionFactoryTest
         xCertHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put("X-URL", Request.getPathInContext(request));

@@ -22,13 +22,14 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
@@ -65,14 +66,12 @@ public class ManyHandlers
     public static class ParamHandler extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            return (req, response, callback) ->
-            {
-                response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.write(true, BufferUtil.toBuffer(new JSON().toJSON(req.getAttributeNameSet())), callback);
-            };
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.write(true, BufferUtil.toBuffer(new JSON().toJSON(request.getAttributeNameSet())), callback);
+            return true;
         }
     }
 
@@ -81,15 +80,11 @@ public class ManyHandlers
      */
     public static class WelcomeWrapHandler extends Handler.Wrapper
     {
-
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.handle(request);
-            if (processor == null)
-                return null;
-
-            return (rq, rs, cb) -> rs.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
+            return super.process(request, response, callback);
         }
     }
 

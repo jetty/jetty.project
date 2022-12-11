@@ -82,12 +82,13 @@ public class RedirectPatternRule extends PatternRule
         return new Processor(input)
         {
             @Override
-            public void process(Response response, Callback callback)
+            public boolean process(Response response, Callback callback)
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());
                 response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, location));
                 callback.succeeded();
+                return true;
             }
         };
     }

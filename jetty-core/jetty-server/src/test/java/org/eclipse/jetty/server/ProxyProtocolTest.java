@@ -63,7 +63,7 @@ public class ProxyProtocolTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
                 if (addr instanceof InetSocketAddress iAddr)
@@ -131,7 +131,7 @@ public class ProxyProtocolTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 if (validateEndPoint(request) &&
                     remoteAddr.equals(Request.getRemoteAddr(request)) &&
@@ -229,7 +229,7 @@ public class ProxyProtocolTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }

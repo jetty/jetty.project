@@ -247,7 +247,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -279,19 +279,14 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
-                return super.handle(request);
-            }
 
-            @Override
-            public void process(Request request, Response response, Callback callback)
-            {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
                     @Override
@@ -323,6 +318,7 @@ public class ContextHandlerTest
                             throw new IllegalStateException();
                         }));
                 });
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -368,7 +364,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demand(() ->
@@ -421,7 +417,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -530,7 +526,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }
@@ -597,7 +593,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, null, callback);

@@ -83,7 +83,7 @@ public class ErrorProcessor implements Request.Processor
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback)
+    public boolean process(Request request, Response response, Callback callback)
     {
         if (_cacheControl != null)
             response.getHeaders().put(_cacheControl);
@@ -115,9 +115,10 @@ public class ErrorProcessor implements Request.Processor
             catch (Throwable x)
             {
                 // TODO: cannot write the error response, give up and close the stream.
-                x.printStackTrace();
+                LOG.warn("Cannot generate error", x);
             }
         }
+        return true;
     }
 
     protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException

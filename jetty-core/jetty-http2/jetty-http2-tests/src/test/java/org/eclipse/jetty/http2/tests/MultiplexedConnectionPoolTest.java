@@ -133,7 +133,7 @@ public class MultiplexedConnectionPoolTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 int req = Integer.parseInt(Request.getPathInContext(request).substring(1));
                 reqExecutingLatches[req].countDown();
@@ -229,7 +229,7 @@ public class MultiplexedConnectionPoolTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 int req = Integer.parseInt(Request.getPathInContext(request).substring(1));
                 Content.Sink.write(response, true, "req " + req + " executed", callback);
@@ -309,7 +309,7 @@ public class MultiplexedConnectionPoolTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -378,7 +378,7 @@ public class MultiplexedConnectionPoolTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).equals("/block"))
                 {

@@ -49,7 +49,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
 
@@ -98,7 +98,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 // Do not respond.
             }
@@ -140,7 +140,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
 
@@ -201,7 +201,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor.Blocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 0);
                 Content.Sink.write(response, false, null);

@@ -30,7 +30,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put("request-scheme", request.getHttpURI().getScheme());
                 callback.succeeded();

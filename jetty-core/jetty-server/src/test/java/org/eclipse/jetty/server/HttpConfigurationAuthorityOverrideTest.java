@@ -652,67 +652,59 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/dump"))
-                return null;
-            return (rq, rs, cb) ->
+                return false;
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+            try (StringWriter stringWriter = new StringWriter();
+                 PrintWriter out = new PrintWriter(stringWriter))
             {
-                rs.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                try (StringWriter stringWriter = new StringWriter();
-                     PrintWriter out = new PrintWriter(stringWriter))
-                {
-                    out.printf("ServerName=[%s]%n", Request.getServerName(rq));
-                    out.printf("ServerPort=[%d]%n", Request.getServerPort(rq));
-                    out.printf("LocalAddr=[%s]%n", Request.getLocalAddr(rq));
-                    out.printf("LocalName=[%s]%n", Request.getLocalAddr(rq));
-                    out.printf("LocalPort=[%s]%n", Request.getLocalPort(rq));
-                    out.printf("HttpURI=[%s]%n", rq.getHttpURI());
-                    Content.Sink.write(rs, true, stringWriter.getBuffer().toString(), cb);
-                }
-            };
+                out.printf("ServerName=[%s]%n", Request.getServerName(request));
+                out.printf("ServerPort=[%d]%n", Request.getServerPort(request));
+                out.printf("LocalAddr=[%s]%n", Request.getLocalAddr(request));
+                out.printf("LocalName=[%s]%n", Request.getLocalAddr(request));
+                out.printf("LocalPort=[%s]%n", Request.getLocalPort(request));
+                out.printf("HttpURI=[%s]%n", request.getHttpURI());
+                Content.Sink.write(response, true, stringWriter.getBuffer().toString(), callback);
+            }
+            return true;
         }
     }
 
     private static class RedirectHandler extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/redirect"))
-                return null;
+                return false;
 
-            return (rq, rs, cb) ->
-            {
-                rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                rs.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
-                cb.succeeded();
-            };
+            response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
+            response.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
+            callback.succeeded();
+            return true;
         }
     }
 
-    private static class ErrorMsgHandler extends Handler.Processor
+    private static class ErrorMsgHandler extends Handler.Abstract
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (!Request.getPathInContext(request).startsWith("/error"))
-                return null;
-            return super.handle(request);
-        }
+                return false;
 
-        @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
-        {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
             Content.Sink.write(response, true, "Generic Error Page.", callback);
+            return true;
         }
     }
 
     public static class RedirectErrorProcessor extends ErrorProcessor
     {
         @Override
-        public void process(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
@@ -722,6 +714,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.getHeaders().put(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
             response.write(true, null, callback);
+            return true;
         }
     }
 

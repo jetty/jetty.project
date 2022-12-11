@@ -56,7 +56,7 @@ public class HTTP2CServer extends Server
     private static class SimpleHandler extends Handler.Processor
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             Fields fields = Request.extractQueryParameters(request);
 

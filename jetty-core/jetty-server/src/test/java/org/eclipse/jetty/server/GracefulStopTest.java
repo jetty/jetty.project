@@ -388,7 +388,7 @@ public class GracefulStopTest
         volatile CountDownLatch latch;
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             // Log.getRootLogger().info("Handle {} / {} ? {}", request.getContextPath(), request.getPathInfo(), request.getQueryString());
             handling.set(true);

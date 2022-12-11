@@ -77,7 +77,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -115,7 +115,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -157,7 +157,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
@@ -196,7 +196,7 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(HttpStatus.OK_200);
                 if (!"/other".equals(Request.getPathInContext(request)))

@@ -39,7 +39,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
@@ -73,7 +73,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))

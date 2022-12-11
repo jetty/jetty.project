@@ -79,17 +79,17 @@ public class WebSocketProxyTest
         public boolean blockServerUpgradeRequests = false;
 
         @Override
-        public Request.Processor handle(Request request)
+        public boolean process(Request request, Response response, Callback callback)
         {
             if (request.getHeaders().get("Upgrade") != null)
             {
                 if (blockServerUpgradeRequests && Request.getPathInContext(request).startsWith("/server"))
                 {
-                    return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    return true;
                 }
             }
-
-            return null;
+            return false;
         }
     }
 

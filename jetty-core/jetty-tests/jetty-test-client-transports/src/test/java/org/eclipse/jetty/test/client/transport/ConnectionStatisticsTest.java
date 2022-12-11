@@ -50,7 +50,7 @@ public class ConnectionStatisticsTest extends AbstractTest
         start(transport, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
             }

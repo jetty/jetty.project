@@ -324,7 +324,7 @@ public class HttpClientLoadTest extends AbstractTest
     private static class LoadHandler extends Handler.Processor
     {
         @Override
-        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             String timeout = request.getHeaders().get("X-Timeout");
             if (timeout != null)

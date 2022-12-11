@@ -140,7 +140,7 @@ public class RequestTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -176,7 +176,7 @@ public class RequestTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -223,7 +223,7 @@ public class RequestTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -275,7 +275,7 @@ public class RequestTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -309,7 +309,7 @@ public class RequestTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -347,7 +347,7 @@ public class RequestTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");

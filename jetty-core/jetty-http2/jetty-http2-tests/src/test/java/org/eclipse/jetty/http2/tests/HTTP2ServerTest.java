@@ -75,7 +75,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -118,7 +118,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 latch.countDown();
                 callback.succeeded();
@@ -176,7 +176,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 latch.countDown();
                 response.write(true, ByteBuffer.wrap(content), callback);
@@ -244,7 +244,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -289,7 +289,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
             }
@@ -336,7 +336,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         startServer(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the SETTINGS frames to be exchanged.
                 Thread.sleep(delay);
@@ -397,7 +397,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             startServer(new Handler.Processor()
             {
                 @Override
-                public void process(Request request, Response response, Callback callback)
+                public void doProcess(Request request, Response response, Callback callback)
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                     // Invalid header name, the connection must be closed.

@@ -96,7 +96,7 @@ public class HTTPServerDocs
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 // Succeed the callback to write the response.
                 callback.succeeded();
@@ -476,7 +476,7 @@ public class HTTPServerDocs
         class LoggingHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }
@@ -485,7 +485,7 @@ public class HTTPServerDocs
         class App1Handler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }
@@ -494,7 +494,7 @@ public class HTTPServerDocs
         class App2Handler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
             }
@@ -520,7 +520,7 @@ public class HTTPServerDocs
         {
             @Override
             // tag::handlerAPI[]
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
             }
             // end::handlerAPI[]
@@ -533,7 +533,7 @@ public class HTTPServerDocs
         class HelloWorldHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
@@ -569,7 +569,7 @@ public class HTTPServerDocs
         class HelloWorldHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
             }
         }
@@ -621,7 +621,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
             }
@@ -649,7 +649,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
             }
@@ -658,7 +658,7 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
             }
@@ -836,7 +836,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the shop, remembering to complete the callback.
             }
@@ -845,7 +845,7 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Processor
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void doProcess(Request request, Response response, Callback callback) throws Exception
             {
                 // Implement the REST APIs, remembering to complete the callback.
             }

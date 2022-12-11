@@ -111,7 +111,7 @@ public class PushedResourcesTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals(path1))
@@ -175,7 +175,7 @@ public class PushedResourcesTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals(oldPath))
@@ -224,7 +224,7 @@ public class PushedResourcesTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public void doProcess(Request request, Response response, Callback callback)
             {
                 String requestURI = Request.getPathInContext(request);
                 if (requestURI.endsWith(primaryResource))

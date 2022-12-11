@@ -248,12 +248,12 @@ public class SslContextFactoryReloadTest
     private static class TestHandler extends EchoHandler
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public void doProcess(Request request, Response response, Callback callback) throws Exception
         {
             if (HttpMethod.POST.is(request.getMethod()))
-                return super.handle(request);
-
-            return this::processNoContent;
+                super.doProcess(request, response, callback);
+            else
+                processNoContent(request, response, callback);
         }
 
         public void processNoContent(Request request, Response response, Callback callback)
