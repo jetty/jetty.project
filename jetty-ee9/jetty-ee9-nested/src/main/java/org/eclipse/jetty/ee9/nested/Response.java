@@ -879,23 +879,7 @@ public class Response implements HttpServletResponse
                 else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
                     _writer = new ResponseWriter(new Utf8HttpWriter(_out), locale, encoding);
                 else
-                {
-                    try
-                    {
-                        _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
-                    }
-                    catch (RuntimeException e)
-                    {
-                        if (e.getCause() instanceof UnsupportedEncodingException)
-                        {
-                            throw (UnsupportedEncodingException)e.getCause();
-                        }
-                        else
-                        {
-                            throw e;
-                        }
-                    }
-                }
+                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
