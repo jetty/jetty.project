@@ -27,17 +27,10 @@ public class EncodingHttpWriter extends HttpWriter
 {
     final Writer _converter;
 
-    public EncodingHttpWriter(HttpOutput out, String encoding)
+    public EncodingHttpWriter(HttpOutput out, String encoding) throws UnsupportedEncodingException
     {
         super(out);
-        try
-        {
-            _converter = new OutputStreamWriter(_bytes, encoding);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
+        _converter = new OutputStreamWriter(_bytes, encoding);
     }
 
     @Override

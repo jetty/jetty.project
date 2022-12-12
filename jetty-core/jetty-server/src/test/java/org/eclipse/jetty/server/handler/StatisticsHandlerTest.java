@@ -15,12 +15,14 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -589,6 +591,7 @@ public class StatisticsHandlerTest
             assertThat(response, containsString("HTTP/1.1 200 OK"));
         }
 
+        Awaitility.waitAtMost(Duration.ofSeconds(10)).until(() -> _statsHandler.getRequestsActive() == 0);
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
