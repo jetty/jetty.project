@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
@@ -878,7 +879,23 @@ public class Response implements HttpServletResponse
                 else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
                     _writer = new ResponseWriter(new Utf8HttpWriter(_out), locale, encoding);
                 else
-                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
+                {
+                    try
+                    {
+                        _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
+                    }
+                    catch (RuntimeException e)
+                    {
+                        if (e.getCause() instanceof UnsupportedEncodingException)
+                        {
+                            throw (UnsupportedEncodingException)e.getCause();
+                        }
+                        else
+                        {
+                            throw e;
+                        }
+                    }
+                }
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
