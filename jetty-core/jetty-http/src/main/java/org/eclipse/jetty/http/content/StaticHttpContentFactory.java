@@ -20,25 +20,12 @@ import org.eclipse.jetty.util.resource.Resource;
 public class StaticHttpContentFactory implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
-    private Resource _styleSheet;
-
-    public StaticHttpContentFactory(HttpContent.Factory factory)
-    {
-        _factory = factory;
-    }
+    private final Resource _styleSheet;
 
     public StaticHttpContentFactory(HttpContent.Factory factory, Resource styleSheet)
     {
         _factory = factory;
         _styleSheet = styleSheet;
-    }
-
-    /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
-     */
-    public void setStyleSheet(Resource stylesheet)
-    {
-        _styleSheet = stylesheet;
     }
 
     /**
