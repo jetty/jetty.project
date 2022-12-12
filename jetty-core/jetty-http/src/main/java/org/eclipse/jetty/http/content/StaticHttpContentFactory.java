@@ -17,17 +17,17 @@ import java.io.IOException;
 
 import org.eclipse.jetty.util.resource.Resource;
 
-public class StaticContentFactory implements HttpContent.Factory
+public class StaticHttpContentFactory implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
     private Resource _styleSheet;
 
-    public StaticContentFactory(HttpContent.Factory factory)
+    public StaticHttpContentFactory(HttpContent.Factory factory)
     {
         _factory = factory;
     }
 
-    public StaticContentFactory(HttpContent.Factory factory, Resource styleSheet)
+    public StaticHttpContentFactory(HttpContent.Factory factory, Resource styleSheet)
     {
         _factory = factory;
         _styleSheet = styleSheet;

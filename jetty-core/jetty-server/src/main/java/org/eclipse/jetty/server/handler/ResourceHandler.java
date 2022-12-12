@@ -23,7 +23,7 @@ import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.content.StaticContentFactory;
+import org.eclipse.jetty.http.content.StaticHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
@@ -106,7 +106,7 @@ public class ResourceHandler extends Handler.Wrapper
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
-        contentFactory = new StaticContentFactory(contentFactory, getStyleSheet());
+        contentFactory = new StaticHttpContentFactory(contentFactory, getStyleSheet());
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
         return contentFactory;
