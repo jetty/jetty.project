@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Objects;
 
-import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

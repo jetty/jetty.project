@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.Objects;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;

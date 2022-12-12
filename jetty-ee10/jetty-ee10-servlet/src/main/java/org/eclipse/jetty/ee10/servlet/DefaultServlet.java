@@ -46,8 +46,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.FileMappingHttpContentFactory;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -55,9 +53,12 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
-import org.eclipse.jetty.http.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.content.StaticContentFactory;
+import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
@@ -131,10 +132,34 @@ public class DefaultServlet extends HttpServlet
         {
             MimeTypes mimeTypes = servletContextHandler.getMimeTypes();
             contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_baseResource), mimeTypes);
-            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
+
+            // Use the servers default stylesheet unless there is one explicitly set by an init param.
+            Resource styleSheet = servletContextHandler.getServer().getDefaultStyleSheet();
+            String stylesheetParam = getInitParameter("stylesheet");
+            if (stylesheetParam != null)
+            {
+                try
+                {
+                    Resource s = _resourceFactory.newResource(stylesheetParam);
+                    if (Resources.isReadableFile(s))
+                        styleSheet = s;
+                    else
+                        LOG.warn("Stylesheet {} does not exist", stylesheetParam);
+                }
+                catch (Exception e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Unable to use stylesheet: {}", stylesheetParam, e);
+                    else
+                        LOG.warn("Unable to use stylesheet: {} - {}", stylesheetParam, e.toString());
+                }
+            }
 
             if (getInitBoolean("useFileMappedBuffer", false))
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
+
+            contentFactory = new StaticContentFactory(contentFactory, styleSheet);
+            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
@@ -174,32 +199,6 @@ public class DefaultServlet extends HttpServlet
         }
         else
             _welcomeServlets = getInitBoolean("welcomeServlets", _welcomeServlets);
-
-        // Use the servers default stylesheet unless there is one explicitly set by an init param.
-        _resourceService.setStyleSheet(servletContextHandler.getServer().getDefaultStyleSheet());
-        String stylesheetParam = getInitParameter("stylesheet");
-        if (stylesheetParam != null)
-        {
-            try
-            {
-                Resource stylesheet = _resourceFactory.newResource(stylesheetParam);
-                if (Resources.isReadableFile(stylesheet))
-                {
-                    _resourceService.setStyleSheet(stylesheet);
-                }
-                else
-                {
-                    LOG.warn("Stylesheet {} does not exist", stylesheetParam);
-                }
-            }
-            catch (Exception e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Unable to use stylesheet: {}", stylesheetParam, e);
-                else
-                    LOG.warn("Unable to use stylesheet: {} - {}", stylesheetParam, e.toString());
-            }
-        }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
         if (encodingHeaderCacheSize >= 0)

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -115,7 +115,8 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                return BufferUtil.toMappedBuffer(_content.getResource().getPath());
+                ByteBuffer byteBuffer = BufferUtil.toMappedBuffer(_content.getResource().getPath());
+                return (byteBuffer == null) ? SENTINEL_BUFFER : byteBuffer;
             }
             catch (Throwable t)
             {

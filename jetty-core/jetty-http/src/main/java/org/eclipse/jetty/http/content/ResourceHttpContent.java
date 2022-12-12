@@ -11,13 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.http.content;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Set;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.EtagUtils;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 

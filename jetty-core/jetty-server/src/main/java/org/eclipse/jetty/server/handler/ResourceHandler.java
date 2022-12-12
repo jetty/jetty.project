@@ -17,13 +17,14 @@ import java.time.Duration;
 import java.util.List;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.FileMappingHttpContentFactory;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreCompressedHttpContentFactory;
-import org.eclipse.jetty.http.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
+import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.content.StaticContentFactory;
+import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Context;
@@ -57,6 +58,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     private ByteBufferPool _byteBufferPool;
     private Resource _resourceBase;
+    private Resource _styleSheet;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
 
@@ -80,8 +82,6 @@ public class ResourceHandler extends Handler.Wrapper
         _byteBufferPool = getByteBufferPool(context);
         _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(setupWelcomeFactory());
-        if (_resourceService.getStyleSheet() == null)
-            setStyleSheet(getServer().getDefaultStyleSheet());
 
         super.doStart();
     }
@@ -105,8 +105,9 @@ public class ResourceHandler extends Handler.Wrapper
     protected HttpContent.Factory newHttpContentFactory()
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        contentFactory = new StaticContentFactory(contentFactory, getStyleSheet());
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
         return contentFactory;
     }
@@ -181,7 +182,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public Resource getStyleSheet()
     {
-        return _resourceService.getStyleSheet();
+        return (_styleSheet == null) ? getServer().getDefaultStyleSheet() : _styleSheet;
     }
 
     public List<String> getWelcomeFiles()
@@ -334,7 +335,7 @@ public class ResourceHandler extends Handler.Wrapper
      */
     public void setStyleSheet(Resource styleSheet)
     {
-        _resourceService.setStyleSheet(styleSheet);
+        _styleSheet = styleSheet;
     }
 
     public void setWelcomeFiles(String... welcomeFiles)

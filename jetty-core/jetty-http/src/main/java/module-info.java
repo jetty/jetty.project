@@ -19,6 +19,7 @@ module org.eclipse.jetty.http
 
     exports org.eclipse.jetty.http;
     exports org.eclipse.jetty.http.pathmap;
+    exports org.eclipse.jetty.http.content;
 
     uses org.eclipse.jetty.http.HttpFieldPreEncoder;
 
