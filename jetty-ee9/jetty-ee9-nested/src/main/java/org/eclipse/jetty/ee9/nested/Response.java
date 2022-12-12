@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
