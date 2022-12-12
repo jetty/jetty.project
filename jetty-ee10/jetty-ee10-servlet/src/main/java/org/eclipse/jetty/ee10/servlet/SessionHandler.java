@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -733,13 +734,25 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
 
         HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
 
+        Request.Processor processor = getHandler().handle(request);
+        if (processor == null)
+            return null;
+
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
         if (cookie != null)
         {
-            ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
-            Response.replaceCookie(servletContextResponse, cookie);
+            return new Request.Processor()
+            {
+                @Override
+                public void process(Request request, Response response, Callback callback) throws Exception
+                {
+                    ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+                    Response.replaceCookie(servletContextResponse, cookie);
+                    processor.process(request, response, callback);
+                }
+            };
         }
 
-        return getHandler().handle(request);
+        return processor;
     }
 }
