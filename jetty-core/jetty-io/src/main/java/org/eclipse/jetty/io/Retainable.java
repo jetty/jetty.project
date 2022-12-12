@@ -40,20 +40,6 @@ public interface Retainable
      */
     boolean release();
 
-    class Noop implements Retainable
-    {
-        @Override
-        public void retain()
-        {
-        }
-
-        @Override
-        public boolean release()
-        {
-            return true;
-        }
-    }
-
     class Wrapper implements Retainable
     {
         private final Retainable wrapped;

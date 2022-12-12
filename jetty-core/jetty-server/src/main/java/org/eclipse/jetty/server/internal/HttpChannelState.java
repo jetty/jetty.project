@@ -345,7 +345,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    public boolean isRequestAccepted()
+    public boolean isRequestHandled()
     {
         try (AutoLock ignored = _lock.lock())
         {

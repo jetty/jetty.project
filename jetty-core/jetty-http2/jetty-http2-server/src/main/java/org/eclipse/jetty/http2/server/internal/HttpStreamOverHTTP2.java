@@ -545,7 +545,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public void onTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
     {
         Runnable task = _httpChannel.onFailure(failure);
-        boolean idle = !_httpChannel.isRequestAccepted();
+        boolean idle = !_httpChannel.isRequestHandled();
         consumer.accept(task, idle);
     }
 
