@@ -1738,22 +1738,6 @@ public class GzipHandlerTest
         return HttpTester.parseResponse(_connector.getResponse(request.generate()));
     }
 
-    public static class MicroHandler extends Handler.Processor
-    {
-        @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
-        {
-            response.getHeaders().put("ETag", CONTENT_ETAG);
-            String ifnm = request.getHeaders().get("If-None-Match");
-            if (ifnm != null && ifnm.equals(CONTENT_ETAG))
-                Response.writeError(request, response, callback, 304);
-            else
-            {
-                Content.Sink.write(response, true, MICRO, callback);
-            }
-        }
-    }
-
     public static class MimeTypeContentHandler extends Handler.Processor
     {
         @Override

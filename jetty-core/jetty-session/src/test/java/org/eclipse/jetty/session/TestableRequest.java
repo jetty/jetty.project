@@ -15,7 +15,6 @@ package org.eclipse.jetty.session;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -32,8 +31,6 @@ import org.eclipse.jetty.server.TunnelSupport;
 
 public class TestableRequest implements Request
 {
-    private final AtomicBoolean _accepted = new AtomicBoolean();
-
     @Override
     public Object removeAttribute(String name)
     {
