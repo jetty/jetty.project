@@ -14,14 +14,12 @@
 package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Deque;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -53,9 +51,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
-import org.eclipse.jetty.ee10.servlet.HttpInput;
 import org.eclipse.jetty.ee10.servlet.HttpOutput;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -64,7 +60,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
@@ -80,9 +75,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static java.nio.ByteBuffer.wrap;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -1201,174 +1194,6 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncIntercepted(Transport transport) throws Exception
-    {
-        start(transport, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                System.err.println("Service " + request);
-
-                HttpInput httpInput = Objects.requireNonNull(ServletContextRequest.getServletContextRequest(request)).getHttpInput();
-                httpInput.addInterceptor(new HttpInput.Interceptor()
-                {
-                    int state = 0;
-                    Content.Chunk saved;
-
-                    @Override
-                    public Content.Chunk readFrom(Content.Chunk chunk)
-                    {
-                        switch (state)
-                        {
-                            case 0:
-                                // null transform
-                                chunk.skip(chunk.remaining());
-                                chunk.release();
-                                state++;
-                                return null;
-
-                            case 1:
-                            {
-                                // copy transform
-                                if (!chunk.hasRemaining())
-                                {
-                                    state++;
-                                    return chunk;
-                                }
-                                ByteBuffer copy = wrap(toArray(chunk.getByteBuffer()));
-                                chunk.skip(copy.remaining());
-                                chunk.release();
-                                return Content.Chunk.from(copy, false);
-                            }
-
-                            case 2:
-                                // byte by byte
-                                if (!chunk.hasRemaining())
-                                {
-                                    state++;
-                                    return chunk;
-                                }
-                                byte[] b = new byte[1];
-                                int l = chunk.get(b, 0, 1);
-                                if (!chunk.hasRemaining())
-                                    chunk.release();
-                                return Content.Chunk.from(wrap(b, 0, l), false);
-
-                            case 3:
-                            {
-                                // double vision
-                                if (!chunk.hasRemaining())
-                                {
-                                    if (saved == null)
-                                    {
-                                        state++;
-                                        return chunk;
-                                    }
-                                    Content.Chunk ref = saved;
-                                    saved = null;
-                                    return ref;
-                                }
-
-                                byte[] data = toArray(chunk.getByteBuffer());
-                                chunk.skip(data.length);
-                                chunk.release();
-                                saved = Content.Chunk.from(wrap(data), false);
-                                return Content.Chunk.from(wrap(data), false);
-                            }
-
-                            default:
-                                return chunk;
-                        }
-                    }
-                });
-
-                AsyncContext asyncContext = request.startAsync();
-                ServletInputStream input = request.getInputStream();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-                input.setReadListener(new ReadListener()
-                {
-                    @Override
-                    public void onDataAvailable() throws IOException
-                    {
-                        while (input.isReady())
-                        {
-                            int b = input.read();
-                            if (b > 0)
-                            {
-                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
-                                out.write(b);
-                            }
-                            else if (b < 0)
-                                return;
-                        }
-                    }
-
-                    @Override
-                    public void onAllDataRead() throws IOException
-                    {
-                        response.getOutputStream().write(out.toByteArray());
-                        asyncContext.complete();
-                    }
-
-                    @Override
-                    public void onError(Throwable x)
-                    {
-                    }
-                });
-            }
-        });
-
-        AsyncRequestContent content = new AsyncRequestContent();
-        CountDownLatch clientLatch = new CountDownLatch(1);
-
-        String expected =
-                "S1" +
-                "S2" +
-                "S3S3" +
-                "S4" +
-                "S5" +
-                "S6";
-
-        client.newRequest(newURI(transport))
-            .method(HttpMethod.POST)
-            .body(content)
-            .send(new BufferingResponseListener()
-            {
-                @Override
-                public void onComplete(Result result)
-                {
-                    if (result.isSucceeded())
-                    {
-                        Response response = result.getResponse();
-                        assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
-                        assertThat(getContentAsString(), Matchers.equalTo(expected));
-                        clientLatch.countDown();
-                    }
-                }
-            });
-
-        content.write(BufferUtil.toBuffer("S0"), Callback.NOOP);
-        content.flush();
-        content.write(BufferUtil.toBuffer("S1"), Callback.NOOP);
-        content.flush();
-        content.write(BufferUtil.toBuffer("S2"), Callback.NOOP);
-        content.flush();
-        content.write(BufferUtil.toBuffer("S3"), Callback.NOOP);
-        content.flush();
-        content.write(BufferUtil.toBuffer("S4"), Callback.NOOP);
-        content.flush();
-        content.write(BufferUtil.toBuffer("S5"), Callback.NOOP);
-        content.flush();
-        content.write(BufferUtil.toBuffer("S6"), Callback.NOOP);
-        content.close();
-
-        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
     public void testAsyncEcho(Transport transport) throws Exception
     {
         // TODO: investigate why H3 does not work.
@@ -1441,236 +1266,6 @@ public class AsyncIOServletTest extends AbstractTest
         assertTrue(clientLatch.await(30, TimeUnit.SECONDS));
         assertThat(resultRef.get().isSucceeded(), Matchers.is(true));
         assertThat(resultRef.get().getResponse().getStatus(), Matchers.equalTo(HttpStatus.OK_200));
-    }
-
-/*
-    // TODO: there is no GzipHttpInputInterceptor anymore, use something else.
-    @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
-    public void testAsyncInterceptedTwice(Transport transport) throws Exception
-    {
-        init(transport);
-        start(transport, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                System.err.println("Service " + request);
-
-                HttpInput httpInput = ((Request)request).getHttpInput();
-                httpInput.addInterceptor(new GzipHttpInputInterceptor(new InflaterPool(-1, true), ((Request)request).getHttpChannel().getByteBufferPool(), 1024));
-                httpInput.addInterceptor(chunk ->
-                {
-                    if (chunk.isTerminal())
-                        return chunk;
-                    ByteBuffer byteBuffer = chunk.getByteBuffer();
-                    byte[] bytes = new byte[2];
-                    bytes[1] = byteBuffer.get();
-                    bytes[0] = byteBuffer.get();
-                    return Content.Chunk.from(wrap(bytes), false);
-                });
-
-                AsyncContext asyncContext = request.startAsync();
-                ServletInputStream input = request.getInputStream();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-                input.setReadListener(new ReadListener()
-                {
-                    @Override
-                    public void onDataAvailable() throws IOException
-                    {
-                        while (input.isReady())
-                        {
-                            int b = input.read();
-                            if (b > 0)
-                            {
-                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
-                                out.write(b);
-                            }
-                            else if (b < 0)
-                                return;
-                        }
-                    }
-
-                    @Override
-                    public void onAllDataRead() throws IOException
-                    {
-                        response.getOutputStream().write(out.toByteArray());
-                        asyncContext.complete();
-                    }
-
-                    @Override
-                    public void onError(Throwable x)
-                    {
-                    }
-                });
-            }
-        });
-
-        AsyncRequestContent contentProvider = new AsyncRequestContent();
-        CountDownLatch clientLatch = new CountDownLatch(1);
-
-        String expected =
-                "0S" +
-                "1S" +
-                "2S" +
-                "3S" +
-                "4S" +
-                "5S" +
-                "6S";
-
-        client.newRequest(newURI(transport))
-            .method(HttpMethod.POST)
-            .path(scenario.servletPath)
-            .body(contentProvider)
-            .send(new BufferingResponseListener()
-            {
-                @Override
-                public void onComplete(Result result)
-                {
-                    if (result.isSucceeded())
-                    {
-                        Response response = result.getResponse();
-                        assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
-                        assertThat(getContentAsString(), Matchers.equalTo(expected));
-                        clientLatch.countDown();
-                    }
-                }
-            });
-
-        for (int i = 0; i < 7; i++)
-        {
-            contentProvider.write(gzipToBuffer("S" + i), Callback.NOOP);
-            contentProvider.flush();
-        }
-        contentProvider.close();
-
-        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
-    }
-*/
-
-    @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
-    public void testAsyncInterceptedTwiceWithNulls(Transport transport) throws Exception
-    {
-        start(transport, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                System.err.println("Service " + request);
-
-                HttpInput httpInput = ((ServletContextRequest)request).getHttpInput();
-                httpInput.addInterceptor(chunk ->
-                {
-                    if (!chunk.hasRemaining())
-                        return chunk;
-
-                    // skip contents with odd numbers
-                    ByteBuffer duplicate = chunk.getByteBuffer().duplicate();
-                    duplicate.get();
-                    byte integer = duplicate.get();
-                    int idx = Character.getNumericValue(integer);
-                    Content.Chunk chunkCopy = Content.Chunk.from(chunk.getByteBuffer().duplicate(), false);
-                    chunk.skip(chunk.remaining());
-                    chunk.release();
-                    if (idx % 2 == 0)
-                        return chunkCopy;
-                    return null;
-                });
-                httpInput.addInterceptor(chunk ->
-                {
-                    if (!chunk.hasRemaining())
-                        return chunk;
-
-                    // reverse the bytes
-                    ByteBuffer byteBuffer = chunk.getByteBuffer();
-                    byte[] bytes = new byte[2];
-                    bytes[1] = byteBuffer.get();
-                    bytes[0] = byteBuffer.get();
-                    return Content.Chunk.from(wrap(bytes), false);
-                });
-
-                AsyncContext asyncContext = request.startAsync();
-                ServletInputStream input = request.getInputStream();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-                input.setReadListener(new ReadListener()
-                {
-                    @Override
-                    public void onDataAvailable() throws IOException
-                    {
-                        while (input.isReady())
-                        {
-                            int b = input.read();
-                            if (b > 0)
-                            {
-                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
-                                out.write(b);
-                            }
-                            else if (b < 0)
-                                return;
-                        }
-                    }
-
-                    @Override
-                    public void onAllDataRead() throws IOException
-                    {
-                        response.getOutputStream().write(out.toByteArray());
-                        asyncContext.complete();
-                    }
-
-                    @Override
-                    public void onError(Throwable x)
-                    {
-                    }
-                });
-            }
-        });
-
-        AsyncRequestContent contentProvider = new AsyncRequestContent();
-        CountDownLatch clientLatch = new CountDownLatch(1);
-
-        String expected =
-                "0S" +
-                "2S" +
-                "4S" +
-                "6S";
-
-        client.newRequest(newURI(transport))
-            .method(HttpMethod.POST)
-            .body(contentProvider)
-            .send(new BufferingResponseListener()
-            {
-                @Override
-                public void onComplete(Result result)
-                {
-                    if (result.isSucceeded())
-                    {
-                        Response response = result.getResponse();
-                        assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
-                        assertThat(getContentAsString(), Matchers.equalTo(expected));
-                        clientLatch.countDown();
-                    }
-                }
-            });
-
-        contentProvider.write(BufferUtil.toBuffer("S0"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S1"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S2"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S3"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S4"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S5"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S6"), Callback.NOOP);
-        contentProvider.close();
-
-        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest

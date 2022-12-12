@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.component.Destroyable;
 
 /**
  * ContentProducer is the bridge between {@link HttpInput} and {@link Content.Source}.
@@ -22,7 +21,6 @@ import org.eclipse.jetty.util.component.Destroyable;
 public interface ContentProducer
 {
     /**
-     * Clear the interceptor and call {@link Destroyable#destroy()} on it if it implements {@link Destroyable}.
      * A recycled {@link ContentProducer} will only produce special content with a non-null error until
      * {@link #reopen()} is called.
      */
@@ -57,7 +55,7 @@ public interface ContentProducer
      * Doesn't change state.
      * @return the byte count produced by the underlying {@link Content.Source}.
      */
-    long getRawBytesArrived();
+    long getBytesArrived();
 
     /**
      * Get the byte count that can immediately be read from this
@@ -93,8 +91,6 @@ public interface ContentProducer
      * Get the next content chunk that can be read from or that describes the terminal condition
      * that was reached (error, eof).
      * This call may or may not block until some content is available, depending on the implementation.
-     * The returned content is decoded by the interceptor set with {@link #setInterceptor(HttpInput.Interceptor)}
-     * or left as-is if no intercept is set.
      * After this call, state can be either of UNREADY or IDLE.
      *
      * @return the next content chunk that can be read from or null if the implementation does not block
@@ -117,18 +113,6 @@ public interface ContentProducer
      * @return true if some content is immediately available, false otherwise.
      */
     boolean isReady();
-
-    /**
-     * Get the {@link HttpInput.Interceptor}.
-     * @return The {@link HttpInput.Interceptor}, or null if none set.
-     */
-    HttpInput.Interceptor getInterceptor();
-
-    /**
-     * Set the interceptor.
-     * @param interceptor The interceptor to use.
-     */
-    void setInterceptor(HttpInput.Interceptor interceptor);
 
     /**
      * Wake up the thread that is waiting for the next content.
