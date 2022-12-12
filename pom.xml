@@ -33,7 +33,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.3.3</checkstyle.version>
+    <checkstyle.version>10.3.4</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
     <commons.compress.version>1.22</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
@@ -43,15 +43,15 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <google.errorprone.version>2.15.0</google.errorprone.version>
-    <grpc.version>1.49.0</grpc.version>
+    <grpc.version>1.49.2</grpc.version>
     <gson.version>2.9.1</gson.version>
     <guava.version>31.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.15.1</hawtio.version>
+    <hawtio.version>2.15.2</hawtio.version>
     <hazelcast.version>4.2.5</hazelcast.version>
-    <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.15.Final</infinispan.version>
+    <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
+    <infinispan.version>11.0.16.Final</infinispan.version>
     <jackson.version>2.13.4</jackson.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
@@ -68,12 +68,12 @@
     <jna.version>5.12.1</jna.version>
     <jnr-constants.version>0.10.4</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
-    <jnr-ffi.version>2.2.11</jnr-ffi.version>
+    <jnr-ffi.version>2.2.12</jnr-ffi.version>
     <jnr-posix.version>3.1.15</jnr-posix.version>
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.8</json-smart.version>
-    <junit.version>5.9.0</junit.version>
+    <junit.version>5.9.1</junit.version>
     <kerb-simplekdc.version>2.0.2</kerb-simplekdc.version>
     <log4j2.version>2.19.0</log4j2.version>
     <logback.version>1.4.5</logback.version>
@@ -81,11 +81,11 @@
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.4</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.8.2</maven.resolver.version>
+    <maven.resolver.version>1.9.2</maven.resolver.version>
     <maven.version>3.8.6</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
-    <org.osgi.annotation.version>8.0.1</org.osgi.annotation.version>
+    <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
@@ -96,9 +96,8 @@
     <testcontainers.version>1.17.5</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>1.20.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
-    <weld.version>4.0.2.Final</weld.version>
 
     <!-- some maven plugins versions -->
     <asciidoctor.maven.plugin.version>2.2.2</asciidoctor.maven.plugin.version>
@@ -123,7 +122,7 @@
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
-    <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
+    <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.7.0</maven-plugin.plugin.version>

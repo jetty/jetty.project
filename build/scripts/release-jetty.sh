@@ -131,7 +131,7 @@ reportMavenTestFailures() {
 
 echo ""
 if proceedyn "Are you sure you want to release using above? (y/N)" n; then
-    mvn clean install -pl build-resources
+    mvn clean install -pl build
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
         mvn -N -Pupdate-version generate-resources

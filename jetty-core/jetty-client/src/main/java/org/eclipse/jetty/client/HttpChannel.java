@@ -78,6 +78,12 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         return result;
     }
 
+    /**
+     * <p>Disassociates the exchange from this channel.</p>
+     *
+     * @param exchange the current exchange that must be already completed
+     * @return true if the exchange was disassociated, false otherwise
+     */
     public boolean disassociate(HttpExchange exchange)
     {
         boolean result = false;
@@ -97,6 +103,14 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         return result;
     }
 
+    /**
+     * <p>Returns the {@code HttpExchange} currently associated
+     * with this channel, possibly {@code null}.</p>
+     * <p>The exchange may be completed and disassociated concurrently,
+     * so callers must act atomically on the exchange.</p>
+     *
+     * @return the {@code HttpExchange} currently associated with this channel, possibly {@code null}.
+     */
     public HttpExchange getHttpExchange()
     {
         try (AutoLock l = _lock.lock())
