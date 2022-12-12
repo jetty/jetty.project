@@ -362,7 +362,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                callback.succeeded();
+                Content.Source.consumeAll(request, callback);
             }
         });
 
