@@ -1332,7 +1332,11 @@ public class HttpChannelTest
     @MethodSource("completionEvents")
     public void testCompletionNoWriteErrorProcessor(List<CompletionTestEvent> events) throws Exception
     {
-        Request.Processor.Always errorProcessor = (request, response, callback) -> callback.succeeded();
+        Request.Processor errorProcessor = (request, response, callback) ->
+        {
+            callback.succeeded();
+            return true;
+        };
         testCompletion(events, errorProcessor, true);
     }
 
@@ -1340,7 +1344,11 @@ public class HttpChannelTest
     @MethodSource("completionEvents")
     public void testCompletionFailedErrorProcessor(List<CompletionTestEvent> events) throws Exception
     {
-        Request.Processor.Always errorProcessor = (request, response, callback) -> callback.failed(new QuietException.Exception("Error processor failed"));
+        Request.Processor errorProcessor = (request, response, callback) ->
+        {
+            callback.failed(new QuietException.Exception("Error processor failed"));
+            return true;
+        };
         testCompletion(events, errorProcessor, false);
     }
 

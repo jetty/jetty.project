@@ -97,7 +97,7 @@ public abstract class AbstractHttpTest
         }
     }
 
-    protected class ThrowExceptionOnDemandHandler extends Handler.Abstract.Blocking
+    protected class ThrowExceptionOnDemandHandler extends Handler.Abstract.NonBlocking
     {
         private final boolean throwException;
         private volatile Throwable failure;

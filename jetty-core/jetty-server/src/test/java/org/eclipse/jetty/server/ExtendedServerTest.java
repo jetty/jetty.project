@@ -141,7 +141,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
     }
 
-    protected static class DispatchedAtHandler extends Handler.Abstract.Blocking
+    protected static class DispatchedAtHandler extends Handler.Abstract.NonBlocking
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

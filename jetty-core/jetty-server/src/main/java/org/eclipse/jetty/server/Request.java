@@ -482,17 +482,15 @@ public interface Request extends Attributes, Content.Source
          * <pre>
          * public boolean process(Request request, Response response, Callback callback)
          * {
-         *     // Implicitly respond with 200 OK.
          *     callback.succeeded();
          *     return true;
          * }
          * </pre>
          * <p>A HelloWorld implementation is:</p>
          * <pre>
-         * public void process(Request request, Response response, Callback callback)
+         * public boolean process(Request request, Response response, Callback callback)
          * {
-         *     // The callback is completed when the write completes.
-         *     response.write(true, callback, "hello, world!");
+         *     response.write(true, ByteBuffer.wrap("Hello World\n".getBytes(StandardCharsets.UTF_8)), callback);
          *     return true;
          * }
          * </pre>
@@ -501,23 +499,12 @@ public interface Request extends Attributes, Content.Source
          * @param response the HTTP response to process
          * @param callback the callback to complete when the processing is complete
          * @return True if an only if the request will be processed, a response generated and the callback eventually called.
-         *         The callback may be completed asynchronously before or after this method returns true..
-         * @throws Exception if there is a failure during the processing. Callers cannot assume that the callback will be
+         *         This may occur within the scope of the call to this method, or asynchronously some time later. If false
+         *         is returned, then this method must not generate a response, nor complete the callback.
+         * @throws Exception if there is a failure during the processing. Catchers cannot assume that the callback will be
          *                   called and thus should attempt to complete the request as if a false had been returned.
          */
         boolean process(Request request, Response response, Callback callback) throws Exception;
-
-        interface Always extends Processor
-        {
-            @Override
-            default boolean process(Request request, Response response, Callback callback) throws Exception
-            {
-                doProcess(request, response, callback);
-                return true;
-            }
-
-            void doProcess(Request request, Response response, Callback callback) throws Exception;
-        }
     }
 
     /**
