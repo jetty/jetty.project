@@ -359,6 +359,8 @@ class AsyncContentProducer implements ContentProducer
             if (LOG.isDebugEnabled())
                 LOG.debug("transforming raw chunk {}", this);
             transformRawChunk();
+            if (_transformedChunk != null)
+                _servletChannel.getState().onContentAdded();
         }
     }
 
