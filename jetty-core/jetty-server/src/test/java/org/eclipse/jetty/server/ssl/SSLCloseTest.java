@@ -100,10 +100,10 @@ public class SSLCloseTest
         }
     }
 
-    private static class WriteHandler extends Handler.Processor
+    private static class WriteHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.getHeaders().put("test", "value");
@@ -119,6 +119,7 @@ public class SSLCloseTest
             response.write(false,
                 BufferUtil.toBuffer(bytes), Callback.from(() -> response.write(true, BufferUtil.toBuffer(bytes), callback), callback::failed)
             );
+            return true;
         }
     }
 }

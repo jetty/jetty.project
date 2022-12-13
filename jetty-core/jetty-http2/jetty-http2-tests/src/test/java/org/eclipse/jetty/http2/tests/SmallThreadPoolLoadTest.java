@@ -189,10 +189,10 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         return !reset.get();
     }
 
-    private static class LoadHandler extends Handler.Processor
+    private static class LoadHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             switch (HttpMethod.fromString(request.getMethod()))
             {
@@ -209,6 +209,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                     Content.copy(request, response, callback);
                 }
             }
+            return true;
         }
     }
 }

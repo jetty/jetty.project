@@ -85,13 +85,14 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testClientProxyProtocolV1() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                return true;
             }
         });
         startClient();
@@ -123,13 +124,14 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testClientProxyProtocolV2() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                return true;
             }
         });
         startClient();
@@ -164,10 +166,10 @@ public class HttpClientProxyProtocolTest
         int typeTLS = 0x20;
         String tlsVersion = "TLSv1.3";
         byte[] tlsVersionBytes = tlsVersion.getBytes(StandardCharsets.US_ASCII);
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
@@ -179,6 +181,8 @@ public class HttpClientProxyProtocolTest
                 }
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+
+                return true;
             }
         });
         startClient();
@@ -218,13 +222,14 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testProxyProtocolWrappingHTTPProxy() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                return true;
             }
         });
         startClient();

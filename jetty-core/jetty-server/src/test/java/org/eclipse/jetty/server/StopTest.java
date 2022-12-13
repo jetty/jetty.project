@@ -16,12 +16,14 @@ package org.eclipse.jetty.server;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -507,7 +509,7 @@ public class StopTest
         assertFalse(context2Started.get());
     }
 
-    static class NoopHandler extends Handler.Processor
+    static class NoopHandler extends Handler.Abstract.Blocking
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -516,36 +518,48 @@ public class StopTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             callback.succeeded(); // TODO should the be after the countdown?
             latch.countDown();
+            return true;
         }
     }
 
-    static class ABHandler extends Handler.Processor
+    static class ABHandler extends Handler.Abstract.Blocking
     {
         final CountDownLatch latchA = new CountDownLatch(1);
         final CountDownLatch latchB = new CountDownLatch(1);
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            /* TODO
-            response.setContentLength(2);
-            response.write(true, callback, ByteBuffer.wrap("a".getBytes()));
-            try
+            response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 2);
+            response.write(true, ByteBuffer.wrap("a".getBytes()), new Callback()
             {
-                latchA.countDown();
-                latchB.await();
-            }
-            catch (InterruptedException e)
-            {
-                throw new RuntimeException(e);
-            }
-            response.flushBuffer();
-            response.write(true, callback, ByteBuffer.wrap("b".getBytes()));
-             */
+                @Override
+                public void succeeded()
+                {
+                    try
+                    {
+                        latchA.countDown();
+                        latchB.await();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                    response.write(true, ByteBuffer.wrap("b".getBytes()), callback);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                }
+            });
+
+            return true;
         }
     }
 }

@@ -250,16 +250,17 @@ public class TryPathsHandlerTest
     public void testSecureRequestIsForwarded() throws Exception
     {
         String path = "/secure";
-        start(List.of("$path"), new Handler.Processor()
+        start(List.of("$path"), new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals("https", httpURI.getScheme());
                 assertTrue(request.isSecure());
                 assertEquals(path, Request.getPathInContext(request));
                 callback.succeeded();
+                return true;
             }
         });
 

@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.MockHttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.gzip.GzipHandlerTest;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -244,15 +245,16 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
                 response.setStatus(200);
                 callback.succeeded();
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -361,10 +363,10 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor.Blocking()
+        Handler handler = new GzipHandlerTest.DumpHandler.Blocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demand(() ->
@@ -383,6 +385,7 @@ public class ContextHandlerTest
                 chunk.release();
                 response.setStatus(200);
                 callback.succeeded();
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -414,10 +417,10 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
@@ -434,6 +437,7 @@ public class ContextHandlerTest
                         complete.countDown();
                     });
                 });
+                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -523,10 +527,10 @@ public class ContextHandlerTest
     @Test
     public void testThrownUsesContextErrorProcessor() throws Exception
     {
-        _contextHandler.setHandler(new Handler.Processor()
+        _contextHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }
@@ -590,13 +594,14 @@ public class ContextHandlerTest
             }
         });
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, null, callback);
+                return true;
             }
         };
         _contextHandler.setHandler(handler);

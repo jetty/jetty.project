@@ -48,32 +48,34 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler1 extends Handler.Processor
+    public static class HelloHandler1 extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
+            return true;
         }
     }
 
-    public static class HelloHandler2 extends Handler.Processor.NonBlocking
+    public static class HelloHandler2 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
             response.write(true, BufferUtil.toBuffer("Hello World\n"), callback);
+            return true;
         }
     }
 
-    public static class HelloHandler3 extends Handler.Processor.NonBlocking
+    public static class HelloHandler3 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws IOException
+        public boolean process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -89,13 +91,14 @@ public class HandlerDocs
                 cb.block();
             }
             callback.succeeded();
+            return true;
         }
     }
 
-    public static class HelloHandler4 extends Handler.Processor.Blocking
+    public static class HelloHandler4 extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws IOException
+        public boolean process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
@@ -109,17 +112,19 @@ public class HandlerDocs
             {
                 callback.failed(t);
             }
+            return true;
         }
     }
 
-    public static class HelloHandler5 extends Handler.Processor.NonBlocking
+    public static class HelloHandler5 extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws IOException
+        public boolean process(Request request, Response response, Callback callback) throws IOException
         {
             response.setStatus(200);
             response.getHeaders().add(HttpHeader.CONTENT_LENGTH, "text/plain");
             new HelloWorldPublisher().subscribe(Content.Sink.asSubscriber(response, callback));
+            return true;
         }
     }
 
@@ -167,10 +172,10 @@ public class HandlerDocs
         }
     }
 
-    public static class EchoHandler extends Handler.Processor.NonBlocking
+    public static class EchoHandler extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
@@ -180,6 +185,7 @@ public class HandlerDocs
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
 
             Content.copy(request, response, callback);
+            return true;
         }
     }
 

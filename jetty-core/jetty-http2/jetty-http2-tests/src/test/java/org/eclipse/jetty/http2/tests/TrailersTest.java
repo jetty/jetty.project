@@ -107,17 +107,18 @@ public class TrailersTest extends AbstractTest
     public void testHandlerRequestTrailers() throws Exception
     {
         CountDownLatch trailerLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             private Request _request;
             private Callback _callback;
 
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 _request = request;
                 _callback = callback;
                 request.demand(this::firstRead);
+                return true;
             }
 
             private void firstRead()
@@ -257,10 +258,10 @@ public class TrailersTest extends AbstractTest
     {
         String trailerName = "X-Trailer";
         String trailerValue = "Zot!";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);
@@ -268,6 +269,7 @@ public class TrailersTest extends AbstractTest
                 // Force the content to be sent above, and then only send the trailers below.
                 trailers.put(trailerName, trailerValue);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -318,12 +320,13 @@ public class TrailersTest extends AbstractTest
     @Test
     public void testRequestTrailerInvalidHpackSent() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -356,10 +359,10 @@ public class TrailersTest extends AbstractTest
     public void testRequestTrailerInvalidHpackReceived() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -370,6 +373,7 @@ public class TrailersTest extends AbstractTest
                     serverLatch.countDown();
                     throw x;
                 }
+                return true;
             }
         });
 
@@ -408,14 +412,15 @@ public class TrailersTest extends AbstractTest
     @Test
     public void testRequestTrailersCopiedAsResponseTrailers() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);
                 Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
+                return true;
             }
         });
 

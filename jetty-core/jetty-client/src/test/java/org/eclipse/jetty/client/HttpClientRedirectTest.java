@@ -484,10 +484,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void testRedirectWithCorruptedBody(Scenario scenario) throws Exception
     {
         byte[] bytes = "ok".getBytes(StandardCharsets.UTF_8);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/redirect"))
                 {
@@ -502,6 +502,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     response.setStatus(HttpStatus.OK_200);
                     response.write(true, ByteBuffer.wrap(bytes), callback);
                 }
+                return true;
             }
         });
 

@@ -47,12 +47,13 @@ public class ConnectionStatisticsTest extends AbstractTest
         // FastCGI server does not have statistics.
         assumeTrue(transport != Transport.FCGI);
 
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Content.copy(request, response, callback);
+                return true;
             }
         });
 

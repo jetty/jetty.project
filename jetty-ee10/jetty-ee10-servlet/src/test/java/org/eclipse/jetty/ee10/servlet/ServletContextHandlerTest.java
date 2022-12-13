@@ -1916,12 +1916,13 @@ public class ServletContextHandlerTest
         servlet.setEnsureDefaultServlet(false);
         servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
 
-        list.addHandler(new Handler.Processor()
+        list.addHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 Response.writeError(request, response, callback, 404, "Fell Through");
+                return true;
             }
         });
 

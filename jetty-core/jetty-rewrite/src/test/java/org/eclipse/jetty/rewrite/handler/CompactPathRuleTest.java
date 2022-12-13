@@ -54,12 +54,13 @@ public class CompactPathRuleTest extends AbstractRuleTest
         httpConfig.setUriCompliance(UriCompliance.UNSAFE);
         CompactPathRule rule = new CompactPathRule();
         _rewriteHandler.addRule(rule);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, request.getHttpURI().getPathQuery(), callback);
+                return true;
             }
         });
 

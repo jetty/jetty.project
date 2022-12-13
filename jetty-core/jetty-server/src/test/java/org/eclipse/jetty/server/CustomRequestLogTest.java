@@ -138,11 +138,12 @@ public class CustomRequestLogTest
         start("%s: %!404,301{Referer}i", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 String status = request.getHeaders().get("Status");
                 response.setStatus(Integer.parseInt(status));
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -253,9 +254,10 @@ public class CustomRequestLogTest
         start("BytesSent: %O", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, content, callback);
+                return true;
             }
         });
 
@@ -272,9 +274,10 @@ public class CustomRequestLogTest
         start("BytesReceived: %I", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, callback);
+                return true;
             }
         });
 
@@ -295,10 +298,11 @@ public class CustomRequestLogTest
         start("BytesTransferred: %S", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 String content = Content.Source.asString(request);
                 Content.Sink.write(response, true, content, callback);
+                return true;
             }
         });
 
@@ -419,11 +423,12 @@ public class CustomRequestLogTest
         start("ResponseHeader: %{Header1}o, %{Header2}o, %{Header3}o", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add("Header1", "value1");
                 response.getHeaders().add("Header2", "value2");
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -465,11 +470,12 @@ public class CustomRequestLogTest
         start("LogResponseStatus: %s", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 String status = request.getHeaders().get("Status");
                 response.setStatus(Integer.parseInt(status));
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -508,10 +514,11 @@ public class CustomRequestLogTest
         start("RequestTime: %t", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 requestTimeRef.set(request.getTimeStamp());
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -532,10 +539,11 @@ public class CustomRequestLogTest
             %{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t""", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 requestTimeRef.set(request.getTimeStamp());
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -564,11 +572,12 @@ public class CustomRequestLogTest
         start("%{" + unit + "}T", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 requestTimeRef.set(request.getTimeStamp());
                 Thread.sleep(delay);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -612,7 +621,7 @@ public class CustomRequestLogTest
         start("%U ConnectionStatus: %s %X", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 if (Request.getPathInContext(request).equals("/abort"))
                 {
@@ -623,6 +632,7 @@ public class CustomRequestLogTest
                 {
                     callback.succeeded();
                 }
+                return true;
             }
         });
 
@@ -681,9 +691,10 @@ public class CustomRequestLogTest
         start("%{trailerName}ti", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, callback);
+                return true;
             }
         });
 
@@ -707,13 +718,14 @@ public class CustomRequestLogTest
         start("%{trailerName}to", new SimpleHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 HttpFields.Mutable trailers = HttpFields.build();
                 response.setTrailersSupplier(() -> trailers);
                 Content.Sink.write(response, false, "hello", Callback.NOOP);
                 trailers.put("trailerName", "42");
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -732,12 +744,13 @@ public class CustomRequestLogTest
         }
     }
 
-    private static class SimpleHandler extends Handler.Processor
+    private static class SimpleHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             callback.succeeded();
+            return true;
         }
     }
 }

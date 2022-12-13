@@ -36,13 +36,14 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
     public void init() throws Exception
     {
         _virtualHostRules = new VirtualHostRuleContainer();
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put("X-Path", request.getHttpURI().getPath());
                 callback.succeeded();
+                return true;
             }
         });
     }

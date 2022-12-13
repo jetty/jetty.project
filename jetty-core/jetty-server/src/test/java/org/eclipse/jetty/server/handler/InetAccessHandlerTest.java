@@ -24,11 +24,11 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.gzip.GzipHandlerTest;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
@@ -58,13 +58,14 @@ public class InetAccessHandlerTest
             {_connector1, _connector2});
 
         _handler = new InetAccessHandler();
-        _handler.setHandler(new Handler.Processor.NonBlocking()
+        _handler.setHandler(new GzipHandlerTest.DumpHandler.NonBlocking()
         {
             @Override
-            protected void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 callback.succeeded();
+                return true;
             }
         });
 

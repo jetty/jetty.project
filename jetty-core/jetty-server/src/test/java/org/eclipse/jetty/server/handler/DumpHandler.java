@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends Handler.Processor.Blocking
+public class DumpHandler extends Handler.Abstract.Blocking
 {
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
@@ -57,7 +57,7 @@ public class DumpHandler extends Handler.Processor.Blocking
     }
 
     @Override
-    public void doProcess(Request request, Response response, Callback callback) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("dump {}", request);
@@ -78,7 +78,7 @@ public class DumpHandler extends Handler.Processor.Blocking
         {
             response.setStatus(200);
             callback.succeeded();
-            return;
+            return true;
         }
 
         Utf8StringBuilder read = null;
@@ -108,7 +108,7 @@ public class DumpHandler extends Handler.Processor.Blocking
                 if (chunk instanceof Content.Chunk.Error error)
                 {
                     callback.failed(error.getCause());
-                    return;
+                    return true;
                 }
 
                 int l = Math.min(buffer.length, Math.min(len, chunk.remaining()));
@@ -138,7 +138,7 @@ public class DumpHandler extends Handler.Processor.Blocking
         {
             response.setStatus(Integer.parseInt(params.getValue("error")));
             callback.succeeded();
-            return;
+            return true;
         }
 
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML.asString());
@@ -211,5 +211,6 @@ public class DumpHandler extends Handler.Processor.Blocking
         }
 
         callback.succeeded();
+        return true;
     }
 }

@@ -80,10 +80,10 @@ public class ProxyCustomizerTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add("preexisting.attribute", request.getAttribute("some.attribute").toString());
                 ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNameSet());
@@ -100,6 +100,7 @@ public class ProxyCustomizerTest
                     response.getHeaders().add("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
 
                 callback.succeeded();
+                return true;
             }
         };
 

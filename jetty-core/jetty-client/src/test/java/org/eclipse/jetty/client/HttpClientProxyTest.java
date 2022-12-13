@@ -158,10 +158,10 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         int serverPort = HttpScheme.HTTP.is(scenario.getScheme()) ? 80 : 443;
         String realm = "test_realm";
         int status = HttpStatus.NO_CONTENT_204;
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 String target = org.eclipse.jetty.server.Request.getPathInContext(request);
                 if (target.startsWith("/proxy"))
@@ -183,7 +183,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                             {
                                 // Change also the host, to verify that proxy authentication works in this case too.
                                 Response.sendRedirect(request, response, callback, scenario.getScheme() + "://127.0.0.1:" + serverPort + "/server");
-                                return;
+                                return true;
                             }
                         }
                         callback.succeeded();
@@ -198,6 +198,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 {
                     Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
                 }
+
+                return true;
             }
         });
 

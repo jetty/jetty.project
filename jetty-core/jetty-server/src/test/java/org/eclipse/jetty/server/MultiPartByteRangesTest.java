@@ -73,10 +73,10 @@ public class MultiPartByteRangesTest
         Path resourcePath = resourceDir.resolve("range.txt");
         Files.writeString(resourcePath, resourceChars);
 
-        start(new Handler.Processor()
+        start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 assertTrue(request.getHeaders().contains(HttpHeader.ACCEPT_RANGES));
                 assertTrue(request.getHeaders().contains(HttpHeader.RANGE));
@@ -93,6 +93,7 @@ public class MultiPartByteRangesTest
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/byteranges; boundary=" + QuotedStringTokenizer.quote(boundary));
                     Content.copy(content, response, callback);
                 }
+                return true;
             }
         });
 

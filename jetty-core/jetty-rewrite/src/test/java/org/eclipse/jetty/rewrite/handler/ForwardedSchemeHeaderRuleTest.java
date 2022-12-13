@@ -27,13 +27,14 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
     public void start(ForwardedSchemeHeaderRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put("request-scheme", request.getHttpURI().getScheme());
                 callback.succeeded();
+                return true;
             }
         });
     }

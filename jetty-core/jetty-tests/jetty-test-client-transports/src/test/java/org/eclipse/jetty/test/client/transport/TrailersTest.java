@@ -40,10 +40,10 @@ public class TrailersTest extends AbstractTest
     {
         String trailerName = "Some-Trailer";
         String trailerValue = "0xC0FFEE";
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 // Read slowly.
                 try (InputStream input = Content.Source.asInputStream(request))
@@ -73,6 +73,7 @@ public class TrailersTest extends AbstractTest
                         response.write(true, null, getCallback());
                     }
                 });
+                return true;
             }
         });
 

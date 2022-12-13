@@ -79,10 +79,10 @@ public class SlowClientWithPipelinedRequestTest
     public void testSlowClientWithPipelinedRequest() throws Exception
     {
         final int contentLength = 512 * 1024;
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 if ("/content".equals(Request.getPathInContext(request)))
                 {
@@ -101,6 +101,7 @@ public class SlowClientWithPipelinedRequestTest
                 {
                     callback.succeeded();
                 }
+                return true;
             }
         });
 

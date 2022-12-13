@@ -36,12 +36,13 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     public WebSocketUpgradeHandler(WebSocketComponents components)
     {
         this.mappings = new WebSocketMappings(components);
-        setHandler(new Handler.Processor()
+        setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                return true;
             }
         });
     }

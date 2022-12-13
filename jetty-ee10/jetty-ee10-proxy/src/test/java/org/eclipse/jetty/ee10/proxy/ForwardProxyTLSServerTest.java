@@ -838,10 +838,10 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new EmptyServerHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 sleep(3 * timeout);
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         });
         startProxy(proxyTLS);
@@ -874,10 +874,10 @@ public class ForwardProxyTLSServerTest
         startTLSServer(new EmptyServerHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 sleep(3 * timeout);
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         });
         startProxy(proxyTLS);
@@ -999,10 +999,10 @@ public class ForwardProxyTLSServerTest
         }
     }
 
-    private static class ServerHandler extends Handler.Processor
+    private static class ServerHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))
@@ -1034,11 +1034,9 @@ public class ForwardProxyTLSServerTest
                         }
                     });
                 }
+                return true;
             }
-            else
-            {
-                throw new ServletException();
-            }
+            throw new ServletException();
         }
     }
 }

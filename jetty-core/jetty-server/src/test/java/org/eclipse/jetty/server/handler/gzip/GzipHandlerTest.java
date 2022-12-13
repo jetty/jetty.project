@@ -1738,14 +1738,15 @@ public class GzipHandlerTest
         return HttpTester.parseResponse(_connector.getResponse(request.generate()));
     }
 
-    public static class MimeTypeContentHandler extends Handler.Processor
+    public static class MimeTypeContentHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             String pathInfo = Request.getPathInContext(request);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
             Content.Sink.write(response, true, "This is content for " + pathInfo + "\n", callback);
+            return true;
         }
 
         private String getContentTypeFromRequest(String filename, Request request)
@@ -1763,15 +1764,15 @@ public class GzipHandlerTest
         }
     }
 
-    public static class TestHandler extends Handler.Processor
+    public static class TestHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (HttpMethod.DELETE.is(request.getMethod()))
             {
                 doDelete(request, response, callback);
-                return;
+                return true;
             }
 
             Fields parameters = Request.extractQueryParameters(request);
@@ -1782,11 +1783,12 @@ public class GzipHandlerTest
             if (ifnm != null && ifnm.equals(CONTENT_ETAG))
             {
                 Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                return;
+                return true;
             }
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             Content.Sink.write(response, true, CONTENT, callback);
+            return true;
         }
 
         void doDelete(Request request, Response response, Callback callback) throws IOException
@@ -1799,10 +1801,10 @@ public class GzipHandlerTest
         }
     }
 
-    public static class WriteHandler extends Handler.Processor
+    public static class WriteHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             Fields parameters = Request.extractQueryParameters(request);
 
@@ -1856,13 +1858,14 @@ public class GzipHandlerTest
 
             Context context = request.getContext();
             context.run(writer);
+            return true;
         }
     }
 
     /**
      * Handler that will write a ByteBuffer in two writes, causing a Transfer-Encoding: chunked.
      */
-    public static class ChunkedWriteHandler extends Handler.Processor
+    public static class ChunkedWriteHandler extends Handler.Abstract.Blocking
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1891,7 +1894,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtils.isNotBlank(etag))
             {
@@ -1903,13 +1906,14 @@ public class GzipHandlerTest
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
             response.write(false, byteBuffer.slice(), Callback.from(() -> response.write(true, null, callback)));
+            return true;
         }
     }
 
     /**
      * Handler that will write a ByteBuffer in a single write, resulting in a Content-Length response header.
      */
-    public static class SingleWriteHandler extends Handler.Processor
+    public static class SingleWriteHandler extends Handler.Abstract.Blocking
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1938,7 +1942,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtils.isNotBlank(etag))
             {
@@ -1952,26 +1956,28 @@ public class GzipHandlerTest
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, slice.remaining());
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
             response.write(true, slice, callback);
+            return true;
         }
     }
 
-    public static class EchoHandler extends Handler.Processor
+    public static class EchoHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
             if (contentType != null)
                 response.getHeaders().add(contentType);
 
             Content.copy(request, response, callback);
+            return true;
         }
     }
 
-    public static class DumpHandler extends Handler.Processor
+    public static class DumpHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -1982,6 +1988,7 @@ public class GzipHandlerTest
 
             String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
             Content.Sink.write(response, true, dump, callback);
+            return true;
         }
     }
 

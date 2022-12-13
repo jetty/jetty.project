@@ -130,10 +130,10 @@ public class MultiplexedConnectionPoolTest
         CountDownLatch[] reqExecutingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
         CountDownLatch[] reqExecutedLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
         CountDownLatch[] reqFinishingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 int req = Integer.parseInt(Request.getPathInContext(request).substring(1));
                 reqExecutingLatches[req].countDown();
@@ -143,6 +143,7 @@ public class MultiplexedConnectionPoolTest
                 assertTrue(reqFinishingLatches[req].await(5, TimeUnit.SECONDS));
 
                 Content.Sink.write(response, true, "req " + req + " executed", callback);
+                return true;
             }
         });
 
@@ -226,13 +227,14 @@ public class MultiplexedConnectionPoolTest
             return pool;
         });
 
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 int req = Integer.parseInt(Request.getPathInContext(request).substring(1));
                 Content.Sink.write(response, true, "req " + req + " executed", callback);
+                return true;
             }
         }, 64, 1L);
 
@@ -306,12 +308,13 @@ public class MultiplexedConnectionPoolTest
             return connectionPool;
         });
 
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -375,10 +378,10 @@ public class MultiplexedConnectionPoolTest
 
         Semaphore handlerSignalingSemaphore = new Semaphore(0);
         Semaphore handlerWaitingSemaphore = new Semaphore(0);
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).equals("/block"))
                 {
@@ -386,6 +389,7 @@ public class MultiplexedConnectionPoolTest
                     handlerWaitingSemaphore.acquire();
                 }
                 callback.succeeded();
+                return true;
             }
         });
 

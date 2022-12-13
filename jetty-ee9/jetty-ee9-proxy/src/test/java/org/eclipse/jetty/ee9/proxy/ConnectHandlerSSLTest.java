@@ -150,10 +150,10 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         return sslSocket;
     }
 
-    private static class ServerHandler extends Handler.Processor
+    private static class ServerHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             String uri = Request.getPathInContext(request);
             if ("/echo".equals(uri))
@@ -190,11 +190,10 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                                 response.write(true, ByteBuffer.wrap(bytes), callback);
                         });
                 }
+
+                return true;
             }
-            else
-            {
-                throw new ServletException();
-            }
+            throw new ServletException();
         }
     }
 }

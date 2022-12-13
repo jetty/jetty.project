@@ -480,15 +480,16 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortConversation(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 if ("/done".equals(org.eclipse.jetty.server.Request.getPathInContext(request)))
                     callback.succeeded();
                 else
                     Response.sendRedirect(request, response, callback, "/done");
+                return true;
             }
         });
 

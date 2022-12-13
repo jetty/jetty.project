@@ -57,10 +57,10 @@ public class SimpleSessionHandlerTest
         sessionManager.setUsingURLs(false);
         _server.setHandler(sessionManager);
 
-        sessionManager.setHandler(new Handler.Processor()
+        sessionManager.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 String pathInContext = Request.getPathInContext(request);
                 String[] split = pathInContext.substring(1).split("/");
@@ -77,7 +77,7 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
 
                             if (split.length > 2)
@@ -89,7 +89,7 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
 
                             if (split.length > 1)
@@ -101,7 +101,7 @@ public class SimpleSessionHandlerTest
                             if (session != null)
                             {
                                 callback.failed(new IllegalStateException("Session already created"));
-                                return;
+                                return true;
                             }
                             session = sessionRequest.getSession(true);
                         }
@@ -111,7 +111,7 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
                             session.invalidate();
                         }
@@ -121,7 +121,7 @@ public class SimpleSessionHandlerTest
                             if (session == null)
                             {
                                 callback.failed(new IllegalStateException("No Session"));
-                                return;
+                                return true;
                             }
                             session.renewId(request, response);
                         }
@@ -139,6 +139,7 @@ public class SimpleSessionHandlerTest
                 }
 
                 Content.Sink.write(response, true, out.toString(), callback);
+                return true;
             }
         });
 

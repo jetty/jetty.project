@@ -73,12 +73,13 @@ public class End2EndClientTest
         connector = new QuicServerConnector(server, sslContextFactory, http1, http2);
         server.addConnector(connector);
 
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Content.Sink.write(response, true, responseContent, callback);
+                return true;
             }
         });
 

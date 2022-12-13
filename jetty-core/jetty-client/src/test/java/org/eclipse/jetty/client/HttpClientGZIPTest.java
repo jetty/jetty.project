@@ -115,10 +115,10 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
     public void testGZIPContentSentTwiceInOneWrite(Scenario scenario) throws Exception
     {
         final byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
 
@@ -132,6 +132,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 System.arraycopy(gzipBytes, 0, content, gzipBytes.length, gzipBytes.length);
 
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 
@@ -201,14 +202,15 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testGZIPContentCorrupted(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
                 Content.Sink.write(response, true, "0123456789", callback);
+                return true;
             }
         });
 

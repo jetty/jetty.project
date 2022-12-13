@@ -45,6 +45,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandlerTest;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -450,10 +451,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final CountDownLatch earlyEOFException = new CountDownLatch(1);
-        startServer(new Handler.Processor.Blocking()
+        startServer(new GzipHandlerTest.DumpHandler.Blocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 long contentLength = request.getLength();
                 long read = 0;
@@ -491,6 +492,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         break;
                     }
                 }
+                return true;
             }
         });
 
@@ -1112,7 +1114,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
-    protected static class BigBlockHandler extends Handler.Processor.Blocking
+    protected static class BigBlockHandler extends Handler.Abstract.Blocking
     {
         byte[] buf = new byte[128 * 1024];
 
@@ -1125,7 +1127,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -1150,6 +1152,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             response.write(true, BufferUtil.toBuffer(out.toString()), callback);
+            return true;
         }
     }
 
@@ -1160,10 +1163,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new HelloHandler("Hello\n")
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 served.incrementAndGet();
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         });
 
@@ -1331,12 +1334,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorHandler extends Handler.Processor.Blocking
+    public static class CommittedErrorHandler extends Handler.Abstract.Blocking
     {
         public EndPoint _endp;
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.getHeaders().put("test", "value");
@@ -1562,24 +1565,26 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         while (line != null);
     }
 
-    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Processor
+    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             response.setStatus(304);
             response.write(false, BufferUtil.toBuffer("yuck"), callback);
+            return true;
         }
     }
 
-    public static class NoopHandler extends Handler.Processor
+    public static class NoopHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             //don't read the input, just send something back
             response.setStatus(200);
             callback.succeeded();
+            return true;
         }
     }
 
@@ -1677,10 +1682,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         final int bufferSize = 1024;
         _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
         CountDownLatch closed = new CountDownLatch(1);
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
                 {
@@ -1713,6 +1718,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 response.setStatus(200);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -1791,7 +1797,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             AtomicBoolean hasContent = new AtomicBoolean();
             Request.Wrapper wrapper = new Request.Wrapper(request)
@@ -1806,7 +1812,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             };
 
-            super.doProcess(wrapper, response, Callback.from(() ->
+            return super.process(wrapper, response, Callback.from(() ->
             {
                 if (_mustHaveContent && !hasContent.get())
                     callback.failed(new IllegalStateException("No Test Content"));

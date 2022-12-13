@@ -19,6 +19,7 @@ import java.net.URLClassLoader;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.Callback;
 
 public class Jetty12Example
@@ -38,15 +39,17 @@ public class Jetty12Example
         // Add an embedded jetty-12 context
         org.eclipse.jetty.server.handler.ContextHandler embedded =
                 new org.eclipse.jetty.server.handler.ContextHandler("/embedded");
-        embedded.setHandler(new org.eclipse.jetty.server.Handler.Processor()
+        embedded.setHandler(new Handler.Abstract.NonBlocking()
         {
-            public void doProcess(org.eclipse.jetty.server.Request request,
+            @Override
+            public boolean process(org.eclipse.jetty.server.Request request,
                                   org.eclipse.jetty.server.Response response,
                                   Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 Content.Sink.write(response, true, "the handler says Hello World", callback);
+                return true;
             }
         });
         contexts.addHandler(embedded);

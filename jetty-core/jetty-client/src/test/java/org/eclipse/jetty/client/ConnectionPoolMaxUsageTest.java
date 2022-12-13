@@ -63,13 +63,14 @@ public class ConnectionPoolMaxUsageTest
     @Test
     public void testMaxUsage() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                return true;
             }
         });
 
@@ -105,13 +106,14 @@ public class ConnectionPoolMaxUsageTest
     @Test
     public void testMaxUsageSetToSmallerValue() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                return true;
             }
         });
 

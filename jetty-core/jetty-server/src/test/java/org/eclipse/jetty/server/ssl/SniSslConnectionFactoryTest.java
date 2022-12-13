@@ -127,15 +127,16 @@ public class SniSslConnectionFactoryTest
             new HttpConnectionFactory(httpConfiguration));
         _server.addConnector(_connector);
         _server.setHandler(xCertHandler);
-        xCertHandler.setHandler(new Handler.Processor()
+        xCertHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put("X-URL", Request.getPathInContext(request));
                 response.getHeaders().put("X-HOST", Request.getServerName(request));
                 callback.succeeded();
+                return true;
             }
         });
 

@@ -131,10 +131,10 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         });
         _server.start();
@@ -177,10 +177,10 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         });
         _server.start();
@@ -276,14 +276,15 @@ public class DelayedHandlerTest
 
         _server.setHandler(delayedHandler);
         CountDownLatch processing = new CountDownLatch(2);
-        delayedHandler.setHandler(new Handler.Processor()
+        delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
                 Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);
                 Content.Sink.write(response, true, String.valueOf(fields), callback);
+                return true;
             }
         });
         _server.start();

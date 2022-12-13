@@ -39,6 +39,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandlerTest;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -147,10 +148,10 @@ public class HttpChannelTest
     @Test
     public void testRecursiveGET() throws Exception
     {
-        _server.setHandler(new Handler.Processor()
+        _server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
@@ -173,6 +174,7 @@ public class HttpChannelTest
                     }
                 };
                 writer.succeeded();
+                return true;
             }
         });
         _server.start();
@@ -460,16 +462,17 @@ public class HttpChannelTest
     @Test
     public void testCompleteThenThrow() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 Content.Sink.write(response, true, "Before throw", Callback.from(callback, () ->
                 {
                     throw new Error("testing");
                 }));
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -497,10 +500,10 @@ public class HttpChannelTest
     @Test
     public void testCommitThenThrowFromCallback() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
@@ -508,6 +511,7 @@ public class HttpChannelTest
                 {
                     throw new Error("testing");
                 }));
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -534,12 +538,13 @@ public class HttpChannelTest
     @Test
     public void testAutoContentLength() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer("12345"), callback);
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -565,13 +570,14 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten1() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(true, BufferUtil.toBuffer("12345"), callback);
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -600,15 +606,16 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten2() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
                     BufferUtil.toBuffer("12345"), Callback.from(() ->
                         response.write(true, null, callback)));
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -633,13 +640,14 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten1() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(true, BufferUtil.toBuffer("1234567890"), callback);
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -668,13 +676,14 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten2() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, BufferUtil.toBuffer("1234"), Callback.from(() -> response.write(true, BufferUtil.toBuffer("567890"), callback)));
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -733,15 +742,16 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailable() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -775,16 +785,17 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailableClosed() throws Exception
     {
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 5);
                 response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -1057,10 +1068,10 @@ public class HttpChannelTest
     @Test
     public void testDemandRecursion() throws Exception
     {
-        _server.setHandler(new Handler.Processor.Blocking()
+        _server.setHandler(new GzipHandlerTest.DumpHandler.Blocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 LongAdder contentSize = new LongAdder();
                 CountDownLatch latch = new CountDownLatch(1);
@@ -1088,6 +1099,7 @@ public class HttpChannelTest
                 {
                     callback.failed(new IOException());
                 }
+                return true;
             }
         });
         _server.start();
@@ -1137,10 +1149,10 @@ public class HttpChannelTest
     {
         AtomicReference<Response> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 handling.set(response);
                 request.addErrorListener(t -> false);
@@ -1150,6 +1162,7 @@ public class HttpChannelTest
                     callback.failed(t);
                     return true;
                 });
+                return true;
             }
         };
         _server.setHandler(handler);
@@ -1224,7 +1237,7 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -1235,7 +1248,7 @@ public class HttpChannelTest
                         super.succeeded();
                     }
                 });
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         };
         _server.setHandler(echoHandler);
@@ -1338,10 +1351,10 @@ public class HttpChannelTest
         AtomicReference<Response> responseRef = new AtomicReference<>();
         AtomicReference<Callback> callbackRef = new AtomicReference<>();
 
-        Handler handler = new Handler.Processor()
+        Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put("Test", "Value");
@@ -1349,6 +1362,7 @@ public class HttpChannelTest
                 callbackRef.set(callback);
                 processing.countDown();
                 processed.await();
+                return true;
             }
         };
 

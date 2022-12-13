@@ -85,18 +85,18 @@ public class StatisticsHandlerTest
     {
         AtomicLong readRate = new AtomicLong(-1L);
 
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        request.demand(() -> doProcess(request, response, callback));
-                        return;
+                        request.demand(() -> process(request, response, callback));
+                        return true;
                     }
                     chunk.release();
                     if (chunk.isLast())
@@ -105,7 +105,7 @@ public class StatisticsHandlerTest
                         readRate.set(rr);
                         //System.err.println("over; read rate=" + rr + " b/s");
                         callback.succeeded();
-                        return;
+                        return true;
                     }
                 }
             }
@@ -138,10 +138,10 @@ public class StatisticsHandlerTest
         AtomicLong writeRate = new AtomicLong(-1L);
         CountDownLatch latch = new CountDownLatch(1);
 
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -163,6 +163,7 @@ public class StatisticsHandlerTest
                         latch.countDown();
                     }
                 });
+                return true;
             }
 
             private void write(Response response, int counter, Callback finalCallback)
@@ -218,31 +219,31 @@ public class StatisticsHandlerTest
     public void testMinimumDataReadRateHandler() throws Exception
     {
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(1100, 0);
-        mdrh.setHandler(new Handler.Processor()
+        mdrh.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        request.demand(() -> doProcess(request, response, callback));
-                        return;
+                        request.demand(() -> process(request, response, callback));
+                        return true;
                     }
 
                     if (chunk instanceof Content.Chunk.Error errorContent)
                     {
                         callback.failed(errorContent.getCause());
-                        return;
+                        return true;
                     }
 
                     chunk.release();
                     if (chunk.isLast())
                     {
                         callback.succeeded();
-                        return;
+                        return true;
                     }
                 }
             }
@@ -282,10 +283,10 @@ public class StatisticsHandlerTest
         CountDownLatch latch = new CountDownLatch(1);
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1100);
         int expectedContentLength = 1000;
-        mdrh.setHandler(new Handler.Processor()
+        mdrh.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -303,6 +304,7 @@ public class StatisticsHandlerTest
                         latch.countDown();
                     }
                 });
+                return true;
             }
 
             private void write(Response response, int counter, Callback finalCallback)
@@ -780,7 +782,7 @@ public class StatisticsHandlerTest
      * when the second barrier is reached, the callback is succeeded;
      * when the third barrier is reached, process() is returning
      */
-    private static class TripleBarrierHandlerProcessor extends Handler.Processor.Blocking
+    private static class TripleBarrierHandlerProcessor extends Handler.Abstract.Blocking
     {
         private final CyclicBarrier[] _barriers;
 
@@ -792,7 +794,7 @@ public class StatisticsHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             try
             {
@@ -807,6 +809,7 @@ public class StatisticsHandlerTest
                 callback.failed(x);
                 throw new IOException(x);
             }
+            return true;
         }
     }
 }

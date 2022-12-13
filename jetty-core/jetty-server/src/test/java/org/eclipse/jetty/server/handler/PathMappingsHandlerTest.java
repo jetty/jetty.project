@@ -256,7 +256,7 @@ public class PathMappingsHandlerTest
         assertThrows(IllegalStateException.class, () -> pathMappingsHandler.addMapping(new ServletPathSpec("/loop"), contextHandler));
     }
 
-    private static class SimpleHandler extends Handler.Processor
+    private static class SimpleHandler extends Handler.Abstract.Blocking
     {
         private final String message;
 
@@ -266,12 +266,13 @@ public class PathMappingsHandlerTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             assertTrue(isStarted());
             response.setStatus(HttpStatus.OK_200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
             response.write(true, BufferUtil.toBuffer(message, StandardCharsets.UTF_8), callback);
+            return true;
         }
 
         @Override

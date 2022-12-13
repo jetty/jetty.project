@@ -137,10 +137,10 @@ public class RequestTest
     {
         final int bufferSize = 4096;
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -148,6 +148,7 @@ public class RequestTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 response.write(true, ByteBuffer.wrap(buf), Callback.NOOP);
+                return true;
             }
         });
         server.start();
@@ -173,10 +174,10 @@ public class RequestTest
     {
         final int bufferSize = 4096;
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 byte[] buf = new byte[bufferSize];
                 Arrays.fill(buf, (byte)'x');
@@ -193,6 +194,7 @@ public class RequestTest
                     bbuf.position(half);
                     response.write(true, bbuf, callback);
                 }));
+                return true;
             }
         });
         server.start();
@@ -220,10 +222,10 @@ public class RequestTest
     public void testDifferentCookies() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -238,6 +240,7 @@ public class RequestTest
                         buff.writeBytes(("Core Cookie: " + c.getName() + "=" + c.getValue() + "\n").getBytes());
                 }
                 response.write(true, ByteBuffer.wrap(buff.toByteArray()), callback);
+                return true;
             }
         });
         
@@ -272,16 +275,17 @@ public class RequestTest
     public void testGETNoConnectionClose() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 byte[] buf = new byte[4096];
                 Arrays.fill(buf, (byte)'x');
                 response.write(true, ByteBuffer.wrap(buf), callback);
+                return true;
             }
         });
 
@@ -306,16 +310,17 @@ public class RequestTest
     public void testHEADNoConnectionClose() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 byte[] buf = new byte[4096];
                 Arrays.fill(buf, (byte)'x');
                 response.write(true, ByteBuffer.wrap(buf), callback);
+                return true;
             }
         });
 
@@ -344,16 +349,17 @@ public class RequestTest
     public void testHEADWithConnectionClose() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 byte[] buf = new byte[4096];
                 Arrays.fill(buf, (byte)'x');
                 response.write(true, ByteBuffer.wrap(buf), callback);
+                return true;
             }
         });
 

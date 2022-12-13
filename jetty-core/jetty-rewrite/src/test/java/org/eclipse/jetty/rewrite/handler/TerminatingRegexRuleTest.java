@@ -38,13 +38,14 @@ public class TerminatingRegexRuleTest extends AbstractRuleTest
         RedirectRegexRule rule2 = new RedirectRegexRule("^/login.*$", "http://login.company.com/");
         rule2.setStatusCode(HttpStatus.SEE_OTHER_303);
         _rewriteHandler.addRule(rule2);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.CREATED_201);
                 callback.succeeded();
+                return true;
             }
         });
     }

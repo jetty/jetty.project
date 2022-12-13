@@ -205,14 +205,15 @@ public class AsyncRequestContentTest extends AbstractTest
         assertEquals(second, requestContent.get(1));
     }
 
-    private static class ConsumeInputHandler extends Handler.Processor
+    private static class ConsumeInputHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             Content.Source.consumeAll(request);
             response.setStatus(HttpStatus.OK_200);
             callback.succeeded();
+            return true;
         }
     }
 }

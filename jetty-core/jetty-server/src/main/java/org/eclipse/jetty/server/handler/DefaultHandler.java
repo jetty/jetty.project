@@ -52,7 +52,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * For requests to '/' a 404 with a list of known contexts is served.
  * For all other requests a normal 404 is served.
  */
-public class DefaultHandler extends Handler.Processor
+public class DefaultHandler extends Handler.Abstract.Blocking
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 
@@ -104,7 +104,7 @@ public class DefaultHandler extends Handler.Processor
     }
 
     @Override
-    public void doProcess(Request request, Response response, Callback callback) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         String method = request.getMethod();
 
@@ -124,13 +124,13 @@ public class DefaultHandler extends Handler.Processor
                 content = _favicon.slice();
             }
             response.write(true, content, callback);
-            return;
+            return true;
         }
 
         if (!isShowContexts() || !HttpMethod.GET.is(method) || !Request.getPathInContext(request).equals("/"))
         {
             Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
-            return;
+            return true;
         }
 
         response.setStatus(HttpStatus.NOT_FOUND_404);
@@ -211,6 +211,7 @@ public class DefaultHandler extends Handler.Processor
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.remaining());
             response.write(true, content, callback);
+            return true;
         }
     }
 

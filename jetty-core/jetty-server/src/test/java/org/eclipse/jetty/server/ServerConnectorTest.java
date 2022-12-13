@@ -62,10 +62,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConnectorTest
 {
-    public static class ReuseInfoHandler extends Handler.Processor
+    public static class ReuseInfoHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -94,6 +94,7 @@ public class ServerConnectorTest
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
             response.write(true, BufferUtil.toBuffer(buffer.toByteArray()), callback);
+            return true;
         }
     }
 
@@ -239,12 +240,13 @@ public class ServerConnectorTest
             connector2.setPort(port);
             server.addConnector(connector2);
 
-            server.setHandler(new Handler.Processor()
+            server.setHandler(new Handler.Abstract.NonBlocking()
             {
                 @Override
-                public void doProcess(Request request, Response response, Callback callback)
+                public boolean process(Request request, Response response, Callback callback)
                 {
                     callback.succeeded();
+                    return true;
                 }
             });
 

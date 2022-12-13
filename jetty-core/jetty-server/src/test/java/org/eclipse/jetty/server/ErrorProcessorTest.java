@@ -68,10 +68,10 @@ public class ErrorProcessorTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 String pathInContext = Request.getPathInContext(request);
                 if (pathInContext.startsWith("/badmessage/"))
@@ -122,10 +122,11 @@ public class ErrorProcessorTest
                         true,
                         "%s Error %s : %s%n".formatted(pathInContext, request.getAttribute(ErrorProcessor.ERROR_STATUS), request.getAttribute(ErrorProcessor.ERROR_MESSAGE)),
                         callback);
-                    return;
+                    return true;
                 }
 
                 Response.writeError(request, response, callback, 404);
+                return true;
             }
         });
         server.start();
@@ -666,12 +667,13 @@ public class ErrorProcessorTest
                 return true;
             }
         });
-        context.setHandler(new Handler.Processor()
+        context.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Response.writeError(request, response, callback, 444);
+                return true;
             }
         });
 

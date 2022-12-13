@@ -192,14 +192,15 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void testRequestHasHTTP2Version() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -217,10 +218,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void testDelayDemandAfterHeaders() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Callback.Completable.with(c -> response.write(false, ByteBuffer.allocate(1), c))
                     .whenComplete((r, x) ->
@@ -230,6 +231,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         else
                             response.write(true, ByteBuffer.allocate(2), callback);
                     });
+                return true;
             }
         });
 
@@ -384,15 +386,16 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
                 assertEquals(query, httpURI.getQuery());
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -409,15 +412,16 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         String path = "/path";
         String query = "a=b";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
                 assertEquals(query, httpURI.getQuery());
                 callback.succeeded();
+                return true;
             }
         });
 

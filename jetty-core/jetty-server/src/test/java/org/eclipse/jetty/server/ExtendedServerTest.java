@@ -141,13 +141,14 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
     }
 
-    protected static class DispatchedAtHandler extends Handler.Processor
+    protected static class DispatchedAtHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.write(true, BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"), callback);
+            return true;
         }
     }
 }

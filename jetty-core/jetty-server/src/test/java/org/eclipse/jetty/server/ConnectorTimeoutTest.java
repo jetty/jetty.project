@@ -160,7 +160,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         startServer(new HelloWorldHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -170,7 +170,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {
                     e.printStackTrace();
                 }
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -218,7 +218,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         startServer(new EchoHandler()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -228,7 +228,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {
                     e.printStackTrace();
                 }
-                super.doProcess(request, response, callback);
+                return super.process(request, response, callback);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -722,10 +722,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         });
     }
 
-    protected static class SlowResponseHandler extends Handler.Processor
+    protected static class SlowResponseHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 
@@ -744,13 +744,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 }
             }
             response.write(true, null, callback);
+            return true;
         }
     }
 
-    protected static class HugeResponseHandler extends Handler.Processor
+    protected static class HugeResponseHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             byte[] buffer = new byte[128 * 1024 * 1024];
@@ -761,13 +762,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 buffer[i * 1024 + 1023] = '\n';
             }
             response.write(true, ByteBuffer.wrap(buffer), callback);
+            return true;
         }
     }
 
-    protected static class WaitHandler extends Handler.Processor
+    protected static class WaitHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             try
@@ -779,6 +781,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 e.printStackTrace();
             }
             Content.Sink.write(response, true, "Hello World\r\n", callback);
+            return true;
         }
     }
 }

@@ -41,15 +41,16 @@ public class AsyncIOTest extends AbstractTest
     @Test
     public void testLastContentAvailableBeforeService() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the data to fully arrive.
                 sleep(1000);
                 Content.Source.consumeAll(request);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -77,13 +78,14 @@ public class AsyncIOTest extends AbstractTest
     @Test
     public void testLastContentAvailableAfterServiceReturns() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -118,7 +120,7 @@ public class AsyncIOTest extends AbstractTest
         fail();
 /*
         final AtomicInteger count = new AtomicInteger();
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

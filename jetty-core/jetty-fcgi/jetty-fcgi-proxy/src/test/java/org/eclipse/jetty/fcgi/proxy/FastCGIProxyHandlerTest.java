@@ -146,15 +146,16 @@ public class FastCGIProxyHandlerTest
         new Random().nextBytes(data);
 
         String path = "/foo/index.php";
-        start(sendStatus200, new Handler.Processor()
+        start(sendStatus200, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
                 assertEquals(path, Request.getPathInContext(request));
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -191,15 +192,16 @@ public class FastCGIProxyHandlerTest
         String remotePath = "/remote/index.php";
         String pathAttribute = "_path_attribute";
         String queryAttribute = "_query_attribute";
-        start(sendStatus200, new Handler.Processor()
+        start(sendStatus200, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), startsWith(originalPath));
                 assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
                 assertThat(Request.getPathInContext(request), endsWith(remotePath));
                 callback.succeeded();
+                return true;
             }
         });
         fcgiHandler.setOriginalPathAttribute(pathAttribute);
@@ -238,12 +240,13 @@ public class FastCGIProxyHandlerTest
         unixDomainPath = path;
         byte[] content = new byte[512];
         new Random().nextBytes(content);
-        start(true, new Handler.Processor()
+        start(true, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 

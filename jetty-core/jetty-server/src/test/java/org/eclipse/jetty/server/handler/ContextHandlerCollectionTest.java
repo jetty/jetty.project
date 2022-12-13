@@ -416,7 +416,7 @@ public class ContextHandlerCollectionTest
         }
     }
 
-    private static final class IsHandledHandler extends Handler.Processor
+    private static final class IsHandledHandler extends Handler.Abstract.Blocking
     {
         private boolean handled;
         private final String name;
@@ -432,12 +432,13 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public void doProcess(Request request, Response response, Callback callback)
+        public boolean process(Request request, Response response, Callback callback)
         {
             this.handled = true;
             response.getHeaders().put("X-IsHandled-Name", name);
             ByteBuffer nameBuffer = BufferUtil.toBuffer(name, StandardCharsets.UTF_8);
             response.write(true, nameBuffer, callback);
+            return true;
         }
 
         public void reset()

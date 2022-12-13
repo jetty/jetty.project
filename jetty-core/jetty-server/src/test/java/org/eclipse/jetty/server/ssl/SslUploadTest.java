@@ -112,13 +112,14 @@ public class SslUploadTest
         assertEquals(requestContent.length, 0);
     }
 
-    private static class EmptyHandler extends Handler.Processor
+    private static class EmptyHandler extends Handler.Abstract.Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
             response.write(true, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()), callback);
+            return true;
         }
     }
 }

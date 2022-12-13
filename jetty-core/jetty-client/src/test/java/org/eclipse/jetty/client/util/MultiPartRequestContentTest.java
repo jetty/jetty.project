@@ -422,10 +422,10 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         return bytes;
     }
 
-    private abstract static class AbstractMultiPartHandler extends Handler.Processor
+    private abstract static class AbstractMultiPartHandler extends Handler.Abstract.NonBlocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             Path tmpDir = MavenTestingUtils.getTargetTestingPath();
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
@@ -443,6 +443,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             {
                 Response.writeError(request, response, callback, x);
             }
+            return true;
         }
 
         protected abstract void process(MultiPartFormData.Parts parts) throws Exception;

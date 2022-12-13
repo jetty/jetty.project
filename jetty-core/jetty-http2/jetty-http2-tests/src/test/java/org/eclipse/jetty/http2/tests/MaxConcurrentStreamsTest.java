@@ -99,14 +99,15 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testOneConcurrentStream() throws Exception
     {
         long sleep = 1000;
-        start(1, new Handler.Processor()
+        start(1, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Sleep a bit to allow the second request to be queued.
                 sleep(sleep);
                 callback.succeeded();
+                return true;
             }
         });
         httpClient.setMaxConnectionsPerDestination(1);
@@ -141,12 +142,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testManyIterationsWithConcurrentStreams() throws Exception
     {
         int concurrency = 1;
-        start(concurrency, new Handler.Processor()
+        start(concurrency, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -174,13 +176,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testSmallMaxConcurrentStreamsExceededOnClient() throws Exception
     {
         int maxConcurrentStreams = 1;
-        startServer(maxConcurrentStreams, new Handler.Processor()
+        startServer(maxConcurrentStreams, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(1000);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -256,13 +259,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     {
         int maxStreams = 2;
         long sleep = 1000;
-        start(maxStreams, new Handler.Processor()
+        start(maxStreams, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
                 callback.succeeded();
+                return true;
             }
         });
         httpClient.setMaxConnectionsPerDestination(1);
@@ -299,13 +303,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testAbortedWhileQueued() throws Exception
     {
         long sleep = 1000;
-        start(1, new Handler.Processor()
+        start(1, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
                 callback.succeeded();
+                return true;
             }
         });
         httpClient.setMaxConnectionsPerDestination(1);
@@ -329,13 +334,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     {
         int maxConcurrent = 10;
         long sleep = 500;
-        start(maxConcurrent, new Handler.Processor()
+        start(maxConcurrent, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
                 callback.succeeded();
+                return true;
             }
         });
         httpClient.setMaxConnectionsPerDestination(1);
@@ -357,12 +363,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testManyConcurrentRequestsWithSmallConcurrentStreams() throws Exception
     {
         byte[] data = new byte[64 * 1024];
-        start(1, new Handler.Processor()
+        start(1, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -416,14 +423,15 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testTwoStreamsFirstTimesOut() throws Exception
     {
         long timeout = 1000;
-        start(1, new Handler.Processor()
+        start(1, new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 if (Request.getPathInContext(request).endsWith("/1"))
                     sleep(2 * timeout);
                 callback.succeeded();
+                return true;
             }
         });
         httpClient.setMaxConnectionsPerDestination(1);

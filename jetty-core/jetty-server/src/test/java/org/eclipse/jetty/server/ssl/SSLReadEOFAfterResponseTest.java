@@ -24,11 +24,11 @@ import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.gzip.GzipHandlerTest;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -75,10 +75,10 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new Handler.Processor.Blocking()
+        server.setHandler(new GzipHandlerTest.DumpHandler.Blocking()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 // First: read the whole content exactly
                 int length = bytes.length;
@@ -118,6 +118,7 @@ public class SSLReadEOFAfterResponseTest
                 if (!chunk.isLast())
                     throw new IllegalStateException();
                 callback.succeeded();
+                return true;
             }
         });
         server.start();

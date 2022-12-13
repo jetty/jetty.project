@@ -147,10 +147,10 @@ public class MovedContextHandler extends ContextHandler
         _cacheControl = cacheControl == null ? null : new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cacheControl);
     }
 
-    private class Redirector extends Handler.Processor
+    private class Redirector extends Blocking
     {
         @Override
-        public void doProcess(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             String redirectURI = getRedirectURI();
             if (redirectURI == null)
@@ -187,6 +187,7 @@ public class MovedContextHandler extends ContextHandler
                 response.getHeaders().put(cacheControl);
 
             callback.succeeded();
+            return true;
         }
     }
 }

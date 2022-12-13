@@ -262,10 +262,10 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch commitLatch = new CountDownLatch(1);
         CountDownLatch resetLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
                 byte[] data = "AFTER RESET".getBytes(charset);
@@ -307,6 +307,7 @@ public class StreamResetTest extends AbstractTest
                 {
                     dataLatch.countDown();
                 }
+                return true;
             }
         });
 
@@ -346,10 +347,10 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch commitLatch = new CountDownLatch(1);
         CountDownLatch resetLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
                 ByteBuffer data = charset.encode("AFTER RESET");
@@ -393,6 +394,7 @@ public class StreamResetTest extends AbstractTest
                         x.printStackTrace();
                     }
                 }).start();
+                return true;
             }
         });
 
@@ -424,14 +426,15 @@ public class StreamResetTest extends AbstractTest
     public void testClientResetConsumesQueuedData() throws Exception
     {
         CountDownLatch dataLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 // Wait for the data to be sent.
                 assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -473,10 +476,10 @@ public class StreamResetTest extends AbstractTest
         AtomicReference<CountDownLatch> requestOnServer = new AtomicReference<>();
         AtomicBoolean blocker = new AtomicBoolean(true);
         Object lock = new Object();
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 requestOnServer.get().countDown();
 
@@ -490,6 +493,7 @@ public class StreamResetTest extends AbstractTest
                 }
 
                 Content.copy(request, response, callback);
+                return true;
             }
         });
         server.start();
@@ -581,10 +585,10 @@ public class StreamResetTest extends AbstractTest
     {
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            start(new Handler.Processor()
+            start(new Handler.Abstract()
             {
                 @Override
-                public void doProcess(Request request, Response response, Callback callback) throws Exception
+                public boolean process(Request request, Response response, Callback callback) throws Exception
                 {
                     // Wait to let the data sent by the client to be queued.
                     Thread.sleep(1000);
@@ -626,10 +630,10 @@ public class StreamResetTest extends AbstractTest
     {
         int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         CountDownLatch writeLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 new Thread(() ->
                 {
@@ -648,6 +652,7 @@ public class StreamResetTest extends AbstractTest
                         x.printStackTrace();
                     }
                 }).start();
+                return true;
             }
         });
 
@@ -687,10 +692,10 @@ public class StreamResetTest extends AbstractTest
     {
         int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         CountDownLatch writeLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 try
                 {
@@ -700,6 +705,7 @@ public class StreamResetTest extends AbstractTest
                 {
                     writeLatch.countDown();
                 }
+                return true;
             }
         });
 
@@ -745,16 +751,17 @@ public class StreamResetTest extends AbstractTest
     {
         int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         CountDownLatch writeLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[10 * windowSize]), Callback.from(callback::succeeded, x ->
                 {
                     writeLatch.countDown();
                     callback.succeeded();
                 }));
+                return true;
             }
         });
 
@@ -795,10 +802,10 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch requestLatch = new CountDownLatch(1);
         CountDownLatch readLatch = new CountDownLatch(1);
         CountDownLatch failureLatch = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -812,6 +819,7 @@ public class StreamResetTest extends AbstractTest
                 {
                     failureLatch.countDown();
                 }
+                return true;
             }
         });
 
@@ -844,10 +852,10 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch flusherLatch = new CountDownLatch(1);
         CountDownLatch writeLatch1 = new CountDownLatch(1);
         CountDownLatch writeLatch2 = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 flusherRef.set(((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint()).getWriteFlusher());
                 flusherLatch.countDown();
@@ -871,6 +879,7 @@ public class StreamResetTest extends AbstractTest
                         writeLatch2.countDown();
                     }
                 }
+                return true;
             }
         });
 
@@ -922,10 +931,10 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch requestLatch1 = new CountDownLatch(1);
         CountDownLatch requestLatch2 = new CountDownLatch(1);
         CountDownLatch writeLatch1 = new CountDownLatch(1);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void doProcess(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals("/1"))
@@ -934,6 +943,7 @@ public class StreamResetTest extends AbstractTest
                     service2(response, callback);
                 else
                     throw new IllegalArgumentException();
+                return true;
             }
 
             private void service1(Request request, Response response, Callback callback) throws Exception

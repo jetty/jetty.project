@@ -225,10 +225,10 @@ public class ThreadStarvationTest
             _server.addConnector(connector);
 
             AtomicInteger count = new AtomicInteger(0);
-            _server.setHandler(new Handler.Processor()
+            _server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void doProcess(Request request, Response response, Callback callback) throws Exception
+                public boolean process(Request request, Response response, Callback callback) throws Exception
                 {
                     int c = count.getAndIncrement();
                     if (c < parties)
@@ -236,6 +236,7 @@ public class ThreadStarvationTest
                     response.setStatus(200);
                     response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, 13);
                     Content.Sink.write(response, true, "Hello World!\n", callback);
+                    return true;
                 }
             });
 

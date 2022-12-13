@@ -178,12 +178,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testGETResponseWithContent(Scenario scenario) throws Exception
     {
         byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -273,10 +274,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         String paramName = "a";
         String paramValue = "\u20AC";
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -285,6 +286,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                     Content.Sink.write(response, true, value, callback);
                 }
+                return true;
             }
         });
 
@@ -305,10 +307,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String paramName = "a";
         String paramValue = "\u20AC";
         String encodedParamValue = URLEncoder.encode(paramValue, UTF_8);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
@@ -317,6 +319,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                     Content.Sink.write(response, true, value, callback);
                 }
+                return true;
             }
         });
 
@@ -338,10 +341,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         byte[] content = {0, 1, 2, 3};
         String paramName = "a";
         String paramValue = "\u20AC";
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
                 Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
@@ -351,6 +354,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
                     response.write(true, ByteBuffer.wrap(content), callback);
                 }
+                return true;
             }
         });
 
@@ -762,12 +766,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testHEADWithResponseContentLength(Scenario scenario) throws Exception
     {
         int length = 1024;
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(new byte[length]), callback);
+                return true;
             }
         });
 
@@ -1106,12 +1111,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         byte[] content = new byte[512];
         new Random().nextBytes(content);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 
@@ -1168,16 +1174,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testHTTP10WithKeepAliveAndContentLength(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Send the headers at this point, then write the content.
                 byte[] content = "TEST".getBytes(UTF_8);
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 Content.Sink.write(response, false, null);
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 
@@ -1196,14 +1203,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testHTTP10WithKeepAliveAndNoContentLength(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Send the headers at this point, then write the content
                 Content.Sink.write(response, false, null);
                 Content.Sink.write(response, true, "TEST", callback);
+                return true;
             }
         });
 
@@ -1253,13 +1261,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testLongPollIsAbortedWhenClientIsStopped(Scenario scenario) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Do not complete the callback.
                 latch.countDown();
+                return true;
             }
         });
 
@@ -1329,15 +1338,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         byte[] data = new byte[length];
         new Random().nextBytes(data);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
                 if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
                     response.getHeaders().put("Connection", "close");
                 response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -1365,10 +1375,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         int maxRetries = 3;
         AtomicInteger requests = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(2);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Source.consumeAll(request);
                 int count = requests.incrementAndGet();
@@ -1377,6 +1387,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 else
                     response.setStatus(HttpStatus.NOT_FOUND_404);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -1396,12 +1407,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testCompleteNotInvokedUntilContentConsumed(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.allocate(1024), callback);
+                return true;
             }
         });
 
@@ -1554,13 +1566,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     public void testIPv6HostWithHTTP10(Scenario scenario) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, org.eclipse.jetty.server.Request.getServerName(request), callback);
+                return true;
             }
         });
 
@@ -1724,12 +1737,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void doProcess(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(bytes), callback);
+                return true;
             }
         });
 
