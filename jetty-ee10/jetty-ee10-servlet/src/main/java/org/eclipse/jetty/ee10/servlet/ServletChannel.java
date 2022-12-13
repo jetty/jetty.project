@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
@@ -418,9 +417,8 @@ public class ServletChannel
 
                     case DISPATCH:
                     {
-                        dispatch(DispatcherType.REQUEST, () ->
+                        dispatch(() ->
                         {
-                            ServletContextHandler.ServletContextApi servletContextApi = getServletContextContext();
                             ServletHandler servletHandler = _context.getServletContextHandler().getServletHandler();
                             ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
 
@@ -432,7 +430,7 @@ public class ServletChannel
 
                     case ASYNC_DISPATCH:
                     {
-                        dispatch(DispatcherType.ASYNC, () ->
+                        dispatch(() ->
                         {
                             HttpURI uri;
                             String pathInContext = Request.getPathInContext(_servletContextRequest);
@@ -486,7 +484,7 @@ public class ServletChannel
                                 code = HttpStatus.INTERNAL_SERVER_ERROR_500;
                             getResponse().setStatus(code);
 
-                            // The handling of the original dispatch failed and we are now going to either generate
+                            // The handling of the original dispatch failed, and we are now going to either generate
                             // and error response ourselves or dispatch for an error page.  If there is content left over
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
@@ -508,7 +506,7 @@ public class ServletChannel
                                 // _state.completing();
                                 try (Blocker.Callback blocker = Blocker.callback())
                                 {
-                                    dispatch(DispatcherType.ERROR, () -> errorProcessor.process(_servletContextRequest, getResponse(), blocker));
+                                    dispatch(() -> errorProcessor.process(_servletContextRequest, getResponse(), blocker));
                                     blocker.block();
                                 }
                             }
@@ -646,7 +644,7 @@ public class ServletChannel
         return false;
     }
 
-    private void dispatch(DispatcherType type, Dispatchable dispatchable) throws Exception
+    private void dispatch(Dispatchable dispatchable) throws Exception
     {
         try
         {
@@ -756,11 +754,6 @@ public class ServletChannel
     public boolean isExpecting100Continue()
     {
         return _expects100Continue;
-    }
-
-    public boolean isExpecting102Processing()
-    {
-        return false;
     }
 
     @Override
@@ -920,6 +913,7 @@ public class ServletChannel
      * then an instance of {@code TransientListeners} must be added to the connector
      * in order for them to be invoked.
      */
+    // TODO: looks like a lot of these methods are never called.
     public interface Listener extends EventListener
     {
         /**
@@ -1066,7 +1060,7 @@ public class ServletChannel
         }
     }
 
-    private class Listeners implements Listener
+    private static class Listeners implements Listener
     {
         private final List<Listener> _listeners;
 
@@ -1132,7 +1126,7 @@ public class ServletChannel
         @Override
         public void onRequestFailure(Request request, Throwable failure)
         {
-            _listeners.forEach(l -> notify(l::onDispatchFailure, request, failure));
+            _listeners.forEach(l -> notify(l::onRequestFailure, request, failure));
         }
 
         @Override
@@ -1150,7 +1144,7 @@ public class ServletChannel
         @Override
         public void onResponseContent(Request request, ByteBuffer content)
         {
-            _listeners.forEach(l -> notify(l::onRequestContent, request, content));
+            _listeners.forEach(l -> notify(l::onResponseContent, request, content));
         }
 
         @Override
@@ -1162,7 +1156,7 @@ public class ServletChannel
         @Override
         public void onResponseFailure(Request request, Throwable failure)
         {
-            _listeners.forEach(l -> notify(l::onDispatchFailure, request, failure));
+            _listeners.forEach(l -> notify(l::onResponseFailure, request, failure));
         }
 
         @Override
