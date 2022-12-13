@@ -1511,7 +1511,7 @@ public class Request implements HttpServletRequest
         if (getRequestedSessionId() == null || _coreSession == null)
             return false;
 
-        return (_sessionManager.getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId()));
+        return (_coreSession.isValid() &&  _sessionManager.getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId()));
     }
 
     @Override
