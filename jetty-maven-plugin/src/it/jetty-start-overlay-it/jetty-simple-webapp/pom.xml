@@ -88,8 +88,6 @@
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <context.path>/setbycontextxml</context.path>
-            <!-- pingServlet>true</pingServlet -->
-            <!-- helloServlet>true</helloServlet -->
             <contentCheck>Simple Base Webapp Index</contentCheck>
             <pathToCheck>/index.html</pathToCheck>
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
