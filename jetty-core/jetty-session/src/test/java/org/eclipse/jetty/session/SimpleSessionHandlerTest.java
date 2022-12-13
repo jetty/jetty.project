@@ -57,7 +57,7 @@ public class SimpleSessionHandlerTest
         sessionManager.setUsingURLs(false);
         _server.setHandler(sessionManager);
 
-        sessionManager.setHandler(new Handler.Abstract.NonBlocking()
+        sessionManager.setHandler(new Handler.Abstract.Blocking()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback)

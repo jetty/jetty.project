@@ -79,6 +79,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
+    public InvocationType getInvocationType()
+    {
+        // Session operations may be blocking
+        return InvocationType.BLOCKING;
+    }
+
+    @Override
     public Handler getHandler()
     {
         return _handler;
