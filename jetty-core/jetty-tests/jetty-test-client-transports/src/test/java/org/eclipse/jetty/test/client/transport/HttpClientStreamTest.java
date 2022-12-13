@@ -306,8 +306,8 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                latch.countDown();
                 super.onContent(response, chunk, demander);
+                latch.countDown();
             }
         };
         client.newRequest(newURI(transport))
@@ -352,15 +352,15 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                contentLatch.countDown();
                 super.onContent(response, chunk, demander);
+                contentLatch.countDown();
             }
 
             @Override
             public void onFailure(Response response, Throwable failure)
             {
-                failedLatch.countDown();
                 super.onFailure(response, failure);
+                failedLatch.countDown();
             }
         };
         client.newRequest(newURI(transport))
@@ -402,15 +402,15 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                contentLatch.countDown();
                 super.onContent(response, chunk, demander);
+                contentLatch.countDown();
             }
 
             @Override
             public void onFailure(Response response, Throwable failure)
             {
-                failedLatch.countDown();
                 super.onFailure(response, failure);
+                failedLatch.countDown();
             }
         };
         client.newRequest(newURI(transport))

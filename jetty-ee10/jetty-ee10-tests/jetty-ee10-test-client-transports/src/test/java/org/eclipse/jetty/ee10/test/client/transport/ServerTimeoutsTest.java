@@ -276,13 +276,13 @@ public class ServerTimeoutsTest extends AbstractTest
         long idleTimeout = 2500;
         setStreamIdleTimeout(idleTimeout);
 
-        BlockingQueue<Runnable> demands = new LinkedBlockingQueue<>();
+        BlockingQueue<Runnable> demanders = new LinkedBlockingQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentAsync((response, chunk, demand) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
                 // Do not succeed the callback so the server will block writing.
-                demands.offer(demand);
+                demanders.offer(demander);
             })
             .send(result ->
             {
@@ -295,10 +295,10 @@ public class ServerTimeoutsTest extends AbstractTest
         // After the server stopped sending, consume on the client to read the early EOF.
         while (true)
         {
-            Runnable demand = demands.poll(1, TimeUnit.SECONDS);
-            if (demand == null)
+            Runnable demander = demanders.poll(1, TimeUnit.SECONDS);
+            if (demander == null)
                 break;
-            demand.run();
+            demander.run();
         }
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
@@ -597,11 +597,11 @@ public class ServerTimeoutsTest extends AbstractTest
         BlockingQueue<Object> objects = new LinkedBlockingQueue<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentAsync((response, chunk, demand) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
                 objects.offer(chunk.remaining());
                 chunk.release();
-                objects.offer(demand);
+                objects.offer(demander);
             })
             .send(result ->
             {
@@ -619,8 +619,8 @@ public class ServerTimeoutsTest extends AbstractTest
                 break;
             long ms = bytes * 1000L / readRate;
             Thread.sleep(ms);
-            Runnable demand = (Runnable)objects.poll();
-            demand.run();
+            Runnable demander = (Runnable)objects.poll();
+            demander.run();
         }
 
         assertTrue(serverLatch.await(15, TimeUnit.SECONDS));

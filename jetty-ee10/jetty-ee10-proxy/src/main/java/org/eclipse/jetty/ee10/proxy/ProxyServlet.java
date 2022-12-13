@@ -216,15 +216,7 @@ public class ProxyServlet extends AbstractProxyServlet
                 content.get(buffer);
                 offset = 0;
             }
-            Callback callback = Callback.from(() ->
-            {
-                chunk.release();
-                demander.run();
-            }, (x) ->
-            {
-                chunk.release();
-                proxyResponse.abort(x);
-            });
+            Callback callback = Callback.from(chunk::release, Callback.from(demander, proxyResponse::abort));
             onResponseContent(request, response, proxyResponse, buffer, offset, length, callback);
         }
 

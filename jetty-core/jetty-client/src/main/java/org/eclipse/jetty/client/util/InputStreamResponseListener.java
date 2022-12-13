@@ -28,13 +28,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -72,13 +72,13 @@ import org.slf4j.LoggerFactory;
 public class InputStreamResponseListener extends Listener.Adapter
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
-    private static final Tuple EOF = new Tuple(Content.Chunk.EOF, Callback.NOOP);
+    private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, (x) -> {});
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
     private final AtomicReference<InputStream> stream = new AtomicReference<>();
-    private final Queue<Tuple> tuples = new ArrayDeque<>();
+    private final Queue<ChunkCallback> chunkCallbacks = new ArrayDeque<>();
     private Response response;
     private Result result;
     private Throwable failure;
@@ -118,7 +118,7 @@ public class InputStreamResponseListener extends Listener.Adapter
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing content {}", chunk);
-                tuples.add(new Tuple(chunk, Callback.from(demander, response::abort)));
+                chunkCallbacks.add(new ChunkCallback(chunk, demander, response::abort));
                 l.signalAll();
             }
         }
@@ -138,7 +138,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         try (AutoLock.WithCondition l = lock.lock())
         {
             if (!closed)
-                tuples.add(EOF);
+                chunkCallbacks.add(EOF);
             l.signalAll();
         }
 
@@ -149,34 +149,34 @@ public class InputStreamResponseListener extends Listener.Adapter
     @Override
     public void onFailure(Response response, Throwable failure)
     {
-        List<Tuple> tuples;
+        List<ChunkCallback> chunkCallbacks;
         try (AutoLock.WithCondition l = lock.lock())
         {
             if (this.failure != null)
                 return;
             this.failure = failure;
-            tuples = drain();
+            chunkCallbacks = drain();
             l.signalAll();
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("Content failure", failure);
 
-        tuples.forEach(tuple -> tuple.failed(failure));
+        chunkCallbacks.forEach(chunkCallback -> chunkCallback.releaseAndFail(failure));
     }
 
     @Override
     public void onComplete(Result result)
     {
         Throwable failure = result.getFailure();
-        List<Tuple> tuples = Collections.emptyList();
+        List<ChunkCallback> chunkCallbacks = Collections.emptyList();
         try (AutoLock.WithCondition l = lock.lock())
         {
             this.result = result;
             if (result.isFailed() && this.failure == null)
             {
                 this.failure = failure;
-                tuples = drain();
+                chunkCallbacks = drain();
             }
             // Notify the response latch in case of request failures.
             responseLatch.countDown();
@@ -192,7 +192,7 @@ public class InputStreamResponseListener extends Listener.Adapter
                 LOG.debug("Result failure", failure);
         }
 
-        tuples.forEach(t -> t.failed(failure));
+        chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
     }
 
     /**
@@ -262,18 +262,18 @@ public class InputStreamResponseListener extends Listener.Adapter
         return result;
     }
 
-    private List<Tuple> drain()
+    private List<ChunkCallback> drain()
     {
-        List<Tuple> failures = new ArrayList<>();
+        List<ChunkCallback> failures = new ArrayList<>();
         try (AutoLock ignored = lock.lock())
         {
             while (true)
             {
-                Tuple tuple = tuples.peek();
-                if (tuple == null || tuple == EOF)
+                ChunkCallback chunkCallback = chunkCallbacks.peek();
+                if (chunkCallback == null || chunkCallback == EOF)
                     break;
-                failures.add(tuple);
-                tuples.poll();
+                failures.add(chunkCallback);
+                chunkCallbacks.poll();
             }
         }
         return failures;
@@ -297,16 +297,16 @@ public class InputStreamResponseListener extends Listener.Adapter
             try
             {
                 int result;
-                Tuple tuple;
+                ChunkCallback chunkCallback;
                 try (AutoLock.WithCondition l = lock.lock())
                 {
                     while (true)
                     {
-                        tuple = tuples.peek();
-                        if (tuple == EOF)
+                        chunkCallback = chunkCallbacks.peek();
+                        if (chunkCallback == EOF)
                             return -1;
 
-                        if (tuple != null)
+                        if (chunkCallback != null)
                             break;
 
                         if (failure != null)
@@ -318,16 +318,16 @@ public class InputStreamResponseListener extends Listener.Adapter
                         l.await();
                     }
 
-                    ByteBuffer buffer = tuple.chunk().getByteBuffer();
+                    ByteBuffer buffer = chunkCallback.chunk().getByteBuffer();
                     result = Math.min(buffer.remaining(), length);
                     buffer.get(b, offset, result);
                     if (!buffer.hasRemaining())
-                        tuples.poll();
+                        chunkCallbacks.poll();
                     else
-                        tuple = null;
+                        chunkCallback = null;
                 }
-                if (tuple != null)
-                    tuple.succeeded();
+                if (chunkCallback != null)
+                    chunkCallback.releaseAndSucceed();
                 return result;
             }
             catch (InterruptedException x)
@@ -347,13 +347,13 @@ public class InputStreamResponseListener extends Listener.Adapter
         @Override
         public void close() throws IOException
         {
-            List<Tuple> tuples;
+            List<ChunkCallback> chunkCallbacks;
             try (AutoLock.WithCondition l = lock.lock())
             {
                 if (closed)
                     return;
                 closed = true;
-                tuples = drain();
+                chunkCallbacks = drain();
                 l.signalAll();
             }
 
@@ -361,26 +361,24 @@ public class InputStreamResponseListener extends Listener.Adapter
                 LOG.debug("InputStream close");
 
             Throwable failure = new AsynchronousCloseException();
-            tuples.forEach(t -> t.failed(failure));
+            chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
 
             super.close();
         }
     }
 
-    private record Tuple(Content.Chunk chunk, Callback callback) implements Callback
+    private record ChunkCallback(Content.Chunk chunk, Runnable success, Consumer<Throwable> throwableConsumer)
     {
-        @Override
-        public void succeeded()
+        private void releaseAndSucceed()
         {
             chunk.release();
-            callback.succeeded();
+            success.run();
         }
 
-        @Override
-        public void failed(Throwable x)
+        private void releaseAndFail(Throwable x)
         {
             chunk.release();
-            callback.failed(x);
+            throwableConsumer.accept(x);
         }
     }
 }

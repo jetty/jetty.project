@@ -153,20 +153,17 @@ public interface Response
         @Override
         default void onContent(Response response, Content.Chunk chunk, Runnable demander)
         {
-            boolean demand = false;
             try
             {
                 onContent(response, chunk.getByteBuffer());
                 chunk.release();
-                demand = true;
+                demander.run();
             }
             catch (Throwable x)
             {
                 chunk.release();
                 response.abort(x);
             }
-            if (demand)
-                demander.run();
         }
     }
 

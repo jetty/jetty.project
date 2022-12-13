@@ -145,7 +145,7 @@ public class HttpClientDemandTest extends AbstractTest
         client.setResponseBufferSize(bufferSize);
         client.start();
 
-        Queue<Runnable> demandQueue = new ConcurrentLinkedQueue<>();
+        Queue<Runnable> demanderQueue = new ConcurrentLinkedQueue<>();
         Queue<Content.Chunk> contentQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
@@ -154,9 +154,9 @@ public class HttpClientDemandTest extends AbstractTest
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
-                    // Don't demand and don't succeed callbacks.
-                    demandQueue.offer(demander);
+                    // Don't demand and don't release chunks.
                     contentQueue.offer(chunk);
+                    demanderQueue.offer(demander);
                 }
 
                 @Override
@@ -172,30 +172,30 @@ public class HttpClientDemandTest extends AbstractTest
         // Wait for the client to receive data from the server.
         // Wait a bit more to be sure it only receives 1 buffer.
         Thread.sleep(1000);
-        assertEquals(1, demandQueue.size());
+        assertEquals(1, demanderQueue.size());
         assertEquals(1, contentQueue.size());
 
         // Demand one more buffer.
-        Runnable demand = demandQueue.poll();
-        assertNotNull(demand);
-        demand.run();
+        Runnable demander = demanderQueue.poll();
+        assertNotNull(demander);
+        demander.run();
         // The client should have received just `count` more buffers.
         Thread.sleep(1000);
-        assertEquals(1, demandQueue.size());
+        assertEquals(1, demanderQueue.size());
         assertEquals(2, contentQueue.size());
 
         // Demand all the rest.
-        demand = demandQueue.poll();
-        assertNotNull(demand);
+        demander = demanderQueue.poll();
+        assertNotNull(demander);
         long begin = NanoTime.now();
         // Spin on demand until content.length bytes have been read.
         while (content.length > contentQueue.stream().map(Content.Chunk::getByteBuffer).mapToInt(Buffer::remaining).sum())
         {
             if (NanoTime.millisSince(begin) > 5000L)
                 fail("Failed to demand all content");
-            demand.run();
+            demander.run();
         }
-        demand.run(); // Demand one last time to get EOF.
+        demander.run(); // Demand one last time to get EOF.
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
 
         byte[] received = new byte[content.length];

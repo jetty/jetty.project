@@ -219,22 +219,21 @@ The response content is provided by the `HttpClient` implementation to applicati
 The listener that follows this model is `Response.ContentSourceListener`.
 
 After the response headers have been processed by the `HttpClient` implementation, `Response.ContentSourceListener.onContentSource(response, contentSource)` is invoked once and only once.
-This allows the application to control precisely the read/demand loop: when to read a chunk, how to handle it and when to demand the next one.
+This allows the application to control precisely the read/demand loop: when to read a chunk, how to process it and when to demand the next one.
 
-A `org.eclipse.jetty.io.Content.Source` read/demand implementation akin to the idiomatic one must be provided: reading a `Content.Chunk` from the `contentSource`, demanding the next one if it is null, reporting if it is an error, processing its `buffer` then releasing it, and finally demanding the next one again if it is not terminal.
+You must provide a `org.eclipse.jetty.io.Content.Source` read/demand implementation that reads a `Content.Chunk` from the provided `Content.Source`; if the read chunk is `null`, `Content.Source.demand(Runnable)` should be called so that the demand callback is called back when more chunks are available; if the chunk is an instance of `Content.Chunk.Error` then the error should be processed; otherwise the chunk should be processed by consuming and then releasing the chunk's `ByteBuffer`; and finally either trying to read another chunk, or demanding for another chunk (unless the current chunk is the last).
 
-IMPORTANT: releasing the `Content.Chunk` must be done only after the bytes in the `buffer` returned by `getByteBuffer()` have been consumed.
+IMPORTANT: Calling `Content.Chunk.release()` must be done only after the bytes in the `ByteBuffer` returned by `Content.Chunk.getByteBuffer()` have been consumed.
 When the `Content.Chunk` is released, the `HttpClient` implementation may reuse the `buffer` and overwrite the bytes with different bytes; if the application looks at the `buffer` _after_ having released the `Content.Chunk` is may see other, unrelated, bytes.
 
-Applications will typically read just one `Content.Chunk` via `contentSource.read()` then demand the next one via `contentSource.demand(() -> onContentSource(request, contentSource))`, but may decide to call `contentSource.read()` until it returns `null`.
-The application uses the `demand` object to demand more content chunks.
-Applications will typically demand for just one more content via `demand.accept(1)`, but may decide to demand for more via `demand.accept(2)` or demand "infinitely" once via `demand.accept(Long.MAX_VALUE)`.
+// TODO: add example code snippet
 
-Applications that call `contentSource.read()` more than once must remember that the request will not be aborted (in case of a timeout or an async call to `request.abort(Throwable)`) for as long as `onContentSource(request, contentSource)` or the callback passed to `contentSource.demand(Runnable callback)` has not returned.
+The invocation of `onContentSource(Request, Content.Source)` and of the demand callback passed to `contentSource.demand(Runnable)` are serialized with respect to asynchronous events such as timeouts or an asynchronous call to `Request.abort(Throwable)`.
+This means that these asynchronous events are not processed until the invocation of `onContentSource(Request, Content.Source)` returns, or until the invocation of the demand callback returns.
 
 Demanding for content and consuming the content are orthogonal activities.
 
-An application can read/demand and store aside the `Content.Chunk` objects to consume them later.
+An application can read, store aside the `Content.Chunk` objects without releasing them (to consume them later), and demand for more chunks.
 If not done carefully, this may lead to excessive memory consumption, since the ``buffer``s are not consumed.
 Releasing the `Content.Chunk`s will result in the ``buffer``s to be disposed/recycled and may be performed at any time.
 

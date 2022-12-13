@@ -19,7 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.Content;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -217,7 +215,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentSource((response, cs) -> response.abort(new Throwable()))
+            .onResponseContentSource((response, contentSource) -> response.abort(new Throwable()))
             .send(result ->
             {
                 if (result.isFailed())
@@ -252,7 +250,12 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             {
                 Content.Chunk chunk = contentSource.read();
                 assertInstanceOf(Content.Chunk.Error.class, chunk);
-                errorContentLatch.countDown();
+                contentSource.demand(() ->
+                {
+                    Content.Chunk c = contentSource.read();
+                    assertInstanceOf(Content.Chunk.Error.class, c);
+                    errorContentLatch.countDown();
+                });
             }))
             .send(result ->
             {

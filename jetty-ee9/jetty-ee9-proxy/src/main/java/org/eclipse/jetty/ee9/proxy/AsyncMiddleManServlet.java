@@ -439,17 +439,9 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onContent(Response serverResponse, Content.Chunk chunk, Runnable demander)
         {
+            Callback callback = Callback.from(chunk::release, Callback.from(demander, serverResponse::abort));
             try
             {
-                Callback callback = Callback.from(() ->
-                {
-                    chunk.release();
-                    demander.run();
-                }, (x) ->
-                {
-                    chunk.release();
-                    serverResponse.abort(x);
-                });
                 ByteBuffer content = chunk.getByteBuffer();
                 int contentBytes = content.remaining();
                 if (_log.isDebugEnabled())
@@ -520,8 +512,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             }
             catch (Throwable x)
             {
-                chunk.release();
-                serverResponse.abort(x);
+                callback.failed(x);
             }
         }
 

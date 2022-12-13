@@ -25,8 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -477,35 +475,32 @@ public class HTTPClientDocs
 
         request1.onResponseContentSource(new Response.ContentSourceListener()
         {
-            boolean firstCall = true;
             @Override
             public void onContentSource(Response response, Content.Source contentSource)
             {
-                if (firstCall)
+                // Only execute this method the very first time
+                // to initialize the request to server2.
+
+                request2.onRequestCommit(request ->
                 {
-                    // Only execute this branch the very first time
-                    // to initialize the request to server2.
-                    firstCall = false;
+                    // Only when the request to server2 has been sent,
+                    // then demand response content from server1.
+                    contentSource.demand(() -> forwardContent(response, contentSource));
+                });
 
-                    request2.onRequestCommit(request ->
-                    {
-                        // Only when the request to server2 has been sent,
-                        // then demand response content from server1.
-                        contentSource.demand(() -> onContentSource(response, contentSource));
-                    });
+                // Send the request to server2.
+                request2.send(result -> System.getLogger("forwarder").log(INFO, "Forwarding to server2 complete"));
+            }
 
-                    // Send the request to server2.
-                    request2.send(result -> System.getLogger("forwarder").log(INFO, "Forwarding to server2 complete"));
-                    return;
-                }
-
+            private void forwardContent(Response response, Content.Source contentSource)
+            {
                 // Read one chunk of content.
                 Content.Chunk chunk = contentSource.read();
                 if (chunk == null)
                 {
                     // The read chunk is null, demand to be called back
                     // when the next one is ready to be read.
-                    contentSource.demand(() -> onContentSource(response, contentSource));
+                    contentSource.demand(() -> forwardContent(response, contentSource));
                     // Once a demand is in progress, the content source must not be read
                     // nor demanded again until the demand callback is invoked.
                     return;
@@ -528,7 +523,7 @@ public class HTTPClientDocs
                     // release the chunk to recycle the buffer.
                     chunk.release();
                     // Then demand more response content from server1.
-                    contentSource.demand(() -> onContentSource(response, contentSource));
+                    contentSource.demand(() -> forwardContent(response, contentSource));
                 }, x ->
                 {
                     chunk.release();
