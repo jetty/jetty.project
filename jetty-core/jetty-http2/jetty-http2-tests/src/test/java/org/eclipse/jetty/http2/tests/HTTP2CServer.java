@@ -52,7 +52,7 @@ public class HTTP2CServer extends Server
 //        server.start();
 //    }
 
-    private static class SimpleHandler extends Blocking
+    private static class SimpleHandler extends NonBlocking
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
