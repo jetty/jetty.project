@@ -51,14 +51,12 @@ import org.eclipse.jetty.util.thread.Invocable;
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
  * <p>The typical idiom to read request content is the following:</p>
  * <pre>{@code
- * public void process(Request request, Response response, Callback callback)
+ * public boolean process(Request request, Response response, Callback callback)
  * {
  *     // reject requests not appropriate for this handler
  *     if (!request.getHttpURI().getPath().startsWith("/yourPath"))
- *         return;
+ *         return false;
  *
- *     // accept the request to activate the read APIs
- *     request.accept();
  *     while (true)
  *     {
  *         Content.Chunk chunk = request.read();
@@ -66,7 +64,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *         {
  *             // The chunk is not currently available, demand to be called back.
  *             request.demand(() -> process(request, response, callback));
- *             return;
+ *             return true;
  *         }
  *
  *         if (chunk instanceof Content.Chunk.Error error)
@@ -77,7 +75,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             // Mark the processing as complete, either generating a custom
  *             // response and succeeding the callback, or failing the callback.
  *             callback.failed(failure);
- *             return;
+ *             return true;
  *         }
  *
  *         if (chunk instanceof Trailers trailers)
@@ -91,7 +89,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             // Mark the processing as complete.
  *             callback.succeeded();
  *
- *             return;
+ *             return true;
  *         }
  *
  *         // Normal chunk, process it.
@@ -107,7 +105,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             // Mark the processing as complete.
  *             callback.succeeded();
  *
- *             return;
+ *             return true;
  *         }
  *     }
  * }

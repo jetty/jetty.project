@@ -68,11 +68,6 @@ public class StatisticsHandler extends Handler.Wrapper
             if (_connectionStats.add(id))
                 statisticsRequest.getConnectionMetaData().getConnection().addEventListener(statisticsRequest);
 
-            // TODO currently the stream is wrapped (in accept) rather than wrap the response and callback.
-            //      This means that the stats are for bytes actually received/sent before/after compression and
-            //      timings always wait for the serialized executor completion of all dispatches.
-            //      If we wrapped the response and callback, then bytes could be what are read/written and
-            //      timings would end when the callback is called and not when the dispatch returns.
             if (next.process(statisticsRequest, response, callback))
                 return true;
             _requestStats.decrement();
@@ -386,7 +381,7 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 if (_minimumReadRate > 0)
                 {
-                    Long rr = dataRatePerSecond(_bytesRead.longValue());
+                    long rr = dataRatePerSecond(_bytesRead.longValue());
                     if (rr < _minimumReadRate)
                     {
                         // TODO should this be a QuietException to reduce log verbosity from bad clients?
@@ -417,7 +412,7 @@ public class StatisticsHandler extends Handler.Wrapper
                             long bytesWritten = _bytesWritten.longValue();
                             if (bytesWritten > 0L)
                             {
-                                Long wr = dataRatePerSecond(bytesWritten);
+                                long wr = dataRatePerSecond(bytesWritten);
                                 if (wr < _minimumWriteRate)
                                 {
                                     TimeoutException cause = new TimeoutException("write rate is too low: " + wr);

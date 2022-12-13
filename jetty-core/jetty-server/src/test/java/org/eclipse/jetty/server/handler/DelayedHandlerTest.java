@@ -276,7 +276,7 @@ public class DelayedHandlerTest
 
         _server.setHandler(delayedHandler);
         CountDownLatch processing = new CountDownLatch(2);
-        delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
+        delayedHandler.setHandler(new Handler.Abstract.Blocking()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
