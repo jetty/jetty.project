@@ -323,16 +323,7 @@ public class ServletRequestState
 
     public boolean isResponseCommitted()
     {
-        try (AutoLock l = lock())
-        {
-            switch (_outputState)
-            {
-                case OPEN:
-                    return false;
-                default:
-                    return true;
-            }
-        }
+        return _servletChannel.getResponse().isCommitted();
     }
 
     public boolean isResponseCompleted()
