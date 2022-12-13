@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,6 +22,7 @@ import org.infinispan.Cache;
 import org.infinispan.query.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.infinispan.query.dsl.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,39 +33,40 @@ public class EmbeddedQueryManager implements QueryManager
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedQueryManager.class);
     
     private Cache<String, InfinispanSessionData> _cache;
+    private QueryFactory _factory;
 
     public EmbeddedQueryManager(Cache<String, InfinispanSessionData> cache)
     {
         _cache = cache;
+        _factory = Search.getQueryFactory(_cache);
     }
 
     @Override
     public Set<String> queryExpiredSessions(SessionContext sessionContext, long time)
     {
         Objects.requireNonNull(sessionContext);
-        QueryFactory qf = Search.getQueryFactory(_cache);
-        Query q = qf.from(InfinispanSessionData.class)
-            .select("id")
-            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
-            .and()
-            .having("expiry").lte(time)
-            .and().having("expiry").gt(0)
-            .build();
-
-        List<Object[]> list = q.list();
+        Query<InfinispanSessionData> expiredQuery = _factory.create("select id from org.eclipse.jetty.session.infinispan.InfinispanSessionData where " +
+            " contextPath = :contextPath and expiry <= :expiry and expiry > 0");
+        expiredQuery.setParameter("contextPath", sessionContext.getCanonicalContextPath());
+        expiredQuery.setParameter("expiry", time);
+        
+        @SuppressWarnings("rawtypes")
+        QueryResult result = expiredQuery.execute();
+        List<Object[]> list = result.list();
         Set<String> ids = list.stream().map(a -> (String)a[0]).collect(toSet());
         return ids;
     }
 
     public void deleteOrphanSessions(long time)
     {
-        QueryFactory qf = Search.getQueryFactory(_cache);
-        Query q = qf.from(InfinispanSessionData.class)
-            .select("id", "contextPath", "vhost")
-            .having("expiry").lte(time)
-            .and().having("expiry").gt(0)
-            .build();
-        List<Object[]> list = q.list();
+        Query<InfinispanSessionData> deleteQuery = _factory.create("select id, contextPath, vhost from org.eclipse.jetty.session.infinispan.InfinispanSessionData where " +
+            " expiry <= :expiry and expiry > 0");
+        deleteQuery.setParameter("expiry", time);
+        
+        @SuppressWarnings("rawtypes")
+        QueryResult result = deleteQuery.execute();
+        List<Object[]> list = result.list();
+        
         list.stream().forEach(a ->
         {
             String key = InfinispanKeyBuilder.build((String)a[1], (String)a[2], (String)a[0]);
@@ -88,18 +85,16 @@ public class EmbeddedQueryManager implements QueryManager
     public boolean exists(SessionContext sessionContext, String id)
     {
         Objects.requireNonNull(sessionContext);
-        QueryFactory qf = Search.getQueryFactory(_cache);
-        Query q = qf.from(InfinispanSessionData.class)
-            .select("id")
-            .having("id").eq(id)
-            .and()
-            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
-            .and()
-            .having("expiry").gt(System.currentTimeMillis())
-            .or()
-            .having("expiry").lte(0)
-            .build();
-        List<Object[]> list = q.list();
+        Query<InfinispanSessionData> existQuery = _factory.create("select id from org.eclipse.jetty.session.infinispan.InfinispanSessionData where" +
+            " id = :id and contextPath = :contextPath and expiry > :time or expiry <= 0");
+        existQuery.setParameter("id", id);
+        existQuery.setParameter("contextPath", sessionContext.getCanonicalContextPath());
+        existQuery.setParameter("time", System.currentTimeMillis());
+        
+        @SuppressWarnings("rawtypes")
+        QueryResult result = existQuery.execute();
+        List<Object[]> list = result.list();
+        
         return !list.isEmpty();
     }
 }

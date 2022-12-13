@@ -1,0 +1,29 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-begin-install]]
+==== Installing Jetty
+
+After the download, unpacking Eclipse Jetty will extract the files into a directory called `jetty-home-VERSION`, where `VERSION` is the version that you downloaded, for example `{version}`, so that the directory is called `jetty-home-{version}`.
+
+Unpack Eclipse Jetty compressed file in a convenient location, for example under `/opt`.
+
+CAUTION: For Windows users, you should unpack Jetty to a path that does not contain spaces.
+
+The rest of the instructions in this documentation will refer to this location as `$JETTY_HOME`, or `${jetty.home}`.
+
+IMPORTANT: It is important that *only* stable release versions are used in production environments.
+Versions that have been deprecated or are released as Milestones (M), Alpha, Beta or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+
+If you are new to Jetty, you should read the xref:og-arch[Jetty architecture section] to become familiar with the terms used in this documentation.
+Otherwise, you can jump to the xref:og-begin-start[section on starting Jetty].

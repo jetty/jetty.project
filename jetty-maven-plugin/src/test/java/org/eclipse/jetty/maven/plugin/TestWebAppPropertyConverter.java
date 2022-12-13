@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -115,7 +110,7 @@ public class TestWebAppPropertyConverter
         assertEquals("false", props.get(WebAppPropertyConverter.TMP_DIR_PERSIST));
         assertEquals(classesDir.getAbsolutePath(), props.get(WebAppPropertyConverter.CLASSES_DIR));
         assertEquals(testClassesDir.getAbsolutePath(), props.get(WebAppPropertyConverter.TEST_CLASSES_DIR));
-        assertEquals(String.join(",", jar1.getAbsolutePath(),jar2.getAbsolutePath()), props.get(WebAppPropertyConverter.LIB_JARS));
+        assertEquals(String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()), props.get(WebAppPropertyConverter.LIB_JARS));
         assertEquals(war.getAbsolutePath(), props.get(WebAppPropertyConverter.WAR_FILE));
         assertEquals(WebAppContext.WEB_DEFAULTS_XML, props.get(WebAppPropertyConverter.DEFAULTS_DESCRIPTOR));
         assertEquals(String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()), props.get(WebAppPropertyConverter.OVERRIDE_DESCRIPTORS));
@@ -134,7 +129,7 @@ public class TestWebAppPropertyConverter
         props.setProperty(WebAppPropertyConverter.CLASSES_DIR, classesDir.getAbsolutePath());
         props.setProperty(WebAppPropertyConverter.CONTEXT_PATH, "/foo");
         props.setProperty(WebAppPropertyConverter.CONTEXT_XML, contextXml);
-        props.setProperty(WebAppPropertyConverter.LIB_JARS, String.join(",", jar1.getAbsolutePath(),jar2.getAbsolutePath()));
+        props.setProperty(WebAppPropertyConverter.LIB_JARS, String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()));
         props.setProperty(WebAppPropertyConverter.OVERRIDE_DESCRIPTORS, String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()));
         //props.setProperty(WebAppPropertyConverter.QUICKSTART_WEB_XML, value);
         props.setProperty(WebAppPropertyConverter.TEST_CLASSES_DIR, testClassesDir.getAbsolutePath());

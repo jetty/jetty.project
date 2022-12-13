@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,7 +21,6 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.security.Password;
 
 /**
  * DefaultCallbackHandler
@@ -47,39 +41,34 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
     public void handle(Callback[] callbacks)
         throws IOException, UnsupportedCallbackException
     {
-        for (int i = 0; i < callbacks.length; i++)
+        for (Callback callback : callbacks)
         {
-            if (callbacks[i] instanceof NameCallback)
+            if (callback instanceof NameCallback)
             {
-                ((NameCallback)callbacks[i]).setName(getUserName());
+                ((NameCallback)callback).setName(getUserName());
             }
-            else if (callbacks[i] instanceof ObjectCallback)
+            else if (callback instanceof ObjectCallback)
             {
-                ((ObjectCallback)callbacks[i]).setObject(getCredential());
+                ((ObjectCallback)callback).setObject(getCredential());
             }
-            else if (callbacks[i] instanceof PasswordCallback)
+            else if (callback instanceof PasswordCallback)
             {
-                if (getCredential() instanceof Password)
-                    ((PasswordCallback)callbacks[i]).setPassword(((Password)getCredential()).toString().toCharArray());
-                else if (getCredential() instanceof String)
+                ((PasswordCallback)callback).setPassword(getCredential().toString().toCharArray());
+            }
+            else if (callback instanceof RequestParameterCallback)
+            {
+                if (_request != null)
                 {
-                    ((PasswordCallback)callbacks[i]).setPassword(((String)getCredential()).toCharArray());
+                    RequestParameterCallback rpc = (RequestParameterCallback)callback;
+                    rpc.setParameterValues(Arrays.asList(_request.getParameterValues(rpc.getParameterName())));
                 }
-                else
-                    throw new UnsupportedCallbackException(callbacks[i], "User supplied credentials cannot be converted to char[] for PasswordCallback: try using an ObjectCallback instead");
             }
-            else if (callbacks[i] instanceof RequestParameterCallback)
+            else if (callback instanceof ServletRequestCallback)
             {
-                RequestParameterCallback callback = (RequestParameterCallback)callbacks[i];
-                callback.setParameterValues(Arrays.asList(_request.getParameterValues(callback.getParameterName())));
-            }
-            else if (callbacks[i] instanceof ServletRequestCallback)
-            {
-                ((ServletRequestCallback)callbacks[i]).setRequest(_request);
+                ((ServletRequestCallback)callback).setRequest(_request);
             }
             else
-                throw new UnsupportedCallbackException(callbacks[i]);
+                throw new UnsupportedCallbackException(callback);
         }
     }
 }
-

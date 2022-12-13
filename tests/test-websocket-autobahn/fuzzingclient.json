@@ -1,0 +1,18 @@
+{
+  "options": {
+    "failByDrop": false
+  },
+  "outdir": "./target/reports/servers",
+  "servers": [
+    {
+      "agent": "jetty-autobahn-test",
+      "url": "ws://host.testcontainers.internal:9001",
+      "options": {
+        "version": 18
+      }
+    }
+  ],
+  "cases": ["*"],
+  "exclude-cases": [],
+  "exclude-agent-cases": {}
+}

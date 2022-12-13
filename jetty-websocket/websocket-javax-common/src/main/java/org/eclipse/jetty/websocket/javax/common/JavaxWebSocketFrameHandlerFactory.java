@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -43,22 +38,21 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.common.messages.AbstractDecodedMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public abstract class JavaxWebSocketFrameHandlerFactory
 {
@@ -107,10 +101,12 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     protected final JavaxWebSocketContainer container;
     protected final InvokerUtils.ParamIdentifier paramIdentifier;
+    protected final WebSocketComponents components;
 
     public JavaxWebSocketFrameHandlerFactory(JavaxWebSocketContainer container, InvokerUtils.ParamIdentifier paramIdentifier)
     {
         this.container = container;
+        this.components = container.getWebSocketComponents();
         this.paramIdentifier = paramIdentifier == null ? InvokerUtils.PARAM_IDENTITY : paramIdentifier;
     }
 
@@ -170,8 +166,12 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         errorHandle = InvokerUtils.bindTo(errorHandle, endpoint);
         pongHandle = InvokerUtils.bindTo(pongHandle, endpoint);
 
+        // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
+        components.getObjectFactory().decorate(endpoint);
+
         return new JavaxWebSocketFrameHandler(
             container,
+            upgradeRequest,
             endpoint,
             openHandle, closeHandle, errorHandle,
             textMetadata, binaryMetadata,
@@ -252,7 +252,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     protected JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(EndpointConfig endpointConfig)
     {
-        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
+        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig, container.getWebSocketComponents());
         MethodHandles.Lookup lookup = getServerMethodHandleLookup();
 
         Method openMethod = ReflectUtils.findMethod(Endpoint.class, "onOpen", Session.class, EndpointConfig.class);
@@ -534,49 +534,47 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 {
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, strValue);
                 }
-                else if (Integer.TYPE.isAssignableFrom(type))
+                else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type))
                 {
-                    int intValue = Integer.parseInt(strValue);
+                    Integer intValue = Integer.parseInt(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, intValue);
                 }
-                else if (Long.TYPE.isAssignableFrom(type))
+                else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type))
                 {
-                    long longValue = Long.parseLong(strValue);
+                    Long longValue = Long.parseLong(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, longValue);
                 }
-                else if (Short.TYPE.isAssignableFrom(type))
+                else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type))
                 {
-                    short shortValue = Short.parseShort(strValue);
+                    Short shortValue = Short.parseShort(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, shortValue);
                 }
-                else if (Float.TYPE.isAssignableFrom(type))
+                else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type))
                 {
-                    float floatValue = Float.parseFloat(strValue);
+                    Float floatValue = Float.parseFloat(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, floatValue);
                 }
-                else if (Double.TYPE.isAssignableFrom(type))
+                else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type))
                 {
-                    double doubleValue = Double.parseDouble(strValue);
+                    Double doubleValue = Double.parseDouble(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, doubleValue);
                 }
-                else if (Boolean.TYPE.isAssignableFrom(type))
+                else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type))
                 {
-                    boolean boolValue = Boolean.parseBoolean(strValue);
+                    Boolean boolValue = Boolean.parseBoolean(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, boolValue);
                 }
-                else if (Character.TYPE.isAssignableFrom(type))
+                else if (Character.class.isAssignableFrom(type) || Character.TYPE.isAssignableFrom(type))
                 {
                     if (strValue.length() != 1)
                         throw new IllegalArgumentException("Invalid Size");
-                    char charValue = strValue.charAt(0);
+                    Character charValue = strValue.charAt(0);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, charValue);
                 }
-                else if (Byte.TYPE.isAssignableFrom(type))
+                else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type))
                 {
-                    byte[] buf = strValue.getBytes(UTF_8);
-                    if (buf.length != 1)
-                        throw new IllegalArgumentException("Invalid Size");
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, buf[0]);
+                    Byte b = Byte.parseByte(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, b);
                 }
                 else
                 {

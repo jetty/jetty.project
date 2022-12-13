@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -28,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.ClientEndpointConfig;
@@ -55,7 +51,6 @@ import org.eclipse.jetty.websocket.javax.tests.WSEndpointTracker;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,33 +116,26 @@ public class TextStreamTest
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
-        List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload(expectedMessage));
-        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-
         try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
         {
             fuzzer.sendBulk(send);
-            fuzzer.expect(expect);
+            BlockingQueue<Frame> receivedFrames = fuzzer.getOutputFrames();
+            fuzzer.expectMessage(receivedFrames, OpCode.TEXT, expectedMessage);
+            fuzzer.expect(List.of(CloseStatus.toFrame(CloseStatus.NORMAL)));
         }
     }
 
-    // TODO These tests incorrectly assumes no frame fragmentation.
-    // When message fragmentation is implemented in PartialStringMessageSink then update
-    // this test to check on the server side for no buffers larger than the maxTextMessageBufferSize.
-
-    @Disabled
     @Test
     public void testAtMaxDefaultMessageBufferSize() throws Exception
     {
         testEcho(container.getDefaultMaxTextMessageBufferSize());
     }
 
-    @Disabled
     @Test
     public void testLargerThenMaxDefaultMessageBufferSize() throws Exception
     {
-        int size = container.getDefaultMaxTextMessageBufferSize() + 16;
+        int maxTextMessageBufferSize = container.getDefaultMaxTextMessageBufferSize();
+        int size = maxTextMessageBufferSize + 16;
         byte[] data = newData(size);
 
         List<Frame> send = new ArrayList<>();
@@ -158,19 +146,13 @@ public class TextStreamTest
         byte[] expectedData = new byte[data.length];
         System.arraycopy(data, 0, expectedData, 0, data.length);
 
-        // Frames expected are influenced by container.getDefaultMaxTextMessageBufferSize setting
-        ByteBuffer frame1 = ByteBuffer.wrap(expectedData, 0, container.getDefaultMaxTextMessageBufferSize());
-        ByteBuffer frame2 = ByteBuffer
-            .wrap(expectedData, container.getDefaultMaxTextMessageBufferSize(), size - container.getDefaultMaxTextMessageBufferSize());
-        List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload(frame1).setFin(false));
-        expect.add(new Frame(OpCode.CONTINUATION).setPayload(frame2).setFin(true));
-        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-
         try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
         {
             fuzzer.sendBulk(send);
-            fuzzer.expect(expect);
+
+            BlockingQueue<Frame> receivedFrames = fuzzer.getOutputFrames();
+            fuzzer.expectMessage(receivedFrames, OpCode.TEXT, ByteBuffer.wrap(expectedData));
+            fuzzer.expect(List.of(CloseStatus.toFrame(CloseStatus.NORMAL)));
         }
     }
 

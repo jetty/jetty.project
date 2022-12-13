@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -405,6 +400,10 @@ public class TypeUtil
         return value;
     }
 
+    /**
+     * @deprecated use {@link StringUtil#fromHexString(String)} instead
+     */
+    @Deprecated
     public static byte[] parseBytes(String s, int base)
     {
         byte[] bytes = new byte[s.length() / 2];
@@ -512,45 +511,40 @@ public class TypeUtil
         toHex((int)value, buf);
     }
 
+    /**
+     * @deprecated use {@link StringUtil#toHexString(byte)} instead
+     */
+    @Deprecated
     public static String toHexString(byte b)
     {
-        return toHexString(new byte[]{b}, 0, 1);
+        return StringUtil.toHexString(b);
     }
 
+    /**
+     * @deprecated use {@link StringUtil#toHexString(byte[])} instead
+     */
+    @Deprecated
     public static String toHexString(byte[] b)
     {
-        return toHexString(b, 0, b.length);
+        return StringUtil.toHexString(b);
     }
 
+    /**
+     * @deprecated use {@link StringUtil#toHexString(byte[], int, int)} instead
+     */
+    @Deprecated
     public static String toHexString(byte[] b, int offset, int length)
     {
-        StringBuilder buf = new StringBuilder();
-        for (int i = offset; i < offset + length; i++)
-        {
-            int bi = 0xff & b[i];
-            int c = '0' + (bi / 16) % 16;
-            if (c > '9')
-                c = 'A' + (c - '0' - 10);
-            buf.append((char)c);
-            c = '0' + bi % 16;
-            if (c > '9')
-                c = 'a' + (c - '0' - 10);
-            buf.append((char)c);
-        }
-        return buf.toString();
+        return StringUtil.toHexString(b, offset, length);
     }
 
+    /**
+     * @deprecated use {@link StringUtil#fromHexString(String)}
+     */
+    @Deprecated
     public static byte[] fromHexString(String s)
     {
-        if (s.length() % 2 != 0)
-            throw new IllegalArgumentException(s);
-        byte[] array = new byte[s.length() / 2];
-        for (int i = 0; i < array.length; i++)
-        {
-            int b = Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16);
-            array[i] = (byte)(0xff & b);
-        }
-        return array;
+        return StringUtil.fromHexString(s);
     }
 
     public static void dump(Class<?> c)

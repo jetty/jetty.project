@@ -1,0 +1,81 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[embedded-examples]]
+=== Embedded Examples
+
+Jetty has a rich history of being embedded into a wide variety of applications.
+In this section we will walk you through a number of our simple examples under our embedded-jetty-examples project in our git repository.
+
+____
+[IMPORTANT]
+These files are pulled directly from our git repository when this document is generated.
+If the line numbers do not line up feel free to fix this documentation in github and give us a pull request, or at least open an issue to notify us of the discrepancy.
+____
+
+include::examples/embedded-file-server.adoc[]
+include::examples/embedded-split-file-server.adoc[]
+include::examples/embedded-many-connectors.adoc[]
+include::examples/embedded-secured-hello-handler.adoc[]
+include::examples/embedded-minimal-servlet.adoc[]
+include::examples/embedded-one-webapp.adoc[]
+
+[[embedded-webapp-jsp]]
+==== Web Application with JSP
+
+This example is very similar to the one in the previous section, although it enables the embedded webapp to use JSPs.
+As of jetty-9.2, we use the JSP engine from Apache, which relies on a Servlet Specification 3.1 style `ServletContainerInitializer` to initialize itself.
+To get this to work with Jetty, you need to enable annotations processing, as shown in this example code:
+
+[source, java, subs="{sub-order}"]
+----
+include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/OneWebAppWithJsp.java[]
+
+----
+
+===== Run it!
+
+After you have started things up you should be able to navigate to http://localhost:8080/jsp/ and click on any of the links to jsps.
+
+===== Maven Coordinates
+
+To use this example in your project, you will need the following Maven dependencies declared, in addition to those from the previous section:
+
+[source, xml, subs="{sub-order}"]
+----
+
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-annotations</artifactId>
+  <version>${project.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>apache-jsp</artifactId>
+  <version>${project.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>apache-jstl</artifactId>
+  <version>${project.version}</version>
+</dependency>     
+----
+
+[[adding-embedded-examples]]
+==== Adding Examples
+
+If you would like to add an example to this list, fork the documentation project from github (see the blue bar at the bottom of this page) and add the new page.
+Feel free to add the example contents directly as a `[source.java]` and we will take it from there.
+
+If you feel and example is missing, feel free to open a bug to ask for it.
+No guarantees, but the more helpful and demonstrative it is the better.

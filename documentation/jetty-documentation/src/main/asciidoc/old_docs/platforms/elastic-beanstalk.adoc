@@ -1,0 +1,83 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[elastic-beanstalk]]
+=== Amazon Elastic Beanstalk
+
+____
+[WARNING]
+This is an increasingly aged integration, things like likely changed enough this is not directly useful but may serve as a useful starting point should someone want to look into it.
+____
+
+
+http://aws.amazon.com/elasticbeanstalk/[Elastic Beanstalk] is a component with the http://aws.amazon.com[Amazon Web Services] offering that allows you to configure an entire virtual machine based on one of several available baseline configurations and then customize it through a powerful configuration system. While the default offerings currently available are based on Tomcat for for the java community, we worked out the basics using that configuration system to enable the usage of Jetty instead.
+
+[[elastic-beanstalk-overview]]
+==== Overview
+
+Elastic beanstalk has a very http://aws.amazon.com/about-aws/whats-new/2012/10/02/introducing-aws-elastic-beanstalk-configuration-files/[powerful configuration mechanism] so this integration taps into that to effectively rework the tomcat configuration and replace it with the bits required to make jetty run in its place. Below is a walk through of what the various configuration files are doing and how the general flow of configuration on beanstalk happens.
+
+There is an `.ebextensions` directory in your beanstalk application which contains all of the files requires to configure and customize your beanstalk and application combo.
+Files that end in .config in this directory are processed in alphabetical order.
+
+00-java7.config::
+  installs java 7 onto the beanstalk environment and makes it the   default
+10-tweak.config::
+  not required, but changes the `/opt/elasticbeanstalk` directory to be readable making debugging easier
+11-jetty.config::
+  installs jetty9 into `/opt/jetty-9` and removes unneeded distribution files
+12-beanstalk.config::
+  handles replacing tomcat with jetty in many configuration files, configures logging and wires up system startup processes.
+  Some files in your `.ebextensions` directory are moved to replace files under   /opt/elasticbeanstalk.
+
+If you look in the `.ebextensions` directory of your application you should also see other jetty specific xml and ini files.
+The final config file handles these as they are largely customization for your application.
+
+20-testapp.config::
+  layers application specific configuration files into the jetty installation
+
+The files in our example test webapp here enable various OPTIONS for libraries that need to be loaded, customize the root application being deployed and even deploy additional contexts like we do in our jetty distribution demo.
+This is also the mechanism that you would use to wire up application specific things, for example if you needed additional software installed, customized directories made, etc.
+
+[[elastic-beanstalk-maven]]
+==== Maven Bits
+
+Support for this feature leverages Maven to make things easy and is composed of three different modules.
+
+jetty-beanstalk-overlay::
+  This is the collection of scripts that are required to wedge jetty into the normal beanstalk setup.
+  This module is intended to extract into an webapp to enable it for beanstalk usage with jetty.
+jetty-beanstalk-resources::
+  This generates an artifact of files that are downloaded by the configuration process and contains replacements for certain beanstalk files as well as various system level jetty configuration files like an updated `jetty.sh` script for the `/etc/init.d` setup.
+jetty-beanstalk-testapp::
+  An example webapp that shows both how to combine the war file from another maven module with the jetty-beanstalk-overlay to produce a beanstalk enabled application bundle.
+  Also included is examples of how to alter the jetty configuration for things like a customized
+  `start.ini` file.
+
+____
+[NOTE]
+The test webapps needs access to a snapshot version of the test-jetty-webapp so it really serves as more of an example of how to layer your webapp with the bits required to customize your app for beanstalk and jetty.
+____
+
+To actually make use of these artifacts you currently must clone this git repository and build it locally.
+Once you have the artifacts you simply need to copy the approach in the jetty-beanstalk-testapp to apply the configuration to your webapp.
+
+* https://github.com/jmcc0nn3ll/jetty-beanstalk
+
+____
+[IMPORTANT]
+Bluepill is used to manage the start and stop process of the app server.
+This seems to be a problematic bit of software with a colored history and the version in use at the time of this writing is old.
+When starting and stopping (or restarting) the appserver you may see error messages show up that the Server timed out getting a response or things like that.
+These are red herrings and my experience is that jetty has started and stopped just fine, the pid file required shows up in a very timely fashion (under `/var/run/jetty.pid`) so do check that the app server has started, but please be aware there is a strangeness here that hasn't been sorted out yet.
+____

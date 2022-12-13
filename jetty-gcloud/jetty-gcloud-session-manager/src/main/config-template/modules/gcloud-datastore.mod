@@ -10,5 +10,5 @@ gcloud
 [depends]
 gcloud
 logging-jcl-capture
-logging-jul
+logging-jul-capture
 

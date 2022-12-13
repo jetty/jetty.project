@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,7 +14,9 @@
 package org.eclipse.jetty.start;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -364,5 +361,33 @@ public final class Props implements Iterable<Prop>
     public String toString()
     {
         return props.toString();
+    }
+
+    public static Props load(ClassLoader classLoader, String resourceName)
+    {
+        StartLog.debug("Looking for classloader resource: %s", resourceName);
+        return load(classLoader.getResource(resourceName));
+    }
+
+    public static Props load(URL url)
+    {
+        Props props = new Props();
+        if (url != null)
+        {
+            StartLog.debug("Loading Props: %s", url.toExternalForm());
+            try (InputStream in = url.openStream())
+            {
+                Properties properties = new Properties();
+                properties.load(in);
+                String urlStr = url.toExternalForm();
+                properties.stringPropertyNames().forEach((name) ->
+                    props.setProperty(name, properties.getProperty(name), urlStr));
+            }
+            catch (IOException x)
+            {
+                StartLog.debug(x);
+            }
+        }
+        return props;
     }
 }

@@ -1,0 +1,63 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[debug-handler]]
+=== Debug Handler
+
+[[debug-handler-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.server.handler.DebugHandler`
+* Maven Artifact: org.eclipse.jetty:jetty-server
+* Javadoc: {JDURL}/org/eclipse/jetty/server/handler/DebugHandler.html
+
+[[debug-handler-usage]]
+==== Usage
+
+A simple handler that is useful to debug incoming traffic.
+It will log entry and exit points of HTTP requests as well as the response code.
+
+==== Usage in Standard Distribution
+
+The debug handler can be added to Jetty by activating the `debug` module.
+
+==== Embedded usage
+
+[source, java, subs="{sub-order}"]
+----
+Server server = new Server(8080);
+RolloverFileOutputStream outputStream = new RolloverFileOutputStream("MeinLogPfad/yyyy_mm_dd.request.log", true,10);
+
+DebugHandler debugHandler = new DebugHandler();
+debugHandler.setOutputStream(outputStream);
+debugHandler.setHandler(server.getHandler());
+
+server.setHandler(debugHandler);
+server.start();
+----
+
+==== Example output
+
+[source,bash]
+----
+15:14:05.838:qtp551889550-13-selector-0 OPENED HttpConnection@e910ee4{IDLE},g=HttpGenerator{s=START},p=HttpParser{s=START,0 of 0}
+15:14:05.846:qtp551889550-57:http://0:0:0:0:0:0:0:1:8080/ REQUEST 0:0:0:0:0:0:0:1 GET __utma=111872281.10102721.1321534299.1369833564.1370447492.35; __utmz=111872281.1321534299.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _opt_vi_RPY720HZ=75E12E63-0CD0-4D6F-8383-C90D5C8397C7; Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0
+15:14:05.894:qtp551889550-57:http://0:0:0:0:0:0:0:1:8080/ RESPONSE 200 null
+15:14:05.959:qtp551889550-59:http://0:0:0:0:0:0:0:1:8080/jetty.css REQUEST 0:0:0:0:0:0:0:1 GET __utma=111872281.10102721.1321534299.1369833564.1370447492.35; __utmz=111872281.1321534299.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _opt_vi_RPY720HZ=75E12E63-0CD0-4D6F-8383-C90D5C8397C7; visited=yes; Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0
+15:14:05.962:qtp551889550-59:http://0:0:0:0:0:0:0:1:8080/jetty.css RESPONSE 200 null
+15:14:06.052:qtp551889550-57:http://0:0:0:0:0:0:0:1:8080/images/jetty-header.jpg REQUEST 0:0:0:0:0:0:0:1 GET __utma=111872281.10102721.1321534299.1369833564.1370447492.35; __utmz=111872281.1321534299.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _opt_vi_RPY720HZ=75E12E63-0CD0-4D6F-8383-C90D5C8397C7; visited=yes; Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0
+15:14:06.055:qtp551889550-57:http://0:0:0:0:0:0:0:1:8080/images/jetty-header.jpg RESPONSE 200 null
+15:14:07.248:qtp551889550-59:http://0:0:0:0:0:0:0:1:8080/favicon.ico REQUEST 0:0:0:0:0:0:0:1 GET __utma=111872281.10102721.1321534299.1369833564.1370447492.35; __utmz=111872281.1321534299.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _opt_vi_RPY720HZ=75E12E63-0CD0-4D6F-8383-C90D5C8397C7; visited=yes; Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0
+15:14:07.251:qtp551889550-59:http://0:0:0:0:0:0:0:1:8080/favicon.ico RESPONSE 404 text/html;charset=ISO-8859-1
+15:14:09.330:qtp551889550-57 CLOSED HttpConnection@e910ee4{INTERESTED},g=HttpGenerator{s=START},p=HttpParser{s=START,0 of -1}
+----

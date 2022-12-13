@@ -1,0 +1,39 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-jmx-remote]]
+===== Module `jmx-remote`
+
+The `jmx-remote` module provides remote access to JMX clients.
+
+The module properties to configure remote JMX connector are:
+
+----
+include::{JETTY_HOME}/modules/jmx-remote.mod[tags=documentation]
+----
+
+The system property `java.rmi.server.hostname` is specified with the usual notation, prepending a `-D` in front of the system property name.
+
+The system property `java.rmi.server.hostname` is uncommented because it is necessary in the default configuration -- most systems do not have the local name resolution configured properly for remote access.
+
+As an example, in a Linux machine named `beryl`, the `/etc/hosts` file may contain these entries:
+
+----
+127.0.0.1 localhost
+127.0.1.1 beryl
+----
+
+If the system property `java.rmi.server.hostname` is not specified, the RMI implementation uses the host name `beryl` to figure out the IP address to store in the RMI stub, in this case `127.0.1.1`.
+However, we the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
+
+If the system property `java.rmi.server.hostname` is not specified, the RMI client will try to connect to `127.0.1.1` (because that's what in the RMI stub) and fail because nothing is listening on that address.

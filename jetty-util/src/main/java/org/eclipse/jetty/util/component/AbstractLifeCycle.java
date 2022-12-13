@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -303,6 +299,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
     }
 
+    /**
+     * @deprecated this class is redundant now that {@link LifeCycle.Listener} has default methods.
+     */
+    @Deprecated
     public abstract static class AbstractLifeCycleListener implements LifeCycle.Listener
     {
         @Override
@@ -334,13 +334,9 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public String toString()
     {
-        Class<?> clazz = getClass();
-        String name = clazz.getSimpleName();
-        if ((name == null || name.length() == 0) && clazz.getSuperclass() != null)
-        {
-            clazz = clazz.getSuperclass();
-            name = clazz.getSimpleName();
-        }
+        String name = getClass().getSimpleName();
+        if (StringUtil.isBlank(name) && getClass().getSuperclass() != null)
+            name = getClass().getSuperclass().getSimpleName();
         return String.format("%s@%x{%s}", name, hashCode(), getState());
     }
 

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -48,6 +43,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -104,8 +100,8 @@ public class SocketChannelEndPointTest
     private CountDownLatch _lastEndPointLatch;
 
     // Must be volatile or the test may fail spuriously
-    private AtomicInteger _blockAt = new AtomicInteger(0);
-    private AtomicInteger _writeCount = new AtomicInteger(1);
+    private final AtomicInteger _blockAt = new AtomicInteger(0);
+    private final AtomicInteger _writeCount = new AtomicInteger(1);
 
     public void init(Scenario scenario) throws Exception
     {
@@ -157,10 +153,9 @@ public class SocketChannelEndPointTest
 
                 // wait for read timeout
                 client.setSoTimeout(500);
-                long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                long start = NanoTime.now();
                 assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
-                long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-                assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
+                assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(400L));
 
                 // write then shutdown
                 client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
@@ -212,9 +207,9 @@ public class SocketChannelEndPointTest
                 }
 
                 // wait for read timeout
-                long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                long start = NanoTime.now();
                 assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
-                assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
+                assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(400L));
 
                 // write then shutdown
                 client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
@@ -260,10 +255,9 @@ public class SocketChannelEndPointTest
             _lastEndPoint.setIdleTimeout(10 * specifiedTimeout);
             Thread.sleep((11 * specifiedTimeout) / 10);
 
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertThrows(SocketTimeoutException.class, () -> clientInputStream.read());
-            int elapsed = (int)(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start);
-            assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
+            long start = NanoTime.now();
+            assertThrows(SocketTimeoutException.class, clientInputStream::read);
+            assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(3L * specifiedTimeout / 4));
 
             // write remaining characters
             clientOutputStream.write("90ABCDEF".getBytes(StandardCharsets.UTF_8));
@@ -279,6 +273,7 @@ public class SocketChannelEndPointTest
         }
     }
 
+    @Tag("stress")
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testStress(Scenario scenario) throws Exception
@@ -298,7 +293,7 @@ public class SocketChannelEndPointTest
                 BufferedOutputStream out = new BufferedOutputStream(client.getOutputStream());
                 final CountDownLatch latch = new CountDownLatch(writes);
                 final InputStream in = new BufferedInputStream(client.getInputStream());
-                final long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                final long start = NanoTime.now();
                 out.write(bytes);
                 out.write(count);
                 out.flush();
@@ -330,7 +325,7 @@ public class SocketChannelEndPointTest
                                 count1 = count1 * 10 + (b - '0');
                                 b = in.read();
                             }
-                            last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                            last = NanoTime.now();
 
                             //if (latch.getCount()%1000==0)
                             //    System.out.println(writes-latch.getCount());
@@ -340,12 +335,11 @@ public class SocketChannelEndPointTest
                     }
                     catch (Throwable e)
                     {
-
-                        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                        long now = NanoTime.now();
                         System.err.println("count=" + count1);
                         System.err.println("latch=" + latch.getCount());
-                        System.err.println("time=" + (now - start));
-                        System.err.println("last=" + (now - last));
+                        System.err.println("time=" + NanoTime.millisElapsed(start, now));
+                        System.err.println("last=" + NanoTime.millisElapsed(last, now));
                         System.err.println("endp=" + _lastEndPoint);
                         System.err.println("conn=" + _lastEndPoint.getConnection());
 
@@ -681,7 +675,6 @@ public class SocketChannelEndPointTest
         // volatile int _blockAt = 0;
         ByteBuffer _in = BufferUtil.allocate(32 * 1024);
         ByteBuffer _out = BufferUtil.allocate(32 * 1024);
-        long _last = -1;
         final CountDownLatch _latch;
 
         public TestConnection(EndPoint endp, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
@@ -746,7 +739,6 @@ public class SocketChannelEndPointTest
             EndPoint endPoint = getEndPoint();
             try
             {
-                _last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 boolean progress = true;
                 while (progress)
                 {

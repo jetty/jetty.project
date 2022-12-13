@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -70,14 +65,6 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     @Override
     public void onSettings(Session session, SettingsFrame frame)
     {
-        Map<Integer, Integer> settings = frame.getSettings();
-        if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
-        {
-            HttpDestination destination = destination();
-            if (destination instanceof HttpDestination.Multiplexed)
-                ((HttpDestination.Multiplexed)destination).setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
-        }
-        // The first SETTINGS frame is the server preface reply.
         if (!connection.isMarked())
             onServerPreface(session);
     }
@@ -95,11 +82,21 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     }
 
     @Override
+    public void onGoAway(Session session, GoAwayFrame frame)
+    {
+        if (failConnectionPromise(new ClosedChannelException()))
+            return;
+        HttpConnectionOverHTTP2 connection = getConnection();
+        if (connection != null)
+            connection.remove();
+    }
+
+    @Override
     public void onClose(Session session, GoAwayFrame frame)
     {
         if (failConnectionPromise(new ClosedChannelException()))
             return;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
+        HttpConnectionOverHTTP2 connection = getConnection();
         if (connection != null)
             onClose(connection, frame);
     }
@@ -113,11 +110,12 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     public boolean onIdleTimeout(Session session)
     {
         long idleTimeout = ((HTTP2Session)session).getEndPoint().getIdleTimeout();
-        if (failConnectionPromise(new TimeoutException("Idle timeout expired: " + idleTimeout + " ms")))
+        TimeoutException failure = new TimeoutException("Idle timeout expired: " + idleTimeout + " ms");
+        if (failConnectionPromise(failure))
             return true;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
+        HttpConnectionOverHTTP2 connection = getConnection();
         if (connection != null)
-            return connection.onIdleTimeout(idleTimeout);
+            return connection.onIdleTimeout(idleTimeout, failure);
         return true;
     }
 
@@ -126,7 +124,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     {
         if (failConnectionPromise(failure))
             return;
-        HttpConnectionOverHTTP2 connection = this.connection.getReference();
+        HttpConnectionOverHTTP2 connection = getConnection();
         if (connection != null)
             connection.close(failure);
     }
@@ -137,5 +135,10 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
         if (result)
             httpConnectionPromise().failed(failure);
         return result;
+    }
+
+    private HttpConnectionOverHTTP2 getConnection()
+    {
+        return connection.getReference();
     }
 }

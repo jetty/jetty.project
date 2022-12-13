@@ -1,0 +1,73 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-start]]
+=== Jetty Start Mechanism
+
+NOTE: Make sure you have read the xref:og-arch[Jetty architecture section] if you are not familiar with the terms used in this section.
+
+The Jetty start mechanism is invoked by executing `$JETTY_HOME/start.jar`, from within a `$JETTY_BASE` directory, with zero or more command line options:
+
+----
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar ...
+----
+
+The Jetty start mechanism has two main modes of operation:
+
+* The _tool_ mode, detailed in xref:og-start-configure[this section], when it is used as a command line tool to configure the `$JETTY_BASE` directory by enabling modules, creating sub-directories and files, downloading files, etc.
+In this mode, the JVM started with `java -jar $JETTY_HOME/start.jar` performs the specified command and then exits.
+* The _start_ mode, detailed in xref:og-start-start[this section], when it is used to start the JVM that runs Jetty with the specified configuration.
+In this mode, the JVM started with `java -jar $JETTY_HOME/start.jar` starts Jetty and does not exit until stopped, for example by hitting kbd:[Ctrl+C] on the terminal.
+
+Refer to the xref:og-start-reference[Jetty start mechanism reference section] for the complete list of the available command line options.
+
+You want to use the Jetty start mechanism to xref:og-start-configure[configure your $JETTY_BASE] and then to xref:og-start-start[start Jetty].
+
+include::start-configure.adoc[]
+include::start-start.adoc[]
+include::start-jpms.adoc[]
+include::start-stop.adoc[]
+
+==== Start Mechanism Logging
+
+The steps performed by the Jetty start mechanism are logged by the `StartLog` class, that outputs directly, by default, to `System.err`.
+
+This is necessary to avoid that the Jetty start mechanism depend on logging libraries that may clash with those defined by Jetty logging modules, when Jetty is started in-VM.
+
+[NOTE]
+====
+This section is about the logging performed by the Jetty start mechanism _before_ it configures and starts Jetty.
+See the xref:og-server-logging[logging section] for information about logging when Jetty starts.
+====
+
+You can enable DEBUG level logging with the `--debug` command line option, for both the _tool_ and _start_ modes:
+
+----
+$ java -jar $JETTY_HOME/start.jar --debug ...
+----
+
+You can send the start log output to a file, by default relative to `$JETTY_BASE`, with the `--start-log-file=<file>` option:
+
+----
+$ java -jar $JETTY_HOME/start.jar --debug --start-log-file=start.log ...
+----
+
+This is useful for capturing startup issues where the Jetty-specific logger has not yet kicked in due to a possible startup configuration error.
+
+[[og-start-reference]]
+==== Usage Reference
+
+----
+include::../../../../../../../jetty-start/src/main/resources/org/eclipse/jetty/start/usage.txt[]
+----

@@ -1,0 +1,175 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-client-http3]]
+=== HTTP/3 Client Library
+
+In the vast majority of cases, client applications should use the generic, high-level, xref:pg-client-http[HTTP client library] that also provides HTTP/3 support via the pluggable xref:pg-client-http-transport-http3[HTTP/3 transport] or the xref:pg-client-http-transport-dynamic[dynamic transport].
+
+The high-level HTTP library supports cookies, authentication, redirection, connection pooling and a number of other features that are absent in the low-level HTTP/3 library.
+
+The HTTP/3 client library has been designed for those applications that need low-level access to HTTP/3 features such as _sessions_, _streams_ and _frames_, and this is quite a rare use case.
+
+See also the correspondent xref:pg-server-http3[HTTP/3 server library].
+
+[[pg-client-http3-intro]]
+==== Introducing HTTP3Client
+
+The Maven artifact coordinates for the HTTP/3 client library are the following:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.http3</groupId>
+  <artifactId>http3-client</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+The main class is named `org.eclipse.jetty.http3.client.HTTP3Client`, and must be created, configured and started before use:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=start]
+----
+
+When your application stops, or otherwise does not need `HTTP3Client` anymore, it should stop the `HTTP3Client` instance (or instances) that were started:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=stop]
+----
+
+`HTTP3Client` allows client applications to connect to an HTTP/3 server.
+A _session_ represents a single connection to an HTTP/3 server and is defined by class `org.eclipse.jetty.http3.api.Session`.
+A _session_ typically has a long life -- once the connection is established, it remains active until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the connection.
+
+include::../../http3.adoc[tag=multiplex]
+
+// TODO: flow control?
+//[[pg-client-http3-flow-control]]
+//==== HTTP/3 Flow Control
+
+//include::../../http3.adoc[tag=flowControl]
+
+//How a client application should handle HTTP/3 flow control is discussed in details in xref:pg-client-http3-response[this section].
+
+[[pg-client-http3-connect]]
+==== Connecting to the Server
+
+The first thing an application should do is to connect to the server and obtain a `Session`.
+The following example connects to the server:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=connect]
+----
+
+[[pg-client-http3-configure]]
+==== Configuring the Session
+
+The `connect(...)` method takes a `Session.Client.Listener` parameter.
+This listener's `onPreface(...)` method is invoked just before establishing the connection to the server to gather the client configuration to send to the server.
+Client applications can override this method to change the default configuration:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=configure]
+----
+
+The `Session.Client.Listener` is notified of session events originated by the server such as receiving a `SETTINGS` frame from the server, or the server closing the connection, or the client timing out the connection due to idleness.
+Please refer to the `Session.Client.Listener` link:{javadoc-url}/org/eclipse/jetty/http3/api/Session.Client.Listener.html[javadocs] for the complete list of events.
+
+Once a `Session` has been established, the communication with the server happens by exchanging _frames_.
+
+[[pg-client-http3-request]]
+==== Sending a Request
+
+Sending an HTTP request to the server, and receiving a response, creates a _stream_ that encapsulates the exchange of HTTP/3 frames that compose the request and the response.
+
+In order to send an HTTP request to the server, the client must send a `HEADERS` frame.
+`HEADERS` frames carry the request method, the request URI and the request headers.
+Sending the `HEADERS` frame opens the `Stream`:
+
+[source,java,indent=0,subs=normal]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=newStream]
+----
+
+Note how `Session.newRequest(...)` takes a `Stream.Client.Listener` parameter.
+This listener is notified of stream events originated by the server such as receiving `HEADERS` or `DATA` frames that are part of the response, discussed in more details in the xref:pg-client-http3-response[section below].
+Please refer to the `Stream.Client.Listener` link:{javadoc-url}/org/eclipse/jetty/http3/api/Stream.Client.Listener.html[javadocs] for the complete list of events.
+
+HTTP requests may have content, which is sent using the `Stream` APIs:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=newStreamWithData]
+----
+
+IMPORTANT: When sending two `DATA` frames consecutively, the second call to `Stream.data(...)` must be done only when the first is completed, or a `WritePendingException` will be thrown.
+Use the `CompletableFuture` APIs to ensure that the second `Stream.data(...)` call is performed when the first completed successfully.
+
+[[pg-client-http3-response]]
+==== Receiving a Response
+
+Response events are delivered to the `Stream.Client.Listener` passed to `Session.newRequest(...)`.
+
+An HTTP response is typically composed of a `HEADERS` frame containing the HTTP status code and the response headers, and optionally one or more `DATA` frames containing the response content bytes.
+
+The HTTP/3 protocol also supports response trailers (that is, headers that are sent after the response content) that also are sent using a `HEADERS` frame.
+
+A client application can therefore receive the HTTP/3 frames sent by the server by implementing the relevant methods in `Stream.Client.Listener`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=responseListener]
+----
+
+// TODO: flow control?
+//include::../../http3.adoc[tag=apiFlowControl]
+
+[[pg-client-http3-reset]]
+==== Resetting a Request or Response
+
+In HTTP/3, clients and servers have the ability to tell to the other peer that they are not interested anymore in either the request or the response, by resetting the stream.
+
+The `HTTP3Client` APIs allow client applications to send and receive this "reset" event:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=reset]
+----
+
+// TODO: push not yet implemented in HTTP/3.
+//[[pg-client-http3-push]]
+//==== Receiving HTTP/3 Pushes
+//
+//HTTP/3 servers have the ability to push resources related to a primary resource.
+//When an HTTP/3 server pushes a resource, it sends to the client a `PUSH_PROMISE` frame that contains the request URI and headers that a client would use to request explicitly that resource.
+//
+//Client applications can be configured to tell the server to never push resources, see xref:pg-client-http3-configure[this section].
+//
+//Client applications can listen to the push events, and act accordingly:
+//
+//[source,java,indent=0]
+//----
+//include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=push]
+//----
+//
+//If a client application does not want to handle a particular HTTP/3 push, it can just reset the pushed stream to tell the server to stop sending bytes for the pushed stream:
+//
+//[source,java,indent=0]
+//----
+//include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=pushReset]
+//----

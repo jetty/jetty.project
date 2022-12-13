@@ -4,34 +4,31 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <artifactId>test-infinispan-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
     <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
-    <infinispan.docker.image.version>${infinispan.version}</infinispan.docker.image.version>
+    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
     <!-- from 10.xx it has changed to jboss/infinispan -->
-    <infinispan.docker.image.name>jboss/infinispan-server</infinispan.docker.image.name>
+    <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
   </properties>
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <includes>
-            <include>org/eclipse/jetty/server/session/*.java</include>
+            <include>**/*.java</include>
           </includes>
+          <argLine>--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED</argLine>
+          <systemPropertyVariables>
+            <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
+            <infinispan.docker.image.name>${infinispan.docker.image.name}</infinispan.docker.image.name>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
@@ -66,43 +63,36 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-sessions-common</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-remote-query</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-embedded-query</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
       <scope>test</scope>
     </dependency>
@@ -114,31 +104,38 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>${infinispan.version}</version>
       <scope>test</scope>
+      <exclusions>
+          <exclusion>
+              <groupId>org.wildfly.common</groupId>
+              <artifactId>wildfly-common</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
-      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>${infinispan.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
-      <version>4.2.2.Final</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -161,33 +158,30 @@
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <profiles>
-    <!-- to test hotrod, configure a cache called "remote-session-test" -->
     <profile>
-      <id>remote-session-tests</id>
+      <id>jdk16</id>
       <activation>
-        <property>
-          <name>hotrod.enabled</name>
-          <value>true</value>
-        </property>
+        <jdk>[16,)</jdk>
       </activation>
       <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <systemPropertyVariables>
-                <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
-                <infinispan.docker.image.name>${infinispan.docker.image.name}</infinispan.docker.image.name>
-              </systemPropertyVariables>
-              <includes>
-                <include>**/*.java</include>
-              </includes>
-            </configuration>
-          </plugin>
-        </plugins>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <argLine>--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED</argLine>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
       </build>
     </profile>
   </profiles>

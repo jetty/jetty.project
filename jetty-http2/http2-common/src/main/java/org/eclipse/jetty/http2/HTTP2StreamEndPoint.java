@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,6 +15,7 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
@@ -62,13 +58,31 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return stream.getSession().getLocalAddress();
+        SocketAddress local = getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return stream.getSession().getLocalSocketAddress();
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return stream.getSession().getRemoteAddress();
+        SocketAddress remote = getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return stream.getSession().getRemoteSocketAddress();
     }
 
     @Override
@@ -216,6 +230,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         else
         {
             entry.succeed();
+            // WebSocket does not have a backpressure API so you must always demand
+            // the next frame after succeeding the previous one.
+            stream.demand(1);
         }
         return length;
     }

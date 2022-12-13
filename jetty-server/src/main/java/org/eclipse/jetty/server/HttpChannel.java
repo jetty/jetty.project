@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,24 +15,30 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -50,10 +51,14 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
@@ -64,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to
  * HttpTransport.completed().
  */
-public class HttpChannel implements Runnable, HttpOutput.Interceptor
+public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
@@ -93,7 +98,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         _connector = connector;
-        _configuration = configuration;
+        _configuration = Objects.requireNonNull(configuration);
         _endPoint = endPoint;
         _transport = transport;
 
@@ -119,10 +124,62 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state.isSendError();
     }
 
-    protected HttpInput newHttpInput(HttpChannelState state)
+    /** Format the address or host returned from Request methods
+     * @param addr The address or host
+     * @return Default implementation returns {@link HostPort#normalizeHost(String)}
+     */
+    protected String formatAddrOrHost(String addr)
+    {
+        return HostPort.normalizeHost(addr);
+    }
+
+    private HttpInput newHttpInput(HttpChannelState state)
     {
         return new HttpInput(state);
     }
+
+    /**
+     * Notify the channel that content is needed. If some content is immediately available, true is returned and
+     * {@link #produceContent()} has to be called and will return a non-null object.
+     * If no content is immediately available, an attempt to produce content must be made; if new content has been
+     * produced, true is returned; otherwise {@link HttpInput#onContentProducible()} is called once some content
+     * arrives and {@link #produceContent()} can be called without returning {@code null}.
+     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will
+     * return the error on the next call to {@link #produceContent()}.
+     * @return true if content is immediately available.
+     */
+    public abstract boolean needContent();
+
+    /**
+     * Produce a {@link HttpInput.Content} object with data currently stored within the channel. The produced content
+     * can be special (meaning calling {@link HttpInput.Content#isSpecial()} returns true) if the channel reached a special
+     * state, like EOF or an error.
+     * Once a special content has been returned, all subsequent calls to this method will always return a special content
+     * of the same kind and {@link #needContent()} will always return true.
+     * The returned content is "raw", i.e.: not decoded.
+     * @return a {@link HttpInput.Content} object if one is immediately available without blocking, null otherwise.
+     */
+    public abstract HttpInput.Content produceContent();
+
+    /**
+     * Fail all content that is currently stored within the channel.
+     * @param failure the failure to fail the content with.
+     * @return true if EOF was reached while failing all content, false otherwise.
+     */
+    public abstract boolean failAllContent(Throwable failure);
+
+    /**
+     * Fail the channel's input.
+     * @param failure the failure.
+     * @return true if the channel needs to be rescheduled.
+     */
+    public abstract boolean failed(Throwable failure);
+
+    /**
+     * Mark the channel's input as EOF.
+     * @return true if the channel needs to be rescheduled.
+     */
+    protected abstract boolean eof();
 
     protected HttpOutput newHttpOutput()
     {
@@ -141,7 +198,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * {@link TransientListeners} as an {@link AbstractConnector}
      * provided listener</p>
      * <p>Transient listeners are removed after every request cycle</p>
-     * @param listener
+     * @param listener the listener to add
      * @return true if the listener was added.
      */
     @Deprecated
@@ -269,14 +326,105 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _endPoint;
     }
 
+    /**
+     * <p>Return the local name of the connected channel.</p>
+     *
+     * <p>
+     * This is the host name after the connector is bound and the connection is accepted.
+     * </p>
+     * <p>
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+     * </p>
+     * <p>
+     * Note: some connectors are not based on IP networking, and default behavior here will
+     * result in a null return.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+     * to set the value to an acceptable host name.
+     * </p>
+     *
+     * @return the local name, or null
+     */
+    public String getLocalName()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress).getHostName();
+        }
+
+        InetSocketAddress local = getLocalAddress();
+        if (local != null)
+            return local.getHostString();
+
+        return null;
+    }
+
+    /**
+     * <p>Return the Local Port of the connected channel.</p>
+     *
+     * <p>
+     * This is the port the connector is bound to and is accepting connections on.
+     * </p>
+     * <p>
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+     * </p>
+     * <p>
+     * Note: some connectors are not based on IP networking, and default behavior here will
+     * result in a value of 0 returned.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+     * to set the value to an acceptable port.
+     * </p>
+     *
+     * @return the local port, or 0 if unspecified
+     */
+    public int getLocalPort()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress).getPort();
+        }
+
+        InetSocketAddress local = getLocalAddress();
+        return local == null ? 0 : local.getPort();
+    }
+
     public InetSocketAddress getLocalAddress()
     {
-        return _endPoint.getLocalAddress();
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress);
+        }
+
+        SocketAddress local = _endPoint.getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        return _endPoint.getRemoteAddress();
+        SocketAddress remote = _endPoint.getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    /**
+     * @return return the HttpConfiguration server authority override
+     */
+    public HostPort getServerAuthority()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+            return httpConfiguration.getServerAuthority();
+
+        return null;
     }
 
     /**
@@ -301,19 +449,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written = 0;
         _oldIdleTimeout = 0;
         _transientListeners.clear();
-    }
-
-    public void onAsyncWaitForContent()
-    {
-    }
-
-    public void onBlockWaitForContent()
-    {
-    }
-
-    public void onBlockWaitForContentFailure(Throwable failure)
-    {
-        getRequest().getHttpInput().failed(failure);
     }
 
     @Override
@@ -375,7 +510,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ASYNC_DISPATCH:
                     {
-                        dispatch(DispatcherType.ASYNC,() -> getServer().handleAsync(this));
+                        dispatch(DispatcherType.ASYNC, () -> getServer().handleAsync(this));
                         break;
                     }
 
@@ -393,7 +528,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
                             Integer code = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                            _response.setStatus(code != null ? code : HttpStatus.INTERNAL_SERVER_ERROR_500);
+                            if (code == null)
+                                code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+                            _response.setStatus(code);
+
+                            // The handling of the original dispatch failed and we are now going to either generate
+                            // and error response ourselves or dispatch for an error page.  If there is content left over
+                            // from the failed dispatch, then we try to consume it here and if we fail we add a
+                            // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
+                            // by then.
+                            ensureConsumeAllOrNotPersistent();
 
                             ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
@@ -405,7 +549,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
 
-                            dispatch(DispatcherType.ERROR,() ->
+                            dispatch(DispatcherType.ERROR, () ->
                             {
                                 errorHandler.handle(null, _request, _request, _response);
                                 _request.setHandled(true);
@@ -445,18 +589,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         throw _state.getAsyncContextEvent().getThrowable();
                     }
 
-                    case READ_REGISTER:
-                    {
-                        onAsyncWaitForContent();
-                        break;
-                    }
-
-                    case READ_PRODUCE:
-                    {
-                        _request.getHttpInput().asyncReadProduce();
-                        break;
-                    }
-
                     case READ_CALLBACK:
                     {
                         ContextHandler handler = _state.getContextHandler();
@@ -479,10 +611,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted() && !_request.isHandled() && !_response.getHttpOutput().isClosed())
+                        if (!_response.isCommitted())
                         {
-                            _response.sendError(HttpStatus.NOT_FOUND_404);
-                            break;
+                            if (!_request.isHandled() && !_response.getHttpOutput().isClosed())
+                            {
+                                // The request was not actually handled
+                                _response.sendError(HttpStatus.NOT_FOUND_404);
+                                break;
+                            }
+
+                            // Indicate Connection:close if we can't consume all.
+                            if (_response.getStatus() >= 200)
+                                ensureConsumeAllOrNotPersistent();
                         }
 
                         // RFC 7230, section 3.3.
@@ -498,13 +638,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         if (checkAndPrepareUpgrade())
                             break;
 
-                        // TODO Currently a blocking/aborting consumeAll is done in the handling of the TERMINATED
-                        // TODO Action triggered by the completed callback below.  It would be possible to modify the
-                        // TODO callback to do a non-blocking consumeAll at this point and only call completed when
-                        // TODO that is done.
-
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(() -> _state.completed(null), _state::completed));
+                        _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
                     }
@@ -529,6 +664,66 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         boolean suspended = action == Action.WAIT;
         return !suspended;
+    }
+
+    public void ensureConsumeAllOrNotPersistent()
+    {
+        switch (_request.getHttpVersion())
+        {
+            case HTTP_1_0:
+                if (_request.getHttpInput().consumeAll())
+                    return;
+
+                // Remove any keep-alive value in Connection headers
+                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                {
+                    if (fields == null || fields.isEmpty())
+                        return null;
+                    String v = fields.stream()
+                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
+                        .collect(Collectors.joining(", "));
+                    if (StringUtil.isEmpty(v))
+                        return null;
+
+                    return new HttpField(HttpHeader.CONNECTION, v);
+                });
+                break;
+
+            case HTTP_1_1:
+                if (_request.getHttpInput().consumeAll())
+                    return;
+
+                // Add close value to Connection headers
+                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                {
+                    if (fields == null || fields.isEmpty())
+                        return HttpConnection.CONNECTION_CLOSE;
+
+                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
+                    {
+                        if (fields.size() == 1)
+                        {
+                            HttpField f = fields.get(0);
+                            if (HttpConnection.CONNECTION_CLOSE.equals(f))
+                                return f;
+                        }
+
+                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                            .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
+                            .collect(Collectors.joining(", ")));
+                    }
+
+                    return new HttpField(HttpHeader.CONNECTION,
+                        Stream.concat(fields.stream()
+                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
+                        Stream.of(HttpHeaderValue.CLOSE.asString()))
+                        .collect(Collectors.joining(", ")));
+                });
+                break;
+
+            default:
+                break;
+        }
     }
 
     /**
@@ -612,9 +807,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
         if (isCommitted())
+        {
             abort(failure);
+        }
         else
-            _state.onError(failure);
+        {
+            try
+            {
+                _state.onError(failure);
+            }
+            catch (IllegalStateException e)
+            {
+                abort(failure);
+            }
+        }
     }
 
     /**
@@ -706,7 +912,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
         _combinedListener.onRequestContent(_request, content.getByteBuffer());
-        return _request.getHttpInput().addContent(content);
+        return false;
     }
 
     public boolean onContentComplete()
@@ -729,7 +935,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onRequestComplete {}", this);
-        boolean result = _request.getHttpInput().eof();
+        boolean result = eof();
         _combinedListener.onRequestEnd(_request);
         return result;
     }
@@ -753,9 +959,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", getRequest().getRequestURI(), getBytesWritten());
 
-        if (_requestLog != null)
-            _requestLog.log(_request, _response);
-
         long idleTO = _configuration.getIdleTimeout();
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
@@ -763,11 +966,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request.onCompleted();
         _combinedListener.onComplete(_request);
         _transport.onCompleted();
-    }
-
-    public boolean onEarlyEOF()
-    {
-        return _request.getHttpInput().earlyEOF();
     }
 
     public void onBadMessage(BadMessageException failure)
@@ -839,17 +1037,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (committing)
         {
+            // Let HttpChannel.Listeners modify the response before commit
+            _combinedListener.onResponseBegin(_request);
             // We need an info to commit
             if (response == null)
                 response = _response.newResponseMetaData();
             commit(response);
-            _combinedListener.onResponseBegin(_request);
             _request.onResponseCommit();
-            
-            // wrap callback to process 100 responses
+
+            // wrap callback to process informational responses
             final int status = response.getStatus();
-            final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
-                ? new Send100Callback(callback)
+            final Callback committed = HttpStatus.isInformational(status)
+                ? new Send1XXCallback(callback)
                 : new SendCallback(callback, content, true, complete);
 
             // committing write
@@ -954,6 +1153,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public Scheduler getScheduler()
     {
         return _connector.getScheduler();
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return getHttpConfiguration().isUseInputDirectByteBuffers();
     }
 
     public boolean isUseOutputDirectByteBuffers()
@@ -1274,9 +1478,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private class Send100Callback extends SendCallback
+    private class Send1XXCallback extends SendCallback
     {
-        private Send100Callback(Callback callback)
+        private Send1XXCallback(Callback callback)
         {
             super(callback, null, false, false);
         }

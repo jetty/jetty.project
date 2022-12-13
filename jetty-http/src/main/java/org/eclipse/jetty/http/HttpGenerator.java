@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,12 +17,13 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,13 +86,11 @@ public class HttpGenerator
     private final int _send;
     private static final int SEND_SERVER = 0x01;
     private static final int SEND_XPOWEREDBY = 0x02;
-    private static final Trie<Boolean> ASSUMED_CONTENT_METHODS = new ArrayTrie<>(8);
-
-    static
-    {
-        ASSUMED_CONTENT_METHODS.put(HttpMethod.POST.asString(), Boolean.TRUE);
-        ASSUMED_CONTENT_METHODS.put(HttpMethod.PUT.asString(), Boolean.TRUE);
-    }
+    private static final Index<Boolean> ASSUMED_CONTENT_METHODS = new Index.Builder<Boolean>()
+        .caseSensitive(false)
+        .with(HttpMethod.POST.asString(), Boolean.TRUE)
+        .with(HttpMethod.PUT.asString(), Boolean.TRUE)
+        .build();
 
     public static void setJettyVersion(String serverVersion)
     {
@@ -350,7 +344,6 @@ public class HttpGenerator
             _endOfContent = EndOfContent.UNKNOWN_CONTENT;
             return Result.FLUSH;
         }
-
         _state = State.END;
         return Boolean.TRUE.equals(_persistent) ? Result.DONE : Result.SHUTDOWN_OUT;
     }
@@ -392,15 +385,21 @@ public class HttpGenerator
 
                     // Handle 1xx and no content responses
                     int status = info.getStatus();
-                    if (status >= 100 && status < 200)
+                    if (HttpStatus.isInformational(status))
                     {
                         _noContentResponse = true;
-
-                        if (status != HttpStatus.SWITCHING_PROTOCOLS_101)
+                        switch (status)
                         {
-                            header.put(HttpTokens.CRLF);
-                            _state = State.COMPLETING_1XX;
-                            return Result.FLUSH;
+                            case HttpStatus.SWITCHING_PROTOCOLS_101:
+                                break;
+                            case HttpStatus.EARLY_HINT_103:
+                                generateHeaders(header, content, last);
+                                _state = State.COMPLETING_1XX;
+                                return Result.FLUSH;
+                            default:
+                                header.put(HttpTokens.CRLF);
+                                _state = State.COMPLETING_1XX;
+                                return Result.FLUSH;
                         }
                     }
                     else if (status == HttpStatus.NO_CONTENT_204 || status == HttpStatus.NOT_MODIFIED_304)
@@ -469,6 +468,12 @@ public class HttpGenerator
             default:
                 throw new IllegalStateException();
         }
+    }
+
+    public void servletUpgrade()
+    {
+        _noContentResponse = false;
+        _state = State.COMMITTED;
     }
 
     private void prepareChunk(ByteBuffer chunk, int remaining)
@@ -636,17 +641,23 @@ public class HttpGenerator
 
                         case CONNECTION:
                         {
-                            putTo(field, header);
+                            boolean keepAlive = field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
+                            if (keepAlive && _info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null)
+                            {
+                                _persistent = true;
+                            }
                             if (field.contains(HttpHeaderValue.CLOSE.asString()))
                             {
                                 close = true;
                                 _persistent = false;
                             }
-
-                            if (_info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            if (keepAlive && _persistent == Boolean.FALSE)
                             {
-                                _persistent = true;
+                                field = new HttpField(HttpHeader.CONNECTION,
+                                    Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
+                                        .collect(Collectors.joining(", ")));
                             }
+                            putTo(field, header);
                             break;
                         }
 
@@ -671,7 +682,7 @@ public class HttpGenerator
         // Calculate how to end _content and connection, _content length and transfer encoding
         // settings from http://tools.ietf.org/html/rfc7230#section-3.3.3
 
-        boolean assumedContentRequest = request != null && Boolean.TRUE.equals(ASSUMED_CONTENT_METHODS.get(request.getMethod()));
+        boolean assumedContentRequest = request != null && ASSUMED_CONTENT_METHODS.get(request.getMethod()) != null;
         boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
         boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -29,6 +24,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
@@ -48,7 +44,7 @@ import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +55,16 @@ public abstract class AbstractHandshaker implements Handshaker
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     @Override
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
     {
         if (!validateRequest(request))
             return false;
 
-        WebSocketComponents components = negotiator.getWebSocketComponents();
-        Negotiation negotiation = newNegotiation(request, response, components);
+        // After negotiation these can be set to copy data from request and disable unavailable methods.
+        UpgradeHttpServletRequest upgradeRequest = new UpgradeHttpServletRequest(request);
+        UpgradeHttpServletResponse upgradeResponse = new UpgradeHttpServletResponse(response);
+
+        WebSocketNegotiation negotiation = newNegotiation(upgradeRequest, upgradeResponse, components);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         negotiation.negotiate();
@@ -133,7 +132,7 @@ public abstract class AbstractHandshaker implements Handshaker
         Negotiated negotiated = new Negotiated(baseRequest.getHttpURI().toURI(), protocol, baseRequest.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Session
-        WebSocketCoreSession coreSession = newWebSocketCoreSession(request, handler, negotiated, components);
+        WebSocketCoreSession coreSession = newWebSocketCoreSession(upgradeRequest, handler, negotiated, components);
         if (defaultCustomizer != null)
             defaultCustomizer.customize(coreSession);
         negotiator.customize(coreSession);
@@ -165,6 +164,11 @@ public abstract class AbstractHandshaker implements Handshaker
 
         baseRequest.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
 
+        // Save state from request/response and remove reference to the base request/response.
+        upgradeRequest.upgrade();
+        upgradeResponse.upgrade();
+        negotiation.upgrade();
+
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);
 
@@ -173,11 +177,11 @@ public abstract class AbstractHandshaker implements Handshaker
 
     protected abstract boolean validateRequest(HttpServletRequest request);
 
-    protected abstract Negotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents);
+    protected abstract WebSocketNegotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents);
 
     protected abstract boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response);
 
-    protected boolean validateNegotiation(Negotiation negotiation)
+    protected boolean validateNegotiation(WebSocketNegotiation negotiation)
     {
         if (!negotiation.validateHeaders())
         {
@@ -207,17 +211,17 @@ public abstract class AbstractHandshaker implements Handshaker
                 if (contextHandler != null)
                     contextHandler.handle(runnable);
                 else
-                    runnable.run();
+                    super.handle(runnable);
             }
         };
     }
 
     protected abstract WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession);
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, RetainableByteBufferPool retainableByteBufferPool, WebSocketCoreSession coreSession)
     {
-        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
+        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, retainableByteBufferPool, coreSession);
     }
 
-    protected abstract void prepareResponse(Response response, Negotiation negotiation);
+    protected abstract void prepareResponse(Response response, WebSocketNegotiation negotiation);
 }

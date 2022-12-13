@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,12 +14,13 @@
 package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.DuplicateAnnotationException;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.internal.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,7 +52,8 @@ public class LocalEndpointMetadataTest
         container.stop();
     }
 
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
+    private final WebSocketComponents components = new WebSocketComponents();
+    private final JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container, components);
 
     private JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {

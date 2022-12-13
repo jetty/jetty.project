@@ -1,0 +1,41 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+:doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Operations Guide
+:toc-title: Operations Guide
+:idprefix: og-
+:docinfo: private-head
+
+include::../config.adoc[]
+include::.asciidoctorconfig[]
+include::introduction.adoc[]
+include::begin/chapter.adoc[]
+include::features.adoc[]
+include::howtos.adoc[]
+include::architecture/chapter.adoc[]
+include::start/chapter.adoc[]
+include::modules/chapter.adoc[]
+include::deploy/chapter.adoc[]
+include::server/chapter.adoc[]
+include::protocols/chapter.adoc[]
+include::keystore/chapter.adoc[]
+include::sessions/chapter.adoc[]
+include::quickstart/chapter.adoc[]
+include::annotations/chapter.adoc[]
+include::jsp/chapter.adoc[]
+include::jndi/chapter.adoc[]
+include::jaas/chapter.adoc[]
+include::jaspi/chapter.adoc[]
+include::jmx/chapter.adoc[]
+include::troubleshooting/chapter.adoc[]
+include::xml/chapter.adoc[]

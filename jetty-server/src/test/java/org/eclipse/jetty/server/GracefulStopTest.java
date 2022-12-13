@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +35,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
@@ -50,6 +47,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GracefulStopTest
@@ -147,14 +145,14 @@ public class GracefulStopTest
         handler.latch = new CountDownLatch(1);
         final int port = connector.getLocalPort();
         Socket client = new Socket("127.0.0.1", port);
-        client.getOutputStream().write(post);
-        client.getOutputStream().write(BODY_67890);
+        client.getOutputStream().write(concat(post, BODY_67890));
         client.getOutputStream().flush();
         assertTrue(handler.latch.await(5, TimeUnit.SECONDS));
 
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+        assertNotNull(response);
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getContent(), is("read 10/10\n"));
+        assertThat(response.getContent(), is("read [10/10]"));
         assertThat(response.get(HttpHeader.CONNECTION), nullValue());
 
         return client;
@@ -163,36 +161,35 @@ public class GracefulStopTest
     void assertAvailable(Socket client, byte[] post, TestHandler handler) throws Exception
     {
         handler.latch = new CountDownLatch(1);
-        client.getOutputStream().write(post);
-        client.getOutputStream().write(BODY_67890);
+        client.getOutputStream().write(concat(post, BODY_67890));
         client.getOutputStream().flush();
         assertTrue(handler.latch.await(5, TimeUnit.SECONDS));
 
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+        assertNotNull(response);
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getContent(), is("read 10/10\n"));
+        assertThat(response.getContent(), is("read [10/10]"));
         assertThat(response.get(HttpHeader.CONNECTION), nullValue());
     }
 
     Future<Integer> backgroundUnavailable(Socket client, byte[] post, ContextHandler context, TestHandler handler) throws Exception
     {
         FuturePromise<Integer> future = new FuturePromise<>();
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         new Thread(() ->
         {
             try
             {
                 while (context.isAvailable())
                 {
-                    assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), lessThan(5000L));
+                    assertThat(NanoTime.millisSince(start), lessThan(5000L));
                     Thread.sleep(100);
                 }
 
-                client.getOutputStream().write(post);
-                client.getOutputStream().write(BODY_67890);
+                client.getOutputStream().write(concat(post, BODY_67890));
                 client.getOutputStream().flush();
                 HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
-
+                assertNotNull(response);
                 future.succeeded(response.getStatus());
             }
             catch (Exception e)
@@ -206,19 +203,16 @@ public class GracefulStopTest
 
     void assertQuickStop() throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         server.stop();
-        long stop = System.nanoTime();
-        long duration = TimeUnit.NANOSECONDS.toMillis(stop - start);
-        assertThat(duration, lessThan(2000L));
+        assertThat(NanoTime.millisSince(start), lessThan(2000L));
     }
 
     void assertGracefulStop(LifeCycle lifecycle) throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         lifecycle.stop();
-        long stop = System.nanoTime();
-        long duration = TimeUnit.NANOSECONDS.toMillis(stop - start);
+        long duration = NanoTime.millisSince(start);
         assertThat(duration, greaterThan(50L));
         assertThat(duration, lessThan(5000L));
     }
@@ -226,12 +220,13 @@ public class GracefulStopTest
     void assertResponse(Socket client, boolean close) throws Exception
     {
         HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+        assertNotNull(response);
         assertThat(response.getStatus(), is(200));
         if (close)
             assertThat(response.get(HttpHeader.CONNECTION), is("close"));
         else
             assertThat(response.get(HttpHeader.CONNECTION), nullValue());
-        assertThat(response.getContent(), is("read 10/10\n"));
+        assertThat(response.getContent(), is("read [10/10]"));
     }
 
     void assert500Response(Socket client) throws Exception
@@ -246,11 +241,9 @@ public class GracefulStopTest
 
     void assertQuickClose(Socket client) throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         assertThat(client.getInputStream().read(), is(-1));
-        long stop = System.nanoTime();
-        long duration = TimeUnit.NANOSECONDS.toMillis(stop - start);
-        assertThat(duration, lessThan(2000L));
+        assertThat(NanoTime.millisSince(start), lessThan(2000L));
     }
 
     void assertHandled(TestHandler handler, boolean error)
@@ -264,14 +257,13 @@ public class GracefulStopTest
 
     void backgroundComplete(Socket client, TestHandler handler) throws Exception
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         new Thread(() ->
         {
             try
             {
                 handler.latch.await();
-                long now = System.nanoTime();
-                Thread.sleep(100 - TimeUnit.NANOSECONDS.toMillis(now - start));
+                Thread.sleep(100 - NanoTime.millisSince(start));
                 client.getOutputStream().write(BODY_67890);
             }
             catch (Exception e)
@@ -279,6 +271,13 @@ public class GracefulStopTest
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private byte[] concat(byte[] bytes1, byte[] bytes2)
+    {
+        byte[] bytes = Arrays.copyOf(bytes1, bytes1.length + bytes2.length);
+        System.arraycopy(bytes2, 0, bytes, bytes1.length, bytes2.length);
+        return bytes;
     }
 
     @Test
@@ -414,7 +413,7 @@ public class GracefulStopTest
                     }
                 }
 
-                response.getWriter().printf("read %d/%d%n", c, contentLength);
+                response.getWriter().printf("read [%d/%d]", c, contentLength);
             }
             catch (Throwable th)
             {

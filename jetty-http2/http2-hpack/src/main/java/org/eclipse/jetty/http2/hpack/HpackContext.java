@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -29,9 +24,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,13 +108,14 @@ public class HpackContext
         };
 
     private static final Map<HttpField, Entry> __staticFieldMap = new HashMap<>();
-    private static final Trie<StaticEntry> __staticNameMap = new ArrayTernaryTrie<>(true, 512);
-    private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.UNKNOWN.ordinal()];
+    private static final Index<StaticEntry> __staticNameMap;
+    private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.values().length];
     private static final StaticEntry[] __staticTable = new StaticEntry[STATIC_TABLE.length];
     public static final int STATIC_SIZE = STATIC_TABLE.length - 1;
 
     static
     {
+        Index.Builder<StaticEntry> staticNameMapBuilder = new Index.Builder<StaticEntry>().caseSensitive(false);
         Set<String> added = new HashSet<>();
         for (int i = 1; i < STATIC_TABLE.length; i++)
         {
@@ -173,11 +168,10 @@ public class HpackContext
             if (!added.contains(entry._field.getName()))
             {
                 added.add(entry._field.getName());
-                __staticNameMap.put(entry._field.getName(), entry);
-                if (__staticNameMap.get(entry._field.getName()) == null)
-                    throw new IllegalStateException("name trie too small");
+                staticNameMapBuilder.with(entry._field.getName(), entry);
             }
         }
+        __staticNameMap = staticNameMapBuilder.build();
 
         for (HttpHeader h : HttpHeader.values())
         {

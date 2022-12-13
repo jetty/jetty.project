@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,18 +13,18 @@
 
 package org.eclipse.jetty.jaas.spi;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
-import org.eclipse.jetty.security.AbstractLoginService;
+import org.eclipse.jetty.jaas.JAASLoginService;
+import org.eclipse.jetty.jaas.PropertyUserStoreManager;
 import org.eclipse.jetty.security.PropertyUserStore;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,16 +34,13 @@ import org.slf4j.LoggerFactory;
 public class PropertyFileLoginModule extends AbstractLoginModule
 {
     public static final String DEFAULT_FILENAME = "realm.properties";
-
     private static final Logger LOG = LoggerFactory.getLogger(PropertyFileLoginModule.class);
 
-    private static ConcurrentHashMap<String, PropertyUserStore> _propertyUserStores = new ConcurrentHashMap<String, PropertyUserStore>();
-
-    private int _refreshInterval = 0;
-    private String _filename = DEFAULT_FILENAME;
+    private PropertyUserStore _store;
 
     /**
-     * Read contents of the configured property file.
+     * Use a PropertyUserStore to read the authentication and authorizaton information contained in
+     * the file named by the option "file".
      *
      * @param subject the subject
      * @param callbackHandler the callback handler
@@ -64,38 +56,59 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         setupPropertyUserStore(options);
     }
 
+    /**
+     * Get an existing, or create a new PropertyUserStore to read the 
+     * authentication and authorization information from the file named by
+     * the option "file".
+     * 
+     * @param options configuration options
+     */
     private void setupPropertyUserStore(Map<String, ?> options)
     {
-        parseConfig(options);
+        String filename = (String)options.get("file");
+        filename = (filename == null ? DEFAULT_FILENAME : filename);
 
-        if (_propertyUserStores.get(_filename) == null)
+        PropertyUserStoreManager mgr = JAASLoginService.INSTANCE.get().getBean(PropertyUserStoreManager.class);
+        if (mgr == null)
+            throw new IllegalStateException("No PropertyUserStoreManager");
+
+        _store = mgr.getPropertyUserStore(filename);
+        if (_store == null)
         {
-            PropertyUserStore propertyUserStore = new PropertyUserStore();
-            propertyUserStore.setConfig(_filename);
-
-            PropertyUserStore prev = _propertyUserStores.putIfAbsent(_filename, propertyUserStore);
-            if (prev == null)
+            boolean hotReload = false;  
+            String tmp = (String)options.get("hotReload");
+            if (tmp != null)
+                hotReload = Boolean.parseBoolean(tmp);
+            else
             {
-                LOG.debug("setupPropertyUserStore: Starting new PropertyUserStore. PropertiesFile: {} refreshInterval: {}", _filename, _refreshInterval);
-
-                try
+                //refreshInterval is deprecated, use hotReload instead
+                tmp = (String)options.get("refreshInterval");
+                if (tmp != null)
                 {
-                    propertyUserStore.start();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Exception while starting propertyUserStore: ", e);
+                    LOG.warn("Use 'hotReload' boolean property instead of 'refreshInterval'");
+                    try
+                    {
+                        hotReload = (Integer.parseInt(tmp) > 0);
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        LOG.warn("'refreshInterval' is not an integer");
+                    }
                 }
             }
+            PropertyUserStore newStore = new PropertyUserStore();
+            newStore.setConfig(filename);
+            newStore.setHotReload(hotReload);
+            _store = mgr.addPropertyUserStore(filename, newStore);
+            try
+            {
+                _store.start();
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Exception starting propertyUserStore {} ", filename, e);
+            }
         }
-    }
-
-    private void parseConfig(Map<String, ?> options)
-    {
-        String tmp = (String)options.get("file");
-        _filename = (tmp == null ? DEFAULT_FILENAME : tmp);
-        tmp = (String)options.get("refreshInterval");
-        _refreshInterval = (tmp == null ? _refreshInterval : Integer.parseInt(tmp));
     }
 
     /**
@@ -103,29 +116,23 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the user information
      */
     @Override
-    public UserInfo getUserInfo(String userName) throws Exception
+    public JAASUser getUser(String userName) throws Exception
     {
-        PropertyUserStore propertyUserStore = _propertyUserStores.get(_filename);
-        if (propertyUserStore == null)
-            throw new IllegalStateException("PropertyUserStore should never be null here!");
-
         if (LOG.isDebugEnabled())
-            LOG.debug("Checking PropertyUserStore {} for {}", _filename, userName);
-        UserIdentity userIdentity = propertyUserStore.getUserIdentity(userName);
-        if (userIdentity == null)
+            LOG.debug("Checking PropertyUserStore {} for {}", _store.getConfig(), userName);
+        UserPrincipal up = _store.getUserPrincipal(userName);
+        if (up == null)
             return null;
 
-        //TODO in future versions change the impl of PropertyUserStore so its not
-        //storing Subjects etc, just UserInfo
-        Set<AbstractLoginService.RolePrincipal> principals = userIdentity.getSubject().getPrincipals(AbstractLoginService.RolePrincipal.class);
-
-        List<String> roles = principals.stream()
-            .map(AbstractLoginService.RolePrincipal::getName)
-            .collect(Collectors.toList());
-
-        Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Found: {} in PropertyUserStore {}", userName,  _filename);
-        return new UserInfo(userName, credential, roles);
+        List<RolePrincipal> rps = _store.getRolePrincipals(userName);
+        List<String> roles = rps == null ? Collections.emptyList() : rps.stream().map(RolePrincipal::getName).collect(Collectors.toList());
+        return new JAASUser(up)
+        {
+            @Override
+            public List<String> doFetchRoles()
+            {
+                return roles;
+            }
+        };
     }
 }

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -31,6 +26,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
@@ -41,7 +37,7 @@ public class SerialRestServlet extends AbstractRestServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        final long start = System.nanoTime();
+        long start = NanoTime.now();
 
         String[] keywords = sanitize(request.getParameter(ITEMS_PARAM)).split(",");
         Queue<Map<String, Object>> results = new LinkedList<>();
@@ -77,8 +73,7 @@ public class SerialRestServlet extends AbstractRestServlet
         out.println(STYLE);
         out.println("</head><body><small>");
 
-        long now = System.nanoTime();
-        long total = now - start;
+        long total = NanoTime.since(start);
 
         out.print("<b>Blocking: " + sanitize(request.getParameter(ITEMS_PARAM)) + "</b><br/>");
         out.print("Total Time: " + ms(total) + "ms<br/>");

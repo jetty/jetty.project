@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -301,14 +296,28 @@ public class ErrorPageTest
     @Test
     public void testErrorException() throws Exception
     {
+        _errorPageErrorHandler.setUnwrapServletException(false);
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: javax.servlet.ServletException: java.lang.IllegalStateException"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: javax.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class javax.servlet.ServletException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
+        }
+
+        _errorPageErrorHandler.setUnwrapServletException(true);
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        {
+            String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
         }
@@ -459,6 +468,7 @@ public class ErrorPageTest
                 __destroyed = new AtomicBoolean(false);
                 String response = _connector.getResponse("GET /unavailable/info HTTP/1.0\r\n\r\n");
                 assertThat(response, Matchers.containsString("HTTP/1.1 404 "));
+                _server.stop();
                 assertTrue(__destroyed.get());
             }
         }
@@ -623,7 +633,7 @@ public class ErrorPageTest
             if (code != null)
                 response.sendError(Integer.parseInt(code));
             else
-                throw new ServletException(new IllegalStateException());
+                throw new ServletException(new IllegalStateException("Test Exception"));
         }
     }
 

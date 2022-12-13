@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -41,6 +36,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -161,12 +157,12 @@ public class StopTest
                     @Override
                     public void close()
                     {
-                        long start = System.nanoTime();
+                        long start = NanoTime.now();
                         new Thread(() ->
                         {
                             try
                             {
-                                Thread.sleep(closeWait - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+                                Thread.sleep(closeWait - NanoTime.millisSince(start));
                             }
                             catch (Throwable e)
                             {
@@ -211,7 +207,7 @@ public class StopTest
                 break;
         }
 
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         try
         {
             server.stop();
@@ -221,10 +217,9 @@ public class StopTest
         {
             assertTrue(stopTimeout > 0 && stopTimeout < closeWait);
         }
-        long stop = System.nanoTime();
 
         // Check stop time was correct
-        assertThat(TimeUnit.NANOSECONDS.toMillis(stop - start), stopTimeMatcher);
+        assertThat(NanoTime.millisSince(start), stopTimeMatcher);
 
         // Connection closed
         while (true)
@@ -232,7 +227,7 @@ public class StopTest
             int r = client.getInputStream().read();
             if (r == -1)
                 break;
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start), lessThan(10L));
+            assertThat(NanoTime.millisSince(start), lessThan(10L));
         }
 
         // onClose Thread interrupted or completed
@@ -349,10 +344,10 @@ public class StopTest
             }
         }).start();
 
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         while (!connector.isShutdown())
         {
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start), lessThan(10L));
+            assertThat(NanoTime.secondsSince(start), lessThan(10L));
             Thread.sleep(10);
         }
 

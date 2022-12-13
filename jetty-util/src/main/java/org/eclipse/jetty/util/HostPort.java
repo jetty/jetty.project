@@ -1,22 +1,21 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
 //
 
 package org.eclipse.jetty.util;
+
+import java.net.InetAddress;
+
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
  * <p>Parse an authority string (in the form {@code host:port}) into
@@ -52,9 +51,12 @@ public class HostPort
                 if (close < 0)
                     throw new IllegalArgumentException("Bad IPv6 host");
                 _host = authority.substring(0, close + 1);
+                if (!isValidIpAddress(_host))
+                    throw new IllegalArgumentException("Bad IPv6 host");
 
                 if (authority.length() > close + 1)
                 {
+                    // ipv6 with port
                     if (authority.charAt(close + 1) != ':')
                         throw new IllegalArgumentException("Bad IPv6 port");
                     _port = parsePort(authority.substring(close + 2));
@@ -70,21 +72,29 @@ public class HostPort
                 int c = authority.lastIndexOf(':');
                 if (c >= 0)
                 {
-                    // ipv6address
                     if (c != authority.indexOf(':'))
                     {
+                        // ipv6address no port
                         _host = "[" + authority + "]";
+                        if (!isValidIpAddress(_host))
+                            throw new IllegalArgumentException("Bad IPv6 host");
                         _port = 0;
                     }
                     else
                     {
+                        // host/ipv4 with port
                         _host = authority.substring(0, c);
+                        if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                            throw new IllegalArgumentException("Bad Authority");
                         _port = parsePort(authority.substring(c + 1));
                     }
                 }
                 else
                 {
+                    // host/ipv4 without port
                     _host = authority;
+                    if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                        throw new IllegalArgumentException("Bad Authority");
                     _port = 0;
                 }
             }
@@ -99,11 +109,32 @@ public class HostPort
         }
     }
 
+    protected boolean isValidIpAddress(String ip)
+    {
+        try
+        {
+            // Per javadoc, If a literal IP address is supplied, only the validity of the
+            // address format is checked.
+            InetAddress.getByName(ip);
+            return true;
+        }
+        catch (Throwable ignore)
+        {
+            return false;
+        }
+    }
+
+    protected boolean isValidHostName(String name)
+    {
+        return URIUtil.isValidHostRegisteredName(name);
+    }
+
     /**
      * Get the host.
      *
      * @return the host
      */
+    @ManagedAttribute("host")
     public String getHost()
     {
         return _host;
@@ -114,6 +145,7 @@ public class HostPort
      *
      * @return the port
      */
+    @ManagedAttribute("port")
     public int getPort()
     {
         return _port;
@@ -128,6 +160,16 @@ public class HostPort
     public int getPort(int defaultPort)
     {
         return _port > 0 ? _port : defaultPort;
+    }
+
+    public boolean hasHost()
+    {
+        return StringUtil.isNotBlank(_host);
+    }
+
+    public boolean hasPort()
+    {
+        return _port > 0;
     }
 
     @Override
@@ -149,7 +191,7 @@ public class HostPort
     public static String normalizeHost(String host)
     {
         // if it is normalized IPv6 or could not be IPv6, return
-        if (host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
+        if (host == null || host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
             return host;
 
         // normalize with [ ]

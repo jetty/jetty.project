@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -37,6 +33,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
@@ -49,7 +46,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Assumptions;
@@ -57,15 +53,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.eclipse.jetty.http.client.Transport.FCGI;
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
+import static org.eclipse.jetty.http.client.Transport.H2;
+import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
@@ -178,7 +172,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 1000;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         CountDownLatch resultLatch = new CountDownLatch(2);
         AsyncRequestContent content = new AsyncRequestContent();
@@ -242,7 +236,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 2500;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -266,8 +260,6 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
     public void testAsyncWriteIdleTimeoutFires(Transport transport) throws Exception
     {
         init(transport);
-        // TODO work out why this test fails for UNIX_SOCKET
-        Assumptions.assumeFalse(scenario.transport == UNIX_SOCKET);
 
         CountDownLatch handlerLatch = new CountDownLatch(1);
         scenario.start(new AbstractHandler()
@@ -300,7 +292,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 2500;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -363,15 +355,22 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         });
 
         AsyncRequestContent content = new AsyncRequestContent();
-        BlockingQueue<Object> results = new BlockingArrayQueue<>();
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
             .body(content)
+            .onResponseSuccess(response ->
+            {
+                responseRef.set(response);
+                responseLatch.countDown();
+                // Now that we have the response, fail the request,
+                // as the request body has not been fully sent yet.
+                response.abort(new Exception("thrown by the test"));
+            })
             .send(result ->
             {
-                if (result.isFailed())
-                    results.offer(result.getFailure());
-                else
-                    results.offer(result.getResponse().getStatus());
+                resultLatch.countDown();
             });
 
         for (int i = 0; i < 3; ++i)
@@ -383,15 +382,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 
         assertThat(scenario.requestLog.poll(5, TimeUnit.SECONDS), containsString(" 408"));
 
-        // Request should timeout.
+        // Request should timeout on server.
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
 
-        Object result = results.poll(5, TimeUnit.SECONDS);
-        assertNotNull(result);
-        if (result instanceof Integer)
-            assertThat(result, is(408));
-        else
-            assertThat(result, instanceOf(Throwable.class));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.REQUEST_TIMEOUT_408, responseRef.get().getStatus());
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -450,7 +446,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         scenario.start(new BlockingReadHandler(handlerLatch));
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
@@ -518,7 +514,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                 });
             }
         });
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -559,7 +555,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                 }
             }
         });
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
@@ -607,7 +603,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         // In HTTP/2, we force the flow control window to be small, so that the server
         // stalls almost immediately without having written many bytes, so that the test
         // completes quickly.
-        Assumptions.assumeTrue(transport.isHttp2Based());
+        Assumptions.assumeTrue(transport == H2C || transport == H2);
 
         init(transport);
 

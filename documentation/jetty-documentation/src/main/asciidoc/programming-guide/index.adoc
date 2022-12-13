@@ -1,0 +1,27 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+:doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Programming Guide
+:toc-title: Jetty Programming Guide
+:idprefix: pg-
+:docinfo: private-head
+
+include::../config.adoc[]
+include::.asciidoctorconfig[]
+include::introduction.adoc[]
+include::client/client.adoc[]
+include::server/server.adoc[]
+include::maven/maven.adoc[]
+include::arch.adoc[]
+include::troubleshooting.adoc[]
+include::migration/migration.adoc[]

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,8 +15,10 @@ package org.eclipse.jetty.server.session;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -35,47 +32,15 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSessionDataStore.class);
+    
+    public static final int DEFAULT_GRACE_PERIOD_SEC = 60 * 60; //default of 1hr
+    public static final int DEFAULT_SAVE_PERIOD_SEC = 0;
 
     protected SessionContext _context; //context associated with this session data store
-    protected int _gracePeriodSec = 60 * 60; //default of 1hr 
+    protected int _gracePeriodSec = DEFAULT_GRACE_PERIOD_SEC;
     protected long _lastExpiryCheckTime = 0; //last time in ms that getExpired was called
     protected long _lastOrphanSweepTime = 0; //last time in ms that we deleted orphaned sessions
-    protected int _savePeriodSec = 0; //time in sec between saves
-    
-    /**
-     * Small utility class to allow us to
-     * return a result and an Exception
-     * from invocation of Runnables.
-     *
-     * @param <V> the type of the result.
-     */
-    private class Result<V>
-    {
-        private V _result;
-        private Exception _exception;
-        
-        public void setResult(V result)
-        {
-            _result = result;
-        }
-        
-        public void setException(Exception exception)
-        {
-            _exception = exception;
-        }
-        
-        private void throwIfException() throws Exception
-        {
-            if (_exception != null)
-                throw _exception;
-        }
-        
-        public V getOrThrow() throws Exception
-        {
-            throwIfException();
-            return _result;
-        }
-    }
+    protected int _savePeriodSec = DEFAULT_SAVE_PERIOD_SEC; //time in sec between saves
     
     /**
      * Check if a session for the given id exists.
@@ -173,21 +138,22 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         if (!isStarted())
             throw new IllegalStateException("Not started");
 
-        final Result<SessionData> result = new Result<>();
-
+        final FuturePromise<SessionData> result = new FuturePromise<>();
+        
         Runnable r = () ->
         {
             try
             {
-                result.setResult(doLoad(id));
+                result.succeeded(doLoad(id));
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
 
         _context.run(r);
+
         return result.getOrThrow();
     }
 
@@ -216,7 +182,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             //set the last saved time to now
             data.setLastSaved(System.currentTimeMillis());
             
-            final Result<Object> result = new Result<>();
+            final FuturePromise<Void> result = new FuturePromise<>();
             Runnable r = () ->
             {
                 try
@@ -224,32 +190,33 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     //call the specific store method, passing in previous save time
                     doStore(id, data, lastSave);
                     data.clean(); //unset all dirty flags
+                    result.succeeded(null);
                 }
                 catch (Exception e)
                 {
                     //reset last save time if save failed
                     data.setLastSaved(lastSave);
-                    result.setException(e);
+                    result.failed(e);
                 }
             };
             _context.run(r);
-            result.throwIfException();
+            result.getOrThrow();
         }
     }
 
     @Override
     public boolean exists(String id) throws Exception
     {
-        Result<Boolean> result = new Result<>();
+        FuturePromise<Boolean> result = new FuturePromise<>();
         Runnable r = () ->
         {
             try
             {
-                result.setResult(doExists(id));
+                result.succeeded(doExists(id));
             }
             catch (Exception e)
             {
-                result.setException(e);
+                result.failed(e);
             }
         };
 

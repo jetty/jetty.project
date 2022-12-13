@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -37,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -45,6 +41,8 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -226,7 +224,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 if (HttpMethod.HEAD.is(request.getMethod()))
                 {
-                    stream.getSession().close(ErrorCode.REFUSED_STREAM_ERROR.code, null, Callback.NOOP);
+                    int error = ErrorCode.REFUSED_STREAM_ERROR.code;
+                    stream.reset(new ResetFrame(stream.getId(), error), Callback.NOOP);
+                    stream.getSession().close(error, null, Callback.NOOP);
                 }
                 else
                 {
@@ -345,7 +345,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         int proxyPort = connector.getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, new Origin.Protocol(List.of("h2c"), false)));
+        client.getProxyConfiguration().addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), false, new Origin.Protocol(List.of("h2c"), false)));
 
         int serverPort = proxyPort + 1; // Any port will do, just not the same as the proxy.
         ContentResponse response = client.newRequest("localhost", serverPort)
@@ -611,6 +611,43 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testInputStreamResponseListener() throws Exception
+    {
+        var bytes = 100_000;
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                int streamId = stream.getId();
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
+                Callback.Completable callback = new Callback.Completable();
+                stream.headers(responseFrame, callback);
+                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(new byte[bytes]), true), Callback.NOOP));
+                return null;
+            }
+        });
+
+        var requestCount = 10_000;
+        IntStream.range(0, requestCount).forEach(i ->
+        {
+            try
+            {
+                InputStreamResponseListener listener = new InputStreamResponseListener();
+                client.newRequest("localhost", connector.getLocalPort()).headers(httpFields -> httpFields.put("X-Request-Id", Integer.toString(i))).send(listener);
+                Response response = listener.get(15, TimeUnit.SECONDS);
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(bytes, listener.getInputStream().readAllBytes().length);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Disabled

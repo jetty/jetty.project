@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,10 +14,15 @@
 package org.eclipse.jetty;
 
 import com.acme.DispatchServlet;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,6 +34,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class DispatchServletTest
 {
+    private Server server;
+    private LocalConnector connector;
+    private ServletContextHandler context;
+
+    @BeforeEach
+    public void setUp() throws Exception
+    {
+        server = new Server();
+        connector = new LocalConnector(server);
+        server.addConnector(connector);
+        context = new ServletContextHandler(server, "/tests");
+        server.start();
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        LifeCycle.stop(server);
+    }
+
     /**
      * As filed in JETTY-978.
      *
@@ -71,20 +91,14 @@ public class DispatchServletTest
     @Test
     public void testSelfRefForwardDenialOfService() throws Exception
     {
-        ServletTester tester = new ServletTester();
-        tester.setContextPath("/tests");
+        ServletHolder dispatch = context.addServlet(DispatchServlet.class, "/dispatch/*");
+        context.addServlet(DefaultServlet.class, "/");
 
-        ServletHolder dispatch = tester.addServlet(DispatchServlet.class, "/dispatch/*");
-        tester.addServlet(DefaultServlet.class, "/");
-        tester.start();
-
-        StringBuilder req1 = new StringBuilder();
-        req1.append("GET /tests/dispatch/includeN/").append(dispatch.getName()).append(" HTTP/1.1\n");
-        req1.append("Host: tester\n");
-        req1.append("Connection: close\n");
-        req1.append("\n");
-
-        String response = tester.getResponses(req1.toString());
+        String request = "GET /tests/dispatch/includeN/" + dispatch.getName() + " HTTP/1.1\n" +
+            "Host: tester\n" +
+            "Connection: close\n" +
+            "\n";
+        String response = connector.getResponse(request);
 
         String msg = "Response code on SelfRefDoS";
 
@@ -95,14 +109,11 @@ public class DispatchServletTest
     @Test
     public void testSelfRefDeep() throws Exception
     {
-        ServletTester tester = new ServletTester();
-        tester.setContextPath("/tests");
-        tester.addServlet(DispatchServlet.class, "/dispatch/*");
-        tester.addServlet(DefaultServlet.class, "/");
-        tester.start();
+        context.addServlet(DispatchServlet.class, "/dispatch/*");
+        context.addServlet(DefaultServlet.class, "/");
 
         String[] selfRefs =
-            {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN",};
+            {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN"};
 
         /*
          * Number of nested dispatch requests. 220 is a good value, as it won't
@@ -113,19 +124,13 @@ public class DispatchServletTest
 
         for (String selfRef : selfRefs)
         {
-            StringBuilder req1 = new StringBuilder();
-            req1.append("GET /tests");
-            for (int i = 0; i < nestedDepth; i++)
-            {
-                req1.append(selfRef);
-            }
-
-            req1.append("/ HTTP/1.1\n");
-            req1.append("Host: tester\n");
-            req1.append("Connection: close\n");
-            req1.append("\n");
-
-            String response = tester.getResponses(req1.toString());
+            String request = "GET /tests" +
+                selfRef.repeat(nestedDepth) +
+                "/ HTTP/1.1\n" +
+                "Host: tester\n" +
+                "Connection: close\n" +
+                "\n";
+            String response = connector.getResponse(request);
 
             StringBuilder msg = new StringBuilder();
             msg.append("Response code on nested \"").append(selfRef).append("\"");

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -25,7 +20,6 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 public class FrameSequence
 {
     private final AutoLock lock = new AutoLock();
-    // TODO should we be able to get a non fin frame then get a close frame without error
     private byte state = OpCode.UNDEFINED;
 
     public void check(byte opcode, boolean fin) throws ProtocolException
@@ -45,15 +39,15 @@ public class FrameSequence
                         throw new ProtocolException("CONTINUATION after fin==true");
                     if (fin)
                         state = OpCode.UNDEFINED;
-                    return;
+                    break;
 
                 case OpCode.CLOSE:
                     state = OpCode.CLOSE;
-                    return;
+                    break;
 
                 case OpCode.PING:
                 case OpCode.PONG:
-                    return;
+                    break;
 
                 case OpCode.TEXT:
                 case OpCode.BINARY:
@@ -62,7 +56,7 @@ public class FrameSequence
                         throw new ProtocolException("DataFrame before fin==true");
                     if (!fin)
                         state = opcode;
-                    return;
+                    break;
             }
         }
     }

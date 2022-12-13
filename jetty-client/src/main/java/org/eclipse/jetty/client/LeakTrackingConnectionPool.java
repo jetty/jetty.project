@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -29,7 +24,7 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
 {
     private static final Logger LOG = LoggerFactory.getLogger(LeakTrackingConnectionPool.class);
 
-    private final LeakDetector<Connection> leakDetector = new LeakDetector<Connection>()
+    private final LeakDetector<Connection> leakDetector = new LeakDetector<>()
     {
         @Override
         protected void leaked(LeakInfo leakInfo)
@@ -40,15 +35,15 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
 
     public LeakTrackingConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
-        super((HttpDestination)destination, maxConnections, requester);
+        super(destination, maxConnections, requester);
         addBean(leakDetector);
     }
 
     @Override
     public void close()
     {
-        LifeCycle.stop(this);
         super.close();
+        LifeCycle.stop(this);
     }
 
     @Override
@@ -65,7 +60,7 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
             LOG.info("Connection {}@{} released but not acquired", connection, leakDetector.id(connection));
     }
 
-    protected void leaked(LeakDetector.LeakInfo leakInfo)
+    protected void leaked(LeakDetector<Connection>.LeakInfo leakInfo)
     {
         LOG.info("Connection {} leaked at:", leakInfo.getResourceDescription(), leakInfo.getStackFrames());
     }

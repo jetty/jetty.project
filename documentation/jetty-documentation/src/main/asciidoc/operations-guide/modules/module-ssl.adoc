@@ -1,0 +1,65 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-ssl]]
+===== Module `ssl`
+
+The `ssl` module provides the secure connector, and allows you to configure the KeyStore properties and the TLS parameters, and depends on the xref:og-module-server[`server` module].
+
+[[og-module-ssl-connector]]
+====== Secure Connector Properties
+
+The module properties to configure the secure connector are:
+
+----
+include::{JETTY_HOME}/modules/ssl.mod[tags=documentation-connector]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.ssl.port`::
+The network port that Jetty listens to for secure connections -- default `8443`.
+`jetty.ssl.idleTimeout`::
+The amount of time a connection can be idle (i.e. no bytes received and no bytes sent) until the server decides to close it to save resources -- default `30000` milliseconds.
+`jetty.ssl.acceptors`::
+The number of threads that compete to accept connections -- default 1. Use -1 to let the accept heuristic decides the value; the current heuristic calculates a value based on the number of cores).
+Refer to xref:og-module-http-acceptors[this section] for more information about acceptor threads.
+`jetty.ssl.selectors`::
+The number of NIO selectors (with an associated thread) that manage connections -- default -1 (i.e. a select heuristic decides the value; the current heuristic calculates a value based on the number of cores).
+Refer to xref:og-module-http-selectors[this section] for more information about selector threads.
+
+The module properties to configure the KeyStore and TLS parameters are:
+
+----
+include::{JETTY_HOME}/modules/ssl.mod[tags=documentation-ssl-context]
+----
+
+[[og-module-ssl-keystore-tls]]
+====== KeyStore Properties and TLS Properties
+
+Among the configurable properties, the most relevant are:
+
+`jetty.sslContext.keyStorePath`::
+The KeyStore path on the file system relative to `$JETTY_BASE` -- defaults to `$JETTY_BASE/etc/keystore.p12`.
+`jetty.sslContext.keyStorePassword`::
+The KeyStore password, which you want to explicitly configure.
+The password may be obfuscated with the xref:og-password[Jetty Password Tool].
+
+If you need to configure client certificate authentication, you want to configure one of these properties (they are mutually exclusive):
+
+`jetty.sslContext.needClientAuth`::
+Whether client certificate authentication should be required.
+`jetty.sslContext.wantClientAuth`::
+Whether client certificate authentication should be requested.
+
+If you configure client certificate authentication, you need to configure and distribute a client KeyStore as explained in xref:og-keystore-client-authn[this section].

@@ -14,10 +14,10 @@ logging
 log4j
 
 [files]
-maven://org.slf4j/jcl-over-slf4j/%{slf4j.version}|jcl-over-slf4j-${slf4j.version}.jar
+maven://org.slf4j/log4j-over-slf4j/${slf4j.version}|lib/logging/log4j-over-slf4j-${slf4j.version}.jar
 
 [lib]
-lib/logging/log4j-to-slf4j-${slf4j.version}.jar
+lib/logging/log4j-over-slf4j-${slf4j.version}.jar
 
 [license]
 SLF4J is distributed under the MIT License.

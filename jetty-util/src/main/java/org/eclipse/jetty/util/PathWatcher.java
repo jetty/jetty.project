@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,7 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -31,7 +25,6 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
@@ -121,7 +114,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         public void setPauseUntil(long time)
         {
-            if (time > pauseUntil)
+            if (NanoTime.isBefore(pauseUntil, time))
                 pauseUntil = time;
         }
 
@@ -129,7 +122,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             if (pauseUntil == 0)
                 return false;
-            if (pauseUntil > now)
+            if (NanoTime.isBefore(now, pauseUntil))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("PAUSED {}", this);
@@ -501,32 +494,28 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
     }
 
-    public static enum DirAction
+    public enum DirAction
     {
-        IGNORE, WATCH, ENTER;
+        IGNORE, WATCH, ENTER
     }
 
     /**
      * Listener for path change events
      */
-    public static interface Listener extends EventListener
+    public interface Listener extends EventListener
     {
         void onPathWatchEvent(PathWatchEvent event);
     }
 
     /**
-     * EventListListener
-     *
      * Listener that reports accumulated events in one shot
      */
-    public static interface EventListListener extends EventListener
+    public interface EventListListener extends EventListener
     {
         void onPathWatchEvents(List<PathWatchEvent> events);
     }
 
     /**
-     * PathWatchEvent
-     *
      * Represents a file event. Reported to registered listeners.
      */
     public class PathWatchEvent
@@ -543,7 +532,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             this.path = path;
             this.type = type;
             this.config = config;
-            checked = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            checked = NanoTime.now();
             check();
         }
 
@@ -572,7 +561,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 this.type = PathWatchEventType.UNKNOWN;
             }
             this.config = config;
-            checked = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            checked = NanoTime.now();
             check();
         }
 
@@ -606,7 +595,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             check();
 
             if (lastModified == modified && lastLength == length)
-                return (now - checked) >= quietTime;
+                return NanoTime.elapsed(checked, now) >= quietTime;
 
             checked = now;
             return false;
@@ -614,7 +603,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         public long toQuietCheck(long now, long quietTime)
         {
-            long check = quietTime - (now - checked);
+            long check = quietTime - NanoTime.elapsed(checked, now);
             if (check <= 0)
                 return quietTime;
             return check;
@@ -622,10 +611,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         public void modified()
         {
-            long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long now = NanoTime.now();
             checked = now;
             check();
-            config.setPauseUntil(now + getUpdateQuietTimeMillis());
+            config.setPauseUntil(now + getUpdateQuietTimeNanos());
         }
 
         @Override
@@ -690,13 +679,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     }
 
     /**
-     * PathWatchEventType
-     *
      * Type of an event
      */
-    public static enum PathWatchEventType
+    public enum PathWatchEventType
     {
-        ADDED, DELETED, MODIFIED, UNKNOWN;
+        ADDED, DELETED, MODIFIED, UNKNOWN
     }
 
     private static final boolean IS_WINDOWS;
@@ -727,8 +714,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     private static final WatchEvent.Kind<?>[] WATCH_DIR_KINDS = {ENTRY_CREATE, ENTRY_DELETE};
 
     private WatchService watchService;
-    private WatchEvent.Modifier[] watchModifiers;
-    private boolean nativeWatchService;
 
     private final List<Config> configs = new ArrayList<>();
     private final Map<WatchKey, Config> keys = new ConcurrentHashMap<>();
@@ -859,10 +844,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     protected void doStart() throws Exception
     {
         //create a new watchservice
-        createWatchService();
+        this.watchService = FileSystems.getDefault().newWatchService();
 
         //ensure setting of quiet time is appropriate now we have a watcher
-        setUpdateQuietTime(getUpdateQuietTimeMillis(), TimeUnit.MILLISECONDS);
+        setUpdateQuietTime(getUpdateQuietTimeNanos(), TimeUnit.NANOSECONDS);
 
         // Register all watched paths, walking dir hierarchies as needed, possibly generating
         // fake add events if notifyExistingOnStart is true
@@ -910,42 +895,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     }
 
     /**
-     * Create a fresh WatchService and determine if it is a
-     * native implementation or not.
-     */
-    private void createWatchService() throws IOException
-    {
-        //create a watch service
-        this.watchService = FileSystems.getDefault().newWatchService();
-
-        WatchEvent.Modifier[] modifiers = null;
-        boolean nativeService = true;
-        // Try to determine native behavior
-        // See http://stackoverflow.com/questions/9588737/is-java-7-watchservice-slow-for-anyone-else
-        try
-        {
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            Class<?> pollingWatchServiceClass = Class.forName("sun.nio.fs.PollingWatchService", false, cl);
-            if (pollingWatchServiceClass.isAssignableFrom(this.watchService.getClass()))
-            {
-                nativeService = false;
-                LOG.info("Using Non-Native Java {}", pollingWatchServiceClass.getName());
-                Class<?> c = Class.forName("com.sun.nio.file.SensitivityWatchEventModifier");
-                Field f = c.getField("HIGH");
-                modifiers = new WatchEvent.Modifier[]{(WatchEvent.Modifier)f.get(c)};
-            }
-        }
-        catch (Throwable t)
-        {
-            // Unknown JVM environment, assuming native.
-            LOG.trace("IGNORED", t);
-        }
-
-        this.watchModifiers = modifiers;
-        this.nativeWatchService = nativeService;
-    }
-
-    /**
      * Check to see if the watcher is in a state where it should generate
      * watch events to the listeners. Used to determine if watcher should generate
      * events for existing files and dirs on startup.
@@ -967,14 +916,9 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         return listeners.iterator();
     }
 
-    /**
-     * Change the quiet time.
-     *
-     * @return the quiet time in millis
-     */
-    public long getUpdateQuietTimeMillis()
+    long getUpdateQuietTimeNanos()
     {
-        return TimeUnit.MILLISECONDS.convert(updateQuietTimeDuration, updateQuietTimeUnit);
+        return TimeUnit.NANOSECONDS.convert(updateQuietTimeDuration, updateQuietTimeUnit);
     }
 
     private void registerTree(Path dir, Config config, boolean notify) throws IOException
@@ -1047,25 +991,16 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     protected void register(Path path, Config config) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Registering watch on {} {}", path, watchModifiers == null ? null : Arrays.asList(watchModifiers));
+            LOG.debug("Registering watch on {}", path);
 
         register(path, config, WATCH_EVENT_KINDS);
     }
 
     private void register(Path path, Config config, WatchEvent.Kind<?>[] kinds) throws IOException
     {
-        if (watchModifiers != null)
-        {
-            // Java Watcher
-            WatchKey key = path.register(watchService, kinds, watchModifiers);
-            keys.put(key, config);
-        }
-        else
-        {
-            // Native Watcher
-            WatchKey key = path.register(watchService, kinds);
-            keys.put(key, config);
-        }
+        // Native Watcher
+        WatchKey key = path.register(watchService, kinds);
+        keys.put(key, config);
     }
 
     /**
@@ -1093,8 +1028,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
      * single MODIFY event. Both the accumulation of events and coalescing of MODIFY
      * events reduce the number and frequency of event reporting for "noisy" files (ie
      * those that are undergoing rapid change).
-     *
-     * @see java.lang.Runnable#run()
      */
     @Override
     public void run()
@@ -1105,7 +1038,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             LOG.debug("Starting java.nio file watching with {}", watchService);
         }
 
-        long waitTime = getUpdateQuietTimeMillis();
+        long waitTime = getUpdateQuietTimeNanos();
 
         WatchService watch = watchService;
 
@@ -1117,7 +1050,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             try
             {
                 // Reset all keys before watching
-                long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                long now = NanoTime.now();
                 for (Map.Entry<WatchKey, Config> e : keys.entrySet())
                 {
                     WatchKey k = e.getKey();
@@ -1135,7 +1068,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Waiting for poll({})", waitTime);
-                key = waitTime < 0 ? watch.take() : waitTime > 0 ? watch.poll(waitTime, updateQuietTimeUnit) : watch.poll();
+                key = waitTime < 0 ? watch.take() : waitTime > 0 ? watch.poll(waitTime, TimeUnit.NANOSECONDS) : watch.poll();
 
                 // handle all active keys
                 while (key != null)
@@ -1272,7 +1205,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("processPending> {}", pending.values());
 
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long now = NanoTime.now();
         long wait = Long.MAX_VALUE;
 
         // pending map is maintained in LRU order
@@ -1284,7 +1217,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 continue;
 
             // if the path is quiet move to events
-            if (event.isQuiet(now, getUpdateQuietTimeMillis()))
+            long quietTime = getUpdateQuietTimeNanos();
+            if (event.isQuiet(now, quietTime))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("isQuiet {}", event);
@@ -1293,11 +1227,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             }
             else
             {
-                long msToCheck = event.toQuietCheck(now, getUpdateQuietTimeMillis());
+                long nsToCheck = event.toQuietCheck(now, quietTime);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("pending {} {}", event, msToCheck);
-                if (msToCheck < wait)
-                    wait = msToCheck;
+                    LOG.debug("pending {} {}", event, nsToCheck);
+                if (nsToCheck < wait)
+                    wait = nsToCheck;
             }
         }
         if (LOG.isDebugEnabled())
@@ -1384,14 +1318,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     public void setUpdateQuietTime(long duration, TimeUnit unit)
     {
         long desiredMillis = unit.toMillis(duration);
-
-        if (watchService != null && !this.nativeWatchService && (desiredMillis < 5000))
-        {
-            LOG.warn("Quiet Time is too low for non-native WatchService [{}]: {} < 5000 ms (defaulting to 5000 ms)", watchService.getClass().getName(), desiredMillis);
-            this.updateQuietTimeDuration = 5000;
-            this.updateQuietTimeUnit = TimeUnit.MILLISECONDS;
-            return;
-        }
 
         if (IS_WINDOWS && (desiredMillis < 1000))
         {

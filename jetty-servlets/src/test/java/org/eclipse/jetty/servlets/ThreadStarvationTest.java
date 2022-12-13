@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -59,7 +54,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,10 +70,9 @@ public class ThreadStarvationTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testDefaultServletSuccess() throws Exception
     {
-        int maxThreads = 10;
+        int maxThreads = 6;
         QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, maxThreads);
         threadPool.setDetailedDump(true);
         _server = new Server(threadPool);
@@ -91,11 +84,11 @@ public class ThreadStarvationTest
         Path resourcePath = Paths.get(directory.getPath(), resourceName);
         try (OutputStream output = Files.newOutputStream(resourcePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
         {
-            byte[] chunk = new byte[1024];
+            byte[] chunk = new byte[256 * 1024];
             Arrays.fill(chunk, (byte)'X');
             chunk[chunk.length - 2] = '\r';
             chunk[chunk.length - 1] = '\n';
-            for (int i = 0; i < 256 * 1024; ++i)
+            for (int i = 0; i < 1024; ++i)
             {
                 output.write(chunk);
             }
@@ -140,10 +133,9 @@ public class ThreadStarvationTest
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-            Thread.sleep(100);
         }
 
-        // Wait for a the servlet to block.
+        // Wait for a thread on the servlet to block.
         assertTrue(writePending.await(5, TimeUnit.SECONDS));
 
         long expected = Files.size(resourcePath);

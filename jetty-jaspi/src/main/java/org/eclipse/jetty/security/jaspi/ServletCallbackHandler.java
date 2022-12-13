@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -38,14 +33,13 @@ import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**
- * Idiot class required by jaspi stupidity
+ * This {@link CallbackHandler} will bridge {@link Callback}s to handle to the given to the Jetty {@link LoginService}.
  */
 public class ServletCallbackHandler implements CallbackHandler
 {
     private final LoginService _loginService;
-
-    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<CallerPrincipalCallback>();
-    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<GroupPrincipalCallback>();
+    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<>();
+    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<>();
 
     public ServletCallbackHandler(LoginService loginService)
     {
@@ -69,6 +63,7 @@ public class ServletCallbackHandler implements CallbackHandler
             else if (callback instanceof PasswordValidationCallback)
             {
                 PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback)callback;
+                @SuppressWarnings("unused")
                 Subject subject = passwordValidationCallback.getSubject();
 
                 UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null);

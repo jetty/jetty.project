@@ -1,0 +1,249 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-jmx-remote]]
+==== Enabling Remote JMX Support
+
+There are two ways to configure a Jetty server so that it is possible to access the JVM platform MBeans from remote clients:
+
+* Use the `com.sun.management.jmxremote` and related system properties when starting Jetty.
+Unfortunately, this solution does not work well with firewalls, and will not be discussed further.
+* Use the `jmx-remote` Jetty module.
+
+Both ways use Java's Remote Method Invocation (RMI) to communicate between the client and the server.
+
+[IMPORTANT]
+.Refresher: How RMI Works
+====
+A server application that wants to make an object available to remote clients must _export_ the object.
+
+Exporting an object creates an RMI _stub_ that contains the host/port of the RMI _server_ that accepts incoming invocations from clients and forwards them to the object.
+During the creation of the RMI stub, the host stored in the RMI stub is retrieved from the local name resolution system (for example, in Linux, from `/etc/hosts`).
+
+The RMI stub is then sent, along with a name that uniquely identifies the object, to the RMI _registry_.
+The RMI registry is a service that maps names to RMI stubs; it may be external to both clients and server, although often it is part of the server JVM.
+
+When a client application wants to connect to the server object using RMI, it first connects to the RMI registry to download the RMI stub for the RMI server; recall that the RMI stub contains the host/port to connect to the RMI server.
+Then, the client uses the RMI stub to connect to the RMI server, typically to a host/port that may be different from the RMI registry host/port (in particular, by default the RMI server port will be different from the RMI registry port).
+====
+
+Remote access to the platform MBeans, and therefore the Jetty MBeans, is enabled by the `jmx-remote` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=jmx-remote
+----
+
+This command creates the `jmx-remote.ini` file:
+
+[source,subs=quotes]
+----
+JETTY_BASE
+└── start.d
+    └── #jmx-remote.ini#
+----
+
+Enabling the `jmx-remote` module transitively enables the xref:og-jmx-local[`jmx` module] as well.
+
+The configuration for the RMI registry and the RMI server is specified by a `JMXServiceURL`.
+The string format of an RMI `JMXServiceURL` is the following:
+
+----
+service:jmx:rmi://<rmi_server_host>:<rmi_server_port>/jndi/rmi://<rmi_registry_host>:<rmi_registry_port>/jmxrmi
+----
+
+Below you can find examples of ``JMXServiceURL``s:
+
+[source,subs=quotes]
+----
+*service:jmx:rmi:///jndi/rmi:///jmxrmi*
+where:
+  rmi_server_host = local host address
+  rmi_server_port = randomly chosen
+  rmi_registry_host = local host address
+  rmi_registry_port = 1099
+
+*service:jmx:rmi://0.0.0.0:1099/jndi/rmi://0.0.0.0:1099/jmxrmi*
+where:
+  rmi_server_host = any address
+  rmi_server_port = 1099
+  rmi_registry_host = any address
+  rmi_registry_port = 1099
+
+*service:jmx:rmi://localhost:1100/jndi/rmi://localhost:1099/jmxrmi*
+where:
+  rmi_server_host = loopback address
+  rmi_server_port = 1100
+  rmi_registry_host = loopback address
+  rmi_registry_port = 1099
+----
+
+The default `JMXServiceURL` configured by the `jmx-remote` module is the following:
+
+----
+service:jmx:rmi://localhost:1099/jndi/rmi://localhost:1099/jmxrmi
+----
+
+With the default configuration, only clients that are local to the server machine can connect to the RMI registry and RMI server - this is done for security reasons.
+However, even with this local-only configuration, it would still be possible to access the MBeans from remote using an SSH tunnel, as explained in xref:og-jmx-remote-ssh-tunnel[this section].
+
+By specifying an appropriate `JMXServiceURL`, you can fine tune the network address the RMI registry and the RMI server bind to, and the ports that the RMI registry and the RMI server listen to.
+The RMI server and RMI registry hosts and ports can be the same (as in the default configuration) because RMI is able to multiplex traffic arriving to one port to multiple RMI objects.
+
+If you need to allow JMX remote access through a firewall, you must open both the RMI registry and the RMI server ports.
+The default configuration simplifies the firewall configuration because you only need to open port `1099`.
+
+[NOTE]
+====
+When Jetty is started with the `jmx-remote` module enabled, the RMI stub of the Jetty component that provides access to the MBeans is exported to the RMI registry.
+
+The RMI stub contains the host/port to connect to the RMI server, but the host is typically the machine host name, not the host specified in the `JMXServiceURL` (the latter is only used to specify the network address the RMI server binds to).
+
+To control the host stored in the RMI stub you need to set the system property `java.rmi.server.hostname` with the desired value in the module configuration file, `jmx-remote.ini`.
+====
+
+IMPORTANT: If your client cannot connect to the server, the most common cause is a mismatch between the RMI server host of the `JMXServiceURL` and the RMI server host of the RMI stub.
+
+You can customize the RMI server host/port, the RMI registry host/port and the system property `java.rmi.server.hostname` by editing the `jmx-remote.ini` configuration file.
+Further information about the `jmx-remote` module configuration can be found xref:og-module-jmx-remote[here].
+
+[[og-jmx-remote-ssh-tunnel]]
+===== Remote JMX Access with Port Forwarding via SSH Tunnel
+
+You can access JMX MBeans on a remote machine when the RMI ports are not open, for example because of firewall policies, but you have SSH access to the machine, using local port forwarding via an SSH tunnel.
+
+In this case you want to configure the `JMXServiceURL` that binds the RMI server and the RMI registry to the loopback interface only and to the same port:
+
+----
+service:jmx:rmi://localhost:1099/jndi/rmi://localhost:1099/jmxrmi
+----
+
+You must set the system property `-Djava.rmi.server.hostname=localhost` so that the RMI stub contains `localhost` as the host name to connect to.
+This is, incidentally, the default configuration of the `jmx-remote` module.
+
+Then you set up the local port forwarding with the SSH tunnel:
+
+----
+$ ssh -L 1099:localhost:1099 <user>@<machine_host>
+----
+
+Thanks to the local port forwarding of the SSH tunnel, when the client connects to `localhost:1099` on your local computer, the traffic will be forwarded to `machine_host` and when there, the SSH daemon will forward the traffic to `localhost:1099` on `machine_host`, which is exactly where the RMI server and the RMI registry listens to.
+
+The client first contacts the RMI registry, so it connects to `localhost:1099` on your local computer; the traffic is forwarded to `machine_host` through the SSH tunnel, connects to the RMI registry and the RMI stub is downloaded to the client.
+
+Then the client uses the RMI stub to connect to the RMI server. The RMI stub contains `localhost` as the RMI server host because that is what you have configured with the system property `java.rmi.server.hostname`.
+
+The client will connect again to `localhost:1099` on your local computer, this time to contact the RMI server; the traffic is forwarded to `machine_host` through the SSH tunnel, arrives to `machine_host` and connects to the RMI server.
+
+[[og-jmx-remote-auth]]
+===== Remote JMX Access Authentication & Authorization
+
+The standard `javax.management.remote.JMXConnectorServer` class, used by the `jmx-remote` module to provide remote JMX access to Jetty MBeans, provides several options to authenticate and authorize users.
+For a complete guide to controlling authentication and authorization in JMX, see link:https://docs.oracle.com/en/java/javase/11/management/monitoring-and-management-using-jmx-technology.html[the official JMX documentation].
+
+The simplest way to control JMX authentication and authorization is to specify two files: one contains username and password pairs, and the other contains username and permission pairs.
+
+This is achieved by enabling the `jmx-remote-auth` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=jmx-remote-auth
+----
+
+Enabling the `jmx-remote-auth` Jetty module creates the following files:
+
+----
+$JETTY_BASE
+├── etc
+│   ├── jmxremote.access
+│   ├── jmxremote.password
+│   └── jmx-remote-auth.xml
+└── start.d
+    ├── jmx-remote-auth.ini
+    └── jmx-remote.ini
+----
+
+Then you edit the `$JETTY_BASE/etc/jmxremote.password` file, adding the username/password pairs that you need:
+
+.$JETTY_BASE/etc/jmxremote.password
+----
+# The file format is: <username> <password>
+alice wonderland
+bob marley
+----
+
+You must also edit the `$JETTY_BASE/etc/jmxremote.access` file to give permissions to your users:
+
+.$JETTY_BASE/etc/jmxremote.access
+----
+# The file format is: <username> <readonly|readwrite>
+alice readwrite
+bob readonly
+----
+
+The above files define user `alice` with password `wonderland` to have `readwrite` access, and user `bob` with password `marley` to have `readonly` access.
+
+[[og-jmx-remote-secure]]
+===== Securing Remote JMX Access with TLS
+
+The JMX communication via RMI happens by default in clear-text, but it is possible to secure the JMX communication via RMI with TLS.
+
+If you want to reuse the configuration that you are using for the xref:og-protocols-https[`https` module], you can just enable the `jmx-remote-ssl.xml` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=jmx-remote-ssl
+----
+
+[NOTE]
+====
+The `jmx-remote-ssl` Jetty module depends on the `ssl` Jetty module that in turn requires a KeyStore (read xref:og-protocols-ssl[this section] for more information).
+====
+
+The KeyStore must contain a valid certificate signed by a Certification Authority.
+Having certificates signed by a Certification Authority simplifies by a lot the configuration needed to get the RMI communication over TLS working properly.
+
+The RMI mechanic is the usual one: the RMI client (typically a monitoring console) will connect first to the RMI registry (using TLS), download the RMI stub that contains the address and port of the RMI server to connect to, then connect to the RMI server (using TLS).
+
+This also mean that if the RMI registry and the RMI server are on different hosts, the RMI client must have available the cryptographic material to validate the certificates from both hosts.
+This is where having certificates signed by a Certification Authority simplifies the configuration: if they are signed by a well known Certification Authority, the client does not need any extra configuration -- everything will be handled by the Java runtime.
+
+If the certificates are not signed by a Certification Authority (for example the certificate is self-signed), then you need to specify the TLS system properties that allow RMI (especially when acting as an RMI client) to retrieve the cryptographic material necessary to establish the TLS connection.
+
+[IMPORTANT]
+====
+When the RMI server exports the `JMXConnectorServer` it acts as an RMI _client_ towards the RMI registry, and as such you must specify the TLS system properties as detailed below.
+====
+
+You must edit the `$JETTY_BASE/start.d/jmx-remote-ssl.ini` file and add the TrustStore path and password:
+
+.$JETTY_BASE/start.d/jmx-remote-ssl.ini
+----
+--module=jmx-remote-ssl
+
+# System properties necessary for non-trusted certificates.
+-Djavax.net.ssl.trustStore=/path/to/trustStore.p12
+-Djavax.net.ssl.trustStorePassword=password
+----
+
+[IMPORTANT]
+====
+The TrustStore must contain the certificate you want to trust.
+
+If you are using self-signed certificates, the KeyStore already contains the self-signed certificate and therefore the KeyStore can be used as a TrustStore, and the system properties above can refer to the KeyStore path and password.
+====
+
+JMX compliant tools that offer a graphical user interface also must be started specifying the TrustStore path and password.
+
+For example, to launch link:https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
+
+----
+$ jmc -vmargs -Djavax.net.ssl.trustStore=/path/to/trustStore.p12 -Djavax.net.ssl.trustStorePassword=password
+----

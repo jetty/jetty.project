@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <name>Demo :: Servlet Spec :: Webapp</name>
@@ -67,7 +67,7 @@
             <Bundle-Description>Test Webapp for Servlet 4.0 Features</Bundle-Description>
             <!-- TODO Add 'org.eclipse.jetty.util;version="[9.4.19,9.4.20)",' below, once 9.4.19 is released with a fix for #3726 -->
             <Import-Package>
-              javax.transaction*;version="[1.1,1.3)", javax.servlet*;version="[2.6,4.1)", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *
+              javax.transaction*;version="[1.1,2.0)", javax.servlet*;version="[2.6,4.1)", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *
             </Import-Package>
             <_nouses />
             <Export-Package>com.acme.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>
@@ -85,14 +85,14 @@
             <id>generate-xml-files</id>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <concat destfile="${project.build.directory}/plugin-context.xml">
                   <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml" />
                 </concat>
                 <concat destfile="${project.build.directory}/test-spec.xml">
                   <filelist dir="src/main/templates/" files="annotations-context-header.xml,env-definitions.xml" />
                 </concat>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -202,12 +202,10 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-web-fragment</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-container-initializer</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!-- deliberately old version to test classloading -->

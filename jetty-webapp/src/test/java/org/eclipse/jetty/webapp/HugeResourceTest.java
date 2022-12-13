@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileStore;
@@ -64,6 +60,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -72,6 +69,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+@Tag("large-disk-resource")
 public class HugeResourceTest
 {
     private static final long KB = 1024;
@@ -126,9 +124,22 @@ public class HugeResourceTest
     @AfterAll
     public static void cleanupTestFiles()
     {
-        FS.ensureDeleted(staticBase);
-        FS.ensureDeleted(outputDir);
-        FS.ensureDeleted(multipartTempDir);
+        quietlyDelete(staticBase);
+        quietlyDelete(outputDir);
+        quietlyDelete(multipartTempDir);
+    }
+
+    private static void quietlyDelete(Path path)
+    {
+        try
+        {
+            if (path != null)
+                FS.ensureDeleted(path);
+        }
+        catch (Throwable ignore)
+        {
+            // ignore
+        }
     }
 
     private static void makeStaticFile(Path staticFile, long size) throws IOException
@@ -178,6 +189,7 @@ public class HugeResourceTest
         context.setBaseResource(new PathResource(staticBase));
 
         context.addServlet(PostServlet.class, "/post");
+        context.addServlet(ChunkedServlet.class, "/chunked/*");
 
         String location = multipartTempDir.toString();
         long maxFileSize = Long.MAX_VALUE;
@@ -213,7 +225,7 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
-    public void testDownload(String filename, long expectedSize) throws Exception
+    public void testDownloadStatic(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
@@ -240,7 +252,33 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
-    public void testHead(String filename, long expectedSize) throws Exception
+    public void testDownloadChunked(String filename, long expectedSize) throws Exception
+    {
+        URI destUri = server.getURI().resolve("/chunked/" + filename);
+        InputStreamResponseListener responseListener = new InputStreamResponseListener();
+
+        Request request = client.newRequest(destUri)
+            .method(HttpMethod.GET);
+        request.send(responseListener);
+        Response response = responseListener.get(5, TimeUnit.SECONDS);
+
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+        // dumpResponse(response);
+
+        String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
+        assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
+
+        try (ByteCountingOutputStream out = new ByteCountingOutputStream();
+             InputStream in = responseListener.getInputStream())
+        {
+            IO.copy(in, out);
+            assertThat("Downloaded Files Size: " + filename, out.getCount(), is(expectedSize));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("staticFiles")
+    public void testHeadStatic(String filename, long expectedSize) throws Exception
     {
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
@@ -261,6 +299,30 @@ public class HugeResourceTest
         String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
         long contentLengthLong = Long.parseLong(contentLength);
         assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
+    }
+
+    @ParameterizedTest
+    @MethodSource("staticFiles")
+    public void testHeadChunked(String filename, long expectedSize) throws Exception
+    {
+        URI destUri = server.getURI().resolve("/chunked/" + filename);
+        InputStreamResponseListener responseListener = new InputStreamResponseListener();
+
+        Request request = client.newRequest(destUri)
+            .method(HttpMethod.HEAD);
+        request.send(responseListener);
+        Response response = responseListener.get(5, TimeUnit.SECONDS);
+
+        try (InputStream in = responseListener.getInputStream())
+        {
+            assertThat(in.read(), is(-1));
+        }
+
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+        // dumpResponse(response);
+
+        String transferEncoding = response.getHeaders().get(HttpHeader.TRANSFER_ENCODING);
+        assertThat("Http Response Header: \"Transfer-Encoding\"", transferEncoding, is("chunked"));
     }
 
     @ParameterizedTest
@@ -346,6 +408,22 @@ public class HugeResourceTest
             resp.setContentType("text/plain");
             resp.setCharacterEncoding("utf-8");
             resp.getWriter().printf("bytes-received=%d%n", byteCounting.getCount());
+        }
+    }
+
+    public static class ChunkedServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        {
+            URL resource = req.getServletContext().getResource(req.getPathInfo());
+            OutputStream output = resp.getOutputStream();
+            try (InputStream input = resource.openStream())
+            {
+                resp.setContentType("application/octet-stream");
+                resp.flushBuffer();
+                IO.copy(input, output);
+            }
         }
     }
 

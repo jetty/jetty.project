@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -59,10 +54,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -77,6 +74,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.Sweeper;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,12 +143,13 @@ public class HttpClient extends ContainerLifeCycle
     private boolean tcpNoDelay = true;
     private boolean strictEventOrdering = false;
     private HttpField encodingField;
-    private boolean removeIdleDestinations = false;
+    private long destinationIdleTimeout;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
+    private Sweeper destinationSweeper;
 
     /**
      * Creates a HttpClient instance that can perform HTTP/1.1 requests to non-TLS and TLS destinations.
@@ -164,7 +163,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
-        this.connector = ((AbstractHttpClientTransport)transport).getBean(ClientConnector.class);
+        this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
         addBean(handlers);
         addBean(decoderFactories);
     }
@@ -196,20 +195,26 @@ public class HttpClient extends ContainerLifeCycle
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
             threadPool.setName(name);
-            setExecutor(threadPool);
+            executor = threadPool;
+            setExecutor(executor);
         }
+        int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
+            ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
+            : ProcessorUtils.availableProcessors() * 2;
         ByteBufferPool byteBufferPool = getByteBufferPool();
         if (byteBufferPool == null)
-            setByteBufferPool(new MappedByteBufferPool(2048,
-                executor instanceof ThreadPool.SizedThreadPool
-                    ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
-                    : ProcessorUtils.availableProcessors() * 2));
+            setByteBufferPool(new MappedByteBufferPool(2048, maxBucketSize));
+        if (getBean(RetainableByteBufferPool.class) == null)
+            addBean(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
-            setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
+        {
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
+            setScheduler(scheduler);
+        }
 
         if (resolver == null)
-            setSocketAddressResolver(new SocketAddressResolver.Async(getExecutor(), getScheduler(), getAddressResolutionTimeout()));
+            setSocketAddressResolver(new SocketAddressResolver.Async(getExecutor(), scheduler, getAddressResolutionTimeout()));
 
         handlers.put(new ContinueProtocolHandler());
         handlers.put(new RedirectProtocolHandler(this));
@@ -223,7 +228,14 @@ public class HttpClient extends ContainerLifeCycle
         cookieStore = cookieManager.getCookieStore();
 
         transport.setHttpClient(this);
+
         super.doStart();
+
+        if (getDestinationIdleTimeout() > 0L)
+        {
+            destinationSweeper = new Sweeper(scheduler, 1000L);
+            destinationSweeper.start();
+        }
     }
 
     private CookieManager newCookieManager()
@@ -234,6 +246,12 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
+        if (destinationSweeper != null)
+        {
+            destinationSweeper.stop();
+            destinationSweeper = null;
+        }
+
         decoderFactories.clear();
         handlers.clear();
 
@@ -289,6 +307,11 @@ public class HttpClient extends ContainerLifeCycle
     CookieManager getCookieManager()
     {
         return cookieManager;
+    }
+
+    Sweeper getDestinationSweeper()
+    {
+        return destinationSweeper;
     }
 
     /**
@@ -449,7 +472,8 @@ public class HttpClient extends ContainerLifeCycle
             .body(oldRequest.getBody())
             .idleTimeout(oldRequest.getIdleTimeout(), TimeUnit.MILLISECONDS)
             .timeout(oldRequest.getTimeout(), TimeUnit.MILLISECONDS)
-            .followRedirects(oldRequest.isFollowRedirects());
+            .followRedirects(oldRequest.isFollowRedirects())
+            .tag(oldRequest.getTag());
         for (HttpField field : oldRequest.getHeaders())
         {
             HttpHeader header = field.getHeader();
@@ -521,23 +545,36 @@ public class HttpClient extends ContainerLifeCycle
         return new Origin(scheme, host, port, request.getTag(), protocol);
     }
 
+    /**
+     * <p>Returns, creating it if absent, the destination with the given origin.</p>
+     *
+     * @param origin the origin that identifies the destination
+     * @return the destination for the given origin
+     */
     public HttpDestination resolveDestination(Origin origin)
     {
-        return destinations.computeIfAbsent(origin, o ->
+        return destinations.compute(origin, (k, v) ->
         {
-            HttpDestination destination = getTransport().newHttpDestination(o);
-            // Start the destination before it's published to other threads.
-            addManaged(destination);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Created {}", destination);
-            return destination;
+            if (v == null || v.stale())
+            {
+                HttpDestination newDestination = getTransport().newHttpDestination(k);
+                // Start the destination before it's published to other threads.
+                addManaged(newDestination);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Created {}; existing: '{}'", newDestination, v);
+                return newDestination;
+            }
+            return v;
         });
     }
 
     protected boolean removeDestination(HttpDestination destination)
     {
+        boolean removed = destinations.remove(destination.getOrigin(), destination);
         removeBean(destination);
-        return destinations.remove(destination.getOrigin(), destination);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Removed {}; result: {}", destination, removed);
+        return removed;
     }
 
     /**
@@ -548,24 +585,28 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<>(destinations.values());
     }
 
-    protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
+    protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
     {
         HttpDestination destination = (HttpDestination)resolveDestination(request);
         destination.send(request, listeners);
     }
 
-    protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
+    protected void newConnection(HttpDestination destination, Promise<Connection> promise)
     {
+        // Multiple threads may access the map, especially with DEBUG logging enabled.
+        Map<String, Object> context = new ConcurrentHashMap<>();
+        context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
+        context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
+        Origin.Protocol protocol = destination.getOrigin().getProtocol();
+        List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
+        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, protocols);
+
         Origin.Address address = destination.getConnectAddress();
         resolver.resolve(address.getHost(), address.getPort(), new Promise<>()
         {
             @Override
             public void succeeded(List<InetSocketAddress> socketAddresses)
             {
-                // Multiple threads may access the map, especially with DEBUG logging enabled.
-                Map<String, Object> context = new ConcurrentHashMap<>();
-                context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
-                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 connect(socketAddresses, 0, context);
             }
 
@@ -589,7 +630,7 @@ public class HttpClient extends ContainerLifeCycle
                             connect(socketAddresses, nextIndex, context);
                     }
                 });
-                transport.connect(socketAddresses.get(index), context);
+                transport.connect((SocketAddress)socketAddresses.get(index), context);
             }
         });
     }
@@ -864,16 +905,16 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the size of the buffer used to write requests
+     * @return the size of the buffer (in bytes) used to write requests
      */
-    @ManagedAttribute("The request buffer size")
+    @ManagedAttribute("The request buffer size in bytes")
     public int getRequestBufferSize()
     {
         return requestBufferSize;
     }
 
     /**
-     * @param requestBufferSize the size of the buffer used to write requests
+     * @param requestBufferSize the size of the buffer (in bytes) used to write requests
      */
     public void setRequestBufferSize(int requestBufferSize)
     {
@@ -881,9 +922,9 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the size of the buffer used to read responses
+     * @return the size of the buffer (in bytes) used to read responses
      */
-    @ManagedAttribute("The response buffer size")
+    @ManagedAttribute("The response buffer size in bytes")
     public int getResponseBufferSize()
     {
         return responseBufferSize;
@@ -917,8 +958,10 @@ public class HttpClient extends ContainerLifeCycle
 
     /**
      * @return whether TCP_NODELAY is enabled
+     * @deprecated use {@link ClientConnector#isTCPNoDelay()} instead
      */
     @ManagedAttribute(value = "Whether the TCP_NODELAY option is enabled", name = "tcpNoDelay")
+    @Deprecated
     public boolean isTCPNoDelay()
     {
         return tcpNoDelay;
@@ -927,7 +970,9 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @param tcpNoDelay whether TCP_NODELAY is enabled
      * @see java.net.Socket#setTcpNoDelay(boolean)
+     * @deprecated use {@link ClientConnector#setTCPNoDelay(boolean)} instead
      */
+    @Deprecated
     public void setTCPNoDelay(boolean tcpNoDelay)
     {
         this.tcpNoDelay = tcpNoDelay;
@@ -997,13 +1042,49 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * The default value is 0
+     * @return the time in ms after which idle destinations are removed
+     * @see #setDestinationIdleTimeout(long)
+     */
+    @ManagedAttribute("The time in ms after which idle destinations are removed, disabled when zero or negative")
+    public long getDestinationIdleTimeout()
+    {
+        return destinationIdleTimeout;
+    }
+
+    /**
+     * <p>
+     * Whether destinations that have no connections (nor active nor idle) and no exchanges
+     * should be removed after the specified timeout.
+     * </p>
+     * <p>
+     * If the specified {@code destinationIdleTimeout} is 0 or negative, then the destinations
+     * are not removed.
+     * </p>
+     * <p>
+     * Avoids accumulating destinations when applications (e.g. a spider bot or web crawler)
+     * hit a lot of different destinations that won't be visited again.
+     * </p>
+     *
+     * @param destinationIdleTimeout the time in ms after which idle destinations are removed
+     */
+    public void setDestinationIdleTimeout(long destinationIdleTimeout)
+    {
+        if (isStarted())
+            throw new IllegalStateException();
+        this.destinationIdleTimeout = destinationIdleTimeout;
+    }
+
+    /**
      * @return whether destinations that have no connections should be removed
      * @see #setRemoveIdleDestinations(boolean)
+     * @deprecated replaced by {@link #getDestinationIdleTimeout()}
      */
+    @Deprecated
     @ManagedAttribute("Whether idle destinations are removed")
     public boolean isRemoveIdleDestinations()
     {
-        return removeIdleDestinations;
+        return destinationIdleTimeout > 0L;
     }
 
     /**
@@ -1017,10 +1098,12 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @param removeIdleDestinations whether destinations that have no connections should be removed
      * @see org.eclipse.jetty.client.DuplexConnectionPool
+     * @deprecated replaced by {@link #setDestinationIdleTimeout(long)}, calls the latter with a value of 10000 ms.
      */
+    @Deprecated
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
-        this.removeIdleDestinations = removeIdleDestinations;
+        setDestinationIdleTimeout(removeIdleDestinations ? 10_000L : 0L);
     }
 
     /**
@@ -1224,7 +1307,7 @@ public class HttpClient extends ContainerLifeCycle
         @Override
         public Iterator<ContentDecoder.Factory> iterator()
         {
-            final Iterator<ContentDecoder.Factory> iterator = set.iterator();
+            Iterator<ContentDecoder.Factory> iterator = set.iterator();
             return new Iterator<>()
             {
                 @Override

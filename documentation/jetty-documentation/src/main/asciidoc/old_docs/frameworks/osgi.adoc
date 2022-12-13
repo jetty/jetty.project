@@ -1,0 +1,1157 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[framework-jetty-osgi]]
+=== OSGI
+
+==== Introduction
+
+The Jetty OSGi infrastructure provides a Jetty container inside an OSGi container.
+Traditional JavaEE webapps can be deployed, in addition to Jetty `ContextHandlers`, along with OSGi web bundles.
+In addition, the infrastructure also supports the OSGi `HttpService` interface.
+
+==== General Setup
+
+All of the Jetty jars contain manifest entries appropriate to ensure that they can be deployed into an OSGi container as bundles.
+You will need to install some jetty jars into your OSGi container.
+You can always find the Jetty jars either in the Maven Central repository, or you can link:https://www.eclipse.org/jetty/download.html[download] a distribution of Jetty.
+Here's the absolute minimal set of Jetty jars:
+
+.Minimal Bundles
+[cols=",",options="header",]
+|===================================================
+|Jar |Bundle Symbolic Name
+|jetty-util |org.eclipse.jetty.util
+|jetty-http |org.eclipse.jetty.http
+|jetty-io |org.eclipse.jetty.io
+|jetty-security |org.eclipse.jetty.security
+|jetty-server |org.eclipse.jetty.server
+|jetty-servlet |org.eclipse.jetty.servlet
+|jetty-webapp |org.eclipse.jetty.webapp
+|jetty-deploy |org.eclipse.jetty.deploy
+|jetty-xml |org.eclipse.jetty.xml
+|jetty-servlet-api |org.eclipse.jetty.servlet-api
+|===================================================
+
+You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty - for example ALPN, websocket, annotations - use the `ServiceLoader` mechanism, which requires an OSGi Service Loader Mediator like SPI Fly:
+
+[[spifly]]
+.SPI Fly Bundles
+[cols=",,",options="header",]
+|=======================================================================
+|Jar |Bundle Symbolic Name |Location
+|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.2.4.jar |org.apache.aries.spifly.dynamic.bundle
+|https://repo1.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven central]
+|=======================================================================
+
+____
+[NOTE]
+We strongly recommend that you also deploy the link:#osgi-annotations[annotation-related] jars also, as the Servlet Specification increasingly relies on annotations for functionality.
+____
+
+You will also need the **OSGi Event Management service** and the **OSGi Configuration Management service**.
+If your OSGi container does not automatically make these available, you will need to add them in a way appropriate to your container.
+
+==== The Jetty OSGi Container
+
+===== The jetty-osgi-boot jar
+
+Now that you have the basic set of Jetty jars installed, you can install the https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot/[jetty-osgi-boot.jar] bundle, downloadable from the maven central repo https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot/[here.]
+
+This bundle will instantiate and make available the Jetty OSGi container when it is started.
+If this bundle is not auto-started upon installation into your OSGi container, you should start it manually using a command appropriate for your container.
+
+[[customize-jetty-container]]
+===== Customizing the Jetty Container
+
+Before going ahead with the install, you may want to customize the Jetty container.
+In general this is done by a combination of System properties and the usual Jetty xml configuration files.
+The way you define the System properties will depend on which OSGi container you are using, so ensure that you are familiar with how to set them for your environment.
+In the following examples, we will assume that the OSGi container allows us to set System properties as simple `name=value` pairs.
+
+The available System properties are:
+
+jetty.http.port::
+If not specified, this defaults to the usual jetty port of 8080.
+jetty.home::
+Either this property _or_ the *jetty.home.bundle* _must_ be specified.
+This property should point to a file system location that has an `etc/` directory containing xml files to configure the Jetty container on startup.
+For example:
++
+[source, plain, subs="{sub-order}"]
+----
+jetty.home=/opt/custom/jetty
+
+----
+
++
+Where `/opt/custom/jetty` contains:
++
+[source, plain, subs="{sub-order}"]
+----
+
+etc/jetty.xml
+etc/jetty-selector.xml
+etc/jetty-deployer.xml
+etc/jetty-special.xml
+----
+
+jetty.home.bundle::
+Either this property _or_ the *jetty.home* property must be specified.
+This property should specify the symbolic name of a bundle which contains a directory called `jettyhome/`.
+The `jettyhome/` directory should have a subdirectory called `etc/` that contains the xml files to be applied to Jetty on startup.
+The jetty-osgi-boot.jar contains a `jettyhome/` directory with a default set of xml configuration files.
+Here's how you would specify it:
++
+[source, plain, subs="{sub-order}"]
+----
+jetty.home.bundle=org.eclipse.jetty.osgi.boot
+----
+
++
+Here's a partial listing of that jar that shows you the names of the xml files contained within it:
++
+[source, plain, subs="{sub-order}"]
+----
+META-INF/MANIFEST.MF
+jettyhome/etc/jetty.xml
+jettyhome/etc/jetty-deployer.xml
+jettyhome/etc/jetty-http.xml
+----
+
+jetty.etc.config.urls::
+This specifies the paths of the xml files that are to be used.
+If not specified, they default to:
++
+[source, plain, subs="{sub-order}"]
+----
+etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml
+----
+
++
+Note that the paths can either be relative or absolute, or a mixture.
+If the path is relative, it is resolved against either *jetty.home* or **jetty.home.bundle**, whichever was specified.
+You can use this ability to mix and match jetty configuration files to add functionality, such as adding in a https connector.
+Here's an example of adding a HTTPS connector, using the relevant files from the jetty-home:
++
+....
+etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deployer.xml
+....
++
+
+Note that regardless of whether you set the *jetty.home* or *jetty.home.bundle* property, when Jetty executes the configuration files, it will set an appropriate value for *jetty.home* so that references in xml files to `<property name="jetty.home">` will work.
+Be careful, however, if you are mixing and matching relative and absolute configuration file paths: the value of *jetty.home* is determined from the resolved location of the _relative_ files only.
+
+===== The Jetty Container as an OSGi Service
+
+You can now go ahead and deploy the jetty-osgi-boot.jar into your OSGi container.
+A Jetty server instance will be created, the xml config files applied to it, and then published as an OSGi service.
+Normally, you will not need to interact with this service instance, however you can retrieve a reference to it using the usual OSGi API:
+
+[source, java, subs="{sub-order}"]
+----
+org.osgi.framework.BundleContext bc;
+org.osgi.framework.ServiceReference ref = bc.getServiceReference("org.eclipse.jetty.server.Server");
+----
+
+The Server service has a couple of properties associated with it that you can retrieve using the `org.osgi.framework.ServiceReference.getProperty(String)` method:
+
+managedServerName::
+The Jetty Server instance created by the jetty-osgi-boot.jar will be called "defaultJettyServer"
+jetty.etc.config.urls::
+The list of xml files resolved from either *jetty.home* or **jetty.home.bundle**/jettyhome
+
+===== Adding More Jetty Servers
+
+As we have seen in the previous section, the jetty-osgi-boot code will create an `org.eclipse.jetty.server.Server` instance, apply the xml configuration files specified by *jetty.etc.config.urls* System property to it, and then register it as an OSGi Service.
+The name associated with this default instance is `defaultJettyServer`.
+
+You can create other Server instances, register them as OSGi Services, and the jetty-osgi-boot code will notice them, and configure them so that they can deploy `ContextHandlers` and webapp bundles.
+When you deploy webapps or `ContextHandlers` as bundles or Services (see sections below) you can target them to be deployed to a particular server instance via
+the Server's name.
+
+Here's an example of how to create a new Server instance and register it with OSGi so that the jetty-osgi-boot code will find it and configure it so it can be a deployment target:
+
+[source, java, subs="{sub-order}"]
+----
+public class Activator implements BundleActivator
+{
+
+    public void start(BundleContext context) throws Exception
+    {
+
+        Server server = new Server();
+        //do any setup on Server in here
+        String serverName = "fooServer";
+        Dictionary serverProps = new Hashtable();
+        //define the unique name of the server instance
+        serverProps.put("managedServerName", serverName);
+        serverProps.put("jetty.http.port", "9999");
+        //let Jetty apply some configuration files to the Server instance
+        serverProps.put("jetty.etc.config.urls", "file:/opt/jetty/etc/jetty.xml,file:/opt/jetty/etc/jetty-selector.xml,file:/opt/jetty/etc/jetty-deployer.xml");
+        //register as an OSGi Service for Jetty to find
+        context.registerService(Server.class.getName(), server, serverProps);
+
+    }
+}
+----
+
+Now that we have created a new Server called "fooServer", we can deploy webapps and `ContextHandlers` as Bundles or Services to it (see below for more information on this). Here's an example of deploying a webapp as a Service and targeting it to the "fooServer" Server we created above:
+
+[source, java, subs="{sub-order}"]
+----
+public class Activator implements BundleActivator
+{
+
+    public void start(BundleContext context) throws Exception
+    {
+
+        //Create a webapp context as a Service and target it at the "fooServer" Server instance
+        WebAppContext webapp = new WebAppContext();
+        Dictionary props = new Hashtable();
+        props.put("war",".");
+        props.put("contextPath","/acme");
+        props.put("managedServerName", "fooServer");
+        context.registerService(ContextHandler.class.getName(),webapp,props);
+    }
+}
+----
+
+==== Deploying Bundles as Webapps
+
+The Jetty OSGi container listens for the installation of bundles, and will automatically attempt to deploy any that appear to be webapps.
+
+Any of the following criteria are sufficient for Jetty to deploy the bundle as a webapp:
+
+Bundle contains a WEB-INF/web.xml file::
+If the bundle contains a web descriptor, then it is automatically deployed.
+This is an easy way to deploy classic JavaEE webapps.
+Bundle MANIFEST contains Jetty-WarFolderPath (for releases prior tojetty-9.3) or Jetty-WarResourcePath::
+This is the location within the bundle of the webapp resources.
+Typically this would be used if the bundle is not a pure webapp, but rather the webapp is a component of the bundle.
+Here's an example of a bundle where the resources of the webapp are not located at the root of the bundle, but rather inside the subdirectory `web/` :
++
+`MANIFEST`:
++
+[source, plain, subs="{sub-order}"]
+----
+Bundle-Name: Web
+Jetty-WarResourcePath: web
+Import-Package: javax.servlet;version="3.1",
+ javax.servlet.resources;version="3.1"
+Bundle-SymbolicName: com.acme.sample.web
+----
+
++
+Bundle contents:
++
+[source, plain, subs="{sub-order}"]
+----
+META-INF/MANIFEST.MF
+web/index.html
+web/foo.html
+web/WEB-INF/web.xml
+com/acme/sample/web/MyStuff.class
+com/acme/sample/web/MyOtherStuff.class
+----
+Bundle MANIFEST contains Web-ContextPath::
+This header can be used in conjunction with either of the two preceding headers to control the context path to which the webapp is deployed, or alone to identify that the bundle's contents should be published as a webapp.
+This header is part of the RFC-66 specification for using webapps with OSGi.
+Here's an example based on the previous one where we use the `Web-ContextPath` header to set its deployment context path to be "/sample" :
+
++
+`MANIFEST`:
++
+[source, plain, subs="{sub-order}"]
+----
+Bundle-Name: Web
+Jetty-WarResourcePath: web
+Web-ContextPath: /sample
+Import-Package: javax.servlet;version="3.1",
+ javax.servlet.resources;version="3.1"
+Bundle-SymbolicName: com.acme.sample.web
+----
+
+You can also define extra headers in your bundle MANIFEST that help
+customize the web app to be deployed:
+
+Jetty-defaultWebXmlFilePath::
+The location of a `webdefault.xml` file to apply to the webapp.
+The location can be either absolute (either absolute path or file: url), or relative (in which case it is interpreted as relative to the bundle root).
+Defaults to the `webdefault.xml` file built into the Jetty OSGi container.
+Jetty-WebXmlFilePath::
+The location of the `web.xml` file.
+The location can be either absolute (either absolute path or file: url), or relative (in which case it is interpreted as relative to the bundle root).
+Defaults to `WEB-INF/web.xml`
+Jetty-extraClassPath::
+A classpath of additional items to add to the webapp's classloader.
+Jetty-bundleInstall::
+The path to the base folder that overrides the computed bundle installation - mostly useful for those OSGi frameworks that unpack bundles by default.
+Require-TldBundle::
+A comma separated list of bundle symbolic names of bundles containing TLDs that this webapp depends upon.
+managedServerName::
+The name of the Server instance to which to deploy this webapp bundle.
+If not specified, defaults to the default Server instance called "defaultJettyServer".
+Jetty-WarFragmentResourcePath::
+The path within a fragment hosted by the web-bundle that contains static resources for the webapp.
+The path is appended to the base resource for the webapp (see Jetty-WarResourcePath).
+Jetty-WarPrependFragmentResourcePath::
+The path within a fragment hosted by the web-bundle that contains static resources for the webapp.
+The path is prepended to the base resource for the webapp (see Jetty-WarResourcePath).
+Jetty-ContextFilePath::
+A comma separated list of paths within the webapp bundle to Jetty context files that will be applied to the webapp.
+Alternatively you may include a single Jetty context file called `jetty-webapp-context.xml` in the webapp bundle's META-INF directory and it will be automatically applied to the webapp.
+
+===== Determining the Context Path for a Webapp Bundle
+
+As we have seen in the previous section, if the bundle `MANIFEST` contains the RFC-66 header **Web-ContextPath**, Jetty will use that as the context path.
+If the `MANIFEST` does not contain that header, then Jetty will concoct a context path based on the last element of the bundle's location (by calling `Bundle.getLocation()`) after stripping off any file extensions.
+
+For example, suppose we have a bundle whose location is:
+
+[source, plain, subs="{sub-order}"]
+----
+file://some/where/over/the/rainbow/oz.war
+----
+
+The corresponding synthesized context path would be:
+
+[source, plain, subs="{sub-order}"]
+----
+/oz
+----
+
+===== Extra Properties Available for Webapp Bundles
+
+You can further customize your webapp by including a Jetty context xml file that is applied to the webapp.
+This xml file must be placed in `META-INF` of the bundle, and must be called `jetty-webapp-context.xml`.
+
+Here's an example of a webapp bundle listing containing such a file:
+
+[source, plain, subs="{sub-order}"]
+----
+META-INF/MANIFEST.MF
+META-INF/jetty-webapp-context.xml
+web/index.html
+web/foo.html
+web/WEB-INF/web.xml
+com/acme/sample/web/MyStuff.class
+com/acme/sample/web/MyOtherStuff.class
+----
+
+Here's an example of the contents of a `META-INF/jetty-webapp-context.xml` file:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="defaultsDescriptor"><Property name="bundle.root"/>META-INF/webdefault.xml</Set>
+</Configure>
+----
+
+As you can see, it is a normal context xml file used to set up a webapp.
+There are, however, some additional useful properties that can be referenced
+
+Server::
+This is a reference to the Jetty `org.eclipse.jetty.server.Server` instance to which the webapp being configured in the context xml file will be deployed.
+bundle.root::
+This is a reference to the `org.eclipse.jetty.util.resource.Resource` that represents the location of the Bundle.
+Note that this could be either a directory in the file system if the OSGi container automatically unpacks bundles, or it may be a jar:file: url if the bundle remains packed.
+
+==== Deploying Bundles as Jetty ContextHandlers
+
+In addition to deploying webapps, the Jetty OSGi container listens for the installation of bundles that are not heavyweight webapps, but rather use the flexible Jetty-specific concept of `ContextHandlers`.
+
+The following is the criteria used to decide if a bundle can be deployed as a `ContextHandler`:
+
+Bundle MANIFEST contains Jetty-ContextFilePath::
+A comma separated list of names of context files - each one of which represents a ContextHandler that should be deployed by Jetty.
+The context files can be inside the bundle, external to the bundle somewhere on the file system, or external to the bundle in the *jetty.home* directory.
++
+A context file that is inside the bundle:
++
+[source, plain, subs="{sub-order}"]
+----
+Jetty-ContextFilePath: ./a/b/c/d/foo.xml
+----
++
+A context file that is on the file system:
++
+[source, plain, subs="{sub-order}"]
+----
+Jetty-ContextFilePath: /opt/app/contexts/foo.xml
+----
++
+A context file that is relative to jetty.home:
++
+[source, plain, subs="{sub-order}"]
+----
+Jetty-ContextFilePath: contexts/foo.xml
+----
++
+A number of different context files:
++
+[source, plain, subs="{sub-order}"]
+----
+Jetty-ContextFilePath: ./a/b/c/d/foo.xml,/opt/app/contexts/foo.xml,contexts/foo.xml
+----
+
+Other `MANIFEST` properties that can be used to configure the deployment of the `ContextHandler`:
+
+managedServerName::
+The name of the Server instance to which to deploy this webapp bundle.
+If not specified, defaults to the default Server instance called "defaultJettyServer".
+
+===== Determining the Context Path for a ContextHandler Bundle
+
+Usually, the context path for the ContextHandler will be set by the context xml file.
+However, you can override any path set in the context xml file by using the *Web-ContextPath* header in the `MANIFEST`.
+
+===== Extra Properties Available for Context Xml Files
+
+Before the Jetty OSGi container applies a context xml file found in a *Jetty-ContextFilePath* `MANIFEST` header, it sets a few useful propertiesthat can be referred to within the xml file:
+
+Server::
+This is a reference to the Jetty `org.eclipse.jetty.server.Server` instance to which the `ContextHandler` being configured in the context xml file will be deployed.
+bundle.root::
+This is a reference to the `org.eclipse.jetty.util.resource.Resource` that represents the location of the Bundle (obtained by calling `Bundle.getLocation()`).
+Note that this could be either a directory in the file system if the OSGi container automatically unpacks bundles, or it may be a jar:file: url if the bundle remains packed.
+
+Here's an example of a context xml file that makes use of these properties:
+
+[source, xml, subs="{sub-order}"]
+----
+include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
+----
+
+[[services-as-webapps]]
+==== Deploying Services as Webapps
+
+In addition to listening for bundles whose format or `MANIFEST` entries define a webapp or `ContextHandler` for to be deployed, the Jetty OSGi container also listens for the registration of OSGi services that are instances of `org.eclipse.jetty.webapp.WebAppContext`.
+So you may programmatically create a `WebAppContext`, register it as a service, and have Jetty pick it up and deploy it.
+
+Here's an example of doing that with a simple bundle that serves static content, and an `org.osgi.framework.BundleActivator` that instantiates the `WebAppContext`:
+
+The bundle contents:
+
+[source, plain, subs="{sub-order}"]
+----
+META-INF/MANIFEST.MF
+index.html
+com/acme/osgi/Activator.class
+----
+
+The `MANIFEST.MF`:
+
+[source, plain, subs="{sub-order}"]
+----
+Bundle-Classpath: .
+Bundle-Name: Jetty OSGi Test WebApp
+DynamicImport-Package: org.eclipse.jetty.*;version="[9.0,10.0)"
+Bundle-Activator: com.acme.osgi.Activator
+Import-Package: org.eclipse.jetty.server.handler;version="[9.0,10)",
+ org.eclipse.jetty.webapp;version="[9.0,10)",
+ org.osgi.framework;version= "[1.5,2)",
+ org.osgi.service.cm;version="1.2.0",
+ org.osgi.service.packag eadmin;version="[1.2,2)",
+ org.osgi.service.startlevel;version="1.0.0",
+ org.osgi.service.url;version="1.0.0",
+ org.osgi.util.tracker;version= "1.3.0",
+ org.xml.sax,org.xml.sax.helpers
+Bundle-SymbolicName: com.acme.testwebapp
+----
+
+The Activator code:
+
+[source, java, subs="{sub-order}"]
+----
+public void start(BundleContext context) throws Exception
+{
+    WebAppContext webapp = new WebAppContext();
+    Dictionary props = new Hashtable();
+    props.put("Jetty-WarResourcePath",".");
+    props.put("contextPath","/acme");
+    context.registerService(WebAppContext.class.getName(),webapp,props);
+}
+----
+
+The above setup is sufficient for Jetty to recognize and deploy the `WebAppContext` at /acme.
+
+As the example shows, you can use OSGi Service properties in order to communicate extra configuration information to Jetty:
+
+Jetty-WarFolderPath (for releases prior to 9.3) or Jetty-WarResourcePath::
+The location within the bundle of the root of the static resources for the webapp
+Web-ContextPath::
+The context path at which to deploy the webapp.
+Jetty-defaultWebXmlFilePath::
+The location within the bundle of a `webdefault.xml` file to apply to the webapp.
+Defaults to that of the Jetty OSGi container.
+Jetty-WebXmlFilePath::
+The location within the bundle of the `web.xml` file.
+Defaults to `WEB-INF/web.xml`
+Jetty-extraClassPath::
+A classpath of additional items to add to the webapp's classloader.
+Jetty-bundleInstall::
+The path to the base folder that overrides the computed bundle installation - mostly useful for those OSGi frameworks that unpack bundles by default.
+Require-TldBundle::
+A comma separated list of bundle symbolic names of bundles containing TLDs that this webapp depends upon.
+managedServerName::
+The name of the Server instance to which to deploy this webapp.
+If not specified, defaults to the default Server instance called "defaultJettyServer".
+Jetty-WarFragmentResourcePath::
+The path within a fragment hosted by the web-bundle that contains static resources for the webapp.
+The path is appended to the base resource for the webapp (see Jetty-WarResourcePath).
+Jetty-WarPrependFragmentResourcePath::
+The path within a fragment hosted by the web-bundle that contains static resources for the webapp.
+The path is prepended to the base resource for the webapp (see Jetty-WarResourcePath).
+
+==== Deploying Services as ContextHandlers
+
+Similarly to WebApp`Contexts, the Jetty OSGi container can detect the registration of an OSGi Service that represents a `ContextHandler` and ensure that it is deployed.
+The `ContextHandler` can either be fully configured before it is registered as an OSGi service - in which case the Jetty OSGi container will merely deploy it - or the `ContextHandler` can be partially configured, with the Jetty OSGi container completing the configuration via a context xml file and properties associated with the Service.
+
+Here's an example of doing that with a simple bundle that serves static content with an `org.osgi.framework.BundleActivator` that instantiates a `ContextHandler` and registers it as an OSGi Service, passing in properties that define a context xml file and context path for Jetty to apply upon deployment:
+
+The bundle contents:
+
+[source, plain, subs="{sub-order}"]
+----
+META-INF/MANIFEST.MF
+static/index.html
+acme.xml
+com/acme/osgi/Activator.class
+com/acme/osgi/Activator$1.class
+----
+
+The `MANIFEST`:
+
+[source, plain, subs="{sub-order}"]
+----
+Bundle-Classpath: .
+Bundle-Name: Jetty OSGi Test Context
+DynamicImport-Package: org.eclipse.jetty.*;version="[9.0,10.0)"
+Bundle-Activator: com.acme.osgi.Activator
+Import-Package: javax.servlet;version="2.6.0",
+ javax.servlet.resources;version="2.6.0",
+ org.eclipse.jetty.server.handler;version="[9.0,10)",
+ org.osgi.framework;version="[1.5,2)",
+ org.osgi.service.cm;version="1.2.0",
+ org.osgi.service.packageadmin;version="[1.2,2)",
+ org.osgi.service.startlevel;version="1.0.0.o",
+ org.osgi.service.url;version="1.0.0",
+ org.osgi.util.tracker;version="1.3.0",
+ org.xml.sax,org.xml.sax.helpers
+Bundle-SymbolicName: com.acme.testcontext
+----
+
+The Activator code:
+
+[source, java, subs="{sub-order}"]
+----
+public void start(final BundleContext context) throws Exception
+{
+    ContextHandler ch = new ContextHandler();
+    ch.addEventListener(new ServletContextListener () {
+
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+               System.err.println("Context is initialized");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                System.err.println("Context is destroyed!");
+            }
+
+    });
+    Dictionary props = new Hashtable();
+    props.put("Web-ContextPath","/acme");
+    props.put("Jetty-ContextFilePath", "acme.xml");
+    context.registerService(ContextHandler.class.getName(),ch,props);
+}
+----
+
+The contents of the `acme.xml` context file:
+
+[source, xml, subs="{sub-order}"]
+----
+include::{SRCDIR}/jetty-osgi/test-jetty-osgi-context/src/main/context/acme.xml[]
+----
+
+You may also use the following OSGi Service properties:
+
+managedServerName::
+The name of the Server instance to which to deploy this webapp.
+If not specified, defaults to the default Server instance called "defaultJettyServer".
+
+===== Extra Properties Available for Context Xml Files
+
+Before the Jetty OSGi container applies a context xml file found in a `Jetty-ContextFilePath` property, it sets a few useful properties that can be referred to within the xml file:
+
+Server::
+This is a reference to the Jetty `org.eclipse.jetty.server.Server` instance to which the `ContextHandler` being configured in the context xml file will be deployed.
+bundle.root::
+This is a reference to the `org.eclipse.jetty.util.resource.Resource` that represents the location of the Bundle publishing the `ContextHandler` as a Service (obtained by calling `Bundle.getLocation()`).
+Note that this could be either a directory in the file system if the OSGi container automatically unpacks bundles, or it may be a jar:file: url if the bundle remains packed.
+
+In the example above, you can see both of these properties being used in the context xml file.
+
+==== Support for the OSGi Service Platform Enterprise Specification
+
+The Jetty OSGi container implements several aspects of the Enterprise Specification v4.2 for the `WebAppContexts` and `ContextHandlers` that it deploys from either bundles or OSGi services as outlined in foregoing sections.
+
+===== Context Attributes
+
+For each `WebAppContext` or `ContextHandler`, the following context attribute is set, as required by section __128.6.1 Bundle Context__ page 427:
+
+osgi-bundleContext::
+The value of this attribute is the `BundleContext` representing the Bundle associated with the `WebAppContext` or `ContextHandler`.
+
+===== Service Attributes
+
+As required by the specification section _128.3.4 Publishing the Servlet Context_ page 421, each `WebAppContext` and `ContextHandler` deployed by the Jetty OSGi container is also published as an OSGi service (unless it has been already - see sections 1.6 and 1.7).
+The following properties are associated with these services:
+
+osgi.web.symbolicname::
+The symbolic name of the Bundle associated with the `WebAppContext` or `ContextHandler`
+osgi.web.version::
+The Bundle-Version header from the Bundle associated with the `WebAppContext` or `ContextHandler`
+osgi.web.contextpath::
+The context path of the `WebAppContext` or `ContextHandler`
+
+===== OSGi Events
+
+As required by the specification section _128.5 Events_ pg 426, the
+following OSGi Event Admin events will be posted:
+
+org/osgi/service/web/DEPLOYING::
+The Jetty OSGi container is about to deploy a `WebAppContext` or `ContextHandler`
+org/osgi/service/web/DEPLOYED::
+The Jetty OSGi container has finished deploying a `WebAppContext` or `ContextHandler` and it is in service
+org/osgi/service/web/UNDEPLOYING::
+The Jetty OSGi container is about to undeploy a `WebAppContext` or `ContextHandler`
+org/osgi/service/web/UNDEPLOYED::
+The Jetty OSGi container has finished undeploying a `WebAppContext` or `ContextHandler` and it is no longer in service
+org/osgi/service/web/FAILED::
+The Jetty OSGi container failed to deploy a `WebAppContext` or `ContextHandler`
+
+==== Using JSPs
+
+===== Setup
+
+In order to use JSPs with your webapps and bundles you will need to install the JSP and JSTL jars and their dependencies into your OSGi container.
+Some you will find in the Jetty distribution, whereas others you will need to download from https://repo1.maven.org/maven2/org/eclipse/jetty/orbit/[Maven central].
+Here is the list of recommended jars (NOTE the version numbers may change in future):
+
+[[osgi-jsp]]
+
+.Jars Required for JSP
+[cols=",,",options="header",]
+|=======================================================================
+|Jar |Bundle Symbolic Name |Location
+|The link:#osgi-annotations[annotation jars] | |
+
+|org.mortbay.jasper:apache-el |org.mortbay.jasper.apache-el
+|Distribution lib/apache-jsp
+
+|org.mortbay.jasper:apache-jsp |org.mortbay.jasper.apache-jsp
+|Distribution lib/apache-jsp
+
+|org.eclipse.jetty:apache-jsp |org.eclipse.jetty.apache-jsp
+|Distribution lib/apache-jsp
+
+|org.eclipse.jdt.core-3.8.2.v20130121.jar
+|org.eclipse.jdt.core.compiler.batch |Distribution lib/apache-jsp
+
+|org.eclipse.jetty.osgi:jetty-osgi-boot-jsp
+|org.eclipse.jetty.osgi.boot.jsp
+|https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven central]
+|=======================================================================
+
+____
+[NOTE]
+1. As of Jetty 9.2.3 the jetty-osgi-boot-jsp bundle changed to using Apache Jasper as the JSP implementation.
+Prior to this the Glassfish Jasper implementation was used, which had a different set of dependencies - pay careful attention to the jars listed both at the top of this page and in this section, as deployment of other jars can cause incomplete or incorrect package resolution in the OSGi container.
+2.  The order of deployment is important.
+Deploy these bundles in the order shown or you may experience strange failures in the compilation of jsps.
+This can be hard to diagnose but is almost always caused by the `ServletContainerInitializer` in the `org.eclipse.jetty.apache-jsp` bundle for the jsp container not being invoked due to incorrect startup of the annotation jars.
+____
+
+For the JSTL library, we recommend the use of the implementation from Glassfish, as it has fewer dependencies:
+
+.Jars Required for Glassfish JSTL
+[cols=",,",options="header",]
+|=======================================================================
+|Jar |Bundle Symbolic Name
+|The link:#osgi-jsp[jsp jars]|
+
+|org.eclipse.jetty.orbit:javax.servlet.jsp.jstl-1.2.0.v201105211821.jar| javax.servlet.jsp.jstl
+
+|org.glassfish.web:javax.servlet.jsp.jstl-1.2.2.jar|org.glassfish.web.javax.servlet.jsp.jstl
+|=======================================================================
+
+However, if you wish, you may use the JSTL implementation from Apache instead, although you will need to source some dependency jars with suitable OSGi manifests:
+
+.Jars Required for Apache JSTL
+[cols=",,",options="header",]
+|=======================================================================
+|Jar |Bundle Symbolic Name |Location
+|The link:#osgi-jsp[jsp jars] | |
+
+|org.apache.taglibs:taglibs-standard-spec:jar:1.2.1
+|org.apache.taglibs.taglibs-standard-spec |Distribution lib/apache-jstl
+
+|org.apache.taglibs:taglibs-standard-spec:jar:1.2.1
+|org.apache.taglibs.standard-impl |Distribution lib/apache-jstl
+
+|org.apache.xalan 2.7.1 | |Try
+http://download.eclipse.org/tools/orbit/downloads/drops/R20140525021250/repository/plugins/org.apache.xalan_2.7.1.v201005080400.jar[Eclipse
+Orbit]
+
+|org.apache.xml.serializer 2.7.1 | |Try
+http://download.eclipse.org/tools/orbit/downloads/drops/R20140525021250/repository/plugins/org.apache.xml.serializer_2.7.1.v201005080400.jar[Eclipse
+Orbit]
+|=======================================================================
+
+===== The jetty-osgi-boot-jsp jar
+
+To be able to use JSPs you will need to also install the https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp/[jetty-osgi-boot-jsp.jar] into your OSGi container.
+This jar can be obtained from maven central https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp/[here].
+
+This bundle acts as a fragment extension to the jetty-osgi-boot.jar and adds in support for using JSP.
+
+====== Using TagLibs
+
+The Jetty JSP OSGi container will make available the JSTL tag library to all webapps.
+If you only use this tag library, then your webapp will work without any further modification.
+
+However, if you make use of other taglibs, you will need to ensure that they are installed into the OSGi container, and also define some System properties and/or `MANIFEST` headers in your webapp.
+This is necessary because the classloading regime used by the OSGi container is very different than that used by JSP containers, and the `MANIFEST` of a normal webapp does not contain enough information for the OSGi environment to allow a JSP container to find and resolve TLDs referenced in the webapp's .jsp files.
+
+Firstly, lets look at an example of a web bundle's modified `MANIFEST` file so you get an idea of what is required.
+This example is a web bundle that uses the Spring servlet framework:
+
+[source, plain, subs="{sub-order}"]
+----
+Bundle-SymbolicName: com.acme.sample
+Bundle-Name: WebSample
+Web-ContextPath: taglibs
+Import-Bundle: org.springframework.web.servlet
+Require-TldBundle: org.springframework.web.servlet
+Bundle-Version: 1.0.0
+Import-Package: org.eclipse.virgo.web.dm;version="[3.0.0,4.0.0)",org.s
+ pringframework.context.config;version="[2.5.6,4.0.0)",org.springframe
+ work.stereotype;version="[2.5.6,4.0.0)",org.springframework.web.bind.
+ annotation;version="[2.5.6,4.0.0)",org.springframework.web.context;ve
+ rsion="[2.5.6,4.0.0)",org.springframework.web.servlet;version="[2.5.6
+ ,4.0.0)",org.springframework.web.servlet.view;version="[2.5.6,4.0.0)"
+----
+
+The *Require-TldBundle* header tells the Jetty OSGi container that this bundle contains TLDs that need to be passed over to the JSP container for processing.
+The *Import-Bundle* header ensures that the implementation classes for these TLDs will be available to the webapp on the OSGi classpath.
+
+The format of the *Require-TldBundle* header is a comma separated list of one or more symbolic names of bundles containing TLDs.
+
+====== Container Path Taglibs
+
+Some TLD jars are required to be found on the Jetty OSGi container's classpath, rather than considered part of the web bundle's classpath.
+For example, this is true of JSTL and Java Server Faces.
+The Jetty OSGi container takes care of JSTL for you, but you can control which other jars are considered as part of the container's classpath by using the System property **org.eclipse.jetty.osgi.tldbundles**:
+
+org.eclipse.jetty.osgi.tldbundles::
+System property defined on the OSGi environment that is a comma separated list of symbolic names of bundles containing taglibs that will be treated as if they are on the container's classpath for web bundles.
+For example:
++
+[source, plain, subs="{sub-order}"]
+----
+org.eclipse.jetty.osgi.tldbundles=com.acme.special.tags,com.foo.web,org.bar.web.framework
+----
++
+You will still need to define the *Import-Bundle* header in the `MANIFEST` file for the web bundle to ensure that the TLD bundles are on the OSGi classpath.
+
+Alternatively or additionally, you can define a pattern as a context attribute that will match symbolic bundle names in the OSGi environment containing TLDs that should be considered as discovered from the container's classpath.
+
+org.eclipse.jetty.server.webapp.containerIncludeBundlePattern::
+This pattern must be specified as a context attribute of the `WebAppContext` representing the web bundle.
+Unless you are deploying your own `WebAppContext` (see link:#services-as-webapps[Deploying Services as Webapps]), you won't have a reference to the `WebAppContext` to do this.
+In that case, it can be specified on the `org.eclipse.jetty.deploy.DeploymentManager`, where it will be applied to _every_ webapp deployed by the Jetty OSGi container.
+The `jetty-osgi-boot.jar` contains the default `jettyhome/etc/jetty-deploy.xml` file where the `DeploymentManager` is defined.
+To set the pattern, you will need to provide your own etc files - see the section on link:#customize-jetty-container[customizing the jetty container] for how to do this. Here's how the `jetty-deploy.xml` file would look if we defined a pattern that matched all bundle symbolic names ending in "tag" and "web":
++
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+    <Call name="addBean">
+      <Arg>
+        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+          <Set name="contexts">
+            <Ref refid="Contexts" />
+          </Set>
+          <Call name="setContextAttribute">
+            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeBundlePattern</Arg>
+            <Arg>.*\.tag$|.*\.web$</Arg>
+          </Call>
+        </New>
+      </Arg>
+    </Call>
+</Configure>
+----
++
+Again, you will still need to define suitable *Import-Bundle* headers in your web bundle `MANIFEST` to ensure that bundles matching the pattern are available on the OSGi class path.
+
+[[osgi-annotations]]
+==== Using Annotations/ServletContainerInitializers
+
+Annotations are very much part of the Servlet 3.0 and 3.1 specifications.
+In order to use them with Jetty in OSGi, you will need to deploy some extra jars into your OSGi container:
+
+.Jars Required for Annotations
+[cols=",,",options="header",]
+|=======================================================================
+|Jar |Bundle Symbolic Name |Location
+|The link:#spifly[spifly jars] | |
+|org.ow2.asm:asm-7.0.jar |org.objectweb.asm
+|https://repo1.maven.org/maven2/org/ow2/asm/asm[Maven central]
+
+|org.ow2.asm:asm-commons-7.0.jar |org.objectweb.asm.commons
+|https://repo1.maven.org/maven2/org/ow2/asm/asm-commons[Maven central]
+
+|org.ow2.asm:asm-tree-7.0.jar |org.objectweb.asm.tree
+|https://repo1.maven.org/maven2/org/ow2/asm/asm-tree[Maven central]
+
+|javax.annotation:javax.annotation-api-1.2.jar |javax.annotation-api
+|https://repo1.maven.org/maven2/javax/annotation/javax.annotation-api/[Maven
+central]
+
+|jta api version 1.1.1 (eg
+org.apache.geronimo.specs:geronimo-jta_1.1_spec-1.1.1.jar)^*^ | |Maven
+central
+
+|javax mail api version 1.4.1 (eg
+org.eclipse.jetty.orbit:javax.mail.glassfish-1.4.1.v201005082020.jar)^*^
+| |Maven central
+
+|jetty-jndi |org.eclipse.jetty.jndi |Distribution lib/
+
+|jetty-plus |org.eclipse.jetty.plus |Distribution lib/
+
+|jetty-annotations |org.eclipse.jetty.annotations |Distribution lib/
+|=======================================================================
+
+____
+[IMPORTANT]
+If you wish to use JSPs you will need to deploy these annotation-related jars.
+____
+
+____
+[NOTE]
+You may be able to deploy later versions or other providers of these specifications, however these particular versions are known to have correct manifests and have been tested and known to work with OSGi.
+____
+
+Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
+This interface requires annotation support.
+It is implemented by providers of code that extend the capabilities of the container.
+An example of this is the Jetty JSR356 Websocket implementation, although it is being used increasingly commonly in popular libraries like link:http://projects.spring.io/spring-framework/[Spring], link:https://jersey.java.net/[Jersey] and JSP containers.
+
+To find `ServletContainerInitializers` on the classpath, Jetty uses the Java http://docs.oracle.com/javase/7/docs/api/java/util/ServiceLoader.html[`ServiceLoader`]
+mechanism.
+For this to function in OSGi, you will need an OSGi R5 compatible container, and have support for the http://blog.osgi.org/2013/02/javautilserviceloader-in-osgi.html[Service Loader Mediator].
+Jetty has been tested with the http://aries.apache.org/modules/spi-fly.html[Aries SpiFly] module, which is the reference implementation of the Service Loader Mediator, and is listed in the jars above.
+
+==== OSGi Containers
+
+===== Felix
+
+The Jetty OSGi integration has been successfully tested against http://felix.apache.org/[Felix] 5.0.0.
+
+You will require the following extra Felix services, available as separately downloadable jars:
+
+* http://felix.apache.org/documentation/subprojects/apache-felix-config-admin.html[Felix Configuration Admin Service]
+* http://felix.apache.org/documentation/subprojects/apache-felix-event-admin.html[Felix Event Admin Service]
+
+Unfortunately, as of Felix 4.x there is a difficultly with the resolution of the `javax.transaction` package.
+A link:http://mail-archives.apache.org/mod_mbox/felix-users/201211.mbox/%3CCAPr=90M+5vYjPqAvyTU+gYHr64y_FosBYELeUYcU_rFEJF3Cxw&#64;mail.gmail.com%3E[description of the problem] and hint to solving it is described [http://mail-archives.apache.org/mod_mbox/felix-users/201211.mbox/%3CCAPr=90M+5vYjPqAvyTU+gYHr64y_FosBYELeUYcU_rFEJF3Cxw&#64;mail.gmail.com%3E[here]].
+
+The simplest solution for this is to extract the `default.properties` file from the `felix.jar`, change the declaration of the `javax.sql` and `javax.transaction` packages and set the changed lines as the value of the `org.osgi.framework.system.packages` property in the `conf/config.properties` file.
+
+The `default.properties` file defines the default `org.osgi.framework.system.packages` property like this:
+
+[source,properties]
+----
+# Default packages exported by system bundle.
+org.osgi.framework.system.packages=org.osgi.framework; version=1.7.0, \
+ org.osgi.framework.hooks.bundle; version=1.1.0, \
+ org.osgi.framework.hooks.resolver; version=1.0.0, \
+ org.osgi.framework.hooks.service; version=1.1.0, \
+ org.osgi.framework.hooks.weaving; version=1.0.0, \
+ org.osgi.framework.launch; version=1.1.0, \
+ org.osgi.framework.namespace; version=1.0.0, \
+ org.osgi.framework.startlevel; version=1.0.0, \
+ org.osgi.framework.wiring; version=1.1.0, \
+ org.osgi.resource; version=1.0.0, \
+ org.osgi.service.packageadmin; version=1.2.0, \
+ org.osgi.service.startlevel; version=1.1.0, \
+ org.osgi.service.url; version=1.0.0, \
+ org.osgi.util.tracker; version=1.5.1 \
+ ${jre-${java.specification.version}}
+----
+
+The last line must be substituted for one of the definitions further down in the file that is suitable for the jvm you are using.
+
+You will take these lines and copy them into the `conf/config.properties` file, after having replaced the line `$\{jre-$\{java.specification.version}}` with all of the lines relevant to your version of the jvm.
+
+For example, for a 1.7 jvm, you will find this property definition:
+
+[source,properties]
+----
+jre-1.7=, \
+ javax.accessibility;uses:="javax.swing.text";version="0.0.0.1_007_JavaSE", \
+ javax.activation;version="0.0.0.1_007_JavaSE", \
+ javax.activity;version="0.0.0.1_007_JavaSE", \
+ javax.annotation.processing;uses:="javax.tools,javax.lang.model,javax.lang.model.element,javax.lang.model.util";version="0.0.0.1_007_JavaSE", \
+ javax.annotation;version="0.0.0.1_007_JavaSE", \
+ javax.crypto.interfaces;uses:="javax.crypto.spec,javax.crypto";version="0.0.0.1_007_JavaSE", \
+ javax.crypto.spec;uses:="javax.crypto";version="0.0.0.1_007_JavaSE", \
+ javax.crypto;uses:="javax.crypto.spec";version="0.0.0.1_007_JavaSE", \
+ javax.imageio.event;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", \
+ javax.imageio.metadata;uses:="org.w3c.dom,javax.imageio";version="0.0.0.1_007_JavaSE", \
+ javax.imageio.plugins.bmp;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", \
+ javax.imageio.plugins.jpeg;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", \
+ javax.imageio.spi;uses:="javax.imageio.stream,javax.imageio,javax.imageio.metadata";version="0.0.0.1_007_JavaSE", \
+ javax.imageio.stream;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", \
+ javax.imageio;uses:="javax.imageio.metadata,javax.imageio.stream,javax.imageio.spi,javax.imageio.event";version="0.0.0.1_007_JavaSE", \
+ javax.jws.soap;version="0.0.0.1_007_JavaSE", \
+ javax.jws;version="0.0.0.1_007_JavaSE", \
+ javax.lang.model.element;uses:="javax.lang.model.type,javax.lang.model";version="0.0.0.1_007_JavaSE", \
+ javax.lang.model.type;uses:="javax.lang.model.element,javax.lang.model";version="0.0.0.1_007_JavaSE", \
+ javax.lang.model.util;uses:="javax.lang.model,javax.lang.model.element,javax.annotation.processing,javax.lang.model.type";version="0.0.0.1_007_JavaSE", \
+ javax.lang.model;version="0.0.0.1_007_JavaSE", \
+ javax.management.loading;uses:="javax.management";version="0.0.0.1_007_JavaSE", \
+ javax.management.modelmbean;uses:="javax.management,javax.management.loading";version="0.0.0.1_007_JavaSE", \
+ javax.management.monitor;uses:="javax.management";version="0.0.0.1_007_JavaSE", \
+ javax.management.openmbean;uses:="javax.management";version="0.0.0.1_007_JavaSE", \
+ javax.management.relation;uses:="javax.management";version="0.0.0.1_007_JavaSE", \
+ javax.management.remote.rmi;uses:="javax.management.remote,javax.security.auth,javax.management,javax.management.loading,javax.naming,javax.rmi.ssl,org.omg.CORBA,org.omg.CORBA_2_3.portable,org.omg.CORBA.portable,javax.rmi.CORBA,javax.rmi";version="0.0.0.1_007_JavaSE", \
+ javax.management.remote;uses:="javax.security.auth,javax.management";version="0.0.0.1_007_JavaSE", \
+ javax.management.timer;uses:="javax.management";version="0.0.0.1_007_JavaSE", \
+ javax.management;uses:="javax.management.loading,javax.management.openmbean";version="0.0.0.1_007_JavaSE", \
+ javax.naming.directory;uses:="javax.naming";version="0.0.0.1_007_JavaSE", \
+ javax.naming.event;uses:="javax.naming,javax.naming.directory";version="0.0.0.1_007_JavaSE", \
+ javax.naming.ldap;uses:="javax.naming,javax.naming.directory,javax.net.ssl,javax.naming.event";version="0.0.0.1_007_JavaSE", \
+ javax.naming.spi;uses:="javax.naming,javax.naming.directory";version="0.0.0.1_007_JavaSE", \
+ javax.naming;uses:="javax.naming.spi";version="0.0.0.1_007_JavaSE", \
+ javax.net.ssl;uses:="javax.security.cert,javax.security.auth.x500,javax.net";version="0.0.0.1_007_JavaSE", \
+ javax.net;version="0.0.0.1_007_JavaSE", \
+ javax.print.attribute.standard;uses:="javax.print.attribute";version="0.0.0.1_007_JavaSE", \
+ javax.print.attribute;version="0.0.0.1_007_JavaSE", \
+ javax.print.event;uses:="javax.print,javax.print.attribute";version="0.0.0.1_007_JavaSE", \
+ javax.print;uses:="javax.print.attribute,javax.print.event,javax.print.attribute.standard";version="0.0.0.1_007_JavaSE", \
+ javax.rmi.CORBA;uses:="org.omg.CORBA,org.omg.CORBA_2_3.portable,org.omg.CORBA.portable,org.omg.SendingContext";version="0.0.0.1_007_JavaSE", \
+ javax.rmi.ssl;uses:="javax.net,javax.net.ssl";version="0.0.0.1_007_JavaSE", \
+ javax.rmi;uses:="org.omg.CORBA,javax.rmi.CORBA";version="0.0.0.1_007_JavaSE", \
+ javax.script;version="0.0.0.1_007_JavaSE", \
+ javax.security.auth.callback;version="0.0.0.1_007_JavaSE", \
+ javax.security.auth.kerberos;uses:="javax.security.auth,javax.crypto";version="0.0.0.1_007_JavaSE", \
+ javax.security.auth.login;uses:="javax.security.auth,javax.security.auth.callback";version="0.0.0.1_007_JavaSE", \
+ javax.security.auth.spi;uses:="javax.security.auth.callback,javax.security.auth.login,javax.security.auth";version="0.0.0.1_007_JavaSE", \
+ javax.security.auth.x500;uses:="javax.security.auth";version="0.0.0.1_007_JavaSE", \
+ javax.security.auth;version="0.0.0.1_007_JavaSE", \
+ javax.security.cert;version="0.0.0.1_007_JavaSE", \
+ javax.security.sasl;uses:="javax.security.auth.callback";version="0.0.0.1_007_JavaSE", \
+ javax.sound.midi.spi;uses:="javax.sound.midi";version="0.0.0.1_007_JavaSE", \
+ javax.sound.midi;uses:="javax.sound.midi.spi";version="0.0.0.1_007_JavaSE", \
+ javax.sound.sampled.spi;uses:="javax.sound.sampled";version="0.0.0.1_007_JavaSE", \
+ javax.sound.sampled;uses:="javax.sound.sampled.spi";version="0.0.0.1_007_JavaSE", \
+ javax.sql.rowset.serial;uses:="javax.sql.rowset";version="0.0.0.1_007_JavaSE", \
+ javax.sql.rowset.spi;uses:="javax.sql,javax.naming,javax.sql.rowset";version="0.0.0.1_007_JavaSE", \
+ javax.sql.rowset;uses:="javax.sql,javax.sql.rowset.serial,javax.sql.rowset.spi";version="0.0.0.1_007_JavaSE", \
+ javax.sql;uses:="javax.transaction.xa";version="0.0.0.1_007_JavaSE", \
+ javax.swing.border;uses:="javax.swing";version="0.0.0.1_007_JavaSE", \
+ javax.swing.colorchooser;uses:="javax.swing,javax.swing.border,javax.swing.event,javax.swing.text";version="0.0.0.1_007_JavaSE", \
+ javax.swing.event;uses:="javax.swing,javax.swing.text,javax.swing.table,javax.swing.tree,javax.swing.undo";version="0.0.0.1_007_JavaSE", \
+ javax.swing.filechooser;uses:="javax.swing";version="0.0.0.1_007_JavaSE", \
+ javax.swing.plaf.basic;uses:="javax.swing.border,javax.swing,javax.swing.plaf,javax.swing.text,javax.swing.event,javax.swing.colorchooser,javax.accessibility,javax.swing.filechooser,javax.swing.text.html,javax.sound.sampled,javax.swing.table,javax.swing.plaf.synth,javax.swing.tree";version="0.0.0.1_007_JavaSE", \
+ javax.swing.plaf.metal;uses:="javax.swing.plaf,javax.swing,javax.swing.border,javax.swing.text,javax.swing.plaf.basic,javax.swing.filechooser,javax.swing.event,javax.swing.tree";version="0.0.0.1_007_JavaSE", \
+ javax.swing.plaf.multi;uses:="javax.accessibility,javax.swing,javax.swing.plaf,javax.swing.filechooser,javax.swing.text,javax.swing.tree";version="0.0.0.1_007_JavaSE", \
+ javax.swing.plaf.nimbus;uses:="javax.swing,javax.swing.plaf,javax.swing.border,javax.swing.plaf.synth";version="0.0.0.1_007_JavaSE", \
+ javax.swing.plaf.synth;uses:="javax.swing,javax.swing.plaf,javax.swing.text,javax.swing.border,javax.swing.plaf.basic,javax.swing.colorchooser,javax.swing.event,javax.xml.parsers,org.xml.sax,org.xml.sax.helpers,javax.swing.table,javax.swing.tree";version="0.0.0.1_007_JavaSE", \
+ javax.swing.plaf;uses:="javax.swing,javax.swing.border,javax.accessibility,javax.swing.filechooser,javax.swing.text,javax.swing.tree";version="0.0.0.1_007_JavaSE", \
+ javax.swing.table;uses:="javax.swing.event,javax.swing.plaf,javax.swing.border,javax.swing,javax.accessibility";version="0.0.0.1_007_JavaSE", \
+ javax.swing.text.html.parser;uses:="javax.swing.text,javax.swing.text.html";version="0.0.0.1_007_JavaSE", \
+ javax.swing.text.html;uses:="javax.swing.event,javax.swing.text,javax.accessibility,javax.swing,javax.swing.plaf,javax.swing.border,javax.swing.undo";version="0.0.0.1_007_JavaSE", \
+ javax.swing.text.rtf;uses:="javax.swing.text";version="0.0.0.1_007_JavaSE", \
+ javax.swing.text;uses:="javax.swing.event,javax.swing.tree,javax.swing.undo,javax.swing,javax.swing.plaf,javax.swing.plaf.basic,javax.print,javax.print.attribute,javax.accessibility,javax.swing.text.html";version="0.0.0.1_007_JavaSE", \
+ javax.swing.tree;uses:="javax.swing.event,javax.swing,javax.swing.border,javax.swing.plaf,javax.swing.plaf.basic";version="0.0.0.1_007_JavaSE", \
+ javax.swing.undo;uses:="javax.swing,javax.swing.event";version="0.0.0.1_007_JavaSE", \
+ javax.swing;uses:="javax.swing.event,javax.accessibility,javax.swing.text,javax.swing.plaf,javax.swing.border,javax.swing.tree,javax.swing.table,javax.swing.colorchooser,javax.swing.plaf.basic,javax.swing.text.html,javax.swing.filechooser,javax.print,javax.print.attribute,javax.swing.plaf.metal";version="0.0.0.1_007_JavaSE", \
+ javax.tools;uses:="javax.lang.model.element,javax.annotation.processing,javax.lang.model";version="0.0.0.1_007_JavaSE", \
+ javax.transaction.xa;version="0.0.0.1_007_JavaSE", \
+ javax.transaction;version="0.0.0.1_007_JavaSE", \
+ javax.xml.bind.annotation.adapters;uses:="javax.xml.bind";version="0.0.0.1_007_JavaSE", \
+ javax.xml.bind.annotation;uses:="javax.xml.transform,javax.xml.bind,javax.xml.parsers,javax.xml.transform.dom,org.w3c.dom";version="0.0.0.1_007_JavaSE", \
+ javax.xml.bind.attachment;uses:="javax.activation";version="0.0.0.1_007_JavaSE", \
+ javax.xml.bind.helpers;uses:="javax.xml.bind.annotation.adapters,javax.xml.transform.dom,org.w3c.dom,org.xml.sax,javax.xml.bind.attachment,javax.xml.stream,javax.xml.transform,javax.xml.transform.stream,javax.xml.validation,javax.xml.transform.sax,javax.xml.bind,javax.xml.parsers";version="0.0.0.1_007_JavaSE", \
+ javax.xml.bind.util;uses:="javax.xml.transform.sax,javax.xml.bind,org.xml.sax,org.xml.sax.ext,org.xml.sax.helpers";version="0.0.0.1_007_JavaSE", \
+ javax.xml.bind;uses:="javax.xml.validation,javax.xml.namespace,javax.xml.datatype,javax.xml.transform,javax.xml.bind.annotation,javax.xml.transform.stream,org.w3c.dom,javax.xml.bind.attachment,javax.xml.stream,javax.xml.bind.annotation.adapters,org.xml.sax";version="0.0.0.1_007_JavaSE", \
+ javax.xml.crypto.dom;uses:="javax.xml.crypto,org.w3c.dom";version="0.0.0.1_007_JavaSE", \
+ javax.xml.crypto.dsig.dom;uses:="javax.xml.crypto.dsig,javax.xml.crypto,org.w3c.dom,javax.xml.crypto.dom";version="0.0.0.1_007_JavaSE", \
+ javax.xml.crypto.dsig.keyinfo;uses:="javax.xml.crypto";version="0.0.0.1_007_JavaSE", \
+ javax.xml.crypto.dsig.spec;uses:="javax.xml.crypto";version="0.0.0.1_007_JavaSE", \
+ javax.xml.crypto.dsig;uses:="javax.xml.crypto,javax.xml.crypto.dsig.spec,javax.xml.crypto.dsig.keyinfo";version="0.0.0.1_007_JavaSE", \
+ javax.xml.crypto;uses:="javax.xml.crypto.dsig.keyinfo";version="0.0.0.1_007_JavaSE", \
+ javax.xml.datatype;uses:="javax.xml.namespace";version="0.0.0.1_007_JavaSE", \
+ javax.xml.namespace;version="0.0.0.1_007_JavaSE", \
+ javax.xml.parsers;uses:="javax.xml.validation,org.w3c.dom,org.xml.sax,org.xml.sax.helpers";version="0.0.0.1_007_JavaSE", \
+ javax.xml.soap;uses:="javax.activation,javax.xml.namespace,org.w3c.dom,javax.xml.transform.dom,javax.xml.transform";version="0.0.0.1_007_JavaSE", \
+ javax.xml.stream.events;uses:="javax.xml.namespace,javax.xml.stream";version="0.0.0.1_007_JavaSE", \
+ javax.xml.stream.util;uses:="javax.xml.stream,javax.xml.stream.events,javax.xml.namespace";version="0.0.0.1_007_JavaSE", \
+ javax.xml.stream;uses:="javax.xml.stream.events,javax.xml.namespace,javax.xml.stream.util,javax.xml.transform";version="0.0.0.1_007_JavaSE", \
+ javax.xml.transform.dom;uses:="javax.xml.transform,org.w3c.dom";version="0.0.0.1_007_JavaSE", \
+ javax.xml.transform.sax;uses:="org.xml.sax.ext,javax.xml.transform,org.xml.sax,javax.xml.transform.stream";version="0.0.0.1_007_JavaSE", \
+ javax.xml.transform.stax;uses:="javax.xml.stream,javax.xml.transform,javax.xml.stream.events";version="0.0.0.1_007_JavaSE", \
+ javax.xml.transform.stream;uses:="javax.xml.transform";version="0.0.0.1_007_JavaSE", \
+ javax.xml.transform;version="0.0.0.1_007_JavaSE", \
+ javax.xml.validation;uses:="org.w3c.dom.ls,javax.xml.transform,javax.xml.transform.stream,org.xml.sax,org.w3c.dom";version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws.handler.soap;uses:="javax.xml.ws.handler,javax.xml.namespace,javax.xml.soap,javax.xml.bind";version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws.handler;uses:="javax.xml.ws,javax.xml.namespace";version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws.http;uses:="javax.xml.ws";version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws.soap;uses:="javax.xml.ws.spi,javax.xml.ws,javax.xml.soap";version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws.spi.http;version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws.spi;uses:="javax.xml.ws,javax.xml.ws.wsaddressing,javax.xml.transform,org.w3c.dom,javax.xml.namespace,javax.xml.ws.handler,javax.xml.bind";version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws.wsaddressing;uses:="javax.xml.bind.annotation,javax.xml.namespace,org.w3c.dom,javax.xml.transform,javax.xml.bind,javax.xml.ws,javax.xml.ws.spi";version="0.0.0.1_007_JavaSE", \
+ javax.xml.ws;uses:="javax.xml.ws.handler,javax.xml.ws.spi,javax.xml.ws.spi.http,javax.xml.transform,org.w3c.dom,javax.xml.bind.annotation,javax.xml.transform.stream,javax.xml.bind,javax.xml.namespace";version="0.0.0.1_007_JavaSE", \
+ javax.xml.xpath;uses:="org.xml.sax,javax.xml.namespace";version="0.0.0.1_007_JavaSE", \
+ javax.xml;version="0.0.0.1_007_JavaSE", \
+ org.ietf.jgss;version="0.0.0.1_007_JavaSE", \
+ org.omg.CORBA.DynAnyPackage;uses:="org.omg.CORBA";version="0.0.0.1_007_JavaSE", \
+ org.omg.CORBA.ORBPackage;uses:="org.omg.CORBA";version="0.0.0.1_007_JavaSE", \
+ org.omg.CORBA.TypeCodePackage;uses:="org.omg.CORBA";version="0.0.0.1_007_JavaSE", \
+ org.omg.CORBA.portable;uses:="org.omg.CORBA,org.omg.CORBA_2_3.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.CORBA;uses:="org.omg.CORBA.portable,org.omg.CORBA.DynAnyPackage,org.omg.CORBA.ORBPackage,org.omg.CORBA_2_3.portable,org.omg.CORBA.TypeCodePackage";version="0.0.0.1_007_JavaSE", \
+ org.omg.CORBA_2_3.portable;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.CORBA_2_3;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.CosNaming.NamingContextExtPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.CosNaming.NamingContextPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.CosNaming";version="0.0.0.1_007_JavaSE", \
+ org.omg.CosNaming;uses:="org.omg.CORBA.portable,org.omg.CORBA,org.omg.PortableServer,org.omg.CosNaming.NamingContextPackage,org.omg.CosNaming.NamingContextExtPackage";version="0.0.0.1_007_JavaSE", \
+ org.omg.Dynamic;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.DynamicAny.DynAnyFactoryPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.DynamicAny.DynAnyPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.DynamicAny;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.DynamicAny.DynAnyFactoryPackage,org.omg.DynamicAny.DynAnyPackage";version="0.0.0.1_007_JavaSE", \
+ org.omg.IOP.CodecFactoryPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.IOP.CodecPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.IOP;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.IOP.CodecFactoryPackage,org.omg.IOP.CodecPackage";version="0.0.0.1_007_JavaSE", \
+ org.omg.Messaging;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableInterceptor.ORBInitInfoPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableInterceptor;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.IOP,org.omg.PortableInterceptor.ORBInitInfoPackage,org.omg.CORBA_2_3.portable,org.omg.Dynamic";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableServer.CurrentPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableServer.POAManagerPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableServer.POAPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableServer.ServantLocatorPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableServer.portable;uses:="org.omg.CORBA,org.omg.PortableServer";version="0.0.0.1_007_JavaSE", \
+ org.omg.PortableServer;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.PortableServer.CurrentPackage,org.omg.PortableServer.POAManagerPackage,org.omg.PortableServer.POAPackage,org.omg.PortableServer.portable,org.omg.CORBA_2_3,org.omg.PortableServer.ServantLocatorPackage";version="0.0.0.1_007_JavaSE", \
+ org.omg.SendingContext;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", \
+ org.omg.stub.java.rmi;uses:="javax.rmi.CORBA";version="0.0.0.1_007_JavaSE", \
+ org.w3c.dom.bootstrap;uses:="org.w3c.dom";version="0.0.0.1_007_JavaSE", \
+ org.w3c.dom.events;uses:="org.w3c.dom,org.w3c.dom.views";version="0.0.0.1_007_JavaSE", \
+ org.w3c.dom.ls;uses:="org.w3c.dom,org.w3c.dom.events,org.w3c.dom.traversal";version="0.0.0.1_007_JavaSE", \
+ org.w3c.dom;version="0.0.0.1_007_JavaSE", \
+ org.xml.sax.ext;uses:="org.xml.sax,org.xml.sax.helpers";version="0.0.0.1_007_JavaSE", \
+ org.xml.sax.helpers;uses:="org.xml.sax";version="0.0.0.1_007_JavaSE", \
+ org.xml.sax;version="0.0.0.1_007_JavaSE"
+----
+
+Remove the definition for the `javax.transaction` packages, and remove the `uses:=` clause for the `javax.sql` packages (but leaving the `version` clause). Concatenate all the lines together.
+You'll wind up with something like this in your `conf/config.properties` file:
+
+[source,properties]
+----
+org.osgi.framework.system.packages=org.osgi.framework;version=1.7.0, org.osgi.framework.hooks.bundle;version=1.1.0, org.osgi.framework.hooks.resolver;version=1.0.0, org.osgi.framework.hooks.service;version=1.1.0, org.osgi.framework.hooks.weaving;version=1.0.0, org.osgi.framework.launch;version=1.1.0, org.osgi.framework.namespace;version=1.0.0, org.osgi.framework.startlevel;version=1.0.0, org.osgi.framework.wiring;version=1.1.0, org.osgi.resource;version=1.0.0, org.osgi.service.packageadmin; version=1.2.0, org.osgi.service.startlevel; version=1.1.0, org.osgi.service.url;version=1.0.0, org.osgi.util.tracker;version=1.5.1 javax.accessibility;uses:="javax.swing.text";version="0.0.0.1_007_JavaSE", javax.activation;version="0.0.0.1_007_JavaSE", javax.activity;version="0.0.0.1_007_JavaSE", javax.annotation.processing;uses:="javax.tools,javax.lang.model,javax.lang.model.element,javax.lang.model.util";version="0.0.0.1_007_JavaSE", javax.annotation;version="0.0.0.1_007_JavaSE", javax.crypto.interfaces;uses:="javax.crypto.spec,javax.crypto";version="0.0.0.1_007_JavaSE", javax.crypto.spec;uses:="javax.crypto";version="0.0.0.1_007_JavaSE", javax.crypto;uses:="javax.crypto.spec";version="0.0.0.1_007_JavaSE", javax.imageio.event;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", javax.imageio.metadata;uses:="org.w3c.dom,javax.imageio";version="0.0.0.1_007_JavaSE", javax.imageio.plugins.bmp;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", javax.imageio.plugins.jpeg;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", javax.imageio.spi;uses:="javax.imageio.stream,javax.imageio,javax.imageio.metadata";version="0.0.0.1_007_JavaSE", javax.imageio.stream;uses:="javax.imageio";version="0.0.0.1_007_JavaSE", javax.imageio;uses:="javax.imageio.metadata,javax.imageio.stream,javax.imageio.spi,javax.imageio.event";version="0.0.0.1_007_JavaSE", javax.jws.soap;version="0.0.0.1_007_JavaSE", javax.jws;version="0.0.0.1_007_JavaSE", javax.lang.model.element;uses:="javax.lang.model.type,javax.lang.model";version="0.0.0.1_007_JavaSE", javax.lang.model.type;uses:="javax.lang.model.element,javax.lang.model";version="0.0.0.1_007_JavaSE", javax.lang.model.util;uses:="javax.lang.model,javax.lang.model.element,javax.annotation.processing,javax.lang.model.type";version="0.0.0.1_007_JavaSE", javax.lang.model;version="0.0.0.1_007_JavaSE", javax.management.loading;uses:="javax.management";version="0.0.0.1_007_JavaSE", javax.management.modelmbean;uses:="javax.management,javax.management.loading";version="0.0.0.1_007_JavaSE", javax.management.monitor;uses:="javax.management";version="0.0.0.1_007_JavaSE", javax.management.openmbean;uses:="javax.management";version="0.0.0.1_007_JavaSE", javax.management.relation;uses:="javax.management";version="0.0.0.1_007_JavaSE", javax.management.remote.rmi;uses:="javax.management.remote,javax.security.auth,javax.management,javax.management.loading,javax.naming,javax.rmi.ssl,org.omg.CORBA,org.omg.CORBA_2_3.portable,org.omg.CORBA.portable,javax.rmi.CORBA,javax.rmi";version="0.0.0.1_007_JavaSE", javax.management.remote;uses:="javax.security.auth,javax.management";version="0.0.0.1_007_JavaSE", javax.management.timer;uses:="javax.management";version="0.0.0.1_007_JavaSE", javax.management;uses:="javax.management.loading,javax.management.openmbean";version="0.0.0.1_007_JavaSE", javax.naming.directory;uses:="javax.naming";version="0.0.0.1_007_JavaSE", javax.naming.event;uses:="javax.naming,javax.naming.directory";version="0.0.0.1_007_JavaSE", javax.naming.ldap;uses:="javax.naming,javax.naming.directory,javax.net.ssl,javax.naming.event";version="0.0.0.1_007_JavaSE", javax.naming.spi;uses:="javax.naming,javax.naming.directory";version="0.0.0.1_007_JavaSE", javax.naming;uses:="javax.naming.spi";version="0.0.0.1_007_JavaSE", javax.net.ssl;uses:="javax.security.cert,javax.security.auth.x500,javax.net";version="0.0.0.1_007_JavaSE", javax.net;version="0.0.0.1_007_JavaSE", javax.print.attribute.standard;uses:="javax.print.attribute";version="0.0.0.1_007_JavaSE", javax.print.attribute;version="0.0.0.1_007_JavaSE", javax.print.event;uses:="javax.print,javax.print.attribute";version="0.0.0.1_007_JavaSE", javax.print;uses:="javax.print.attribute,javax.print.event,javax.print.attribute.standard";version="0.0.0.1_007_JavaSE", javax.rmi.CORBA;uses:="org.omg.CORBA,org.omg.CORBA_2_3.portable,org.omg.CORBA.portable,org.omg.SendingContext";version="0.0.0.1_007_JavaSE", javax.rmi.ssl;uses:="javax.net,javax.net.ssl";version="0.0.0.1_007_JavaSE", javax.rmi;uses:="org.omg.CORBA,javax.rmi.CORBA";version="0.0.0.1_007_JavaSE", javax.script;version="0.0.0.1_007_JavaSE", javax.security.auth.callback;version="0.0.0.1_007_JavaSE", javax.security.auth.kerberos;uses:="javax.security.auth,javax.crypto";version="0.0.0.1_007_JavaSE", javax.security.auth.login;uses:="javax.security.auth,javax.security.auth.callback";version="0.0.0.1_007_JavaSE", javax.security.auth.spi;uses:="javax.security.auth.callback,javax.security.auth.login,javax.security.auth";version="0.0.0.1_007_JavaSE", javax.security.auth.x500;uses:="javax.security.auth";version="0.0.0.1_007_JavaSE", javax.security.auth;version="0.0.0.1_007_JavaSE", javax.security.cert;version="0.0.0.1_007_JavaSE", javax.security.sasl;uses:="javax.security.auth.callback";version="0.0.0.1_007_JavaSE", javax.sound.midi.spi;uses:="javax.sound.midi";version="0.0.0.1_007_JavaSE", javax.sound.midi;uses:="javax.sound.midi.spi";version="0.0.0.1_007_JavaSE", javax.sound.sampled.spi;uses:="javax.sound.sampled";version="0.0.0.1_007_JavaSE", javax.sound.sampled;uses:="javax.sound.sampled.spi";version="0.0.0.1_007_JavaSE", javax.sql.rowset.serial;version="0.0.0.1_007_JavaSE", javax.sql.rowset.spi;version="0.0.0.1_007_JavaSE", javax.sql.rowset;version="0.0.0.1_007_JavaSE", javax.sql;version="0.0.0.1_007_JavaSE", javax.swing.border;uses:="javax.swing";version="0.0.0.1_007_JavaSE", javax.swing.colorchooser;uses:="javax.swing,javax.swing.border,javax.swing.event,javax.swing.text";version="0.0.0.1_007_JavaSE", javax.swing.event;uses:="javax.swing,javax.swing.text,javax.swing.table,javax.swing.tree,javax.swing.undo";version="0.0.0.1_007_JavaSE", javax.swing.filechooser;uses:="javax.swing";version="0.0.0.1_007_JavaSE", javax.swing.plaf.basic;uses:="javax.swing.border,javax.swing,javax.swing.plaf,javax.swing.text,javax.swing.event,javax.swing.colorchooser,javax.accessibility,javax.swing.filechooser,javax.swing.text.html,javax.sound.sampled,javax.swing.table,javax.swing.plaf.synth,javax.swing.tree";version="0.0.0.1_007_JavaSE", javax.swing.plaf.metal;uses:="javax.swing.plaf,javax.swing,javax.swing.border,javax.swing.text,javax.swing.plaf.basic,javax.swing.filechooser,javax.swing.event,javax.swing.tree";version="0.0.0.1_007_JavaSE", javax.swing.plaf.multi;uses:="javax.accessibility,javax.swing,javax.swing.plaf,javax.swing.filechooser,javax.swing.text,javax.swing.tree";version="0.0.0.1_007_JavaSE", javax.swing.plaf.nimbus;uses:="javax.swing,javax.swing.plaf,javax.swing.border,javax.swing.plaf.synth";version="0.0.0.1_007_JavaSE", javax.swing.plaf.synth;uses:="javax.swing,javax.swing.plaf,javax.swing.text,javax.swing.border,javax.swing.plaf.basic,javax.swing.colorchooser,javax.swing.event,javax.xml.parsers,org.xml.sax,org.xml.sax.helpers,javax.swing.table,javax.swing.tree";version="0.0.0.1_007_JavaSE", javax.swing.plaf;uses:="javax.swing,javax.swing.border,javax.accessibility,javax.swing.filechooser,javax.swing.text,javax.swing.tree";version="0.0.0.1_007_JavaSE", javax.swing.table;uses:="javax.swing.event,javax.swing.plaf,javax.swing.border,javax.swing,javax.accessibility";version="0.0.0.1_007_JavaSE", javax.swing.text.html.parser;uses:="javax.swing.text,javax.swing.text.html";version="0.0.0.1_007_JavaSE", javax.swing.text.html;uses:="javax.swing.event,javax.swing.text,javax.accessibility,javax.swing,javax.swing.plaf,javax.swing.border,javax.swing.undo";version="0.0.0.1_007_JavaSE", javax.swing.text.rtf;uses:="javax.swing.text";version="0.0.0.1_007_JavaSE", javax.swing.text;uses:="javax.swing.event,javax.swing.tree,javax.swing.undo,javax.swing,javax.swing.plaf,javax.swing.plaf.basic,javax.print,javax.print.attribute,javax.accessibility,javax.swing.text.html";version="0.0.0.1_007_JavaSE", javax.swing.tree;uses:="javax.swing.event,javax.swing,javax.swing.border,javax.swing.plaf,javax.swing.plaf.basic";version="0.0.0.1_007_JavaSE", javax.swing.undo;uses:="javax.swing,javax.swing.event";version="0.0.0.1_007_JavaSE", javax.swing;uses:="javax.swing.event,javax.accessibility,javax.swing.text,javax.swing.plaf,javax.swing.border,javax.swing.tree,javax.swing.table,javax.swing.colorchooser,javax.swing.plaf.basic,javax.swing.text.html,javax.swing.filechooser,javax.print,javax.print.attribute,javax.swing.plaf.metal";version="0.0.0.1_007_JavaSE", javax.tools;uses:="javax.lang.model.element,javax.annotation.processing,javax.lang.model";version="0.0.0.1_007_JavaSE", javax.xml.bind.annotation.adapters;uses:="javax.xml.bind";version="0.0.0.1_007_JavaSE", javax.xml.bind.annotation;uses:="javax.xml.transform,javax.xml.bind,javax.xml.parsers,javax.xml.transform.dom,org.w3c.dom";version="0.0.0.1_007_JavaSE", javax.xml.bind.attachment;uses:="javax.activation";version="0.0.0.1_007_JavaSE", javax.xml.bind.helpers;uses:="javax.xml.bind.annotation.adapters,javax.xml.transform.dom,org.w3c.dom,org.xml.sax,javax.xml.bind.attachment,javax.xml.stream,javax.xml.transform,javax.xml.transform.stream,javax.xml.validation,javax.xml.transform.sax,javax.xml.bind,javax.xml.parsers";version="0.0.0.1_007_JavaSE", javax.xml.bind.util;uses:="javax.xml.transform.sax,javax.xml.bind,org.xml.sax,org.xml.sax.ext,org.xml.sax.helpers";version="0.0.0.1_007_JavaSE", javax.xml.bind;uses:="javax.xml.validation,javax.xml.namespace,javax.xml.datatype,javax.xml.transform,javax.xml.bind.annotation,javax.xml.transform.stream,org.w3c.dom,javax.xml.bind.attachment,javax.xml.stream,javax.xml.bind.annotation.adapters,org.xml.sax";version="0.0.0.1_007_JavaSE", javax.xml.crypto.dom;uses:="javax.xml.crypto,org.w3c.dom";version="0.0.0.1_007_JavaSE", javax.xml.crypto.dsig.dom;uses:="javax.xml.crypto.dsig,javax.xml.crypto,org.w3c.dom,javax.xml.crypto.dom";version="0.0.0.1_007_JavaSE", javax.xml.crypto.dsig.keyinfo;uses:="javax.xml.crypto";version="0.0.0.1_007_JavaSE", javax.xml.crypto.dsig.spec;uses:="javax.xml.crypto";version="0.0.0.1_007_JavaSE", javax.xml.crypto.dsig;uses:="javax.xml.crypto,javax.xml.crypto.dsig.spec,javax.xml.crypto.dsig.keyinfo";version="0.0.0.1_007_JavaSE", javax.xml.crypto;uses:="javax.xml.crypto.dsig.keyinfo";version="0.0.0.1_007_JavaSE", javax.xml.datatype;uses:="javax.xml.namespace";version="0.0.0.1_007_JavaSE", javax.xml.namespace;version="0.0.0.1_007_JavaSE", javax.xml.parsers;uses:="javax.xml.validation,org.w3c.dom,org.xml.sax,org.xml.sax.helpers";version="0.0.0.1_007_JavaSE", javax.xml.soap;uses:="javax.activation,javax.xml.namespace,org.w3c.dom,javax.xml.transform.dom,javax.xml.transform";version="0.0.0.1_007_JavaSE", javax.xml.stream.events;uses:="javax.xml.namespace,javax.xml.stream";version="0.0.0.1_007_JavaSE", javax.xml.stream.util;uses:="javax.xml.stream,javax.xml.stream.events,javax.xml.namespace";version="0.0.0.1_007_JavaSE", javax.xml.stream;uses:="javax.xml.stream.events,javax.xml.namespace,javax.xml.stream.util,javax.xml.transform";version="0.0.0.1_007_JavaSE", javax.xml.transform.dom;uses:="javax.xml.transform,org.w3c.dom";version="0.0.0.1_007_JavaSE", javax.xml.transform.sax;uses:="org.xml.sax.ext,javax.xml.transform,org.xml.sax,javax.xml.transform.stream";version="0.0.0.1_007_JavaSE", javax.xml.transform.stax;uses:="javax.xml.stream,javax.xml.transform,javax.xml.stream.events";version="0.0.0.1_007_JavaSE", javax.xml.transform.stream;uses:="javax.xml.transform";version="0.0.0.1_007_JavaSE", javax.xml.transform;version="0.0.0.1_007_JavaSE", javax.xml.validation;uses:="org.w3c.dom.ls,javax.xml.transform,javax.xml.transform.stream,org.xml.sax,org.w3c.dom";version="0.0.0.1_007_JavaSE", javax.xml.ws.handler.soap;uses:="javax.xml.ws.handler,javax.xml.namespace,javax.xml.soap,javax.xml.bind";version="0.0.0.1_007_JavaSE", javax.xml.ws.handler;uses:="javax.xml.ws,javax.xml.namespace";version="0.0.0.1_007_JavaSE", javax.xml.ws.http;uses:="javax.xml.ws";version="0.0.0.1_007_JavaSE", javax.xml.ws.soap;uses:="javax.xml.ws.spi,javax.xml.ws,javax.xml.soap";version="0.0.0.1_007_JavaSE", javax.xml.ws.spi.http;version="0.0.0.1_007_JavaSE", javax.xml.ws.spi;uses:="javax.xml.ws,javax.xml.ws.wsaddressing,javax.xml.transform,org.w3c.dom,javax.xml.namespace,javax.xml.ws.handler,javax.xml.bind";version="0.0.0.1_007_JavaSE", javax.xml.ws.wsaddressing;uses:="javax.xml.bind.annotation,javax.xml.namespace,org.w3c.dom,javax.xml.transform,javax.xml.bind,javax.xml.ws,javax.xml.ws.spi";version="0.0.0.1_007_JavaSE", javax.xml.ws;uses:="javax.xml.ws.handler,javax.xml.ws.spi,javax.xml.ws.spi.http,javax.xml.transform,org.w3c.dom,javax.xml.bind.annotation,javax.xml.transform.stream,javax.xml.bind,javax.xml.namespace";version="0.0.0.1_007_JavaSE", javax.xml.xpath;uses:="org.xml.sax,javax.xml.namespace";version="0.0.0.1_007_JavaSE", javax.xml;version="0.0.0.1_007_JavaSE", org.ietf.jgss;version="0.0.0.1_007_JavaSE", org.omg.CORBA.DynAnyPackage;uses:="org.omg.CORBA";version="0.0.0.1_007_JavaSE", org.omg.CORBA.ORBPackage;uses:="org.omg.CORBA";version="0.0.0.1_007_JavaSE", org.omg.CORBA.TypeCodePackage;uses:="org.omg.CORBA";version="0.0.0.1_007_JavaSE", org.omg.CORBA.portable;uses:="org.omg.CORBA,org.omg.CORBA_2_3.portable";version="0.0.0.1_007_JavaSE", org.omg.CORBA;uses:="org.omg.CORBA.portable,org.omg.CORBA.DynAnyPackage,org.omg.CORBA.ORBPackage,org.omg.CORBA_2_3.portable,org.omg.CORBA.TypeCodePackage";version="0.0.0.1_007_JavaSE", org.omg.CORBA_2_3.portable;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.CORBA_2_3;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.CosNaming.NamingContextExtPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.CosNaming.NamingContextPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.CosNaming";version="0.0.0.1_007_JavaSE", org.omg.CosNaming;uses:="org.omg.CORBA.portable,org.omg.CORBA,org.omg.PortableServer,org.omg.CosNaming.NamingContextPackage,org.omg.CosNaming.NamingContextExtPackage";version="0.0.0.1_007_JavaSE", org.omg.Dynamic;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.DynamicAny.DynAnyFactoryPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.DynamicAny.DynAnyPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.DynamicAny;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.DynamicAny.DynAnyFactoryPackage,org.omg.DynamicAny.DynAnyPackage";version="0.0.0.1_007_JavaSE", org.omg.IOP.CodecFactoryPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.IOP.CodecPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.IOP;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.IOP.CodecFactoryPackage,org.omg.IOP.CodecPackage";version="0.0.0.1_007_JavaSE", org.omg.Messaging;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.PortableInterceptor.ORBInitInfoPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.PortableInterceptor;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.IOP,org.omg.PortableInterceptor.ORBInitInfoPackage,org.omg.CORBA_2_3.portable,org.omg.Dynamic";version="0.0.0.1_007_JavaSE", org.omg.PortableServer.CurrentPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.PortableServer.POAManagerPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.PortableServer.POAPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.PortableServer.ServantLocatorPackage;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.PortableServer.portable;uses:="org.omg.CORBA,org.omg.PortableServer";version="0.0.0.1_007_JavaSE", org.omg.PortableServer;uses:="org.omg.CORBA,org.omg.CORBA.portable,org.omg.PortableServer.CurrentPackage,org.omg.PortableServer.POAManagerPackage,org.omg.PortableServer.POAPackage,org.omg.PortableServer.portable,org.omg.CORBA_2_3,org.omg.PortableServer.ServantLocatorPackage";version="0.0.0.1_007_JavaSE", org.omg.SendingContext;uses:="org.omg.CORBA,org.omg.CORBA.portable";version="0.0.0.1_007_JavaSE", org.omg.stub.java.rmi;uses:="javax.rmi.CORBA";version="0.0.0.1_007_JavaSE", org.w3c.dom.bootstrap;uses:="org.w3c.dom";version="0.0.0.1_007_JavaSE", org.w3c.dom.events;uses:="org.w3c.dom,org.w3c.dom.views";version="0.0.0.1_007_JavaSE", org.w3c.dom.ls;uses:="org.w3c.dom,org.w3c.dom.events,org.w3c.dom.traversal";version="0.0.0.1_007_JavaSE", org.w3c.dom;version="0.0.0.1_007_JavaSE", org.xml.sax.ext;uses:="org.xml.sax,org.xml.sax.helpers";version="0.0.0.1_007_JavaSE", org.xml.sax.helpers;uses:="org.xml.sax";version="0.0.0.1_007_JavaSE", org.xml.sax;version="0.0.0.1_007_JavaSE"
+----
+
+You should now be able to start Felix, and deploy all the jars listed on this page.
+You should see output similar to this on the console, using the `felix:lb` command:
+
+....
+    ID|State      |Level|Name
+    0|Active     |    0|System Bundle (4.4.1)
+    1|Active     |    1|ASM (7.0)
+    2|Active     |    1|ASM commons classes (7.0)
+    3|Active     |    1|ASM Tree class visitor (7.0)
+    4|Active     |    1|geronimo-jta_1.1_spec (1.1.1)
+    5|Active     |    1|javax.annotation API (1.2.0)
+    6|Active     |    1|javax.mail bundle from Glassfish (1.4.1.v201005082020)
+    7|Active     |    1|Java Server Pages Standard Tag Library API Bundle (1.2.0.v201105211821)
+    8|Active     |    1|JavaServer Pages (TM) TagLib Implementation (1.2.2)
+    9|Active     |    1|Jetty :: Servlet Annotations ({VERSION})
+   10|Active     |    1|Jetty :: Deployers ({VERSION})
+   11|Active     |    1|Jetty :: Http Utility ({VERSION})
+   12|Active     |    1|Jetty :: IO Utility ({VERSION})
+   13|Active     |    1|Jetty :: JNDI Naming ({VERSION})
+   14|Active     |    1|Jetty :: OSGi :: Boot ({VERSION})
+   15|Resolved   |    1|Jetty-OSGi-Jasper Integration ({VERSION})
+   16|Active     |    1|Jetty Servlet API and Schemas for OSGi (3.1.0)
+   17|Active     |    1|Jetty :: Plus ({VERSION})
+   18|Active     |    1|Jetty :: Security ({VERSION})
+   19|Active     |    1|Jetty :: Server Core ({VERSION})
+   20|Active     |    1|Jetty :: Servlet Handling ({VERSION})
+   21|Active     |    1|Jetty :: Utility Servlets and Filters ({VERSION})
+   22|Active     |    1|Jetty :: Utilities ({VERSION})
+   23|Active     |    1|Jetty :: Webapp Application Support ({VERSION})
+   24|Active     |    1|Jetty :: XML utilities ({VERSION})
+   25|Active     |    1|Apache Aries SPI Fly Dynamic Weaving Bundle (1.2)
+   27|Active     |    1|Apache Felix Bundle Repository (2.0.2)
+   28|Active     |    1|Apache Felix Configuration Admin Service (1.8.0)
+   29|Active     |    1|Apache Felix EventAdmin (1.3.2)
+   30|Active     |    1|Apache Felix Gogo Command (0.14.0)
+   31|Active     |    1|Apache Felix Gogo Runtime (0.12.1)
+   32|Active     |    1|Apache Felix Gogo Shell (0.10.0)
+   33|Active     |    1|Apache Felix Log Service (1.0.1)
+   34|Active     |    1|Jetty :: Apache JSP ({VERSION})
+   35|Active     |    1|Eclipse Compiler for Java(TM) (3.8.2.v20130121-145325)
+   36|Active     |    1|Mortbay EL API and Implementation (8.5.33.1)
+   37|Active     |    1|Mortbay Jasper (8.5.33.1)
+....
+
+===== Eclipse
+
+The Jetty OSGi integration has been successfully tested against https://www.eclipse.org/equinox/[Equinox] Mars RC1.
+
+Ensure that these services are present:
+
+* https://www.eclipse.org/equinox/bundles/[Configuration Admin]
+* https://www.eclipse.org/equinox/bundles/[Event Admin]
+
+====== Eclipse Update Site
+
+There is a list of Eclipse P2 sites for the jetty releases maintained at http://download.eclipse.org/jetty/updates/jetty-bundles-9.x/
+
+Each P2 repo has one big feature group that defines most of the Jetty jars.
+*Beware: No 3rd party dependency jars are included, so you will need to have installed the dependencies listed previously in this document.*
+
+In addition, as the feature group includes websocket, you will need to download and have installed the `javax.websocket-api` jar:
+
+.Extra Jars Required for Websocket
+[cols=",,",options="header",]
+|=======================================================================
+|Jar |Bundle Symbolic Name |Location
+|javax.websocket-api |javax.websocket-api
+|https://repo1.maven.org/maven2/javax/websocket/[Maven
+central]
+|=======================================================================

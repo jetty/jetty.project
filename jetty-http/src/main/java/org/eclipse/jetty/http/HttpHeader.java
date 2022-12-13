@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,9 +15,8 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 public enum HttpHeader
 {
@@ -92,7 +86,9 @@ public enum HttpHeader
      */
     ACCEPT_RANGES("Accept-Ranges"),
     AGE("Age"),
+    ALT_SVC("Alt-Svc"),
     ETAG("ETag"),
+    LINK("Link"),
     LOCATION("Location"),
     PROXY_AUTHENTICATE("Proxy-Authenticate"),
     RETRY_AFTER("Retry-After"),
@@ -128,40 +124,38 @@ public enum HttpHeader
     /**
      * HTTP2 Fields.
      */
-    C_METHOD(":method"),
-    C_SCHEME(":scheme"),
-    C_AUTHORITY(":authority"),
-    C_PATH(":path"),
-    C_STATUS(":status"),
-    C_PROTOCOL(":protocol"),
+    C_METHOD(":method", true),
+    C_SCHEME(":scheme", true),
+    C_AUTHORITY(":authority", true),
+    C_PATH(":path", true),
+    C_STATUS(":status", true),
+    C_PROTOCOL(":protocol");
 
-    UNKNOWN("::UNKNOWN::");
-
-    public static final Trie<HttpHeader> CACHE = new ArrayTrie<>(630);
-
-    static
-    {
-        for (HttpHeader header : HttpHeader.values())
-        {
-            if (header != UNKNOWN)
-                if (!CACHE.put(header.toString(), header))
-                    throw new IllegalStateException();
-        }
-    }
+    public static final Index<HttpHeader> CACHE = new Index.Builder<HttpHeader>()
+        .caseSensitive(false)
+        .withAll(HttpHeader.values(), HttpHeader::toString)
+        .build();
 
     private final String _string;
     private final String _lowerCase;
     private final byte[] _bytes;
     private final byte[] _bytesColonSpace;
     private final ByteBuffer _buffer;
+    private final boolean _pseudo;
 
     HttpHeader(String s)
+    {
+        this(s, false);
+    }
+
+    HttpHeader(String s, boolean pseudo)
     {
         _string = s;
         _lowerCase = StringUtil.asciiToLowerCase(s);
         _bytes = StringUtil.getBytes(s);
         _bytesColonSpace = StringUtil.getBytes(s + ": ");
         _buffer = ByteBuffer.wrap(_bytes);
+        _pseudo = pseudo;
     }
 
     public String lowerCaseName()
@@ -187,6 +181,14 @@ public enum HttpHeader
     public boolean is(String s)
     {
         return _string.equalsIgnoreCase(s);
+    }
+
+    /**
+     * @return True if the header is a HTTP2 Pseudo header (eg ':path')
+     */
+    public boolean isPseudo()
+    {
+        return _pseudo;
     }
 
     public String asString()

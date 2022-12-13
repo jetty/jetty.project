@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -235,8 +230,8 @@ public class QoSFilter implements Filter
                             }
                             catch (IllegalStateException x)
                             {
-                                LOG.warn("Unable to resume suspended dispatch", x);
-                                continue;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("dispatch failed", x);
                             }
                         }
                     }
@@ -298,10 +293,12 @@ public class QoSFilter implements Filter
      * for the semaphore to become available before suspending a request.
      *
      * @param value wait time (in milliseconds)
+     * @deprecated use init-param waitMs instead
      */
+    @Deprecated
     public void setWaitMs(long value)
     {
-        _waitMs = value;
+        LOG.warn("Setter ignored: use waitMs init-param for QoSFilter");
     }
 
     /**
@@ -321,10 +318,12 @@ public class QoSFilter implements Filter
      * a request for while waiting for the semaphore to become available.
      *
      * @param value suspend time (in milliseconds)
+     * @deprecated use init-param suspendMs instead
      */
+    @Deprecated
     public void setSuspendMs(long value)
     {
-        _suspendMs = value;
+        LOG.warn("Setter ignored: use suspendMs init-param for QoSFilter");
     }
 
     /**
@@ -344,11 +343,12 @@ public class QoSFilter implements Filter
      * at the same time.
      *
      * @param value the number of requests
+     * @deprecated use init-param maxRequests instead
      */
+    @Deprecated
     public void setMaxRequests(int value)
     {
-        _passes = new Semaphore((value - getMaxRequests() + _passes.availablePermits()), true);
-        _maxRequests = value;
+        LOG.warn("Setter ignored: use maxRequests init-param for QoSFilter instead");
     }
 
     private class QoSAsyncListener implements AsyncListener
@@ -361,12 +361,12 @@ public class QoSFilter implements Filter
         }
 
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
+        public void onStartAsync(AsyncEvent event)
         {
         }
 
         @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(AsyncEvent event)
         {
         }
 
@@ -382,7 +382,7 @@ public class QoSFilter implements Filter
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException
+        public void onError(AsyncEvent event)
         {
         }
     }

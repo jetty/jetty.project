@@ -1,0 +1,49 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-http3]]
+==== HTTP/3
+
+When you enable support for the HTTP/3 protocol, by default the secure HTTP/2 protocol is also enabled, so that browsers or clients that do not support HTTP/3 will be able to connect to your server.
+
+You need to enable:
+
+* the `ssl` Jetty module, which provides the KeyStore and TLS configuration
+* the `http3` Jetty module, which adds the HTTP/3 protocol on the HTTP/3 connector
+
+Use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,http3
+----
+
+Enabling any module Jetty module that supports secure network communication requires a valid KeyStore (read xref:og-keystore[this section] to create your own KeyStore), that, as a quick example, you can enable with the xref:og-module-test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupArgs="--approve-all-licenses --add-modules=ssl,http3,test-keystore",highlight="(\{.*:8444})"]
+----
+
+Note how Jetty is listening on port `8443` for HTTP/2 and on port `8444` for HTTP/3.
+
+The HTTP/3 protocol parameters can be configured by editing the xref:og-module-http3[`http3` module] properties.

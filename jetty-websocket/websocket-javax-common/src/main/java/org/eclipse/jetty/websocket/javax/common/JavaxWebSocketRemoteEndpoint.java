@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,7 +16,6 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
@@ -34,8 +28,8 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.util.messages.MessageOutputStream;
-import org.eclipse.jetty.websocket.util.messages.MessageWriter;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +63,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     {
         FutureCallback b = new FutureCallback();
         coreSession.flush(b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -231,7 +225,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     @Override
@@ -242,7 +236,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        b.block();
     }
 
     protected void assertMessageNotNull(Object data)
@@ -259,11 +253,5 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         {
             throw new IllegalArgumentException("SendHandler cannot be null");
         }
-    }
-
-    private long getBlockingTimeout()
-    {
-        long idleTimeout = getIdleTimeout();
-        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }

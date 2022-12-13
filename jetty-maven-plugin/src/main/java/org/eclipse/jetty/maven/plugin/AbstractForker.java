@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -35,7 +30,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractForker.class);
     
-    protected Map<String,String> env;
+    protected Map<String, String> env;
     
     protected String jvmArgs;
     
@@ -45,7 +40,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected List<File> jettyXmlFiles;
     
-    protected Map<String,String> jettyProperties;
+    protected Map<String, String> jettyProperties;
     
     protected int stopPort;
     
@@ -63,7 +58,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected File workDir;
     
-    protected Map<String,String> systemProperties;
+    protected Map<String, String> systemProperties;
     
     protected abstract ProcessBuilder  createCommand();
     

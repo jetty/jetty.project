@@ -1,0 +1,45 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-session-memcached]]
+
+==== Modules for Persistent HTTP Sessions: The L2 Session Data Cache
+
+If your chosen persistence technology is slow, it can be helpful to locally cache the session data.
+The `CachingSessionDataStore` is a special type of `SessionDataStore` that locally caches session data, which makes reads faster. It writes-through to your chosen type of `SessionDataStore` when session data changes.
+
+===== MemcachedSessionDataMap
+
+The `MemcachedSessionDataMap` uses `memcached` to perform caching of `SessionData`.
+
+To enable it with the Jetty distribution, enable the `session-store-cache` module, along with your chosen `session-store-xxxx` module.
+
+====== Configuration
+
+The `$JETTY_BASE/start.d/session-store-cache.ini` contains the following configurable properties:
+
+jetty.session.memcached.host::
+Default value is `localhost`.
+This is the host on which the memcached server resides.
+
+jetty.session.memcached.port::
+Default value is `11211`.
+This is the port on which the memcached server is listening.
+
+jetty.session.memcached.expirySec::
+Default value `0`.
+This is the length of time in seconds that an item can remain in the memcached cache, where 0 indicates indefinitely.
+
+jetty.session.memcached.heartbeats::
+Default value `true`.
+Whether the memcached system should generate heartbeats.

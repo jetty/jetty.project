@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,9 +44,9 @@ public class FutureCallbackTest
     {
         FutureCallback fcb = new FutureCallback();
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long start = NanoTime.now();
         assertThrows(TimeoutException.class, () -> fcb.get(500, TimeUnit.MILLISECONDS));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(50L));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(50L));
     }
 
     @Test
@@ -61,9 +57,9 @@ public class FutureCallbackTest
         assertTrue(fcb.isDone());
         assertFalse(fcb.isCancelled());
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        assertEquals(null, fcb.get());
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(500L));
+        long start = NanoTime.now();
+        assertNull(fcb.get());
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(500L));
     }
 
     @Test
@@ -87,10 +83,10 @@ public class FutureCallbackTest
         }).start();
 
         latch.await();
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        assertEquals(null, fcb.get(10000, TimeUnit.MILLISECONDS));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(1000L));
+        long start = NanoTime.now();
+        assertNull(fcb.get(10000, TimeUnit.MILLISECONDS));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(1000L));
 
         assertTrue(fcb.isDone());
         assertFalse(fcb.isCancelled());
@@ -105,11 +101,11 @@ public class FutureCallbackTest
         assertTrue(fcb.isDone());
         assertFalse(fcb.isCancelled());
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        ExecutionException e = assertThrows(ExecutionException.class, () -> fcb.get());
+        long start = NanoTime.now();
+        ExecutionException e = assertThrows(ExecutionException.class, fcb::get);
         assertEquals(ex, e.getCause());
 
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(100L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(100L));
     }
 
     @Test
@@ -134,11 +130,11 @@ public class FutureCallbackTest
         }).start();
 
         latch.await();
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long start = NanoTime.now();
         ExecutionException e = assertThrows(ExecutionException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertEquals(ex, e.getCause());
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(5000L));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(5000L));
 
         assertTrue(fcb.isDone());
         assertFalse(fcb.isCancelled());
@@ -152,10 +148,10 @@ public class FutureCallbackTest
         assertTrue(fcb.isDone());
         assertTrue(fcb.isCancelled());
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        CancellationException e = assertThrows(CancellationException.class, () -> fcb.get());
+        long start = NanoTime.now();
+        CancellationException e = assertThrows(CancellationException.class, fcb::get);
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(100L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(100L));
     }
 
     @Test
@@ -179,12 +175,12 @@ public class FutureCallbackTest
         }).start();
 
         latch.await();
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        CancellationException e = assertThrows(CancellationException.class,() -> fcb.get(10000, TimeUnit.MILLISECONDS));
+        long start = NanoTime.now();
+        CancellationException e = assertThrows(CancellationException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
 
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(1000L));
+        assertThat(NanoTime.millisSince(start), Matchers.greaterThan(10L));
+        assertThat(NanoTime.millisSince(start), Matchers.lessThan(1000L));
 
         assertTrue(fcb.isDone());
         assertTrue(fcb.isCancelled());

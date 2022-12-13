@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,8 +17,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
-import java.util.List;
-import java.util.Queue;
+import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -43,10 +37,11 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -54,18 +49,18 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpable
+public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.Expirable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<DataEntry> dataQueue = new ArrayDeque<>();
+    private Deque<DataEntry> dataQueue;
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
-    private final long timeStamp = System.nanoTime();
+    private final long creationNanoTime = NanoTime.now();
     private final ISession session;
     private final int streamId;
     private final MetaData.Request request;
@@ -79,16 +74,24 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private long dataDemand;
     private boolean dataInitial;
     private boolean dataProcess;
+    private boolean committed;
+    private long idleTimeout;
+    private long expireNanoTime = Long.MAX_VALUE;
 
-    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
+    public HTTP2Stream(ISession session, int streamId, MetaData.Request request, boolean local)
     {
-        super(scheduler);
         this.session = session;
         this.streamId = streamId;
         this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
         this.dataInitial = true;
+    }
+
+    @Deprecated
+    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
+    {
+        this(session, streamId, request, local);
     }
 
     @Override
@@ -150,14 +153,23 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
+        Throwable resetFailure = null;
         try (AutoLock l = lock.lock())
         {
             if (isReset())
-                return;
-            localReset = true;
-            failure = new EOFException("reset");
+            {
+                resetFailure = failure;
+            }
+            else
+            {
+                localReset = true;
+                failure = new EOFException("reset");
+            }
         }
-        session.frames(this, List.of(frame), callback);
+        if (resetFailure != null)
+            callback.failed(resetFailure);
+        else
+            ((HTTP2Session)session).reset(this, frame, callback);
     }
 
     private boolean startWrite(Callback callback)
@@ -235,18 +247,86 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING || state == CloseState.CLOSED;
     }
 
+    @Override
+    public boolean failAllData(Throwable x)
+    {
+        Deque<DataEntry> copy;
+        try (AutoLock l = lock.lock())
+        {
+            dataDemand = 0;
+            copy = dataQueue;
+            dataQueue = null;
+        }
+        DataEntry lastDataEntry = null;
+        if (copy != null)
+        {
+            copy.forEach(dataEntry -> dataEntry.callback.failed(x));
+            lastDataEntry = copy.isEmpty() ? null : copy.peekLast();
+        }
+        if (lastDataEntry == null)
+            return isRemotelyClosed();
+        return lastDataEntry.frame.isEndStream();
+    }
+
     public boolean isLocallyClosed()
     {
         return closeState.get() == CloseState.LOCALLY_CLOSED;
     }
 
     @Override
+    public void commit()
+    {
+        committed = true;
+    }
+
+    @Override
+    public boolean isCommitted()
+    {
+        return committed;
+    }
+
+    @Override
+    public int dataSize()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            return dataQueue == null ? 0 : dataQueue.size();
+        }
+    }
+
     public boolean isOpen()
     {
         return !isClosed();
     }
 
     @Override
+    public void notIdle()
+    {
+        long idleTimeout = getIdleTimeout();
+        if (idleTimeout > 0)
+            expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+    }
+
+    @Override
+    public long getExpireNanoTime()
+    {
+        return expireNanoTime;
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+        notIdle();
+        ((HTTP2Session)session).scheduleTimeout(this);
+    }
+
     protected void onIdleExpired(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
@@ -351,24 +431,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
-
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
-
         callback.succeeded();
     }
 
     private void onData(DataFrame frame, Callback callback)
     {
-        if (getRecvWindow() < 0)
-        {
-            // It's a bad client, it does not deserve to be
-            // treated gently by just resetting the stream.
-            ((HTTP2Session)session).onConnectionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded");
-            callback.failed(new IOException("stream_window_exceeded"));
-            return;
-        }
-
         // SPEC: remotely closed streams must be replied with a reset.
         if (isRemotelyClosed())
         {
@@ -400,6 +467,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         DataEntry entry = new DataEntry(frame, callback);
         try (AutoLock l = lock.lock())
         {
+            if (dataQueue == null)
+                dataQueue = new ArrayDeque<>();
             dataQueue.offer(entry);
             initial = dataInitial;
             if (initial)
@@ -441,7 +510,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
-                dataProcess = proceed = !dataQueue.isEmpty();
+                dataProcess = proceed = dataQueue != null && !dataQueue.isEmpty();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Demand {}/{}, {} data processing for {}", n, demand, proceed ? "proceeding" : "stalling", this);
@@ -456,7 +525,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             DataEntry dataEntry;
             try (AutoLock l = lock.lock())
             {
-                if (dataQueue.isEmpty() || dataDemand == 0)
+                if (dataQueue == null || dataQueue.isEmpty() || dataDemand == 0)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Stalling data processing for {}", this);
@@ -467,9 +536,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 dataEntry = dataQueue.poll();
             }
             DataFrame frame = dataEntry.frame;
-            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                session.removeStream(this);
+            boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
             notifyDataDemanded(this, frame, dataEntry.callback);
+            if (closed)
+                session.removeStream(this);
         }
     }
 
@@ -489,8 +559,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             failure = new EofException("reset");
         }
         close();
-        session.removeStream(this);
-        notifyReset(this, frame, callback);
+        if (session.removeStream(this))
+            notifyReset(this, frame, callback);
+        else
+            callback.succeeded();
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -513,8 +585,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             failure = frame.getFailure();
         }
         close();
-        session.removeStream(this);
-        notifyFailure(this, frame, callback);
+        if (session.removeStream(this))
+            notifyFailure(this, frame, callback);
+        else
+            callback.succeeded();
     }
 
     @Override
@@ -666,10 +740,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
-    @Override
     public void onClose()
     {
-        super.onClose();
         notifyClosed(this);
     }
 
@@ -692,6 +764,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         Callback callback = endWrite();
         if (callback != null)
             callback.failed(x);
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        synchronized (this)
+        {
+            return sendCallback != null ? sendCallback.getInvocationType() : Callback.super.getInvocationType();
+        }
     }
 
     private Callback endWrite()
@@ -850,18 +931,19 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             session.hashCode(),
             sendWindow,
             recvWindow,
+            dataSize(),
             demand(),
             localReset,
             remoteReset,
             closeState,
-            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStamp),
+            NanoTime.millisSince(creationNanoTime),
             attachment);
     }
 

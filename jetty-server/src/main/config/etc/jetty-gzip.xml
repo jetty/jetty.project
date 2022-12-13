@@ -13,19 +13,28 @@
     <Arg>
       <New id="GzipHandler" class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
         <Set name="minGzipSize" property="jetty.gzip.minGzipSize"/>
-        <Set name="checkGzExists" property="jetty.gzip.checkGzExists"/>
-        <Set name="compressionLevel" property="jetty.gzip.compressionLevel"/>
         <Set name="inflateBufferSize" property="jetty.gzip.inflateBufferSize"/>
-        <Set name="inflaterPoolCapacity" property="jetty.gzip.inflaterPoolCapacity"/>
-        <Set name="deflaterPoolCapacity" property="jetty.gzip.deflaterPoolCapacity"/>
         <Set name="syncFlush" property="jetty.gzip.syncFlush"/>
         <Set name="dispatcherTypes" property="jetty.gzip.dispatcherTypes"/>
         <Set name="includedMethodList" property="jetty.gzip.includedMethodList"/>
         <Set name="excludedMethodList" property="jetty.gzip.excludedMethodList"/>
-        <Set name="includedMimeTypes" property="jetty.gzip.includedMimeTypeList"/>
-        <Set name="excludedMimeTypes" property="jetty.gzip.excludedMimeTypeList"/>
+        <Set name="includedMimeTypesList" property="jetty.gzip.includedMimeTypeList"/>
+        <Set name="excludedMimeTypesList" property="jetty.gzip.excludedMimeTypeList"/>
         <Set name="includedPaths" property="jetty.gzip.includedPathList"/>
         <Set name="excludedPaths" property="jetty.gzip.excludedPathList"/>
+        <Set name="inflaterPool">
+            <New class="org.eclipse.jetty.util.compression.InflaterPool">
+                <Arg type="int"><Property name="jetty.gzip.inflaterPool.capacity" deprecated="jetty.gzip.inflaterPoolCapacity" default="1024"/></Arg>
+                <Arg type="boolean"><Property name="jetty.gzip.inflaterPool.noWrap" default="true"/></Arg>
+            </New>
+        </Set>
+        <Set name="deflaterPool">
+            <New class="org.eclipse.jetty.util.compression.DeflaterPool">
+                <Arg type="int"><Property name="jetty.gzip.deflaterPool.capacity" deprecated="jetty.gzip.deflaterPoolCapacity" default="1024"/></Arg>
+                <Arg type="int"><Property name="jetty.gzip.deflaterPool.compressionLevel" deprecated="jetty.gzip.compressionLevel" default="-1"/></Arg>
+                <Arg type="boolean"><Property name="jetty.gzip.deflaterPool.noWrap" default="true"/></Arg>
+            </New>
+        </Set>
 
 <!--
         <Set name="includedMethods">

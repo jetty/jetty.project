@@ -14,7 +14,7 @@ logging
 commons-logging
 
 [files]
-maven://org.slf4j/jcl-over-slf4j/%{slf4j.version}|jcl-over-slf4j-${slf4j.version}.jar
+maven://org.slf4j/jcl-over-slf4j/${slf4j.version}|lib/logging/jcl-over-slf4j-${slf4j.version}.jar
 
 [lib]
 lib/logging/jcl-over-slf4j-${slf4j.version}.jar

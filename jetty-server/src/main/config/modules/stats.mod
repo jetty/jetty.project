@@ -8,6 +8,10 @@ server
 
 [depend]
 server
+servlet
+
+[lib]
+lib/jetty-util-ajax-${jetty.version}.jar
 
 [xml]
 etc/jetty-stats.xml

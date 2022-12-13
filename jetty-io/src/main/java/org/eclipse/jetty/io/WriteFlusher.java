@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
@@ -209,18 +205,15 @@ public abstract class WriteFlusher
     private class PendingState extends State
     {
         private final Callback _callback;
+        private final SocketAddress _address;
         private final ByteBuffer[] _buffers;
 
-        private PendingState(ByteBuffer[] buffers, Callback callback)
+        private PendingState(Callback callback, SocketAddress address, ByteBuffer[] buffers)
         {
             super(StateType.PENDING);
-            _buffers = buffers;
             _callback = callback;
-        }
-
-        public ByteBuffer[] getBuffers()
-        {
-            return _buffers;
+            _address = address;
+            _buffers = buffers;
         }
 
         InvocationType getCallbackInvocationType()
@@ -258,6 +251,11 @@ public abstract class WriteFlusher
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
+        write(callback, null, buffers);
+    }
+
+    public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
+    {
         Objects.requireNonNull(callback);
 
         if (isFailed())
@@ -274,13 +272,13 @@ public abstract class WriteFlusher
 
         try
         {
-            buffers = flush(buffers);
+            buffers = flush(address, buffers);
 
             if (buffers != null)
             {
                 if (DEBUG)
                     LOG.debug("flushed incomplete");
-                PendingState pending = new PendingState(buffers, callback);
+                PendingState pending = new PendingState(callback, address, buffers);
                 if (updateState(__WRITING, pending))
                     onIncompleteFlush();
                 else
@@ -373,16 +371,17 @@ public abstract class WriteFlusher
         Callback callback = pending._callback;
         try
         {
-            ByteBuffer[] buffers = pending.getBuffers();
+            ByteBuffer[] buffers = pending._buffers;
+            SocketAddress address = pending._address;
 
-            buffers = flush(buffers);
+            buffers = flush(address, buffers);
 
             if (buffers != null)
             {
                 if (DEBUG)
                     LOG.debug("flushed incomplete {}", BufferUtil.toDetailString(buffers));
-                if (buffers != pending.getBuffers())
-                    pending = new PendingState(buffers, callback);
+                if (buffers != pending._buffers)
+                    pending = new PendingState(callback, address, buffers);
                 if (updateState(__COMPLETING, pending))
                     onIncompleteFlush();
                 else
@@ -409,17 +408,18 @@ public abstract class WriteFlusher
     /**
      * Flushes the buffers iteratively until no progress is made.
      *
+     * @param address the datagram channel to send the buffers to (used by QUIC and HTTP/3)
      * @param buffers The buffers to flush
      * @return The unflushed buffers, or null if all flushed
      * @throws IOException if unable to flush
      */
-    protected ByteBuffer[] flush(ByteBuffer[] buffers) throws IOException
+    protected ByteBuffer[] flush(SocketAddress address, ByteBuffer[] buffers) throws IOException
     {
         boolean progress = true;
         while (progress && buffers != null)
         {
             long before = BufferUtil.remaining(buffers);
-            boolean flushed = _endPoint.flush(buffers);
+            boolean flushed = address == null ? _endPoint.flush(buffers) : ((DatagramChannelEndPoint)_endPoint).send(address, buffers);
             long after = BufferUtil.remaining(buffers);
             long written = before - after;
 

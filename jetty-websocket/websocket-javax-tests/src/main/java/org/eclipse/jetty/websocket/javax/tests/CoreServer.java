@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,19 +18,14 @@ import java.net.URI;
 import java.util.List;
 import java.util.function.Function;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.javax.tests.framehandlers.FrameEcho;
@@ -49,12 +39,12 @@ public class CoreServer extends ContainerLifeCycle
     private URI serverUri;
     private URI wsUri;
 
-    public CoreServer(Function<Negotiation, FrameHandler> negotiationFunction)
+    public CoreServer(Function<WebSocketNegotiation, FrameHandler> negotiationFunction)
     {
-        this(new BaseNegotiator()
+        this(new WebSocketNegotiator.AbstractNegotiator()
         {
             @Override
-            public FrameHandler negotiate(Negotiation negotiation) throws IOException
+            public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
             {
                 return negotiationFunction.apply(negotiation);
             }
@@ -81,7 +71,9 @@ public class CoreServer extends ContainerLifeCycle
         server.addConnector(connector);
 
         // Add Handler
-        server.setHandler(new HandlerList(new WebSocketUpgradeHandler(negotiator), new DefaultHandler()));
+        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler();
+        upgradeHandler.addMapping("/*", negotiator);
+        server.setHandler(new HandlerList(upgradeHandler, new DefaultHandler()));
 
         // Start Server
         addBean(server);
@@ -104,49 +96,10 @@ public class CoreServer extends ContainerLifeCycle
         return wsUri;
     }
 
-    public abstract static class BaseNegotiator implements WebSocketNegotiator
-    {
-        protected final WebSocketComponents components;
-
-        public BaseNegotiator()
-        {
-            this.components = new WebSocketComponents();
-        }
-
-        @Override
-        public void customize(Configuration configurable)
-        {
-        }
-
-        @Override
-        public WebSocketExtensionRegistry getExtensionRegistry()
-        {
-            return components.getExtensionRegistry();
-        }
-
-        @Override
-        public DecoratedObjectFactory getObjectFactory()
-        {
-            return components.getObjectFactory();
-        }
-
-        @Override
-        public ByteBufferPool getByteBufferPool()
-        {
-            return components.getBufferPool();
-        }
-
-        @Override
-        public WebSocketComponents getWebSocketComponents()
-        {
-            return components;
-        }
-    }
-
-    public static class EchoNegotiator extends BaseNegotiator
+    public static class EchoNegotiator extends WebSocketNegotiator.AbstractNegotiator
     {
         @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
+        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
         {
             List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
 
@@ -173,11 +126,6 @@ public class CoreServer extends ContainerLifeCycle
                 // no frame handler available for offered subprotocols
                 return null;
             }
-        }
-
-        @Override
-        public void customize(Configuration configurable)
-        {
         }
     }
 }

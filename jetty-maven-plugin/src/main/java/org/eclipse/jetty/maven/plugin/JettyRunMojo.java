@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,7 +17,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -34,7 +29,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -57,14 +54,16 @@ import org.eclipse.jetty.webapp.WebAppContext;
 @Execute (phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 {
-    //Start of parameters only valid for runType=inprocess  
+    //Start of parameters only valid for deploymentType=EMBED  
     /**
-     * The interval in seconds to pause before checking if changes
-     * have occurred and re-deploying as necessary. A value 
-     * of 0 indicates no re-deployment will be done. In that case, you
-     * can force redeployment by typing a linefeed character at the command line.
+     * Controls redeployment of the webapp.
+     * <ol>
+     * <li> -1 : means no redeployment will be done </li>
+     * <li>  0 : means redeployment only occurs if you hit the ENTER key </li>
+     * <li>  otherwise, the interval in seconds to pause before checking and redeploying if necessary </li>
+     * </ol>
      */
-    @Parameter(defaultValue = "0", property = "jetty.scan", required = true)
+    @Parameter(defaultValue = "-1", property = "jetty.scan", required = true)
     protected int scan;
 
     /**
@@ -74,7 +73,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 
     /**
      * Only one of the following will be used, depending the mode
-     * the mojo is started in: EMBED, FORK, HOME
+     * the mojo is started in: EMBED, FORK, EXTERNAL
      */
     protected JettyEmbedder embedder;
     protected JettyForker forker;
@@ -143,6 +142,12 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     private void startScanner()
         throws Exception
     {
+        if (scan < 0)
+        {
+            getLog().info("Automatic redeployment disabled, see 'mvn jetty:help' for more redeployment options");
+            return; //no automatic or manual redeployment
+        }
+        
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
@@ -150,8 +155,27 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.setScanInterval(scan);
             scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
             scanner.setReportExistingFilesOnStartup(false);
+            scanner.addListener(new Scanner.BulkListener()
+            {   
+                public void filesChanged(Set<String> changes)
+                {
+                    try
+                    {
+                        restartWebApp(changes.contains(project.getFile().getCanonicalPath()));
+                    }
+                    catch (Exception e)
+                    {
+                        getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
+                    }
+                }
+            });
             configureScanner();
-            getLog().info("Scan interval ms = " + scan);
+            getLog().info("Scan interval sec = " + scan);
+            
+            //unmanage scheduler so it is not stopped with the scanner
+            Scheduler scheduler = scanner.getBean(Scheduler.class);
+            scanner.unmanage(scheduler);
+            LifeCycle.start(scheduler);
             scanner.start();
         }
         else
@@ -189,21 +213,6 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         {
             throw new MojoExecutionException("Error forming scan list", e);
         }
-        scanner.addListener(new Scanner.BulkListener()
-        {
-            public void filesChanged(List<String> changes)
-            {
-                try
-                {
-                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
-                    restartWebApp(reconfigure);
-                }
-                catch (Exception e)
-                {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
-                }
-            }
-        });
     }
 
     public void gatherScannables() throws Exception
@@ -228,7 +237,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.addFile(new File(webApp.getOverrideDescriptor()).toPath());
         }
 
-        File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory,"WEB-INF"));
+        File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory, "WEB-INF"));
         if (jettyWebXmlFile != null)
         {
             scanner.addFile(jettyWebXmlFile.toPath());
@@ -371,8 +380,12 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     scanner.start();
                 break;
             }
+            case DISTRO:
             case HOME:
+            case EXTERNAL:
             {
+                if (deployMode != DeploymentMode.EXTERNAL)
+                    getLog().warn(deployMode + " mode is deprecated, use mode EXTERNAL");
                 verifyPomConfiguration();
                 if (reconfigure)
                 {

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,10 +25,10 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +74,11 @@ public class JettyHomeForker extends AbstractForker
      */
     protected String[] modules;
 
+    /*
+     * Optional jetty commands
+     */
+    protected String jettyOptions;
+
     protected List<File> libExtJarFiles;
     protected Path modulesPath;
     protected Path etcPath;
@@ -86,6 +86,16 @@ public class JettyHomeForker extends AbstractForker
     protected Path webappPath;
     protected Path mavenLibPath;
     protected String version;
+
+    public void setJettyOptions(String jettyOptions)
+    {
+        this.jettyOptions = jettyOptions;
+    }
+
+    public String getJettyOptions()
+    {
+        return jettyOptions;
+    }
 
     public List<File> getLibExtJarFiles()
     {
@@ -172,23 +182,15 @@ public class JettyHomeForker extends AbstractForker
     {
         List<String> cmd = new ArrayList<>();
         cmd.add("java");
-        cmd.add("-jar");
-        cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
-
-        cmd.add("-DSTOP.PORT=" + stopPort);
-        if (stopKey != null)
-            cmd.add("-DSTOP.KEY=" + stopKey);
 
         //add any args to the jvm
-        if (jvmArgs != null)
+        if (StringUtil.isNotBlank(jvmArgs))
         {
-            String[] args = jvmArgs.split(" ");
-            for (String a : args)
-            {
-                if (!StringUtil.isBlank(a))
-                    cmd.add(a.trim());
-            }
+            Arrays.stream(jvmArgs.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
         }
+
+        cmd.add("-jar");
+        cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
 
         if (systemProperties != null)
         {
@@ -197,6 +199,10 @@ public class JettyHomeForker extends AbstractForker
                 cmd.add("-D" + e.getKey() + "=" + e.getValue());
             }
         }
+
+        cmd.add("-DSTOP.PORT=" + stopPort);
+        if (stopKey != null)
+            cmd.add("-DSTOP.KEY=" + stopKey);
 
         //set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
@@ -215,6 +221,12 @@ public class JettyHomeForker extends AbstractForker
             tmp.append(",ext");
         tmp.append(",maven");
         cmd.add(tmp.toString());
+ 
+        //put any other jetty options onto the command line
+        if (StringUtil.isNotBlank(jettyOptions))
+        {
+            Arrays.stream(jettyOptions.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+        }
 
         //put any jetty properties onto the command line
         if (jettyProperties != null)
@@ -402,7 +414,7 @@ public class JettyHomeForker extends AbstractForker
             JarResource res = (JarResource)JarResource.newJarResource(Resource.newResource(jettyHomeZip));
             res.copyTo(baseDir);
             //zip will unpack to target/jetty-home-<VERSION>
-            jettyHome = new File(baseDir,"jetty-home-" + version);
+            jettyHome = new File(baseDir, "jetty-home-" + version);
         }
     }
 }

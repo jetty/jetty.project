@@ -1,0 +1,92 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-https]]
+==== Secure HTTP/1.1
+
+Secure HTTP/1.1 is enabled with both the `ssl` and `https` Jetty modules with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,https
+----
+
+[source,options=nowrap]
+----
+include::jetty[args="--add-modules=ssl,https"]
+----
+
+The command above enables the `ssl` module, that provides the secure network connector, the KeyStore configuration and TLS configuration -- for more details see xref:og-protocols-ssl[this section].
+Then, the xref:og-module-https[`https` module] adds HTTP/1.1 as the protocol secured by TLS.
+
+The `$JETTY_BASE` directory looks like this:
+
+[source]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── https.ini
+    └── ssl.ini
+----
+
+Note that the KeyStore file is missing, because you have to provide one with the cryptographic material you want (read xref:og-keystore[this section] to create your own KeyStore).
+You need to configure these two properties by editing `ssl.ini`:
+
+* `jetty.sslContext.keyStorePath`
+* `jetty.sslContext.keyStorePassword`
+
+As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+[source,options=nowrap]
+----
+include::jetty[setupArgs="--add-modules=ssl,https",args="--add-modules=test-keystore"]
+----
+
+The `$JETTY_BASE` directory is now:
+
+[source,subs=quotes]
+----
+├── etc
+│   └── #test-keystore.p12#
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── https.ini
+    ├── ssl.ini
+    └── test-keystore.ini
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupArgs="--add-modules=ssl,https,test-keystore",highlight="(\{.*:8443})"]
+----
+
+Note how Jetty is listening on port `8443` for the secure HTTP/1.1 protocol.
+
+[WARNING]
+====
+If you point your browser at `+https://localhost:8443/+` you will get a warning from the browser about a "potential security risk ahead", or that "your connection is not private", or similar message depending on the browser.
+
+This is normal because the certificate contained in `test-keystore.p12` is self-signed -- and as such not signed by a recognized certificate authority -- and therefore browsers do not trust it.
+====

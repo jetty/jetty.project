@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
@@ -33,7 +29,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 /**
  * <p>EndPoint is the abstraction for an I/O channel that transports bytes.</p>
  *
- * <h3>Asynchronous Methods</h3>
+ * <p>Asynchronous Methods</p>
  * <p>The asynchronous scheduling methods of {@link EndPoint}
  * has been influenced by NIO.2 Futures and Completion
  * handlers, but does not use those actual interfaces because they have
@@ -42,7 +38,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * implementations of {@link Callback}, such as {@link FutureCallback} and
  * {@link IteratingCallback}.</p>
  *
- * <h3>Reads</h3>
+ * <p>Reads</p>
  * <p>A {@link FutureCallback} can be used to block until an endpoint is ready
  * to fill bytes - the notification will be emitted by the NIO subsystem:</p>
  * <pre>
@@ -56,7 +52,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * int filled = endPoint.fill(byteBuffer);
  * </pre>
  *
- * <h3>Asynchronous Reads</h3>
+ * <p>Asynchronous Reads</p>
  * <p>A {@link Callback} can be used to read asynchronously in its own dispatched
  * thread:</p>
  * <pre>
@@ -77,7 +73,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * });
  * </pre>
  *
- * <h3>Blocking Writes</h3>
+ * <p>Blocking Writes</p>
  * <p>The write contract is that the callback is completed when all the bytes
  * have been written or there is a failure.
  * Blocking writes look like this:</p>
@@ -105,16 +101,38 @@ public interface EndPoint extends Closeable
     }
 
     /**
-     * @return The local Inet address to which this {@code EndPoint} is bound, or {@code null}
-     * if this {@code EndPoint} does not represent a network connection.
+     * @return The local InetSocketAddress to which this {@code EndPoint} is bound, or {@code null}
+     * if this {@code EndPoint} is not bound to a Socket address.
+     * @deprecated use {@link #getLocalSocketAddress()} instead
      */
+    @Deprecated
     InetSocketAddress getLocalAddress();
 
     /**
-     * @return The remote Inet address to which this {@code EndPoint} is bound, or {@code null}
-     * if this {@code EndPoint} does not represent a network connection.
+     * @return the local SocketAddress to which this {@code EndPoint} is bound or {@code null}
+     * if this {@code EndPoint} is not bound to a Socket address.
      */
+    default SocketAddress getLocalSocketAddress()
+    {
+        return getLocalAddress();
+    }
+
+    /**
+     * @return The remote InetSocketAddress to which this {@code EndPoint} is connected, or {@code null}
+     * if this {@code EndPoint} is not connected to a Socket address.
+     * @deprecated use {@link #getRemoteSocketAddress()} instead.
+     */
+    @Deprecated
     InetSocketAddress getRemoteAddress();
+
+    /**
+     * @return The remote SocketAddress to which this {@code EndPoint} is connected, or {@code null}
+     * if this {@code EndPoint} is not connected to a Socket address.
+     */
+    default SocketAddress getRemoteSocketAddress()
+    {
+        return getRemoteAddress();
+    }
 
     /**
      * @return whether this EndPoint is open
@@ -185,7 +203,10 @@ public interface EndPoint extends Closeable
      * filled or -1 if EOF is read or the input is shutdown.
      * @throws IOException if the endpoint is closed.
      */
-    int fill(ByteBuffer buffer) throws IOException;
+    default int fill(ByteBuffer buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
@@ -197,7 +218,10 @@ public interface EndPoint extends Closeable
      * destination (ie is not buffering any data).
      * @throws IOException If the endpoint is closed or output is shutdown.
      */
-    boolean flush(ByteBuffer... buffer) throws IOException;
+    default boolean flush(ByteBuffer... buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return The underlying transport object (socket, channel, etc.)
@@ -253,7 +277,10 @@ public interface EndPoint extends Closeable
      * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */
-    void write(Callback callback, ByteBuffer... buffers) throws WritePendingException;
+    default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return the {@link Connection} associated with this EndPoint

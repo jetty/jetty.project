@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.quic</groupId>
+    <artifactId>quic-parent</artifactId>
+    <version>10.0.14-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>quic-quiche</artifactId>
+  <packaging>pom</packaging>
+  <name>Jetty :: QUIC :: Quiche</name>
+
+  <modules>
+    <module>quic-quiche-common</module>
+    <module>quic-quiche-jna</module>
+  </modules>
+
+  <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <module>quic-quiche-foreign-incubator</module>
+      </modules>
+    </profile>
+  </profiles>
+</project>

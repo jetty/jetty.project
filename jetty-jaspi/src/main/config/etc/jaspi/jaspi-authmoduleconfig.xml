@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Call class="javax.security.auth.message.config.AuthConfigFactory" name="getFactory">
+    <!-- Configure the AuthConfigFactory here. -->
+  </Call>
+</Configure>

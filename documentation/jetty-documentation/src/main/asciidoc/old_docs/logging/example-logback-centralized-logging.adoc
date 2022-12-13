@@ -1,0 +1,139 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[example-logging-logback-centralized]]
+=== Centralized Logging using Logback
+
+The term _Centralized Logging_ refers to a forced logging configuration for the Jetty Server and all web applications that are deployed on the server.
+It routes all logging events from the web applications to a single configuration on the Server side.
+
+The example below shows how to accomplish this with Jetty and Slf4j, using `Logback` to manage the final writing of logs to disk.
+
+____
+[IMPORTANT]
+This mechanism forces all webapps to use the server's configuration for logging, something that isn't 100% appropriate for all webapps.
+An example would be having Jenkins-CI deployed as an webapp, if you force its logging configuration to the server side, you lose the ability on http://jenkins-ci.org/[Jenkins-CI] to see the logs from the various builds (as now those logs are actually going to the main server log).
+____
+
+This configuration is essentially the multiple logger configuration with added configuration to the deployers to force a `WebAppClassLoader` change to use the server classpath over the webapps classpath for the logger specific classes.
+
+The technique used by this configuration is to provide an link:{JDURL}org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[AppLifeCycle.Binding] against the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[`"deploying"`node] that modifies the
+link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#getSystemClasspathPattern()[WebAppContext.getSystemClasspathPattern().add(String)] for the common logging classes.
+See https://github.com/jetty-project/jetty-webapp-logging/blob/master/jetty-webapp-logging/src/main/java/org/eclipse/jetty/webapp/logging/CentralizedWebAppLoggingBinding.java[org.eclipse.jetty.logging.CentralizedWebAppLoggingBinding] for actual implementation.
+
+A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by Logback.
+
+[source,screen,subs="{sub-order}"]
+....
+[mybase]$ curl -O https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.4.27/jetty-webapp-logging-9.4.27-config.jar
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  3402  100  3402    0     0  15823      0 --:--:-- --:--:-- --:--:-- 15750
+
+[mybase]$ jar -xf jetty-webapp-logging-9.4.27-config.jar
+
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd --add-to-start=centralized-webapp-logging
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: logback-impl
+  + Logback: the reliable, generic, fast and flexible logging framework.
+  + Copyright (C) 1999-2012, QOS.ch. All rights reserved.
+  + This program and the accompanying materials are dual-licensed under
+  + either:
+  + the terms of the Eclipse Public License v1.0
+  + as published by the Eclipse Foundation:
+  + http://www.eclipse.org/legal/epl-v10.html
+  + or (per the licensee's choosing) under
+  + the terms of the GNU Lesser General Public License version 2.1
+  + as published by the Free Software Foundation:
+  + http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO  : slf4j-api       transitively enabled
+INFO  : log4j-over-slf4j transitively enabled
+INFO  : jcl-slf4j       transitively enabled
+INFO  : logback-impl    transitively enabled
+INFO  : jul-slf4j       transitively enabled
+INFO  : slf4j-logback   transitively enabled
+INFO  : centralized-webapp-logging initialized in ${jetty.base}/start.d/centralized-webapp-logging.ini
+INFO  : logging-logback transitively enabled
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/lib/slf4j
+DOWNLD: https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.25.jar
+MKDIR : ${jetty.base}/lib/logging
+DOWNLD: https://repo1.maven.org/maven2/org/slf4j/log4j-over-slf4j/1.7.25/log4j-over-slf4j-1.7.25.jar to ${jetty.base}/lib/logging/log4j-over-slf4j-1.7.25.jar
+DOWNLD: https://repo1.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.25/jcl-over-slf4j-1.7.25.jar to ${jetty.base}/lib/slf4j/jcl-over-slf4j-1.7.25.jar
+MKDIR : ${jetty.base}/lib/logback
+DOWNLD: https://repo1.maven.org/maven2/ch/qos/logback/logback-core/1.2.3/logback-core-1.2.3.jar to ${jetty.base}/lib/logback/logback-core-1.2.3.jar
+DOWNLD: https://repo1.maven.org/maven2/org/slf4j/jul-to-slf4j/1.7.25/jul-to-slf4j-1.7.25.jar to ${jetty.base}/lib/slf4j/jul-to-slf4j-1.7.25.jar
+COPY  : ${jetty.home}/modules/jul-slf4j/etc/java-util-logging.properties to ${jetty.base}/etc/java-util-logging.properties
+DOWNLD: https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.2.3/logback-classic-1.2.3.jar to ${jetty.base}/lib/logback/logback-classic-1.2.3.jar
+MKDIR : ${jetty.base}/logs
+DOWNLD: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.4.27/jetty-webapp-logging-9.4.27.jar to ${jetty.base}/lib/logging/jetty-webapp-logging-9.4.27.jar
+INFO  : Base directory was modified
+
+$
+....
+
+This replacement `centralized-webapp-logging.mod` performs a number of tasks.
+
+. `mybase` is a `${jetty.base}` directory.
+. The jetty-home is unpacked (and untouched) into `/opt/jetty-home/` and becomes the `${jetty.home}` directory for this demonstration.
+. The `curl` command downloads the replacement config overlay for the `${jetty.base}/modules/` directory to use.
+. The `start.jar --add-to-start=centralized-webapp-logging` command performs a number of steps to make the centralized-webapp-logging module available to the `${jetty.base}` configuration.
+.. A new `${jetty.base}/start.d/centralized-webapp-logging.ini` configuration was created.
+.. Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
+.. Required logging libraries are downloaded (if not present already) to the `${jetty.base}/lib/logging/` directory:
+* `slf4j-api.jar` - API jar for Slf4j (used by most of the rest of the jars)
+* `log4j-over-slf4j.jar` - Slf4j jar that captures all log4j emitted logging events
+* `jul-to-slf4j.jar` - Slf4j jar that captures all java.util.logging events
+* `jcl-over-slf4j.jar` - Slf4j jar that captures all commons-logging events
+* `logback-classic.jar` - the Slf4j adapter jar that routes all of the captured logging events to logback itself.
+* `logback-core.jar` - the logback implementation jar, that handles all of the filtering and output of the logging events.
+.. Required webapp-logging library is downloaded (if not present already) to the `${jetty.base}/lib/webapp-logging/` directory:
+* `jetty-webapp-logging.jar` - the Jetty side deployment manger app-lifecycle bindings for modifying the `WebAppClassloaders` of deployed webapps.
+
+At this point the Jetty `mybase` is configured so that the jetty server itself will log using slf4j, and all other logging events from other Jetty Server components (such as database drivers, security layers, jsp, mail, and other 3rd party server components) are routed to logback for filtering and output.
+
+All webapps deployed via the `DeploymentManager` have their `WebAppClassLoader` modified to use server side classes and configuration for all logging implementations.
+
+The server classpath can be verified by using the `start.jar --list-config` command.
+
+In essence, Jetty is now configured to emit its own logging events to slf4j, and various slf4j bridge jars are acting on behalf of `log4j`, `java.util.logging`, and `commons-logging`, routing all of the logging events to `logback`
+(a slf4j implementation) for routing (to console, file, etc...).

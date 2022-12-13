@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,10 +21,12 @@ import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
@@ -171,10 +168,27 @@ public class BufferUtil
     }
 
     /**
-     * Clear the buffer to be empty in flush mode.
-     * The position and limit are set to 0;
+     * Resets the buffer's endianness to {@link ByteOrder#BIG_ENDIAN}
+     * and clears the buffer to be empty in flush mode.
+     * The position and limit are set to 0.
      *
-     * @param buffer The buffer to clear.
+     * @param buffer the buffer to reset.
+     */
+    public static void reset(ByteBuffer buffer)
+    {
+        if (buffer != null)
+        {
+            buffer.order(ByteOrder.BIG_ENDIAN);
+            buffer.position(0);
+            buffer.limit(0);
+        }
+    }
+
+    /**
+     * Clears the buffer to be empty in flush mode.
+     * The position and limit are set to 0.
+     *
+     * @param buffer the buffer to clear.
      */
     public static void clear(ByteBuffer buffer)
     {
@@ -1037,9 +1051,14 @@ public class BufferUtil
 
     public static ByteBuffer toMappedBuffer(File file) throws IOException
     {
-        try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ))
+        return toMappedBuffer(file.toPath(), 0, file.length());
+    }
+
+    public static ByteBuffer toMappedBuffer(Path filePath, long pos, long len) throws IOException
+    {
+        try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ))
         {
-            return channel.map(MapMode.READ_ONLY, 0, file.length());
+            return channel.map(MapMode.READ_ONLY, pos, len);
         }
     }
 

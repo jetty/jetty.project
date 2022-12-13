@@ -1,0 +1,184 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[quickstart-common-config]]
+
+=== Common Jetty Configuration
+
+[[creating-jetty-base]]
+==== Creating a new Jetty Base
+
+The `demo-base` directory described earlier is an example of the link:#startup-base-and-home[`jetty.base`] mechanism.
+A Jetty base directory allows the configuration and web applications of a server instance to be stored separately from the Jetty distribution, so that upgrades can be done with minimal disruption.
+Jetty's default configuration is based on two properties:
+
+jetty.home::
+  The property that defines the location of the Jetty distribution, its libs, default modules and default XML files (typically start.jar, lib, etc).
+jetty.base::
+  The property that defines the location of a specific implementation of a Jetty server, its configuration, logs and web applications (typically start.d/*.ini files, logs and webapps).
+
+____
+[IMPORTANT]
+Your Jetty Home directory should be treated as a standard of truth and remain unmodified or changed.
+Changes or additions to your configuration should take place in the Jetty Base directory.
+____
+
+The `jetty.home` and `jetty.base` properties may be explicitly set on the command line, or they can be inferred from the environment if used with commands like:
+
+[source, screen, subs="{sub-order}"]
+----
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar
+----
+
+The following commands create a new base directory, enables both the HTTP connector and the web application deployer modules, and copies a demo webapp to be deployed:
+
+[source, screen, subs="{sub-order}"]
+----
+> JETTY_BASE=/tmp/mybase
+> mkdir $JETTY_BASE
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar
+
+WARNING: Nothing to start, exiting ...
+
+Usage: java -jar start.jar [options] [properties] [configs]
+       java -jar start.jar --help  # for more information
+
+> java -jar $JETTY_HOME/start.jar --create-startd
+INFO : Base directory was modified
+> java -jar $JETTY_HOME/start.jar --add-to-start=http,deploy
+
+INFO: server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO: http            initialised in ${jetty.base}/start.d/http.ini
+INFO: security        initialised (transitively) in ${jetty.base}/start.d/security.ini
+INFO: servlet         initialised (transitively) in ${jetty.base}/start.d/servlet.ini
+INFO: webapp          initialised (transitively) in ${jetty.base}/start.d/webapp.ini
+INFO: deploy          initialised in ${jetty.base}/start.d/deploy.ini
+MKDIR: ${jetty.base}/webapps
+INFO: Base directory was modified
+
+> cp $JETTY_HOME/demo-base/webapps/async-rest.war webapps/ROOT.war
+> java -jar $JETTY_HOME/start.jar
+
+2015-06-04 11:10:16.286:INFO::main: Logging initialized @274ms
+2015-06-04 11:10:16.440:INFO:oejs.Server:main: jetty-9.3.0.v20150601
+2015-06-04 11:10:16.460:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///tmp/mybase/webapps/] at interval 1
+2015-06-04 11:10:16.581:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
+2015-06-04 11:10:16.589:INFO:oejw.StandardDescriptorProcessor:main: NO JSP Support for /, did not find org.eclipse.jetty.jsp.JettyJspServlet
+2015-06-04 11:10:16.628:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@1a407d53{/,[file:///tmp/jetty-0.0.0.0-8080-ROOT.war-_-any-4510228025526425427.dir/webapp/, jar:file:///tmp/jetty-0.0.0.0-8080-ROOT.war-_-any-4510228025526425427.dir/webapp/WEB-INF/lib/example-async-rest-jar-{VERSION}.jar!/META-INF/resources],AVAILABLE}{/ROOT.war}
+2015-06-04 11:10:16.645:INFO:oejs.ServerConnector:main: Started ServerConnector@3abbfa04{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2015-06-04 11:10:16.646:INFO:oejs.Server:main: Started @634ms
+----
+
+[[quickstart-changing-jetty-port]]
+==== Changing the Jetty Port
+
+You can configure Jetty to run on a different port by setting the `jetty.http.port` property on the command line:
+
+[source, screen, subs="{sub-order}"]
+----
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar jetty.http.port=8081
+...
+----
+
+When the server starts, it will now run on port `8081`.
+It is important to note that setting properties on the command line will only take affect for that instance of the server.
+To change the configuration so that the server will always start on the desired port, you will need to edit the `start.d/http.ini`
+
+____
+[NOTE]
+--
+The configuration by properties works via the following chain:
+
+* The `start.d/http.ini` file is part of the effective command line and contains the `--module=http` argument which activates the http module.
+* The `modules/http.mod` file defines the http module which specifies the `etc/jetty-http.xml` configuration file and the template ini properties it uses.
+* The `jetty.http.port` property is used by the Property XML element in `etc/jetty.http.xml` to inject the `ServerConnector` instance with the port.
+
+For more information see the link:#quick-start-configure[Quickstart Configuration Guide] and link:#configuring-connectors[Configuring Connectors].
+--
+____
+
+[[quickstart-starting-https]]
+==== Adding SSL for HTTPS & HTTP2
+
+Building on the example above, we can activate additional modules to add support HTTPS and HTTP2 for the server.
+To add HTTPS and HTTP2 connectors to a Jetty configuration, the modules can be activated by the following command:
+
+[source, screen, subs="{sub-order}"]
+----
+> java -jar $JETTY_HOME/start.jar --add-to-start=https,http2
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: alpn-impl/alpn-8
+  + ALPN is a hosted at github under the GPL v2 with ClassPath Exception.
+  + ALPN replaces/modifies OpenJDK classes in the sun.security.ssl package.
+  + http://github.com/jetty-project/jetty-alpn
+  + http://openjdk.java.net/legal/gplv2+ce.html
+
+Proceed (y/N)? y
+INFO  : alpn-impl/alpn-1.8.0_92 dynamic dependency of alpn-impl/alpn-8
+INFO  : alpn            transitively enabled, ini template available with --add-to-start=alpn
+INFO  : alpn-impl/alpn-8 dynamic dependency of alpn
+INFO  : http2           initialized in ${jetty.base}/start.d/http2.ini
+INFO  : https           initialized in ${jetty.base}/start.d/https.ini
+INFO  : ssl             transitively enabled, ini template available with --add-to-start=ssl
+MKDIR : ${jetty.base}/lib/alpn
+DOWNLD: https://repo1.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/8.1.8.v20160420/alpn-boot-8.1.8.v20160420.jar to ${jetty.base}/lib/alpn/alpn-boot-8.1.8.v20160420.jar
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
+INFO  : Base directory was modified
+
+> java -jar $JETTY_HOME/start.jar
+[...]
+2017-05-22 12:48:23.271:INFO:oejs.AbstractConnector:main: Started ServerConnector@134d0064{SSL,[ssl, alpn, h2, http/1.1]}{0.0.0.0:8443}
+[...]
+----
+
+The `--add-to-start` command sets up the effective command line in the ini files to run an ssl connection that supports the HTTPS and HTTP2 protocols as follows:
+
+* transitively enabled the `ssl` module that configures an SSL connector (eg port, keystore etc.) by adding `etc/jetty-ssl.xml` and `etc/jetty-ssl-context.xml` to the effective command line.
+* transitively enabled the `alpn` module that configures protocol negotiation on the SSL connector by adding `etc/jetty-alpn.xml` to the effective command line.
+* creates `start.d/https.ini` that configures the HTTPS protocol on the SSL connector by adding `etc/jetty-https.xml` to the effective command line.
+* creates `start.d/http2.ini` that configures the HTTP/2 protocol on the SSL connector by adding `etc/jetty-http2.xml` to the effective command line.
+* checks for the existence of a `etc/keystore` file and if not present, downloads a demonstration keystore file.
+
+[[quickstart-changing-https-port]]
+===== Changing the Jetty HTTPS Port
+
+You can configure the SSL connector to run on a different port by setting the `jetty.ssl.port` property on the command line:
+
+[source, screen, subs="{sub-order}"]
+----
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar jetty.ssl.port=8444
+----
+
+Alternatively, property values can be added to the effective command line built from the `start.ini` file or `start.d/*.ini` files, depending on your set up.
+Please see the section on link:#start-vs-startd[Start.ini vs. Start.d] for more information.
+
+==== More start.jar Options
+
+The job of the `start.jar` is to interpret the command line, `start.ini` and `start.d` directory (and associated .ini files) to build a Java classpath and list of properties and configuration files to pass to the main class of the Jetty XML configuration mechanism.
+The `start.jar` mechanism has many options which are documented in the xref:startup[] administration section and you can see them in summary by using the command:
+
+[source, screen, subs="{sub-order}"]
+----
+> java -jar $JETTY_HOME/start.jar --help
+----

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -33,6 +28,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
@@ -44,6 +40,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
@@ -63,6 +60,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.ssl.X509;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -168,7 +166,27 @@ public class SniSslConnectionFactoryTest
     @Test
     public void testSNIConnect() throws Exception
     {
-        start("src/test/resources/keystore_sni.p12");
+        start(ssl ->
+        {
+            ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            ssl.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
+            {
+                // Make sure the *.domain.com comes before sub.domain.com
+                // to test that we prefer more specific domains.
+                List<X509> sortedCertificates = certificates.stream()
+                    // As sorted() sorts ascending, make *.domain.com the smallest.
+                    .sorted((x509a, x509b) ->
+                    {
+                        if (x509a.matches("domain.com"))
+                            return -1;
+                        if (x509b.matches("domain.com"))
+                            return 1;
+                        return 0;
+                    })
+                    .collect(Collectors.toList());
+                return ssl.sniSelect(keyType, issuers, session, sniHost, sortedCertificates);
+            });
+        });
 
         String response = getResponse("jetty.eclipse.org", "jetty.eclipse.org");
         assertThat(response, Matchers.containsString("X-HOST: jetty.eclipse.org"));
@@ -178,6 +196,9 @@ public class SniSslConnectionFactoryTest
 
         response = getResponse("foo.domain.com", "*.domain.com");
         assertThat(response, Matchers.containsString("X-HOST: foo.domain.com"));
+
+        response = getResponse("sub.domain.com", "sub.domain.com");
+        assertThat(response, Matchers.containsString("X-HOST: sub.domain.com"));
 
         response = getResponse("m.san.com", "san example");
         assertThat(response, Matchers.containsString("X-HOST: m.san.com"));
@@ -214,8 +235,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response, Matchers.containsString("Invalid SNI"));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "See Issue #6609 - TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnection() throws Exception
     {
         start(ssl ->
@@ -254,8 +275,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "See Issue #6609 - TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedFunction() throws Exception
     {
         start((ssl, customizer) ->
@@ -281,8 +302,8 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "See Issue #6609 - TLSv1.3 behavior differences between Linux and Windows")
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void testWrongSNIRejectedConnectionWithNonSNIKeystore() throws Exception
     {
         start(ssl ->
@@ -467,6 +488,21 @@ public class SniSslConnectionFactoryTest
         assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
         assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
         assertEquals(0, history.size());
+    }
+
+    @Test
+    public void testSNIWithDifferentKeyTypes() throws Exception
+    {
+        // This KeyStore contains 2 certificates, one with keyAlg=EC, one with keyAlg=RSA.
+        start(ssl -> ssl.setKeyStorePath("src/test/resources/keystore_sni_key_types.p12"));
+
+        // Make a request with SNI = rsa.domain.com, the RSA certificate should be chosen.
+        HttpTester.Response response1 = HttpTester.parseResponse(getResponse("rsa.domain.com", "rsa.domain.com"));
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+        // Make a request with SNI = ec.domain.com, the EC certificate should be chosen.
+        HttpTester.Response response2 = HttpTester.parseResponse(getResponse("ec.domain.com", "ec.domain.com"));
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 
     private String getResponse(String host, String cn) throws Exception

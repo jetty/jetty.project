@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,6 +25,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,7 +42,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,6 +50,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
@@ -69,25 +65,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SslContextFactoryTest
 {
-    private SslContextFactory cf;
-
-    @BeforeEach
-    public void setUp() throws Exception
-    {
-        cf = new SslContextFactory.Server();
-
-        java.security.cert.CertPathBuilder certPathBuilder = java.security.cert.CertPathBuilder.getInstance("PKIX");
-        java.security.cert.PKIXRevocationChecker revocationChecker = (java.security.cert.PKIXRevocationChecker)certPathBuilder.getRevocationChecker();
-        revocationChecker.setOptions(java.util.EnumSet.of(
-            java.security.cert.PKIXRevocationChecker.Option.valueOf("PREFER_CRLS"),
-            java.security.cert.PKIXRevocationChecker.Option.valueOf("SOFT_FAIL"),
-            java.security.cert.PKIXRevocationChecker.Option.valueOf("NO_FALLBACK")));
-        cf.setPkixCertPathChecker(revocationChecker);
-    }
-
     @Test
     public void testSLOTH() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setKeyStorePassword("storepwd");
 
         cf.start();
@@ -95,9 +76,13 @@ public class SslContextFactoryTest
         // cf.dump(System.out, "");
         List<SslSelectionDump> dumps = cf.selectionDump();
 
-        SslSelectionDump cipherDump = dumps.stream()
+        Optional<SslSelectionDump> cipherSuiteDumpOpt = dumps.stream()
             .filter((dump) -> dump.type.contains("Cipher Suite"))
-            .findFirst().get();
+            .findFirst();
+
+        assertTrue(cipherSuiteDumpOpt.isPresent(), "Cipher Suite dump section should exist");
+
+        SslSelectionDump cipherDump = cipherSuiteDumpOpt.get();
 
         for (String enabledCipher : cipherDump.enabled)
         {
@@ -106,8 +91,41 @@ public class SslContextFactoryTest
     }
 
     @Test
+    public void testDumpExcludedProtocols() throws Exception
+    {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
+        cf.setExcludeProtocols("TLSv1\\.?[01]?");
+        cf.start();
+
+        // Confirm behavior in engine
+        assertThat(cf.newSSLEngine().getEnabledProtocols(), not(hasItemInArray("TLSv1.1")));
+        assertThat(cf.newSSLEngine().getEnabledProtocols(), not(hasItemInArray("TLSv1")));
+
+        // Confirm output in dump
+        List<SslSelectionDump> dumps = cf.selectionDump();
+
+        Optional<SslSelectionDump> protocolDumpOpt = dumps.stream()
+            .filter((dump) -> dump.type.contains("Protocol"))
+            .findFirst();
+
+        assertTrue(protocolDumpOpt.isPresent(), "Protocol dump section should exist");
+
+        SslSelectionDump protocolDump = protocolDumpOpt.get();
+
+        long countTls11Enabled = protocolDump.enabled.stream().filter((t) -> t.contains("TLSv1.1")).count();
+        long countTls11Disabled = protocolDump.disabled.stream().filter((t) -> t.contains("TLSv1.1")).count();
+
+        assertThat("Enabled Protocols TLSv1.1 count", countTls11Enabled, is(0L));
+        assertThat("Disabled Protocols TLSv1.1 count", countTls11Disabled, is(1L));
+
+        // Uncomment to show dump in console.
+        // cf.dump(System.out, "");
+    }
+
+    @Test
     public void testDumpIncludeTlsRsa() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setKeyStorePassword("storepwd");
         cf.setIncludeCipherSuites("TLS_RSA_.*");
         cf.setExcludeCipherSuites("BOGUS"); // just to not exclude anything
@@ -124,9 +142,15 @@ public class SslContextFactoryTest
             .collect(Collectors.toList());
 
         List<String> selectedSuites = Arrays.asList(cf.getSelectedCipherSuites());
-        SslSelectionDump cipherDump = dumps.stream()
+
+        Optional<SslSelectionDump> cipherSuiteDumpOpt = dumps.stream()
             .filter((dump) -> dump.type.contains("Cipher Suite"))
-            .findFirst().get();
+            .findFirst();
+
+        assertTrue(cipherSuiteDumpOpt.isPresent(), "Cipher Suite dump section should exist");
+
+        SslSelectionDump cipherDump = cipherSuiteDumpOpt.get();
+
         assertThat("Dump Enabled List size is equal to selected list size", cipherDump.enabled.size(), is(selectedSuites.size()));
 
         for (String expectedCipherSuite : tlsRsaSuites)
@@ -139,6 +163,7 @@ public class SslContextFactoryTest
     @Test
     public void testNoTsFileKs() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setKeyStorePassword("storepwd");
 
         cf.start();
@@ -149,6 +174,7 @@ public class SslContextFactoryTest
     @Test
     public void testNoTsSetKs() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         KeyStore ks = KeyStore.getInstance("PKCS12");
         try (InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore.p12"))
         {
@@ -164,13 +190,7 @@ public class SslContextFactoryTest
     @Test
     public void testNoTsNoKs() throws Exception
     {
-        cf.start();
-        assertNotNull(cf.getSslContext());
-    }
-
-    @Test
-    public void testTrustAll() throws Exception
-    {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.start();
         assertNotNull(cf.getSslContext());
     }
@@ -178,6 +198,7 @@ public class SslContextFactoryTest
     @Test
     public void testNoTsResourceKs() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         Resource keystoreResource = Resource.newSystemResource("keystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
@@ -193,6 +214,7 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsResourceKs() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         Resource keystoreResource = Resource.newSystemResource("keystore.p12");
         Resource truststoreResource = Resource.newSystemResource("keystore.p12");
 
@@ -209,6 +231,7 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         Resource keystoreResource = Resource.newSystemResource("keystore.p12");
         Resource truststoreResource = Resource.newSystemResource("keystore.p12");
 
@@ -219,7 +242,7 @@ public class SslContextFactoryTest
 
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
-            IOException x = assertThrows(IOException.class, () -> cf.start());
+            IOException x = assertThrows(IOException.class, cf::start);
             assertThat(x.getMessage(), containsString("password was incorrect"));
         }
     }
@@ -227,6 +250,7 @@ public class SslContextFactoryTest
     @Test
     public void testNoKeyConfig()
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
             IllegalStateException x = assertThrows(IllegalStateException.class, () ->
@@ -241,6 +265,7 @@ public class SslContextFactoryTest
     @Test
     public void testSetExcludeCipherSuitesRegex() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setExcludeCipherSuites(".*RC4.*");
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();
@@ -255,6 +280,7 @@ public class SslContextFactoryTest
     @Test
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.setIncludeCipherSuites(".*ECDHE.*", ".*WIBBLE.*");
 
         cf.start();
@@ -270,6 +296,7 @@ public class SslContextFactoryTest
     @Test
     public void testProtocolAndCipherSettingsAreNPESafe()
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         assertNotNull(cf.getExcludeProtocols());
         assertNotNull(cf.getIncludeProtocols());
         assertNotNull(cf.getExcludeCipherSuites());
@@ -279,6 +306,7 @@ public class SslContextFactoryTest
     @Test
     public void testSNICertificates() throws Exception
     {
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         Resource keystoreResource = Resource.newSystemResource("snikeystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
@@ -319,9 +347,9 @@ public class SslContextFactoryTest
     @Test
     public void testNonDefaultKeyStoreTypeUsedForTrustStore() throws Exception
     {
-        cf = new SslContextFactory.Server();
-        cf.setKeyStoreResource(Resource.newSystemResource("keystore.jks"));
-        cf.setKeyStoreType("jks");
+        SslContextFactory.Server cf = new SslContextFactory.Server();
+        cf.setKeyStoreResource(Resource.newSystemResource("keystore.p12"));
+        cf.setKeyStoreType("pkcs12");
         cf.setKeyStorePassword("storepwd");
         cf.start();
         cf.stop();
@@ -337,7 +365,7 @@ public class SslContextFactoryTest
     @Test
     public void testClientSslContextFactory() throws Exception
     {
-        cf = new SslContextFactory.Client();
+        SslContextFactory.Client cf = new SslContextFactory.Client();
         cf.start();
 
         assertEquals("HTTPS", cf.getEndpointIdentificationAlgorithm());
@@ -346,7 +374,7 @@ public class SslContextFactoryTest
     @Test
     public void testServerSslContextFactory() throws Exception
     {
-        cf = new SslContextFactory.Server();
+        SslContextFactory.Server cf = new SslContextFactory.Server();
         cf.start();
 
         assertNull(cf.getEndpointIdentificationAlgorithm());

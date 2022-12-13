@@ -1,0 +1,166 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[deployment-architecture]]
+=== Deployment Architecture
+
+Jetty is built around an extensible Deployment Manager architecture complete with formal LifeCycle for Web Applications going through it.
+
+For Jetty to serve content (static or dynamic), a link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler] needs to be configured and added to Jetty in the appropriate location.
+A pluggable `DeploymentManager` exists to make this process easier.
+The Jetty distribution contains example `DeploymentManager` configurations to deploy WAR files found in a directory to Jetty, and to deploy Jetty context xml files into Jetty as well.
+
+The `DeploymentManager` is the heart of the typical webapp deployment mechanism; it operates as a combination of an Application LifeCycle Graph, Application Providers that find and provide Applications into the Application LifeCycle Graph, and a set of bindings in the graph that control the deployment process.
+
+image:Jetty_DeployManager_DeploymentManager_Roles.png[image,width=195]
+
+[[udm-application-providers]]
+==== Application Providers
+
+Before Jetty deploys an application, an link:{JDURL}/org/eclipse/jetty/deploy/AppProvider.html[`AppProvider`] identifies the App and then provides it to the `DeploymentManager`.
+The main `AppProvider` with the Jetty distribution is the link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[`WebAppProvider`.]
+
+[[udm-application-lifecycle-graph]]
+==== Application LifeCycle Graph
+
+The core feature of the `DeploymentManager` is the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[Application LifeCycle Graph].
+
+image:Jetty_DeployManager_AppLifeCycle-1.png[image,width=340]
+
+The nodes and edges of this graph are pre-defined in Jetty along the most common actions and states found.
+These nodes and edges are not hardcoded; they can be adjusted and added to depending on need (for example, any complex requirements for added workflow, approvals, staging, distribution, coordinated deploys for a cluster or cloud, etc.).
+
+New applications enter this graph at the Undeployed node, and the link:{JDURL}/org/eclipse/jetty/deploy/DeploymentManager.html#requestAppGoal(org.eclipse.jetty.deploy.App[`java.lang.String DeploymentManager.requestAppGoal(App,String)`] method pushes them through the graph.
+
+[[udm-lifecycle-bindings]]
+==== LifeCycle Bindings
+
+A set of default link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[`AppLifeCycle.Bindings`] defines standard behavior, and handles deploying, starting, stopping, and undeploying applications.
+If desired, custom `AppLifeCycle.Bindings` can be written and assigned anywhere on the Application LifeCycle graph.
+
+Examples of new `AppLifeCycle.Binding` implementations that can be developed include:
+
+* Validating the incoming application.
+* Preventing the deployment of known forbidden applications.
+* Submitting the installation to an application auditing service in a corporate environment.
+* Distributing the application to other nodes in the cluster or cloud.
+* Emailing owner/admin of change of state of the application.
+
+There are four default bindings:
+
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardDeployer.html[`StandardDeployer`] — Deploys the ContextHandler into Jetty in the appropriate place.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStarter.html[`StandardStarter`] — Sets the ContextHandler to started and start accepting incoming requests.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStopper.html[`StandardStopper`] — Stops the ContextHandler and stops accepting incoming requests.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardUndeployer.html[`StandardUndeployer`] — Removes the ContextHandler from Jetty.
+
+image:Jetty_DeployManager_DefaultAppLifeCycleBindings.png[image,width=851]
+
+A fifth, non-standard binding, called link:{JDURL}/org/eclipse/jetty/deploy/bindings/DebugBinding.html[DebugBinding], is also available for debugging reasons; it logs the various transitions through the Application LifeCycle.
+
+===== Using GlobalWebappConfigBinding
+
+In addition to the LifeCycle bindings discussed above, there is also the link:https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/deploy/bindings/GlobalWebappConfigBinding.html[`GlobalWebappConfigBinding`] which, when added to the `DeploymentManager` will apply an additional configuration XML file to each webapp that it deploys.
+This can useful when setting server or system classes, or when defining link:#override-web-xml[override descriptors.]
+This configuration XML file will be _in addition to_ any context XML file that exists for the webapp; it will be applied _after_ any context XML files but _before_ the webapp is started.
+The format for the  XML file is the same as any context XML file and can be used to same parameters for a webapp.
+
+To use this binding, you can either modify the existing `jetty-deploy.xml` which comes with the Jetty distribution (be sure to link:#startup-base-and-home[copy it to your $JETTY_BASE/etc directory first]), or by link:#custom-modules[creating a new module] file which calls to an additional XML file.
+
+[source, xml, subs="{sub-order}"]
+----
+        <Call name="addLifeCycleBinding">
+          <Arg>
+            <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding" >
+              <Set name="jettyXml"><Property name="jetty.home" default="." />/etc/global-webapp-config.xml</Set>
+            </New>
+          </Arg>
+        </Call>
+----
+
+[[default-web-app-provider]]
+==== Understanding the Default WebAppProvider
+
+The link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[WebAppProvider] is used for the deployment of Web Applications packaged as WAR files, expanded as a directory, or declared in a xref:deployable-descriptor-file[].
+It supports hot (re)deployment.
+
+The basic operation of the `WebAppProvider` is to periodically scan a directory for deployables.
+In the standard Jetty Distribution, this is configured in the `${jetty.home}/etc/jetty-deploy.xml` file.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+        <Call id="webappprovider" name="addAppProvider">
+          <Arg>
+            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
+              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="extractWars">true</Set>
+            </New>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+The above configuration will create a `DeploymentManager` tracked as a Server LifeCycle Bean, with the following configuration.
+
+contexts::
+  A passed in reference to the HandlerContainer into which the discovered webapps are deployed.
+  This is normally a reference that points to the `id="Contexts"` found in the `${jetty.home}/etc/jetty.xml` file, which itself is an instance of `ContextHandlerCollection`.
+
+monitoredDirName::
+  The file path or URL to the directory to scan for web applications.
+
+  Scanning follows these rules:
+
+  1.  A base directory must exist.
+  2.  Hidden Files (starting with `"."`) are ignored.
+  3.  Directories with names ending in `".d"` are ignored.
+  4.  Common CVS directories `"CVS"` and `"CVSROOT"` are ignored.
+  5.  Any `*.war` files are considered link:#automatic-webapp-deployment[automatic deployables].
+  6.  Any `*.xml` files are considered link:#deployable-descriptor-file[context descriptor deployables].
+  7.  In the special case where both a WAR file and XML file exists for same base name, the XML file is assumed to configure and reference the WAR file (see xref:configuring-specific-webapp-deployment[]).
+  Since jetty-9.2.7, if either the WAR file or its corresponding XML file changes, the webapp will be redeployed.
+  8.  A directory is considered to be deployable.
+  9.  In the special case where both a Directory and WAR file of the same name exists, the WAR file is assumed to be an automatic deployable.
+  10. In the special case where both a Directory and XML file of the same name exists, the XML file is assumed to configure and reference the Directory.
+  11. All other directories are subject to automatic deployment.
+  12. If automatic deployment is used, and the special filename `root.war/ROOT.war` or directory name `root/ROOT` will result in a deployment to the `"/"` context path.
+
+defaultsDescriptor::
+  Specifies the default Servlet web descriptor to use for all Web Applications.
+  The intent of this descriptor is to include common configuration for the Web Application before the Web Application's own `/WEB-INF/web.xml` is applied.
+  The `${jetty.home}/etc/webdefault.xml` that comes with the Jetty distribution controls the configuration of the JSP and Default servlets, along with MIME-types and other basic metadata.
+
+scanInterval::
+  The period in seconds between sweeps of the `monitoredDirName` for changes: new contexts to deploy, changed contexts to redeploy, or removed contexts to undeploy.
+
+extractWars::
+  If parameter is true, any packed WAR or zip files are first extracted to a temporary directory before being deployed.
+  This is advisable if there are uncompiled JSPs in the web apps.
+
+parentLoaderPriority::
+  Parameter is a boolean that selects whether the standard Java link:#jetty-classloading[parent first delegation] is used or the link:#jetty-classloading[servlet specification webapp classloading priority].
+  The latter is the default.

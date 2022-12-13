@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -36,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>The parser for STDOUT type frame bodies.</p>
- * <p>STDOUT frame bodies contain both the HTTP headers (but not the response line)
+ * <p>The parser for STDOUT frame content.</p>
+ * <p>STDOUT frame content contain both the HTTP headers (but not the response line)
  * and the HTTP content (either Content-Length delimited or chunked).</p>
  * <p>For this reason, a special HTTP parser is used to parse the frames body.
  * This special HTTP parser is configured to skip the response line, and to
@@ -57,9 +52,11 @@ public class ResponseContentParser extends StreamContentParser
     }
 
     @Override
-    public void noContent()
+    public boolean noContent()
     {
-        // Does nothing, since for responses the end of content is signaled via a FCGI_END_REQUEST frame
+        // Does nothing, since for responses the end of
+        // content is signaled via a FCGI_END_REQUEST frame.
+        return false;
     }
 
     @Override

@@ -4,62 +4,23 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests-parent</artifactId>
   <name>Jetty Tests :: Parent</name>
   <packaging>pom</packaging>
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <configuration>
-            <!-- No point deploying testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <configuration>
-            <!-- no need of sources for test jars -->
-            <skipSource>true</skipSource>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <!-- No point building javadoc on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>findbugs-maven-plugin</artifactId>
-          <configuration>
-            <!-- No Point running Findbugs on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <configuration>
-            <!-- No point running clirr on test projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
+  <properties>
+    <spotbugs.skip>true</spotbugs.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.source.skip>true</maven.source.skip>
+  </properties>
   <modules>
     <module>jetty-jmh</module>
     <module>jetty-http-tools</module>
+    <module>jetty-home-tester</module>
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-loginservice</module>
@@ -69,5 +30,8 @@
     <module>test-http-client-transport</module>
     <module>test-distribution</module>
     <module>test-cdi</module>
+    <module>test-jpms</module>
+    <module>test-websocket-autobahn</module>
   </modules>
+
 </project>

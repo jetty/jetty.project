@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +36,7 @@ public abstract class IdleTimeout
     private final Scheduler _scheduler;
     private final AtomicReference<Scheduler.Task> _timeout = new AtomicReference<>();
     private volatile long _idleTimeout;
-    private volatile long _idleTimestamp = System.nanoTime();
+    private volatile long _idleNanoTime = NanoTime.now();
 
     /**
      * @param scheduler A scheduler used to schedule checks for the idle timeout.
@@ -60,7 +56,7 @@ public abstract class IdleTimeout
      */
     public long getIdleFor()
     {
-        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - _idleTimestamp);
+        return NanoTime.millisSince(_idleNanoTime);
     }
 
     /**
@@ -84,6 +80,9 @@ public abstract class IdleTimeout
         long old = _idleTimeout;
         _idleTimeout = idleTimeout;
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Setting idle timeout {} -> {} on {}", old, idleTimeout, this);
+
         // Do we have an old timeout
         if (old > 0)
         {
@@ -105,7 +104,7 @@ public abstract class IdleTimeout
      */
     public void notIdle()
     {
-        _idleTimestamp = System.nanoTime();
+        _idleNanoTime = NanoTime.now();
     }
 
     private void idleCheck()
@@ -152,8 +151,8 @@ public abstract class IdleTimeout
     {
         if (isOpen())
         {
-            long idleTimestamp = _idleTimestamp;
-            long idleElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTimestamp);
+            long idleNanoTime = _idleNanoTime;
+            long idleElapsed = NanoTime.millisSince(idleNanoTime);
             long idleTimeout = getIdleTimeout();
             long idleLeft = idleTimeout - idleElapsed;
 

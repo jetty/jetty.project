@@ -1,0 +1,73 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[proxy-servlet]]
+=== Proxy Servlet
+
+[[proxy-servlet-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.proxy.ProxyServlet`
+* Maven Artifact: org.eclipse.jetty:jetty-proxy
+* Javadoc: {JDURL}/org/eclipse/jetty/proxy/ProxyServlet.html
+
+[[proxy-servlet-usage]]
+==== Usage
+
+An asynchronous servlet that forwards requests to another server either as a standard web reverse proxy (as defined by RFC2616) or as a transparent reverse proxy.
+Internally it uses the async jetty-client.
+
+To facilitate JMX monitoring, the `HttpClient` instance is set as context attribute, prefixed with the servlet's name and exposed by the mechanism provided by `ContextHandler.MANAGED_ATTRIBUTES`.
+
+[[proxy-servlet-init]]
+==== Init Parameters
+
+The following init parameters may be used to configure the servlet:
+
+hostHeader::
+  forces the host header to a particular value
+viaHost::
+  the name to use in the Via header: Via: http/1.1 <viaHost>
+whiteList::
+  comma-separated list of allowed proxy hosts
+blackList::
+  comma-separated list of forbidden proxy hosts
+
+
+In addition, there are a number of init parameters that can be used to configure the `HttpClient` instance used internally for the proxy.
+
+maxThreads::
+Default Value: 256
+The max number of threads of HttpClient's Executor
+
+maxConnections::
+Default Value: 32768
+The max number of connections per destination.
+RFC 2616 suggests that 2 connections should be opened per each destination, but browsers commonly open 6 or more.
+If this `HttpClient` is used for load testing, it is common to have only one destination (the server to load test), and it is recommended to set this value to a high value (at least as much as the threads present in the executor).
+
+idleTimeout::
+Default Value: 30000
+The idle timeout in milliseconds that a connection can be idle, that is without traffic of bytes in either direction.
+
+timeout::
+Default Value: 60000
+The total timeout in milliseconds for the request/response conversation.
+
+requestBufferSize::
+Default Value: 4096
+The size of the request buffer the request is written into.
+
+responseBufferSize::
+Default Value: 4096
+The size of the response buffer the response is written into.

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -114,10 +109,13 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
+    private int maxDynamicTableSize = 4096;
+    private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
+    private boolean isUseALPN = true;
 
     public HTTP2Client()
     {
@@ -317,6 +315,28 @@ public class HTTP2Client extends ContainerLifeCycle
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
+    @ManagedAttribute("The HPACK dynamic table maximum size")
+    public int getMaxDynamicTableSize()
+    {
+        return maxDynamicTableSize;
+    }
+
+    public void setMaxDynamicTableSize(int maxDynamicTableSize)
+    {
+        this.maxDynamicTableSize = maxDynamicTableSize;
+    }
+
+    @ManagedAttribute("The max size of header block fragments")
+    public int getMaxHeaderBlockFragment()
+    {
+        return maxHeaderBlockFragment;
+    }
+
+    public void setMaxHeaderBlockFragment(int maxHeaderBlockFragment)
+    {
+        this.maxHeaderBlockFragment = maxHeaderBlockFragment;
+    }
+
     @ManagedAttribute("Whether to use direct ByteBuffers for reading")
     public boolean isUseInputDirectByteBuffers()
     {
@@ -337,6 +357,17 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    @ManagedAttribute(value = "Whether ALPN should be used when establishing connections")
+    public boolean isUseALPN()
+    {
+        return isUseALPN;
+    }
+
+    public void setUseALPN(boolean useALPN)
+    {
+        isUseALPN = useALPN;
     }
 
     public CompletableFuture<Session> connect(SocketAddress address, Session.Listener listener)
@@ -404,8 +435,9 @@ public class HTTP2Client extends ContainerLifeCycle
         ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
         if (sslContextFactory != null)
         {
-            ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
-            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
+            if (isUseALPN())
+                factory = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
+            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), factory);
         }
         return factory;
     }

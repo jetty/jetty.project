@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -356,17 +351,18 @@ public class MavenWebAppContext extends WebAppContext
     }
 
     @Override
-    public Resource getResource(String uriInContext) throws MalformedURLException
+    public Resource getResource(String pathInContext) throws MalformedURLException
     {
         Resource resource = null;
         // Try to get regular resource
-        resource = super.getResource(uriInContext);
+        resource = super.getResource(pathInContext);
 
         // If no regular resource exists check for access to /WEB-INF/lib or
         // /WEB-INF/classes
-        if ((resource == null || !resource.exists()) && uriInContext != null && _classes != null)
+        if ((resource == null || !resource.exists()) && pathInContext != null && _classes != null)
         {
-            String uri = URIUtil.canonicalPath(uriInContext);
+            // Canonicalize again to look for the resource inside /WEB-INF subdirectories.
+            String uri = URIUtil.canonicalPath(pathInContext);
             if (uri == null)
                 return null;
 
@@ -507,4 +503,11 @@ public class MavenWebAppContext extends WebAppContext
             LOG.warn("Problem initializing cdi", e);
         }
     }
+
+    // need to be overridden to avoid Maven reflection issues with super class and override method
+    public void setExtraClasspath(String extraClasspath) throws IOException
+    {
+        super.setExtraClasspath(extraClasspath);
+    }
+
 }

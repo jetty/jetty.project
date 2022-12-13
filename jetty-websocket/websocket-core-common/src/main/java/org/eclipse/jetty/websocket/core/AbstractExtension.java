@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -31,11 +26,11 @@ import org.slf4j.LoggerFactory;
 public class AbstractExtension implements Extension
 {
     private final Logger log;
+    private CoreSession coreSession;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
-    private Configuration configuration;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
 
@@ -145,13 +140,15 @@ public class AbstractExtension implements Extension
 
     protected void nextIncomingFrame(Frame frame, Callback callback)
     {
-        log.debug("nextIncomingFrame({})", frame);
+        if (log.isDebugEnabled())
+            log.debug("nextIncomingFrame({})", frame);
         this.nextIncoming.onFrame(frame, callback);
     }
 
     protected void nextOutgoingFrame(Frame frame, Callback callback, boolean batch)
     {
-        log.debug("nextOutgoingFrame({})", frame);
+        if (log.isDebugEnabled())
+            log.debug("nextOutgoingFrame({})", frame);
         this.nextOutgoing.sendFrame(frame, callback, batch);
     }
 
@@ -170,12 +167,17 @@ public class AbstractExtension implements Extension
     @Override
     public void setCoreSession(CoreSession coreSession)
     {
-        this.configuration = coreSession;
+        this.coreSession = coreSession;
+    }
+
+    public CoreSession getCoreSession()
+    {
+        return coreSession;
     }
 
     protected Configuration getConfiguration()
     {
-        return configuration;
+        return coreSession;
     }
 
     @Override

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,7 +17,6 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
 {
-    private long idleTimeout = 1000;
+    private final long idleTimeout = 1000;
 
     @Override
     public void init(Transport transport) throws IOException
@@ -54,7 +48,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         scenario.startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 if (target.equals("/timeout"))
@@ -90,7 +84,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 if (target.equals("/timeout"))
@@ -144,7 +138,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         scenario.start(new EmptyServerHandler());
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setConnectionIdleTimeout(idleTimeout);
 
         ContentResponse response1 = scenario.client.newRequest(scenario.newURI()).send();
         assertEquals(HttpStatus.OK_200, response1.getStatus());

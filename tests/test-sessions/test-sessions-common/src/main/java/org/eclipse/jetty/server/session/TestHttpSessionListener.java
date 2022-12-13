@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -31,16 +26,18 @@ public class TestHttpSessionListener implements HttpSessionListener
     public List<String> createdSessions = new ArrayList<>();
     public List<String> destroyedSessions = new ArrayList<>();
     public boolean accessAttribute = false;
-    public Exception ex = null;
+    public boolean lastAccessTime = false;
+    public Exception attributeException = null;
+    public Exception accessTimeException = null;
 
-    public TestHttpSessionListener(boolean access)
+    public TestHttpSessionListener(boolean accessAttribute, boolean lastAccessTime)
     {
-        accessAttribute = access;
+        this.accessAttribute = accessAttribute;
+        this.lastAccessTime = lastAccessTime;
     }
 
     public TestHttpSessionListener()
     {
-        accessAttribute = false;
     }
 
     public void sessionDestroyed(HttpSessionEvent se)
@@ -54,7 +51,19 @@ public class TestHttpSessionListener implements HttpSessionListener
             }
             catch (Exception e)
             {
-                ex = e;
+                attributeException = e;
+            }
+        }
+        
+        if (lastAccessTime)
+        {
+            try
+            {
+                se.getSession().getLastAccessedTime();
+            }
+            catch (Exception e)
+            {
+                accessTimeException = e;
             }
         }
     }

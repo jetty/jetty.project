@@ -1,0 +1,175 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-fastcgi]]
+=== Configuring Jetty for FastCGI
+
+In this section you will see how to configure Jetty to serve WordPress via FastCGI.
+
+The first step is to have WordPress installed on your server machine, for example under `/var/www/wordpress`.
+For more information about how to install WordPress, please refer to the https://codex.wordpress.org/Installing_WordPress[WordPress Installation Guide].
+
+The second step is to install `php-fpm` and make sure it is configured to listen on a TCP socket; typically it is configured to listen to `localhost:9000`.
+
+The third step is to install Jetty, for example under `/opt/jetty`, called in the following `$JETTY_HOME`.
+Refer to xref:jetty-downloading[] for more information about how to install Jetty.
+
+The fourth step is to create a Jetty base directory (see xref:startup-base-and-home[]), called in the following `$JETTY_BASE`, where you setup the configuration needed to support FastCGI in Jetty, and configure the `fcgi`, `http` and `deploy` modules, so that Jetty will be able to accept HTTP requests from browsers, convert them in FastCGI, and proxy them to `php-fpm`:
+
+[source, screen, subs="{sub-order}"]
+....
+$ mkdir -p /usr/jetty/wordpress
+$ cd /usr/jetty/wordpress
+$ java -jar $JETTY_HOME/start.jar --add-to-start=fcgi,http,deploy
+....
+
+Therefore `$JETTY_BASE=/usr/jetty/wordpress`.
+
+The fifth step is to deploy the web application that provides the proxying of client requests to the FastCGI server, `php-fpm`.
+Typically this is done by deploying a `*.war` file in the `$JETTY_BASE/webapps` directory.
+For FastCGI there is no web application that needs developed - all the work has already been done for you by Jetty.
+As such you only need to deploy a Jetty context XML file that configures the web application directly.
+Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml`:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
+
+    <New id="root" class="java.lang.String">
+        <Arg>/var/www/wordpress</Arg>
+    </New>
+
+    <Set name="contextPath">/</Set>
+    <Set name="resourceBase"><Ref refid="root" /></Set>
+    <Set name="welcomeFiles">
+        <Array type="string"><Item>index.php</Item></Array>
+    </Set>
+
+    <Call name="addFilter">
+        <Arg>org.eclipse.jetty.fcgi.server.proxy.TryFilesFilter</Arg>
+        <Arg>/*</Arg>
+        <Arg>
+            <Call name="of" class="java.util.EnumSet">
+                <Arg><Get name="REQUEST" class="javax.servlet.DispatcherType" /></Arg>
+            </Call>
+        </Arg>
+        <Call name="setInitParameter">
+            <Arg>files</Arg>
+            <Arg>$path /index.php?p=$path</Arg>
+        </Call>
+    </Call>
+
+    <Call name="addServlet">
+        <Arg>
+            <New class="org.eclipse.jetty.servlet.ServletHolder">
+                <Arg>default</Arg>
+                <Arg>
+                    <Call name="forName" class="java.lang.Class">
+                        <Arg>org.eclipse.jetty.servlet.DefaultServlet</Arg>
+                    </Call>
+                </Arg>
+                <Call name="setInitParameter">
+                    <Arg>dirAllowed</Arg>
+                    <Arg>false</Arg>
+                </Call>
+            </New>
+        </Arg>
+        <Arg>/</Arg>
+    </Call>
+
+    <Call name="addServlet">
+        <Arg>org.eclipse.jetty.fcgi.server.proxy.FastCGIProxyServlet</Arg>
+        <Arg>*.php</Arg>
+        <Call name="setInitParameter">
+            <Arg>proxyTo</Arg>
+            <Arg>http://localhost:9000</Arg>
+        </Call>
+        <Call name="setInitParameter">
+            <Arg>prefix</Arg>
+            <Arg>/</Arg>
+        </Call>
+        <Call name="setInitParameter">
+            <Arg>scriptRoot</Arg>
+            <Arg><Ref refid="root" /></Arg>
+        </Call>
+        <Call name="setInitParameter">
+            <Arg>scriptPattern</Arg>
+            <Arg>(.+?\\.php)</Arg>
+        </Call>
+    </Call>
+
+</Configure>
+
+----
+
+An explanation of the above contents:
+
+* Linne 6 specifies the WordPress installation directory, in this example `/var/www/wordpress` (as defined in the first step).
+* Line 9 it is specified the context path at which WordPress will be served, in this example at the root context path `/`.
+* Line 10 specifies the resource base of the context, also set to the WordPress installation directory.
+This allows Jetty to serve static resources directly from the WordPress installation directory.
+* Line 12 specifies the welcome file as `index.php`, so that Jetty can perform the proper redirects in case of URIs ending with the `/` character.
+* Line 15 specifies the `TryFilesFilter`, a Servlet Filter that has been inspired by the http://wiki.nginx.org/HttpCoreModule#try_files[try_files] functionality offered by Nginx.
+This filter tries to serve the resource from the file system first, and if the resource is not found it forwards the request as `index.php?p=$path`, which will match the proxy servlet defined below.
+Refer to the link:{JDURL}/org/eclipse/jetty/fcgi/server/proxy/TryFilesFilter.html[TryFilesFilter] documentation for further information.
+* Line 29specifies Jetty's `DefaultServlet` to serve static content such as CSS files, JavaScript files, etc. `DefaultServlet` will serve these files by looking in the resource base of the context, defined at line 10 (see above).
+* Line 47 specifies the `FastCGIProxyServlet`, a Servlet that proxies HTTP requests arriving from clients to FastCGI requests to the FastCGI server.
+* Line 52 specifies the TCP address of the FastCGI server (`php-fpm`), where HTTP requests are forwarded as FastCGI requests.
+* Line 60 specifies once again the WordPress installation directory, so that the `FastCGIProxyServlet` can pass this information to the FastCGI server.
+* Line 64 specifies a regular expression that matches request URIs performed to this servlet, in addition to the standard URL mapping defined by Servlet at line 49.
+Refer to the link:{JDURL}/org/eclipse/jetty/fcgi/server/proxy/FastCGIProxyServlet.html[FastCGIProxyServlet] documentation for further information.
+
+The last step is to start Jetty (see xref:startup[]) and navigate to `http://localhost:8080` with your browser and enjoy WordPress:
+
+[source, screen, subs="{sub-order}"]
+....
+$ cd $JETTY_BASE
+$ java -jar /opt/jetty/start.jar
+....
+
+[[configuring-fastcgi-http2]]
+==== Configuring Jetty to Proxy HTTP/2 to FastCGI
+
+In order to configure Jetty to listen for HTTP/2 requests from clients that are HTTP/2 enabled and forward them to the FastCGI server as FastCGI requests, you need to enable the `http2` module, which in turn will require a TLS connector and consequently a keystore to read the key material required by TLS.
+
+Enabling the `http2` is easy; in additions to the modules you have enabled above, add the `http2` module:
+
+[source, screen, subs="{sub-order}"]
+....
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http2
+....
+
+The command above adds the `http2` module (and its dependencies) to the existing modules and uses the default Jetty keystore to provide the key material required by TLS.
+You will want to use your own keystore with your own private key and certificate for your own domain.
+
+Remember that by adding the `http2` module, you will start two JVMs: one that reads the configuration, and one that has the ALPN boot boot jar in the boot classpath, as explained in xref:http2-configuring[].
+
+Since now your site will run over TLS, you need to make sure that the WordPress URL is also configured so.
+If you have followed the steps of the link:#configuring-fastcgi[previous section], your WordPress site is served at `http://localhost:8080`.
+You will need to change that to be `https://localhost:8443` from the WordPress administration web interface, or follow the http://codex.wordpress.org/Changing_The_Site_URL[WordPress instructions] to do so without using the administration web interface.
+
+The minimal modules required to run WordPress with Jetty on HTTP/2 are therefore: `http2`, `http`, `fcgi` and `deploy`.
+These will setup a clear text connector on port 8080 for HTTP/1.1 and a TLS connector on port 8443 for HTTP/2 and HTTP/1.1.
+
+At this point, you can start Jetty (see xref:startup[]), hit `http://localhost:8080` with your browser and enjoy WordPress via HTTP/2 using a HTTP/2 enabled browser:
+
+[source, screen, subs="{sub-order}"]
+....
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar
+....
+
+If you don't have a HTTP/2 enabled browser, WordPress will still be available over HTTP/1.1.

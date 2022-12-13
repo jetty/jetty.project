@@ -1,0 +1,102 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-session-cache]]
+==== Modules for HTTP Session Caching
+
+In this section we will look at the alternatives for the `SessionCache`, i.e. the L1 cache of in-use session objects.
+Jetty ships with 2 alternatives: an in-memory cache, and a null cache.
+The latter does not actually do any caching of sessions, and can be useful if you either want to minimize your support for sessions, or you are in a clustered deployment without a sticky loadbalancer.
+
+The xref:og-session-usecases[scenarios] go into more detail on this.
+
+[[og-session-cache-hash]]
+===== Caching in Memory
+
+If you wish to change any of the default configuration values you should enable the `session-cache-hash` xref:startup-modules[module].
+The name `"hash"` harks back to historical Jetty session implementations, whereby sessions were kept in memory using a HashMap.
+
+====== Configuration
+
+The `$JETTY_BASE/start.d/session-cache-hash.ini` contains the following configurable properties:
+
+jetty.session.evictionPolicy::
+Integer, default -1.
+This controls whether session objects that are held in memory are subject to eviction from the cache.
+Eviction means that the session is removed from the cache.
+This can reduce the memory footprint of the cache and can be useful if you have a lot of sessions.
+Eviction is usually used in conjunction with a `SessionDataStore` that persists sessions.
+The eviction strategies and their corresponding values are:
+   -1 (NO EVICTION):::
+   sessions are never evicted from the cache.
+   The only way they leave are via expiration or invalidation.
+   0 (EVICT AFTER USE):::
+   sessions are evicted from the cache as soon as the last active request for it finishes.
+   The session will be passed to the `SessionDataStore` to be written out before eviction.
+   >= 1 (EVICT ON INACTIVITY):::
+   any positive number is the time in seconds after which a session that is in the cache but has not experienced any activity will be evicted.
+   Use the `jetty.session.saveOnInactiveEvict` property to force a session write before eviction.
+
+NOTE: If you are not using one of the session store modules, ie one of the ``session-store-xxxx``s, then sessions will be lost when the context is stopped, or the session is evicted.
+
+jetty.session.saveOnInactiveEvict::
+Boolean, default `false`.
+This controls whether a session will be persisted to the `SessionDataStore` if it is being evicted due to the EVICT ON INACTIVITY policy.
+Usually sessions will be written to the `SessionDataStore` whenever the last simultaneous request exits the session.
+However, as `SessionDataStores` can be configured to skip some writes (see the documentation for the `session-store-xxx` module that you are using), this option is provided to ensure that the session will be written out.
+
+NOTE: Be careful with this option, as in clustered scenarios it would be possible to "re-animate" a session that has actually been deleted by another node.
+
+jetty.session.saveOnCreate::
+Boolean, default `false`.
+Controls whether a session that is newly created will be immediately saved to the `SessionDataStore` or lazily saved as the last request for the session exits.
+This can be useful if the request dispatches to another context and needs to re-use the same session id.
+
+jetty.session.removeUnloadableSessions::
+Boolean, default `false`.
+Controls whether the session cache should ask a `SessionDataStore` to delete a session that cannot be restored - for example because it is corrupted.
+
+jetty.session.flushOnResponseCommit::
+Boolean, default `false`.
+If true, if a session is "dirty" - ie its attributes have changed - it will be written to the `SessionDataStore` as the response is about to commit.
+This ensures that all subsequent requests whether to the same or different node will see the updated session data.
+If false, a dirty session will only be written to the backing store when the last simultaneous request for it leaves the session.
+
+jetty.session.invalidateOnShutdown::
+Boolean, default `false`.
+If true, when a context is shutdown, all sessions in the cache are invalidated and deleted both from the cache and from the `SessionDataStore`.
+
+[[og-session-cache-null]]
+===== No Caching
+
+You may need to use the `session-cache-null` module if your clustering setup does not have a sticky load balancer, or if you want absolutely minimal support for sessions.
+If you enable this module, but you don't enable a module that provides session persistence (ie one of the `session-store-xxx` modules), then sessions will _neither_ be retained in memory _nor_ persisted.
+
+====== Configuration
+
+The `$JETTY_BASE/start.d/session-cache-null.ini` contains the following configurable properties:
+
+jetty.session.saveOnCreate::
+Boolean, default `false`.
+Controls whether a session that is newly created will be immediately saved to the `SessionDataStore` or lazily saved as the last request for the session exits.
+This can be useful if the request dispatches to another context and needs to re-use the same session id.
+
+jetty.session.removeUnloadableSessions::
+Boolean, default `false`.
+Controls whether the session cache should ask a `SessionDataStore` to delete a session that cannot be restored - for example because it is corrupted.
+
+jetty.session.flushOnResponseCommit::
+Boolean, default `false`.
+If true, if a session is "dirty" - ie its attributes have changed - it will be written to the backing store as the response is about to commit.
+This ensures that all subsequent requests whether to the same or different node will see the updated session data.
+If false, a dirty session will only be written to the backing store when the last simultaneous request for it leaves the session.

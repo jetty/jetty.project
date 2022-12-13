@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -37,7 +32,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -52,13 +46,12 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class PathWatcherTest
 {
-    public static final int QUIET_TIME;
-    public static final int WAIT_TIME;
-    public static final int LONG_TIME;
+    public static final long QUIET_TIME;
+    public static final long WAIT_TIME;
+    public static final long LONG_TIME;
 
     static
     {
@@ -217,10 +210,10 @@ public class PathWatcherTest
         {
             //assertThat("Trigger Path must be set",triggerPath,notNullValue());
             //assertThat("Trigger Type must be set",triggerType,notNullValue());
-            double multiplier = 25.0;
-            long awaitMillis = (long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier);
-            LOG.debug("Waiting for finish ({} ms)", awaitMillis);
-            assertThat("Timed Out (" + awaitMillis + "ms) waiting for capture to finish", finishedLatch.await(awaitMillis, TimeUnit.MILLISECONDS), is(true));
+            long multiplier = 25;
+            long awaitNanos = pathWatcher.getUpdateQuietTimeNanos() * multiplier;
+            LOG.debug("Waiting for finish ({} ns)", awaitNanos);
+            assertThat("Timed Out (" + awaitNanos + "ns) waiting for capture to finish", finishedLatch.await(awaitNanos, TimeUnit.NANOSECONDS), is(true));
             LOG.debug("Finished capture");
         }
 
@@ -253,7 +246,7 @@ public class PathWatcherTest
      * @throws IOException if unable to write file
      * @throws InterruptedException if sleep between writes was interrupted
      */
-    private void updateFileOverTime(Path path, int timeDuration, TimeUnit timeUnit)
+    private void updateFileOverTime(Path path, long timeDuration, TimeUnit timeUnit)
     {
         try
         {
@@ -264,11 +257,11 @@ public class PathWatcherTest
             int chunkBufLen = 16;
             byte[] chunkBuf = new byte[chunkBufLen];
             Arrays.fill(chunkBuf, (byte)'x');
-            long end = System.nanoTime() + timeUnit.toNanos(timeDuration);
 
+            long start = NanoTime.now();
             try (FileOutputStream out = new FileOutputStream(path.toFile()))
             {
-                while (System.nanoTime() < end)
+                while (NanoTime.since(start) < timeUnit.toNanos(timeDuration))
                 {
                     out.write(chunkBuf);
                     out.flush();
@@ -360,32 +353,32 @@ public class PathWatcherTest
             // Check slow modification
             capture.reset(1);
             expected.clear();
-            long start = System.nanoTime();
+            long start = NanoTime.now();
             new Thread(() ->
             {
                 updateFileOverTime(dir.resolve("file1"), 2 * QUIET_TIME, TimeUnit.MILLISECONDS);
             }).start();
             expected.put("file1", new PathWatchEventType[]{MODIFIED});
             capture.finishedLatch.await(LONG_TIME, TimeUnit.MILLISECONDS);
-            long end = System.nanoTime();
+            long end = NanoTime.now();
             capture.assertEvents(expected);
-            assertThat(end - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(2 * QUIET_TIME)));
+            assertThat(NanoTime.millisElapsed(start, end), greaterThan(2 * QUIET_TIME));
             Thread.sleep(WAIT_TIME);
             capture.assertEvents(expected);
 
             // Check slow add
             capture.reset(1);
             expected.clear();
-            start = System.nanoTime();
+            start = NanoTime.now();
             new Thread(() ->
             {
                 updateFileOverTime(dir.resolve("file2"), 2 * QUIET_TIME, TimeUnit.MILLISECONDS);
             }).start();
             expected.put("file2", new PathWatchEventType[]{ADDED});
             capture.finishedLatch.await(LONG_TIME, TimeUnit.MILLISECONDS);
-            end = System.nanoTime();
+            end = NanoTime.now();
             capture.assertEvents(expected);
-            assertThat(end - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(2 * QUIET_TIME)));
+            assertThat(NanoTime.millisElapsed(start, end), greaterThan(2 * QUIET_TIME));
             Thread.sleep(WAIT_TIME);
             capture.assertEvents(expected);
 
@@ -958,15 +951,14 @@ public class PathWatcherTest
             // New war added (slowly)
             capture.setFinishTrigger(1);
             Path warFile = dir.resolve("hello.war");
-            long start = System.nanoTime();
+            long start = NanoTime.now();
             new Thread(() ->
             {
                 updateFileOverTime(warFile, 2 * QUIET_TIME, TimeUnit.MILLISECONDS);
             }).start();
 
             assertTrue(capture.finishedLatch.await(4 * QUIET_TIME, TimeUnit.MILLISECONDS));
-            long end = System.nanoTime();
-            assertThat(end - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(2 * QUIET_TIME)));
+            assertThat(NanoTime.millisSince(start), greaterThan(2 * QUIET_TIME));
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
             expected.put("bar/WEB-INF/web.xml", new PathWatchEventType[]{ADDED});

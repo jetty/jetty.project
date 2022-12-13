@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -22,7 +23,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>javax.transaction.*;version="1.1",*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},javax.transaction.*;version="1.1",*</Import-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
@@ -30,13 +31,6 @@
               osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
             </Provide-Capability>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.plus.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>
@@ -48,19 +42,12 @@
       <artifactId>jakarta.transaction-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derby</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

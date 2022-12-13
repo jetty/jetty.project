@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -76,7 +71,7 @@ public class MavenMetadataTest
     @Test
     public void testIsExpiredTimestampNow()
     {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
         String timestamp = getTimestampFormatter().format(now);
         assertFalse(MavenMetadata.isExpiredTimestamp(timestamp), "Timestamp should NOT be stale: " + timestamp);
     }
@@ -84,7 +79,7 @@ public class MavenMetadataTest
     @Test
     public void testIsExpiredTimestampYesterday()
     {
-        LocalDateTime yesterday = LocalDateTime.now().minusDays(1);
+        LocalDateTime yesterday = LocalDateTime.now(ZoneId.of("UTC")).minusDays(1);
         String timestamp = getTimestampFormatter().format(yesterday);
         assertTrue(MavenMetadata.isExpiredTimestamp(timestamp), "Timestamp should be stale: " + timestamp);
     }

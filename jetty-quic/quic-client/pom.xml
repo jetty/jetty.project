@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.quic</groupId>
+    <artifactId>quic-parent</artifactId>
+    <version>10.0.14-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>quic-client</artifactId>
+  <name>Jetty :: QUIC :: Client</name>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>quic-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>quic-quiche-jna</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>quic-server</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-http-client-transport</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>17</jdk>
+      </activation>
+      <!--
+      This profile makes sure the Foreign binding is used for tests when running exactly on JDK 17.
+      Older and newer JDKs will revert to the JNA binding.
+      -->
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.quic</groupId>
+          <artifactId>quic-quiche-foreign-incubator</artifactId>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <!-- Make sure to use the Foreign binding by adding and opening the jdk.incubator.foreign module. -->
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>
+                @{argLine}
+                ${jetty.surefire.argLine}
+                --add-modules=jdk.incubator.foreign
+                --add-opens jdk.incubator.foreign/jdk.incubator.foreign=ALL-UNNAMED
+                --enable-native-access ALL-UNNAMED
+              </argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

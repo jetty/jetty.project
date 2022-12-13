@@ -1,0 +1,26 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-keystore]]
+=== Configuring SSL/TLS KeyStores
+
+A KeyStore is a file on the file system that contains a private key and a public certificate, along with the certificate chain of the certificate authorities that issued the certificate.
+The private key, the public certificate and the certificate chain, but more generally the items present in a KeyStore, are typically referred to as "cryptographic material".
+
+Keystores may encode the cryptographic material with different encodings, the most common being link:https://en.wikipedia.org/wiki/PKCS_12[PKCS12], and are typically protected by a password.
+
+Refer to the xref:og-protocols-ssl[secure protocols section] for more information about how to configure a secure connector using a KeyStore.
+
+include::keystore-create.adoc[]
+include::keystore-csr.adoc[]
+include::keystore-client-authn.adoc[]

@@ -1,4 +1,0 @@
-
-[defaults]
-from-module=old
-

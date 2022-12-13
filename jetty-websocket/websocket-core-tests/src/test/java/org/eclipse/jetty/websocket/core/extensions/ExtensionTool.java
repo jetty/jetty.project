@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,7 +14,8 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -44,8 +40,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class ExtensionTool
 {
@@ -56,13 +52,15 @@ public class ExtensionTool
         private Extension ext;
         private final Parser parser;
         private final IncomingFramesCapture capture;
+        private final WebSocketCoreSession coreSession;
 
         private Tester(String parameterizedExtension)
         {
             this.requestedExtParams = parameterizedExtension;
             this.extConfig = ExtensionConfig.parse(parameterizedExtension);
-            Class<?> extClass = components.getExtensionRegistry().getExtension(extConfig.getName());
-            assertThat("extClass", extClass, notNullValue());
+            coreSession = newWebSocketCoreSession(Collections.singletonList(extConfig));
+            ExtensionStack extensionStack = coreSession.getExtensionStack();
+            assertThat(extensionStack.getExtensions().size(), equalTo(1));
 
             this.capture = new IncomingFramesCapture();
             this.parser = new Parser(new MappedByteBufferPool());
@@ -75,15 +73,17 @@ public class ExtensionTool
 
         public void assertNegotiated(String expectedNegotiation)
         {
-            this.ext = components.getExtensionRegistry().newInstance(extConfig, components);
+            this.ext = coreSession.getExtensionStack().getExtensions().get(0);
             this.ext.setNextIncomingFrames(capture);
-            this.ext.setCoreSession(newWebSocketCoreSession());
         }
 
         public void parseIncomingHex(String... rawhex)
         {
             int parts = rawhex.length;
             byte[] net;
+
+            // Simulate initial demand from onOpen().
+            coreSession.autoDemand();
 
             for (int i = 0; i < parts; i++)
             {
@@ -97,7 +97,16 @@ public class ExtensionTool
                     if (frame == null)
                         break;
 
-                    FutureCallback callback = new FutureCallback();
+                    FutureCallback callback = new FutureCallback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            super.succeeded();
+                            if (!coreSession.isDemanding())
+                                coreSession.autoDemand();
+                        }
+                    };
                     ext.onFrame(frame, callback);
 
                     // Throw if callback fails.
@@ -162,11 +171,11 @@ public class ExtensionTool
         return new Tester(parameterizedExtension);
     }
 
-    private WebSocketCoreSession newWebSocketCoreSession()
+    private WebSocketCoreSession newWebSocketCoreSession(List<ExtensionConfig> configs)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
-        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
-        return coreSession;
+        exStack.setLastDemand(l -> {}); // Never delegate to WebSocketConnection as it is null for this test.
+        exStack.negotiate(configs, configs);
+        return new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
     }
 }

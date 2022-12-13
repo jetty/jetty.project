@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,11 +13,12 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>A Trie String lookup data structure using a fixed size array.</p>
@@ -33,8 +29,8 @@ import java.util.Set;
  * indexed in each lookup table, whilst infrequently used characters
  * must use a big character table.
  * </p>
- * <p>This Trie is very space efficient if the key characters are
- * from ' ', '+', '-', ':', ';', '.', 'A' to 'Z' or 'a' to 'z'.
+ * <p>This Trie is space efficient if the key characters are
+ * from ' ', '+', '-', ':', ';', '.', '0' - '9', A' to 'Z' or 'a' to 'z'
  * Other ISO-8859-1 characters can be used by the key, but less space
  * efficiently.
  * </p>
@@ -47,32 +43,88 @@ import java.util.Set;
  *
  * @param <V> the entry type
  */
-public class ArrayTrie<V> extends AbstractTrie<V>
+class ArrayTrie<V> extends AbstractTrie<V>
 {
+    public static int MAX_CAPACITY = Character.MAX_VALUE;
     /**
      * The Size of a Trie row is how many characters can be looked
      * up directly without going to a big index.  This is set at
      * 32 to cover case insensitive alphabet and a few other common
      * characters.
      */
-    private static final int ROW_SIZE = 32;
+    private static final int ROW_SIZE = 48;
+    private static final int BIG_ROW_INSENSITIVE = 22;
+    private static final int BIG_ROW_SENSITIVE = 48;
+    private static final int X = Integer.MIN_VALUE;
 
     /**
      * The index lookup table, this maps a character as a byte
-     * (ISO-8859-1 or UTF8) to an index within a Trie row
+     * (ISO-8859-1 or UTF8) to a Trie index within a Trie row.
+     * Positive values are column indexes within the main {@link #_table}.
+     * Negative values are indexes within a {@link Node#_bigRow}.
+     * Values of {@link #X} are not indexed and must be searched for
+     * in the extended {@link Node#_bigRow}
      */
-    private static final int[] LOOKUP =
+    private static final int[] LOOKUP_INSENSITIVE =
         {
-            // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-            /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
-            /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
-            /*4*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-            /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
+            //     0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            /*0*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*1*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*2*/ -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, 43, 44, 45, 46, 47,
+            /*3*/  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 37, 38, 39, 40, 41, 42,
+            /*4*/-12, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            /*5*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -13, -14, -15, -16, 36,
+            /*6*/-17, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            /*7*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -18, -19, -20, -21,  X,
         };
+
+    /**
+     * The index lookup table, this maps a character as a byte
+     * (ISO-8859-1 or UTF8) to a Trie index within a Trie row.
+     * Positive values are column indexes within the main {@link #_table}.
+     * Negative values are indexes within a {@link Node#_bigRow}.
+     * Values of {@link #X} are not indexed and must be searched for
+     * in the extended {@link Node#_bigRow}
+     */
+    private static final int[] LOOKUP_SENSITIVE =
+        {
+            //     0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+            /*0*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*1*/  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,
+            /*2*/ -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, 43, 44, 45, 46, 47,
+            /*3*/  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 37, 38, 39, 40, 41, 42,
+            /*4*/-12, -22, -23, -24, -25, -26, -27, -28, -29, -30, -31, -32, -33, -34, -35, -36,
+            /*5*/-37, -38, -39, -40, -41, -42, -43, -44, -45, -46, -47, -13, -14, -15, -16, 36,
+            /*6*/-17, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            /*7*/ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -18, -19, -20, -21,  X,
+        };
+
+    /**
+     * A Node in the tree.
+     * A Node instance is only needed for rows in the {@link #_table} array
+     * that either have a key/value pair or a {@link #_bigRow} extended row.
+     * @param <V> The value type of the node.
+     */
+    private static class Node<V>
+    {
+        String _key;
+        V _value;
+
+        /**
+         * A big row of indexes in which extended characters can be found.
+         * The first {@link ArrayTrie#_bigRowSize} entries are accessed by negative
+         * indexes from the {@link ArrayTrie#_lookup} table. The following entries
+         * are character/row pairs that must be searched looking for a match.
+         * A big row is dynamically allocated to minimum size required for it's entries.
+         */
+        char[] _bigRow;
+
+        @Override
+        public String toString()
+        {
+            return _key + "=" + _value;
+        }
+    }
 
     /**
      * The Trie rows in a single array which allows a lookup of row,character
@@ -80,177 +132,244 @@ public class ArrayTrie<V> extends AbstractTrie<V>
      * array that has been flattened to achieve locality of reference.
      * The first ROW_SIZE entries are for row 0, then next ROW_SIZE
      * entries are for row 1 etc.   So in general instead of using
-     * _rows[row][index], we use _rows[row*ROW_SIZE+index] to look up
+     * _rows[row][column], we use _rows[row*ROW_SIZE+column] to look up
      * the next row for a given character.
      *
      * The array is of characters rather than integers to save space.
      */
-    private final char[] _rowIndex;
-
-    /**
-     * The key (if any) for a Trie row.
-     * A row may be a leaf, a node or both in the Trie tree.
-     */
-    private final String[] _key;
-
-    /**
-     * The value (if any) for a Trie row.
-     * A row may be a leaf, a node or both in the Trie tree.
-     */
-    private final V[] _value;
-
-    /**
-     * A big index for each row.
-     * If a character outside of the lookup map is needed,
-     * then a big index will be created for the row, with
-     * 256 entries, one for each possible byte.
-     */
-    private char[][] _bigIndex;
-
-    /**
-     * The number of rows allocated
-     */
+    private final char[] _table;
+    private final int[] _lookup;
+    private final Node<V>[] _node;
+    private final int _bigRowSize;
     private char _rows;
 
-    public ArrayTrie()
+    /** Create a trie from capacity and content
+     * @param capacity The maximum capacity of the Trie or -1 for unlimited capacity
+     * @param caseSensitive True if the Trie keys are case sensitive
+     * @param contents The known contents of the Trie
+     * @param <V> The value type of the Trie
+     * @return a Trie containing the contents or null if not possible.
+     */
+    public static <V> ArrayTrie<V> from(int capacity, boolean caseSensitive, Map<String, V> contents)
     {
-        this(128);
+        // can't do infinite capacity
+        if (capacity < 0)
+            return null;
+
+        if (capacity > MAX_CAPACITY)
+            return null;
+
+        ArrayTrie<V> trie = new ArrayTrie<>(caseSensitive, capacity);
+        if (contents != null && !trie.putAll(contents))
+            return null;
+        return trie;
     }
 
     /**
      * @param capacity The capacity of the trie, which at the worst case
-     * is the total number of characters of all keys stored in the Trie.
-     * The capacity needed is dependent of the shared prefixes of the keys.
-     * For example, a capacity of 6 nodes is required to store keys "foo"
-     * and "bar", but a capacity of only 4 is required to
-     * store "bar" and "bat".
+     * is the total number of characters of all keys stored in the Trie, 
+     * plus 1 for the empty key.
+     * @see AbstractTrie#requiredCapacity(Set, boolean)
      */
-    @SuppressWarnings("unchecked")
-    public ArrayTrie(int capacity)
+    ArrayTrie(int capacity)
     {
-        super(true);
-        _value = (V[])new Object[capacity];
-        _rowIndex = new char[capacity * 32];
-        _key = new String[capacity];
+        this(false, capacity);
+    }
+
+    @SuppressWarnings("unchecked")
+    ArrayTrie(boolean caseSensitive, int capacity)
+    {
+        super(caseSensitive);
+        _bigRowSize = caseSensitive ? BIG_ROW_SENSITIVE : BIG_ROW_INSENSITIVE;
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
+        _lookup = !caseSensitive ? LOOKUP_INSENSITIVE : LOOKUP_SENSITIVE;
+        _table = new char[capacity * ROW_SIZE];
+        _node = new Node[capacity];
     }
 
     @Override
     public void clear()
     {
         _rows = 0;
-        Arrays.fill(_value, null);
-        Arrays.fill(_rowIndex, (char)0);
-        Arrays.fill(_key, null);
+        Arrays.fill(_table, (char)0);
+        Arrays.fill(_node, null);
     }
 
     @Override
-    public boolean put(String s, V v)
+    public boolean put(String key, V value)
     {
-        int t = 0;
-        int k;
-        int limit = s.length();
-        for (k = 0; k < limit; k++)
+        int row = 0;
+        int limit = key.length();
+        for (int i = 0; i < limit; i++)
         {
-            char c = s.charAt(k);
-
-            int index = LOOKUP[c & 0x7f];
-            if (index >= 0)
+            char c = key.charAt(i);
+            int column = c > 0x7f ? Integer.MIN_VALUE : _lookup[c];
+            if (column >= 0)
             {
-                int idx = t * ROW_SIZE + index;
-                t = _rowIndex[idx];
-                if (t == 0)
+                // This character is indexed to a column of the main table
+                int idx = row * ROW_SIZE + column;
+                row = _table[idx];
+                if (row == 0)
                 {
-                    if (++_rows >= _value.length)
+                    // not found so we need a new row
+                    if (_rows == _node.length - 1)
                         return false;
-                    t = _rowIndex[idx] = _rows;
+                    row = _table[idx] = ++_rows;
                 }
             }
-            else if (c > 127)
-                throw new IllegalArgumentException("non ascii character");
+            else if (column != Integer.MIN_VALUE)
+            {
+                // This character is indexed to a column in the nodes bigRow
+                int idx = -column;
+                Node<V> node = _node[row];
+                if (node == null)
+                    node = _node[row] = new Node<>();
+                char[] big = node._bigRow;
+                row = (big == null || idx >= big.length) ? 0 : big[idx];
+
+                if (row == 0)
+                {
+                    // Not found, we need a new row
+                    if (_rows == _node.length - 1)
+                        return false;
+
+                    // Expand the size of the bigRow to have +1 extended lookups
+                    if (big == null)
+                        big = node._bigRow = new char[idx + 1];
+                    else if (idx >= big.length)
+                        big = node._bigRow = Arrays.copyOf(big, idx + 1);
+
+                    row = big[idx] = ++_rows;
+                }
+            }
             else
             {
-                if (_bigIndex == null)
-                    _bigIndex = new char[_value.length][];
-                if (t >= _bigIndex.length)
-                    return false;
-                char[] big = _bigIndex[t];
-                if (big == null)
-                    big = _bigIndex[t] = new char[128];
-                t = big[c];
-                if (t == 0)
+                // This char is neither in the normal table, nor the first part of a bigRow
+                // Look for it linearly in an extended big row.
+                int last = row;
+                row = 0;
+                Node<V> node = _node[last];
+                if (node != null)
                 {
-                    if (_rows == _value.length)
+                    char[] big = node._bigRow;
+                    if (big != null)
+                    {
+                        for (int idx = _bigRowSize; idx < big.length; idx += 2)
+                        {
+                            if (big[idx] == c)
+                            {
+                                row = big[idx + 1];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (row == 0)
+                {
+                    // Not found, so we need a new row
+                    if (_rows == _node.length - 1)
                         return false;
-                    t = big[c] = ++_rows;
+
+                    if (node == null)
+                        node = _node[last] = new Node<>();
+                    char[] big = node._bigRow;
+
+                    // Expand the size of the bigRow to have extended lookups
+                    if (big == null)
+                        big = node._bigRow = new char[_bigRowSize + 2];
+                    else
+                        big = node._bigRow = Arrays.copyOf(big, Math.max(big.length, _bigRowSize) + 2);
+
+                    // set the lookup char and its row
+                    // TODO if the extended big row entries were sorted, then missed lookups could be aborted sooner
+                    // TODO and/or a binary chop search could be done for hits.
+                    big[big.length - 2] = c;
+                    row = big[big.length - 1] = ++_rows;
                 }
             }
         }
 
-        if (t >= _key.length)
+        // We have processed all characters so set the key and value in the current Node
+        Node<V> node = _node[row];
+        if (node == null)
+            node = _node[row] = new Node<>();
+        node._key = key;
+        node._value = value;
+        return true;
+    }
+
+    private int lookup(int row, char c)
+    {
+        // If the char is small we can lookup in the index table
+        if (c < 0x80)
         {
-            _rows = (char)_key.length;
-            return false;
+            int column = _lookup[c];
+            if (column != Integer.MIN_VALUE)
+            {
+                // The char is indexed, so should be in normal row or bigRow
+                if (column >= 0)
+                {
+                    // look in the normal row
+                    int idx = row * ROW_SIZE + column;
+                    row = _table[idx];
+                }
+                else
+                {
+                    // Look in the indexed part of the bigRow
+                    Node<V> node = _node[row];
+                    char[] big = node == null ? null : _node[row]._bigRow;
+                    int idx = -column;
+                    if (big == null || idx >= big.length)
+                        return -1;
+                    row = big[idx];
+                }
+                return row == 0 ? -1 : row;
+            }
         }
 
-        _key[t] = v == null ? null : s;
-        _value[t] = v;
-        return true;
+        // Not an indexed char, so do a linear search through he tail of the bigRow
+        Node<V> node = _node[row];
+        char[] big = node == null ? null : node._bigRow;
+        if (big != null)
+        {
+            for (int i = _bigRowSize; i < big.length; i += 2)
+                if (big[i] == c)
+                    return big[i + 1];
+        }
+
+        return -1;
     }
 
     @Override
     public V get(String s, int offset, int len)
     {
-        int t = 0;
+        int row = 0;
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(offset + i);
-            int index = LOOKUP[c & 0x7f];
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                t = _rowIndex[idx];
-                if (t == 0)
-                    return null;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                t = big[c];
-                if (t == 0)
-                    return null;
-            }
+            row = lookup(row, c);
+            if (row < 0)
+                return null;
         }
-        return _value[t];
+        Node<V> node = _node[row];
+        return node == null ? null : node._value;
     }
 
     @Override
     public V get(ByteBuffer b, int offset, int len)
     {
-        int t = 0;
+        int row = 0;
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(offset + i);
-            int index = LOOKUP[c & 0x7f];
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                t = _rowIndex[idx];
-                if (t == 0)
-                    return null;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                t = big[c];
-                if (t == 0)
-                    return null;
-            }
+            row = lookup(row, (char)(c & 0xff));
+            if (row < 0)
+                return null;
         }
-        return (V)_value[t];
+        Node<V> node = _node[row];
+        return node == null ? null : node._value;
     }
 
     @Override
@@ -273,205 +392,191 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         return getBest(0, s, offset, len);
     }
 
-    private V getBest(int t, String s, int offset, int len)
+    private V getBest(int row, String s, int offset, int len)
     {
         int pos = offset;
         for (int i = 0; i < len; i++)
         {
             char c = s.charAt(pos++);
-            int index = LOOKUP[c & 0x7f];
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                int nt = big[c];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
+            int next = lookup(row, c);
+            if (next < 0)
+                break;
 
-            // Is the next Trie is a match
-            if (_key[t] != null)
+            // Is the row a match?
+            Node<V> node = _node[row];
+            if (node != null && node._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, s, offset + i + 1, len - i - 1);
+                V best = getBest(next, s, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                return (V)_value[t];
+                return node._value;
             }
+
+            row = next;
         }
-        return (V)_value[t];
+        Node<V> node = _node[row];
+        return node == null ? null : node._value;
     }
 
-    private V getBest(int t, byte[] b, int offset, int len)
+    private V getBest(int row, byte[] b, int offset, int len)
     {
         for (int i = 0; i < len; i++)
         {
             byte c = b[offset + i];
-            int index = LOOKUP[c & 0x7f];
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                int nt = big[c];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
+            int next = lookup(row, (char)(c & 0xff));
+            if (next < 0)
+                break;
 
-            // Is the next Trie is a match
-            if (_key[t] != null)
+            // Is the next row a match?
+            Node<V> node = _node[row];
+            if (node != null && node._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(next, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                break;
+                return node._value;
             }
+
+            row = next;
         }
-        return (V)_value[t];
+        Node<V> node = _node[row];
+        return node == null ? null : node._value;
     }
 
-    private V getBest(int t, ByteBuffer b, int offset, int len)
+    private V getBest(int row, ByteBuffer b, int offset, int len)
     {
         int pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
-            byte c = b.get(pos++);
-            int index = LOOKUP[c & 0x7f];
-            if (index >= 0)
-            {
-                int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
-            else
-            {
-                char[] big = _bigIndex == null ? null : _bigIndex[t];
-                if (big == null)
-                    return null;
-                int nt = big[c];
-                if (nt == 0)
-                    break;
-                t = nt;
-            }
+            if (pos >= b.limit())
+                return null;
 
-            // Is the next Trie is a match
-            if (_key[t] != null)
+            byte c = b.get(pos++);
+            int next = lookup(row, (char)(c & 0xff));
+            if (next < 0)
+                break;
+
+            // Is the next row a match?
+            Node<V> node = _node[row];
+            if (node != null && node._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(next, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
-                break;
+                return node._value;
             }
+
+            row = next;
         }
-        return (V)_value[t];
+        Node<V> node = _node[row];
+        return node == null ? null : node._value;
     }
 
     @Override
     public String toString()
     {
-        StringBuilder buf = new StringBuilder();
-        toString(buf, 0);
-
-        if (buf.length() == 0)
-            return "{}";
-
-        buf.setCharAt(0, '{');
-        buf.append('}');
-        return buf.toString();
-    }
-
-    private void toString(Appendable out, int t)
-    {
-        if (_value[t] != null)
-        {
-            try
-            {
-                out.append(',');
-                out.append(_key[t]);
-                out.append('=');
-                out.append(_value[t].toString());
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        for (int i = 0; i < ROW_SIZE; i++)
-        {
-            int idx = t * ROW_SIZE + i;
-            if (_rowIndex[idx] != 0)
-                toString(out, _rowIndex[idx]);
-        }
-
-        char[] big = _bigIndex == null ? null : _bigIndex[t];
-        if (big != null)
-        {
-            for (int i : big)
-            {
-                if (i != 0)
-                    toString(out, i);
-            }
-        }
+        return
+            "AT@" + Integer.toHexString(hashCode()) + '{' +
+            "cs=" + isCaseSensitive() + ';' +
+            "c=" + _table.length / ROW_SIZE + ';' +
+            Arrays.stream(_node)
+                .filter(n -> n != null && n._key != null)
+                .map(Node::toString)
+                .collect(Collectors.joining(",")) +
+            '}';
     }
 
     @Override
     public Set<String> keySet()
     {
-        Set<String> keys = new HashSet<>();
-        keySet(keys, 0);
-        return keys;
-    }
-
-    private void keySet(Set<String> set, int t)
-    {
-        if (t < _value.length && _value[t] != null)
-            set.add(_key[t]);
-
-        for (int i = 0; i < ROW_SIZE; i++)
-        {
-            int idx = t * ROW_SIZE + i;
-            if (idx < _rowIndex.length && _rowIndex[idx] != 0)
-                keySet(set, _rowIndex[idx]);
-        }
-
-        char[] big = _bigIndex == null || t >= _bigIndex.length ? null : _bigIndex[t];
-        if (big != null)
-        {
-            for (int i : big)
-            {
-                if (i != 0)
-                    keySet(set, i);
-            }
-        }
+        return Arrays.stream(_node)
+            .filter(Objects::nonNull)
+            .map(n -> n._key)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
     }
 
     @Override
-    public boolean isFull()
+    public int size()
     {
-        return _rows + 1 >= _key.length;
+        return keySet().size();
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return keySet().isEmpty();
+    }
+
+    public void dumpStdErr()
+    {
+        System.err.print("row:");
+        for (int c = 0; c < ROW_SIZE; c++)
+        {
+            for (int i = 0; i < 0x7f; i++)
+            {
+                if (_lookup[i] == c)
+                {
+                    System.err.printf("  %s", (char)i);
+                    break;
+                }
+            }
+        }
+        System.err.println();
+        System.err.print("big:");
+        for (int c = 0; c < _bigRowSize; c++)
+        {
+            for (int i = 0; i < 0x7f; i++)
+            {
+                if (-_lookup[i] == c)
+                {
+                    System.err.printf("  %s", (char)i);
+                    break;
+                }
+            }
+        }
+        System.err.println();
+
+        for (int row = 0; row <= _rows; row++)
+        {
+            System.err.printf("%3x:", row);
+            for (int c = 0; c < ROW_SIZE; c++)
+            {
+                char ch = _table[row * ROW_SIZE + c];
+                if (ch == 0)
+                    System.err.print("  .");
+                else
+                    System.err.printf("%3x", (int)ch);
+            }
+            Node<V> node = _node[row];
+            if (node != null)
+            {
+                System.err.printf(" : %s%n", node);
+                char[] bigRow = node._bigRow;
+                if (bigRow != null)
+                {
+                    System.err.print("   :");
+                    for (int c = 0; c < Math.min(_bigRowSize, bigRow.length); c++)
+                    {
+                        char ch = bigRow[c];
+                        if (ch == 0)
+                            System.err.print("  _");
+                        else
+                            System.err.printf("%3x", (int)ch);
+                    }
+
+                    for (int c = _bigRowSize; c < bigRow.length; c += 2)
+                        System.err.printf(" %s>%x", bigRow[c], (int)bigRow[c + 1]);
+
+                    System.err.println();
+                }
+            }
+            else
+                System.err.println();
+        }
+        System.err.println();
     }
 }

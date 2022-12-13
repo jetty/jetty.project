@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -56,7 +51,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         public String version;
         public String type;
         public String classifier;
-        private String mavenRepoUri = "https://repo1.maven.org/maven2/";
+        private String mavenRepoUri = DEFAULT_REMOTE_REPO;
 
         public String toPath()
         {
@@ -107,6 +102,9 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
     }
 
     private final Path localRepositoryDir;
+
+    private static final String DEFAULT_REMOTE_REPO = "https://repo1.maven.org/maven2/";
+
     private final boolean readonly;
     private String mavenRepoUri;
 
@@ -228,6 +226,18 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         return null;
     }
 
+    public String getRemoteUri()
+    {
+        if (this.mavenRepoUri != null)
+        {
+            return this.mavenRepoUri;
+        }
+        else
+        {
+            return System.getProperty("maven.repo.uri", DEFAULT_REMOTE_REPO);
+        }
+    }
+
     public Coordinates getCoordinates(URI uri)
     {
         if (!"maven".equalsIgnoreCase(uri.getScheme()))
@@ -265,14 +275,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         coords.version = parts[2];
         coords.type = "jar";
         coords.classifier = null;
-        if (this.mavenRepoUri != null)
-        {
-            coords.mavenRepoUri = this.mavenRepoUri;
-        }
-        else
-        {
-            coords.mavenRepoUri = System.getProperty("maven.repo.uri", coords.mavenRepoUri);
-        }
+        coords.mavenRepoUri = getRemoteUri();
 
         if (parts.length >= 4)
         {

@@ -1,0 +1,35 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-compliance-cookie]]
+==== Cookie Compliance Modes
+
+The standards for Cookies have varied greatly over time from a non-specified but de-facto standard (implemented by the first browsers), through link:https://tools.ietf.org/html/rfc2965[RFC 2965] and currently to link:https://tools.ietf.org/html/rfc6265[RFC 6265].
+
+The link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.Violation.html[CookieCompliance.Violation] enumeration defines the RFC requirements that may be optionally enforced by Jetty when parsing the `Cookie` HTTP header in requests and when generating the `Set-Cookie` HTTP header in responses.
+
+These violations are then grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html[`CookieCompliance`] class, which also defines several named modes that support common deployed sets of violations, with the default being link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#RFC6265[`CookieCompliance.RFC6265`].
+
+For example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=cookieCompliance]
+----
+
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#from(java.lang.String)[`CookieCompliance.from(String)`] method:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=cookieComplianceCustom]
+----

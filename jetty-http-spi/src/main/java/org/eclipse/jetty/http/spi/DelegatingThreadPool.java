@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,12 +18,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.TryExecutor;
 
-public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool, TryExecutor
+public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool, TryExecutor, VirtualThreads.Configurable
 {
     private Executor _executor; // memory barrier provided by start/stop semantics
     private TryExecutor _tryExecutor;
@@ -64,6 +60,19 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
     public boolean tryExecute(Runnable task)
     {
         return _tryExecutor.tryExecute(task);
+    }
+
+    @Override
+    public Executor getVirtualThreadsExecutor()
+    {
+        return VirtualThreads.getVirtualThreadsExecutor(_executor);
+    }
+
+    @Override
+    public void setVirtualThreadsExecutor(Executor executor)
+    {
+        if (_executor instanceof VirtualThreads.Configurable)
+            ((VirtualThreads.Configurable)_executor).setVirtualThreadsExecutor(executor);
     }
 
     @Override

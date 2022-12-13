@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,6 +22,7 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +53,11 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      */
     public abstract Connection getConnection() throws Exception;
 
-    public class JDBCUserInfo extends UserInfo
+    public class JDBCUser extends JAASUser
     {
-        public JDBCUserInfo(String userName, Credential credential)
+        public JDBCUser(UserPrincipal user)
         {
-            super(userName, credential);
+            super(user);
         }
 
         @Override
@@ -79,7 +75,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the user info
      */
     @Override
-    public UserInfo getUserInfo(String userName)
+    public JAASUser getUser(String userName)
         throws Exception
     {
         try (Connection connection = getConnection())
@@ -100,11 +96,9 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
             }
 
             if (dbCredential == null)
-            {
                 return null;
-            }
 
-            return new JDBCUserInfo(userName, Credential.getCredential(dbCredential));
+            return new JDBCUser(new UserPrincipal(userName, Credential.getCredential(dbCredential)));
         }
     }
 

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -51,18 +46,19 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
-import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
-import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.internal.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 
 /**
  * Factory to create {@link JettyWebSocketFrameHandler} instances suitable for
@@ -82,12 +78,64 @@ import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 {
-    private final WebSocketContainer container;
-    private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
+    private static final InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(String.class).required()
+    };
 
-    public JettyWebSocketFrameHandlerFactory(WebSocketContainer container)
+    private static final InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(ByteBuffer.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(byte[].class).required(),
+        new InvokerUtils.Arg(int.class), // offset
+        new InvokerUtils.Arg(int.class) // length
+    };
+
+    private static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(InputStream.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(Reader.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(String.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(ByteBuffer.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(byte[].class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private final WebSocketContainer container;
+    private final WebSocketComponents components;
+    private final Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
+
+    public JettyWebSocketFrameHandlerFactory(WebSocketContainer container, WebSocketComponents components)
     {
         this.container = container;
+        this.components = components;
+    }
+
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
     }
 
     public JettyWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -135,7 +183,10 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         final MethodHandle pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
         BatchMode batchMode = metadata.getBatchMode();
 
-        JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
+        // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
+        components.getObjectFactory().decorate(endpointInstance);
+
+        return new JettyWebSocketFrameHandler(
             container,
             endpointInstance,
             openHandle, closeHandle, errorHandle,
@@ -144,8 +195,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             frameHandle, pingHandle, pongHandle,
             batchMode,
             metadata);
-
-        return frameHandler;
     }
 
     public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
@@ -329,34 +378,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         if (onMessages != null && onMessages.length > 0)
         {
             // The different kind of @OnWebSocketMessage method parameter signatures expected
-
-            InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(String.class).required()
-            };
-
-            InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(ByteBuffer.class).required()
-            };
-
-            InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(byte[].class).required(),
-                new InvokerUtils.Arg(int.class), // offset
-                new InvokerUtils.Arg(int.class) // length
-            };
-
-            InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(InputStream.class).required()
-            };
-
-            InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(Reader.class).required()
-            };
-
             for (Method onMsg : onMessages)
             {
                 assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
@@ -405,11 +426,27 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     metadata.setTextHandler(ReaderMessageSink.class, methodHandle, onMsg);
                     continue;
                 }
-                else
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, textPartialCallingArgs);
+                if (methodHandle != null)
                 {
-                    // Not a valid @OnWebSocketMessage declaration signature
-                    throw InvalidSignatureException.build(endpointClass, OnWebSocketMessage.class, onMsg);
+                    // Partial Text Message
+                    assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
+                    metadata.setTextHandler(PartialStringMessageSink.class, methodHandle, onMsg);
+                    continue;
                 }
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryPartialBufferCallingArgs);
+                if (methodHandle != null)
+                {
+                    // Partial ByteBuffer Message
+                    assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
+                    metadata.setBinaryHandle(PartialByteBufferMessageSink.class, methodHandle, onMsg);
+                    continue;
+                }
+
+                // Not a valid @OnWebSocketMessage declaration signature
+                throw InvalidSignatureException.build(endpointClass, OnWebSocketMessage.class, onMsg);
             }
         }
 

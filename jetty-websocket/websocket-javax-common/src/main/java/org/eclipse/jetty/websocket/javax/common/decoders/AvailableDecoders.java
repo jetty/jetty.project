@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.javax.common.decoders;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
@@ -30,17 +26,21 @@ import java.util.stream.Stream;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 
-public class AvailableDecoders implements Iterable<RegisteredDecoder>
+public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
 {
     private final List<RegisteredDecoder> registeredDecoders = new ArrayList<>();
     private final EndpointConfig config;
+    private final WebSocketComponents components;
 
-    public AvailableDecoders(EndpointConfig config)
+    public AvailableDecoders(EndpointConfig config, WebSocketComponents components)
     {
+        this.components = Objects.requireNonNull(components);
+
         // Register the Config Based Decoders.
         this.config = Objects.requireNonNull(config);
         registerAll(config.getDecoders());
@@ -77,7 +77,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
 
     private void registerPrimitive(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
     {
-        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, config, true));
+        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, config, components, true));
     }
 
     private void register(Class<? extends Decoder> decoder)
@@ -156,7 +156,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
                 return;
         }
 
-        registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType, config));
+        registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType, config, components));
     }
 
     public RegisteredDecoder getFirstRegisteredDecoder(Class<?> type)
@@ -211,5 +211,11 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
     public Stream<RegisteredDecoder> stream()
     {
         return registeredDecoders.stream();
+    }
+
+    @Override
+    public void close()
+    {
+        registeredDecoders.forEach(RegisteredDecoder::destroyInstance);
     }
 }

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <name>Demo :: Mock Resources</name>
   <artifactId>demo-mock-resources</artifactId>
@@ -17,26 +17,19 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.demos.demo-mock-resources</Bundle-SymbolicName>
-                <Bundle-Description>Mock resources used for testing</Bundle-Description>
-                <Export-Package>
-                  com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
-                </Export-Package>
-                <Import-Package>
-                  javax.sql, javax.transaction;version="1.1", javax.mail;version="1.4.1"
-                </Import-Package>
-                <_nouses>true</_nouses>
-              </instructions>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>org.eclipse.jetty.demos.demo-mock-resources</Bundle-SymbolicName>
+            <Bundle-Description>Mock resources used for testing</Bundle-Description>
+            <Export-Package>
+              com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+            </Export-Package>
+            <Import-Package>
+              javax.sql, javax.transaction;version="1.1", javax.mail;version="1.4.1"
+            </Import-Package>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -54,7 +47,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

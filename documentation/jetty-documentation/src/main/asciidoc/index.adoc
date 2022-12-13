@@ -1,0 +1,34 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+:doctitle: Eclipse Jetty Documentation
+
+include::config.adoc[]
+
+== xref:operations-guide/index.adoc[Jetty Operations Guide]
+
+The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+
+== xref:programming-guide/index.adoc[Jetty Programming Guide]
+
+The Eclipse Jetty Programming Guide targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
+
+== xref:contribution-guide/index.adoc[Jetty Contribution Guide]
+
+The Eclipse Jetty Programming Guide targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
+
+== xref:old_docs/index.adoc[OLD Jetty Documentation]
+
+The guides above are a work in progress for the current Jetty version.
+
+The old Jetty documentation refers to old Jetty versions, and it is currently being ported to the current Jetty version.

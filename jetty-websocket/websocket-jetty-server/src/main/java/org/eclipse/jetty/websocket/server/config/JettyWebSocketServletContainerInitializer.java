@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,11 +18,10 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +31,17 @@ import org.slf4j.LoggerFactory;
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServletContainerInitializer.class);
+    private final Configurator configurator;
+
+    public JettyWebSocketServletContainerInitializer()
+    {
+        this(null);
+    }
+
+    public JettyWebSocketServletContainerInitializer(Configurator configurator)
+    {
+        this.configurator = configurator;
+    }
 
     public interface Configurator
     {
@@ -48,25 +53,14 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      * during the {@link ServletContext} initialization phase.
      *
      * @param context the context to add listener to.
-     * @param configurator a lambda that is called to allow the {@link WebSocketMapping} to
+     * @param configurator a lambda that is called to allow the {@link WebSocketMappings} to
      * be configured during {@link ServletContext} initialization phase
      */
     public static void configure(ServletContextHandler context, Configurator configurator)
     {
         if (!context.isStopped())
             throw new IllegalStateException("configure should be called before starting");
-
-        context.addEventListener(
-            ContainerInitializer
-                .asContextListener(new JettyWebSocketServletContainerInitializer())
-                .afterStartup((servletContext) ->
-                {
-                    if (configurator != null)
-                    {
-                        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContext);
-                        configurator.accept(servletContext, container);
-                    }
-                }));
+        context.addServletContainerInitializer(new JettyWebSocketServletContainerInitializer(configurator));
     }
 
     /**
@@ -92,11 +86,9 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     private static JettyWebSocketServerContainer initialize(ServletContextHandler context)
     {
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context.getServletContext());
-        WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
-
         if (LOG.isDebugEnabled())
-            LOG.debug("configureContext {} {} {}", container, mapping, components);
+            LOG.debug("initialize {} {}", container, components);
 
         return container;
     }
@@ -105,6 +97,13 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     public void onStartup(Set<Class<?>> c, ServletContext context)
     {
         ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(context, "Jetty WebSocket SCI");
-        JettyWebSocketServletContainerInitializer.initialize(contextHandler);
+        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.initialize(contextHandler);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onStartup {}", container);
+
+        if (configurator != null)
+        {
+            configurator.accept(context, container);
+        }
     }
 }

@@ -1,0 +1,157 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[qos-filter]]
+=== Quality of Service Filter
+
+[[qos-filter-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.servlets.QoSFilter`
+* Maven Artifact: org.eclipse.jetty:jetty-servlets
+* Javadoc: {JDURL}/org/eclipse/jetty/servlets/QoSFilter.html
+
+[[qos-filter-usage]]
+==== Usage
+
+Jetty supports Continuations, which allow non-blocking handling of HTTP requests, so that threads can be allocated in a managed way to provide application specific Quality of Service (QoS).
+The `QoSFilter` is a utility servlet filter that implements some QoS features.
+
+[[qos-understanding]]
+==== Understanding the Problem
+
+===== Waiting for Resources
+
+Web applications frequently use JDBC Connection pools to limit the simultaneous load on the database.
+This protects the database from peak loads, but makes the web application vulnerable to thread starvation.
+Consider a thread pool with 20 connections, being used by a web application that that typically receives 200 requests per second and each request holds a JDBC connection for 50ms.
+Such a pool can service on average 200*20*1000/50 = 400 requests per second.
+
+However, if the request rate rises above 400 per second, or if the database slows down (due to a large query) or becomes momentarily unavailable, the thread pool can very quickly accumulate many waiting requests.
+If, for example, the website is "slashdotted" or experiences some other temporary burst of traffic and the request rate rises from 400 to 500 requests per second, then 100 requests per second join those waiting for a JDBC connection.
+Typically, a web server's thread pool contains only a few hundred threads, so a burst or slow DB need only persist for a few seconds to consume the entire web server's thread pool; this is called thread starvation.
+The key issue with thread starvation is that it effects the entire web application, and potentially the entire web server.
+Even if the requests using the database are only a small proportion of the total requests on the web server, all requests are blocked because all the available threads are waiting on the JDBC connection pool.
+This represents non-graceful degradation under load and provides a very poor quality of service.
+
+===== Prioritizing Resources
+
+Consider a web application that is under extreme load.
+This load might be due to a popularity spike (slashdot), usage burst (Christmas or close of business), or even a denial of service attack.
+During such periods of load, it is often desirable not to treat all requests as equals, and to give priority to high value customers or administrative users.
+
+The typical behavior of a web server under extreme load is to use all its threads to service requests and to build up a backlog of unserviced requests.
+If the backlog grows deep enough, then requests start to timeout and users experience failures as well as delays.
+
+Ideally, the web application should be able to examine the requests in the backlog, and give priority to high value customers and administrative users.
+But with the standard blocking servlet API, it is not possible to examine a request without allocating a thread to that request for the duration of its handling.
+There is no way to delay the handling of low priority requests, so if the resources are to be reallocated, then the low priority requests must all be failed.
+
+[[qos-applying]]
+==== Applying the QoSFilter
+
+The Quality of Service Filter (QoSFilter) uses Continuations to avoid thread starvation, prioritize requests and give graceful degradation under load, to provide a high quality of service.
+When you apply the filter to specific URLs within a web application, it limits the number of active requests being handled for those URLs.
+Any requests in excess of the limit are suspended. When a request completes handling the limited URL, one of the waiting requests resumes and can be handled.
+You can assign priorities to each suspended request, so that high priority requests resume before lower priority requests.
+
+===== Required JARs
+
+To use the QoS Filter, these JAR files must be available in `WEB-INF/lib`:
+
+* $JETTY_HOME/lib/jetty-util.jar
+* $JETTY_HOME/lib/jetty-servlets.jar – contains QoSFilter
+
+===== Sample Configuration
+
+Place the configuration in a webapp's `web.xml` or `jetty-web.xml`.
+The default configuration processes ten requests at a time, servicing more important requests first and queuing up the rest.
+This example processes fifty requests at a time:
+
+[source, xml, subs="{sub-order}"]
+----
+<filter>
+   <filter-name>QoSFilter</filter-name>
+   <filter-class>org.eclipse.jetty.servlets.QoSFilter</filter-class>
+   <init-param>
+     <param-name>maxRequests</param-name>
+     <param-value>50</param-value>
+   </init-param>
+ </filter>
+----
+
+[[qos-filter-init]]
+===== Configuring QoS Filter Parameters
+
+A semaphore polices the `maxRequests` limit.
+The filter waits a short time while attempting to acquire the semaphore.
+The `waitMs` init parameter controls the wait, avoiding the expense of a suspend if the semaphore is shortly available.
+If the semaphore cannot be obtained, Jetty suspends the request for the default suspend period of the container or the value set as the `suspendMs` init parameter.
+
+The QoS filter uses the following init parameters:
+
+maxRequests::
+The maximum number of requests to be serviced at a time. The default is 10.
+maxPriority::
+The maximum valid priority that can be assigned to a request.
+A request with a high priority value is more important than a request with a low priority value. The default is 10.
+waitMs::
+The length of time, in milliseconds, to wait while trying to accept a new request.
+Used when the maxRequests limit is reached.
+Default is 50 ms.
+suspendMs::
+Length of time, in milliseconds, that the request will be suspended if it is not accepted immediately.
+If not set, the container's default suspend period applies. Default is -1 ms.
+managedAttr::
+If set to true, then this servlet is set as a `ServletContext` attribute with the filter name as the attribute name.
+This allows a context external mechanism (for example, JMX via `ContextHandler.MANAGED_ATTRIBUTES`) to manage the configuration of the filter.
+
+===== Mapping to URLs
+
+You can use the `<filter-mapping>` syntax to map the QoSFilter to a servlet, either by using the servlet name, or by using a URL pattern.
+In this example, a URL pattern applies the QoSFilter to every request within the web application context:
+
+[source, xml, subs="{sub-order}"]
+----
+<filter-mapping>
+   <filter-name>QoSFilter</filter-name>
+   <url-pattern>/*</url-pattern>
+ </filter-mapping>
+----
+
+===== Setting the Request Priority
+
+Requests with higher values have a higher priority.
+The default request priorities assigned by the QoSFilter are:
+
+* 2 -- For any authenticated request
+* 1 -- For any request with a non-new valid session
+* 0 -- For all other requests
+
+To customize the priority, subclass QoSFilter and then override the `getPriority(ServletRequest request)` method to return an appropriate priority for the request.
+You can then use this subclass as your QoS filter.
+Here's an example:
+
+[source, java, subs="{sub-order}"]
+----
+public class ParsePriorityQoSFilter extends QoSFilter
+ {
+     protected int getPriority(ServletRequest request)
+     {
+         String p = ((HttpServletRequest)request).getParameter("priority");
+         if (p!=null)
+             return Integer.parseInt(p);
+         return 0;
+     }
+ }
+----

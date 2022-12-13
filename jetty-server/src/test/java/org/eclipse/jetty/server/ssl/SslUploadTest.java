@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -48,9 +43,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
 public class SslUploadTest
 {
     private static Server server;
@@ -123,7 +115,6 @@ public class SslUploadTest
         }.start();
         */
 
-        long start = System.nanoTime();
         OutputStream out = socket.getOutputStream();
         out.write("POST / HTTP/1.1\r\n".getBytes());
         out.write("Host: localhost\r\n".getBytes());
@@ -141,10 +132,7 @@ public class SslUploadTest
         InputStream in = socket.getInputStream();
         String response = IO.toString(in);
         assertTrue(response.indexOf("200") > 0);
-        // System.err.println(response);
 
-        // long end = System.nanoTime();
-        // System.out.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
         assertEquals(requestContent.length, total);
     }
 

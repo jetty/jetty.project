@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot</artifactId>
@@ -10,31 +10,48 @@
   <description>Jetty OSGi Boot bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.osgi.boot.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.osgi</groupId>
+      <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.osgi</groupId>
+      <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi.services</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.cm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.event</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.tracker</artifactId>
     </dependency>
   </dependencies>
 
@@ -46,14 +63,14 @@
           <execution>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
                 <copy todir="target/classes/jettyhome">
                   <fileset dir="jettyhome">
                     <exclude name="**/*.log" />
                   </fileset>
                 </copy>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -70,29 +87,30 @@
             <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
             <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
-            <Import-Package>javax.mail;version="1.4.0";resolution:=optional,
-                javax.mail.event;version="1.4.0";resolution:=optional,
-                javax.mail.internet;version="1.4.0";resolution:=optional,
-                javax.mail.search;version="1.4.0";resolution:=optional,
-                javax.mail.util;version="1.4.0";resolution:=optional,
-                javax.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-                javax.servlet.http;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-                javax.transaction;version="1.1.0";resolution:=optional,
-                javax.transaction.xa;version="1.1.0";resolution:=optional,
-                org.objectweb.asm;version="$(version;=;${asm.version})";resolution:=optional,
-                org.osgi.framework,
-                org.osgi.service.cm;version="1.2.0",
-                org.osgi.service.packageadmin,
-                org.osgi.service.startlevel;version="1.0.0",
-                org.osgi.service.url;version="1.0.0",
-                org.osgi.util.tracker;version="1.3.0",
-                org.slf4j;resolution:=optional,
-                org.slf4j.spi;resolution:=optional,
-                org.slf4j.helpers;resolution:=optional,
-                org.xml.sax,
-                org.xml.sax.helpers,
-                org.eclipse.jetty.annotations;resolution:=optional,
-                *
+            <Import-Package>
+              ${osgi.slf4j.import.packages},
+              javax.mail;version="1.4.0";resolution:=optional,
+              javax.mail.event;version="1.4.0";resolution:=optional,
+              javax.mail.internet;version="1.4.0";resolution:=optional,
+              javax.mail.search;version="1.4.0";resolution:=optional,
+              javax.mail.util;version="1.4.0";resolution:=optional,
+              javax.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              javax.servlet.http;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              javax.transaction;version="1.1.0";resolution:=optional,
+              javax.transaction.xa;version="1.1.0";resolution:=optional,
+              org.objectweb.asm;version="$(version;=;${asm.version})";resolution:=optional,
+              org.osgi.framework,
+              org.osgi.service.cm;version="${osgi-service-cm-version}",
+              org.osgi.service.component;version="${osgi-service-component-version}",
+              org.osgi.service.event;version="${osgi-service-event-version}",
+              org.osgi.service.packageadmin,
+              org.osgi.service.startlevel;version="1.0.0",
+              org.osgi.service.url;version="1.0.0",
+              org.osgi.util.tracker;version="${osgi-util-tracker-version}",
+              org.xml.sax,
+              org.xml.sax.helpers,
+              org.eclipse.jetty.annotations;resolution:=optional,
+              *
             </Import-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
@@ -102,13 +120,6 @@
             </Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.osgi.boot.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>

@@ -1,0 +1,339 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[jndi-configuration]]
+=== Configuring JNDI
+
+[[configuring-jndi-env-entries]]
+==== Configuring JNDI _env-entries_
+
+Sometimes it is useful to pass configuration information to a webapp at runtime that you either cannot or cannot conveniently code into a `web.xml` env-entry.
+In such cases, you can use the `org.eclipse.jetty.plus.jndi.EnvEntry` class, and even override an entry of the same name in `web.xml`.
+
+[source, xml, subs="{sub-order}"]
+----
+<New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <Arg></Arg>
+  <Arg>mySpecialValue</Arg>
+  <Arg type="java.lang.Integer">4000</Arg>
+  <Arg type="boolean">true</Arg>
+</New>
+----
+
+This example defines a virtual `env-entry` called `mySpecialValue` with value `4000` that is xref:jndi-name-scope[scoped] to the JVM.
+It is put into JNDI at `java:comp/env/mySpecialValue` for _every_ web app deployed.
+Moreover, the boolean argument indicates that this value overrides an `env-entry` of the same name in `web.xml`.
+If you don't want to override, omit this argument, or set it to `false`.
+
+The Servlet Specification allows binding only the following object types to an `env-entry`:
+
+* java.lang.String
+* java.lang.Integer
+* java.lang.Float
+* java.lang.Double
+* java.lang.Long
+* java.lang.Short
+* java.lang.Character
+* java.lang.Byte
+* java.lang.Boolean
+
+That being said, Jetty is a little more flexible and allows you to also bind custom POJOs, http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Reference.html[`javax.naming.References`] and http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Referenceable.html[`javax.naming.Referenceables`].
+Be aware that if you take advantage of this feature, your web application is __not portable__.
+
+To use the `env-entry` configured above, use code in your `servlet/filter/etc.`, such as:
+
+[source, java, subs="{sub-order}"]
+----
+import javax.naming.InitialContext;
+
+public class MyClass {
+
+  public void myMethod() {
+
+    InitialContext ic = new InitialContext();
+    Integer mySpecialValue = (Integer)ic.lookup("java:comp/env/mySpecialValue");
+    ...
+  }
+}
+----
+
+[[configuring-resource-refs-and-resource-env-refs]]
+==== Configuring _resource-refs_ and _resource-env-refs_
+
+You can configure any type of resource that you want to refer to in a `web.xml` file as a `resource-ref` or `resource-env-ref`, using the `org.eclipse.jetty.plus.jndi.Resource` type of naming entry.
+You provide the scope, the name of the object (relative to `java:comp/env`) and a POJO instance or a `javax.naming.Reference` instance or `javax.naming.Referenceable` instance.
+
+The http://jcp.org/aboutJava/communityprocess/pr/jsr244/index.html[J2EE Specification] recommends storing DataSources in `java:comp/env/jdbc`, JMS connection factories under `java:comp/env/jms`, JavaMail connection factories under `java:comp/env/mail` and URL connection factories under `java:comp/env/url`.
+
+For example:
+
+.DataSource Declaration Conventions
+[cols=",,",options="header",]
+|=======================================================================
+|Resource Type |Name in `jetty.xml` |Environment Lookup
+|javax.sql.DataSource |jdbc/myDB |java:comp/env/jdbc/myDB
+
+|javax.jms.QueueConnectionFactory |jms/myQueue
+|java:comp/env/jms/myQueue
+
+|javax.mail.Session |mail/myMailService
+|java:comp/env/mail/myMailService
+|=======================================================================
+
+[[configuring-datasources]]
+==== Configuring DataSources
+
+Here is an example of configuring a `javax.sql.DataSource`.
+Jetty can use any DataSource implementation available on its classpath.
+In this example, the DataSource is from the http://db.apache.org/derby[Derby] relational database, but you can use any implementation of a `javax.sql.DataSource`.
+This example configures it as scoped to a web app with the id of __wac__:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+  <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid="wac"/></Arg>
+    <Arg>jdbc/myds</Arg>
+    <Arg>
+      <New class="org.apache.derby.jdbc.EmbeddedDataSource">
+        <Set name="DatabaseName">test</Set>
+        <Set name="createDatabase">create</Set>
+      </New>
+    </Arg>
+  </New>
+</Configure>
+----
+
+The code above creates an instance of `org.apache.derby.jdbc.EmbeddedDataSource`, calls the two setter methods `setDatabaseName("test"),` and `setCreateDatabase("create"),` and binds it into the JNDI scope for the web app.
+If you do not have the appropriate `resource-ref` set up in your `web.xml`, it is available from application lookups as `java:comp/env/jdbc/myds`.
+
+Here's an example `web.xml` declaration for the datasource above:
+
+[source, xml, subs="{sub-order}"]
+----
+<resource-ref>
+  <res-ref-name>jdbc/myds</res-ref-name>
+  <res-type>javax.sql.DataSource</res-type>
+  <res-auth>Container</res-auth>
+</resource-ref>
+----
+
+To look up your DataSource in your `servlet/filter/etc.`:
+
+[source, java, subs="{sub-order}"]
+----
+import javax.naming.InitialContext;
+import javax.sql.DataSource;
+
+public class MyClass {
+
+  public void myMethod() {
+
+    InitialContext ic = new InitialContext();
+    DataSource myDS = (DataSource)ic.lookup("java:comp/env/jdbc/myds");
+
+    ...
+  }
+}
+----
+
+____
+[NOTE]
+Careful! When configuring Resources, ensure that the type of object you configure matches the type of object you expect to look up in `java:comp/env`.
+For database connection factories, this means that the object you register as a Resource _must_ implement the `javax.sql.DataSource` interface.
+____
+
+For more examples of datasource configurations, see xref:jndi-datasource-examples[].
+
+[[configuring-jms-queues-topics-connectionfactories]]
+==== Configuring JMS Queues, Topics and ConnectionFactories
+
+Jetty can bind any implementation of the JMS destinations and connection factories.
+You just need to ensure the implementation Jars are available on Jetty's classpath.
+Here is an example of binding an http://activemq.apache.org[ActiveMQ] in-JVM connection factory:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+  <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>jms/connectionFactory</Arg>
+    <Arg>
+      <New class="org.apache.activemq.ActiveMQConnectionFactory">
+        <Arg>vm://localhost?broker.persistent=false</Arg>
+      </New>
+    </Arg>
+  </New>
+</Configure>
+----
+
+The entry in `web.xml` would be:
+
+[source, xml, subs="{sub-order}"]
+----
+<resource-ref>
+  <res-ref-name>jms/connectionFactory</res-ref-name>
+  <res-type>javax.jms.ConnectionFactory</res-type>
+  <res-auth>Container</res-auth>
+</resource-ref>
+----
+
+//TODO: put in an example of a QUEUE from progress demo
+
+[[configuring-mail-with-jndi]]
+==== Configuring Mail
+
+Jetty also provides infrastructure for access to `javax.mail.Sessions` from within an application:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+  <New id="mail" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid="wac"/></Arg>
+    <Arg>mail/Session</Arg>
+    <Arg>
+      <New class="org.eclipse.jetty.jndi.factories.MailSessionReference">
+        <Set name="user">fred</Set>
+        <Set name="password">OBF:1xmk1w261z0f1w1c1xmq</Set>
+        <Set name="properties">
+          <New class="java.util.Properties">
+            <Put name="mail.smtp.host">XXX</Put>
+            <Put name="mail.from">me@me</Put>
+            <Put name="mail.debug">true</Put>
+          </New>
+        </Set>
+      </New>
+    </Arg>
+  </New>
+</Configure>
+----
+
+This setup creates an instance of the `org.eclipse.jetty.jndi.factories.MailSessionReference` class, calls it's setter methods to set up the authentication for the mail system, and populates a set of Properties, setting them on the `MailSessionReference` instance.
+The result is that an application can look up `java:comp/env/mail/Session` at runtime and obtain access to a `javax.mail.Session` that has the necessary configuration to permit it to send email via SMTP.
+
+____
+[NOTE]
+As of Jetty 10, the link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.mail.glassfish/1.4.1.v201005082020/javax.mail.glassfish-1.4.1.v201005082020.jar[`javax.mail`] and  link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.activation/1.1.0.v201105071233/javax.activation-1.1.0.v201105071233.jar[`javax.activation`] jar files are not included in the Jetty Distribution and will need to be downloaded separately from Maven Central.
+____
+
+____
+[TIP]
+You can set the password to be plain text, or use Jetty's link:#configuring-security-secure-passwords[Secure Password Obfuscation] (OBF:) mechanism to make the config file a little more secure from prying eyes.
+Remember that you cannot use the other Jetty encryption mechanisms of MD5 and Crypt because they do not allow you to recover the original password, which the mail system requires.
+____
+
+[[configuring-xa-transactions]]
+==== Configuring XA Transactions
+
+If you want to perform distributed transactions with your resources, you need a _transaction manager_ that supports the JTA interfaces, and that you can look up as `java:comp/UserTransaction` in your webapp.
+Jetty does not ship with one as standard, but you can plug in the one you prefer.
+You can configure a transaction manager using the link:{JDURL}/org/eclipse/jetty/plus/jndi/Transaction.html[JNDI Transaction] object in a Jetty config file.
+The following example configures the http://www.atomikos.com/[Atomikos] transaction manager:
+
+[source, xml, subs="{sub-order}"]
+----
+<New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+  <Arg>
+    <New class="com.atomikos.icatch.jta.J2eeUserTransaction"/>
+  </Arg>
+</New>
+----
+
+[[configuring-links]]
+==== Configuring Links
+
+Generally, the name you set for your `Resource` should be the same name you use for it in `web.xml`.
+For example:
+
+In a context xml file:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+  <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid="wac"/></Arg>
+    <Arg>jdbc/mydatasource</Arg>
+    <Arg>
+      <New class="org.apache.derby.jdbc.EmbeddedDataSource">
+        <Set name="DatabaseName">test</Set>
+        <Set name="createDatabase">create</Set>
+      </New>
+    </Arg>
+  </New>
+</Configure>
+----
+
+In a `web.xml` file:
+
+[source, xml, subs="{sub-order}"]
+----
+<resource-ref>
+  <res-ref-name>jdbc/mydatasource</res-ref-name>
+  <res-type>javax.sql.DataSource</res-type>
+  <res-auth>Container</res-auth>
+  <injection-target>
+    <injection-target-class>com.acme.JNDITest</injection-target-class>
+    <injection-target-name>myDatasource</injection-target-name>
+  </injection-target>
+</resource-ref>
+----
+
+However, you can refer to it in `web.xml` by a different name, and link it to the name in your `org.eclipse.jetty.plus.jndi.Resource` by using an `org.eclipse.jetty.plus.jndi.Link`.
+For the example above, you can refer to the `jdbc/mydatasource` resource as `jdbc/mydatasource1` as follows:
+
+In a context xml file declare `jdbc/mydatasource`:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+  <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid="wac"/></Arg>
+    <Arg>jdbc/mydatasource</Arg>
+    <Arg>
+      <New class="org.apache.derby.jdbc.EmbeddedDataSource">
+        <Set name="DatabaseName">test</Set>
+        <Set name="createDatabase">create</Set>
+      </New>
+    </Arg>
+  </New>
+</Configure>
+----
+
+Then in a `WEB-INF/jetty-env.xml` file, link the name `jdbc/mydatasource` to the name you want to reference it as in
+`web.xml`, which in this case is `jdbc/mydatasource1`:
+
+[source, xml, subs="{sub-order}"]
+----
+<New id="map1" class="org.eclipse.jetty.plus.jndi.Link">
+  <Arg><Ref refid='wac'/></Arg>
+  <Arg>jdbc/mydatasource1</Arg> <!-- name in web.xml -->
+  <Arg>jdbc/mydatasource</Arg>  <!-- name in container environment -->
+</New>
+----
+
+Now you can refer to `jdbc/mydatasource1` in the `web.xml` like this:
+
+[source, xml, subs="{sub-order}"]
+----
+<resource-ref>
+  <res-ref-name>jdbc/mydatasource1</res-ref-name>
+  <res-type>javax.sql.DataSource</res-type>
+  <res-auth>Container</res-auth>
+  <injection-target>
+    <injection-target-class>com.acme.JNDITest</injection-target-class>
+    <injection-target-name>myDatasource</injection-target-name>
+  </injection-target>
+</resource-ref>
+----
+
+This can be useful when you cannot change a JNDI resource directly in the `web.xml` but need to link it to a specific resource in your deployment environment.

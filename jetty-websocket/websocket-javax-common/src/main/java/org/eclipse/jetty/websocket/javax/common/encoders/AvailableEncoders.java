@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.javax.common.encoders;
 
+import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -29,69 +25,27 @@ import java.util.stream.Collectors;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.InitException;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class AvailableEncoders implements Predicate<Class<?>>
+public class AvailableEncoders implements Predicate<Class<?>>, Closeable
 {
-    public static class RegisteredEncoder
-    {
-        public final Class<? extends Encoder> encoder;
-        public final Class<? extends Encoder> interfaceType;
-        public final Class<?> objectType;
-        public final boolean primitive;
-        public Encoder instance;
-
-        public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType)
-        {
-            this(encoder, interfaceType, objectType, false);
-        }
-
-        public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType, boolean primitive)
-        {
-            this.encoder = encoder;
-            this.interfaceType = interfaceType;
-            this.objectType = objectType;
-            this.primitive = primitive;
-        }
-
-        public boolean implementsInterface(Class<? extends Encoder> type)
-        {
-            return interfaceType.isAssignableFrom(type);
-        }
-
-        public boolean isType(Class<?> type)
-        {
-            return objectType.isAssignableFrom(type);
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder str = new StringBuilder();
-            str.append(AvailableEncoders.RegisteredEncoder.class.getSimpleName());
-            str.append('[').append(encoder.getName());
-            str.append(',').append(interfaceType.getName());
-            str.append(',').append(objectType.getName());
-            if (primitive)
-            {
-                str.append(",PRIMITIVE");
-            }
-            str.append(']');
-            return str.toString();
-        }
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(AvailableEncoders.class);
 
     private final EndpointConfig config;
-    private LinkedList<RegisteredEncoder> registeredEncoders;
+    private final WebSocketComponents components;
+    private final LinkedList<RegisteredEncoder> registeredEncoders;
 
-    public AvailableEncoders(EndpointConfig config)
+    public AvailableEncoders(EndpointConfig config, WebSocketComponents components)
     {
-        Objects.requireNonNull(config);
-        this.config = config;
-        registeredEncoders = new LinkedList<>();
+        this.config = Objects.requireNonNull(config);
+        this.components = Objects.requireNonNull(components);
+        this.registeredEncoders = new LinkedList<>();
 
         // TEXT based [via Class reference]
         registerPrimitive(BooleanEncoder.class, Encoder.Text.class, Boolean.class);
@@ -272,7 +226,7 @@ public class AvailableEncoders implements Predicate<Class<?>>
                 return registeredEncoder.instance;
             }
 
-            registeredEncoder.instance = registeredEncoder.encoder.getConstructor().newInstance();
+            registeredEncoder.instance = components.getObjectFactory().createInstance(registeredEncoder.encoder);
             registeredEncoder.instance.init(this.config);
             return registeredEncoder.instance;
         }
@@ -290,5 +244,11 @@ public class AvailableEncoders implements Predicate<Class<?>>
     public boolean test(Class<?> type)
     {
         return registeredEncoders.stream().anyMatch(registered -> registered.isType(type));
+    }
+
+    @Override
+    public void close()
+    {
+        registeredEncoders.forEach(RegisteredEncoder::destroyInstance);
     }
 }

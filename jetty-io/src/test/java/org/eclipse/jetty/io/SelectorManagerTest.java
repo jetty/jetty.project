@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,7 +22,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -35,7 +29,6 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,23 +53,21 @@ public class SelectorManagerTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testConnectTimeoutBeforeSuccessfulConnect() throws Exception
     {
         ServerSocketChannel server = ServerSocketChannel.open();
         server.bind(new InetSocketAddress("localhost", 0));
         SocketAddress address = server.getLocalAddress();
 
-        final AtomicLong timeoutConnection = new AtomicLong();
-        final long connectTimeout = 1000;
+        CountDownLatch connectionFinishedLatch = new CountDownLatch(1);
+        CountDownLatch failedConnectionLatch = new CountDownLatch(1);
+        long connectTimeout = 1000;
         SelectorManager selectorManager = new SelectorManager(executor, scheduler)
         {
             @Override
             protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
             {
-                SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
-                endPoint.setIdleTimeout(connectTimeout / 2);
-                return endPoint;
+                return new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
             }
 
             @Override
@@ -84,14 +75,16 @@ public class SelectorManagerTest
             {
                 try
                 {
-                    long timeout = timeoutConnection.get();
-                    if (timeout > 0)
-                        TimeUnit.MILLISECONDS.sleep(timeout);
+                    assertTrue(failedConnectionLatch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
                     return super.doFinishConnect(channel);
                 }
                 catch (InterruptedException e)
                 {
                     return false;
+                }
+                finally
+                {
+                    connectionFinishedLatch.countDown();
                 }
             }
 
@@ -121,40 +114,36 @@ public class SelectorManagerTest
         {
             SocketChannel client1 = SocketChannel.open();
             client1.configureBlocking(false);
-            client1.connect(address);
-            long timeout = connectTimeout * 2;
-            timeoutConnection.set(timeout);
-            final CountDownLatch latch1 = new CountDownLatch(1);
+            assertFalse(client1.connect(address));
             selectorManager.connect(client1, new Callback()
             {
                 @Override
                 public void failed(Throwable x)
                 {
-                    latch1.countDown();
+                    failedConnectionLatch.countDown();
                 }
             });
-            assertTrue(latch1.await(connectTimeout * 3, TimeUnit.MILLISECONDS));
+            assertTrue(failedConnectionLatch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
             assertFalse(client1.isOpen());
 
-            // Wait for the first connect to finish, as the selector thread is waiting in finishConnect().
-            Thread.sleep(timeout);
+            // Wait for the first connect to finish, as the selector thread is waiting in doFinishConnect().
+            assertTrue(connectionFinishedLatch.await(5, TimeUnit.SECONDS));
 
             // Verify that after the failure we can connect successfully.
             try (SocketChannel client2 = SocketChannel.open())
             {
                 client2.configureBlocking(false);
-                client2.connect(address);
-                timeoutConnection.set(0);
-                final CountDownLatch latch2 = new CountDownLatch(1);
+                assertFalse(client2.connect(address));
+                CountDownLatch successfulConnectionLatch = new CountDownLatch(1);
                 selectorManager.connect(client2, new Callback()
                 {
                     @Override
                     public void succeeded()
                     {
-                        latch2.countDown();
+                        successfulConnectionLatch.countDown();
                     }
                 });
-                assertTrue(latch2.await(connectTimeout * 5, TimeUnit.MILLISECONDS));
+                assertTrue(successfulConnectionLatch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
                 assertTrue(client2.isOpen());
             }
         }

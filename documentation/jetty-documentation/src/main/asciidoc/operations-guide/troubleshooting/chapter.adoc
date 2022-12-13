@@ -1,0 +1,38 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-troubleshooting]]
+=== Troubleshooting
+
+To troubleshoot Jetty when used as a production server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
+
+Jetty is based on components organized as a tree, with the `Server` instance at the root of the tree.
+
+As explained in the xref:og-jmx[JMX section], these components can be exported as JMX MBeans and therefore be accessible from JMX Consoles such as Java Missions Control (JMC).
+
+Being able to take a snapshot of the state of Jetty while it is running is the most useful information that can be attached when reporting an issue.
+Such state includes:
+
+* The thread pool configuration and its current state, including how many threads are in use, and their stack trace.
+* The TLS configuration.
+* The I/O configuration and its current state, including the ports Jetty listens to, how many connections are currently open, and he state of each connection, and the state of the request/response handling for each connection.
+* The `Handler` structure and its configuration.
+* The web applications deployed and their configurations, including the class loader information.
+
+The prerequisite for troubleshooting is to enable JMX, so that Jetty -- possibly a production server -- can be accessed from a remote location to obtain the information exported via JMX, and possibly be able to reconfigure Jetty to solve the issue.
+
+IMPORTANT: Make sure you read about how to secure the access to Jetty when using xref:og-jmx-remote[remote JMX].
+
+include::troubleshooting-dump.adoc[]
+include::troubleshooting-logging.adoc[]
+include::troubleshooting-debugging.adoc[]

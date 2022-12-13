@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -24,10 +19,8 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -36,71 +29,53 @@ import org.eclipse.jetty.plus.security.DataSourceLoginService;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mariadb.jdbc.MariaDbDataSource;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * DataSourceLoginServiceTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class DataSourceLoginServiceTest
 {
-
-    public static final String _content = "This is some protected content";
-    private static File _docRoot;
-    private static HttpClient _client;
-    private static String __realm = "DSRealm";
-    private static URI _baseUri;
-    private static DatabaseLoginServiceTestServer _testServer;
-
+    private static final String _content = "This is some protected content";
+    private static String REALM_NAME = "DSRealm";
+    private static File __docRoot;
+    private static URI __baseUri;
+    private static DatabaseLoginServiceTestServer __testServer;
+    private AuthenticationStore _authStore;
+    private HttpClient _client;
+    
     @BeforeAll
     public static void setUp() throws Exception
     {
+        __docRoot = MavenTestingUtils.getTargetTestingDir("dsloginservice-test");
+        FS.ensureDirExists(__docRoot);
 
-        _docRoot = MavenTestingUtils.getTargetTestingDir("loginservice-test");
-        FS.ensureDirExists(_docRoot);
-
-        File content = new File(_docRoot, "input.txt");
-        FileOutputStream out = new FileOutputStream(content);
-        out.write(_content.getBytes("utf-8"));
-        out.close();
-
-        //clear previous runs
-        File scriptFile = MavenTestingUtils.getTestResourceFile("droptables.sql");
-        int result = DatabaseLoginServiceTestServer.runscript(scriptFile);
-        //ignore result as derby spits errors for dropping tables that dont exist
-
-        //create afresh
-        scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
-        result = DatabaseLoginServiceTestServer.runscript(scriptFile);
-        assertThat("runScript result", result, is(0));
-
-        _testServer = new DatabaseLoginServiceTestServer();
-        _testServer.setResourceBase(_docRoot.getAbsolutePath());
-        _testServer.setLoginService(configureLoginService());
-        _testServer.start();
-        _baseUri = _testServer.getBaseUri();
-    }
-
-    @AfterAll
-    public static void tearDown()
-        throws Exception
-    {
-        if (_testServer != null)
+        File content = new File(__docRoot, "input.txt");
+        try (FileOutputStream out = new FileOutputStream(content))
         {
-            _testServer.stop();
-            _testServer = null;
+            out.write(_content.getBytes("utf-8"));
         }
-    }
 
-    public static DataSourceLoginService configureLoginService() throws Exception
-    {
+        //create a datasource and bind to jndi
+        MariaDbDataSource ds = new MariaDbDataSource();
+        ds.setUser(DatabaseLoginServiceTestServer.MARIA_DB_USER);
+        ds.setPassword(DatabaseLoginServiceTestServer.MARIA_DB_PASSWORD);
+        ds.setUrl(DatabaseLoginServiceTestServer.MARIA_DB_FULL_URL);
+        org.eclipse.jetty.plus.jndi.Resource binding = 
+            new org.eclipse.jetty.plus.jndi.Resource(null, "dstest", ds);
+        
+        __testServer = new DatabaseLoginServiceTestServer();
+        
         DataSourceLoginService loginService = new DataSourceLoginService();
         loginService.setUserTableName("users");
         loginService.setUserTableKey("id");
@@ -113,18 +88,41 @@ public class DataSourceLoginServiceTest
         loginService.setUserRoleTableRoleKey("role_id");
         loginService.setUserRoleTableUserKey("user_id");
         loginService.setJndiName("dstest");
-        loginService.setName(__realm);
-        if (_testServer != null)
-            loginService.setServer(_testServer.getServer());
+        loginService.setName(REALM_NAME);
+        loginService.setServer(__testServer.getServer());
+        
+        __testServer.setResourceBase(__docRoot.getAbsolutePath()); 
+        __testServer.setLoginService(loginService);
+        __testServer.start();
+        __baseUri = __testServer.getBaseUri();
+    }
 
-        //create a datasource
-        EmbeddedDataSource ds = new EmbeddedDataSource();
-        File db = new File(DatabaseLoginServiceTestServer.getDbRoot(), "loginservice");
-        ds.setDatabaseName(db.getAbsolutePath());
-        org.eclipse.jetty.plus.jndi.Resource binding = new org.eclipse.jetty.plus.jndi.Resource(null, "dstest",
-            ds);
-        assertThat("Created binding for dstest", binding, notNullValue());
-        return loginService;
+    @AfterAll
+    public static void tearDown()
+        throws Exception
+    {
+        if (__testServer != null)
+        {
+            __testServer.stop();
+            __testServer = null;
+        }
+    }
+
+    @BeforeEach
+    public void setupClient() throws Exception
+    {
+        _client = new HttpClient();
+        _authStore = _client.getAuthenticationStore();
+    }
+    
+    @AfterEach
+    public void stopClient() throws Exception
+    {
+        if (_client != null)
+        {
+            _client.stop();
+            _client = null;
+        }
     }
 
     @Test
@@ -132,58 +130,40 @@ public class DataSourceLoginServiceTest
     {
         try
         {
-            startClient("jetty", "jetty");
-
-            ContentResponse response = _client.GET(_baseUri.resolve("input.txt"));
+            _authStore.addAuthentication(new BasicAuthentication(__baseUri, REALM_NAME, "dstest", "dstest"));
+            _client.start();
+            ContentResponse response = _client.GET(__baseUri.resolve("input.txt"));
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals(_content, response.getContentAsString());
 
             stopClient();
 
-            String newpwd = String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+            String newpwd = String.valueOf(NanoTime.now());
 
-            changePassword("jetty", newpwd);
+            changePassword("dstest", newpwd);
 
-            startClient("jetty", newpwd);
+            setupClient();
+            _authStore.addAuthentication(new BasicAuthentication(__baseUri, REALM_NAME, "dstest", newpwd));
+            _client.start();
 
-            response = _client.GET(_baseUri.resolve("input.txt"));
+            response = _client.GET(__baseUri.resolve("input.txt"));
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals(_content, response.getContentAsString());
         }
         finally
         {
-            stopClient();
+            changePassword("dstest", "dstest");
         }
     }
 
     protected void changePassword(String user, String newpwd) throws Exception
     {
-        Loader.loadClass("org.apache.derby.jdbc.EmbeddedDriver").getDeclaredConstructor().newInstance();
-        try (Connection connection = DriverManager.getConnection(DatabaseLoginServiceTestServer.__dbURL, "", "");
+        Loader.loadClass(DatabaseLoginServiceTestServer.MARIA_DB_DRIVER_CLASS);
+        try (Connection connection = DriverManager.getConnection(DatabaseLoginServiceTestServer.MARIA_DB_FULL_URL);
              Statement stmt = connection.createStatement())
         {
             connection.setAutoCommit(true);
             stmt.executeUpdate("update users set pwd='" + newpwd + "' where username='" + user + "'");
-        }
-    }
-
-    protected void startClient(String user, String pwd) throws Exception
-    {
-        _client = new HttpClient();
-        QueuedThreadPool executor = new QueuedThreadPool();
-        executor.setName(executor.getName() + "-client");
-        _client.setExecutor(executor);
-        AuthenticationStore authStore = _client.getAuthenticationStore();
-        authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, user, pwd));
-        _client.start();
-    }
-
-    protected void stopClient() throws Exception
-    {
-        if (_client != null)
-        {
-            _client.stop();
-            _client = null;
         }
     }
 }

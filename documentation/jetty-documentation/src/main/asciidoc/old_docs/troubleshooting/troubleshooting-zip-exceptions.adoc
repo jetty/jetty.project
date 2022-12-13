@@ -1,0 +1,39 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[troubleshooting-zip-exceptions]]
+=== Troubleshooting Zip Exceptions
+
+A Zip exception occurs when Jetty rereads a Jar or WAR file.
+
+The JVM maintains a cache of zip file indexes, and does not support hot replacement of zip files.
+Thus if you redeploy a web application using the same WAR or Jar files, exceptions occur when Jetty rereads the jars.
+See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4774421[Oracle Bug 4774421] for more information.
+
+[[remedy]]
+==== Remedy
+
+The remedy is to avoid hot replacing Jar or WAR files, which can be difficult if you are using the
+link:#configuring-specific-webapp-deployment[Webapp Provider].
+You can use the following techniques to reduce exposure to this issue:
+
+* Deploy unpacked classes in the `WEB-INF/classes` directory rather than as a Jar file under `WEB-INF/lib`.
+* Deploy all WAR and Jar files with a version number in their filename or path.
+If the code changes, a new version number applies, avoiding the cache problem.
+* Deploy a packed WAR file with the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setExtractWAR(boolean)[setExtractWAR] option set to true.
+This causes the WAR to be extracted to a link:#ref-temporary-directories[temporary directory] and thus to a new location.
+This might not be sufficient if you want to hot-replace and re-extract the WAR, so you might also need to use link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setCopyWebInf(boolean)[WebAppContext.setCopyWebInf(true)], which (re)copies just the WEB-INF directory to a different location.
+* Deploy an unpacked WAR file with the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setCopyWebDir(boolean)[setCopyWebDir] option set to true.
+This causes the directory to be extracted to a new location.
+
+If you have problems with link:#troubleshooting-locked-files-on-windows[Windows file-locking] preventing static file editing (such as JSP or HTML), use the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setCopyWebDir(boolean)[WebAppContext .setCopyWebDir(true)] option.

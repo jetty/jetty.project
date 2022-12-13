@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,6 +21,7 @@ import java.util.function.Predicate;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.api.Connection;
@@ -41,9 +37,13 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.http3.client.http.internal.HttpChannelOverHTTP3;
+import org.eclipse.jetty.http3.client.http.internal.HttpConnectionOverHTTP3;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -128,7 +128,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                 return new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
-                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
                     {
                         return new HttpConnectionOverHTTP(endPoint, context)
                         {
@@ -178,6 +178,35 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                     }
                 };
             }
+            case H3:
+            {
+                HTTP3Client http3Client = new HTTP3Client();
+                http3Client.getClientConnector().setSelectors(1);
+                http3Client.getClientConnector().setSslContextFactory(scenario.newClientSslContextFactory());
+                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+                return new HttpClientTransportOverHTTP3(http3Client)
+                {
+                    @Override
+                    protected HttpConnection newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+                    {
+                        return new HttpConnectionOverHTTP3(destination, session)
+                        {
+                            @Override
+                            protected HttpChannelOverHTTP3 newHttpChannel()
+                            {
+                                return new HttpChannelOverHTTP3(getHttpDestination(), this, getSession())
+                                {
+                                    @Override
+                                    public boolean associate(HttpExchange exchange)
+                                    {
+                                        return code.test(exchange) && super.associate(exchange);
+                                    }
+                                };
+                            }
+                        };
+                    }
+                };
+            }
             case FCGI:
             {
                 ClientConnector clientConnector = new ClientConnector();
@@ -206,9 +235,12 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                     }
                 };
             }
-            case UNIX_SOCKET:
+            case UNIX_DOMAIN:
             {
-                return new HttpClientTransportOverUnixSockets(scenario.sockFile.toString())
+                ClientConnector clientConnector = ClientConnector.forUnixDomain(scenario.unixDomainPath);
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
+                return new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
                     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)

@@ -1,0 +1,22 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[quick-start-getting-started]]
+== Using Jetty
+
+You can use Jetty in many different ways ranging from embedding Jetty in applications, launching it from different build systems, from different JVM-based languages, or as a standalone distribution.
+This guide covers the latter, a standalone distribution suitable for deploying web applications.
+
+include::jetty-installing.adoc[]
+include::jetty-running.adoc[]
+include::jetty-common-configuration.adoc[]

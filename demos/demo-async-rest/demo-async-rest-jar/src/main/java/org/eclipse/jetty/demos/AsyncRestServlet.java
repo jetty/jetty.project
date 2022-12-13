@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -36,6 +31,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -77,7 +73,7 @@ public class AsyncRestServlet extends AbstractRestServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        long start = System.nanoTime();
+        long start = NanoTime.now();
 
         // Do we have results yet?
         @SuppressWarnings("unchecked")
@@ -124,7 +120,7 @@ public class AsyncRestServlet extends AbstractRestServlet
 
             // save timing info and return
             request.setAttribute(START_ATTR, start);
-            request.setAttribute(DURATION_ATTR, System.nanoTime() - start);
+            request.setAttribute(DURATION_ATTR, NanoTime.since(start));
 
             return;
         }
@@ -143,9 +139,9 @@ public class AsyncRestServlet extends AbstractRestServlet
         long initial = (Long)request.getAttribute(DURATION_ATTR);
         long start0 = (Long)request.getAttribute(START_ATTR);
 
-        long now = System.nanoTime();
-        long total = now - start0;
-        long generate = now - start;
+        long now = NanoTime.now();
+        long total = NanoTime.elapsed(start0, now);
+        long generate = NanoTime.elapsed(start, now);
         long thread = initial + generate;
 
         out.print("<b>Asynchronous: " + sanitize(request.getParameter(ITEMS_PARAM)) + "</b><br/>");

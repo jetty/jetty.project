@@ -1,0 +1,62 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-http-handler]]
+==== Server Handlers
+
+An `org.eclipse.jetty.server.Handler` is the component that processes incoming HTTP requests and eventually produces HTTP responses.
+
+``Handler``s can be organized in different ways:
+
+* in a sequence, where ``Handler``s are invoked one after the other
+** `HandlerCollection` invokes _all_ ``Handler``s one after the other
+** `HandlerList` invokes ``Handlers``s until one calls `Request.setHandled(true)` to indicate that the request has been handled and no further `Handler` should be invoked
+* nested, where one `Handler` invokes the next, nested, `Handler`
+** `HandlerWrapper` implements this behavior
+
+The `HandlerCollection` behavior (invoking _all_ handlers) is useful when for example the last `Handler` is a logging `Handler` that logs the request (that may have been modified by previous handlers).
+
+The `HandlerList` behavior (invoking handlers up to the first that calls `Request.setHandled(true)`) is useful when each handler processes a different URIs or a different virtual hosts: ``Handler``s are invoked one after the other until one matches the URI or virtual host.
+
+The nested behavior is useful to enrich the request with additional services such as HTTP session support (`SessionHandler`), or with specific behaviors dictated by the Servlet specification (`ServletHandler`).
+
+``Handler``s can be organized in a tree by composing them together:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerTree]
+----
+
+The corresponding `Handler` tree structure looks like the following:
+
+[source,screen]
+----
+HandlerCollection
+├── HandlerList
+│   ├── App1Handler
+│   └── HandlerWrapper
+│       └── App2Handler
+└── LoggingHandler
+----
+
+Server applications should rarely write custom ``Handler``s, preferring instead to use existing ``Handler``s provided by the Jetty Server Libraries for managing web application contexts, security, HTTP sessions and Servlet support.
+Refer to xref:pg-server-http-handler-use[this section] for more information about how to use the ``Handler``s provided by the Jetty Server Libraries.
+
+However, in some cases the additional features are not required, or additional constraints on memory footprint, or performance, or just simplicity must be met.
+In these cases, implementing your own `Handler` may be a better solution.
+Refer to xref:pg-server-http-handler-implement[this section] for more information about how to write your own ``Handler``s.
+
+// TODO: document ScopedHandler? Is this really necessary or just an implementation detail that application will never worry about?
+
+include::server-http-handler-use.adoc[]
+include::server-http-handler-implement.adoc[]

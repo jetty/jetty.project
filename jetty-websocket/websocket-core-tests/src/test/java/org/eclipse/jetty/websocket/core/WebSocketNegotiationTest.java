@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -42,7 +37,7 @@ import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,10 +76,10 @@ public class WebSocketNegotiationTest extends WebSocketTester
     @BeforeEach
     public void startup() throws Exception
     {
-        WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator(components, null)
+        WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator()
         {
             @Override
-            public FrameHandler negotiate(Negotiation negotiation) throws IOException
+            public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
             {
                 if (negotiation.getOfferedSubprotocols().isEmpty())
                 {
@@ -127,7 +122,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
             }
         };
 
-        server = new WebSocketServer(negotiator);
+        server = new WebSocketServer(components, negotiator, false);
         client = new WebSocketCoreClient(null, components);
 
         server.start();
@@ -337,7 +332,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         // RFC6455: If the server does not agree to any of the client's requested subprotocols, the only acceptable
         // value is null. It MUST NOT send back a |Sec-WebSocket-Protocol| header field in its response.
         HttpFields httpFields = headers.get();
-        assertThat(httpFields.get(HttpHeader.UPGRADE), is("WebSocket"));
+        assertThat(httpFields.get(HttpHeader.UPGRADE), is("websocket"));
         assertNull(httpFields.get(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL));
     }
 

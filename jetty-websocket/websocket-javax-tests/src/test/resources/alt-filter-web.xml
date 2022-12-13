@@ -12,12 +12,12 @@
   </context-param>
 
   <filter>
-    <filter-name>wsuf-test</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-class>
+    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
   </filter>
 
   <filter-mapping>
-    <filter-name>wsuf-test</filter-name>
+    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
     <url-pattern>/echo/*</url-pattern>
   </filter-mapping>
 </web-app>

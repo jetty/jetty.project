@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -65,18 +61,12 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             settings = Collections.emptyMap();
         SettingsFrame settingsFrame = new SettingsFrame(settings, false);
 
-        WindowUpdateFrame windowFrame = null;
         int sessionWindow = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        updateRecvWindow(sessionWindow);
         if (sessionWindow > 0)
-        {
-            updateRecvWindow(sessionWindow);
-            windowFrame = new WindowUpdateFrame(0, sessionWindow);
-        }
-
-        if (windowFrame == null)
-            frames(null, List.of(settingsFrame), Callback.NOOP);
+            frames(null, List.of(settingsFrame, new WindowUpdateFrame(0, sessionWindow)), Callback.NOOP);
         else
-            frames(null, List.of(settingsFrame, windowFrame), Callback.NOOP);
+            frames(null, List.of(settingsFrame), Callback.NOOP);
     }
 
     @Override
@@ -105,31 +95,26 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 }
                 else
                 {
-                    if (isClosed())
+                    stream = createRemoteStream(streamId, (MetaData.Request)metaData);
+                    if (stream != null)
                     {
-                        updateLastRemoteStreamId(streamId);
-                        reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
-                    }
-                    else
-                    {
-                        stream = createRemoteStream(streamId, (MetaData.Request)metaData);
-                        if (stream != null)
+                        onStreamOpened(stream);
+
+                        if (metaData instanceof MetaData.ConnectRequest)
                         {
-                            onStreamOpened(stream);
-
-                            if (metaData instanceof MetaData.ConnectRequest)
+                            if (!isConnectProtocolEnabled() && ((MetaData.ConnectRequest)metaData).getProtocol() != null)
                             {
-                                if (!isConnectProtocolEnabled() && ((MetaData.ConnectRequest)metaData).getProtocol() != null)
-                                {
-                                    stream.reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
-                                    return;
-                                }
+                                stream.reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
+                                return;
                             }
-
-                            stream.process(frame, Callback.NOOP);
-                            Stream.Listener listener = notifyNewStream(stream, frame);
-                            stream.setListener(listener);
                         }
+
+                        stream.process(frame, Callback.NOOP);
+                        boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                        Stream.Listener listener = notifyNewStream(stream, frame);
+                        stream.setListener(listener);
+                        if (closed)
+                            removeStream(stream);
                     }
                 }
             }
@@ -148,7 +133,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             if (stream != null)
             {
                 stream.process(frame, Callback.NOOP);
+                boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(stream, frame);
+                if (closed)
+                    removeStream(stream);
             }
             else
             {

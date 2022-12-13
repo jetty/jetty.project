@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,11 +13,14 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
 
 /**
  * ContainerInitializerAnnotationHandler
@@ -34,12 +32,22 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 public class ContainerInitializerAnnotationHandler extends AbstractHandler
 {
     final ContainerInitializer _initializer;
-    final Class _annotation;
+    final ServletContainerInitializerHolder _holder;
+    final Class<?> _annotation;
 
-    public ContainerInitializerAnnotationHandler(ContainerInitializer initializer, Class annotation)
+    @Deprecated
+    public ContainerInitializerAnnotationHandler(ContainerInitializer initializer, Class<?> annotation)
     {
+        _holder = null;
+        _annotation = Objects.requireNonNull(annotation);
         _initializer = initializer;
-        _annotation = annotation;
+    }
+    
+    public ContainerInitializerAnnotationHandler(ServletContainerInitializerHolder holder, Class<?> annotation)
+    {
+        _holder = Objects.requireNonNull(holder);
+        _annotation = Objects.requireNonNull(annotation);
+        _initializer = null;
     }
 
     /**
@@ -50,10 +58,13 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     @Override
     public void handle(ClassInfo info, String annotationName)
     {
-        if (annotationName == null || !_annotation.getName().equals(annotationName))
+        if (!_annotation.getName().equals(annotationName))
             return;
 
-        _initializer.addAnnotatedTypeName(info.getClassName());
+        if (_initializer != null)
+            _initializer.addAnnotatedTypeName(info.getClassName());
+        else
+            _holder.addStartupClasses(info.getClassName());
     }
 
     /**
@@ -64,9 +75,13 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     @Override
     public void handle(FieldInfo info, String annotationName)
     {
-        if (annotationName == null || !_annotation.getName().equals(annotationName))
+        if (!_annotation.getName().equals(annotationName))
             return;
-        _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
+
+        if (_initializer != null)
+            _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
+        else
+            _holder.addStartupClasses(info.getClassInfo().getClassName());
     }
 
     /**
@@ -77,11 +92,15 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     @Override
     public void handle(MethodInfo info, String annotationName)
     {
-        if (annotationName == null || !_annotation.getName().equals(annotationName))
+        if (!_annotation.getName().equals(annotationName))
             return;
-        _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
+        if (_initializer != null)
+            _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
+        else
+            _holder.addStartupClasses(info.getClassInfo().getClassName());
     }
 
+    @Deprecated
     public ContainerInitializer getContainerInitializer()
     {
         return _initializer;

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -151,7 +146,9 @@ public class UrlEncoded
      * @param content the string containing the encoded parameters
      * @param map the MultiMap to put parsed query parameters into
      * @param charset the charset to use for decoding
+     * @deprecated use {@link #decodeTo(String, MultiMap, Charset)} instead
      */
+    @Deprecated(since = "10", forRemoval = true)
     public static void decodeTo(String content, MultiMap<String> map, String charset)
     {
         decodeTo(content, map, charset == null ? null : Charset.forName(charset));
@@ -506,7 +503,9 @@ public class UrlEncoded
      * @param maxLength the maximum length of the form to decode or -1 for no limit
      * @param maxKeys the maximum number of keys to decode or -1 for no limit
      * @throws IOException if unable to decode the input stream
+     * @deprecated use {@link #decodeTo(InputStream, MultiMap, Charset, int, int)} instead
      */
+    @Deprecated(since = "10", forRemoval = true)
     public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
         throws IOException
     {

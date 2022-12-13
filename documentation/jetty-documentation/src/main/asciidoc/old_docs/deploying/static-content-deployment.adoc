@@ -1,0 +1,36 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[static-content-deployment]]
+=== Configuring Static Content Deployment
+
+To serve purely static content, the Jetty Deployment Descriptor XML concepts and the internal `ResourceHandler` can be used.
+Create a file called `scratch.xml` in the `${jetty.base}/webapps` directory and paste the following file contents in it.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <Set name="contextPath">/scratch</Set>
+  <Set name="handler">
+    <New class="org.eclipse.jetty.server.handler.ResourceHandler">
+      <Set name="resourceBase">/home/scratch</Set>
+      <Set name="directoriesListed">true</Set>
+    </New>
+  </Set>
+</Configure>
+----
+
+This is a very basic setup for serving static files.
+For advanced static file serving, use the link:{JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html[DefaultServlet].

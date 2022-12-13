@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-runner</artifactId>
@@ -11,6 +11,8 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
+    <!-- too many external dependencies to fix... :) -->
+    <spotbugs.skip>true</spotbugs.skip>
   </properties>
 
   <build>
@@ -27,11 +29,34 @@
             </goals>
             <configuration>
               <includes>**</includes>
-              <excludes>**/MANIFEST.MF,META-INF/*.RSA,META-INF/*.DSA,META-INF/*.SF,module-info.class</excludes>
+              <excludes>
+                **/MANIFEST.MF,
+                META-INF/LICENSE,
+                META-INF/*.RSA,
+                META-INF/*.DSA,
+                META-INF/*.SF,
+                module-info.class,
+                readme.txt,
+                MANIFEST.MF,
+                about.html,
+                ecj.1
+              </excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
+              <includeScope>compile</includeScope>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
@@ -50,8 +75,12 @@
           </execution>
         </executions>
         <configuration>
+          <debug>${it.debug}</debug>
+          <addTestClassPath>true</addTestClassPath>
           <scriptVariables>
             <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
+            <hamcrest.version>${hamcrest.version}</hamcrest.version>
           </scriptVariables>
           <goals>
             <goal>clean</goal>
@@ -61,14 +90,6 @@
     </plugins>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <configuration>
-            <!-- Clirr fails with "org.apache.tools.ant.Task not found" on this project -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
@@ -84,10 +105,12 @@
           <artifactId>maven-jar-plugin</artifactId>
           <configuration>
             <archive>
-              <manifestFile>src/main/resources/MANIFEST.MF</manifestFile>
               <manifest>
                 <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
               </manifest>
+              <manifestEntries>
+                <Comment>Jetty Runner</Comment>
+              </manifestEntries>
             </archive>
           </configuration>
         </plugin>
@@ -99,37 +122,30 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaas</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>apache-jsp</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>apache-jstl</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -139,6 +155,17 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>demo-simple-webapp</artifactId>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

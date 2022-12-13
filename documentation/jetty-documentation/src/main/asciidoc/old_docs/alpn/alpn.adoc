@@ -1,0 +1,100 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[alpn]]
+=== Introducing ALPN
+
+Application Layer Protocol Negotiation (ALPN) is a TLS extension that allows client and server to negotiate the application protocol that they will use to communicate within the encryption provided by TLS.
+
+Any protocol can be negotiated by ALPN within a TLS connection; the protocols that are most commonly negotiated are HTTP/2 and HTTP/1.1.
+
+Browsers only support HTTP/2 over TLS by negotiating the HTTP/2 protocol via ALPN.
+You need to configure the server to support TLS and ALPN if you want browsers to use
+the HTTP/2 protocol, otherwise they will default to HTTP/1.1.
+
+In the Jetty project, ALPN is _used_ in two artifacts: `jetty-alpn-client` and `jetty-alpn-server`, respectively for the client and for the server.
+
+When using Jetty as a standalone server via the Jetty distribution, the `jetty-alpn-server` artifact is automatically included in the server classpath by the Jetty module system.
+
+When using Jetty embedded, the `jetty-alpn-client` and `jetty-alpn-server` artifacts must be included in the classpath, respectively for client and server use cases.
+
+The ALPN implementation is _provided_ to these two artifacts with the following three options:
+
+* For JDK 8 or later, a provider based on the link:#conscrypt[Conscrypt security provider]
+** Works with JDK 8 or later and provides improved performance
+** Binds to the OpenSSL native library shipped by Conscrypt and is therefore only available on the platforms supported by Conscrypt
+* For JDK 9 or later, a provider based on the ALPN APIs present in the JDK
+** Works with JDK 9 or later, pure Java implementation
+** Lower performance than Conscrypt
+
+The first, although hosted under the umbrella of the Jetty project, is independent of Jetty (the Servlet Container); you can use it in any other Java network server.
+
+Each provider above provides an ALPN _service_ implementation; Jetty uses the `ServiceLoader` mechanism to load these service implementations.
+At least one valid provider must be present in the server classpath.
+For example, using JDK 8 with the JDK 9 ALPN provider is an _invalid_ combination.
+The absence of valid implementations is an error at startup (see also the link:#alpn-troubleshooting[troubleshooting section]).
+
+There may be multiple ALPN service providers in the server classpath.
+When a new connection is created, an `SSLEngine` instance is associated to it; each `SSLEngine` is passed all service implementations, until one accepts it.
+
+It is therefore possible to have multiple providers active at the same time, for example the JDK 9 provider and the Conscrypt provider, and at runtime the correct one will be chosen by the Jetty runtime.
+
+[[alpn-conscrypt]]
+==== ALPN and Conscrypt
+
+When using JDK 8 or later, you can use the https://conscrypt.org/[Conscrypt] security provider to provide the ALPN service implementation.
+
+Conscrypt binds natively to BoringSSL (a fork of OpenSSL by Google), so ALPN will be supported via the support provided by BoringSSL (bundled together with Conscrypt).
+
+When using Jetty as a standalone server via the Jetty distribution, ALPN is enabled by enabling the `conscrypt` module.
+
+When using Jetty embedded, ALPN is enabled by the `jetty-alpn-conscrypt-client` and `jetty-alpn-conscrypt-server` artifacts, respectively for client usage and server usage.
+In addition, you also need the Conscrypt artifacts, typically the `org.conscrypt:conscrypt-openjdk-uber` artifact.
+All these artifacts must be added to the classpath.
+
+[[alpn-jdk9]]
+==== ALPN and JDK 9
+
+When using JDK 9 or later and Jetty as a standalone server via the Jetty distribution, ALPN support is automatically enabled when the `http2` module is enabled.
+This enables transitively the `alpn-9` module which puts the `jetty-alpn-java-server` artifact in the server classpath, providing the ALPN JDK 9 service implementation.
+
+When using JDK 9 or later and Jetty embedded, the ALPN service implementation is provided by the `jetty-alpn-java-client` and `jetty-alpn-java-server` artifacts, respectively for client usage and server usage, and must be added to the classpath.
+
+[[alpn-osgi]]
+===== Starting in OSGi
+
+To use ALPN in an OSGi environment, in addition to what described above, you will also need to deploy the `jetty-osgi-alpn` jar.
+This jar contains a `Fragment-Host` directive that ensures the ALPN classes will be available from the system bundle.
+
+You can download the https://repo1.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-alpn/[jetty-osgi-alpn jar] from Maven Central.
+
+____
+[NOTE]
+OSGi *requires* a `ServiceLoader` implementation for Jetty to function properly.
+OSGi leverages http://aries.apache.org/modules/spi-fly.html[Apache Aries SPI Fly] for this functionality.
+You can read more about OSGi and `ServiceLoader` http://blog.osgi.org/2013/02/javautilserviceloader-in-osgi.html[here.]
+____
+
+[[alpn-troubleshooting]]
+==== ALPN Troubleshooting
+
+When starting the Jetty server, especially when using Jetty embedded, it may be possible that you see an error similar to this:
+
+[source, plain, subs="{sub-order}"]
+----
+IllegalStateException: no ALPN processor
+----
+
+The error means that you don't have the ALPN dependencies setup correctly in your classpath.
+
+For example, you do not have the `jetty-alpn-java-server` artifact in the classpath.

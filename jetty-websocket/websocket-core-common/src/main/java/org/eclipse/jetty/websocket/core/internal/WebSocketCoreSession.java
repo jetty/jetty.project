@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -48,11 +43,10 @@ import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
-import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
+import org.eclipse.jetty.websocket.core.internal.util.FrameValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +67,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private final Negotiated negotiated;
     private final boolean demanding;
     private final Flusher flusher = new Flusher(this);
+    private final ExtensionStack extensionStack;
 
     private int maxOutgoingFrames = -1;
     private final AtomicInteger numOutgoingFrames = new AtomicInteger();
@@ -86,15 +81,28 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
+    private ClassLoader classLoader;
 
     public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
     {
+        this.classLoader = Thread.currentThread().getContextClassLoader();
         this.components = components;
         this.handler = handler;
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+        extensionStack = negotiated.getExtensions();
+        extensionStack.initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+    }
+
+    public ClassLoader getClassLoader()
+    {
+        return classLoader;
+    }
+
+    public void setClassLoader(ClassLoader classLoader)
+    {
+        this.classLoader = classLoader;
     }
 
     /**
@@ -103,7 +111,16 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
      */
     protected void handle(Runnable runnable)
     {
-        runnable.run();
+        ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
+        try
+        {
+            Thread.currentThread().setContextClassLoader(classLoader);
+            runnable.run();
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldClassLoader);
+        }
     }
 
     /**
@@ -112,106 +129,6 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public boolean isDemanding()
     {
         return demanding;
-    }
-
-    public void assertValidIncoming(Frame frame)
-    {
-        assertValidFrame(frame);
-
-        // Validate frame size.
-        if (maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
-
-        // Assert Incoming Frame Behavior Required by RFC-6455 / Section 5.1
-        switch (behavior)
-        {
-            case SERVER:
-                if (!frame.isMasked())
-                    throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
-                break;
-
-            case CLIENT:
-                if (frame.isMasked())
-                    throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
-                break;
-
-            default:
-                throw new IllegalStateException(behavior.toString());
-        }
-
-        /*
-         * RFC 6455 Section 5.5.1
-         * close frame payload is specially formatted which is checked in CloseStatus
-         */
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            if (!(frame instanceof ParsedFrame)) // already check in parser
-                CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
-        }
-    }
-
-    public void assertValidOutgoing(Frame frame) throws CloseException
-    {
-        assertValidFrame(frame);
-
-        // Validate frame size (allowed to be over max frame size if autoFragment is true).
-        if (!autoFragment && maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
-
-        /*
-         * RFC 6455 Section 5.5.1
-         * close frame payload is specially formatted which is checked in CloseStatus
-         */
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            if (!(frame instanceof ParsedFrame)) // already check in parser
-            {
-                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                if (!CloseStatus.isTransmittableStatusCode(closeStatus.getCode()) && (closeStatus.getCode() != CloseStatus.NO_CODE))
-                {
-                    throw new ProtocolException("Frame has non-transmittable status code");
-                }
-            }
-        }
-    }
-
-    public void assertValidFrame(Frame frame)
-    {
-        if (!OpCode.isKnown(frame.getOpCode()))
-            throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
-
-        int payloadLength = frame.getPayloadLength();
-        if (frame.isControlFrame())
-        {
-            if (!frame.isFin())
-                throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(frame.getOpCode()) + "]");
-
-            if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
-                throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
-
-            if (frame.isRsv1())
-                throw new ProtocolException("Cannot have RSV1==true on Control frames");
-            if (frame.isRsv2())
-                throw new ProtocolException("Cannot have RSV2==true on Control frames");
-            if (frame.isRsv3())
-                throw new ProtocolException("Cannot have RSV3==true on Control frames");
-        }
-        else
-        {
-            /*
-             * RFC 6455 Section 5.2
-             *
-             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
-             * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-             */
-            ExtensionStack extensionStack = negotiated.getExtensions();
-            if (frame.isRsv1() && !extensionStack.isRsv1Used())
-                throw new ProtocolException("RSV1 not allowed to be set");
-            if (frame.isRsv2() && !extensionStack.isRsv2Used())
-                throw new ProtocolException("RSV2 not allowed to be set");
-            if (frame.isRsv3() && !extensionStack.isRsv3Used())
-                throw new ProtocolException("RSV3 not allowed to be set");
-        }
     }
 
     public ExtensionStack getExtensionStack()
@@ -260,12 +177,18 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
     public SocketAddress getLocalAddress()
     {
-        return getConnection().getEndPoint().getLocalAddress();
+        return getConnection().getEndPoint().getLocalSocketAddress();
     }
 
     public SocketAddress getRemoteAddress()
     {
-        return getConnection().getEndPoint().getRemoteAddress();
+        return getConnection().getEndPoint().getRemoteSocketAddress();
+    }
+
+    @Override
+    public boolean isInputOpen()
+    {
+        return sessionState.isInputOpen();
     }
 
     @Override
@@ -283,6 +206,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
         connection.getFrameFlusher().setIdleTimeout(writeTimeout.toMillis());
+        extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }
 
@@ -330,12 +254,13 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             closeConnection(sessionState.getCloseStatus(), Callback.NOOP);
     }
 
-    public void closeConnection(CloseStatus closeStatus, Callback callback)
+    private void closeConnection(CloseStatus closeStatus, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {}", closeStatus, this);
 
         abort();
+        extensionStack.close();
 
         // Forward Errors to Local WebSocket EndPoint
         if (closeStatus.isAbnormal() && closeStatus.getCause() != null)
@@ -471,11 +396,12 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
                 if (!demanding)
-                    connection.demand(1);
+                    autoDemand();
             },
             x ->
             {
-                LOG.warn("Error during OPEN", x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error during OPEN", x);
                 processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
             });
 
@@ -500,9 +426,30 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
-        if (!sessionState.isInputOpen())
-            throw new IllegalStateException("FrameHandler input not open: " + this);
-        connection.demand(n);
+        getExtensionStack().demand(n);
+    }
+
+    public void autoDemand()
+    {
+        getExtensionStack().demand(1);
+    }
+
+    @Override
+    public boolean isRsv1Used()
+    {
+        return getExtensionStack().isRsv1Used();
+    }
+
+    @Override
+    public boolean isRsv2Used()
+    {
+        return getExtensionStack().isRsv2Used();
+    }
+
+    @Override
+    public boolean isRsv3Used()
+    {
+        return getExtensionStack().isRsv3Used();
     }
 
     public WebSocketConnection getConnection()
@@ -523,7 +470,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
         try
         {
-            assertValidIncoming(frame);
+            FrameValidation.assertValidIncoming(frame, this);
         }
         catch (Throwable t)
         {
@@ -550,7 +497,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
         try
         {
-            assertValidOutgoing(frame);
+            FrameValidation.assertValidOutgoing(frame, this);
         }
         catch (Throwable t)
         {
@@ -702,7 +649,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private class IncomingAdaptor implements IncomingFrames
     {
         @Override
-        public void onFrame(Frame frame, final Callback callback)
+        public void onFrame(Frame frame, Callback callback)
         {
             Callback closeCallback = null;
             try
@@ -715,7 +662,13 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    handle(() -> handler.onFrame(frame, callback));
+                    Callback handlerCallback = isDemanding() ? callback : Callback.from(() ->
+                    {
+                        callback.succeeded();
+                        autoDemand();
+                    }, callback::failed);
+
+                    handle(() -> handler.onFrame(frame, handlerCallback));
                     return;
                 }
 

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -32,6 +27,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -99,25 +95,25 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier", coords.classifier, nullValue());
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-start/9.3.x/jetty-start-9.3.x.jar"));
+            is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-start/9.3.x/jetty-start-9.3.x.jar"));
     }
 
     @Test
     public void testGetCoordinateZip()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
-        String ref = "maven://org.eclipse.jetty/jetty-distribution/9.3.x/zip";
+        String ref = "maven://org.eclipse.jetty/jetty-home/10.0.0/zip";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
 
         assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
-        assertThat("coords.artifactId", coords.artifactId, is("jetty-distribution"));
-        assertThat("coords.version", coords.version, is("9.3.x"));
+        assertThat("coords.artifactId", coords.artifactId, is("jetty-home"));
+        assertThat("coords.version", coords.version, is("10.0.0"));
         assertThat("coords.type", coords.type, is("zip"));
         assertThat("coords.classifier", coords.classifier, nullValue());
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.3.x/jetty-distribution-9.3.x.zip"));
+                   is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-home/10.0.0/jetty-home-10.0.0.zip"));
     }
 
     @Test
@@ -135,7 +131,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier", coords.classifier, is("tests"));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+            is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
     }
 
     @Test
@@ -153,7 +149,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier", coords.classifier, is("tests"));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+            is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
     }
 
     @Test
@@ -173,11 +169,12 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier", coords.classifier, is("tests"));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+            is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
     }
 
     @Test
-    public void testDownloadDefaultRepo()
+    @Tag("external")
+    public void testDownloadUnspecifiedRepo()
         throws Exception
     {
         MavenLocalRepoFileInitializer repo =
@@ -193,7 +190,7 @@ public class MavenLocalRepoFileInitializerTest
         assertThat("coords.classifier", coords.classifier, is("tests"));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.4.31.v20200723/jetty-http-9.4.31.v20200723-tests.jar"));
+                   is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-http/9.4.31.v20200723/jetty-http-9.4.31.v20200723-tests.jar"));
 
         Path destination = testdir.getEmptyPathDir().resolve("jetty-http-9.4.31.v20200723-tests.jar");
         Files.deleteIfExists(destination);

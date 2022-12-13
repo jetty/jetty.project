@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -44,7 +39,11 @@ import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 
-public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
+/**
+ * Simple abstract module implementing a Javax Authentication {@link ServerAuthModule} and {@link ServerAuthContext}.
+ * To be used as a building block for building more sophisticated auth modules.
+ */
+public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthContext
 {
     private static final Class[] SUPPORTED_MESSAGE_TYPES = new Class[]{HttpServletRequest.class, HttpServletResponse.class};
 
@@ -97,12 +96,6 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
         return AuthStatus.SEND_SUCCESS;
     }
 
-    @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
-    {
-        return AuthStatus.SEND_FAILURE;
-    }
-
     /**
      * @param messageInfo message info to examine for mandatory flag
      * @return whether authentication is mandatory or optional
@@ -115,9 +108,7 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
         return Boolean.parseBoolean(mandatory);
     }
 
-    protected boolean login(Subject clientSubject, String credentials,
-                            String authMethod, MessageInfo messageInfo)
-        throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String credentials, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ') + 1);
         credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
@@ -127,10 +118,7 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
         return login(clientSubject, userName, new Password(password), authMethod, messageInfo);
     }
 
-    protected boolean login(Subject clientSubject, String username,
-                            Credential credential, String authMethod,
-                            MessageInfo messageInfo)
-        throws IOException, UnsupportedCallbackException
+    protected boolean login(Subject clientSubject, String username, Credential credential, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         CredentialValidationCallback credValidationCallback = new CredentialValidationCallback(clientSubject, username, credential);
         callbackHandler.handle(new Callback[]{credValidationCallback});

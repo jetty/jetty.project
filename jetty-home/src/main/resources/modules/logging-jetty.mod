@@ -22,3 +22,4 @@ lib/logging/jetty-slf4j-impl-${jetty.version}.jar
 
 [ini]
 jetty.webapp.addServerClasses+=,org.eclipse.jetty.logging.
+jetty.webapp.addServerClasses+=,${jetty.home.uri}/lib/logging/

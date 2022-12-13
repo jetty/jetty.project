@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -55,11 +51,29 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
     private final Extension[] rsvClaims = new Extension[3];
+    private LongConsumer lastDemand;
+    private DemandChain demandChain = n -> lastDemand.accept(n);
 
     public ExtensionStack(WebSocketComponents components, Behavior behavior)
     {
         this.components = components;
         this.behavior = behavior;
+    }
+
+    public void close()
+    {
+        for (Extension ext : extensions)
+        {
+            try
+            {
+                ext.close();
+            }
+            catch (Throwable t)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Extension Error During Close", t);
+            }
+        }
     }
 
     @ManagedAttribute(name = "Extension List", readonly = true)
@@ -204,7 +218,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 rsvClaims[2] = ext;
         }
 
-        // Wire up Extensions
+        // Wire up Extensions and DemandChain.
         if ((extensions != null) && (extensions.size() > 0))
         {
             ListIterator<Extension> exts = extensions.listIterator();
@@ -215,6 +229,13 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 Extension ext = exts.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
+
+                if (ext instanceof DemandChain)
+                {
+                    DemandChain demandingExtension = (DemandChain)ext;
+                    demandingExtension.setNextDemand(demandChain::demand);
+                    demandChain = demandingExtension;
+                }
             }
 
             // Connect incomingFrames
@@ -256,6 +277,16 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         {
             extension.setCoreSession(coreSession);
         }
+    }
+
+    public void demand(long n)
+    {
+        demandChain.demand(n);
+    }
+
+    public void setLastDemand(LongConsumer lastDemand)
+    {
+        this.lastDemand = lastDemand;
     }
 
     public Extension getRsv1User()

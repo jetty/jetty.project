@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -37,12 +32,20 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
 
     public GzipHttpInputInterceptor(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
     {
-        _decoder = new Decoder(inflaterPool, pool, bufferSize);
+        this(inflaterPool, pool, bufferSize, false);
+    }
+
+    public GzipHttpInputInterceptor(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize, boolean useDirectBuffers)
+    {
+        _decoder = new Decoder(inflaterPool, pool, bufferSize, useDirectBuffers);
     }
 
     @Override
     public Content readFrom(Content content)
     {
+        if (content.isSpecial())
+            return content;
+
         _decoder.decodeChunks(content.getByteBuffer());
         final ByteBuffer chunk = _chunk;
 
@@ -53,6 +56,12 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
         {
             @Override
             public void succeeded()
+            {
+                _decoder.release(chunk);
+            }
+
+            @Override
+            public void failed(Throwable x)
             {
                 _decoder.release(chunk);
             }
@@ -67,9 +76,9 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
 
     private class Decoder extends GZIPContentDecoder
     {
-        private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
+        private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize, boolean useDirectBuffers)
         {
-            super(inflaterPool, bufferPool, bufferSize);
+            super(inflaterPool, bufferPool, bufferSize, useDirectBuffers);
         }
 
         @Override

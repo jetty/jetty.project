@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -11,6 +11,7 @@
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.annotations.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -29,17 +30,13 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>org.objectweb.asm;version="5",*</Import-Package>
-            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
+            <Import-Package>${osgi.slf4j.import.packages},org.objectweb.asm;version="[$(version;==;${asm.version}),$(version;+;${asm.version}))",*</Import-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)", osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
             </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+            </Provide-Capability>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.annotations.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>
@@ -49,12 +46,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
@@ -86,7 +81,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

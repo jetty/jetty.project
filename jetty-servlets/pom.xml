@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,6 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlets</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.servlets.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -21,15 +22,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules jetty.servlet.api --add-modules org.eclipse.jetty.util --add-modules org.eclipse.jetty.io --add-modules org.eclipse.jetty.http --add-modules org.eclipse.jetty.server --add-modules org.eclipse.jetty.jmx --add-reads org.eclipse.jetty.servlets=java.management --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
+            @{argLine} ${jetty.surefire.argLine} --add-modules jetty.servlet.api --add-modules org.eclipse.jetty.util --add-modules org.eclipse.jetty.io --add-modules org.eclipse.jetty.http --add-modules org.eclipse.jetty.server --add-reads org.eclipse.jetty.servlets=java.management --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
           </argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.servlets.*</onlyAnalyze>
         </configuration>
       </plugin>
     </plugins>
@@ -39,18 +33,15 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -60,7 +51,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -75,20 +65,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>jetty-http-tools</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

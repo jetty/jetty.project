@@ -1,0 +1,58 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+=== Upgrading from Jetty 9.4.x to Jetty 10.0.x
+
+The purpose of this guide is to assist users migrating from Jetty 9.4 to 10.
+It is not comprehensive, but covers many of the major changes included in the release that may prove as problem areas for users.
+
+==== Required Java Version
+
+Jetty 10 requires, at a minimum, Java 11 to function.
+Items such as the Java Platform Module System (JPMS), which Jetty 10 supports, are not available in earlier versions of Java.
+
+==== ServletContainerInitializers
+
+As of Jetty 10, Annotations will be discovered even for old versions of `web.xml` (2.5).
+Users wishing not to use annotations from the webapp classpath with older versions of `web.xml` must call `WebAppContext.setConfigurationDiscovered(false)` either programmatically or in xml.
+
+==== Removed Classes
+
+//TODO - Insert major removed/refactored classes from Jetty-9.x.x to Jetty-10.0.x
+
+==== Changes to Websocket
+
+//TODO - List of changes to Websocket -- Joakim/Lachlan
+
+==== `javax.mail` and `javax.transaction`
+
+Both `javax.mail` and `javax.transaction` have been removed from the Jetty Distribution in Jetty 10.
+If you require these jars, you will need to enable the `ext` link:#startup-modules[module] and copy the files to your `$JETTY_BASE/lib/ext` directory.
+
+==== Module Changes in Jetty 10.0
+
+===== New Modules in Jetty 10.0
+
+//TODO - Insert new modules introduced in Jetty 10
+
+===== Changes to Existing Modules in Jetty 10.0
+
+//TODO - Insert module changes introduced in Jetty 10
+
+==== Changes to Sessions
+
+//TODO - List of changes to Sessions -- Jan
+
+==== Removal of System Properties(?)
+
+//TODO - List of removed System bits --- Greg

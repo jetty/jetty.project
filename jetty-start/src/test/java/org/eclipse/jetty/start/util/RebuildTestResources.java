@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,6 +15,7 @@ package org.eclipse.jetty.start.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,7 +30,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
  * Utility class to rebuild the src/test/resources/dist-home from the active build tree.
  * <p>
  * Not really meant to be run with each build. Nor is it a good idea to attempt to do that (as this would introduce a dependency from jetty-start ->
- * jetty-distribution which is a circular dependency)
+ * jetty-home which is a circular dependency)
  */
 public class RebuildTestResources
 {
@@ -42,7 +38,7 @@ public class RebuildTestResources
 
     public static void main(String[] args)
     {
-        File realDistHome = MavenTestingUtils.getProjectDir("../jetty-distribution/target/distribution");
+        File realDistHome = MavenTestingUtils.getProjectDir("../jetty-home/target/jetty-home");
         File outputDir = MavenTestingUtils.getTestResourceDir("dist-home");
         try
         {
@@ -177,19 +173,22 @@ public class RebuildTestResources
     {
         Files.createDirectories(to);
 
-        for (Path path : Files.newDirectoryStream(from))
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(from))
         {
-            String name = renamer.getName(path);
-            Path dest = to.resolve(name);
-            if (Files.isDirectory(path))
+            for (Path path : directoryStream)
             {
-                copyDir(path, dest, fileMatcher, renamer, copier);
-            }
-            else
-            {
-                if (fileMatcher.matches(path))
+                String name = renamer.getName(path);
+                Path dest = to.resolve(name);
+                if (Files.isDirectory(path))
                 {
-                    copier.copy(path, dest);
+                    copyDir(path, dest, fileMatcher, renamer, copier);
+                }
+                else
+                {
+                    if (fileMatcher.matches(path))
+                    {
+                        copier.copy(path, dest);
+                    }
                 }
             }
         }

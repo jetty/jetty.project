@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,12 +18,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -39,7 +36,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
  * A {@link org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool} wrapper around {@link ThreadPoolExecutor}.
  */
 @ManagedObject("A thread pool")
-public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool.SizedThreadPool, TryExecutor
+public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool.SizedThreadPool, TryExecutor, VirtualThreads.Configurable
 {
     private final ThreadPoolExecutor _executor;
     private final ThreadPoolBudget _budget;
@@ -51,6 +48,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     private int _priority = Thread.NORM_PRIORITY;
     private boolean _daemon;
     private boolean _detailedDump;
+    private Executor _virtualThreadsExecutor;
 
     public ExecutorThreadPool()
     {
@@ -271,6 +269,25 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     public boolean isLowOnThreads()
     {
         return getThreads() == getMaxThreads() && _executor.getQueue().size() >= getIdleThreads();
+    }
+
+    @Override
+    public Executor getVirtualThreadsExecutor()
+    {
+        return _virtualThreadsExecutor;
+    }
+
+    @Override
+    public void setVirtualThreadsExecutor(Executor executor)
+    {
+        try
+        {
+            VirtualThreads.Configurable.super.setVirtualThreadsExecutor(executor);
+            _virtualThreadsExecutor = executor;
+        }
+        catch (UnsupportedOperationException ignored)
+        {
+        }
     }
 
     @Override

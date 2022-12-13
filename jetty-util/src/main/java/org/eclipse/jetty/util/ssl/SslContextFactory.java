@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
@@ -47,15 +43,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -65,7 +60,6 @@ import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
@@ -142,7 +136,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
-    private final List<String> _includeCipherSuites = new ArrayList<>();
+    private final Set<String> _includeCipherSuites = new LinkedHashSet<>();
     private final Map<String, X509> _aliasX509 = new HashMap<>();
     private final Map<String, X509> _certHosts = new HashMap<>();
     private final Map<String, X509> _certWilds = new HashMap<>();
@@ -515,6 +509,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
+     * You can either use the exact Protocol name or a a regular expression.
+     *
      * @param protocols The array of protocol names to exclude from
      * {@link SSLEngine#setEnabledProtocols(String[])}
      */
@@ -525,7 +521,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @param protocol Protocol names to add to {@link SSLEngine#setEnabledProtocols(String[])}
+     * You can either use the exact Protocol name or a a regular expression.
+     *
+     * @param protocol Protocol name patterns to add to {@link SSLEngine#setEnabledProtocols(String[])}
      */
     public void addExcludeProtocols(String... protocol)
     {
@@ -533,7 +531,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @return The array of protocol names to include in
+     * @return The array of protocol name patterns to include in
      * {@link SSLEngine#setEnabledProtocols(String[])}
      */
     @ManagedAttribute("The included TLS protocols")
@@ -543,7 +541,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @param protocols The array of protocol names to include in
+     * You can either use the exact Protocol name or a a regular expression.
+     *
+     * @param protocols The array of protocol name patterns to include in
      * {@link SSLEngine#setEnabledProtocols(String[])}
      */
     public void setIncludeProtocols(String... protocols)
@@ -553,7 +553,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @return The array of cipher suite names to exclude from
+     * @return The array of cipher suite name patterns to exclude from
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
      */
     @ManagedAttribute("The excluded cipher suites")
@@ -563,7 +563,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * You can either use the exact cipher suite name or a a regular expression.
+     * You can either use the exact Cipher suite name or a a regular expression.
      *
      * @param cipherSuites The array of cipher suite names to exclude from
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
@@ -575,6 +575,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
+     * You can either use the exact Cipher suite name or a a regular expression.
+     *
      * @param cipher Cipher names to add to {@link SSLEngine#setEnabledCipherSuites(String[])}
      */
     public void addExcludeCipherSuites(String... cipher)
@@ -583,7 +585,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @return The array of cipher suite names to include in
+     * @return The array of Cipher suite names to include in
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
      */
     @ManagedAttribute("The included cipher suites")
@@ -593,7 +595,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * You can either use the exact cipher suite name or a a regular expression.
+     * You can either use the exact Cipher suite name or a a regular expression.
      *
      * @param cipherSuites The array of cipher suite names to include in
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
@@ -707,13 +709,20 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public void setTrustStorePath(String trustStorePath)
     {
-        try
+        if (StringUtil.isEmpty(trustStorePath))
         {
-            _trustStoreResource = Resource.newResource(trustStorePath);
+            _trustStoreResource = null;
         }
-        catch (Exception e)
+        else
         {
-            throw new IllegalArgumentException(e);
+            try
+            {
+                _trustStoreResource = Resource.newResource(trustStorePath);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalArgumentException(e);
+            }
         }
     }
 
@@ -785,6 +794,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         _validatePeerCerts = validatePeerCerts;
     }
 
+    public String getKeyStorePassword()
+    {
+        return _keyStorePassword == null ? null : _keyStorePassword.toString();
+    }
+
     /**
      * @param password The password for the key store.  If null is passed and
      * a keystore is set, then
@@ -795,6 +809,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     public void setKeyStorePassword(String password)
     {
         _keyStorePassword = password == null ? getPassword(PASSWORD_PROPERTY) : newPassword(password);
+    }
+
+    public String getKeyManagerPassword()
+    {
+        return _keyManagerPassword == null ? null : _keyManagerPassword.toString();
     }
 
     /**
@@ -1246,28 +1265,10 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public void selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
     {
-        Set<String> selectedProtocols = new LinkedHashSet<>();
-
-        // Set the starting protocols - either from the included or enabled list
-        if (!_includeProtocols.isEmpty())
-        {
-            // Use only the supported included protocols
-            for (String protocol : _includeProtocols)
-            {
-                if (Arrays.asList(supportedProtocols).contains(protocol))
-                    selectedProtocols.add(protocol);
-                else
-                    LOG.info("Protocol {} not supported in {}", protocol, Arrays.asList(supportedProtocols));
-            }
-        }
-        else
-            selectedProtocols.addAll(Arrays.asList(enabledProtocols));
-
-        // Remove any excluded protocols
-        selectedProtocols.removeAll(_excludeProtocols);
+        List<String> selectedProtocols = processIncludeExcludePatterns("Protocols", enabledProtocols, supportedProtocols, _includeProtocols, _excludeProtocols);
 
         if (selectedProtocols.isEmpty())
-            LOG.warn("No selected protocols from {}", Arrays.asList(supportedProtocols));
+            LOG.warn("No selected Protocols from {}", Arrays.asList(supportedProtocols));
 
         _selectedProtocols = selectedProtocols.toArray(new String[0]);
     }
@@ -1282,18 +1283,10 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     protected void selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        List<String> selectedCiphers = new ArrayList<>();
-
-        // Set the starting ciphers - either from the included or enabled list
-        if (_includeCipherSuites.isEmpty())
-            selectedCiphers.addAll(Arrays.asList(enabledCipherSuites));
-        else
-            processIncludeCipherSuites(supportedCipherSuites, selectedCiphers);
-
-        removeExcludedCipherSuites(selectedCiphers);
+        List<String> selectedCiphers = processIncludeExcludePatterns("Cipher Suite", enabledCipherSuites, supportedCipherSuites, _includeCipherSuites, _excludeCipherSuites);
 
         if (selectedCiphers.isEmpty())
-            LOG.warn("No supported ciphers from {}", Arrays.asList(supportedCipherSuites));
+            LOG.warn("No supported Cipher Suite from {}", Arrays.asList(supportedCipherSuites));
 
         Comparator<String> comparator = getCipherComparator();
         if (comparator != null)
@@ -1306,39 +1299,58 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         _selectedCipherSuites = selectedCiphers.toArray(new String[0]);
     }
 
-    protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selectedCiphers)
+    private List<String> processIncludeExcludePatterns(String type, String[] enabled, String[] supported, Set<String> included, Set<String> excluded)
     {
-        for (String cipherSuite : _includeCipherSuites)
+        List<String> selected = new ArrayList<>();
+        // Set the starting list - either from the included or enabled list
+        if (included.isEmpty())
         {
-            Pattern p = Pattern.compile(cipherSuite);
-            boolean added = false;
-            for (String supportedCipherSuite : supportedCipherSuites)
-            {
-                Matcher m = p.matcher(supportedCipherSuite);
-                if (m.matches())
-                {
-                    added = true;
-                    selectedCiphers.add(supportedCipherSuite);
-                }
-            }
-            if (!added)
-                LOG.info("No Cipher matching '{}' is supported", cipherSuite);
+            selected.addAll(Arrays.asList(enabled));
         }
+        else
+        {
+            // process include patterns
+            for (String includedItem : included)
+            {
+                Pattern pattern = Pattern.compile(includedItem);
+                boolean added = false;
+                for (String supportedItem : supported)
+                {
+                    if (pattern.matcher(supportedItem).matches())
+                    {
+                        added = true;
+                        selected.add(supportedItem);
+                    }
+                }
+                if (!added)
+                    LOG.info("No {} matching '{}' is supported", type, includedItem);
+            }
+        }
+
+        // process exclude patterns
+        for (String excludedItem : excluded)
+        {
+            Pattern pattern = Pattern.compile(excludedItem);
+            selected.removeIf(selectedItem -> pattern.matcher(selectedItem).matches());
+        }
+
+        return selected;
     }
 
+    /**
+     * @deprecated no replacement
+     */
+    @Deprecated
+    protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selectedCiphers)
+    {
+    }
+
+    /**
+     * @deprecated no replacement
+     */
+    @Deprecated
     protected void removeExcludedCipherSuites(List<String> selectedCiphers)
     {
-        for (String excludeCipherSuite : _excludeCipherSuites)
-        {
-            Pattern excludeCipherPattern = Pattern.compile(excludeCipherSuite);
-            for (Iterator<String> i = selectedCiphers.iterator(); i.hasNext(); )
-            {
-                String selectedCipherSuite = i.next();
-                Matcher m = excludeCipherPattern.matcher(selectedCipherSuite);
-                if (m.matches())
-                    i.remove();
-            }
-        }
     }
 
     /**
@@ -2007,6 +2019,14 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             return 0;
     }
 
+    public void validateCerts(X509Certificate[] certs) throws Exception
+    {
+        KeyStore trustStore = loadTrustStore(_trustStoreResource);
+        Collection<? extends CRL> crls = loadCRL(_crlPath);
+        CertificateValidator validator = new CertificateValidator(trustStore, crls);
+        validator.validate(certs);
+    }
+
     @Override
     public String toString()
     {
@@ -2073,6 +2093,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     public static class Client extends SslContextFactory
     {
+        private SniProvider sniProvider = (sslEngine, serverNames) -> serverNames;
+
         public Client()
         {
             this(false);
@@ -2089,6 +2111,90 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             checkTrustAll();
             checkEndPointIdentificationAlgorithm();
             super.checkConfiguration();
+        }
+
+        @Override
+        public void customize(SSLEngine sslEngine)
+        {
+            SSLParameters sslParameters = sslEngine.getSSLParameters();
+            List<SNIServerName> serverNames = sslParameters.getServerNames();
+            if (serverNames == null)
+                serverNames = Collections.emptyList();
+            List<SNIServerName> newServerNames = getSNIProvider().apply(sslEngine, serverNames);
+            if (newServerNames != null && newServerNames != serverNames)
+            {
+                sslParameters.setServerNames(newServerNames);
+                sslEngine.setSSLParameters(sslParameters);
+            }
+            super.customize(sslEngine);
+        }
+
+        /**
+         * @return the SNI provider used to customize the SNI
+         */
+        public SniProvider getSNIProvider()
+        {
+            return sniProvider;
+        }
+
+        /**
+         * @param sniProvider the SNI provider used to customize the SNI
+         */
+        public void setSNIProvider(SniProvider sniProvider)
+        {
+            this.sniProvider = Objects.requireNonNull(sniProvider);
+        }
+
+        /**
+         * <p>A provider for SNI names to send to the server during the TLS handshake.</p>
+         * <p>By default, the OpenJDK TLS implementation does not send SNI names when
+         * they are IP addresses, following what currently specified in
+         * <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">TLS 1.3</a>,
+         * or when they are non-domain strings such as {@code "localhost"}.</p>
+         * <p>If you need to send custom SNI, such as a non-domain SNI or an IP address SNI,
+         * you can set your own SNI provider or use {@link #NON_DOMAIN_SNI_PROVIDER}.</p>
+         */
+        @FunctionalInterface
+        public interface SniProvider
+        {
+            /**
+             * <p>An SNI provider that, if the given {@code serverNames} list is empty,
+             * retrieves the host via {@link SSLEngine#getPeerHost()}, converts it to
+             * ASCII bytes, and sends it as SNI.</p>
+             * <p>This allows to send non-domain SNI such as {@code "localhost"} or
+             * IP addresses.</p>
+             */
+            public static final SniProvider NON_DOMAIN_SNI_PROVIDER = Client::getSniServerNames;
+
+            /**
+             * <p>Provides the SNI names to send to the server.</p>
+             * <p>Currently, RFC 6066 allows for different types of server names,
+             * but defines only one of type "host_name".</p>
+             * <p>As such, the input {@code serverNames} list and the list to be returned
+             * contain at most one element.</p>
+             *
+             * @param sslEngine the SSLEngine that processes the TLS handshake
+             * @param serverNames the non-null immutable list of server names computed by implementation
+             * @return either the same {@code serverNames} list passed as parameter, or a new list
+             * containing the server names to send to the server
+             */
+            public List<SNIServerName> apply(SSLEngine sslEngine, List<SNIServerName> serverNames);
+        }
+
+        private static List<SNIServerName> getSniServerNames(SSLEngine sslEngine, List<SNIServerName> serverNames)
+        {
+            if (serverNames.isEmpty())
+            {
+                String host = sslEngine.getPeerHost();
+                if (host != null)
+                {
+                    // Must use the byte[] constructor, because the character ':' is forbidden when
+                    // using the String constructor (but typically present in IPv6 addresses).
+                    // Since Java 17, only letter|digit|hyphen characters are allowed, even by the byte[] constructor.
+                    return List.of(new SNIHostName(host.getBytes(StandardCharsets.US_ASCII)));
+                }
+            }
+            return serverNames;
         }
     }
 
@@ -2146,12 +2252,17 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         /**
-         * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * <p>Returns whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>The exact logic to choose an alias given the SNI is configurable via
+         * {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
+         * <p>The default implementation is {@link #sniSelect(String, Principal[], SSLSession, String, Collection)}
+         * and if SNI is not required it will delegate the TLS implementation to
+         * choose an alias (typically the first alias in the KeyStore).</p>
+         * <p>Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).</p>
          *
-         * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         * delegation to the non SNI matching methods.
+         * @return whether an SNI match is required when choosing the alias that identifies the certificate
          */
         @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
         public boolean isSniRequired()
@@ -2160,14 +2271,12 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         /**
-         * Set if the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match? Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
-         * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
-         * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
+         * <p>Sets whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
+         * overridden or a custom function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
          *
-         * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         * delegation to the non SNI matching methods.
+         * @param sniRequired whether an SNI match is required when choosing the alias that identifies the certificate
          */
         public void setSniRequired(boolean sniRequired)
         {
@@ -2221,22 +2330,53 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         @Override
-        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
+        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates)
         {
+            boolean sniRequired = isSniRequired();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Selecting alias: keyType={}, sni={}, sniRequired={}, certs={}", keyType, String.valueOf(sniHost), sniRequired, certificates);
+
+            String alias;
             if (sniHost == null)
             {
                 // No SNI, so reject or delegate.
-                return isSniRequired() ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                alias = sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
             }
             else
             {
-                // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
-                return certificates.stream()
+                // Match the SNI host.
+                List<X509> matching = certificates.stream()
                     .filter(x509 -> x509.matches(sniHost))
-                    .findFirst()
-                    .map(X509::getAlias)
-                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE);
+                    .collect(Collectors.toList());
+
+                if (matching.isEmpty())
+                {
+                    // There is no match for this SNI among the certificates valid for
+                    // this keyType; check if there is any certificate that matches this
+                    // SNI, as we will likely be called again with a different keyType.
+                    boolean anyMatching = aliasCerts().values().stream()
+                        .anyMatch(x509 -> x509.matches(sniHost));
+                    alias = sniRequired || anyMatching ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                }
+                else
+                {
+                    alias = matching.get(0).getAlias();
+                    if (matching.size() > 1)
+                    {
+                        // Prefer strict matches over wildcard matches.
+                        alias = matching.stream()
+                            .min(Comparator.comparingInt(cert -> cert.getWilds().size()))
+                            .map(X509::getAlias)
+                            .orElse(alias);
+                    }
+                }
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Selected alias={}", String.valueOf(alias));
+
+            return alias;
         }
 
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)

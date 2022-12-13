@@ -10,7 +10,7 @@
     <Arg>
       <New id="ThreadLimitHandler" class="org.eclipse.jetty.server.handler.ThreadLimitHandler">
         <Arg name="forwardedHeader"><Property name="jetty.threadlimit.forwardedHeader"/></Arg> 
-        <Set name="enabled" property="jetty.threadlimit.enabled"/> 
+        <Set name="enabled"><Property name="jetty.threadlimit.enabled" default="true"/></Set>
         <Set name="threadLimit" property="jetty.threadlimit.threadLimit"/> 
       </New>
     </Arg>

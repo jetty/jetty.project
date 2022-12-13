@@ -1,0 +1,29 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[error-handler]]
+=== Error Handler
+
+[[error-handler-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.server.handler.ErrorHandler`
+* Maven Artifact: org.eclipse.jetty:jetty-server
+* Javadoc: {JDURL}/org/eclipse/jetty/server/handler/ErrorHandler.html
+
+[[error-handler-usage]]
+==== Usage
+
+A handler that is used to report errors from servlet contexts and webapp contexts to report error conditions.
+Primarily handles setting the various servlet spec specific response headers for error conditions.
+Can be customized by extending; for more information on this see xref:custom-error-pages[].

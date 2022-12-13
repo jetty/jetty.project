@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,11 +26,14 @@ import org.apache.jasper.runtime.JspFactoryImpl;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,20 +47,13 @@ import static org.hamcrest.Matchers.not;
 public class TestJettyJspServlet
 {
     public WorkDir workdir;
-
-    private File _dir;
-    private ServletTester _tester;
+    private Server _server;
+    private LocalConnector _connector;
 
     public static class DfltServlet extends HttpServlet
     {
-
-        public DfltServlet()
-        {
-            super();
-        }
-
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
             resp.setContentType("html/text");
             resp.getOutputStream().println("This.Is.The.Default.");
@@ -74,26 +64,27 @@ public class TestJettyJspServlet
     public void setUp() throws Exception
     {
         JspFactory.setDefaultFactory(new JspFactoryImpl());
-        _dir = MavenTestingUtils.getTestResourceDir("base");
-        _tester = new ServletTester("/context");
-        _tester.getContext().setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
-        ServletHolder jspHolder = _tester.getContext().addServlet(JettyJspServlet.class, "/*");
+        File baseDir = MavenTestingUtils.getTestResourceDir("base");
+        _server = new Server();
+        _connector = new LocalConnector(_server);
+        _server.addConnector(_connector);
+        ServletContextHandler context = new ServletContextHandler(_server, "/context", true, false);
+        context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
+        ServletHolder jspHolder = context.addServlet(JettyJspServlet.class, "/*");
         jspHolder.setInitParameter("scratchdir", workdir.getPath().toString());
-        _tester.getContext().setResourceBase(_dir.getAbsolutePath());
-        _tester.getContext().setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
+        context.setResourceBase(baseDir.getAbsolutePath());
+        context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         ServletHolder dfltHolder = new ServletHolder();
         dfltHolder.setName("default");
         dfltHolder.setHeldClass(DfltServlet.class);
-        _tester.getContext().addServlet(dfltHolder, "/");
-
-        _tester.start();
+        context.addServlet(dfltHolder, "/");
+        _server.start();
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        if (_tester != null)
-            _tester.stop();
+        LifeCycle.stop(_server);
     }
 
     @Test
@@ -106,7 +97,7 @@ public class TestJettyJspServlet
                 "Connection: close\r\n" +
                 "\r\n";
 
-        String rawResponse = _tester.getResponses(request);
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), not(containsString("This.Is.The.Default.")));
     }
@@ -120,7 +111,7 @@ public class TestJettyJspServlet
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String rawResponse = _tester.getResponses(request);
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), containsString("This.Is.The.Default."));
     }

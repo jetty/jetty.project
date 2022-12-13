@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,23 +12,27 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.tests</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-core-client</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-core-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-core-common</artifactId>
-      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -37,72 +41,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- No point deploying testing projects -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- No point building javadoc on testing projects -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-  <profiles>
-    <profile>
-      <id>autobahn</id>
-      <activation>
-        <property>
-          <name>autobahn</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>me.normanmaurer.maven.autobahntestsuite</groupId>
-            <artifactId>autobahntestsuite-maven-plugin</artifactId>
-            <version>0.1.6</version>
-            <configuration>
-
-              <!-- Optional configuration -->
-              <!-- The port to bind the server on. Default is to choose a random free port. -->
-              <!--port>9090</port-->
-
-              <!-- The number of milliseconds to wait for the server to startup -->
-              <waitTime>20000</waitTime>
-              <generateJUnitXml>true</generateJUnitXml>
-              <cases>
-                <case>*</case>
-              </cases>
-              <testFailureIgnore>true</testFailureIgnore>
-              <excludeCases></excludeCases>
-              <failOnNonStrict>false</failOnNonStrict>
-            </configuration>
-            <executions>
-              <execution>
-                <phase>test</phase>
-                <goals>
-                  <goal>fuzzingclient</goal>
-                </goals>
-                <configuration>
-                  <!-- The class that contains a main method which accepts the port as a parameter to start the server. -->
-                  <mainClass>org.eclipse.jetty.websocket.core.autobahn.CoreAutobahnServer</mainClass>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

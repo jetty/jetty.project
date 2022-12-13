@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,11 +22,11 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
@@ -59,37 +54,44 @@ public class FileTestHelper
 
     public void assertStoreDirEmpty(boolean isEmpty) throws IOException
     {
-        long storeDirCount = Files.list(storeDirRoot).count();
-
-        if (isEmpty)
+        try (Stream<Path> s = Files.list(storeDirRoot))
         {
-            assertThat("Store Dir content count", storeDirCount, is(0L));
-        }
-        else
-        {
-            assertThat("Store Dir content count", storeDirCount, greaterThan(0L));
+            long storeDirCount = s.count();
+            if (isEmpty)
+            {
+                assertThat("Store Dir content count", storeDirCount, is(0L));
+            }
+            else
+            {
+                assertThat("Store Dir content count", storeDirCount, greaterThan(0L));
+            }
         }
     }
 
     public File getFile(String sessionId) throws IOException
     {
-        Optional<Path> sessionPath = Files.list(storeDirRoot)
-            .filter((path) -> path.getFileName().toString().contains(sessionId))
-            .findFirst();
-        if (sessionPath.isPresent())
-            return sessionPath.get().toFile();
-        return null;
+        try (Stream<Path> s = Files.list(storeDirRoot))
+        {
+            return s
+                .filter((path) -> path.getFileName().toString().endsWith("_" + sessionId))
+                .findFirst()
+                .map(Path::toFile)
+                .orElse(null);
+        }
     }
 
     public void assertSessionExists(String sessionId, boolean exists) throws IOException
     {
-        Optional<Path> sessionPath = Files.list(storeDirRoot)
-            .filter((path) -> path.getFileName().toString().contains(sessionId))
-            .findFirst();
-        if (exists)
-            assertTrue(sessionPath.isPresent());
-        else
-            assertFalse(sessionPath.isPresent());
+        try (Stream<Path> s = Files.list(storeDirRoot))
+        {
+            Optional<Path> sessionPath = s
+                .filter((path) -> path.getFileName().toString().contains(sessionId))
+                .findFirst();
+            if (exists)
+                assertTrue(sessionPath.isPresent());
+            else
+                assertFalse(sessionPath.isPresent());
+        }
     }
 
     public void assertFileExists(String filename, boolean exists)
@@ -194,14 +196,11 @@ public class FileTestHelper
     public void deleteFile(String sessionId) throws IOException
     {
         // Collect
-        List<Path> matches = Files.list(storeDirRoot)
-            .filter((path) -> path.getFileName().toString().contains(sessionId))
-            .collect(Collectors.toList());
-
-        // Delete outside of lambda
-        for (Path path : matches)
+        try (Stream<Path> s = Files.list(storeDirRoot))
         {
-            FS.deleteFile(path);
+            s.filter((path) -> path.getFileName().toString().contains(sessionId))
+                .collect(Collectors.toList()) // Delete outside of list stream
+                .forEach(FS::deleteFile);
         }
     }
 

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -202,6 +197,12 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         _pattern = pattern;
         _variables = variables;
         _logicalDeclaration = logicalSignature.toString();
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Creating UriTemplatePathSpec[{}] (regex: \"{}\", signature: [{}], group: {}, variables: [{}])",
+                _declaration, regex, sig, _group, String.join(", ", _variables));
+        }
     }
 
     /**
@@ -301,7 +302,9 @@ public class UriTemplatePathSpec extends AbstractPathSpec
             Map<String, String> ret = new HashMap<>();
             int groupCount = matcher.groupCount();
             for (int i = 1; i <= groupCount; i++)
+            {
                 ret.put(_variables[i - 1], matcher.group(i));
+            }
             return ret;
         }
         return null;
@@ -309,7 +312,17 @@ public class UriTemplatePathSpec extends AbstractPathSpec
 
     protected Matcher getMatcher(String path)
     {
-        return _pattern.matcher(path);
+        int idx = path.indexOf('?');
+        if (idx >= 0)
+        {
+            // match only non-query part
+            return _pattern.matcher(path.substring(0, idx));
+        }
+        else
+        {
+            // match entire path
+            return _pattern.matcher(path);
+        }
     }
 
     @Override
@@ -358,7 +371,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         Matcher matcher = getMatcher(path);
         if (matcher.matches())
         {
-            if (matcher.groupCount() >= 1)
+            if (_group == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
             {
                 int idx = matcher.start(1);
                 if (idx > 0)
@@ -399,17 +412,18 @@ public class UriTemplatePathSpec extends AbstractPathSpec
     @Override
     public boolean matches(final String path)
     {
-        int idx = path.indexOf('?');
-        if (idx >= 0)
+        return getMatcher(path).matches();
+    }
+
+    @Override
+    public MatchedPath matched(String path)
+    {
+        Matcher matcher = getMatcher(path);
+        if (matcher.matches())
         {
-            // match only non-query part
-            return getMatcher(path.substring(0, idx)).matches();
+            return new UriTemplatePathSpec.UriTemplateMatchedPath(this, path, matcher);
         }
-        else
-        {
-            // match entire path
-            return getMatcher(path).matches();
-        }
+        return null;
     }
 
     public int getVariableCount()
@@ -420,5 +434,63 @@ public class UriTemplatePathSpec extends AbstractPathSpec
     public String[] getVariables()
     {
         return _variables;
+    }
+
+    private static class UriTemplateMatchedPath implements MatchedPath
+    {
+        private final UriTemplatePathSpec pathSpec;
+        private final String path;
+        private final Matcher matcher;
+
+        public UriTemplateMatchedPath(UriTemplatePathSpec uriTemplatePathSpec, String path, Matcher matcher)
+        {
+            this.pathSpec = uriTemplatePathSpec;
+            this.path = path;
+            this.matcher = matcher;
+        }
+
+        @Override
+        public String getPathMatch()
+        {
+            // TODO: UriTemplatePathSpec has no concept of prefix/suffix, this should be simplified
+            // TODO: Treat all UriTemplatePathSpec matches as exact when it comes to pathMatch/pathInfo
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                int idx = matcher.start(1);
+                if (idx > 0)
+                {
+                    if (path.charAt(idx - 1) == '/')
+                        idx--;
+                    return path.substring(0, idx);
+                }
+            }
+            return path;
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            // TODO: UriTemplatePathSpec has no concept of prefix/suffix, this should be simplified
+            // TODO: Treat all UriTemplatePathSpec matches as exact when it comes to pathMatch/pathInfo
+            if (pathSpec.getGroup() == PathSpecGroup.PREFIX_GLOB && matcher.groupCount() >= 1)
+            {
+                String pathInfo = matcher.group(1);
+                if ("".equals(pathInfo))
+                    return "/";
+                else
+                    return pathInfo;
+            }
+            return null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[" +
+                "pathSpec=" + pathSpec +
+                ", path=\"" + path + "\"" +
+                ", matcher=" + matcher +
+                ']';
+        }
     }
 }

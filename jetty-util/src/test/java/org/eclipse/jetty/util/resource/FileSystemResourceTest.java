@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -51,7 +46,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -347,9 +341,12 @@ public class FileSystemResourceTest
             assertThat("Ref A2 exists", refA2.exists(), is(true));
             assertThat("Ref O1 exists", refO1.exists(), is(true));
 
-            assertThat("Ref A1 alias", refA1.isAlias(), is(false));
-            assertThat("Ref A2 alias", refA2.isAlias(), is(false));
-            assertThat("Ref O1 alias", refO1.isAlias(), is(false));
+            if (LINUX.isCurrentOs())
+            {
+                assertThat("Ref A1 alias", refA1.isAlias(), is(false));
+                assertThat("Ref A2 alias", refA2.isAlias(), is(false));
+                assertThat("Ref O1 alias", refO1.isAlias(), is(false));
+            }
 
             assertThat("Ref A1 contents", toString(refA1), is("hi a-with-circle"));
             assertThat("Ref A2 contents", toString(refA2), is("hi a-with-two-dots"));
@@ -643,7 +640,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSymlink(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -651,17 +647,19 @@ public class FileSystemResourceTest
         Path foo = dir.resolve("foo");
         Path bar = dir.resolve("bar");
 
+        boolean symlinkSupported;
         try
         {
             Files.createFile(foo);
             Files.createSymbolicLink(bar, foo);
+            symlinkSupported = true;
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
-            // if unable to create symlink, no point testing the rest
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported");
+            symlinkSupported = false;
         }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
         {
@@ -685,7 +683,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testNonExistantSymlink(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -694,16 +691,18 @@ public class FileSystemResourceTest
         Path foo = dir.resolve("foo");
         Path bar = dir.resolve("bar");
 
+        boolean symlinkSupported;
         try
         {
             Files.createSymbolicLink(bar, foo);
+            symlinkSupported = true;
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
-            // if unable to create symlink, no point testing the rest
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported");
+            symlinkSupported = false;
         }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
         {
@@ -837,8 +836,7 @@ public class FileSystemResourceTest
             }
             catch (InvalidPathException e)
             {
-                // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(true, "Not supported");
+                assumeTrue(false, "NTFS simple streams not supported");
             }
         }
     }
@@ -885,8 +883,7 @@ public class FileSystemResourceTest
             }
             catch (InvalidPathException e)
             {
-                // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(true, "Not supported");
+                assumeTrue(false, "NTFS $DATA streams not supported");
             }
         }
     }
@@ -931,15 +928,13 @@ public class FileSystemResourceTest
             }
             catch (InvalidPathException e)
             {
-                // NTFS filesystem streams are unsupported on some platforms.
-                assumeTrue(true, "Not supported on this OS");
+                assumeTrue(false, "NTFS $DATA streams not supported");
             }
         }
     }
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSemicolon(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -950,11 +945,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo;");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with semicolon");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -966,7 +959,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSingleQuote(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -978,11 +970,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo' bar");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with single quote");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -994,7 +984,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testSingleBackTick(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1006,11 +995,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo` bar");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with single back tick");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1022,7 +1009,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    @DisabledOnOs(WINDOWS)
     public void testBrackets(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1034,11 +1020,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo[1]");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with square brackets");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1050,7 +1034,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testBraces(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1062,11 +1045,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo.{bar}.txt");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with squiggle braces");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1078,7 +1059,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testCaret(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1090,11 +1070,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo^3.txt");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with caret");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1106,7 +1084,6 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @ValueSource(classes = PathResource.class) // FileResource does not support this
-    @DisabledOnOs(WINDOWS)
     public void testPipe(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
@@ -1118,11 +1095,9 @@ public class FileSystemResourceTest
             Path foo = dir.resolve("foo|bar.txt");
             Files.createFile(foo);
         }
-        catch (Exception e)
+        catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that Microsoft Windows takes.
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create file with pipe symbol");
         }
 
         try (Resource base = newResource(resourceClass, dir.toFile()))
@@ -1479,10 +1454,7 @@ public class FileSystemResourceTest
         }
         catch (InvalidPathException e)
         {
-            // if unable to create file, no point testing the rest.
-            // this is the path that occurs if you have a system that doesn't support UTF-8
-            // directory names (or you simply don't have a Locale set properly)
-            assumeTrue(true, "Not supported on this OS");
+            assumeTrue(false, "Unable to create directory with utf-8 character");
             return;
         }
 

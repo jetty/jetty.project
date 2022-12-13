@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,6 +15,7 @@ package org.eclipse.jetty.server.session;
 
 import java.security.SecureRandom;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -72,7 +68,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      */
     public DefaultSessionIdManager(Server server)
     {
-        _server = server;
+        _server = Objects.requireNonNull(server);
+        _server.setSessionIdManager(this);
     }
 
     /**
@@ -90,7 +87,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      */
     public void setServer(Server server)
     {
-        _server = server;
+        _server = Objects.requireNonNull(server);
+        _server.setSessionIdManager(this);
     }
 
     /**
@@ -275,7 +273,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
         return id;
     }
-
+    
     @Override
     public boolean isIdInUse(String id)
     {
@@ -313,9 +311,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     protected void doStart() throws Exception
     {
-        if (_server == null)
-            throw new IllegalStateException("No Server for SessionIdManager");
-
         initRandom();
 
         if (_workerName == null)
@@ -344,6 +339,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _houseKeeper.stop();
         if (_ownHouseKeeper)
         {
+            removeBean(_houseKeeper);
             _houseKeeper = null;
         }
         _random = null;

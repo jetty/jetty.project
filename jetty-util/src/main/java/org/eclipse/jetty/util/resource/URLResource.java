@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,7 +22,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Objects;
 
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -128,11 +122,6 @@ public class URLResource extends Resource
         return _in != null;
     }
 
-    /**
-     * Returns true if the represented resource is a container/directory.
-     * If the resource is not a file, resources ending with "/" are
-     * considered directories.
-     */
     @Override
     public boolean isDirectory()
     {
@@ -290,9 +279,11 @@ public class URLResource extends Resource
     public Resource addPath(String path)
         throws IOException
     {
-        Objects.requireNonNull(path, "Path may not be null");
-
-        path = URIUtil.canonicalPath(path);
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        if (URIUtil.canonicalPath(path) == null)
+            throw new MalformedURLException(path);
 
         return newResource(URIUtil.addEncodedPaths(_url.toExternalForm(), URIUtil.encodePath(path)), _useCaches);
     }

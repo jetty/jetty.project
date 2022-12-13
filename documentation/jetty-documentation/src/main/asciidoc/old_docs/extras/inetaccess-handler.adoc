@@ -1,0 +1,32 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[inetaccess-handler]]
+=== InetAccess Handler
+
+[[inetaccess-handler-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.server.handler.InetAccessHandler`
+* Maven Artifact: org.eclipse.jetty:jetty-server
+* Javadoc: {JDURL}/org/eclipse/jetty/server/handler/InetAccessHandler.html
+
+[[inetaccess-handler-usage]]
+==== Usage
+
+Controls access to the wrapped handler using the real remote IP. Control is provided by and `IncludeExcludeSet` over a `InetAddressSet`.
+This handler uses the real internet address of the connection, not one reported in the forwarded for headers, as this cannot be as easily forged.
+
+==== Usage in Standard Distribution
+
+The InetAccess handler can be added to Jetty by activating the `inetaccess` module.

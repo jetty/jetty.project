@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,14 +14,13 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
-import java.nio.charset.UnsupportedCharsetException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -60,6 +55,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.NanoTime;
 
 public class HttpRequest implements Request
 {
@@ -82,7 +78,7 @@ public class HttpRequest implements Request
     private boolean versionExplicit;
     private long idleTimeout = -1;
     private long timeout;
-    private long timeoutAt;
+    private long timeoutNanoTime = Long.MAX_VALUE;
     private Content content;
     private boolean followRedirects;
     private List<HttpCookie> cookies;
@@ -200,6 +196,8 @@ public class HttpRequest implements Request
             String rawPath = uri.getRawPath();
             if (rawPath == null)
                 rawPath = "";
+            if (!rawPath.startsWith("/"))
+                rawPath = "/" + rawPath;
             this.path = rawPath;
             String query = uri.getRawQuery();
             if (query != null)
@@ -767,7 +765,7 @@ public class HttpRequest implements Request
     public ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
     {
         FutureResponseListener listener = new FutureResponseListener(this);
-        send(this, listener);
+        send(listener);
 
         try
         {
@@ -806,30 +804,38 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
-        send(this, listener);
+        sendAsync(client::send, listener);
     }
 
-    private void send(HttpRequest request, Response.CompleteListener listener)
+    void sendAsync(HttpDestination destination, Response.CompleteListener listener)
+    {
+        sendAsync(destination::send, listener);
+    }
+
+    private void sendAsync(BiConsumer<HttpRequest, List<Response.ResponseListener>> sender, Response.CompleteListener listener)
     {
         if (listener != null)
             responseListeners.add(listener);
-        sent();
-        client.send(request, responseListeners);
+        sender.accept(this, responseListeners);
     }
 
     void sent()
     {
-        long timeout = getTimeout();
-        timeoutAt = timeout > 0 ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) : -1;
+        if (timeoutNanoTime == Long.MAX_VALUE)
+        {
+            long timeout = getTimeout();
+            if (timeout > 0)
+                timeoutNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout);
+        }
     }
 
     /**
-     * @return The nanoTime at which the timeout expires or -1 if there is no timeout.
+     * @return The nanoTime at which the timeout expires or {@link Long#MAX_VALUE} if there is no timeout.
      * @see #timeout(long, TimeUnit)
      */
-    long getTimeoutAt()
+    long getTimeoutNanoTime()
     {
-        return timeoutAt;
+        return timeoutNanoTime;
     }
 
     protected List<Response.ResponseListener> getResponseListeners()
@@ -908,15 +914,7 @@ public class HttpRequest implements Request
         if (value == null)
             return "";
 
-        String encoding = "utf-8";
-        try
-        {
-            return URLEncoder.encode(value, encoding);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new UnsupportedCharsetException(encoding);
-        }
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private void extractParams(String query)
@@ -939,15 +937,7 @@ public class HttpRequest implements Request
 
     private String urlDecode(String value)
     {
-        String charset = "utf-8";
-        try
-        {
-            return URLDecoder.decode(value, charset);
-        }
-        catch (UnsupportedEncodingException x)
-        {
-            throw new UnsupportedCharsetException(charset);
-        }
+        return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 
     private URI buildURI(boolean withQuery)
@@ -964,14 +954,14 @@ public class HttpRequest implements Request
         return result;
     }
 
-    private URI newURI(String uri)
+    private URI newURI(String path)
     {
         try
         {
             // Handle specially the "OPTIONS *" case, since it is possible to create a URI from "*" (!).
-            if ("*".equals(uri))
+            if ("*".equals(path))
                 return null;
-            URI result = new URI(uri);
+            URI result = new URI(path);
             return result.isOpaque() ? null : result;
         }
         catch (URISyntaxException x)

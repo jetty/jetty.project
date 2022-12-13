@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -25,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -260,6 +256,44 @@ public class DispatcherTest
     }
 
     @Test
+    public void testForwardExForwardEx() throws Exception
+    {
+        _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
+        _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 56\r\n" +
+                "\r\n" +
+                "THROWING\r\n" +
+                "CAUGHT2 java.io.IOException: Expected\r\n" +
+                "AFTER\r\n";
+
+        String responses = _connector.getResponse("GET /context/RelDispatchServlet?path=include/throw HTTP/1.0\n\n");
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testIncludeExIncludeEx() throws Exception
+    {
+        _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
+        _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 122\r\n" +
+                "\r\n" +
+                "BEFORE\r\n" +
+                "THROWING\r\n" +
+                "CAUGHT1 java.io.IOException: Expected\r\n" +
+                "BETWEEN\r\n" +
+                "THROWING\r\n" +
+                "CAUGHT2 java.io.IOException: Expected\r\n" +
+                "AFTER\r\n";
+
+        String responses = _connector.getResponse("GET /context/RelDispatchServlet?include=true&path=include/throw HTTP/1.0\n\n");
+        assertEquals(expected, responses);
+    }
+
+    @Test
     public void testForwardThenInclude() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
@@ -434,6 +468,22 @@ public class DispatcherTest
         // Add filter that wraps response, intercepts close and writes after doChain
         _contextHandler.addFilter(WrappingFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         testForward();
+    }
+
+    @Test
+    public void testDispatchMapping() throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder("TestServlet", MappingServlet.class), "/TestServlet");
+        _contextHandler.addServlet(new ServletHolder("DispatchServlet", AsyncDispatch2TestServlet.class), "/DispatchServlet");
+        _contextHandler.addServlet(new ServletHolder("DispatchServlet2", AsyncDispatch2TestServlet.class), "/DispatchServlet2");
+
+        // TODO Test TCK hack for https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
+        String response = _connector.getResponse("GET /context/DispatchServlet HTTP/1.0\n\n");
+        assertThat(response, containsString("matchValue=DispatchServlet, pattern=/DispatchServlet, servletName=DispatchServlet, mappingMatch=EXACT"));
+
+        // TODO Test how it should work after fix for https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
+        String response2 = _connector.getResponse("GET /context/DispatchServlet2 HTTP/1.0\n\n");
+        assertThat(response2, containsString("matchValue=TestServlet, pattern=/TestServlet, servletName=TestServlet, mappingMatch=EXACT"));
     }
 
     public static class WrappingFilter implements Filter
@@ -670,12 +720,62 @@ public class DispatcherTest
         }
     }
 
+    public static class RelativeDispatch2Servlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            RequestDispatcher dispatcher = null;
+            String path = request.getParameter("path");
+            String include = request.getParameter("include");
+            ServletOutputStream out = response.getOutputStream();
+            try
+            {
+                out.println("BEFORE");
+                if (Boolean.parseBoolean(include))
+                    request.getRequestDispatcher(path).include(request, response);
+                else
+                    request.getRequestDispatcher(path).forward(request, response);
+                out.println("AFTER1");
+            }
+            catch (Throwable t)
+            {
+                out.println("CAUGHT1 " + t);
+            }
+
+            try
+            {
+                out.println("BETWEEN");
+                if (Boolean.parseBoolean(include))
+                    request.getRequestDispatcher(path).include(request, response);
+                else
+                    request.getRequestDispatcher(path).forward(request, response);
+                out.println("AFTER2");
+            }
+            catch (Throwable t)
+            {
+                out.println("CAUGHT2 " + t);
+            }
+            out.println("AFTER");
+        }
+    }
+
     public static class RogerThatServlet extends GenericServlet
     {
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             res.getWriter().print("Roger That!");
+        }
+    }
+
+    public static class ThrowServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            res.getOutputStream().println("THROWING");
+            throw new IOException("Expected");
         }
     }
 
@@ -975,6 +1075,47 @@ public class DispatcherTest
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
             response.getOutputStream().print(request.getDispatcherType().toString());
+        }
+    }
+
+    public static class MappingServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+        {
+            HttpServletMapping mapping = req.getHttpServletMapping();
+            if (mapping == null)
+            {
+                resp.getWriter().println("Get null HttpServletMapping");
+            }
+            else
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.append("matchValue=" + mapping.getMatchValue())
+                    .append(", pattern=" + mapping.getPattern())
+                    .append(", servletName=" + mapping.getServletName())
+                    .append(", mappingMatch=" + mapping.getMappingMatch());
+                resp.getWriter().println(sb.toString());
+            }
+        }
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+        {
+            this.doGet(req, resp);
+        }
+    }
+
+    public static class AsyncDispatch2TestServlet extends HttpServlet
+    {
+        public void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException
+        {
+            AsyncContext asyncContext = req.startAsync();
+            asyncContext.setTimeout(0);
+            asyncContext.dispatch("/TestServlet");
         }
     }
 }

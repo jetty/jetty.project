@@ -15,11 +15,18 @@
       <!-- Writer -->
       <Arg>
         <New class="org.eclipse.jetty.server.AsyncRequestLogWriter">
-          <Arg><Property name="jetty.base" default="." />/<Property>
-              <Name>jetty.requestlog.filePath</Name>
-              <Default><Property name="jetty.requestlog.dir" default="logs"/>/yyyy_mm_dd.request.log</Default>
-            </Property></Arg>
-          <Arg/>
+          <Arg>
+            <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+              <Arg><Property name="jetty.base"/></Arg>
+              <Arg>
+                <Property name="jetty.requestlog.filePath">
+                  <Default>
+                    <Property name="jetty.requestlog.dir" default="logs"/>/yyyy_MM_dd.request.log
+                  </Default>
+                </Property>
+              </Arg>
+            </Call>
+          </Arg>
 
           <Set name="filenameDateFormat"><Property name="jetty.requestlog.filenameDateFormat" default="yyyy_MM_dd"/></Set>
           <Set name="retainDays"><Property name="jetty.requestlog.retainDays" default="90"/></Set>

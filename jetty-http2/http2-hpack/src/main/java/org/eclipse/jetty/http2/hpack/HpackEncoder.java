@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -208,7 +203,7 @@ public class HpackEncoder
                     encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
                     encode(buffer, new HttpField(HttpHeader.C_PATH, request.getURI().getPathQuery()));
                     if (protocol != null)
-                        encode(buffer,new HttpField(HttpHeader.C_PROTOCOL,protocol));
+                        encode(buffer, new HttpField(HttpHeader.C_PROTOCOL, protocol));
                 }
             }
             else if (metadata.isResponse())
@@ -266,9 +261,9 @@ public class HpackEncoder
             if (_maxHeaderListSize > 0 && _headerListSize > _maxHeaderListSize)
             {
                 if (LOG.isDebugEnabled())
-                   LOG.warn("Header list size too large {} > {} metadata={}", _headerListSize, _maxHeaderListSize, metadata);
+                    LOG.warn("Header list size too large {} > {} metadata={}", _headerListSize, _maxHeaderListSize, metadata);
                 else
-                   LOG.warn("Header list size too large {} > {}", _headerListSize, _maxHeaderListSize);
+                    LOG.warn("Header list size too large {} > {}", _headerListSize, _maxHeaderListSize);
             }
 
             if (LOG.isDebugEnabled())

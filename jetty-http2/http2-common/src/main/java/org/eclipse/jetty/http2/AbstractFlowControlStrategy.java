@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -185,21 +181,21 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 
     protected void onSessionStalled(ISession session)
     {
-        sessionStall.set(System.nanoTime());
+        sessionStall.set(NanoTime.now());
         if (LOG.isDebugEnabled())
             LOG.debug("Session stalled {}", session);
     }
 
     protected void onStreamStalled(IStream stream)
     {
-        streamsStalls.put(stream, System.nanoTime());
+        streamsStalls.put(stream, NanoTime.now());
         if (LOG.isDebugEnabled())
             LOG.debug("Stream stalled {}", stream);
     }
 
     protected void onSessionUnstalled(ISession session)
     {
-        long stallTime = System.nanoTime() - sessionStall.getAndSet(0);
+        long stallTime = NanoTime.since(sessionStall.getAndSet(0));
         sessionStallTime.addAndGet(stallTime);
         if (LOG.isDebugEnabled())
             LOG.debug("Session unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), session);
@@ -210,7 +206,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         Long time = streamsStalls.remove(stream);
         if (time != null)
         {
-            long stallTime = System.nanoTime() - time;
+            long stallTime = NanoTime.since(time);
             streamsStallTime.addAndGet(stallTime);
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), stream);
@@ -223,7 +219,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
         long pastStallTime = sessionStallTime.get();
         long currentStallTime = sessionStall.get();
         if (currentStallTime != 0)
-            currentStallTime = System.nanoTime() - currentStallTime;
+            currentStallTime = NanoTime.since(currentStallTime);
         return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 
@@ -231,8 +227,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     public long getStreamsStallTime()
     {
         long pastStallTime = streamsStallTime.get();
-        long now = System.nanoTime();
-        long currentStallTime = streamsStalls.values().stream().reduce(0L, (result, time) -> now - time);
+        long now = NanoTime.now();
+        long currentStallTime = streamsStalls.values().stream().reduce(0L, (result, time) -> NanoTime.elapsed(time, now));
         return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 

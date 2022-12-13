@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -41,6 +36,20 @@ import org.slf4j.LoggerFactory;
  * </pre>
  * <p>Depending on the {@code type}, the content may have a different format,
  * so there are specialized content parsers.</p>
+ * <p>A typical exchange is:</p>
+ * <pre>
+ * BEGIN_REQUEST
+ * PARAMS (length &gt; 0)
+ * PARAMS (length == 0 to signal end of PARAMS frames)
+ * [STDIN (length &gt; 0 in case of request content)]
+ * STDIN (length == 0 to signal end of STDIN frames and end of request)
+ * ...
+ * STDOUT (length &gt; 0 with HTTP headers and HTTP content)
+ * STDOUT (length == 0 to signal end of STDOUT frames)
+ * [STDERR (length &gt; 0)]
+ * [STDERR (length == 0 to signal end of STDERR frames)]
+ * END_REQUEST
+ * </pre>
  *
  * @see HeaderParser
  * @see ContentParser
@@ -75,7 +84,10 @@ public abstract class Parser
                     ContentParser contentParser = findContentParser(headerParser.getFrameType());
                     if (headerParser.getContentLength() == 0)
                     {
-                        contentParser.noContent();
+                        padding = headerParser.getPaddingLength();
+                        state = State.PADDING;
+                        if (contentParser.noContent())
+                            return true;
                     }
                     else
                     {
@@ -94,9 +106,9 @@ public abstract class Parser
                             // parsing; the async operation will eventually resume parsing.
                             return true;
                         }
+                        padding = headerParser.getPaddingLength();
+                        state = State.PADDING;
                     }
-                    padding = headerParser.getPaddingLength();
-                    state = State.PADDING;
                     break;
                 }
                 case PADDING:
@@ -181,7 +193,6 @@ public abstract class Parser
             @Override
             public void onFailure(int request, Throwable failure)
             {
-
             }
         }
     }

@@ -1,0 +1,28 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[advanced-contributing]]
+== Contributing to Jetty
+
+There are many ways to contribute to Jetty, from hardened developers looking to sharpen their skills to neophytes interested in working with an open source project for the first time. 
+Here we show ways to interact with the Jetty community, give feedback to the developers and contribute patches to both core Jetty code and even this document.
+
+include::community.adoc[]
+include::documentation.adoc[]
+include::source-build.adoc[]
+include::coding-standards.adoc[]
+include::bugs.adoc[]
+include::patches.adoc[]
+include::security.adoc[]
+include::releasing-jetty.adoc[]
+include::release-testing.adoc[]

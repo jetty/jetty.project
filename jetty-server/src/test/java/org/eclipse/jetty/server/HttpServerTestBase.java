@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -52,8 +47,6 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,8 +209,16 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             byte[] buffer = new byte[64 * 1024];
             Arrays.fill(buffer, (byte)'A');
 
-            os.write(buffer);
-            os.flush();
+            try
+            {
+                os.write(buffer);
+                os.flush();
+            }
+            catch (Exception e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("write exception", e);
+            }
 
             // Read the response.
             String response = readResponse(client);
@@ -1755,7 +1756,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
     public void testShutdown() throws Exception
     {
         configureServer(new ReadExactHandler());
@@ -1796,7 +1796,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
     public void testChunkedShutdown() throws Exception
     {
         configureServer(new ReadExactHandler(4096));

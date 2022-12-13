@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -247,23 +242,22 @@ public class BufferUtilTest
         ThreadLocalRandom.current().nextBytes(bytes);
         ByteBuffer buffer = BufferUtil.allocate(capacity);
         BufferUtil.append(buffer, bytes, 0, capacity);
-        long startTest = System.nanoTime();
+        long startTest = NanoTime.now();
         for (int i = 0; i < testRuns; i++)
         {
-            long start = System.nanoTime();
+            long start = NanoTime.now();
             for (int j = 0; j < iterations; j++)
             {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                long startRun = System.nanoTime();
+                long startRun = NanoTime.now();
                 BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);
-                long elapsedRun = System.nanoTime() - startRun;
-//                LOG.warn("run elapsed={}ms", elapsedRun / 1000);
+//                LOG.info("run elapsed={}ms", NanoTime.elapsedFrom(startRun) / 1000);
                 assertThat("Bytes in out equal bytes in buffer", Arrays.equals(bytes, out.toByteArray()), is(true));
             }
-            long elapsed = System.nanoTime() - start;
+            long elapsed = NanoTime.since(start);
             LOG.warn("elapsed={}ms average={}ms", elapsed / 1000, elapsed / iterations / 1000);
         }
-        LOG.warn("overall average: {}ms", (System.nanoTime() - startTest) / testRuns / iterations / 1000);
+        LOG.warn("overall average: {}ms", NanoTime.since(startTest) / testRuns / iterations / 1000);
     }
 
     @Test

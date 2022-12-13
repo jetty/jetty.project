@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jmx</artifactId>
@@ -10,6 +10,7 @@
   <description>JMX management artifact for jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmx</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.jmx.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>
@@ -21,20 +22,12 @@
           </argLine>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.jmx.*</onlyAnalyze>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -53,7 +46,6 @@
     <dependency>
       <groupId>com.openpojo</groupId>
       <artifactId>openpojo</artifactId>
-      <version>0.8.13</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

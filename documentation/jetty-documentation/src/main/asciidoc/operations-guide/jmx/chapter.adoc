@@ -1,0 +1,26 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-jmx]]
+=== JMX Monitoring & Management
+
+Monitoring and management of a Jetty server is important because it allows you to monitor the status of the server (_"Is the server processing requests?"_) and to manage -- i.e. read and possibly change -- its configuration.
+
+The ability to read and change the Jetty configuration is very important for troubleshooting Jetty -- please refer to the xref:og-troubleshooting[troubleshooting section] for more information.
+
+Jetty relies on the Java Management Extensions (JMX) APIs included in OpenJDK to provide monitoring and management.
+
+The JMX APIs support a JVM-local `MBeanServer`, accessible only from within the JVM itself (or by tools that can _attach_ to a running JVM), and a way to expose the `MBeanServer` to remote clients via Java's RMI (Remote Method Invocation).
+
+include::jmx-local.adoc[]
+include::jmx-remote.adoc[]

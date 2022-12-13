@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -32,12 +27,13 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.util.messages.MessageInputStream;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageInputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
@@ -72,6 +68,36 @@ public class MessageInputStreamTest
                 assertThat("Message", message, is("Hello World"));
             }
         });
+    }
+
+    @Test
+    public void testMultipleReadsIntoSingleByteArray() throws IOException
+    {
+        try (MessageInputStream stream = new MessageInputStream())
+        {
+            // Append a single message (simple, short)
+            Frame frame = new Frame(OpCode.TEXT);
+            frame.setPayload("Hello World");
+            frame.setFin(true);
+            stream.accept(frame, Callback.NOOP);
+
+            // Read entire message it from the stream.
+            byte[] bytes = new byte[100];
+
+            int read = stream.read(bytes, 0, 6);
+            assertThat(read, is(6));
+
+            read = stream.read(bytes, 6, 10);
+            assertThat(read, is(5));
+
+            read = stream.read(bytes, 11, 10);
+            assertThat(read, is(-1));
+
+            String message = new String(bytes, 0, 11, StandardCharsets.UTF_8);
+
+            // Test it
+            assertThat("Message", message, is("Hello World"));
+        }
     }
 
     @Test
@@ -253,5 +279,24 @@ public class MessageInputStreamTest
                 assertThat("Message", message, is("Hello World"));
             }
         });
+    }
+
+    @Test
+    public void testReadSingleByteIsNotSigned() throws Exception
+    {
+        try (MessageInputStream stream = new MessageInputStream())
+        {
+            // Byte must be greater than 127.
+            int theByte = 200;
+            // Append a single message (simple, short)
+            Frame frame = new Frame(OpCode.BINARY);
+            frame.setPayload(new byte[]{(byte)theByte});
+            frame.setFin(true);
+            stream.accept(frame, Callback.NOOP);
+
+            // Single byte read must not return a signed byte.
+            int read = stream.read();
+            assertEquals(theByte, read);
+        }
     }
 }

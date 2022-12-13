@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -164,8 +158,6 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             }).collect(Collectors.toList());
 
         webApp.setWebInfLib(webInfLibs);
-        
-        System.err.println("WEBINF LIB = " + webInfLibs);
 
         //if we have not already set web.xml location, need to set one up
         if (webApp.getDescriptor() == null)
@@ -184,8 +176,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
-                
-                System.err.println("TRYING TO FIND WEB.XML as " + r);
+
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
@@ -195,7 +186,6 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             //Still don't have a web.xml file: finally try the configured static resource directory if there is one
             if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
             {
-                System.err.println("TRYING TO FIND WEB.XML in src/main/webapp instead");
                 File f = new File(new File(webAppSourceDirectory, "WEB-INF"), "web.xml");
                 if (f.exists() && f.isFile())
                 {
@@ -203,8 +193,6 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 }
             }
         }
-
-        System.err.println("DOING OVERLAYS");
         
         //process any overlays and the war type artifacts, and
         //sets up the base resource collection for the webapp

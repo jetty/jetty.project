@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,13 +14,14 @@
 package org.eclipse.jetty.client;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -35,23 +31,50 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * Applications add subclasses of {@link Proxy} to this configuration via:
  * <pre>
  * ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
- * proxyConfig.getProxies().add(new HttpProxy(proxyHost, 8080));
+ * proxyConfig.addProxy(new HttpProxy(proxyHost, 8080));
  * </pre>
  *
  * @see HttpClient#getProxyConfiguration()
  */
 public class ProxyConfiguration
 {
-    private final List<Proxy> proxies = new ArrayList<>();
+    private final List<Proxy> proxies = new BlockingArrayQueue<>();
 
+    /**
+     * @deprecated use {@link #addProxy(Proxy)} and {@link #removeProxy(Proxy)} instead
+     * @return the forward proxies to use
+     */
+    @Deprecated(forRemoval = true)
     public List<Proxy> getProxies()
     {
         return proxies;
     }
 
+    /**
+     * Adds a proxy.
+     *
+     * @param proxy a proxy
+     * @throws NullPointerException if {@code proxy} is null
+     */
+    public void addProxy(Proxy proxy)
+    {
+        proxies.add(Objects.requireNonNull(proxy));
+    }
+
+    /**
+     * Removes a proxy.
+     *
+     * @param proxy a proxy
+     * @return true if a match is found
+     */
+    public boolean removeProxy(Proxy proxy)
+    {
+        return proxies.remove(proxy);
+    }
+
     public Proxy match(Origin origin)
     {
-        for (Proxy proxy : getProxies())
+        for (Proxy proxy : proxies)
         {
             if (proxy.matches(origin))
                 return proxy;

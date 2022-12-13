@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -118,7 +114,7 @@ public class HttpCookie
         _secure = secure;
         _comment = comment;
         _version = version;
-        _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
+        _expiration = maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(maxAge);
         _sameSite = sameSite;
     }
 
@@ -139,7 +135,7 @@ public class HttpCookie
         _secure = cookie.getSecure();
         _comment = cookie.getComment();
         _version = cookie.getVersion();
-        _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
+        _expiration = _maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(_maxAge);
         // support for SameSite values has not yet been added to java.net.HttpCookie
         _sameSite = getSameSiteFromComment(cookie.getComment());
     }
@@ -230,7 +226,7 @@ public class HttpCookie
      */
     public boolean isExpired(long timeNanos)
     {
-        return _expiration >= 0 && timeNanos >= _expiration;
+        return _expiration != -1 && NanoTime.isBefore(_expiration, timeNanos);
     }
 
     /**

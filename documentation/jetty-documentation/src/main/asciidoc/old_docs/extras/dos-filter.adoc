@@ -1,0 +1,107 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[dos-filter]]
+=== Denial of Service Filter
+
+[[dos-filter-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.servlets.DoSFilter`
+* Maven Artifact: org.eclipse.jetty:jetty-servlets
+* Javadoc: {JDURL}/org/eclipse/jetty/servlets/DoSFilter.html
+
+[[dos-filter-usage]]
+==== Usage
+
+The Denial of Service (DoS) filter limits exposure to request flooding, whether malicious, or as a result of a misconfigured client.
+The DoS filter keeps track of the number of requests from a connection per second.
+If the requests exceed the limit, Jetty rejects, delays, or throttles the request, and sends a warning message.
+The filter works on the assumption that the attacker might be written in simple blocking style, so by suspending requests you are hopefully consuming the attacker's resources.
+
+[[dos-filter-using]]
+==== Using the DoS Filter
+
+Jetty places throttled requests in a priority queue, giving priority first to authenticated users and users with an HttpSession, then to connections identified by their IP addresses.
+Connections with no way to identify them have lowest priority.
+To uniquely identify authenticated users, you should implement the The extractUserId(ServletRequest request) function.
+
+===== Required JARs
+
+To use the DoS Filter, these JAR files must be available in WEB-INF/lib:
+
+* $JETTY_HOME/lib/jetty-util.jar
+* $JETTY_HOME/lib/jetty-servlets.jar
+
+===== Sample Configuration
+
+Place the configuration in a webapp's `web.xml` or `jetty-web.xml`.
+The default configuration allows 25 requests per connection at a time, servicing more important requests first, and queuing up the rest.
+This example allow 30 requests at a time:
+
+[source, xml, subs="{sub-order}"]
+----
+<filter>
+   <filter-name>DoSFilter</filter-name>
+   <filter-class>org.eclipse.jetty.servlets.DoSFilter</filter-class>
+   <init-param>
+     <param-name>maxRequestsPerSec</param-name>
+     <param-value>30</param-value>
+   </init-param>
+ </filter>
+----
+
+[[dos-filter-init]]
+===== Configuring DoS Filter Parameters
+
+The following `init` parameters control the behavior of the filter:
+
+maxRequestsPerSec::
+Maximum number of requests from a connection per second.
+Requests in excess of this are first delayed, then throttled.
+Default is 25.
+
+delayMs::
+Delay imposed on all requests over the rate limit, before they are considered at all:
+* 100 (ms) = Default
+* -1 = Reject request
+* 0 = No delay
+* any other value = Delay in ms
+
+maxWaitMs::
+Length of time, in ms, to blocking wait for the throttle semaphore.
+Default is 50 ms.
+throttledRequests::
+Number of requests over the rate limit able to be considered at once.
+Default is 5.
+throttleMs::
+Length of time, in ms, to async wait for semaphore. Default is 30000L.
+maxRequestMs::
+Length of time, in ms, to allow the request to run. Default is 30000L.
+maxIdleTrackerMs::
+Length of time, in ms, to keep track of request rates for a connection, before deciding that the user has gone away, and discarding it.
+Default is 30000L.
+insertHeaders::
+If true, insert the DoSFilter headers into the response.
+Defaults to true.
+trackSessions::
+If true, usage rate is tracked by session if a session exists.
+Defaults to true.
+remotePort::
+If true and session tracking is not used, then rate is tracked by IP and port (effectively connection).
+Defaults to false.
+ipWhitelist::
+A comma-separated list of IP addresses that will not be rate limited.
+managedAttr::
+If set to true, then this servlet is set as a ServletContext attribute with the filter name as the attribute name.
+This allows a context external mechanism (for example, JMX via `ContextHandler.MANAGED_ATTRIBUTES`) to manage the configuration of the filter.

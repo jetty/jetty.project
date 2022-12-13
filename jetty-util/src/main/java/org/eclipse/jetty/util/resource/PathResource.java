@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -61,7 +56,7 @@ public class PathResource extends Resource
     private final URI uri;
     private final boolean belongsToDefaultFileSystem;
 
-    private final Path checkAliasPath()
+    private Path checkAliasPath()
     {
         Path abs = path;
 
@@ -73,7 +68,6 @@ public class PathResource extends Resource
          * we will just use the original URI to construct the
          * alias reference Path.
          */
-
         if (!URIUtil.equalsIgnoreEncodings(uri, path.toUri()))
         {
             try
@@ -90,9 +84,14 @@ public class PathResource extends Resource
         }
 
         if (!abs.isAbsolute())
-        {
             abs = path.toAbsolutePath();
-        }
+
+        // Any normalization difference means it's an alias,
+        // and we don't want to bother further to follow
+        // symlinks as it's an alias anyway.
+        Path normal = path.normalize();
+        if (!isSameName(abs, normal))
+            return normal;
 
         try
         {
@@ -101,11 +100,8 @@ public class PathResource extends Resource
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
-
                 if (!isSameName(abs, real))
-                {
                     return real;
-                }
             }
         }
         catch (IOException e)
@@ -238,8 +234,7 @@ public class PathResource extends Resource
                 LOG.debug("Unable to get real/canonical path for {}", path, e);
         }
 
-        // cleanup any lingering relative path nonsense (like "/./" and "/../")
-        this.path = absPath.normalize();
+        this.path = absPath;
 
         assertValidPath(path);
         this.uri = this.path.toUri();
@@ -259,7 +254,7 @@ public class PathResource extends Resource
         // Calculate the URI and the path separately, so that any aliasing done by
         // FileSystem.getPath(path,childPath) is visible as a difference to the URI
         // obtained via URIUtil.addDecodedPath(uri,childPath)
-
+        // The checkAliasPath normalization checks will only work correctly if the getPath implementation here does not normalize.
         this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
         if (isDirectory() && !childPath.endsWith("/"))
             childPath += "/";
@@ -334,22 +329,42 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(final String subpath) throws IOException
+    public boolean isSame(Resource resource)
     {
-        String cpath = URIUtil.canonicalPath(subpath);
+        try
+        {
+            if (resource instanceof PathResource)
+            {
+                Path path = ((PathResource)resource).getPath();
+                return Files.isSameFile(getPath(), path);
+            }
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ignored", e);
+        }
+        return false;
+    }
 
-        if ((cpath == null) || (cpath.length() == 0))
-            throw new MalformedURLException(subpath);
+    @Override
+    public Resource addPath(final String subPath) throws IOException
+    {
+        // Check that the path is within the root,
+        // but use the original path to create the
+        // resource, to preserve aliasing.
+        if (URIUtil.canonicalPath(subPath) == null)
+            throw new MalformedURLException(subPath);
 
-        if ("/".equals(cpath))
+        if ("/".equals(subPath))
             return this;
 
-        // subpaths are always under PathResource
-        // compensate for input subpaths like "/subdir"
+        // Sub-paths are always under PathResource
+        // compensate for input sub-paths like "/subdir"
         // where default resolve behavior would be
         // to treat that like an absolute path
 
-        return new PathResource(this, subpath);
+        return new PathResource(this, subPath);
     }
 
     private void assertValidPath(Path path)

@@ -1,0 +1,65 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[moved-context-handler]]
+=== Moved Context Handler
+
+[[moved-context-handler-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.server.handler.MovedContextHandler`
+* Maven Artifact: org.eclipse.jetty:jetty-server
+* Javadoc: {JDURL}/org/eclipse/jetty/server/handler/MovedContextHandler.html
+
+[[moved-context-handler-usage]]
+==== Usage
+
+You can use the `MovedContextHandler` to relocate or redirect a context that has changed context path and/or virtual hosts.
+
+You can configure it to _permanently_ redirect the old URL to the new URL, in which case Jetty sends a Http Status code of 301 to the browser with the new URL.
+Alternatively, you can make it non-permanent, in which case Jetty sends a 302 Http Status code along with the new URL.
+
+In addition, as with any other context, you can configure a list of virtual hosts, meaning that this context responds only to requests to one of the listed host names.
+
+Suppose you have a context deployed at `/foo`, but that now you want to deploy at the root context `/` instead.
+
+* First you reconfigure and redeploy the context on Jetty.
+* Next you need a way to redirect all the browsers who have bookmarked `/foo` to the new path.
+You create a new xref:configuring-contexts[context xml] file in `{$jetty/.base}/webapps` and configure the `MovedContextHandler` to do the redirection from `/foo` to `/`.
+
+Below is an example.
+This is a permanent redirection, which also preserves `pathinfo` and query strings on the redirect:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.server.handler.MovedContextHandler">
+  <Set name="contextPath">/foo</Set>
+  <Set name="newContextURL">/</Set>
+  <Set name="permanent">true</Set>
+  <Set name="discardPathInfo">false</Set>
+  <Set name="discardQuery">false</Set>
+
+  <Set name="virtualHosts">
+    <Array type="String">
+          <Item>209.235.245.73</Item>
+          <Item>127.0.0.73</Item>
+          <Item>acme.org</Item>
+          <Item>www.acme.org</Item>
+          <Item>server.acme.org</Item>
+    </Array>
+  </Set>
+</Configure>
+----

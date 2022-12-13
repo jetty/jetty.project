@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,9 +14,9 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -40,6 +35,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -148,7 +144,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private boolean _useFileMappedBuffer = false;
     private String _relativeResourceBase;
     private ServletHandler _servletHandler;
-    private ServletHolder _defaultHolder;
 
     public DefaultServlet(ResourceService resourceService)
     {
@@ -176,7 +171,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
-        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip", false)));
+        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
         _resourceService.setPathInfoOnly(getInitBoolean("pathInfoOnly", _resourceService.isPathInfoOnly()));
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
@@ -222,7 +217,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             if (_stylesheet == null)
             {
-                _stylesheet = Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+                _stylesheet = ResourceHandler.getDefaultStylesheet();
             }
         }
         catch (Exception e)
@@ -284,7 +279,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _resourceService.setContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
-        List<String> gzipEquivalentFileExtensions = new ArrayList<String>();
+        List<String> gzipEquivalentFileExtensions = new ArrayList<>();
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
         if (otherGzipExtensions != null)
         {
@@ -304,18 +299,17 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
 
         _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
-        for (ServletHolder h : _servletHandler.getServlets())
-        {
-            if (h.getServletInstance() == this)
-                _defaultHolder = h;
-        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("resource base = {}", _resourceBase);
     }
 
-    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, boolean gzip)
+    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
     {
+        if (precompressed == null && gzip == null)
+        {
+            return dft;
+        }
         List<CompressedContentFormat> ret = new ArrayList<>();
         if (precompressed != null && precompressed.indexOf('=') > 0)
         {
@@ -325,7 +319,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 String encoding = setting[0].trim();
                 String extension = setting[1].trim();
                 ret.add(new CompressedContentFormat(encoding, extension));
-                if (gzip && !ret.contains(CompressedContentFormat.GZIP))
+                if (gzip == Boolean.TRUE && !ret.contains(CompressedContentFormat.GZIP))
                     ret.add(CompressedContentFormat.GZIP);
             }
         }
@@ -337,7 +331,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 ret.add(CompressedContentFormat.GZIP);
             }
         }
-        else if (gzip)
+        else if (gzip == Boolean.TRUE)
         {
             // gzip handling is for backwards compatibility with older Jetty
             ret.add(CompressedContentFormat.GZIP);
@@ -378,16 +372,21 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         return value;
     }
 
-    private boolean getInitBoolean(String name, boolean dft)
+    private Boolean getInitBoolean(String name)
     {
         String value = getInitParameter(name);
         if (value == null || value.length() == 0)
-            return dft;
+            return null;
         return (value.startsWith("t") ||
             value.startsWith("T") ||
             value.startsWith("y") ||
             value.startsWith("Y") ||
             value.startsWith("1"));
+    }
+
+    private boolean getInitBoolean(String name, boolean dft)
+    {
+        return Optional.ofNullable(getInitBoolean(name)).orElse(dft);
     }
 
     private int getInitInt(String name, int dft)
@@ -430,8 +429,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             else
             {
-                URL u = _servletContext.getResource(pathInContext);
-                r = _contextHandler.newResource(u);
+                return null;
             }
 
             if (LOG.isDebugEnabled())
@@ -499,9 +497,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             return null;
 
         String welcomeServlet = null;
-        for (int i = 0; i < _welcomes.length; i++)
+        for (String s : _welcomes)
         {
-            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
+            String welcomeInContext = URIUtil.addPaths(pathInContext, s);
             Resource welcome = getResource(welcomeInContext);
             if (welcome != null && welcome.exists())
                 return welcomeInContext;
@@ -509,9 +507,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
             {
                 ServletHandler.MappedServlet entry = _servletHandler.getMappedServlet(welcomeInContext);
-                @SuppressWarnings("ReferenceEquality")
-                boolean isDefaultHolder = (entry.getServletHolder() != _defaultHolder);
-                if (entry != null && isDefaultHolder &&
+                if (entry != null && entry.getServletHolder().getServletInstance() != this &&
                     (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
                     welcomeServlet = welcomeInContext;
             }

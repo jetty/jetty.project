@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -39,6 +34,7 @@ import java.util.jar.JarOutputStream;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.security.Credential;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
@@ -53,15 +49,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.condition.OS.MAC;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 public class PropertyUserStoreTest
 {
-    private final class UserCount implements PropertyUserStore.UserListener
+    private static final class UserCount implements PropertyUserStore.UserListener
     {
         private final AtomicInteger userCount = new AtomicInteger();
-        private final List<String> users = new ArrayList<String>();
+        private final List<String> users = new ArrayList<>();
 
         private UserCount()
         {
@@ -86,9 +81,8 @@ public class PropertyUserStoreTest
 
         public void awaitCount(int expectedCount) throws InterruptedException
         {
-            long timeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + TimeUnit.SECONDS.toMillis(10);
-
-            while (userCount.get() != expectedCount && (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) < timeout))
+            long start = NanoTime.now();
+            while (userCount.get() != expectedCount && NanoTime.secondsSince(start) < 10)
             {
                 TimeUnit.MILLISECONDS.sleep(100);
             }
@@ -191,15 +185,15 @@ public class PropertyUserStoreTest
 
         store.start();
 
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("tom"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("dick"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("harry"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("tom"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("dick"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("harry"), notNullValue());
         userCount.assertThatCount(is(3));
         userCount.awaitCount(3);
     }
 
     @Test
-    public void testPropertyUserStoreFails() throws Exception
+    public void testPropertyUserStoreFails()
     {
         assertThrows(IllegalStateException.class, () ->
         {
@@ -224,12 +218,12 @@ public class PropertyUserStoreTest
 
         store.start();
 
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-            store.getUserIdentity("tom"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-            store.getUserIdentity("dick"), notNullValue());
-        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", //
-            store.getUserIdentity("harry"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", //
+            store.getUserPrincipal("tom"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", //
+            store.getUserPrincipal("dick"), notNullValue());
+        assertThat("Failed to retrieve user directly from PropertyUserStore", //
+            store.getUserPrincipal("harry"), notNullValue());
         userCount.assertThatCount(is(3));
         userCount.awaitCount(3);
     }
@@ -264,7 +258,7 @@ public class PropertyUserStoreTest
         addAdditionalUser(usersFile, "skip: skip, roleA\n");
         userCount.awaitCount(4);
         assertThat(loadCount.get(), is(2));
-        assertThat(store.getUserIdentity("skip"), notNullValue());
+        assertThat(store.getUserPrincipal("skip"), notNullValue());
         userCount.assertThatCount(is(4));
         userCount.assertThatUsers(hasItem("skip"));
 
@@ -282,7 +276,6 @@ public class PropertyUserStoreTest
     }
 
     @Test
-    @DisabledOnOs({MAC, WINDOWS}) // File is locked on OS, cannot change.
     public void testPropertyUserStoreLoadRemoveUser() throws Exception
     {
         testdir.ensureEmpty();

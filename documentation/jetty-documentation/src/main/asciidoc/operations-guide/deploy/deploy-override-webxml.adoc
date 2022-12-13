@@ -1,0 +1,55 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-deploy-jetty-override-web-xml]]
+==== Overriding `web.xml`
+
+You can configure an additional `web.xml` that complements the `web.xml` file that is present in the web application `+*.war+` file.
+This additional `web.xml` is processed _after_ the `+*.war+` file `web.xml`.
+This allows you to add host specific configuration or server specific configuration without having to extract the web application `web.xml`, modify it, and repackage it in the `+*.war+` file.
+
+.mywebapp.xml
+[source,xml,highlight=8]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/mywebapp</Set>
+  <Set name="war">/opt/webapps/mywebapp.war</Set>
+  <Set name="overrideDescriptor">/opt/webapps/mywebapp-web.xml</Set>
+</Configure>
+----
+
+The format of the additional `web.xml` is exactly the same as a standard `web.xml` file, for example:
+
+.mywebapp-web.xml
+[source,xml,linenums,highlight=10-11]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+  <servlet>
+    <servlet-name>my-servlet</servlet-name>
+    <init-param>
+      <param-name>host</param-name>
+      <param-value>192.168.0.13</param-value>
+    </init-param>
+  </servlet>
+</web-app>
+----
+
+In the example above, you configured the `my-servlet` Servlet (defined in the web application `web.xml`), adding a host specific `init-param` with the IP address of the host.
+

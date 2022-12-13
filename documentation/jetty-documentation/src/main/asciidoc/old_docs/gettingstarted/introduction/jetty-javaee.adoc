@@ -1,0 +1,104 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[jetty-javaee]]
+=== Jetty and Java EE Web Profile
+
+Jetty implements aspects of the Java EE specification, primarily the Servlet Specification.
+Recent releases of the Java EE platform have introduced a Web Profile, recognizing that many developers need only a subset of the many technologies under the Java EE umbrella.
+
+While Jetty itself does not ship all of the Web Profile technologies, Jetty architecture is such that you can plug in third party implementations to produce a container customized to your exact needs.
+
+[[jetty-javaee-7]]
+==== Java EE 7 Web Profile
+
+In the forthcoming Java EE-7 specification, the Web Profile reflects updates in its component specifications and adds some new ones:
+
+.JavaEE7 Web Profile
+[cols=",,,",options="header",]
+|=======================================================================
+|JSR |Name |Included with jetty-9.1.x |Pluggable
+
+|http://jcp.org/en/jsr/detail?id=340[JSR 340] |Servlet Specification API 3.1 |Yes |
+
+|http://jcp.org/en/jsr/detail?id=344[JSR 344] |Java Server Faces 2.2 (JSF) |No |Yes, https://javaserverfaces.java.net/[Mojarra] or http://myfaces.apache.org/[MyFaces]
+
+|http://jcp.org/en/jsr/detail?id=245[JSR 245] / http://jcp.org/en/jsr/detail?id=341[JSR 341] |Java Server Pages 2.3/Java Expression Language 3.0 (JSP/EL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=52[JSR 52] |Java Standard Tag Library 1.2 (JSTL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=45[JSR 45] |Debugging Support for Other Languages 1.0 |Yes (via JSP) |Yes (via JSP)
+
+|http://jcp.org/en/jsr/detail?id=346[JSR 346] |Contexts and Dependency Injection for the JavaEE Platform 1.1 (Web Beans) |No |Yes, http://seamframework.org/Weld[Weld]
+
+|http://jcp.org/en/jsr/detail?id=330[JSR 330] |Dependency Injection for Java 1.0 |No |Yes as part of a CDI implementation, http://seamframework.org/Weld[Weld]
+
+|http://jcp.org/en/jsr/detail?id=316[JSR 316] |Managed Beans 1.0 |No |Yes, as part of another technology
+
+|http://jcp.org/en/jsr/detail?id=345[JSR 345] |Enterprise JavaBeans 3.2 Lite |No |
+
+|http://jcp.org/en/jsr/detail?id=338[JSR 338] |Java Persistence 2.1 (JPA) |No |Yes, eg http://www.hibernate.org/[Hibernate]
+
+|http://jcp.org/en/jsr/detail?id=250[JSR 250] |Common Annotations for the Java Platform 1.2 |Yes |Partially (for non-core Servlet Spec annotations)
+
+|http://jcp.org/en/jsr/detail?id=907[JSR 907] |Java Transaction API 1.2 (JTA) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=349[JSR 349] |Bean Validation 1.1 |No |Yes as part of another technology eg JSF, or a stand-alone implementation such as http://www.hibernate.org/subprojects/validator/docs.html[Hiberate
+Validator]
+
+|http://jcp.org/en/jsr/detail?id=339[JSR 339] |Java API for RESTful Web Services 2.0 (JAX-RS) |No |
+
+|http://jcp.org/en/jsr/detail?id=356[JSR 356] |Java API for Websocket 1.0 |Yes |No
+
+|http://jcp.org/en/jsr/detail?id=353[JSR 353] |Java API for JSON Processing 1.0 (JSON-P) |No |Yes, eg JSON-P https://java.net/projects/jsonp/[reference implementation]
+
+|http://jcp.org/en/jsr/detail?id=318[JSR 318] |Interceptors 1.2 |No |Yes as part of a CDI implementation
+|=======================================================================
+
+[[jetty-javaee-6]]
+==== Jetty EE 6 Web Profile
+
+Here is the matrix of JSRs for Java EE 6 Web Profile, and how they relate to Jetty:
+
+.Java EE 6 Web Profile
+[cols=",,,",options="header",]
+|=======================================================================
+|JSR |Name |Included with jetty-9.0.x |Pluggable
+
+|http://jcp.org/en/jsr/detail?id=315[JSR 315] |Servlet Specification API 3.0 |Yes |
+
+|http://jcp.org/en/jsr/detail?id=314[JSR 314] |JavaServer Faces 2.0 (JSF) |No |Yes, for example, https://javaserverfaces.java.net/[Mojarra] or http://myfaces.apache.org/[MyFaces]
+
+|http://jcp.org/en/jsr/detail?id=245[JSR 245] |JavaServer Pages 2.2/Java Expression Language 2.2 (JSP/EL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=52[JSR 52] |Java Standard Tag Library 1.2 (JSTL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=45[JSR 45] |Debugging Support for Other Languages 1.0 |Yes (via JSP) |Yes (via JSP)
+
+|http://jcp.org/en/jsr/detail?id=299[JSR 299] |Contexts and Dependency Injection for the Java EE Platform 1.0 (Web Beans) |No |Yes, http://seamframework.org/Weld[Weld] or http://openwebbeans.apache.org/[OpenWebBeans]
+
+|http://jcp.org/en/jsr/detail?id=330[JSR 330] |Dependency Injection for Java 1.0 |No |Yes as part of a CDI implementation, http://seamframework.org/Weld[Weld]
+
+|http://jcp.org/en/jsr/detail?id=316[JSR 316] |Managed Beans 1.0 |No |Yes, as part of another technology.
+
+|http://jcp.org/en/jsr/detail?id=318[JSR 318] |Enterprise JavaBeans 3.1 |No |Yes, OpenEJB
+
+|http://jcp.org/en/jsr/detail?id=317[JSR 317] |Java Persistence 2.0 (JPA) |No |Yes, http://www.hibernate.org/[Hibernate]
+
+|http://jcp.org/en/jsr/detail?id=250[JSR 250] |Common Annotations for the Java Platform |Yes |Partially (for non-core Servlet Spec annotations)
+
+|http://jcp.org/en/jsr/detail?id=907[JSR 907] |Java Transaction API (JTA) |Yes |Implementations are pluggable, such as http://www.atomikos.com/[Atomikos], http://jotm.ow2.org/[JOTM], http://jencks.codehaus.org/Transaction+Manager[Jencks (Geronimo Transaction Manager)]
+
+|http://jcp.org/en/jsr/detail?id=303[JSR 303] |Bean Validation 1.0 |No |Yes as part of another technology (JSF), or a stand-alone implementation such as http://www.hibernate.org/subprojects/validator/docs.html[Hiberate
+Validator]
+|=======================================================================

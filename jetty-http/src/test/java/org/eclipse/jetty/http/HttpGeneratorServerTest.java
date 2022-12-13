@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -869,5 +864,20 @@ public class HttpGeneratorServerTest
         String headers = BufferUtil.toString(header);
         assertThat(headers, containsString(HttpHeaderValue.KEEP_ALIVE.asString()));
         assertThat(headers, containsString(customValue));
+    }
+
+    @Test
+    public void testKeepAliveWithClose() throws Exception
+    {
+        HttpGenerator generator = new HttpGenerator();
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString() + ", other, " + HttpHeaderValue.CLOSE.asString());
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_0, 200, "OK", fields, -1);
+        ByteBuffer header = BufferUtil.allocate(4096);
+        HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, true);
+        assertSame(HttpGenerator.Result.FLUSH, result);
+        String headers = BufferUtil.toString(header);
+        assertThat(headers, containsString("Connection: other, close\r\n"));
+        assertThat(headers, not(containsString("keep-alive")));
     }
 }

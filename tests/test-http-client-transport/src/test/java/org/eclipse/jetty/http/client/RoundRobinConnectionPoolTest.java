@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -37,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.Request;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -105,8 +101,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
-            if (transport != Transport.UNIX_SOCKET && i > 0)
+            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
+            if (transport != Transport.UNIX_DOMAIN && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
@@ -117,7 +113,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
     {
         init(transport);
         int multiplex = 1;
-        if (scenario.transport.isHttp2Based())
+        if (scenario.transport.isMultiplexed())
             multiplex = 4;
         int maxMultiplex = multiplex;
 
@@ -199,8 +195,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
-            if (transport != Transport.UNIX_SOCKET && i > 0)
+            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
+            if (transport != Transport.UNIX_DOMAIN && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
@@ -212,7 +208,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         init(transport);
 
         int multiplex = 1;
-        if (scenario.transport.isHttp2Based())
+        if (scenario.transport.isMultiplexed())
             multiplex = 2;
         int maxMultiplex = multiplex;
 
@@ -229,6 +225,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
                 remotePorts.add(request.getRemotePort());
             }
         });
+        if (transport == Transport.H3)
+            ((QuicServerConnector)scenario.connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
         scenario.client.getTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex);
@@ -251,6 +249,14 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         assertTrue(clientLatch.await(count, TimeUnit.SECONDS));
         assertEquals(count, remotePorts.size());
 
+        // Unix Domain does not have ports.
+        if (transport == Transport.UNIX_DOMAIN)
+            return;
+
+        // UDP does not have TIME_WAIT so ports may be reused by different connections.
+        if (transport == Transport.H3)
+            return;
+
         // Maps {remote_port -> number_of_times_port_was_used}.
         Map<Integer, Long> results = remotePorts.stream()
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
@@ -259,6 +265,6 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         // [p1, p2, p3 | p1, p2, p3 | p4, p4, p5 | p6, p5, p7]
         // Opening p5 and p6 was delayed, so the opening of p7 was triggered
         // to replace p4 while p5 and p6 were busy sending their requests.
-        assertThat(remotePorts.toString(), count / maxUsage, lessThanOrEqualTo(results.size()));
+        assertThat(results.toString(), count / maxUsage, lessThanOrEqualTo(results.size()));
     }
 }

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -29,7 +24,7 @@ import org.eclipse.jetty.client.api.Connection;
 public interface ConnectionPool extends Closeable
 {
     /**
-     * Optionally pre-create up to <code>connectionCount</code>
+     * Optionally pre-create up to {@code connectionCount}
      * connections so they are immediately ready for use.
      * @param connectionCount the number of connections to pre-start.
      */
@@ -111,7 +106,7 @@ public interface ConnectionPool extends Closeable
     }
 
     /**
-     * Marks a connection pool as supporting multiplexed connections.
+     * Marks a connection as supporting multiplexed requests.
      */
     interface Multiplexable
     {
@@ -122,7 +117,22 @@ public interface ConnectionPool extends Closeable
 
         /**
          * @param maxMultiplex the max number of requests multiplexable on a single connection
+         * @deprecated do not use, as the maxMultiplex value is pulled, rather than pushed
          */
-        void setMaxMultiplex(int maxMultiplex);
+        @Deprecated
+        default void setMaxMultiplex(int maxMultiplex)
+        {
+        }
+    }
+
+    /**
+     * Marks a connection as being usable for a maximum number of requests.
+     */
+    interface MaxUsable
+    {
+        /**
+         * @return the max number of requests on a single connection
+         */
+        int getMaxUsageCount();
     }
 }

@@ -1,0 +1,24 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+== Eclipse Jetty Programming Guide
+
+The Eclipse Jetty Programming Guide targets developers who want to use the Eclipse Jetty libraries in their applications.
+
+The Eclipse Jetty libraries provide the client-side and server-side APIs to work with various web protocols such as HTTP/1.1, HTTP/2, HTTP/3, WebSocket and FastCGI.
+
+You may use the xref:pg-client[Eclipse Jetty client-side library] in your application to make calls to third party REST services, or to other REST microservices in your system.
+
+Likewise, you may use the xref:pg-server[Eclipse Jetty server-side library] to quickly create an HTTP or REST service without having to create a web application archive file (a `+*.war+` file) and without having to deploy it a Jetty standalone server that you would have to download and install.
+
+This guide will walk you through the design of the Eclipse Jetty libraries and how to use its classes to write your applications.

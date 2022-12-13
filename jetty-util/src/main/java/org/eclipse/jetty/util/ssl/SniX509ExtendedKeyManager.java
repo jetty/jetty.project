@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -33,6 +29,7 @@ import java.util.stream.Collectors;
 import javax.net.ssl.ExtendedSSLSession;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIMatcher;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -120,12 +117,16 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         String host = null;
         if (session instanceof ExtendedSSLSession)
         {
-            host = ((ExtendedSSLSession)session).getRequestedServerNames().stream()
-                .findAny()
-                .filter(SNIHostName.class::isInstance)
-                .map(SNIHostName.class::cast)
-                .map(SNIHostName::getAsciiName)
-                .orElse(null);
+            List<SNIServerName> serverNames = ((ExtendedSSLSession)session).getRequestedServerNames();
+            if (serverNames != null)
+            {
+                host = serverNames.stream()
+                    .findAny()
+                    .filter(SNIHostName.class::isInstance)
+                    .map(SNIHostName.class::cast)
+                    .map(SNIHostName::getAsciiName)
+                    .orElse(null);
+            }
         }
         if (host == null)
         {
@@ -195,7 +196,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (delegate)
             alias = _delegate.chooseServerAlias(keyType, issuers, socket);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose {} alias {}/{} on {}", delegate ? "delegate" : "explicit", alias, keyType, socket);
+            LOG.debug("Chose {} alias={} keyType={} on {}", delegate ? "delegate" : "explicit", String.valueOf(alias), keyType, socket);
         return alias;
     }
 
@@ -209,7 +210,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (delegate)
             alias = _delegate.chooseEngineServerAlias(keyType, issuers, engine);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose {} alias {}/{} on {}", delegate ? "delegate" : "explicit", alias, keyType, engine);
+            LOG.debug("Chose {} alias={} keyType={} on {}", delegate ? "delegate" : "explicit", String.valueOf(alias), keyType, engine);
         return alias;
     }
 
@@ -249,7 +250,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
          * <p>Selects a certificate based on SNI information.</p>
          * <p>This method may be invoked multiple times during the TLS handshake, with different parameters.
          * For example, the {@code keyType} could be different, and subsequently the collection of certificates
-         * (because they need to match the {@code keyType}.</p>
+         * (because they need to match the {@code keyType}).</p>
          *
          * @param keyType the key algorithm type name
          * @param issuers the list of acceptable CA issuer subject names or null if it does not matter which issuers are used

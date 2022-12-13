@@ -28,7 +28,8 @@ INSERT INTO users VALUES
 (3,'other','OBF:1xmk1w261u9r1w1c1xmq'),
 (4,'plain','plain'),
 (5,'user','password'),
-(6,'digest','MD5:6e120743ad67abfbc385bc2bb754e297');
+(6,'digest','MD5:6e120743ad67abfbc385bc2bb754e297'),
+(7,'dstest','dstest');
 
 INSERT INTO user_roles VALUES
 (1,1),
@@ -37,4 +38,5 @@ INSERT INTO user_roles VALUES
 (3,1),
 (4,1),
 (5,1),
-(6,1);
+(6,1),
+(7,1);

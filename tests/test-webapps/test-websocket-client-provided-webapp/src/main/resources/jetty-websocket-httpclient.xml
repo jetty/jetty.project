@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.client.HttpClient">
+  <Arg>
+    <New class="org.eclipse.jetty.client.http.HttpClientTransportOverHTTP">
+      <Arg>
+        <New class="org.eclipse.jetty.io.ClientConnector">
+          <Call name="setSslContextFactory">
+            <Arg>
+              <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Client">
+                <Set name="trustAll" type="java.lang.Boolean">true</Set>
+              </New>
+            </Arg>
+          </Call>
+        </New>
+      </Arg>
+    </New>
+  </Arg>
+  <Set name="connectTimeout">4999</Set>
+</Configure>

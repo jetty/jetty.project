@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,7 +14,6 @@
 package org.eclipse.jetty.test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -32,7 +26,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -58,6 +52,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.junit.jupiter.api.AfterEach;
@@ -71,22 +66,24 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class CustomRequestLogTest
 {
-    CustomRequestLog _log;
-    Server _server;
-    LocalConnector _connector;
-    BlockingQueue<String> _entries = new BlockingArrayQueue<>();
-    BlockingQueue<Long> requestTimes = new BlockingArrayQueue<>();
-    ServerConnector _serverConnector;
-    URI _serverURI;
+    private final BlockingQueue<String> _entries = new BlockingArrayQueue<>();
+    private final BlockingQueue<Long> requestTimes = new BlockingArrayQueue<>();
+    private CustomRequestLog _log;
+    private Server _server;
+    private LocalConnector _connector;
+    private ServerConnector _serverConnector;
+    private URI _serverURI;
 
     private static final long DELAY = 2000;
 
     @BeforeEach
-    public void before() throws Exception
+    public void before()
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
@@ -116,6 +113,7 @@ public class CustomRequestLogTest
         _serverURI = new URI(String.format("http://%s:%d/", host, localPort));
     }
 
+    @SuppressWarnings("SameParameterValue")
     private static SecurityHandler getSecurityHandler(String username, String password, String realm)
     {
         HashLoginService loginService = new HashLoginService();
@@ -145,6 +143,22 @@ public class CustomRequestLogTest
     public void after() throws Exception
     {
         _server.stop();
+    }
+
+    @Test
+    public void testRequestFilter() throws Exception
+    {
+        AtomicReference<Boolean> logRequest = new AtomicReference<>();
+        testHandlerServerStart("RequestPath: %U");
+        _log.setFilter((request, response) -> logRequest.get());
+
+        logRequest.set(true);
+        _connector.getResponse("GET /path HTTP/1.0\n\n");
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("RequestPath: /path"));
+
+        logRequest.set(false);
+        _connector.getResponse("GET /path HTTP/1.0\n\n");
+        assertNull(_entries.poll(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -202,16 +216,16 @@ public class CustomRequestLogTest
             "%{server}a|%{server}p|" +
             "%{client}a|%{client}p");
 
-        Enumeration e = NetworkInterface.getNetworkInterfaces();
+        Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
         while (e.hasMoreElements())
         {
-            NetworkInterface n = (NetworkInterface)e.nextElement();
+            NetworkInterface n = e.nextElement();
             if (n.isLoopback())
             {
-                Enumeration ee = n.getInetAddresses();
+                Enumeration<InetAddress> ee = n.getInetAddresses();
                 while (ee.hasMoreElements())
                 {
-                    InetAddress i = (InetAddress)ee.nextElement();
+                    InetAddress i = ee.nextElement();
                     try (Socket client = newSocket(i.getHostAddress(), _serverURI.getPort()))
                     {
                         OutputStream os = client.getOutputStream();
@@ -222,7 +236,7 @@ public class CustomRequestLogTest
                         os.write(request.getBytes(StandardCharsets.ISO_8859_1));
                         os.flush();
 
-                        String[] log = _entries.poll(5, TimeUnit.SECONDS).split("\\|");
+                        String[] log = Objects.requireNonNull(_entries.poll(5, TimeUnit.SECONDS)).split("\\|");
                         assertThat(log.length, is(8));
 
                         String localAddr = log[0];
@@ -433,7 +447,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        long requestTime = requestTimes.poll(5, TimeUnit.SECONDS);
+        long requestTime = getTimeRequestReceived();
         DateCache dateCache = new DateCache(CustomRequestLog.DEFAULT_DATE_FORMAT, Locale.getDefault(), "GMT");
         assertThat(log, is("RequestTime: [" + dateCache.format(requestTime) + "]"));
     }
@@ -447,7 +461,8 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        long requestTime = requestTimes.poll(5, TimeUnit.SECONDS);
+        assertNotNull(log);
+        long requestTime = getTimeRequestReceived();
 
         DateCache dateCache1 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "GMT");
         DateCache dateCache2 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "EST");
@@ -466,7 +481,8 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        long lowerBound = requestTimes.poll(5, TimeUnit.SECONDS);
+        assertNotNull(log);
+        long lowerBound = getTimeRequestReceived();
         long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
@@ -484,7 +500,8 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        long lowerBound = requestTimes.poll(5, TimeUnit.SECONDS);
+        assertNotNull(log);
+        long lowerBound = getTimeRequestReceived();
         long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
@@ -502,7 +519,8 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /delay HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        long lowerBound = requestTimes.poll(5, TimeUnit.SECONDS);
+        assertNotNull(log);
+        long lowerBound = getTimeRequestReceived();
         long upperBound = System.currentTimeMillis();
 
         long measuredDuration = Long.parseLong(log);
@@ -580,11 +598,6 @@ public class CustomRequestLogTest
         fail(log);
     }
 
-    protected Socket newSocket() throws Exception
-    {
-        return newSocket(_serverURI.getHost(), _serverURI.getPort());
-    }
-
     protected Socket newSocket(String host, int port) throws Exception
     {
         Socket socket = new Socket(host, port);
@@ -609,10 +622,17 @@ public class CustomRequestLogTest
         }
     }
 
+    private long getTimeRequestReceived() throws InterruptedException
+    {
+        Long requestTime = requestTimes.poll(5, TimeUnit.SECONDS);
+        assertNotNull(requestTime);
+        return requestTime;
+    }
+
     private class TestServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
 
@@ -657,8 +677,7 @@ public class CustomRequestLogTest
 
             if (request.getContentLength() > 0)
             {
-                InputStream in = request.getInputStream();
-                while (in.read() > 0);
+                IO.readBytes(request.getInputStream());
             }
         }
     }

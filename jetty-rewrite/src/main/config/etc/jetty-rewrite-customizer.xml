@@ -9,7 +9,7 @@
       <New id="Rewrite" class="org.eclipse.jetty.rewrite.RewriteCustomizer">
         <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
         <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
-        <Set name="originalPathAttribute" property="jetty.rewrite.originalPathAttribute"/>
+        <Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" default="requestedPath"/></Set>
       </New>
     </Arg>
   </Call>  

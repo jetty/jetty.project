@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -45,6 +40,7 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -179,18 +175,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private DirContext _rootContext;
 
-    public class LDAPUserInfo extends UserInfo
+    public class LDAPUser extends JAASUser
     {
         Attributes attributes;
 
-        /**
-         * @param userName the user name
-         * @param credential the credential
-         * @param attributes the user {@link Attributes}
-         */
-        public LDAPUserInfo(String userName, Credential credential, Attributes attributes)
+        public LDAPUser(UserPrincipal user, Attributes attributes)
         {
-            super(userName, credential);
+            super(user);
             this.attributes = attributes;
         }
 
@@ -198,6 +189,25 @@ public class LdapLoginModule extends AbstractLoginModule
         public List<String> doFetchRoles() throws Exception
         {
             return getUserRoles(_rootContext, getUserName(), attributes);
+        }
+    }
+
+    public class LDAPBindingUser extends JAASUser
+    {   
+        DirContext _context;
+        String _userDn;
+
+        public LDAPBindingUser(UserPrincipal user, DirContext context, String userDn)
+        {
+            super(user);
+            _context = context;
+            _userDn = userDn;
+        }
+
+        @Override
+        public List<String> doFetchRoles() throws Exception
+        {
+            return getUserRolesByDn(_context, _userDn);
         }
     }
 
@@ -214,19 +224,17 @@ public class LdapLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the user info
      */
     @Override
-    public UserInfo getUserInfo(String username) throws Exception
+    public JAASUser getUser(String username) throws Exception
     {
         Attributes attributes = getUserAttributes(username);
         String pwdCredential = getUserCredentials(attributes);
 
         if (pwdCredential == null)
-        {
             return null;
-        }
 
         pwdCredential = convertCredentialLdapToJetty(pwdCredential);
         Credential credential = Credential.getCredential(pwdCredential);
-        return new LDAPUserInfo(username, credential, attributes);
+        return new LDAPUser(new UserPrincipal(username, credential), attributes);
     }
 
     protected String doRFC2254Encoding(String inputString)
@@ -421,7 +429,7 @@ public class LdapLoginModule extends AbstractLoginModule
             else
             {
                 // This sets read and the credential
-                UserInfo userInfo = getUserInfo(webUserName);
+                JAASUser userInfo = getUser(webUserName);
 
                 if (userInfo == null)
                 {
@@ -429,7 +437,7 @@ public class LdapLoginModule extends AbstractLoginModule
                     return false;
                 }
 
-                setCurrentUser(new JAASUserInfo(userInfo));
+                setCurrentUser(userInfo);
 
                 if (webCredential instanceof String)
                     authed = credentialLogin(Credential.getCredential((String)webCredential));
@@ -520,12 +528,8 @@ public class LdapLoginModule extends AbstractLoginModule
         try
         {
             DirContext dirContext = new InitialDirContext(environment);
-            List<String> roles = getUserRolesByDn(dirContext, userDn);
-
-            UserInfo userInfo = new UserInfo(username, null, roles);
-            setCurrentUser(new JAASUserInfo(userInfo));
+            setCurrentUser(new LDAPBindingUser(new UserPrincipal(username, null), dirContext, userDn));
             setAuthenticated(true);
-
             return true;
         }
         catch (javax.naming.AuthenticationException e)

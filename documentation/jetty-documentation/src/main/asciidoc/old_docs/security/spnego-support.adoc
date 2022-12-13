@@ -1,0 +1,133 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[spnego-support]]
+=== SPNEGO Support
+
+Simple and Protected GSSAPI Negotiation Mechanism (SPNEGO) is a way for users
+to be seamlessly authenticated when running on systems that rely on Kerberos
+for authentication, such as Windows Active Directory based networks.
+
+Jetty supports this type of authentication and authorization through the JDK
+(which has been enabled since the later versions of Java 6 and 7).
+
+==== Configuring Jetty and SPNEGO
+
+To run with SPNEGO enabled the following command line options are required:
+
+[source,screen, subs="{sub-order}"]
+----
+-Djava.security.krb5.conf=/path/to/krb5.ini
+----
+
+For debugging the SPNEGO authentication the following options are helpful:
+
+[source,screen, subs="{sub-order}"]
+----
+-Dorg.eclipse.jetty.LEVEL=debug
+-Dsun.security.spnego.debug=true
+-Dsun.security.jgss.debug=true
+-Dsun.security.krb5.debug=true
+----
+
+SPNEGO authentication must be enabled in the webapp in the following way.
+The name of the role will be different for your network.
+
+[source, xml, subs="{sub-order}"]
+----
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>Secure Area</web-resource-name>
+    <url-pattern>/secure/me/*</url-pattern>
+  </web-resource-collection>
+  <auth-constraint>
+    <!-- this is the domain that the user is a member of -->
+    <role-name>MORTBAY.ORG</role-name>
+  </auth-constraint>
+</security-constraint>
+<login-config>
+  <auth-method>SPNEGO</auth-method>
+  <realm-name>Test Realm</realm-name>
+  <!-- optionally to add custom error page -->
+  <spnego-login-config>
+    <spnego-error-page>/loginError.html?param=foo</spnego-error-page>
+  </spnego-login-config>
+</login-config>
+----
+
+A corresponding `UserRealm` needs to be created either programmatically if
+embedded, via the `jetty.xml` or in a context file for the webapp.
+
+This is what the configuration within a context XML file would look like:
+
+[source, xml, subs="{sub-order}"]
+----
+<Get name="securityHandler">
+  <Set name="loginService">
+    <New class="org.eclipse.jetty.security.ConfigurableSpnegoLoginService">
+      <Arg>Test Realm</Arg>
+      <Arg><Ref refid="authorizationService" /></Arg>
+      <Set name="keyTabPath"><Ref refid="keyTabPath" /></Set>
+    </New>
+  </Set>
+</Get>
+----
+
+On the Windows Active Domain Controller run:
+
+[source, screen, subs="{sub-order}"]
+----
+$ setspn -A HTTP/linux.mortbay.org ADUser
+----
+
+To create the keyTab file use the following process:
+
+[source, screen, subs="{sub-order}"]
+----
+$ ktpass -out c:\dir\krb5.keytab -princ HTTP/linux.mortbay.org@MORTBAY.ORG -mapUser ADUser -mapOp set -pass ADUserPWD -crypto RC4-HMAC-NT -pType KRB5_NT_PRINCIPAL
+----
+
+This step will give you the keyTab file which should then be copied to the
+machine running the http server and referenced from the configuration files.
+
+==== Configuring Firefox
+
+The follows steps have been required to inform Firefox that it should use a negotiation dialog to authenticate.
+
+1.  Browse to about:config and agree to the warnings
+2.  Search through to find the 'network' settings
+3.  Set `network.negotiate-auth.delegation-uris` to http://,https://
+4.  Set `network.negotiate-auth.trusted-uris` to http://,https://
+
+==== Configuring Internet Explorer
+
+The follows steps have been required to inform Internet Explorer that it should use a negotiation dialog to authenticate.
+
+1.  Tools -> Options -> Security -> Local Intranet -> Sites (everything should be checked here)
+2.  Tools -> Options -> Security -> Local Intranet -> Sites -> Advanced (add url to server (`http://` and/or `https://` -- use the hostname, not the IP)
+3.  Tools -> Options -> Security -> Local Intranet -> Sites -> Advanced -> Close
+4.  Tools -> Options -> Security -> Local Intranet -> Sites -> Ok
+5.  Tools -> Options -> Advanced -> Security (in the checkbox list)
+6.  Locate and select `Enable Integrated Windows Authentication`
+7.  Tools -> Options -> Advanced -> Security -> Ok
+8.  Close IE then reopen and browse to your SPNEGO protected resource
+
+You *must* use hostname and not the IP.
+If you use the IP it will default to NTLM authentication.
+The following conditions must be true for SPNEGO authentication to work:
+
+* You must be within the Intranet Zone of the network
+* Access the server using a Hostname rather than IP
+* Integrated Windows Authentication in IE is enabled and/or the host is trusted in Firefox
+* The server is not local to the browser; it can't be running on localhost
+* The client's Kerberos system is authenticated to a domain controller

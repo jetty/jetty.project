@@ -1,0 +1,56 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[quickstart-jetty-coordinates]]
+=== Finding Jetty in Maven
+
+_____
+[IMPORTANT]
+It is important that only stable releases are used in production environments.
+Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+_____
+
+==== Maven Coordinates
+
+Jetty has existed in Maven Central almost since its inception, though the coordinates have changed over the years.
+When Jetty was based at SourceForge and then The Codehaus it was located under the `groupId` of `org.mortbay.jetty`.
+With Jetty 7 the project moved to the Eclipse foundation and to a new `groupId` at that time to reflect its new home.
+
+The top level Project Object Model (POM) for the Jetty project is located under the following coordinates.
+
+[source, xml, subs="{sub-order}"]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-project</artifactId>
+  <version>${project.version}</version>
+</dependency>
+----
+
+==== Changelogs in Maven Central
+
+The changes between versions of Jetty are tracked in a file called VERSIONS.txt, which is under source control and is generated on release.
+Those generated files are also uploaded into Maven Central during the release of the top level POM. You can find them as a classifier marked artifact.
+
+https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-project/
+
+[source, xml, subs="{sub-order}"]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-project</artifactId>
+  <version>${project.version}</version>
+  <classifier>version</classifier>
+  <type>txt</type>
+</dependency>
+----

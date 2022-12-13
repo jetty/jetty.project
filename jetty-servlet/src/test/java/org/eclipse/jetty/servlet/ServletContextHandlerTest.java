@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,9 +16,11 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -62,6 +59,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.RoleInfo;
@@ -79,6 +77,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler.ServletContainerInitializerStarter;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -86,6 +85,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -691,6 +692,69 @@ public class ServletContextHandlerTest
 
         root.getServletHandler().addListener(initialListener);
         _server.start();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/", ""})
+    public void testGetContextPathRoot(String inputContextPath) throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath(inputContextPath);
+        contextHandler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("utf-8");
+                resp.getWriter().printf("getContextPath()=[%s]", req.getContextPath());
+            }
+        }), "/dump");
+        _server.setHandler(contextHandler);
+        _server.start();
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /dump HTTP/1.1\r\n");
+        rawRequest.append("Host: local\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertEquals(200, response.getStatus(), "response status");
+        assertEquals("getContextPath()=[]", response.getContent(), "response content");
+    }
+
+    /**
+     * Address spec "3.5. Request Path Elements" with respect to Servlet Path.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"/*", ""})
+    public void testGetServletPathEmpty(String pathSpec) throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("");
+        contextHandler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("utf-8");
+                resp.getWriter().printf("getServletPath()=[%s]", req.getServletPath());
+            }
+        }), pathSpec);
+        _server.setHandler(contextHandler);
+        _server.start();
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET / HTTP/1.1\r\n");
+        rawRequest.append("Host: local\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertEquals(200, response.getStatus(), "response status");
+        assertEquals("getServletPath()=[]", response.getContent(), "response content");
     }
 
     @Test
@@ -1545,6 +1609,83 @@ public class ServletContextHandlerTest
 
         String response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testAddServletContainerInitializer() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        final AtomicBoolean called = new AtomicBoolean();
+        context.addServletContainerInitializer(new ServletContainerInitializer()
+            {
+                @Override
+                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+                {
+                    called.set(true);
+                }
+            });
+        
+        _server.setHandler(context);
+        _server.start();
+        ServletContainerInitializerStarter starter = context.getBean(ServletContainerInitializerStarter.class);
+        assertNotNull(starter);
+        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        assertEquals(1, holders.size());
+        assertTrue(called.get());
+    }
+    
+    @Test
+    public void testAddServletContainerInitializerWithArgs() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        
+        final Set<Class<?>> onStartupClasses = new HashSet<>();
+        context.addServletContainerInitializer(new ServletContainerInitializer()
+            {
+                @Override
+                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+                {
+                    onStartupClasses.addAll(c);
+                }
+            }, HelloServlet.class, TestServlet.class);
+
+        _server.setHandler(context);
+        _server.start();
+        
+        ServletContainerInitializerStarter starter = context.getBean(ServletContainerInitializerStarter.class);
+        assertNotNull(starter);
+        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        assertEquals(1, holders.size());
+        assertThat(onStartupClasses, Matchers.containsInAnyOrder(HelloServlet.class, TestServlet.class));
+    }
+
+    @Test
+    public void testAddServletContainerInitializerHolder() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        
+        final Set<Class<?>> onStartupClasses = new HashSet<>();
+        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(Source.EMBEDDED,
+            new ServletContainerInitializer()
+            {
+                @Override
+                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+                {
+                    onStartupClasses.addAll(c);
+                }
+            }, HelloServlet.class, TestServlet.class);
+        
+        context.addServletContainerInitializer(holder);
+        _server.setHandler(context);
+        _server.start();
+        ServletContainerInitializerStarter starter = context.getBean(ServletContainerInitializerStarter.class);
+        assertNotNull(starter);
+        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        assertEquals(1, holders.size());
+        assertThat(onStartupClasses, Matchers.containsInAnyOrder(HelloServlet.class, TestServlet.class));
     }
 
     @Test

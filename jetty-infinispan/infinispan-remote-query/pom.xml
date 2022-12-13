@@ -2,14 +2,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-remote-query</artifactId>
   <name>Jetty :: Infinispan Session Manager Remote with Querying</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
-    <infinispan.docker.image.version>9.4.8.Final</infinispan.docker.image.version>
+    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
   </properties>
   <build>
     <plugins>
@@ -45,11 +45,11 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):(.*):.*$" replace="maven://\1/\2/\4/jar/\3|lib/infinispan/\2-\3-\4.jar" byline="true" />
                 <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar" byline="true" />
                 <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
           <execution>
@@ -59,29 +59,12 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
                 <concat destfile="${project.build.directory}/infinispan-remote-query-libs.mod">
-                  <fileset file="src/main/config-template/modules/sessions/infinispan/remote/infinispan-remote-query-libs.mod" />
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/remote/infinispan-remote-query-libs.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
-              </tasks>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
+              </target>
             </configuration>
           </execution>
         </executions>
@@ -90,7 +73,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <skipTests>true</skipTests>
+          <systemPropertyVariables>
+            <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
@@ -99,7 +84,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-common</artifactId>
-      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.infinispan</groupId>
@@ -114,17 +98,18 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
-      <version>${infinispan.version}</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>${infinispan.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -136,30 +121,10 @@
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-  <profiles>
-    <profile>
-      <id>remote-session-tests</id>
-      <activation>
-        <property>
-          <name>hotrod.enabled</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>false</skipTests>
-              <systemPropertyVariables>
-                <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

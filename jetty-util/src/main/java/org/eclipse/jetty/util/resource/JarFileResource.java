@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -144,7 +139,7 @@ public class JarFileResource extends JarResource
             String fileUrl = _urlString.substring(4, _urlString.length() - 2);
             try
             {
-                return newResource(fileUrl).exists();
+                return _directory = newResource(fileUrl).exists();
             }
             catch (Exception e)
             {
@@ -236,15 +231,10 @@ public class JarFileResource extends JarResource
         return _exists;
     }
 
-    /**
-     * Returns true if the represented resource is a container/directory.
-     * If the resource is not a file, resources ending with "/" are
-     * considered directories.
-     */
     @Override
     public boolean isDirectory()
     {
-        return _urlString.endsWith("/") || exists() && _directory;
+        return exists() && _directory;
     }
 
     /**

@@ -1,0 +1,54 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[embedded-secured-hello-handler]]
+==== Secured Hello Handler
+
+This example shows how to wrap one handler with another one that handles security.
+We have a simple Hello Handler that just return a greeting but add on the restriction that to get this greeting you must authenticate.
+Another thing to remember is that this example uses the `ConstraintSecurityHandler` which is what supports the security mappings inside of the servlet api, it could be easier to show just the `SecurityHandler` usage, but the constraint provides more configuration power.
+If you don't need that you can drop the Constraint bits and use just the `SecurityHandler`.
+
+[source, java, subs="{sub-order}"]
+----
+include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SecuredHelloHandler.java[]
+
+----
+
+===== Run it!
+
+After you have started things up you should be able to navigate to http://localhost:8080/index.html (assuming one is in the resource base directory) and you are good to go.
+
+===== The Realm Properties File
+
+[source,properties]
+----
+include::{SRCDIR}/examples/embedded/src/test/resources/realm.properties[]
+      
+----
+
+===== Maven Coordinates
+
+To use this example in your project you will need the following Maven dependencies declared.
+
+[source, xml, subs="{sub-order}"]
+----
+
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-server</artifactId>
+  <version>${project.version}</version>
+</dependency>
+
+      
+----

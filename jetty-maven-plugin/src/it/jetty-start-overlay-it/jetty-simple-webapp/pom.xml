@@ -74,7 +74,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
+        <executions>
+          <execution>
+            <id>run-tests</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
           <includes>
             <include>IntegrationTest*.java</include>
           </includes>
@@ -91,6 +98,8 @@
             <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
           </dependenciesToScan>
         </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
@@ -98,7 +107,7 @@
         <executions>
           <execution>
             <id>start-jetty</id>
-            <phase>test-compile</phase>
+            <phase>pre-integration-test</phase>
             <goals>
               <goal>start</goal>
             </goals>

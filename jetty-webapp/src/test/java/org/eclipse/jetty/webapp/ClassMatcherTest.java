@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,11 +25,9 @@ import org.eclipse.jetty.webapp.ClassMatcher.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.EnabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -127,9 +120,26 @@ public class ClassMatcherTest
         assertTrue(_pattern.match("org.example.Anything$Else"));
     }
 
+    @Test
+    public void testCopy()
+    {
+        ClassMatcher copy = new ClassMatcher(_pattern);
+        assertThat(copy.toString(), is(_pattern.toString()));
+    }
+
+    @Test
+    public void testMatchFundamentalExcludeSpecific()
+    {
+        _pattern.clear();
+        _pattern.add("javax.");
+        _pattern.add("-javax.ws.rs.", "-javax.inject.");
+        assertFalse(_pattern.match("org.example.Anything"));
+        assertTrue(_pattern.match("javax.servlet.HttpServlet"));
+        assertFalse(_pattern.match("javax.ws.rs.ProcessingException"));
+    }
+
     @SuppressWarnings("restriction")
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testIncludedLocations() throws Exception
     {
         // jar from JVM classloader
@@ -143,9 +153,9 @@ public class ClassMatcherTest
 
         ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
-        assertThat(pattern.match(String.class), Matchers.is(false));
-        assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
+        assertThat(pattern.match(String.class), is(false));
+        assertThat(pattern.match(Test.class), is(false));
+        assertThat(pattern.match(ClassMatcherTest.class), is(false));
 
         // Add directory for both JVM classes
         pattern.include(locString.toASCIIString());
@@ -153,19 +163,18 @@ public class ClassMatcherTest
         // Add jar for individual class and classes directory
         pattern.include(locJunit.toString(), locTest.toString());
 
-        assertThat(pattern.match(String.class), Matchers.is(true));
-        assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
+        assertThat(pattern.match(String.class), is(true));
+        assertThat(pattern.match(Test.class), is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), is(true));
 
         pattern.add("-java.lang.String");
-        assertThat(pattern.match(String.class), Matchers.is(false));
-        assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
+        assertThat(pattern.match(String.class), is(false));
+        assertThat(pattern.match(Test.class), is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), is(true));
     }
 
     @SuppressWarnings("restriction")
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testIncludedLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
@@ -182,9 +191,9 @@ public class ClassMatcherTest
 
         ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
-        assertThat(pattern.match(String.class), Matchers.is(false));
-        assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
+        assertThat(pattern.match(String.class), is(false));
+        assertThat(pattern.match(Test.class), is(false));
+        assertThat(pattern.match(ClassMatcherTest.class), is(false));
 
         // Add module for all JVM base classes
         pattern.include("jrt:/java.base");
@@ -192,56 +201,18 @@ public class ClassMatcherTest
         // Add jar for individual class and classes directory
         pattern.include(locJunit.toString(), locTest.toString());
 
-        assertThat(pattern.match(String.class), Matchers.is(true));
-        assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
+        assertThat(pattern.match(String.class), is(true));
+        assertThat(pattern.match(Test.class), is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), is(true));
 
         pattern.add("-java.lang.String");
-        assertThat(pattern.match(String.class), Matchers.is(false));
-        assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
+        assertThat(pattern.match(String.class), is(false));
+        assertThat(pattern.match(Test.class), is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), is(true));
     }
 
     @SuppressWarnings("restriction")
     @Test
-    @EnabledOnJre(JRE.JAVA_8)
-    public void testExcludeLocations() throws Exception
-    {
-        // jar from JVM classloader
-        URI locString = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(locString);
-
-        // a jar from maven repo jar
-        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(locJunit);
-
-        // class file 
-        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(locTest);
-
-        ClassMatcher pattern = new ClassMatcher();
-
-        // include everything
-        pattern.include(".");
-
-        assertThat(pattern.match(String.class), Matchers.is(true));
-        assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
-
-        // Add directory for both JVM classes
-        pattern.exclude(locString.toString());
-
-        // Add jar for individual class and classes directory
-        pattern.exclude(locJunit.toString(), locTest.toString());
-
-        assertThat(pattern.match(String.class), Matchers.is(false));
-        assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
-    }
-
-    @SuppressWarnings("restriction")
-    @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testExcludeLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
@@ -261,9 +232,9 @@ public class ClassMatcherTest
         // include everything
         pattern.include(".");
 
-        assertThat(pattern.match(String.class), Matchers.is(true));
-        assertThat(pattern.match(Test.class), Matchers.is(true));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
+        assertThat(pattern.match(String.class), is(true));
+        assertThat(pattern.match(Test.class), is(true));
+        assertThat(pattern.match(ClassMatcherTest.class), is(true));
 
         // Add directory for both JVM classes
         pattern.exclude("jrt:/java.base/");
@@ -271,9 +242,9 @@ public class ClassMatcherTest
         // Add jar for individual class and classes directory
         pattern.exclude(locJunit.toString(), locTest.toString());
 
-        assertThat(pattern.match(String.class), Matchers.is(false));
-        assertThat(pattern.match(Test.class), Matchers.is(false));
-        assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
+        assertThat(pattern.match(String.class), is(false));
+        assertThat(pattern.match(Test.class), is(false));
+        assertThat(pattern.match(ClassMatcherTest.class), is(false));
     }
     
     @Test
@@ -285,33 +256,33 @@ public class ClassMatcherTest
         IncludeExcludeSet<Entry, URI> locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
 
         //Test no name or location includes or excludes - should match
-        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(true));
         
         names.include(matcher.newEntry("a.b.", true));
         names.exclude(matcher.newEntry("d.e.", false));
        
         //Test explicit include by name no locations - should match
-        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(true));
         
         //Test explicit exclude by name no locations - should not match
-        assertThat(ClassMatcher.combine(names, "d.e.f", locations, NULL_SUPPLIER), Matchers.is(false));
+        assertThat(ClassMatcher.combine(names, "d.e.f", locations, NULL_SUPPLIER), is(false));
         
         //Test include by name with location includes - should match
         locations.include(matcher.newEntry("file:/foo/bar", true));
-        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(true));
         
         //Test include by name but with location exclusions - should not match
         locations.clear();
         locations.exclude(matcher.newEntry("file:/high/low", false));
-        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(false));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(false));
         
         //Test neither included or excluded by name, but with location exclusions - should not match
-        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), Matchers.is(false));
+        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), is(false));
         
         //Test neither included nor excluded by name, but with location inclusions - should not match
         locations.clear();
         locations.include(matcher.newEntry("file:/foo/bar", true));
-        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), Matchers.is(false));
+        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), is(false));
     }
 
     @Test

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,12 +16,12 @@ package org.eclipse.jetty.http;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.Integer.MIN_VALUE;
 
 /**
  * Implements a quoted comma separated list of quality values
@@ -58,7 +53,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         return 3;
     };
 
-    private final List<Double> _quality = new ArrayList<>();
+    private final List<QualityValue> _qualities = new ArrayList<>();
+    private QualityValue _lastQuality;
     private boolean _sorted = false;
     private final ToIntFunction<String> _secondaryOrdering;
 
@@ -67,7 +63,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV()
     {
-        this((ToIntFunction)null);
+        this((ToIntFunction<String>)null);
     }
 
     /**
@@ -88,14 +84,14 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             if ("*".equals(s))
                 return preferredOrder.length;
 
-            return MIN_VALUE;
+            return 0;
         });
     }
 
     /**
      * Orders values with equal quality with the given function.
      *
-     * @param secondaryOrdering Function to apply an ordering other than specified by quality
+     * @param secondaryOrdering Function to apply an ordering other than specified by quality, highest values are sorted first.
      */
     public QuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
     {
@@ -103,17 +99,33 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     }
 
     @Override
+    protected void parsedValueAndParams(StringBuffer buffer)
+    {
+        super.parsedValueAndParams(buffer);
+
+        // Collect full value with parameters
+        _lastQuality = new QualityValue(_lastQuality._quality, buffer.toString(), _lastQuality._index);
+        _qualities.set(_lastQuality._index, _lastQuality);
+    }
+
+    @Override
     protected void parsedValue(StringBuffer buffer)
     {
         super.parsedValue(buffer);
 
+        _sorted = false;
+
+        // This is the just the value, without parameters.
         // Assume a quality of ONE
-        _quality.add(1.0D);
+        _lastQuality = new QualityValue(1.0D, buffer.toString(), _qualities.size());
+        _qualities.add(_lastQuality);
     }
 
     @Override
     protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
     {
+        _sorted = false;
+
         if (paramName < 0)
         {
             if (buffer.charAt(buffer.length() - 1) == ';')
@@ -123,7 +135,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             buffer.charAt(paramName) == 'q' && paramValue > paramName &&
             buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
         {
-            Double q;
+            double q;
             try
             {
                 q = (_keepQuotes && buffer.charAt(paramValue) == '"')
@@ -138,8 +150,10 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             buffer.setLength(Math.max(0, paramName - 1));
 
             if (q != 1.0D)
-                // replace assumed quality
-                _quality.set(_quality.size() - 1, q);
+            {
+                _lastQuality = new QualityValue(q, buffer.toString(), _lastQuality._index);
+                _qualities.set(_lastQuality._index, _lastQuality);
+            }
         }
     }
 
@@ -161,38 +175,73 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 
     protected void sort()
     {
+        _values.clear();
+        _qualities.stream()
+            .filter((qv) -> qv._quality != 0.0D)
+            .sorted()
+            .map(QualityValue::getValue)
+            .collect(Collectors.toCollection(() -> _values));
         _sorted = true;
+    }
 
-        Double last = 0.0D;
-        int lastSecondaryOrder = Integer.MIN_VALUE;
+    private class QualityValue implements Comparable<QualityValue>
+    {
+        private final double _quality;
+        private final String _value;
+        private final int _index;
 
-        for (int i = _values.size(); i-- > 0; )
+        private QualityValue(double quality, String value, int index)
         {
-            String v = _values.get(i);
-            Double q = _quality.get(i);
-
-            int compare = last.compareTo(q);
-            if (compare > 0 || (compare == 0 && _secondaryOrdering.applyAsInt(v) < lastSecondaryOrder))
-            {
-                _values.set(i, _values.get(i + 1));
-                _values.set(i + 1, v);
-                _quality.set(i, _quality.get(i + 1));
-                _quality.set(i + 1, q);
-                last = 0.0D;
-                lastSecondaryOrder = 0;
-                i = _values.size();
-                continue;
-            }
-
-            last = q;
-            lastSecondaryOrder = _secondaryOrdering.applyAsInt(v);
+            _quality = quality;
+            _value = value;
+            _index = index;
         }
 
-        int lastElement = _quality.size();
-        while (lastElement > 0 && _quality.get(--lastElement).equals(0.0D))
+        @Override
+        public int hashCode()
         {
-            _quality.remove(lastElement);
-            _values.remove(lastElement);
+            return Double.hashCode(_quality) ^ Objects.hash(_value, _index);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (!(obj instanceof QualityValue))
+                return false;
+            QualityValue qv = (QualityValue)obj;
+            return _quality == qv._quality && Objects.equals(_value, qv._value) && Objects.equals(_index, qv._index);
+        }
+
+        private String getValue()
+        {
+            return _value;
+        }
+
+        @Override
+        public int compareTo(QualityValue o)
+        {
+            // sort highest quality first
+            int compare = Double.compare(o._quality, _quality);
+            if (compare == 0)
+            {
+                // then sort secondary order highest first
+                compare = Integer.compare(_secondaryOrdering.applyAsInt(o._value), _secondaryOrdering.applyAsInt(_value));
+                if (compare == 0)
+                    // then sort index lowest first
+                    compare = -Integer.compare(o._index, _index);
+            }
+            return compare;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s,q=%f,i=%d]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _value,
+                _quality,
+                _index);
         }
     }
 }

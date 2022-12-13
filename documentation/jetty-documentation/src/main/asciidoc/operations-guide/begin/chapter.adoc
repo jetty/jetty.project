@@ -1,0 +1,28 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-begin]]
+=== Getting Started
+
+If you are new to Eclipse Jetty, read on to download, install, start and deploy web applications to Jetty.
+
+include::../../../../../../../jetty-home/src/main/resources/README.adoc[tags=quick]
+
+The following sections will guide you in details about xref:og-begin-download[downloading], xref:og-begin-install[installing] and xref:og-begin-start[starting] Jetty, and xref:og-begin-deploy[deploying] your web applications to Jetty.
+
+Read the xref:og-arch[Jetty architecture section] for more information about Jetty modules, `$JETTY_HOME`, `$JETTY_BASE` and how to customize and start Jetty.
+
+include::download.adoc[]
+include::install.adoc[]
+include::start.adoc[]
+include::deploy.adoc[]

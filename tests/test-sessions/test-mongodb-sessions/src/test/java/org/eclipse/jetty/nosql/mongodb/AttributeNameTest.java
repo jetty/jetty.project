@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,7 +15,6 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,26 +28,26 @@ import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionCache;
 import org.eclipse.jetty.server.session.TestServer;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * AttributeNameTest
- *
  * Test that attribute names that have special characters with meaning to mongo (eg ".") are
  * properly escaped and not accidentally removed.
  * See bug: https://bugs.eclipse.org/bugs/show_bug.cgi?id=444595
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class AttributeNameTest
 {
     @BeforeAll
     public static void beforeClass() throws Exception
     {
-        MongoTestHelper.dropCollection();
         MongoTestHelper.createCollection();
     }
 
@@ -61,6 +55,7 @@ public class AttributeNameTest
     public static void afterClass() throws Exception
     {
         MongoTestHelper.dropCollection();
+        MongoTestHelper.shutdown();
     }
 
     @Test
@@ -140,7 +135,7 @@ public class AttributeNameTest
             if ("init".equals(action))
             {
                 Session session = (Session)request.getSession(true);
-                session.setAttribute("a.b.c", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+                session.setAttribute("a.b.c", NanoTime.now());
                 sendResult(session, httpServletResponse.getWriter());
             }
             else

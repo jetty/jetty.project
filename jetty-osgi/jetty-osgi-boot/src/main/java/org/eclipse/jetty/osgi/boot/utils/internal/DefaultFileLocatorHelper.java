@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -53,12 +48,12 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
     private static Field FILE_FIELD = null;
 
-    private static Field BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = null;// ZipBundleFile
+    private static Field BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = null; // ZipBundleFile
 
     // inside
     // DirZipBundleEntry
 
-    private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null;// ZipFile
+    private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null; // ZipFile
 
     private static final String[] FILE_BUNDLE_ENTRY_CLASSES = {
         "org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry", "org.eclipse.osgi.storage.bundlefile.FileBundleEntry"
@@ -360,10 +355,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * Get a URL to the content of the bundle entry that uses the file:
      * protocol. The content of the bundle entry may be downloaded or extracted
      * to the local file system in order to create a file: URL.
+     * </p>
      *
      * @return a URL to the content of the bundle entry that uses the file:
      * protocol
-     * </p>
      * @throws Exception if unable to get the file url
      */
     @Override

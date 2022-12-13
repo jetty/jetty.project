@@ -1,0 +1,55 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-http-application]]
+===== Writing HTTP Server Applications
+
+Writing HTTP applications is typically simple, especially when using blocking APIs.
+However, there are subtle cases where it is worth clarifying what a server application should do to obtain the desired results when run by Jetty.
+
+[[pg-server-http-application-1xx]]
+====== Sending 1xx Responses
+
+The link:https://tools.ietf.org/html/rfc7231#section-5.1.1[HTTP/1.1 RFC] allows for `1xx` informational responses to be sent before a real content response.
+Unfortunately the servlet specification does not provide a way for these to be sent, so Jetty has had to provide non-standard handling of these headers.
+
+[[pg-server-http-application-100]]
+====== 100 Continue
+
+The `100 Continue` response should be sent by the server when a client sends a request with an `Expect: 100-continue` header, as the client will not send the body of the request until the `100 Continue` response has been sent.
+
+The intent of this feature is to allow a server to inspect the headers and to tell the client to not send a request body that might be too large or insufficiently private or otherwise unable to be handled.
+
+Jetty achieves this by waiting until the input stream or reader is obtained by the filter/servlet, before sending the `100 Continue` response.
+Thus a filter/servlet may inspect the headers of a request before getting the input stream and send an error response (or redirect etc.) rather than the 100 continues.
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=continue100]
+----
+
+[[jetty-102-processing]]
+====== 102 Processing
+
+link:https://tools.ietf.org/html/rfc2518[RFC 2518] defined the `102 Processing` status code that can be sent:
+
+[quote,RFC 2518 section 10.1]
+when the server has a reasonable expectation that the request will take significant time to complete.
+As guidance, if a method is taking longer than 20 seconds (a reasonable, but arbitrary value) to process the server SHOULD return a `102 Processing` response.
+
+However, a later update of RFC 2518, link:https://tools.ietf.org/html/rfc4918[RFC 4918], removed the `102 Processing` status code for link:https://tools.ietf.org/html/rfc4918#appendix-F.3["lack of implementation"].
+
+Jetty supports the `102 Processing` status code.
+If a request is received with the `Expect: 102-processing` header, then a filter/servlet may send a `102 Processing` response (without terminating further processing) by calling `response.sendError(102)`.
+
+// TODO: add section to always read request content until -1 is reached.

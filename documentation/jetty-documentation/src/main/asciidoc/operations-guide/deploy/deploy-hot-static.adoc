@@ -1,0 +1,38 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-deploy-hot-static]]
+==== Hot vs Static Deployment
+
+The `DeploymentManager` scans the `$JETTY_BASE/webapps` directory for changes every `N` seconds, where `N` is configured via the `jetty.deploy.scanInterval` property.
+
+By default, the scan interval is `1` second, which means that _hot_ deployment is enabled: if a file is added/changed/removed from the `$JETTY_BASE/webapps` directory, the `DeploymentManager` will notice the change and respectively deploy/redeploy/undeploy the web application.
+
+Setting the scan interval to `0` means that _static_ deployment is enabled, and the `DeploymentManager` will not scan the `$JETTY_BASE/webapps` directory for changes.
+This means that to deploy/redeploy/undeploy a web application you will need to stop and restart Jetty.
+
+The following command line disables _hot_ deployment by specifying the `jetty.deploy.scanInterval` property on the command line, and therefore only for this particular run:
+
+----
+$ java -jar $JETTY_HOME/start.jar jetty.deploy.scanInterval=0
+----
+
+To make _static_ deployment persistent, you need to edit the `deploy` module configuration file, `$JETTY_BASE/start.d/deploy.ini`, uncomment the module property `jetty.deploy.scanInterval` and change its value to `0`:
+
+.deploy.ini
+[source,subs=quotes]
+----
+--module=deploy
+#jetty.deploy.scanInterval=0#
+...
+----

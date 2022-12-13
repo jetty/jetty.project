@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,6 +22,7 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -176,9 +172,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
 
             case AnnotationConfiguration.CONTAINER_INITIALIZERS:
             {
-                for (String i : values)
+                for (String s : values)
                 {
-                    visitContainerInitializer(context, new ContainerInitializer(Thread.currentThread().getContextClassLoader(), i));
+                    visitServletContainerInitializerHolder(context, 
+                        ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), s));
                 }
                 break;
             }
@@ -221,6 +218,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
+    @Deprecated
     public void visitContainerInitializer(WebAppContext context, ContainerInitializer containerInitializer)
     {
         if (containerInitializer == null)
@@ -244,6 +242,19 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
             context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
             context.addBean(starter, true);
         }
+    }
+    
+    /**
+     * Ensure the ServletContainerInitializerHolder will be started by adding it to the context.
+     * 
+     * @param context the context to which to add the ServletContainerInitializerHolder
+     * @param sciHolder the ServletContainerInitializerHolder
+     */
+    public void visitServletContainerInitializerHolder(WebAppContext context, ServletContainerInitializerHolder sciHolder)
+    {
+        if (sciHolder == null)
+            return;
+        context.addServletContainerInitializer(sciHolder);
     }
 
     public void visitMetaInfResource(WebAppContext context, Resource dir)

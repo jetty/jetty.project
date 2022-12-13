@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -120,11 +115,37 @@ public interface IStream extends Stream, Attachable, Closeable
     boolean isRemotelyClosed();
 
     /**
+     * Fail all data queued in the stream and reset
+     * demand to 0.
+     * @param x the exception to fail the data with.
+     * @return true if the end of the stream was reached, false otherwise.
+     */
+    boolean failAllData(Throwable x);
+
+    /**
      * @return whether this stream has been reset (locally or remotely) or has been failed
      * @see #isReset()
      * @see Listener#onFailure(Stream, int, String, Throwable, Callback)
      */
     boolean isResetOrFailed();
+
+    /**
+     * Marks this stream as committed.
+     *
+     * @see #isCommitted()
+     */
+    void commit();
+
+    /**
+     * @return whether bytes for this stream have been sent to the remote peer.
+     * @see #commit()
+     */
+    boolean isCommitted();
+
+    /**
+     * @return the size of the DATA frame queue
+     */
+    int dataSize();
 
     /**
      * <p>An ordered list of frames belonging to the same stream.</p>

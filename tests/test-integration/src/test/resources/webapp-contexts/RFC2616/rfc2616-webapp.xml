@@ -10,4 +10,12 @@
       </New>
     </Arg>
   </Call>
+  <Get name="systemClassMatcher">
+    <Call name="add"><Arg>org.slf4j.</Arg></Call>
+    <Call name="add"><Arg>org.eclipse.jetty.logging.</Arg></Call>
+  </Get>
+  <Get name="serverClassMatcher">
+    <Call name="add"><Arg>-org.slf4j.</Arg></Call>
+    <Call name="add"><Arg>-org.eclipse.jetty.logging.</Arg></Call>
+  </Get>
 </Configure>

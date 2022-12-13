@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -29,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Tests of {@link PathMappings#getMatch(String)}, with a focus on correct mapping selection order
+ * Tests of {@link PathMappings#getMatched(String)}, with a focus on correct mapping selection order
  */
 @SuppressWarnings("Duplicates")
 public class ServletPathSpecOrderTest
@@ -58,6 +53,7 @@ public class ServletPathSpecOrderTest
         data.add(Arguments.of("/Other/path", "default"));
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         data.add(Arguments.of("/\u20ACuro/path", "money"));
+        // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
         data.add(Arguments.of("/", "root"));
 
         // Extra tests
@@ -92,6 +88,6 @@ public class ServletPathSpecOrderTest
     @MethodSource("data")
     public void testMatch(String inputPath, String expectedResource)
     {
-        assertThat("Match on [" + inputPath + "]", mappings.getMatch(inputPath).getResource(), is(expectedResource));
+        assertThat("Match on [" + inputPath + "]", mappings.getMatched(inputPath).getResource(), is(expectedResource));
     }
 }

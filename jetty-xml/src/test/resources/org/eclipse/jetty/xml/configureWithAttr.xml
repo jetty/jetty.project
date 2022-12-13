@@ -100,7 +100,8 @@
   <Call name="callStatic" class="org.eclipse.jetty.xml.TestConfiguration"/>
 
   <Call name="call">
-    <Arg><Array type="java.lang.Object">
+    <Arg><Array>
+      <Type>java.lang.Object</Type>
       <Item>Blah</Item>
       <Item type="String">1.2.3.4:5678</Item>
       <Item><New class="java.lang.Double"><Arg>1.2345</Arg></New></Item>
@@ -109,7 +110,8 @@
   </Call>
 
   <Call name="call">
-    <Arg><Array type="int">
+    <Arg><Array>
+      <Type>int</Type>
       <Item type="int">1</Item>
       <Item type="int">2</Item>
       <Item type="int">3</Item>

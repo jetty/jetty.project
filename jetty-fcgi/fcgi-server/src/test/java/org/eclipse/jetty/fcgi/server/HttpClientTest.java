@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,8 +13,8 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.io.EOFException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -29,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
@@ -53,20 +47,16 @@ import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
-    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-
     @Test
     public void testGETResponseWithoutContent() throws Exception
     {
@@ -83,7 +73,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testGETResponseWithContent() throws Exception
     {
-        final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
         start(new AbstractHandler()
         {
             @Override
@@ -110,7 +100,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testGETResponseWithBigContent() throws Exception
     {
-        final byte[] data = new byte[16 * 1024 * 1024];
+        byte[] data = new byte[16 * 1024 * 1024];
         new Random().nextBytes(data);
         start(new AbstractHandler()
         {
@@ -139,8 +129,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testGETWithParametersResponseWithContent() throws Exception
     {
-        final String paramName1 = "a";
-        final String paramName2 = "b";
+        String paramName1 = "a";
+        String paramName2 = "b";
         start(new AbstractHandler()
         {
             @Override
@@ -171,8 +161,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testGETWithParametersMultiValuedResponseWithContent() throws Exception
     {
-        final String paramName1 = "a";
-        final String paramName2 = "b";
+        String paramName1 = "a";
+        String paramName2 = "b";
         start(new AbstractHandler()
         {
             @Override
@@ -209,8 +199,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testPOSTWithParameters() throws Exception
     {
-        final String paramName = "a";
-        final String paramValue = "\u20AC";
+        String paramName = "a";
+        String paramValue = "\u20AC";
         start(new AbstractHandler()
         {
             @Override
@@ -240,8 +230,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testPOSTWithQueryString() throws Exception
     {
-        final String paramName = "a";
-        final String paramValue = "\u20AC";
+        String paramName = "a";
+        String paramValue = "\u20AC";
         start(new AbstractHandler()
         {
             @Override
@@ -272,8 +262,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testPUTWithParameters() throws Exception
     {
-        final String paramName = "a";
-        final String paramValue = "\u20AC";
+        String paramName = "a";
+        String paramValue = "\u20AC";
         start(new AbstractHandler()
         {
             @Override
@@ -304,9 +294,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testPOSTWithParametersWithContent() throws Exception
     {
-        final byte[] content = {0, 1, 2, 3};
-        final String paramName = "a";
-        final String paramValue = "\u20AC";
+        byte[] content = {0, 1, 2, 3};
+        String paramName = "a";
+        String paramValue = "\u20AC";
         start(new AbstractHandler()
         {
             @Override
@@ -325,7 +315,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         for (int i = 0; i < 256; ++i)
         {
-            ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
+            ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?r=" + i)
                 .param(paramName, paramValue)
                 .body(new BytesRequestContent(content))
                 .timeout(5, TimeUnit.SECONDS)
@@ -333,14 +323,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
             assertNotNull(response);
             assertEquals(200, response.getStatus());
-            assertArrayEquals(content, response.getContent());
+            assertArrayEquals(content, response.getContent(), "content mismatch for request " + i);
         }
     }
 
     @Test
     public void testPOSTWithContentNotifiesRequestContentListener() throws Exception
     {
-        final byte[] content = {0, 1, 2, 3};
+        byte[] content = {0, 1, 2, 3};
         start(new EmptyServerHandler());
 
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
@@ -362,9 +352,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testPOSTWithContentTracksProgress() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                IO.copy(baseRequest.getInputStream(), OutputStream.nullOutputStream());
+            }
+        });
 
-        final AtomicInteger progress = new AtomicInteger();
+        AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
             .onRequestContent((request, buffer) ->
             {
@@ -392,7 +390,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         // appear as "leaked", so we use a normal ByteBufferPool.
         clientBufferPool = new MappedByteBufferPool.Tagged();
 
-        final byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         start(new AbstractHandler()
         {
             @Override
@@ -416,50 +414,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void testRequestIdleTimeout() throws Exception
-    {
-        final long idleTimeout = 1000;
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
-            {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
-            }
-        });
-
-        final String host = "localhost";
-        final int port = connector.getLocalPort();
-        assertThrows(TimeoutException.class, () ->
-            client.newRequest(host, port)
-                .scheme(scheme)
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
-
-        // Make another request without specifying the idle timeout, should not fail
-        ContentResponse response = client.newRequest(host, port)
-            .scheme(scheme)
-            .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-            .send();
-
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-    }
-
-    @Test
     public void testConnectionIdleTimeout() throws Exception
     {
-        final long idleTimeout = 1000;
+        long idleTimeout = 1000;
         start(new AbstractHandler()
         {
             @Override
@@ -479,25 +436,26 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         connector.setIdleTimeout(idleTimeout);
 
-        ExecutionException x = assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
-        assertThat(x.getCause(), instanceOf(EOFException.class));
+        // Request does not fail because idle timeouts while dispatched are ignored.
+        ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
+            .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
+            .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send();
+        assertNotNull(response1);
+        assertEquals(200, response1.getStatus());
 
         connector.setIdleTimeout(5 * idleTimeout);
 
-        // Make another request to be sure the connection is recreated
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        // Make another request to be sure the connection works fine.
+        ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
             .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
             .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
             .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        assertNotNull(response2);
+        assertEquals(200, response2.getStatus());
     }
 
     @Test
@@ -518,7 +476,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testHEADWithResponseContentLength() throws Exception
     {
-        final int length = 1024;
+        int length = 1024;
         start(new AbstractHandler()
         {
             @Override
@@ -555,7 +513,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testLongPollIsAbortedWhenClientIsStopped() throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         start(new AbstractHandler()
         {
             @Override
@@ -567,7 +525,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        final CountDownLatch completeLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
             .send(result ->
@@ -624,7 +582,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     private void testContentDelimitedByEOFWithSlowRequest(int length) throws Exception
     {
-        final byte[] data = new byte[length];
+        byte[] data = new byte[length];
         new Random().nextBytes(data);
         start(new AbstractHandler()
         {
@@ -668,10 +626,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        final AtomicInteger contentCount = new AtomicInteger();
-        final AtomicReference<Callback> callbackRef = new AtomicReference<>();
-        final AtomicReference<CountDownLatch> contentLatch = new AtomicReference<>(new CountDownLatch(1));
-        final CountDownLatch completeLatch = new CountDownLatch(1);
+        AtomicInteger contentCount = new AtomicInteger();
+        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        AtomicReference<CountDownLatch> contentLatch = new AtomicReference<>(new CountDownLatch(1));
+        CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
             .onResponseContentAsync((response, content, callback) ->

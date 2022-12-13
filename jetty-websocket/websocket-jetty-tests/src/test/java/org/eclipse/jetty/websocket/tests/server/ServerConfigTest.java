@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -63,16 +58,16 @@ public class ServerConfigTest
     private Server server;
     private WebSocketClient client;
     private ServerConnector connector;
-    private ConnectionListener listener = new ConnectionListener();
+    private final ConnectionListener listener = new ConnectionListener();
 
-    private static String message = "this message is over 20 characters long";
-    private static final int inputBufferSize = 200;
-    private static final int maxMessageSize = 20;
-    private static final int idleTimeout = 500;
+    private static final String MESSAGE = "this message is over 20 characters long";
+    private static final int INPUT_BUFFER_SIZE = 200;
+    private static final int MAX_MESSAGE_SIZE = 20;
+    private static final int IDLE_TIMEOUT = 500;
 
-    private EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
-    private EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
-    private EventSocket standardEndpoint = new EventSocket();
+    private final EventSocket annotatedEndpoint = new AnnotatedConfigEndpoint();
+    private final EventSocket sessionConfigEndpoint = new SessionConfigEndpoint();
+    private final EventSocket standardEndpoint = new EventSocket();
 
     private EventSocket getServerEndpoint(String path)
     {
@@ -95,7 +90,7 @@ public class ServerConfigTest
         return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
     }
 
-    @WebSocket(idleTimeout = idleTimeout, maxTextMessageSize = maxMessageSize, maxBinaryMessageSize = maxMessageSize, inputBufferSize = inputBufferSize, batchMode = BatchMode.ON)
+    @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE, batchMode = BatchMode.ON)
     public static class AnnotatedConfigEndpoint extends EventSocket
     {
     }
@@ -106,10 +101,10 @@ public class ServerConfigTest
         @Override
         public void onOpen(Session session)
         {
-            session.setIdleTimeout(Duration.ofMillis(idleTimeout));
-            session.setMaxTextMessageSize(maxMessageSize);
-            session.setMaxBinaryMessageSize(maxMessageSize);
-            session.setInputBufferSize(inputBufferSize);
+            session.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
+            session.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+            session.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            session.setInputBufferSize(INPUT_BUFFER_SIZE);
             super.onOpen(session);
         }
     }
@@ -119,10 +114,10 @@ public class ServerConfigTest
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            factory.setIdleTimeout(Duration.ofMillis(idleTimeout));
-            factory.setMaxTextMessageSize(maxMessageSize);
-            factory.setMaxBinaryMessageSize(maxMessageSize);
-            factory.setInputBufferSize(inputBufferSize);
+            factory.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
+            factory.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+            factory.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            factory.setInputBufferSize(INPUT_BUFFER_SIZE);
             factory.addMapping("/", (req, resp) -> standardEndpoint);
         }
     }
@@ -145,10 +140,10 @@ public class ServerConfigTest
         }
     }
 
-    public class ConnectionListener implements Connection.Listener
+    public static class ConnectionListener implements Connection.Listener
     {
-        private AtomicInteger opened = new AtomicInteger(0);
-        private CountDownLatch closed = new CountDownLatch(1);
+        private final AtomicInteger opened = new AtomicInteger(0);
+        private final CountDownLatch closed = new CountDownLatch(1);
 
         @Override
         public void onOpened(Connection connection)
@@ -188,10 +183,10 @@ public class ServerConfigTest
 
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
-            container.setIdleTimeout(Duration.ofMillis(idleTimeout));
-            container.setMaxTextMessageSize(maxMessageSize);
-            container.setMaxBinaryMessageSize(maxMessageSize);
-            container.setInputBufferSize(inputBufferSize);
+            container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
+            container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+            container.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            container.setInputBufferSize(INPUT_BUFFER_SIZE);
             container.addMapping("/containerConfig", (req, resp) -> standardEndpoint);
         });
 
@@ -223,7 +218,7 @@ public class ServerConfigTest
         WebSocketCoreSession coreSession = (WebSocketCoreSession)((WebSocketSession)serverEndpoint.session).getCoreSession();
         WebSocketConnection connection = coreSession.getConnection();
 
-        assertThat(connection.getInputBufferSize(), is(inputBufferSize));
+        assertThat(connection.getInputBufferSize(), is(INPUT_BUFFER_SIZE));
 
         serverEndpoint.session.close();
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -245,7 +240,7 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(message));
+        clientEndpoint.session.getRemote().sendBytes(BufferUtil.toBuffer(MESSAGE));
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));
@@ -269,7 +264,7 @@ public class ServerConfigTest
         clientEndpoint.session.getRemote().sendString("hello world");
         String msg = serverEndpoint.textMessages.poll(500, TimeUnit.MILLISECONDS);
         assertThat(msg, is("hello world"));
-        Thread.sleep(idleTimeout + 500);
+        Thread.sleep(IDLE_TIMEOUT + 500);
 
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.error, instanceOf(WebSocketTimeoutException.class));
@@ -290,7 +285,7 @@ public class ServerConfigTest
         CompletableFuture<Session> connect = client.connect(clientEndpoint, uri);
 
         connect.get(5, TimeUnit.SECONDS);
-        clientEndpoint.session.getRemote().sendString(message);
+        clientEndpoint.session.getRemote().sendString(MESSAGE);
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));

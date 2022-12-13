@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,6 +14,7 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,8 +26,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -50,11 +48,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -241,9 +238,9 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 }
                 else
                 {
-                    // Send 100-Continue and consume the content
-                    IO.copy(request.getInputStream(), new ByteArrayOutputStream());
-                    // Send a redirect
+                    // Send 100-Continue and consume the content.
+                    IO.copy(request.getInputStream(), OutputStream.nullOutputStream());
+                    // Send a redirect.
                     response.sendRedirect("/done");
                 }
             }
@@ -324,36 +321,40 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(Transport transport) throws Exception
     {
         init(transport);
-        long idleTimeout = 1000;
+        AtomicReference<org.eclipse.jetty.client.api.Request> clientRequestRef = new AtomicReference<>();
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        CountDownLatch serverLatch = new CountDownLatch(1);
+
         scenario.startServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 baseRequest.setHandled(true);
+                clientRequestRef.get().abort(new Exception("abort!"));
                 try
                 {
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                    if (!clientLatch.await(5, TimeUnit.SECONDS))
+                        throw new ServletException("Server timed out on client latch");
+                    serverLatch.countDown();
                 }
-                catch (InterruptedException x)
+                catch (InterruptedException e)
                 {
-                    throw new ServletException(x);
+                    throw new ServletException(e);
                 }
             }
         });
-        scenario.startClient(httpClient -> httpClient.setIdleTimeout(2 * idleTimeout));
+        scenario.startClient();
 
         byte[] content = new byte[1024];
-        CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        org.eclipse.jetty.client.api.Request clientRequest = scenario.client.newRequest(scenario.newURI());
+        clientRequestRef.set(clientRequest);
+        clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
             .send(new BufferingResponseListener()
             {
                 @Override
@@ -362,21 +363,22 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                     assertTrue(result.isFailed());
                     assertNotNull(result.getRequestFailure());
                     assertNotNull(result.getResponseFailure());
-                    latch.countDown();
+                    clientLatch.countDown();
                 }
             });
 
-        assertTrue(latch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(Transport transport) throws Exception
     {
         init(transport);
-        long idleTimeout = 1000;
+        AtomicReference<org.eclipse.jetty.client.api.Request> clientRequestRef = new AtomicReference<>();
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        CountDownLatch serverLatch = new CountDownLatch(1);
         scenario.startServer(new AbstractHandler()
         {
             @Override
@@ -385,9 +387,12 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 baseRequest.setHandled(true);
                 // Send 100-Continue and consume the content
                 IO.copy(request.getInputStream(), new ByteArrayOutputStream());
+                clientRequestRef.get().abort(new Exception("abort!"));
                 try
                 {
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                    if (!clientLatch.await(5, TimeUnit.SECONDS))
+                        throw new ServletException("Server timed out on client latch");
+                    serverLatch.countDown();
                 }
                 catch (InterruptedException x)
                 {
@@ -395,11 +400,12 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 }
             }
         });
-        scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
+        scenario.startClient();
 
         byte[] content = new byte[1024];
-        CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.newRequest(scenario.newURI())
+        org.eclipse.jetty.client.api.Request clientRequest = scenario.client.newRequest(scenario.newURI());
+        clientRequestRef.set(clientRequest);
+        clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
             .send(new BufferingResponseListener()
@@ -410,11 +416,12 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                     assertTrue(result.isFailed());
                     assertNull(result.getRequestFailure());
                     assertNotNull(result.getResponseFailure());
-                    latch.countDown();
+                    clientLatch.countDown();
                 }
             });
 
-        assertTrue(latch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -479,10 +486,16 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithDeferredContentRespond100Continue(Transport transport) throws Exception
     {
+        byte[] chunk1 = new byte[]{0, 1, 2, 3};
+        byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        byte[] data = new byte[chunk1.length + chunk2.length];
+        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
+        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
+
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        AtomicReference<Thread> handlerThread = new AtomicReference<>();
         init(transport);
         scenario.start(new AbstractHandler()
         {
@@ -490,18 +503,22 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
+                handlerThread.set(Thread.currentThread());
                 // Send 100-Continue and echo the content
-                IO.copy(request.getInputStream(), response.getOutputStream());
+
+                ServletOutputStream outputStream = response.getOutputStream();
+                DataInputStream inputStream = new DataInputStream(request.getInputStream());
+                // Block until the 1st chunk is fully received.
+                byte[] buf1 = new byte[chunk1.length];
+                inputStream.readFully(buf1);
+                outputStream.write(buf1);
+
+                serverLatch.countDown();
+                IO.copy(inputStream, outputStream);
             }
         });
 
-        byte[] chunk1 = new byte[]{0, 1, 2, 3};
-        byte[] chunk2 = new byte[]{4, 5, 6, 7};
-        byte[] data = new byte[chunk1.length + chunk2.length];
-        System.arraycopy(chunk1, 0, data, 0, chunk1.length);
-        System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);
-
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch requestLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent();
         scenario.client.newRequest(scenario.newURI())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
@@ -512,28 +529,38 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 public void onComplete(Result result)
                 {
                     assertArrayEquals(data, getContent());
-                    latch.countDown();
+                    requestLatch.countDown();
                 }
             });
 
-        Thread.sleep(1000);
+        // Wait for the handler thread to be blocked in the 1st IO.
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
 
         content.offer(ByteBuffer.wrap(chunk1));
 
-        Thread.sleep(1000);
+        // Wait for the handler thread to be blocked in the 2nd IO.
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
 
         content.offer(ByteBuffer.wrap(chunk2));
         content.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testExpect100ContinueWithInitialAndDeferredContentRespond100Continue(Transport transport) throws Exception
     {
+        AtomicReference<Thread> handlerThread = new AtomicReference<>();
         init(transport);
         scenario.start(new AbstractHandler()
         {
@@ -541,6 +568,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
+                handlerThread.set(Thread.currentThread());
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -567,7 +595,12 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 }
             });
 
-        Thread.sleep(1000);
+        // Wait for the handler thread to be blocked in IO.
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThread.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
 
         content.offer(ByteBuffer.wrap(chunk2));
         content.close();

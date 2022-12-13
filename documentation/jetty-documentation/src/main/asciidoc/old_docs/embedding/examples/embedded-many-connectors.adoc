@@ -1,0 +1,51 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[embedded-many-connectors]]
+==== Multiple Connectors
+
+This example shows how to configure Jetty to use multiple connectors, specifically so it can process both http and https requests.
+Since the meat of this example is the server and connector configuration it only uses a simple HelloHandler but this example should be easily merged with other examples like those deploying servlets or webapps.
+
+[source, java, subs="{sub-order}"]
+----
+include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ManyConnectors.java[]
+
+----
+
+===== Walkthrough
+
+Start things up!
+By using the `server.join()` the server thread will join with the current thread.
+See link:http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()[`Thread.join()`] for more details.
+
+===== Maven Coordinates
+
+To use this example in your project you will need the following Maven dependencies declared.
+
+[source, xml, subs="{sub-order}"]
+----
+                
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-server</artifactId>
+  <version>${project.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-security</artifactId>
+  <version>${project.version}</version>
+</dependency>
+
+            
+----

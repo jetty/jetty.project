@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -33,6 +29,17 @@ import static java.lang.Long.MAX_VALUE;
  * <p>Subclasses should implement {@link #onTimeoutExpired()}.</p>
  * <p>This implementation is optimised assuming that the timeout
  * will mostly be cancelled and then reused with a similar value.</p>
+ * <p>The typical scenario to use this class is when you have events
+ * that postpone (by re-scheduling), or cancel then re-schedule, a
+ * timeout for a single entity.
+ * For example: connection idleness, where for each connection there
+ * is a CyclicTimeout and a read/write postpones the timeout; when
+ * the timeout expires, the implementation checks against a timestamp
+ * if the connection is really idle.
+ * Another example: HTTP session expiration, where for each HTTP
+ * session there is a CyclicTimeout and at the beginning of the
+ * request processing the timeout is canceled (via cancel()), but at
+ * the end of the request processing the timeout is re-scheduled.</p>
  * <p>This implementation has a {@link Timeout} holding the time
  * at which the scheduled task should fire, and a linked list of
  * {@link Wakeup}, each holding the actual scheduled task.</p>
@@ -47,6 +54,8 @@ import static java.lang.Long.MAX_VALUE;
  * When the Wakeup task fires, it will see that the Timeout is now
  * in the future and will attach a new Wakeup with the future time
  * to the Timeout, and submit a scheduler task for the new Wakeup.</p>
+ *
+ * @see CyclicTimeouts
  */
 public abstract class CyclicTimeout implements Destroyable
 {
@@ -83,7 +92,7 @@ public abstract class CyclicTimeout implements Destroyable
      */
     public boolean schedule(long delay, TimeUnit units)
     {
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         long newTimeoutAt = now + units.toNanos(delay);
 
         Wakeup newWakeup = null;
@@ -95,16 +104,19 @@ public abstract class CyclicTimeout implements Destroyable
 
             // Is the current wakeup good to use? ie before our timeout time?
             Wakeup wakeup = timeout._wakeup;
-            if (wakeup == null || wakeup._at > newTimeoutAt)
+            if (wakeup == null || NanoTime.isBefore(newTimeoutAt, wakeup._at))
                 // No, we need an earlier wakeup.
                 wakeup = newWakeup = new Wakeup(newTimeoutAt, wakeup);
 
             if (_timeout.compareAndSet(timeout, new Timeout(newTimeoutAt, wakeup)))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Installed timeout in {} ms, waking up in {} ms",
+                {
+                    LOG.debug("Installed timeout in {} ms, {} wake up in {} ms",
                         units.toMillis(delay),
-                        TimeUnit.NANOSECONDS.toMillis(wakeup._at - now));
+                        newWakeup != null ? "new" : "existing",
+                        NanoTime.millisElapsed(now, wakeup._at));
+                }
                 break;
             }
         }
@@ -181,7 +193,7 @@ public abstract class CyclicTimeout implements Destroyable
             return String.format("%s@%x:%dms,%s",
                 getClass().getSimpleName(),
                 hashCode(),
-                TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
+                NanoTime.millisUntil(_at),
                 _wakeup);
         }
     }
@@ -203,7 +215,7 @@ public abstract class CyclicTimeout implements Destroyable
 
         private void schedule(long now)
         {
-            _task.compareAndSet(null, _scheduler.schedule(this, _at - now, TimeUnit.NANOSECONDS));
+            _task.compareAndSet(null, _scheduler.schedule(this, NanoTime.elapsed(now, _at), TimeUnit.NANOSECONDS));
         }
 
         private void destroy()
@@ -216,7 +228,7 @@ public abstract class CyclicTimeout implements Destroyable
         @Override
         public void run()
         {
-            long now = System.nanoTime();
+            long now = NanoTime.now();
             Wakeup newWakeup = null;
             boolean hasExpired = false;
             while (true)
@@ -247,7 +259,7 @@ public abstract class CyclicTimeout implements Destroyable
                 wakeup = wakeup._next;
 
                 Timeout newTimeout;
-                if (timeout._at <= now)
+                if (NanoTime.isBeforeOrSame(timeout._at, now))
                 {
                     // We have timed out!
                     hasExpired = true;
@@ -257,7 +269,7 @@ public abstract class CyclicTimeout implements Destroyable
                 {
                     // We have not timed out, but we are set to!
                     // Is the current wakeup good to use? ie before our timeout time?
-                    if (wakeup == null || wakeup._at >= timeout._at)
+                    if (wakeup == null || NanoTime.isBefore(timeout._at, wakeup._at))
                         // No, we need an earlier wakeup.
                         wakeup = newWakeup = new Wakeup(timeout._at, wakeup);
                     newTimeout = new Timeout(timeout._at, wakeup);
@@ -288,7 +300,7 @@ public abstract class CyclicTimeout implements Destroyable
             return String.format("%s@%x:%dms->%s",
                 getClass().getSimpleName(),
                 hashCode(),
-                _at == MAX_VALUE ? _at : TimeUnit.NANOSECONDS.toMillis(_at - System.nanoTime()),
+                _at == MAX_VALUE ? _at : NanoTime.millisUntil(_at),
                 _next);
         }
     }

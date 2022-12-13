@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <artifactId>jetty-project</artifactId>
+    <groupId>org.eclipse.jetty</groupId>
+    <version>10.0.14-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.http3</groupId>
+  <artifactId>http3-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Jetty :: HTTP3</name>
+
+  <modules>
+    <module>http3-qpack</module>
+    <module>http3-common</module>
+    <module>http3-server</module>
+    <module>http3-client</module>
+    <module>http3-http-client-transport</module>
+    <module>http3-tests</module>
+  </modules>
+
+</project>

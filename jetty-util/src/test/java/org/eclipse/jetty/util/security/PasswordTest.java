@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,9 +13,22 @@
 
 package org.eclipse.jetty.util.security;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PasswordTest
 {
@@ -48,5 +56,41 @@ public class PasswordTest
         String password = "secret password !#\u20ac ";
         String obfuscate = Password.obfuscate(password);
         assertEquals(password, Password.deobfuscate(obfuscate));
+    }
+
+    @Test
+    public void testCommandLineUsage() throws IOException, InterruptedException
+    {
+        ProcessBuilder passwordBuilder = new ProcessBuilder()
+            .directory(MavenTestingUtils.getTargetDir())
+            .command("java",
+                "-cp", MavenTestingUtils.getTargetPath("classes").toString(),
+                Password.class.getName(),
+                "user", "password")
+            .redirectErrorStream(true);
+
+        Process passwordProcess = passwordBuilder.start();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(passwordProcess.getInputStream())))
+        {
+            String output = reader.lines().collect(Collectors.joining(System.lineSeparator()));
+            if (passwordProcess.waitFor(5, TimeUnit.SECONDS))
+            {
+                int exitCode = passwordProcess.exitValue();
+                assertThat("Non-error exit code: " + output, exitCode, is(0));
+                assertThat("Output", output, not(containsString("Exception")));
+                assertThat("Output", output, allOf(
+                    containsString("password"),
+                    containsString("OBF:"),
+                    containsString("MD5:"),
+                    containsString("CRYPT:")
+                ));
+            }
+            else
+            {
+                System.out.println(output);
+                passwordProcess.destroy();
+                fail("Process didn't exit properly (was forcibly destroyed)");
+            }
+        }
     }
 }

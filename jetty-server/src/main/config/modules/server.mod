@@ -1,9 +1,9 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enables the core Jetty server on the classpath.
+Enables and configures the Jetty server.
+This module does not enable any network protocol support.
+To enable a specific network protocol such as HTTP/1.1, you must enable the correspondent Jetty module.
 
-[optional]
+[after]
 jvm
 ext
 resources
@@ -25,6 +25,7 @@ lib/jetty-io-${jetty.version}.jar
 etc/jetty.xml
 
 [ini-template]
+# tag::documentation-http-config[]
 ### Common HTTP configuration
 ## Scheme to use to build URIs for secure redirects
 # jetty.httpConfig.secureScheme=https
@@ -59,18 +60,32 @@ etc/jetty.xml
 ## Maximum number of error dispatches to prevent looping
 # jetty.httpConfig.maxErrorDispatches=10
 
+## Relative Redirect Locations allowed
+# jetty.httpConfig.relativeRedirectAllowed=false
+
+## Whether to use direct ByteBuffers for reading or writing
+# jetty.httpConfig.useInputDirectByteBuffers=true
+# jetty.httpConfig.useOutputDirectByteBuffers=true
+# end::documentation-http-config[]
+
+# tag::documentation-server-compliance[]
 ## HTTP Compliance: RFC7230, RFC7230_LEGACY, RFC2616, RFC2616_LEGACY, LEGACY
 # jetty.httpConfig.compliance=RFC7230
+
+## URI Compliance: DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE
+# jetty.httpConfig.uriCompliance=DEFAULT
 
 ## Cookie compliance mode for parsing request Cookie headers: RFC2965, RFC6265
 # jetty.httpConfig.requestCookieCompliance=RFC6265
 
 ## Cookie compliance mode for generating response Set-Cookie: RFC2965, RFC6265
 # jetty.httpConfig.responseCookieCompliance=RFC6265
+# end::documentation-server-compliance[]
 
-## Relative Redirect Locations allowed
-# jetty.httpConfig.relativeRedirectAllowed=false
+## multipart/form-data compliance mode of: LEGACY(slow), RFC7578(fast)
+# jetty.httpConfig.multiPartFormDataCompliance=RFC7578
 
+# tag::documentation-server-config[]
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true
@@ -83,8 +98,16 @@ etc/jetty.xml
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+# end::documentation-server-config[]
 
-## Scheduler Configuration
+# tag::documentation-scheduler-config[]
+### Server Scheduler Configuration
+## The scheduler thread name, defaults to "Scheduler-{hashCode()}" if blank.
 # jetty.scheduler.name=
-# jetty.scheduler.deamon=false
-# jetty.scheduler.threads=-1
+
+## Whether the server scheduler threads are daemon.
+# jetty.scheduler.daemon=false
+
+## The number of server scheduler threads.
+# jetty.scheduler.threads=1
+# end::documentation-scheduler-config[]

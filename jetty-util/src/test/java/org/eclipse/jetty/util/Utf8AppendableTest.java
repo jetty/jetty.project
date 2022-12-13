@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -153,6 +148,35 @@ public class Utf8AppendableTest
             Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
             buffer.append((byte)0xC2);
             buffer.append((byte)0xC2);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testInvalidZeroUTF8(Class<Utf8Appendable> impl) throws UnsupportedEncodingException
+    {
+        // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
+        assertThrows(Utf8Appendable.NotUtf8Exception.class, () ->
+        {
+            Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+            buffer.append((byte)0xC0);
+            buffer.append((byte)0x80);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testInvalidAlternateDotEncodingUTF8(Class<Utf8Appendable> impl) throws UnsupportedEncodingException
+    {
+        // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
+        assertThrows(Utf8Appendable.NotUtf8Exception.class, () ->
+        {
+            Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+            buffer.append((byte)0x2f);
+            buffer.append((byte)0xc0);
+            buffer.append((byte)0xae);
+            buffer.append((byte)0x2e);
+            buffer.append((byte)0x2f);
         });
     }
 

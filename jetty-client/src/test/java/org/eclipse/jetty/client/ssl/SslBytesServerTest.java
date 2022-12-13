@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -73,7 +68,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
@@ -87,7 +81,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 // Other JREs have slight differences in how TLS work
 // and this test expects a very specific TLS behavior.
@@ -334,7 +327,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         final SSLSocket client2 = newClient(proxy);
 
-        threadPool.submit(() ->
+        Future<Object> handshakeFuture = threadPool.submit(() ->
         {
             client2.startHandshake();
             return null;
@@ -366,6 +359,9 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Done
         TLSRecord doneRecord = proxy.readFromClient();
         assertNotNull(doneRecord);
+
+        // Wait for socket to be done with handshake
+        handshakeFuture.get(5, TimeUnit.SECONDS);
         // Close
         client2.close();
         TLSRecord closeRecord = proxy.readFromClient();
@@ -1029,7 +1025,6 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1084,7 +1079,6 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testRequestWithBigContentReadBlockedThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1377,9 +1371,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(100));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser an goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(150));
         assertThat(sslFlushes.get(), Matchers.lessThan(50));
-        assertThat(httpParses.get(), Matchers.lessThan(100));
+        assertThat(httpParses.get(), Matchers.lessThan(150));
 
         assertNull(request.get(5, TimeUnit.SECONDS));
 
@@ -1399,9 +1396,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(100));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser an goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(150));
         assertThat(sslFlushes.get(), Matchers.lessThan(50));
-        assertThat(httpParses.get(), Matchers.lessThan(100));
+        assertThat(httpParses.get(), Matchers.lessThan(150));
 
         closeClient(client);
     }
@@ -1596,9 +1596,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(50));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser and goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(70));
         assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        assertThat(httpParses.get(), Matchers.lessThan(50));
+        assertThat(httpParses.get(), Matchers.lessThan(70));
 
         closeClient(client);
     }
@@ -1743,9 +1746,12 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        assertThat(sslFills.get(), Matchers.lessThan(50));
+        // The new HttpInput impl tends to call fill and parse more often than the previous one
+        // b/c HttpChannel.needContent() does a fill and parse before doing a fill interested;
+        // this runs the parser and goes to the OS more often but requires less rescheduling.
+        assertThat(sslFills.get(), Matchers.lessThan(80));
         assertThat(sslFlushes.get(), Matchers.lessThan(20));
-        assertThat(httpParses.get(), Matchers.lessThan(100));
+        assertThat(httpParses.get(), Matchers.lessThan(120));
 
         closeClient(client);
     }

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
@@ -37,6 +33,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,10 +41,15 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketFrameHandlerTest
 {
     private static DummyContainer container;
+
+    private final WebSocketComponents components;
+    private final JettyWebSocketFrameHandlerFactory endpointFactory;
+    private final CoreSession coreSession;
 
     @BeforeAll
     public static void startContainer() throws Exception
@@ -62,20 +64,31 @@ public class JettyWebSocketFrameHandlerTest
         container.stop();
     }
 
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
-    private CoreSession coreSession = new CoreSession.Empty()
+    public JettyWebSocketFrameHandlerTest()
     {
-        @Override
-        public Behavior getBehavior()
+        components = new WebSocketComponents();
+        endpointFactory = new JettyWebSocketFrameHandlerFactory(container, components);
+        coreSession = new CoreSession.Empty()
         {
-            return Behavior.CLIENT;
-        }
-    };
+            @Override
+            public Behavior getBehavior()
+            {
+                return Behavior.CLIENT;
+            }
+
+            @Override
+            public WebSocketComponents getWebSocketComponents()
+            {
+                return components;
+            }
+        };
+
+        LifeCycle.start(components);
+    }
 
     private JettyWebSocketFrameHandler newLocalFrameHandler(Object wsEndpoint)
     {
-        JettyWebSocketFrameHandler localEndpoint = endpointFactory.newJettyFrameHandler(wsEndpoint);
-        return localEndpoint;
+        return endpointFactory.newJettyFrameHandler(wsEndpoint);
     }
 
     public static class ConnectionOnly implements WebSocketConnectionListener
@@ -102,7 +115,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testConnectionListener() throws Exception
+    public void testConnectionListener()
     {
         ConnectionOnly socket = new ConnectionOnly();
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
@@ -143,7 +156,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testAnnotatedStreamedTextSingle() throws Exception
+    public void testAnnotatedStreamedTextSingle()
     {
         assertTimeout(Duration.ofMillis(1000), () ->
         {
@@ -165,7 +178,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testAnnotatedStreamedTextMultipleParts() throws Exception
+    public void testAnnotatedStreamedTextMultipleParts()
     {
         assertTimeout(Duration.ofMillis(1000), () ->
         {
@@ -182,7 +195,7 @@ public class JettyWebSocketFrameHandlerTest
             localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
             // Await completion (of threads)
-            socket.streamLatch.await(2, TimeUnit.SECONDS);
+            assertTrue(socket.streamLatch.await(2, TimeUnit.SECONDS));
 
             // Validate Events
             socket.events.assertEvents("onTextStream\\(Hello World\\)");
@@ -190,7 +203,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testListenerPartialSocket() throws Exception
+    public void testListenerPartialSocket()
     {
         // Setup
         EndPoints.ListenerPartialSocket socket = new EndPoints.ListenerPartialSocket();
@@ -221,7 +234,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testListenerBasicSocket() throws Exception
+    public void testListenerBasicSocket()
     {
         // Setup
         EndPoints.ListenerBasicSocket socket = new EndPoints.ListenerBasicSocket();
@@ -247,7 +260,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testListenerBasicSocketError() throws Exception
+    public void testListenerBasicSocketError()
     {
         // Setup
         EndPoints.ListenerBasicSocket socket = new EndPoints.ListenerBasicSocket();
@@ -267,7 +280,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testListenerFrameSocket() throws Exception
+    public void testListenerFrameSocket()
     {
         // Setup
         EndPoints.ListenerFrameSocket socket = new EndPoints.ListenerFrameSocket();
@@ -297,7 +310,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testListenerPingPongSocket() throws Exception
+    public void testListenerPingPongSocket()
     {
         // Setup
         EndPoints.ListenerPingPongSocket socket = new EndPoints.ListenerPingPongSocket();

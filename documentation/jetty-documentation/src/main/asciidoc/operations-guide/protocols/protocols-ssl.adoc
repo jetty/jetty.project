@@ -1,0 +1,288 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-ssl]]
+==== Configuring Secure Protocols
+
+Secure protocols are normal protocols such as HTTP/1.1, HTTP/2 or WebSocket that are wrapped by the link:https://en.wikipedia.org/wiki/Transport_Layer_Security[TLS protocol].
+Any network protocol based on TCP can be wrapped with TLS.
+
+QUIC, the protocol based on UDP that transports HTTP/3, uses TLS messages but not the TLS protocol framing.
+
+The `https` scheme used in URIs really means `tls+http/1.1` (or `tls+http/2`, or `quic+http/3`) and similarly the `wss` scheme used in URIs really means `tls+websocket`, etc.
+Senders wrap the underlying protocol bytes (e.g. HTTP bytes or WebSocket bytes) with the TLS protocol, while receivers first interpret the TLS protocol to obtain the underlying protocol bytes, and then interpret the wrapped bytes.
+
+The xref:og-module-ssl[`ssl` Jetty module] allows you to configure a secure network connector; if other modules require encryption, they declare a dependency on the `ssl` module.
+
+It is the job of other Jetty modules to configure the wrapped protocol.
+For example, it is the xref:og-protocols-https[`https` module] that configures the wrapped protocol to be HTTP/1.1.
+Similarly, it is the xref:og-protocols-http2[`http2` module] that configures the wrapped protocol to be HTTP/2.
+If you enable _both_ the `https` and the `http2` module, you will have a single secure connector that will be able to interpret both HTTP/1.1 and HTTP/2.
+
+TIP: Recall from the xref:og-modules[section about modules], that only modules that are explicitly enabled get their module configuration file (`+*.ini+`) saved in `$JETTY_BASE/start.d/`, and you want `$JETTY_BASE/start.d/ssl.ini` to be present so that you can configure the connector properties, the KeyStore properties and the TLS properties.
+
+[[og-protocols-ssl-customize]]
+===== Customizing KeyStore and SSL/TLS Configuration
+
+Secure protocols have a slightly more complicated configuration since they require to configure a _KeyStore_.
+Refer to the xref:og-keystore[KeyStore section] for more information about how to create and manage a KeyStore.
+
+For simple cases, you only need to configure the KeyStore path and KeyStore password as explained in xref:og-module-ssl-keystore-tls[this section].
+
+For more advanced configuration you may want to configure the TLS protocol versions, or the ciphers to include/exclude, etc.
+The correct way of doing this is to create a custom xref:og-xml[Jetty XML file] and reference it in `$JETTY_BASE/start.d/ssl.ini`:
+
+.ssl.ini
+[source,subs=verbatim]
+----
+jetty.sslContext.keyStorePassword=my_passwd! <1>
+etc/tls-config.xml <2>
+----
+<1> Configures the `jetty.sslContext.keyStorePassword` property with the KeyStore password.
+<2> References your newly created `$JETTY_BASE/etc/tls-config.xml`.
+
+The `ssl.ini` file above only shows the lines that are not commented out (you can leave the lines that are commented unmodified for future reference).
+
+You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following template content:
+
+.tls-config.xml
+[source,xml,subs=verbatim]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory">
+    ... <1>
+  </Ref>
+</Configure>
+----
+<1> Here goes your advanced configuration.
+
+The `tls-config.xml` file references the `sslContextFactory` component (created by the `ssl` Jetty module) that configures the KeyStore and TLS parameters, so that you can now call its APIs via XML, and you will have full flexibility for any advanced configuration you want (see below for few examples).
+
+Refer to the link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory javadocs] for the list of methods that you can call through the Jetty XML file.
+
+CAUTION: Use module properties whenever possible, and only resort to use a Jetty XML file for advanced configuration that you cannot do using module properties.
+
+[[og-protocols-ssl-customize-versions]]
+====== Customizing SSL/TLS Protocol Versions
+
+By default, the SSL protocols (SSL, SSLv2, SSLv3, etc.) are already excluded because they are vulnerable.
+To explicitly add the exclusion of TLSv1.0 and TLSv1.1 (that are also vulnerable -- which leaves only TLSv1.2 and TLSv1.3 available), you want to use this XML:
+
+.tls-config.xml
+[source,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory">
+    <Call name="addExcludeProtocols">
+      <Arg>
+        <Array type="String">
+          <Item>TLSv1.0</Item>
+          <Item>TLSv1.1</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
+----
+
+[[og-protocols-ssl-customize-ciphers]]
+====== Customizing SSL/TLS Ciphers
+
+You can precisely set the list of excluded ciphers, completely overriding Jetty's default, with this XML:
+
+.tls-config.xml
+[source,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory">
+    <Set name="ExcludeCipherSuites">
+      <Array type="String">
+        <Item>^TLS_RSA_.*$</Item>
+        <Item>^.*_RSA_.*_(MD5|SHA|SHA1)$</Item>
+        <Item>^.*_DHE_RSA_.*$</Item>
+        <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
+        <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
+      </Array>
+    </Set>
+  </Ref>
+</Configure>
+----
+
+Note how each array item specifies a _regular expression_ that matches multiple ciphers, or specifies a precise cipher to exclude.
+
+You can choose to create multiple XML files, and reference them all from `$JETTY_BASE/start.d/ssl.ini`, or put all your custom configurations in a single XML file.
+
+[[og-protocols-ssl-renew]]
+===== Renewing the Certificates
+
+When you create a certificate, you must specify for how many days it is valid.
+
+The typical validity is 90 days, and while this period may seem short, it has two advantages:
+
+* Reduces the risk in case of compromised/stolen keys.
+* Encourages automation, i.e. certificate renewal performed by automated tools (rather than manually) at scheduled times.
+
+To renew a certificate, you must go through the xref:og-keystore-create[same steps] you followed to create the certificate the first time, and then you can xref:og-protocols-ssl-reload[reload the KeyStore] without the need to stop Jetty.
+
+[[og-protocols-ssl-reload]]
+===== Watching and Reloading the KeyStore
+
+Jetty can be configured to monitor the directory of the KeyStore file, and reload the `SslContextFactory` component if the KeyStore file changed.
+
+This feature can be enabled by activating the `ssl-reload` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=ssl-reload
+----
+
+For more information about the configuration of the `ssl-reload` Jetty module, see xref:og-module-ssl-reload[this section].
+
+[[og-protocols-ssl-conscrypt]]
+===== Using Conscrypt as SSL/TLS Provider
+
+By default, the standard TLS provider that comes with the JDK is used.
+
+The standard TLS provider from OpenJDK is implemented in Java (no native code), and its performance is not optimal, both in CPU usage and memory usage.
+
+A faster alternative, implemented natively, is Google's link:https://github.com/google/conscrypt/[Conscrypt], which is built on link:https://boringssl.googlesource.com/boringssl/[BoringSSL], which is Google's fork of link:https://www.openssl.org/[OpenSSL].
+
+CAUTION: As Conscrypt eventually binds to a native library, there is a higher risk that a bug in Conscrypt or in the native library causes a JVM crash, while the Java implementation will not cause a JVM crash.
+
+To use Conscrypt as the TLS provider just enable the `conscrypt` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=conscrypt
+----
+
+[[og-protocols-ssl-sni]]
+===== Configuring SNI
+
+Server Name Indication (SNI) is a TLS extension that clients send to indicate what domain they want to connect to during the initial TLS handshake.
+
+Modern TLS clients (e.g. browsers) always send the SNI extension; however, older TLS clients may not send the SNI extension.
+
+Being able to handle the SNI is important when you have xref:og-deploy-virtual-hosts[virtual hosts] and a KeyStore with multiple certificates, one for each domain.
+
+For example, you may have deployed over a secure connector two web applications, both at context path `/`, one at virtual host `one.com` and one at virtual host `two.net`.
+The KeyStore contains two certificates, one for `one.com` and one for `two.net`.
+
+There are three `ssl` module properties that control the SNI behavior on the server: one that works at the TLS level, and two that works at the HTTP level.
+
+The property that works at the TLS level is:
+
+`jetty.sslContext.sniRequired`::
+Whether SNI is required at the TLS level, defaults to `false`.
+Its behavior is explained by the following table:
++
+.Behavior of the `jetty.sslContext.sniRequired` property
+[cols="3*a"]
+|===
+|
+| `sniRequired=false`
+| `sniRequired=true`
+
+| SNI = `null`
+| client receives default certificate
+| client receives TLS failure
+
+| SNI = `wrong.org`
+| client receives default certificate
+| client receives TLS failure
+
+| SNI = `one.com`
+| client receives `one.com` certificate
+| client receives `one.com` certificate
+|===
++
+[WARNING]
+====
+The _default certificate_ is the certificate returned by the TLS implementation in case there is no SNI match, and you should not rely on this certificate to be the same across Java vendors and versions, or Jetty versions, or TLS provider vendors and versions.
+
+In the example above it could be either the `one.com` certificate or the `two.net` certificate.
+====
+
+When `jetty.sslContext.sniRequired=true`, clients that don't send a valid SNI receive a TLS failure, and their attempt to connect to the server fails.
+The details of this failure may not be reported and could be difficult to figure out that the failure is related to an invalid SNI.
+
+For this reason, other two properties are defined at the HTTP level, so that clients can received an HTTP 400 response with more details about what went wrong while trying to connect to the server:
+
+`jetty.ssl.sniRequired`::
+Whether SNI is required at the HTTP level, defaults to `false`.
+Its behavior is similar to the `jetty.sslContext.sniRequired` property above, and is explained by the following table:
++
+.Behavior of the `jetty.ssl.sniRequired` property
+[cols=3*a]
+|===
+|
+| `sniRequired=false`
+| `sniRequired=true`
+
+| SNI = `null`
+| Accept
+| Reject: 400 Bad Request
+
+| SNI = `wrong.org`
+| Accept
+| Reject: 400 Bad Request
+
+| SNI = `one.com`
+| Accept
+| Accept
+|===
+
+When `jetty.ssl.sniRequired=true`, the SNI is matched against the certificate sent to the client, and only if there is a match the request is accepted.
+
+When the request is accepted, there could be an additional check controlled by the following property:
+
+`jetty.ssl.sniHostCheck`::
+Whether the certificate sent to the client matches the `Host` header, defaults to `true`.
+Its behavior is explained by the following table:
++
+.Behavior of the `jetty.ssl.sniHostCheck` property
+[cols="3*a"]
+|===
+|
+| `sniHostCheck=false`
+| `sniHostCheck=true`
+
+| certificate = `one.com` +
+`Host: wrong.org`
+| Accept
+| Reject: 400 Bad Request
+
+| certificate = `one.com` +
+`Host: one.com`
+| Accept
+| Accept
+|===
+
+In the normal case with the default server configuration, for a TLS clients that sends SNI, and then sends an HTTP request with the correct `Host` header, Jetty will pick the correct certificate from the KeyStore based on the SNI received from the client, and accept the request.
+
+Accepting the request does not mean that the request is responded with an HTTP 200 OK, but just that the request passed successfully the SNI checks and will be processed by the server.
+If the request URI is for a resource that does not exist, the response will likely be a 404 Not Found.
+
+You may modify the default values of the SNI properties if you want stricter control over old/broken TLS clients or bad HTTP requests.

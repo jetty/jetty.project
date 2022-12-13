@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,12 +14,16 @@
 package org.eclipse.jetty.security.openid;
 
 import java.io.Serializable;
+import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -50,6 +49,14 @@ public class OpenIdCredentials implements Serializable
     private String authCode;
     private Map<String, Object> response;
     private Map<String, Object> claims;
+    private boolean verified = false;
+
+    public OpenIdCredentials(Map<String, Object> claims)
+    {
+        this.redirectUri = null;
+        this.authCode = null;
+        this.claims = claims;
+    }
 
     public OpenIdCredentials(String authCode, String redirectUri)
     {
@@ -100,13 +107,18 @@ public class OpenIdCredentials implements Serializable
                 claims = JwtDecoder.decode(idToken);
                 if (LOG.isDebugEnabled())
                     LOG.debug("claims {}", claims);
-                validateClaims(configuration);
             }
             finally
             {
                 // reset authCode as it can only be used once
                 authCode = null;
             }
+        }
+
+        if (!verified)
+        {
+            validateClaims(configuration);
+            verified = true;
         }
     }
 
@@ -143,10 +155,11 @@ public class OpenIdCredentials implements Serializable
             throw new AuthenticationException("Audience Claim MUST contain the client_id value");
         else if (isList)
         {
-            if (!Arrays.asList((Object[])aud).contains(clientId))
+            List<Object> list = Arrays.asList((Object[])aud);
+            if (!list.contains(clientId))
                 throw new AuthenticationException("Audience Claim MUST contain the client_id value");
 
-            if (claims.get("azp") == null)
+            if (list.size() > 1 && claims.get("azp") == null)
                 throw new AuthenticationException("A multi-audience ID token needs to contain an azp claim");
         }
         else if (!isValidType)
@@ -158,14 +171,27 @@ public class OpenIdCredentials implements Serializable
     {
         Fields fields = new Fields();
         fields.add("code", authCode);
-        fields.add("client_id", configuration.getClientId());
-        fields.add("client_secret", configuration.getClientSecret());
         fields.add("redirect_uri", redirectUri);
         fields.add("grant_type", "authorization_code");
+
+        Request request = configuration.getHttpClient().POST(configuration.getTokenEndpoint());
+        switch (configuration.getAuthMethod())
+        {
+            case "client_secret_basic":
+                URI uri = URI.create(configuration.getTokenEndpoint());
+                Authentication.Result authentication = new BasicAuthentication.BasicResult(uri, configuration.getClientId(), configuration.getClientSecret());
+                authentication.apply(request);
+                break;
+            case "client_secret_post":
+                fields.add("client_id", configuration.getClientId());
+                fields.add("client_secret", configuration.getClientSecret());
+                break;
+            default:
+                throw new IllegalStateException(configuration.getAuthMethod());
+        }
+
         FormRequestContent formContent = new FormRequestContent(fields);
-        Request request = configuration.getHttpClient().POST(configuration.getTokenEndpoint())
-                .body(formContent)
-                .timeout(10, TimeUnit.SECONDS);
+        request = request.body(formContent).timeout(10, TimeUnit.SECONDS);
         ContentResponse response = request.send();
         String responseBody = response.getContentAsString();
         if (LOG.isDebugEnabled())

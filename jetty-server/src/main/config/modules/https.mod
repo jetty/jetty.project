@@ -12,7 +12,7 @@ ssl
 [depend]
 ssl
 
-[optional]
+[after]
 alpn
 http2
 http-forwarded

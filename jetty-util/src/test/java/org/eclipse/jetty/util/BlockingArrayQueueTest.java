@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,29 +14,32 @@
 package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class BlockingArrayQueueTest
 {
     @Test
-    public void testWrap() throws Exception
+    public void testWrap()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3);
 
@@ -81,7 +79,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemove() throws Exception
+    public void testRemove()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3, 3);
 
@@ -103,7 +101,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testLimit() throws Exception
+    public void testLimit()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1, 0, 1);
 
@@ -116,7 +114,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testGrow() throws Exception
+    public void testGrow()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3, 2);
         assertEquals(3, queue.getCapacity());
@@ -166,12 +164,12 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testTake() throws Exception
     {
         final String[] data = new String[4];
 
         final BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         Thread thread = new Thread()
         {
@@ -182,7 +180,7 @@ public class BlockingArrayQueueTest
                 {
                     data[0] = queue.take();
                     data[1] = queue.take();
-                    Thread.sleep(1000);
+                    barrier.await(5, TimeUnit.SECONDS); // Wait until the main thread already called offer().
                     data[2] = queue.take();
                     data[3] = queue.poll(100, TimeUnit.MILLISECONDS);
                 }
@@ -196,35 +194,36 @@ public class BlockingArrayQueueTest
 
         thread.start();
 
-        Thread.sleep(1000);
+        // Wait until the spawned thread is blocked in queue.take().
+        await().atMost(5, TimeUnit.SECONDS).until(() -> thread.getState() == Thread.State.WAITING);
 
         queue.offer("zero");
         queue.offer("one");
         queue.offer("two");
+        barrier.await(5, TimeUnit.SECONDS); // Notify the spawned thread that offer() was called.
         thread.join();
 
         assertEquals("zero", data[0]);
         assertEquals("one", data[1]);
         assertEquals("two", data[2]);
-        assertEquals(null, data[3]);
+        assertNull(data[3]);
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testConcurrentAccess() throws Exception
     {
-        final int THREADS = 50;
+        final int THREADS = 32;
         final int LOOPS = 1000;
 
-        final BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>(1 + THREADS * LOOPS);
+        BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>(1 + THREADS * LOOPS);
 
-        final ConcurrentLinkedQueue<Integer> produced = new ConcurrentLinkedQueue<>();
-        final ConcurrentLinkedQueue<Integer> consumed = new ConcurrentLinkedQueue<>();
+        Set<Integer> produced = ConcurrentHashMap.newKeySet();
+        Set<Integer> consumed = ConcurrentHashMap.newKeySet();
 
-        final AtomicBoolean running = new AtomicBoolean(true);
+        AtomicBoolean consumersRunning = new AtomicBoolean(true);
 
         // start consumers
-        final CyclicBarrier barrier0 = new CyclicBarrier(THREADS + 1);
+        CyclicBarrier consumersBarrier = new CyclicBarrier(THREADS + 1);
         for (int i = 0; i < THREADS; i++)
         {
             new Thread()
@@ -232,20 +231,18 @@ public class BlockingArrayQueueTest
                 @Override
                 public void run()
                 {
-                    final Random random = new Random();
-
                     setPriority(getPriority() - 1);
                     try
                     {
-                        while (running.get())
+                        while (consumersRunning.get())
                         {
-                            int r = 1 + random.nextInt(10);
+                            int r = 1 + ThreadLocalRandom.current().nextInt(10);
                             if (r % 2 == 0)
                             {
                                 Integer msg = queue.poll();
                                 if (msg == null)
                                 {
-                                    Thread.sleep(1 + random.nextInt(10));
+                                    Thread.sleep(ThreadLocalRandom.current().nextInt(2));
                                     continue;
                                 }
                                 consumed.add(msg);
@@ -266,7 +263,7 @@ public class BlockingArrayQueueTest
                     {
                         try
                         {
-                            barrier0.await();
+                            consumersBarrier.await();
                         }
                         catch (Exception e)
                         {
@@ -278,7 +275,7 @@ public class BlockingArrayQueueTest
         }
 
         // start producers
-        final CyclicBarrier barrier1 = new CyclicBarrier(THREADS + 1);
+        CyclicBarrier producersBarrier = new CyclicBarrier(THREADS + 1);
         for (int i = 0; i < THREADS; i++)
         {
             final int id = i;
@@ -287,16 +284,15 @@ public class BlockingArrayQueueTest
                 @Override
                 public void run()
                 {
-                    final Random random = new Random();
                     try
                     {
                         for (int j = 0; j < LOOPS; j++)
                         {
-                            Integer msg = random.nextInt();
+                            Integer msg = ThreadLocalRandom.current().nextInt();
                             produced.add(msg);
                             if (!queue.offer(msg))
                                 throw new Exception(id + " FULL! " + queue.size());
-                            Thread.sleep(1 + random.nextInt(10));
+                            Thread.sleep(ThreadLocalRandom.current().nextInt(2));
                         }
                     }
                     catch (Exception e)
@@ -307,7 +303,7 @@ public class BlockingArrayQueueTest
                     {
                         try
                         {
-                            barrier1.await();
+                            producersBarrier.await();
                         }
                         catch (Exception e)
                         {
@@ -318,22 +314,22 @@ public class BlockingArrayQueueTest
             }.start();
         }
 
-        barrier1.await();
-        int size = queue.size();
-        int last = size - 1;
-        while (size > 0 && size != last)
+        producersBarrier.await();
+
+        AtomicInteger last = new AtomicInteger(queue.size() - 1);
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            last = size;
-            Thread.sleep(500);
-            size = queue.size();
-        }
-        running.set(false);
-        barrier0.await();
+            int size = queue.size();
+            if (size == 0 && last.get() == size)
+                return true;
+            last.set(size);
+            return false;
+        });
 
-        HashSet<Integer> prodSet = new HashSet<>(produced);
-        HashSet<Integer> consSet = new HashSet<>(consumed);
+        consumersRunning.set(false);
+        consumersBarrier.await();
 
-        assertEquals(prodSet, consSet);
+        assertEquals(produced, consumed);
     }
 
     @Test
@@ -344,7 +340,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemoveObjectWithWrappedTail() throws Exception
+    public void testRemoveObjectWithWrappedTail()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(6);
         // Wrap the tail
@@ -366,7 +362,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemoveObject() throws Exception
+    public void testRemoveObject()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
 
@@ -400,7 +396,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testRemoveWithMaxCapacityOne() throws Exception
+    public void testRemoveWithMaxCapacityOne()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1);
 
@@ -413,7 +409,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testIteratorWithModification() throws Exception
+    public void testIteratorWithModification()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
         int count = queue.getMaxCapacity() - 1;
@@ -435,7 +431,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testListIterator() throws Exception
+    public void testListIterator()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
         String element1 = "A";
@@ -469,7 +465,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testListIteratorWithWrappedHead() throws Exception
+    public void testListIteratorWithWrappedHead()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4, 0, 4);
         // This sequence of offers and polls wraps the head around the array
@@ -509,7 +505,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testDrainTo() throws Exception
+    public void testDrainTo()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>();
         queue.add("one");
@@ -529,5 +525,31 @@ public class BlockingArrayQueueTest
         assertThat(to, Matchers.contains("one", "two", "three", "four", "five", "six"));
         assertThat(queue.size(), Matchers.is(0));
         assertThat(queue, Matchers.empty());
+    }
+
+    @Test
+    public void testDrainToAtDefaultGrowthSize()
+    {
+        BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>();
+        for (int i = 0; i < BlockingArrayQueue.DEFAULT_GROWTH * 2; i++)
+        {
+            queue.add(i);
+        }
+
+        List<Integer> list = new ArrayList<>();
+        assertThat(queue.drainTo(list), is(BlockingArrayQueue.DEFAULT_GROWTH * 2));
+        assertThat(list.size(), is(BlockingArrayQueue.DEFAULT_GROWTH * 2));
+        assertThat(queue.size(), is(0));
+    }
+
+    @Test
+    public void testDrainToAtZeroSize()
+    {
+        BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<>();
+
+        List<Integer> list = new ArrayList<>();
+        assertThat(queue.drainTo(list), is(0));
+        assertThat(list.size(), is(0));
+        assertThat(queue.size(), is(0));
     }
 }

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -77,7 +73,8 @@ public class JavaxOnCloseTest
         public void onClose(CloseReason reason)
         {
             super.onClose(reason);
-            onClose.accept(session);
+            if (onClose != null)
+                onClose.accept(session);
         }
     }
 
@@ -230,5 +227,37 @@ public class JavaxOnCloseTest
         assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.error, instanceOf(RuntimeException.class));
         assertThat(clientEndpoint.error.getMessage(), containsString("trigger onError from client onClose"));
+    }
+
+    @Test
+    public void testCloseFromCallback() throws Exception
+    {
+        EventSocket clientEndpoint = new EventSocket();
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
+        client.connectToServer(clientEndpoint, uri);
+
+        OnCloseEndpoint serverEndpoint = Objects.requireNonNull(serverEndpoints.poll(5, TimeUnit.SECONDS));
+        assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+
+        CountDownLatch closeSent = new CountDownLatch(1);
+        clientEndpoint.session.getAsyncRemote().sendText("GOODBYE", sendResult ->
+        {
+            try
+            {
+                clientEndpoint.session.close();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            finally
+            {
+                closeSent.countDown();
+            }
+        });
+
+        assertTrue(closeSent.await(5, TimeUnit.SECONDS));
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseCodes.NORMAL_CLOSURE));
     }
 }

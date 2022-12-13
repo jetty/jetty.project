@@ -1,0 +1,74 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-troubleshooting-debugging]]
+==== Remote Debugging
+
+The Java Virtual Machines allows remote processes on different hosts to connect for debugging purposes, by using specific command line options.
+
+[CAUTION]
+====
+While it is possible to enable remote debugging on a Jetty server, it is typically not recommended for security and performance reasons.
+Only enable remote debugging on a Jetty server as a last resort to troubleshoot issues that could not be troubleshot otherwise.
+====
+
+You can easily create a custom Jetty module (see xref:og-modules-custom[this section]) with the following content:
+
+.remote-debug.mod
+----
+include::remote-debug.mod[]
+----
+
+The `[exec]` directive (documented xref:og-modules-directive-exec[here]) is necessary to pass the `-agentlib:jdwp` JVM option to the forked JVM that runs Jetty, so that you can attach with a debugger.
+
+[NOTE]
+====
+The `address` parameter of the `-agentlib:jdwp` command line option specifies the network address and port the Jetty JVM listens on for remote debugging.
+
+Please refer to the link:https://docs.oracle.com/en/java/javase/17/docs/specs/jpda/conninv.html[Java Debug Wire Protocol documentation] for additional information about the `-agentlib:jdwp` command line option and its parameters.
+====
+
+You can now enable the `remote-debug` Jetty module with the following command issued from the `$JETTY_BASE` directory:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=server,remote-debug
+----
+
+The command above minimally adds a Jetty server without connectors (via the `server` Jetty module) and the `remote-debug` Jetty module, and produces the following `$JETTY_BASE` directory structure:
+
+[source,subs=normal]
+----
+$JETTY_BASE
+├── modules
+│   └── remote-debug.mod
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── ##remote-debug.ini##
+    └── server.ini
+----
+
+You can easily disable the `remote-debug` Jetty module as explained in xref:og-start-configure-disable[this section].
+
+Alternatively, you can enable the `remote-debug` module on the command line, as explained in xref:og-start-configure-enable-command-line[this section].
+
+Starting the Jetty server with the `remote-debug` module enabled yields:
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupModules="src/main/asciidoc/operations-guide/troubleshooting/remote-debug.mod",setupArgs="--add-modules=server,remote-debug",highlight="5005"]
+----
+
+Note how the JVM is listening on port `5005` to allow remote debuggers to connect.
+
+If you want to avoid to fork a second JVM to pass the `-agentlib:jdwp` JVM option, please read xref:og-start-configure-dry-run[this section].

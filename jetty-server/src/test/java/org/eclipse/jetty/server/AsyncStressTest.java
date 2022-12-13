@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -125,11 +119,9 @@ public class AsyncStressTest
                 int period = _random.nextInt(290) + 10;
                 String uri = StringUtil.replace(__paths[p][0], "<PERIOD>", Integer.toString(period));
 
-                long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 String request =
                     "GET " + uri + " HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "start: " + start + "\r\n" +
                         "result: " + __paths[p][1] + "\r\n" +
                         ((l + 1 < loops) ? "" : "Connection: close\r\n") +
                         "\r\n";

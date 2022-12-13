@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -38,6 +33,32 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class SecuredRedirectHandler extends HandlerWrapper
 {
+    /**
+     * The redirect code to send in response.
+     */
+    private final int _redirectCode;
+
+    /**
+     * Uses moved temporarily code (302) as the redirect code.
+     */
+    public SecuredRedirectHandler()
+    {
+        this(HttpServletResponse.SC_MOVED_TEMPORARILY);
+    }
+
+    /**
+     * Use supplied code as the redirect code.
+     *
+     * @param code the redirect code to use in the response
+     * @throws IllegalArgumentException if parameter is an invalid redirect code
+     */
+    public SecuredRedirectHandler(final int code)
+    {
+        if (!HttpStatus.isRedirection(code))
+            throw new IllegalArgumentException("Not a 3xx redirect code");
+        _redirectCode = code;
+    }
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -64,7 +85,7 @@ public class SecuredRedirectHandler extends HandlerWrapper
             String secureScheme = httpConfig.getSecureScheme();
             String url = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
             response.setContentLength(0);
-            response.sendRedirect(url);
+            baseRequest.getResponse().sendRedirect(_redirectCode, url, true);
         }
         else
         {

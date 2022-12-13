@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,6 +14,7 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +37,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
 import org.eclipse.jetty.util.ProcessorUtils;
 
@@ -67,6 +64,8 @@ import org.eclipse.jetty.util.ProcessorUtils;
  * to force the FastCGI {@code HTTPS} parameter to the value {@code on}</li>
  * <li>{@code fastCGI.envNames}, optional, a comma separated list of environment variable
  * names read via {@link System#getenv(String)} that are forwarded as FastCGI parameters.</li>
+ * <li>{@code unixDomainPath}, optional, that specifies the Unix-Domain path the FastCGI
+ * server listens to.</li>
  * </ul>
  *
  * @see TryFilesFilter
@@ -127,11 +126,23 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         String scriptRoot = config.getInitParameter(SCRIPT_ROOT_INIT_PARAM);
         if (scriptRoot == null)
             throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
-        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
-        String value = config.getInitParameter("selectors");
-        if (value != null)
-            selectors = Integer.parseInt(value);
-        return new HttpClient(new ProxyHttpClientTransportOverFCGI(selectors, scriptRoot));
+
+        ClientConnector connector;
+        String unixDomainPath = config.getInitParameter("unixDomainPath");
+        if (unixDomainPath != null)
+        {
+            connector = ClientConnector.forUnixDomain(Path.of(unixDomainPath));
+        }
+        else
+        {
+            int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
+            String value = config.getInitParameter("selectors");
+            if (value != null)
+                selectors = Integer.parseInt(value);
+            connector = new ClientConnector();
+            connector.setSelectors(selectors);
+        }
+        return new HttpClient(new ProxyHttpClientTransportOverFCGI(connector, scriptRoot));
     }
 
     @Override
@@ -266,9 +277,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
     private class ProxyHttpClientTransportOverFCGI extends HttpClientTransportOverFCGI
     {
-        private ProxyHttpClientTransportOverFCGI(int selectors, String scriptRoot)
+        private ProxyHttpClientTransportOverFCGI(ClientConnector connector, String scriptRoot)
         {
-            super(selectors, scriptRoot);
+            super(connector, scriptRoot);
         }
 
         @Override

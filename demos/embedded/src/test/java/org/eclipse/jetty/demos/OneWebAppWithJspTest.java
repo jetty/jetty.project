@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -32,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class OneWebAppWithJspTest extends AbstractEmbeddedTest
 {
@@ -42,8 +36,6 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        assumeTrue(JettyHome.JETTY_HOME != null, "jetty-distribution not found");
-
         server = OneWebAppWithJsp.createServer(0);
         server.start();
 
@@ -60,7 +52,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     @Test
     public void testGetDumpInfo() throws Exception
     {
-        URI uri = serverLocalUri.resolve("/dump/info");
+        URI uri = serverLocalUri.resolve("/dump.jsp");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
             .send();
@@ -70,13 +62,13 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody, containsString("getProtocol:&nbsp;</th><td>HTTP/1.1"));
+        assertThat("Response Content", responseBody, containsString("Protocol:</th><td>HTTP/1.1"));
     }
 
     @Test
     public void testGetJspExpr() throws Exception
     {
-        URI uri = serverLocalUri.resolve("/jsp/expr.jsp?A=1");
+        URI uri = serverLocalUri.resolve("/expr.jsp?A=1");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
             .send();
@@ -93,7 +85,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     @Test
     public void testGetJstlExpr() throws Exception
     {
-        URI uri = serverLocalUri.resolve("/jsp/jstl.jsp");
+        URI uri = serverLocalUri.resolve("/jstl.jsp");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
             .send();
@@ -106,7 +98,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
         assertThat("Response Content", responseBody, containsString("<h1>JSTL Example</h1>"));
         for (int i = 1; i <= 10; i++)
         {
-            assertThat("Reponse content (counting)", responseBody, containsString("" + i));
+            assertThat("Response content (counting)", responseBody, containsString("" + i));
         }
     }
 }

@@ -1,8 +1,7 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/
 
 [description]
-Redirects JVMs console stderr and stdout to a log file.
-Includes output from Jetty's default StdErrLog logging.
+Redirects the JVM console stderr and stdout to a rolling log file.
 
 [tags]
 logging
@@ -16,18 +15,17 @@ etc/console-capture.xml
 [files]
 logs/
 
-[lib]
-resources/
-
 [ini-template]
-## Logging directory (relative to $jetty.base)
+# tag::documentation[]
+## Logging directory (relative to $JETTY_BASE).
 # jetty.console-capture.dir=./logs
 
-## Whether to append to existing file
+## Whether to append to existing file.
 # jetty.console-capture.append=true
 
-## How many days to retain old log files
+## How many days to retain old log files.
 # jetty.console-capture.retainDays=90
 
-## Timezone of the log timestamps
+## Timezone ID of the log timestamps, as specified by java.time.ZoneId.
 # jetty.console-capture.timezone=GMT
+# end::documentation[]

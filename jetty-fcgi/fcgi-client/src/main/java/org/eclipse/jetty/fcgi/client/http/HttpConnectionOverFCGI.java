@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,11 +16,9 @@ package org.eclipse.jetty.fcgi.client.http;
 import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,9 +41,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -63,16 +56,16 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
+    private final RetainableByteBufferPool networkByteBufferPool;
     private final AutoLock lock = new AutoLock();
     private final LinkedList<Integer> requests = new LinkedList<>();
-    private final Map<Integer, HttpChannelOverFCGI> activeChannels = new ConcurrentHashMap<>();
-    private final Queue<HttpChannelOverFCGI> idleChannels = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HttpDestination destination;
     private final Promise<Connection> promise;
     private final Flusher flusher;
     private final Delegate delegate;
     private final ClientParser parser;
+    private HttpChannelOverFCGI channel;
     private RetainableByteBuffer networkBuffer;
     private Object attachment;
 
@@ -85,6 +78,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.delegate = new Delegate(destination);
         this.parser = new ClientParser(new ResponseListener());
         requests.addLast(0);
+        HttpClient client = destination.getHttpClient();
+        this.networkByteBufferPool = client.getByteBufferPool().asRetainableByteBufferPool();
     }
 
     public HttpDestination getHttpDestination()
@@ -139,8 +134,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = destination.getHttpClient();
-        ByteBufferPool bufferPool = client.getByteBufferPool();
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
+        return networkByteBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()
@@ -165,7 +159,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                 if (parse(networkBuffer.getBuffer()))
                     return;
 
-                if (networkBuffer.getReferences() > 1)
+                if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.
@@ -206,7 +200,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     {
         // Close explicitly only if we are idle, since the request may still
         // be in progress, otherwise close only if we can fail the responses.
-        if (activeChannels.isEmpty())
+        HttpChannelOverFCGI channel = this.channel;
+        if (channel == null || channel.getRequest() == 0)
             close();
         else
             failAndClose(new EOFException(String.valueOf(getEndPoint())));
@@ -216,27 +211,33 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public boolean onIdleExpired()
     {
         long idleTimeout = getEndPoint().getIdleTimeout();
-        boolean close = delegate.onIdleTimeout(idleTimeout);
+        TimeoutException failure = new TimeoutException("Idle timeout " + idleTimeout + " ms");
+        boolean close = delegate.onIdleTimeout(idleTimeout, failure);
         if (close)
-            close(new TimeoutException("Idle timeout " + idleTimeout + " ms"));
+            close(failure);
         return false;
     }
 
     protected void release(HttpChannelOverFCGI channel)
     {
-        if (activeChannels.remove(channel.getRequest()) == null)
-        {
-            channel.destroy();
-        }
-        else
+        HttpChannelOverFCGI existing = this.channel;
+        if (existing == channel)
         {
             channel.setRequest(0);
             // Recycle only non-failed channels.
             if (channel.isFailed())
+            {
+                channel.destroy();
+                this.channel = null;
+            }
+            destination.release(this);
+        }
+        else
+        {
+            if (existing == null)
                 channel.destroy();
             else
-                idleChannels.offer(channel);
-            destination.release(this);
+                throw new UnsupportedOperationException("FastCGI Multiplex");
         }
     }
 
@@ -291,34 +292,27 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     protected void abort(Throwable failure)
     {
-        for (HttpChannelOverFCGI channel : activeChannels.values())
+        HttpChannelOverFCGI channel = this.channel;
+        if (channel != null)
         {
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
                 exchange.getRequest().abort(failure);
             channel.destroy();
-        }
-        activeChannels.clear();
-
-        HttpChannel channel = idleChannels.poll();
-        while (channel != null)
-        {
-            channel.destroy();
-            channel = idleChannels.poll();
+            this.channel = null;
         }
     }
 
     private void failAndClose(Throwable failure)
     {
-        boolean result = false;
-        for (HttpChannelOverFCGI channel : activeChannels.values())
+        HttpChannelOverFCGI channel = this.channel;
+        if (channel != null)
         {
-            result |= channel.responseFailure(failure);
+            boolean result = channel.responseFailure(failure);
             channel.destroy();
+            if (result)
+                close(failure);
         }
-
-        if (result)
-            close(failure);
     }
 
     private int acquireRequest()
@@ -342,7 +336,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     protected HttpChannelOverFCGI acquireHttpChannel(int id, Request request)
     {
-        HttpChannelOverFCGI channel = idleChannels.poll();
         if (channel == null)
             channel = newHttpChannel(request);
         channel.setRequest(id);
@@ -360,8 +353,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return String.format("%s@%x[l:%s<->r:%s]",
             getClass().getSimpleName(),
             hashCode(),
-            getEndPoint().getLocalAddress(),
-            getEndPoint().getRemoteAddress());
+            getEndPoint().getLocalSocketAddress(),
+            getEndPoint().getRemoteSocketAddress());
     }
 
     private class Delegate extends HttpConnection
@@ -372,15 +365,20 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }
 
         @Override
+        protected Iterator<HttpChannel> getHttpChannels()
+        {
+            HttpChannel channel = HttpConnectionOverFCGI.this.channel;
+            return channel == null ? Collections.emptyIterator() : Collections.singleton(channel).iterator();
+        }
+
+        @Override
         public SendFailure send(HttpExchange exchange)
         {
             HttpRequest request = exchange.getRequest();
             normalizeRequest(request);
 
-            // FCGI may be multiplexed, so one channel for each exchange.
             int id = acquireRequest();
             HttpChannelOverFCGI channel = acquireHttpChannel(id, request);
-            activeChannels.put(id, channel);
 
             return send(channel, exchange);
         }
@@ -389,6 +387,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public void close()
         {
             HttpConnectionOverFCGI.this.close();
+            destroy();
         }
 
         protected void close(Throwable failure)
@@ -414,7 +413,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         @Override
         public void onBegin(int request, int code, String reason)
         {
-            HttpChannelOverFCGI channel = activeChannels.get(request);
+            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
                 channel.responseBegin(code, reason);
             else
@@ -424,7 +423,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         @Override
         public void onHeader(int request, HttpField field)
         {
-            HttpChannelOverFCGI channel = activeChannels.get(request);
+            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
                 channel.responseHeader(field);
             else
@@ -434,7 +433,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         @Override
         public boolean onHeaders(int request)
         {
-            HttpChannelOverFCGI channel = activeChannels.get(request);
+            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
                 return !channel.responseHeaders();
             noChannel(request);
@@ -448,7 +447,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             {
                 case STD_OUT:
                 {
-                    HttpChannelOverFCGI channel = activeChannels.get(request);
+                    HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
                     if (channel != null)
                     {
                         networkBuffer.retain();
@@ -476,7 +475,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         @Override
         public void onEnd(int request)
         {
-            HttpChannelOverFCGI channel = activeChannels.get(request);
+            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
             {
                 if (channel.responseSuccess())
@@ -491,7 +490,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         @Override
         public void onFailure(int request, Throwable failure)
         {
-            HttpChannelOverFCGI channel = activeChannels.get(request);
+            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
             {
                 if (channel.responseFailure(failure))

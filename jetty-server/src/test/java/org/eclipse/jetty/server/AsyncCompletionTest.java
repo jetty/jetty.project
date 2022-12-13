@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -53,6 +48,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -215,53 +211,46 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             os.write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
-            // wait for OWP to execute (proves we do not block in write APIs)
-            boolean completeCalled = handler.waitForOWPExit();
-
             while (true)
             {
-                // wait for threads to return to base level (proves we are really async)
-                long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
-                while (_threadPool.getBusyThreads() != base)
+                PendingCallback delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
+                Boolean owpExit = handler.pollForOWPExit();
+                if (owpExit == null)
                 {
-                    if (System.nanoTime() > end)
+                    // handle any callback written so far
+                    while (delay != null)
+                    {
+                        delay.proceed();
+                        delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
+                    }
+                    continue;
+                }
+
+                // OWP has exited, but we have a delay, so let's wait for thread to return to the pool to ensure we are async.
+                long start = NanoTime.now();
+                while (delay != null && _threadPool.getBusyThreads() > base)
+                {
+                    if (NanoTime.secondsSince(start) > WAIT)
                         throw new TimeoutException();
                     Thread.sleep(POLL);
                 }
 
-                if (completeCalled)
-                    break;
-
-                // We are now asynchronously waiting!
-                assertThat(__transportComplete.get(), is(false));
-
-                // If we are not complete, we must be waiting for one or more writes to complete
-                while (true)
+                // handle any callback written so far
+                while (delay != null)
                 {
-                    PendingCallback delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
-                    if (delay != null)
-                    {
-                        delay.proceed();
-                        continue;
-                    }
-                    // No delay callback found, have we finished OWP again?
-                    Boolean c = handler.pollForOWPExit();
-
-                    if (c == null)
-                        // No we haven't, so look for another delay callback
-                        continue;
-
-                    // We have a OWP result, so let's handle it.
-                    completeCalled = c;
-                    break;
+                    delay.proceed();
+                    delay = __queue.poll(POLL, TimeUnit.MILLISECONDS);
                 }
+
+                if (owpExit)
+                    break;
             }
 
             // Wait for full completion
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            long start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion
@@ -499,10 +488,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             handler.wait4handle();
 
             // Wait for full completion
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            long start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion
@@ -660,19 +649,19 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             handler.wait4handle();
 
-            long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            long start = NanoTime.now();
             while (_threadPool.getBusyThreads() != base)
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
                 Thread.sleep(POLL);
             }
 
             // Wait for full completion
-            end = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT);
+            start = NanoTime.now();
             while (!__transportComplete.get())
             {
-                if (System.nanoTime() > end)
+                if (NanoTime.secondsSince(start) > WAIT)
                     throw new TimeoutException();
 
                 // proceed with any delayCBs needed for completion

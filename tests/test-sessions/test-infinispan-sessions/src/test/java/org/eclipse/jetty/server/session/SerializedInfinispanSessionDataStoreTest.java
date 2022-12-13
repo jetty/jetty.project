@@ -1,19 +1,14 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
-//
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -29,6 +24,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.infinispan.query.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.infinispan.query.dsl.QueryResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +43,11 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
 
     public WorkDir workDir;
 
+    public SerializedInfinispanSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+    
     @BeforeEach
     public void setup() throws Exception
     {
@@ -66,6 +67,7 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
         factory.setCache(_testSupport.getCache());
+        factory.setSerialization(true);
         QueryManager qm = new EmbeddedQueryManager(_testSupport.getCache());
         factory.setQueryManager(qm);
         return factory;
@@ -74,7 +76,16 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        _testSupport.createSession(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            _testSupport.createSession(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     @Override
@@ -86,7 +97,16 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return _testSupport.checkSessionExists(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return _testSupport.checkSessionExists(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     /**
@@ -99,6 +119,7 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
@@ -116,7 +137,7 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         ((InfinispanSessionDataStore)store).setCache(null);
 
         //test that loading it fails
-        assertThrows(UnreadableSessionDataException.class,() -> store.load("222"));
+        assertThrows(UnreadableSessionDataException.class, () -> store.load("222"));
     }
 
     @Override
@@ -139,14 +160,17 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
     {
         InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
         sd1.setLastNode("fred1");
+        sd1.serializeAttributes();
         _testSupport.getCache().put("session1", sd1);
 
         InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
         sd2.setLastNode("fred2");
+        sd2.serializeAttributes();
         _testSupport.getCache().put("session2", sd2);
 
         InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
         sd3.setLastNode("fred3");
+        sd3.serializeAttributes();
         _testSupport.getCache().put("session3", sd3);
 
         QueryFactory qf = Search.getQueryFactory(_testSupport.getCache());
@@ -154,8 +178,9 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
-            assertEquals(i, q.list().size());
+            Query<InfinispanSessionData> q = qf.create("from org.eclipse.jetty.session.infinispan.InfinispanSessionData where expiry < " + now);
+            QueryResult<InfinispanSessionData> result = q.execute();
+            assertEquals(i, result.list().size());
             Thread.sleep(1000);
         }
     }

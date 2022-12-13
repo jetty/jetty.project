@@ -1,0 +1,177 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[quickstart-webapp]]
+=== Quickstart Webapps
+
+The auto discovery features of the Servlet specification can make deployments slow and uncertain.
+Auto discovery of Web Application configuration can be useful during the development of a webapp as it allows new features and frameworks to be enabled simply by dropping in a jar file.
+However, for deployment, the need to scan the contents of many jars can have a significant impact of the start time of a webapp.
+
+With the release of Jetty 9.2, a quickstart module was included which allows a webapp to be pre-scanned and preconfigured.
+This means that all the scanning is done prior to deployment and all configuration is encoded into an effective `web.xml`, called `WEB-INF/quickstart-web.xml`, which can be inspected to understand what will be deployed before deploying.
+Not only does the `quickstart-web.xml` contain all the discovered Servlets, Filters and Constraints, but it also encodes as context parameters all discovered:
+
+* ServletContainerInitializers
+* HandlesTypes classes
+* Taglib Descriptors
+
+With the quickstart mechanism, Jetty is able to entirely bypass all scanning and discovery modes and start a webapp in a predictable and fast way.
+Tests have shown that webapps that took many seconds to scan and deploy can now be deployed in a few hundred milliseconds.
+
+==== Setting up Quickstart
+
+===== Prerequisites 
+
+====== Jetty Distribution
+
+In a standard Jetty distribution the quickstart module can be configured with the following command:
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar $JETTY_HOME/start.jar --add-to-start=quickstart
+----
+
+====== Embedded
+
+In a Maven project you add a dependency on the artifact `jetty-quickstart`.
+
+[source, xml, subs="{sub-order}"]
+----
+<dependency>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-quickstart</artifactId>
+    <version>{VERSION}</version>
+</dependency>
+----
+
+
+
+===== Configuration
+
+Webapps need to be instances of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`.
+
+`org.eclipse.jetty.quickstart.QuickStartWebApp` instances offer the same setters as the familiar `org.eclipse.jetty.webapp.WebAppContext`, with the addition of:
+
+autoPreconfigure:: 
+                   (true/false). 
+                   If true, the first time the webapp is run, the WEB-INF/quickstart-web.xml is generated BEFORE the webapp is deployed.
+                   Subsequent runs use the previously generated quickstart file.
+originAttribute::
+                   The name of an attribute to insert into the generated elements in quickstart-web.xml that gives the origin of the element.
+                   By default it is `origin`.
+generateOrigin::
+                    (true/false).
+                    By default it is `false`.
+                    If true, the origin attribute will be inserted into each element in quickstart-web.xml.
+                    Note that origin attributes will also be generated if debug log level is enabled.
+
+____
+[NOTE]
+If you are using Spring-Boot you must set `generateOrigin` to true.
+____
+
+The origin is either a descriptor eg web.xml,web-fragment.xml,override-web.xml file, or an annotation eg @WebServlet.
+For xml validation each attribute must be unique, and therefore an integer counter is appended to each value.
+Some examples of elements with origin attribute information are:
+
+[source, xml, subs="{sub-order}"]
+----
+<listener origin="DefaultsDescriptor(file:///path/to/distro/etc/webdefault.xml):21">
+<listener origin="WebDescriptor(file:///path/to/base/webapps/test-spec/WEB-INF/web.xml):22">
+<servlet-class origin="FragmentDescriptor(jar:file:///path/to/base/webapps/test-spec/WEB-INF/lib/test-web-fragment.jar!/META-INF/web-fragment.xml):23">
+<servlet-class origin="@WebServlet(com.acme.test.TestServlet):24">
+----
+
+====== In XML
+If a web application already has a context xml file, eg `webapps/myapp.xml` file, simply change the class in the `Configure` element.
+Otherwise, create a context xml file with the following information (in addition to the usual setting of contextPath, war etc):
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure class="org.eclipse.jetty.quickstart.QuickStartWebApp">
+  <Set name="autoPreconfigure">true</Set>
+</Configure>
+----
+
+====== In Code
+
+Create an instance of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`. You then use the QuickStartWebApp instance in exactly the same way that you would a WebAppContext.
+
+Here's a snippet:
+
+[source, java]
+----
+    QuickStartWebApp webapp = new QuickStartWebApp();
+    webapp.setAutoPreconfigure(true);
+----
+
+
+====== Pre-generating the quickstart-web.xml file
+
+Rather than use the `autoPreconfigure` feature of the QuickStartWebApp - which lazily generates the `quickstart-web.xml` file - you can eagerly pre-generate it for an existing war by invoking as a main class link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[`org.eclipse.jetty.quickstart.PreconfigureQuickStartWar`]. 
+Note that you will need to provide all necessary jetty jars on the command line classpath.
+This will unpack the war if necessary, and create the `quickstart-web.xml` before the first deployment:
+
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -cp [jetty classpath] org.eclipse.jetty.quickstart.PreconfigureQuickStartWar myapp.war
+----
+
+Run the class with no arguments to see other runtime options.
+
+Alternatively, you could use the link:#get-up-and-running[Jetty Maven Plugin] goal link:#jetty-effective-web-xml[`jetty:effective-web-xml`]: this will generate quickstart information, but print it to stderr. 
+The goal provides a configuration option to save the output to a file, which you can then copy into your webapp's WEB-INF dir.
+Note that as the Jetty Maven Plugin is a general tool for running webapps, it may have more jars on its classpath than are needed by your application, and thus may generate extra quickstart information: we recommend that you use this goal only as a quick guide to the type of information that quickstart generates.
+
+// ==== Preconfiguring the web application
+//
+// If the `QuickStateWebApp` method `setAutoPreconfigure(true)` is called (see example in myapp.xml above), then the first time the webapp is deployed a `WEB-INF/quickstart-web.xml` file will be generated that contains the effective `web.xml` for all the discovered configuration.
+// On subsequent deployments, all the discovery steps are skipped and the `quickstart-web.xml` is used directly to configure the web application.
+//
+// It is also possible to preconfigure a war file manually by running the class link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[org.eclipse.jetty.quickstart.PreconfigureQuickStartWar] with the jetty-all-uber (aggregate) jar:
+//
+//
+// This will create the `quickstart-web.xml` file before the first deployment.
+
+==== Avoiding TLD Scans with precompiled JSPs
+
+Of course precompiling JSPs is an excellent way to improve the start time of a web application.
+As of Jetty 9.2 the Apache Jasper JSP implementation has been used and has been augmented to allow the TLD scan to be skipped.
+This can be done by adding a `context-param` to the `web.xml` file (this is done automatically by the Jetty Maven JSPC plugin):
+
+[source, xml, subs="{sub-order}"]
+----
+<context-param>
+  <param-name>org.eclipse.jetty.jsp.precompiled</param-name>
+  <param-value>true</param-value>
+</context-param>
+----
+
+==== Bypassing start.jar
+
+The Jetty `start.jar` mechanism is a very powerful and flexible mechanism for constructing a `classpath` and executing a configuration encoded in Jetty XML format.
+However, this mechanism does take some time to build the `classpath`.
+The start.jar mechanism can be bypassed by using the `–dry-run` option to generate and reuse a complete command line to start Jetty at a later time:
+
+[source, screen, subs="{sub-order}"]
+----
+$ RUN=$(java -jar $JETTY_HOME/start.jar --dry-run)
+$ eval $RUN
+----
+
+Note that `--dry-run` may create a properties file in the temp directory and include it on the generated command line.
+If so, then a copy of the temporary properties file should be taken and the command line updated with it's new persistent location.

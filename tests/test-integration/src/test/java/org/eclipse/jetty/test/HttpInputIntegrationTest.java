@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -34,7 +29,6 @@ import java.util.stream.Stream;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
-import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -61,8 +55,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -78,13 +71,8 @@ public class HttpInputIntegrationTest
         BLOCKING, ASYNC_DISPATCHED, ASYNC_OTHER_DISPATCHED, ASYNC_OTHER_WAIT
     }
 
-    public static final String EOF = "__EOF__";
-    public static final String DELAY = "__DELAY__";
-    public static final String ABORT = "__ABORT__";
-
     private static Server __server;
     private static HttpConfiguration __config;
-    private static HttpConfiguration __sslConfig;
     private static SslContextFactory.Server __sslContextFactory;
 
     @BeforeAll
@@ -98,7 +86,7 @@ public class HttpInputIntegrationTest
         __server.addConnector(local);
 
         ServerConnector http = new ServerConnector(__server, new HttpConnectionFactory(__config), new HTTP2CServerConnectionFactory(__config));
-        http.setIdleTimeout(4000);
+        http.setIdleTimeout(5000);
         __server.addConnector(http);
 
         // SSL Context Factory for HTTPS and HTTP/2
@@ -107,14 +95,15 @@ public class HttpInputIntegrationTest
         __sslContextFactory.setKeyStorePassword("storepwd");
 
         // HTTPS Configuration
-        __sslConfig = new HttpConfiguration(__config);
-        __sslConfig.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration sslConfig = new HttpConfiguration(__config);
+        sslConfig.addCustomizer(new SecureRequestCustomizer());
 
         // HTTP/1 Connection Factory
-        HttpConnectionFactory h1 = new HttpConnectionFactory(__sslConfig);
+        HttpConnectionFactory h1 = new HttpConnectionFactory(sslConfig);
+
         /* TODO
         // HTTP/2 Connection Factory
-        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(__sslConfig);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(sslConfig);
         
         NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
@@ -125,8 +114,8 @@ public class HttpInputIntegrationTest
         SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory, h1.getProtocol() /*TODO alpn.getProtocol()*/);
 
         // HTTP/2 Connector
-        ServerConnector http2 = new ServerConnector(__server, ssl,/*TODO alpn,h2,*/ h1);
-        http2.setIdleTimeout(4000);
+        ServerConnector http2 = new ServerConnector(__server, ssl, /*TODO alpn,h2,*/ h1);
+        http2.setIdleTimeout(5000);
         __server.addConnector(http2);
 
         ServletContextHandler context = new ServletContextHandler(__server, "/ctx");
@@ -145,7 +134,6 @@ public class HttpInputIntegrationTest
 
     interface TestClient
     {
-
         /**
          * @param uri The URI to test, typically /ctx/test?mode=THE_MODE
          * @param delayMs the delay in MS to use.
@@ -160,7 +148,6 @@ public class HttpInputIntegrationTest
     public static Stream<Arguments> scenarios()
     {
         List<Scenario> tests = new ArrayList<>();
-
         // TODO other client types!
         // test with the following clients/protocols:
         //   + Local
@@ -169,16 +156,14 @@ public class HttpInputIntegrationTest
         //   + HTTP/2
         //   + SSL + HTTP/2
         //   + FASTCGI
-        for (Class<? extends TestClient> client : new Class[]{LocalClient.class, H1Client.class, H1SClient.class})
+        for (Class<? extends TestClient> client : Arrays.asList(LocalClient.class, H1Client.class, H1SClient.class))
         {
-
             // test async actions that are run:
             //   + By a thread in a container callback
             //   + By another thread while a container callback is active
             //   + By another thread while no container callback is active
             for (Mode mode : Mode.values())
             {
-
                 // test servlet dispatch with:
                 //   + Delayed dispatch on
                 //   + Delayed dispatch off
@@ -213,7 +198,7 @@ public class HttpInputIntegrationTest
         return tests.stream().map(Arguments::of);
     }
 
-    private static void runmode(Mode mode, final Request request, final Runnable test)
+    private static void runMode(Mode mode, Request request, Runnable test)
     {
         switch (mode)
         {
@@ -224,22 +209,18 @@ public class HttpInputIntegrationTest
             }
             case ASYNC_OTHER_DISPATCHED:
             {
-                final CountDownLatch latch = new CountDownLatch(1);
-                new Thread()
+                CountDownLatch latch = new CountDownLatch(1);
+                new Thread(() ->
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            test.run();
-                        }
-                        finally
-                        {
-                            latch.countDown();
-                        }
+                        test.run();
                     }
-                }.start();
+                    finally
+                    {
+                        latch.countDown();
+                    }
+                }).start();
                 // prevent caller returning until other thread complete
                 try
                 {
@@ -254,40 +235,35 @@ public class HttpInputIntegrationTest
             }
             case ASYNC_OTHER_WAIT:
             {
-                final CountDownLatch latch = new CountDownLatch(1);
-                final HttpChannelState.State S = request.getHttpChannelState().getState();
-                new Thread()
+                CountDownLatch latch = new CountDownLatch(1);
+                HttpChannelState.State state = request.getHttpChannelState().getState();
+                new Thread(() ->
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            if (!latch.await(5, TimeUnit.SECONDS))
-                                fail("latch expired");
+                        if (!latch.await(5, TimeUnit.SECONDS))
+                            fail("latch expired");
 
-                            // Spin until state change
-                            HttpChannelState.State s = request.getHttpChannelState().getState();
-                            while (request.getHttpChannelState().getState() == S)
-                            {
-                                Thread.yield();
-                                s = request.getHttpChannelState().getState();
-                            }
-                            test.run();
-                        }
-                        catch (Exception e)
+                        // Spin until state change
+                        while (request.getHttpChannelState().getState() == state)
                         {
-                            e.printStackTrace();
+                            Thread.yield();
                         }
+                        test.run();
                     }
-                }.start();
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }).start();
                 // ensure other thread running before trying to return
                 latch.countDown();
                 break;
             }
-
             default:
+            {
                 throw new IllegalStateException();
+            }
         }
     }
 
@@ -313,10 +289,9 @@ public class HttpInputIntegrationTest
         assertTrue(response.contains("sum=" + sum));
     }
 
+    @Tag("stress")
     @ParameterizedTest(name = "[{index}] STRESS {0}")
     @MethodSource("scenarios")
-    // JDK 11's SSLSocket is not reliable enough to run this test.
-    @DisabledOnJre(JRE.JAVA_11)
     public void testStress(Scenario scenario) throws Exception
     {
         int sum = 0;
@@ -327,42 +302,38 @@ public class HttpInputIntegrationTest
                 sum += c;
             }
         }
-        final int summation = sum;
+        int summation = sum;
 
-        final int threads = 10;
-        final int loops = 10;
+        int threads = 10;
+        int loops = 10;
 
-        final AtomicInteger count = new AtomicInteger(0);
+        AtomicInteger count = new AtomicInteger(0);
         Thread[] t = new Thread[threads];
 
-        Runnable run = new Runnable()
+        Runnable run = () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                TestClient client = scenario._client.getDeclaredConstructor().newInstance();
+                for (int j = 0; j < loops; j++)
                 {
-                    TestClient client = scenario._client.getDeclaredConstructor().newInstance();
-                    for (int j = 0; j < loops; j++)
-                    {
-                        String response = client.send("/ctx/test?mode=" + scenario._mode, 10, scenario._delay, scenario._length, scenario._send);
-                        assertTrue(response.startsWith("HTTP"));
-                        assertTrue(response.contains(" " + scenario._status + " "));
-                        assertTrue(response.contains("read=" + scenario._read));
-                        assertTrue(response.contains("sum=" + summation));
-                        count.incrementAndGet();
-                    }
+                    String response = client.send("/ctx/test?mode=" + scenario._mode, 10, scenario._delay, scenario._length, scenario._send);
+                    assertTrue(response.startsWith("HTTP"), response);
+                    assertTrue(response.contains(" " + scenario._status + " "), response);
+                    assertTrue(response.contains("read=" + scenario._read), response);
+                    assertTrue(response.contains("sum=" + summation), response);
+                    count.incrementAndGet();
                 }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
             }
         };
 
         for (int i = 0; i < threads; i++)
         {
-            t[i] = new Thread(run);
+            t[i] = new Thread(run, "client-" + i);
             t[i].start();
         }
         for (int i = 0; i < threads; i++)
@@ -370,17 +341,17 @@ public class HttpInputIntegrationTest
             t[i].join();
         }
 
-        assertEquals(count.get(), threads * loops);
+        assertEquals(threads * loops, count.get());
     }
 
     public static class TestServlet extends HttpServlet
     {
-        String expected = "content0CONTENT1";
+        private final String expected = "content0CONTENT1";
 
         @Override
-        protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
-            final Mode mode = Mode.valueOf(req.getParameter("mode"));
+            Mode mode = Mode.valueOf(req.getParameter("mode"));
             resp.setContentType("text/plain");
 
             if (mode == Mode.BLOCKING)
@@ -409,81 +380,70 @@ public class HttpInputIntegrationTest
             else
             {
                 // we are asynchronous
-                final AsyncContext context = req.startAsync();
+                AsyncContext context = req.startAsync();
                 context.setTimeout(10000);
-                final ServletInputStream in = req.getInputStream();
-                final Request request = Request.getBaseRequest(req);
-                final AtomicInteger read = new AtomicInteger(0);
-                final AtomicInteger sum = new AtomicInteger(0);
+                ServletInputStream in = req.getInputStream();
+                Request request = Request.getBaseRequest(req);
+                AtomicInteger read = new AtomicInteger(0);
+                AtomicInteger sum = new AtomicInteger(0);
 
-                runmode(mode, request, new Runnable()
+                runMode(mode, request, () -> in.setReadListener(new ReadListener()
                 {
                     @Override
-                    public void run()
+                    public void onError(Throwable t)
                     {
-                        in.setReadListener(new ReadListener()
+                        t.printStackTrace();
+                        try
                         {
-                            @Override
-                            public void onError(Throwable t)
+                            resp.sendError(500);
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                            throw new RuntimeException(e);
+                        }
+                        context.complete();
+                    }
+
+                    @Override
+                    public void onDataAvailable()
+                    {
+                        runMode(mode, request, () ->
+                        {
+                            while (in.isReady() && !in.isFinished())
                             {
-                                t.printStackTrace();
                                 try
                                 {
-                                    resp.sendError(500);
+                                    int b = in.read();
+                                    if (b < 0)
+                                        return;
+                                    sum.addAndGet(b);
+                                    int i = read.getAndIncrement();
+                                    if (b != expected.charAt(i))
+                                    {
+                                        System.err.printf("XXX '%c'!='%c' at %d%n", expected.charAt(i), (char)b, i);
+                                        System.err.println("    " + request.getHttpChannel());
+                                        System.err.println("    " + request.getHttpChannel().getHttpTransport());
+                                    }
                                 }
                                 catch (IOException e)
                                 {
-                                    e.printStackTrace();
-                                    throw new RuntimeException(e);
+                                    onError(e);
                                 }
-                                context.complete();
-                            }
-
-                            @Override
-                            public void onDataAvailable() throws IOException
-                            {
-                                runmode(mode, request, new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        while (in.isReady() && !in.isFinished())
-                                        {
-                                            try
-                                            {
-                                                int b = in.read();
-                                                if (b < 0)
-                                                    return;
-                                                sum.addAndGet(b);
-                                                int i = read.getAndIncrement();
-                                                if (b != expected.charAt(i))
-                                                {
-                                                    System.err.printf("XXX '%c'!='%c' at %d%n", expected.charAt(i), (char)b, i);
-                                                    System.err.println("    " + request.getHttpChannel());
-                                                    System.err.println("    " + request.getHttpChannel().getHttpTransport());
-                                                }
-                                            }
-                                            catch (IOException e)
-                                            {
-                                                onError(e);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onAllDataRead() throws IOException
-                            {
-                                resp.setStatus(200);
-                                resp.setContentType("text/plain");
-                                resp.getWriter().println("read=" + read.get());
-                                resp.getWriter().println("sum=" + sum.get());
-                                context.complete();
                             }
                         });
                     }
-                });
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        resp.setStatus(200);
+                        resp.setContentType("text/plain");
+                        resp.getWriter().println("read=" + read.get());
+                        resp.getWriter().println("sum=" + sum.get());
+                        context.complete();
+                    }
+                }));
             }
         }
     }
@@ -526,7 +486,7 @@ public class HttpInputIntegrationTest
                     flush(local, buffer, delayMs, delayInFrame, true);
                 }
 
-                buffer.append(c.substring(0, 1));
+                buffer.append(c.charAt(0));
                 flush(local, buffer, delayMs, delayInFrame, true);
                 buffer.append(c.substring(1));
                 if (chunked)
@@ -556,9 +516,9 @@ public class HttpInputIntegrationTest
             }
         }
 
-        private void flush(final LocalEndPoint local, StringBuilder buffer) throws Exception
+        private void flush(LocalEndPoint local, StringBuilder buffer)
         {
-            final String flush = buffer.toString();
+            String flush = buffer.toString();
             buffer.setLength(0);
             flushed.append(flush);
             local.addInputAndExecute(BufferUtil.toBuffer(flush));
@@ -619,7 +579,7 @@ public class HttpInputIntegrationTest
                         flush(out, buffer, delayMs, delayInFrame, true);
                     }
 
-                    buffer.append(c.substring(0, 1));
+                    buffer.append(c.charAt(0));
                     flush(out, buffer, delayMs, delayInFrame, true);
                     buffer.append(c.substring(1));
                     flush(out, buffer, delayMs, delayInFrame, false);
@@ -689,13 +649,13 @@ public class HttpInputIntegrationTest
 
     public static class Scenario
     {
-        final Class<? extends TestClient> _client;
-        final Mode _mode;
-        final Boolean _delay;
-        final int _status;
-        final int _read;
-        final int _length;
-        final List<String> _send;
+        private final Class<? extends TestClient> _client;
+        private final Mode _mode;
+        private final Boolean _delay;
+        private final int _status;
+        private final int _read;
+        private final int _length;
+        private final List<String> _send;
 
         public Scenario(Class<? extends TestClient> client, Mode mode, boolean dispatch, Boolean delay, int status, int read, int length, String... send)
         {

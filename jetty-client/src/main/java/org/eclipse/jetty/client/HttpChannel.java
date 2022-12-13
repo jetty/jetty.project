@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,28 +14,26 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class HttpChannel
+public abstract class HttpChannel implements CyclicTimeouts.Expirable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final AutoLock _lock = new AutoLock();
     private final HttpDestination _destination;
-    private final TimeoutCompleteListener _totalTimeout;
     private HttpExchange _exchange;
 
     protected HttpChannel(HttpDestination destination)
     {
         _destination = destination;
-        _totalTimeout = new TimeoutCompleteListener(destination.getHttpClient().getScheduler());
     }
 
     public void destroy()
     {
-        _totalTimeout.destroy();
     }
 
     public HttpDestination getHttpDestination()
@@ -111,6 +104,13 @@ public abstract class HttpChannel
         }
     }
 
+    @Override
+    public long getExpireNanoTime()
+    {
+        HttpExchange exchange = getHttpExchange();
+        return exchange != null ? exchange.getExpireNanoTime() : Long.MAX_VALUE;
+    }
+
     protected abstract HttpSender getHttpSender();
 
     protected abstract HttpReceiver getHttpReceiver();
@@ -119,16 +119,7 @@ public abstract class HttpChannel
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-        {
-            HttpRequest request = exchange.getRequest();
-            long timeoutAt = request.getTimeoutAt();
-            if (timeoutAt != -1)
-            {
-                exchange.getResponseListeners().add(_totalTimeout);
-                _totalTimeout.schedule(request, timeoutAt);
-            }
             send(exchange);
-        }
     }
 
     public abstract void send(HttpExchange exchange);

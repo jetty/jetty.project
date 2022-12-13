@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -56,6 +51,7 @@ import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -327,7 +323,7 @@ public class DoSFilter implements Filter
         tracker = getRateTracker(request);
 
         // Calculate the rate and check if it is over the allowed limit
-        final OverLimit overLimit = tracker.isRateExceeded(System.currentTimeMillis());
+        final OverLimit overLimit = tracker.isRateExceeded(NanoTime.now());
 
         // Pass it through if we are not currently over the rate limit.
         if (overLimit == null)
@@ -1187,8 +1183,8 @@ public class DoSFilter implements Filter
         }
 
         /**
-         * @param now the time now (in milliseconds)
-         * @return the current calculated request rate over the last second
+         * @param now the time now (in nanoseconds) used to calculate elapsed time since previous requests.
+         * @return the current calculated request rate over the last second if rate exceeded, else null.
          */
         public OverLimit isRateExceeded(long now)
         {
@@ -1201,14 +1197,12 @@ public class DoSFilter implements Filter
             }
 
             if (last == 0)
-            {
                 return null;
-            }
 
-            long rate = (now - last);
-            if (rate < 1000L)
+            long rate = NanoTime.elapsed(last, now);
+            if (TimeUnit.NANOSECONDS.toSeconds(rate) < 1L)
             {
-                return new Overage(Duration.ofMillis(rate), _maxRequestsPerSecond);
+                return new Overage(Duration.ofNanos(rate), _maxRequestsPerSecond);
             }
             return null;
         }
@@ -1297,7 +1291,7 @@ public class DoSFilter implements Filter
 
             int latestIndex = _next == 0 ? (_timestamps.length - 1) : (_next - 1);
             long last = _timestamps[latestIndex];
-            boolean hasRecentRequest = last != 0 && (System.currentTimeMillis() - last) < 1000L;
+            boolean hasRecentRequest = last != 0 && NanoTime.secondsSince(last) < 1L;
 
             DoSFilter filter = (DoSFilter)_context.getAttribute(_filterName);
 

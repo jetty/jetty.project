@@ -1,0 +1,34 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-jmx-local]]
+==== Enabling Local JMX Support
+
+As with many other Jetty features, local JMX support is enabled with the `jmx` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=jmx
+----
+
+With the `jmx` Jetty module enabled, Jetty components will be exported as JMX _MBeans_ to the JVM platform `MBeanServer`, so that they can be accessed by JMX compliant tools.
+
+Each Jetty component will export to its correspondent MBean relevant configuration parameters, so that a JMX tool can read and possibly change the component configuration through the MBean.
+
+Note that the Jetty MBeans are registered into the platform `MBeanServer`, but are not available to remote clients: they are _local_ to the JVM.
+
+This configuration is useful when you develop and test your Jetty server locally.
+
+JMX compliant tools such as link:https://adoptium.net/jmc.html[Java Mission Control (JMC)] can be started locally on your machine and can attach to other JVMs running on your machine, showing you the registered MBeans among which you will find the Jetty MBeans.
+
+NOTE: Enabling only the local JMX support is the most secure option for monitoring and management, but only users that have local access to the JVM will be able to browse the MBeans.
+If you need to access the MBeans from a remote machine, read xref:og-jmx-remote[this section].

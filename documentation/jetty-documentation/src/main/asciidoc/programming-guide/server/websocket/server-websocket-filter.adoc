@@ -1,0 +1,82 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-websocket-configure-filter]]
+==== Advanced `WebSocketUpgradeFilter` Configuration
+
+The `WebSocketUpgradeFilter` that handles the HTTP requests that upgrade to WebSocket is installed in these cases:
+
+* Either by the `JavaxWebSocketServletContainerInitializer`, as described in xref:pg-server-websocket-standard[this section].
+* Or by a call to `JettyWebSocketServerContainer.addMapping(\...)`, as described in xref:pg-server-websocket-jetty[this section].
+
+Typically, the `WebSocketUpgradeFilter` is not present in the `web.xml` configuration, and therefore the mechanisms above create a new `WebSocketUpgradeFilter` and install it _before_ any other Filter declared in `web.xml`, under the default name of `"org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter"` and with path mapping `/*`.
+
+However, if the `WebSocketUpgradeFilter` is already present in `web.xml` under the default name, then the ``ServletContainerInitializer``s will use that declared in `web.xml` instead of creating a new one.
+
+This allows you to customize:
+
+* The filter order; for example, by configuring the `CrossOriginFilter` (or other filters) for increased security or authentication _before_ the `WebSocketUpgradeFilter`.
+* The `WebSocketUpgradeFilter` configuration via ``init-param``s, that affects all `Session` instances created by this filter.
+* The `WebSocketUpgradeFilter` path mapping. Rather than the default mapping of `+/*+`, you can map the `WebSocketUpgradeFilter` to a more specific path such as `+/ws/*+`.
+* The possibility to have multiple ``WebSocketUpgradeFilter``s, mapped to different paths, each with its own configuration.
+
+For example:
+
+[source,xml,subs=verbatim]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+  <display-name>My WebSocket WebApp</display-name>
+
+  <!-- The CrossOriginFilter *must* be the first --> <!--1-->
+  <filter>
+    <filter-name>cross-origin</filter-name>
+    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <async-supported>true</async-supported>
+  </filter>
+  <filter-mapping>
+    <filter-name>cross-origin</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <!-- Configure the default WebSocketUpgradeFilter --> <!--2-->
+  <filter>
+    <!-- The filter name must be the default WebSocketUpgradeFilter name -->
+    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name> <!--3-->
+    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <!-- Configure at most 1 MiB text messages -->
+    <init-param> <!--4-->
+      <param-name>maxTextMessageSize</param-name>
+      <param-value>1048576</param-value>
+    </init-param>
+    <async-supported>true</async-supported>
+  </filter>
+  <filter-mapping>
+    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <!-- Use a more specific path mapping for WebSocket requests -->
+    <url-pattern>/ws/*</url-pattern> <!--5-->
+  </filter-mapping>
+
+</web-app>
+----
+<1> The `CrossOriginFilter` is the first to protect against link:https://owasp.org/www-community/attacks/csrf[cross-site request forgery attacks].
+<2> The configuration for the _default_ `WebSocketUpgradeFilter`.
+<3> Note the use of the _default_ `WebSocketUpgradeFilter` name.
+<4> Specific configuration for `WebSocketUpgradeFilter` parameters.
+<5> Use a more specific path mapping for `WebSocketUpgradeFilter`.
+
+Note that using a more specific path mapping for WebSocket requests is also beneficial to the performance of normal HTTP requests: they do not go through the `WebSocketUpgradeFilter` (as they will not match its path mapping), saving the cost of analyzing them to see whether they are WebSocket upgrade requests or not.

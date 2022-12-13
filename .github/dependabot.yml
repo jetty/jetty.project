@@ -2,36 +2,114 @@ version: 2
 updates:
   - package-ecosystem: "maven"
     directory: "/"
+    open-pull-requests-limit: 50
+    target-branch: "jetty-10.0.x"
     schedule:
-      interval: "weekly"
-    target-branch: "jetty-9.4.x"
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    target-branch: "jetty-9.4.x"
+      interval: "monthly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    # Associate with milestone 10.0.x
+    milestone: 6
+    ignore:
+      # Restrict updates in this branch to jetty in the 10.x.x space
+      - dependency-name: "jakarta.servlet:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "jakarta.activation:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.annotation:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.el:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.inject:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "org.jboss.weld.servlet:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.enterprise:jakarta.enterprise.cdi-api:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "com.sun.xml.ws:jaxws-rt"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.transaction:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "org.infinispan:*"
+        versions: [ ">=12" ]
+      - dependency-name: "jakarta.xml.bind:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "org.glassfish.jaxb:*"
+        versions: [ ">=3.0.0"]
+      - dependency-name: "ch.qos.logback:*"
+        versions: [ ">=1.4.0"]
 
   - package-ecosystem: "maven"
     directory: "/"
+    open-pull-requests-limit: 30
+    target-branch: "jetty-11.0.x"
     schedule:
-      interval: "weekly"
-    target-branch: "jetty-10.0.x"
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    target-branch: "jetty-10.0.x"
+      interval: "monthly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    # Associate with milestone 11.0.x
+    milestone: 7
+    ignore:
+      # Restrict updates in this branch to jetty in the 11.x.x space
+      - dependency-name: "jakarta.activation:*"
+        versions: [ ">=2.1.0" ]
+      - dependency-name: "jakarta.annotation:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.authentication:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.el:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "jakarta.enterprise:jakarta.enterprise.cdi-api:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.inject:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.mail:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.servlet:*"
+        versions: [ ">=6.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.transaction:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.ws.rs:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.xml.bind:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "org.glassfish.jaxb:*"
+        versions: [ ">=4.0.0"]
+      - dependency-name: "jakarta.xml.ws:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "com.sun.xml.ws:jaxws*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "org.jboss.weld.servlet:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "org.infinispan:*"
+        versions: [ ">=12" ]
 
   - package-ecosystem: "maven"
     directory: "/"
+    open-pull-requests-limit: 30
+    target-branch: "jetty-9.4.x"
     schedule:
-      interval: "weekly"
-    target-branch: "jetty-11.0.x"
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    target-branch: "jetty-11.0.x"
+      interval: "monthly"
+      day: "saturday"
+      time: "10:00"
+      timezone: "Australia/Brisbane"
+    ignore:
+      # Restrict updates in this branch to jetty in the 9.4.x space
+      - dependency-name: "org.infinispan:*"
+        versions: [ ">=12" ]

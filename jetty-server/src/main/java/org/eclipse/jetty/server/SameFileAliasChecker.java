@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,14 +40,25 @@ import org.slf4j.LoggerFactory;
  * or Linux on XFS) the the actual file could be stored using UTF-16,
  * but be accessed using NFD UTF-8 or NFC UTF-8 for the same file.
  * </p>
+ * @deprecated use {@link org.eclipse.jetty.server.AllowedResourceAliasChecker} instead.
  */
+@Deprecated
 public class SameFileAliasChecker implements AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(SameFileAliasChecker.class);
 
-    @Override
-    public boolean check(String uri, Resource resource)
+    public SameFileAliasChecker()
     {
+        LOG.warn("SameFileAliasChecker is deprecated");
+    }
+
+    @Override
+    public boolean check(String pathInContext, Resource resource)
+    {
+        // Do not allow any file separation characters in the URI.
+        if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
+            return false;
+
         // Only support PathResource alias checking
         if (!(resource instanceof PathResource))
             return false;

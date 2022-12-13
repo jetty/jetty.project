@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -62,14 +57,18 @@ public class StreamContentParser extends ContentParser
                     int length = Math.min(contentLength, buffer.remaining());
                     int limit = buffer.limit();
                     buffer.limit(buffer.position() + length);
-                    final ByteBuffer slice = buffer.slice();
+                    ByteBuffer slice = buffer.slice();
                     buffer.position(buffer.limit());
                     buffer.limit(limit);
                     contentLength -= length;
+                    if (contentLength <= 0)
+                        state = State.EOF;
                     if (onContent(slice))
                         return Result.ASYNC;
-                    if (contentLength > 0)
-                        break;
+                    break;
+                }
+                case EOF:
+                {
                     state = State.LENGTH;
                     return Result.COMPLETE;
                 }
@@ -83,7 +82,7 @@ public class StreamContentParser extends ContentParser
     }
 
     @Override
-    public void noContent()
+    public boolean noContent()
     {
         try
         {
@@ -94,6 +93,7 @@ public class StreamContentParser extends ContentParser
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while invoking listener {}", listener, x);
         }
+        return false;
     }
 
     protected boolean onContent(ByteBuffer buffer)
@@ -116,6 +116,6 @@ public class StreamContentParser extends ContentParser
 
     private enum State
     {
-        LENGTH, CONTENT
+        LENGTH, CONTENT, EOF
     }
 }

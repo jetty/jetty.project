@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
@@ -32,6 +28,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,19 +55,25 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public void close()
     {
-        remoteEndpoint.close(StatusCode.NORMAL, null);
+        coreSession.close(StatusCode.NORMAL, null, Callback.NOOP);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        remoteEndpoint.close(closeStatus.getCode(), closeStatus.getPhrase());
+        coreSession.close(closeStatus.getCode(), closeStatus.getPhrase(), Callback.NOOP);
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        remoteEndpoint.close(statusCode, reason);
+        coreSession.close(statusCode, reason, Callback.NOOP);
+    }
+
+    @Override
+    public void close(int statusCode, String reason, WriteCallback callback)
+    {
+        coreSession.close(statusCode, reason, Callback.from(callback::writeSuccess, callback::writeFailed));
     }
 
     @Override

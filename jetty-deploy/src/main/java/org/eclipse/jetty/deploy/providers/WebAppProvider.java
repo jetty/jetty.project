@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,12 +22,14 @@ import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.LoggerFactory;
 
 /**
  * The webapps directory scanning provider.
@@ -62,6 +59,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
 {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAppProvider.class);
+
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;
     private ConfigurationManager _configurationManager;
@@ -74,28 +73,24 @@ public class WebAppProvider extends ScanningAppProvider
         @Override
         public boolean accept(File dir, String name)
         {
-            if (!dir.exists())
-            {
+            if (dir == null || !dir.canRead())
                 return false;
-            }
-            String lowername = name.toLowerCase(Locale.ENGLISH);
 
-            File file = new File(dir, name);
-            Resource r = Resource.newResource(file);
-            if (getMonitoredResources().contains(r) && r.isDirectory())
-            {
+            String lowerName = name.toLowerCase(Locale.ENGLISH);
+
+            Resource resource = Resource.newResource(new File(dir, name));
+            if (getMonitoredResources().stream().anyMatch(resource::isSame))
                 return false;
-            }
 
             // ignore hidden files
-            if (lowername.startsWith("."))
+            if (lowerName.startsWith("."))
                 return false;
 
             // Ignore some directories
-            if (file.isDirectory())
+            if (resource.isDirectory())
             {
                 // is it a nominated config directory
-                if (lowername.endsWith(".d"))
+                if (lowerName.endsWith(".d"))
                     return false;
 
                 // is it an unpacked directory for an existing war file?
@@ -107,25 +102,15 @@ public class WebAppProvider extends ScanningAppProvider
                     return false;
 
                 //is it a sccs dir?
-                if ("cvs".equals(lowername) || "cvsroot".equals(lowername))
-                    return false;
-
-                // OK to deploy it then
-                return true;
+                return !"cvs".equals(lowerName) && !"cvsroot".equals(lowerName); // OK to deploy it then
             }
 
             // else is it a war file
-            if (lowername.endsWith(".war"))
-            {
-                //defer deployment decision to fileChanged()
-                return true;
-            }
-
-            // else is it a context XML file 
-            if (lowername.endsWith(".xml"))
+            if (lowerName.endsWith(".war"))
                 return true;
 
-            return false;
+            // else is it a context XML file
+            return lowerName.endsWith(".xml");
         }
     }
 
@@ -281,8 +266,18 @@ public class WebAppProvider extends ScanningAppProvider
         if (!resource.exists())
             throw new IllegalStateException("App resource does not exist " + resource);
 
-        String context = file.getName();
+        final String contextName = file.getName();
 
+        // Resource aliases (after getting name) to ensure baseResource is not an alias
+        if (resource.isAlias())
+        {
+            resource = Resource.resolveAlias(resource);
+            file = resource.getFile();
+            if (!resource.exists())
+                throw new IllegalStateException("App resource does not exist " + resource);
+        }
+
+        // Handle a context XML file
         if (resource.exists() && FileID.isXmlFile(file))
         {
             XmlConfiguration xmlc = new XmlConfiguration(resource)
@@ -292,11 +287,15 @@ public class WebAppProvider extends ScanningAppProvider
                 {
                     super.initializeDefaults(context);
 
+                    // If the XML created object is a ContextHandler
+                    if (context instanceof ContextHandler)
+                        // Initialize the context path prior to running context XML
+                        initializeContextPath((ContextHandler)context, contextName, true);
+
+                    // If it is a webapp
                     if (context instanceof WebAppContext)
-                    {
-                        WebAppContext webapp = (WebAppContext)context;
-                        initializeWebAppContextDefaults(webapp);
-                    }
+                        // initialize other defaults prior to running context XML
+                        initializeWebAppContextDefaults((WebAppContext)context);
                 }
             };
 
@@ -306,54 +305,62 @@ public class WebAppProvider extends ScanningAppProvider
                 xmlc.getProperties().putAll(getConfigurationManager().getProperties());
             return (ContextHandler)xmlc.configure();
         }
-        else if (file.isDirectory())
-        {
-            // must be a directory
-        }
-        else if (FileID.isWebArchiveFile(file))
-        {
-            // Context Path is the same as the archive.
-            context = context.substring(0, context.length() - 4);
-        }
-        else
+        // Otherwise it must be a directory or an archive
+        else if (!file.isDirectory() && !FileID.isWebArchiveFile(file))
         {
             throw new IllegalStateException("unable to create ContextHandler for " + app);
         }
 
-        // Ensure "/" is Not Trailing in context paths.
-        if (context.endsWith("/") && context.length() > 0)
-        {
-            context = context.substring(0, context.length() - 1);
-        }
-
-        // Start building the webapplication
+        // Build the web application
         WebAppContext webAppContext = new WebAppContext();
-        webAppContext.setDisplayName(context);
-
-        // special case of archive (or dir) named "root" is / context
-        if (context.equalsIgnoreCase("root"))
-        {
-            context = URIUtil.SLASH;
-        }
-        else if (context.toLowerCase(Locale.ENGLISH).startsWith("root-"))
-        {
-            int dash = context.toLowerCase(Locale.ENGLISH).indexOf('-');
-            String virtual = context.substring(dash + 1);
-            webAppContext.setVirtualHosts(new String[]{virtual});
-            context = URIUtil.SLASH;
-        }
-
-        // Ensure "/" is Prepended to all context paths.
-        if (context.charAt(0) != '/')
-        {
-            context = "/" + context;
-        }
-
-        webAppContext.setDefaultContextPath(context);
         webAppContext.setWar(file.getAbsolutePath());
+        initializeContextPath(webAppContext, contextName, !file.isDirectory());
         initializeWebAppContextDefaults(webAppContext);
 
         return webAppContext;
+    }
+
+    protected void initializeContextPath(ContextHandler context, String contextName, boolean stripExtension)
+    {
+        String contextPath = contextName;
+
+        // Strip any 3 char extension from non directories
+        if (stripExtension && contextPath.length() > 4 && contextPath.charAt(contextPath.length() - 4) == '.')
+            contextPath = contextPath.substring(0, contextPath.length() - 4);
+
+        // Ensure "/" is Not Trailing in context paths.
+        if (contextPath.endsWith("/") && contextPath.length() > 1)
+            contextPath = contextPath.substring(0, contextPath.length() - 1);
+
+        // special case of archive (or dir) named "root" is / context
+        if (contextPath.equalsIgnoreCase("root"))
+        {
+            contextPath = URIUtil.SLASH;
+        }
+        // handle root with virtual host form
+        else if (StringUtil.startsWithIgnoreCase(contextPath, "root-"))
+        {
+            int dash = contextPath.indexOf('-');
+            String virtual = contextPath.substring(dash + 1);
+            context.setVirtualHosts(virtual.split(","));
+            contextPath = URIUtil.SLASH;
+        }
+
+        // Ensure "/" is Prepended to all context paths.
+        if (contextPath.charAt(0) != '/')
+            contextPath = "/" + contextPath;
+
+        // Set the display name and context Path
+        context.setDisplayName(contextName);
+        if (context instanceof WebAppContext)
+        {
+            WebAppContext webAppContext = (WebAppContext)context;
+            webAppContext.setDefaultContextPath(contextPath);
+        }
+        else
+        {
+            context.setContextPath(contextPath);
+        }
     }
 
     @Override
@@ -391,7 +398,7 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 //if a .xml file exists for it, then redeploy that instead
                 File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getCanonicalPath());
+                super.fileChanged(xml.getPath());
                 return;
             }
 
@@ -400,7 +407,7 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 //if a .XML file exists for it, then redeploy that instead
                 File xml = new File(parent, xmlname);
-                super.fileChanged(xml.getCanonicalPath());
+                super.fileChanged(xml.getPath());
                 return;
             }
 

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
@@ -340,21 +336,23 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 String dstPort = _fields[5];
                 // If UNKNOWN, we must ignore the information sent, so use the EndPoint's.
                 boolean unknown = "UNKNOWN".equalsIgnoreCase(_fields[1]);
+                EndPoint proxyEndPoint;
                 if (unknown)
                 {
-                    srcIP = getEndPoint().getRemoteAddress().getAddress().getHostAddress();
-                    srcPort = String.valueOf(getEndPoint().getRemoteAddress().getPort());
-                    dstIP = getEndPoint().getLocalAddress().getAddress().getHostAddress();
-                    dstPort = String.valueOf(getEndPoint().getLocalAddress().getPort());
+                    EndPoint endPoint = getEndPoint();
+                    proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
                 }
-                InetSocketAddress remote = new InetSocketAddress(srcIP, Integer.parseInt(srcPort));
-                InetSocketAddress local = new InetSocketAddress(dstIP, Integer.parseInt(dstPort));
+                else
+                {
+                    SocketAddress remote = new InetSocketAddress(srcIP, Integer.parseInt(srcPort));
+                    SocketAddress local = new InetSocketAddress(dstIP, Integer.parseInt(dstPort));
+                    proxyEndPoint = new ProxyEndPoint(getEndPoint(), local, remote);
+                }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v1 next protocol '{}' for {} r={} l={}", _next, getEndPoint(), remote, local);
+                    LOG.debug("Proxy v1 next protocol '{}' for {} -> {}", _next, getEndPoint(), proxyEndPoint);
 
-                EndPoint endPoint = new ProxyEndPoint(getEndPoint(), remote, local);
-                upgradeToConnectionFactory(_next, _connector, endPoint);
+                upgradeToConnectionFactory(_next, _connector, proxyEndPoint);
             }
         }
     }
@@ -570,49 +568,62 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v2 body {} from {} for {}", _next, BufferUtil.toHexSummary(_buffer), this);
 
                 // Do we need to wrap the endpoint?
+                ProxyEndPoint proxyEndPoint;
                 EndPoint endPoint = getEndPoint();
-                if (!_local)
+                if (_local)
                 {
-                    InetAddress src;
-                    InetAddress dst;
-                    int sp;
-                    int dp;
-
+                    _buffer.position(_buffer.position() + _length);
+                    proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
+                }
+                else
+                {
+                    SocketAddress local;
+                    SocketAddress remote;
                     switch (_family)
                     {
                         case INET:
                         {
                             byte[] addr = new byte[4];
                             _buffer.get(addr);
-                            src = Inet4Address.getByAddress(addr);
+                            InetAddress srcAddr = Inet4Address.getByAddress(addr);
                             _buffer.get(addr);
-                            dst = Inet4Address.getByAddress(addr);
-                            sp = _buffer.getChar();
-                            dp = _buffer.getChar();
+                            InetAddress dstAddr = Inet4Address.getByAddress(addr);
+                            int srcPort = _buffer.getChar();
+                            int dstPort = _buffer.getChar();
+                            local = new InetSocketAddress(dstAddr, dstPort);
+                            remote = new InetSocketAddress(srcAddr, srcPort);
                             break;
                         }
-
                         case INET6:
                         {
                             byte[] addr = new byte[16];
                             _buffer.get(addr);
-                            src = Inet6Address.getByAddress(addr);
+                            InetAddress srcAddr = Inet6Address.getByAddress(addr);
                             _buffer.get(addr);
-                            dst = Inet6Address.getByAddress(addr);
-                            sp = _buffer.getChar();
-                            dp = _buffer.getChar();
+                            InetAddress dstAddr = Inet6Address.getByAddress(addr);
+                            int srcPort = _buffer.getChar();
+                            int dstPort = _buffer.getChar();
+                            local = new InetSocketAddress(dstAddr, dstPort);
+                            remote = new InetSocketAddress(srcAddr, srcPort);
                             break;
                         }
-
+                        case UNIX:
+                        {
+                            byte[] addr = new byte[108];
+                            _buffer.get(addr);
+                            String src = UnixDomain.toPath(addr);
+                            _buffer.get(addr);
+                            String dst = UnixDomain.toPath(addr);
+                            local = UnixDomain.newSocketAddress(dst);
+                            remote = UnixDomain.newSocketAddress(src);
+                            break;
+                        }
                         default:
-                            throw new IllegalStateException();
+                        {
+                            throw new IllegalStateException("Unsupported family " + _family);
+                        }
                     }
-
-                    // Extract Addresses
-                    InetSocketAddress remote = new InetSocketAddress(src, sp);
-                    InetSocketAddress local = new InetSocketAddress(dst, dp);
-                    ProxyEndPoint proxyEndPoint = new ProxyEndPoint(endPoint, remote, local);
-                    endPoint = proxyEndPoint;
+                    proxyEndPoint = new ProxyEndPoint(endPoint, local, remote);
 
                     // Any additional info?
                     while (_buffer.remaining() > nonProxyRemaining)
@@ -653,16 +664,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Proxy v2 {} {}", getEndPoint(), proxyEndPoint.toString());
-                }
-                else
-                {
-                    _buffer.position(_buffer.position() + _length);
+                        LOG.debug("Proxy v2 {} {}", endPoint, proxyEndPoint);
                 }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 parsing dynamic packet part is now done, upgrading to {}", _nextProtocol);
-                upgradeToConnectionFactory(_next, _connector, endPoint);
+                upgradeToConnectionFactory(_next, _connector, proxyEndPoint);
             }
 
             private void parseHeader() throws IOException
@@ -712,7 +719,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
 
                 Transport transport;
-                switch (0xF & transportAndFamily)
+                switch (transportAndFamily & 0xF)
                 {
                     case 0:
                         transport = Transport.UNSPEC;
@@ -729,7 +736,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                 _length = _buffer.getChar();
 
-                if (!_local && (_family == Family.UNSPEC || _family == Family.UNIX || transport != Transport.STREAM))
+                if (!_local && (_family == Family.UNSPEC || transport != Transport.STREAM))
                     throw new IOException(String.format("Proxy v2 unsupported PROXY mode 0x%x,0x%x", versionAndCommand, transportAndFamily));
 
                 if (_length > getMaxProxyHeader())
@@ -756,15 +763,21 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         private static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
 
         private final EndPoint _endPoint;
-        private final InetSocketAddress _remote;
-        private final InetSocketAddress _local;
+        private final SocketAddress _local;
+        private final SocketAddress _remote;
         private Map<Integer, byte[]> _tlvs;
 
+        @Deprecated
         public ProxyEndPoint(EndPoint endPoint, InetSocketAddress remote, InetSocketAddress local)
         {
+            this(endPoint, (SocketAddress)local, remote);
+        }
+
+        public ProxyEndPoint(EndPoint endPoint, SocketAddress local, SocketAddress remote)
+        {
             _endPoint = endPoint;
-            _remote = remote;
             _local = local;
+            _remote = remote;
         }
 
         public EndPoint unwrap()
@@ -853,11 +866,29 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public InetSocketAddress getLocalAddress()
         {
+            SocketAddress local = getLocalSocketAddress();
+            if (local instanceof InetSocketAddress)
+                return (InetSocketAddress)local;
+            return null;
+        }
+
+        @Override
+        public SocketAddress getLocalSocketAddress()
+        {
             return _local;
         }
 
         @Override
         public InetSocketAddress getRemoteAddress()
+        {
+            SocketAddress remote = getRemoteSocketAddress();
+            if (remote instanceof InetSocketAddress)
+                return (InetSocketAddress)remote;
+            return null;
+        }
+
+        @Override
+        public SocketAddress getRemoteSocketAddress()
         {
             return _remote;
         }
@@ -937,6 +968,49 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
         {
             _endPoint.write(callback, buffers);
+        }
+    }
+
+    private static class UnixDomain
+    {
+        private static final Class<?> unixDomainSocketAddress = probe();
+
+        private static Class<?> probe()
+        {
+            try
+            {
+                return ClassLoader.getPlatformClassLoader().loadClass("java.net.UnixDomainSocketAddress");
+            }
+            catch (Throwable ignored)
+            {
+                return null;
+            }
+        }
+
+        private static SocketAddress newSocketAddress(String path)
+        {
+            try
+            {
+                if (unixDomainSocketAddress != null)
+                    return (SocketAddress)unixDomainSocketAddress.getMethod("of", String.class).invoke(null, path);
+                return null;
+            }
+            catch (Throwable ignored)
+            {
+                return null;
+            }
+        }
+
+        private static String toPath(byte[] bytes)
+        {
+            // Unix-Domain paths are zero-terminated.
+            int i = 0;
+            while (i < bytes.length)
+            {
+                if (bytes[i++] == 0)
+                    break;
+            }
+            return new String(bytes, 0, i, StandardCharsets.US_ASCII).trim();
         }
     }
 }

@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -28,19 +28,14 @@
     <module>websocket-javax-client</module>
     <module>websocket-javax-server</module>
     <module>websocket-javax-tests</module>
-    <!-- Common WebSocket Implementation -->
-    <module>websocket-util</module>
-    <module>websocket-util-server</module>
+    <!-- Common Servlet WebSocket Implementation -->
+    <module>websocket-servlet</module>
   </modules>
+  <properties>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.websocket.*</spotbugs.onlyAnalyze>
+  </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

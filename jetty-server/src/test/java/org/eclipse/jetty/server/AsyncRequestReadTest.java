@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -293,8 +288,8 @@ public class AsyncRequestReadTest
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             assertThat(in.readLine(), containsString("HTTP/1.1 200 OK"));
-            assertThat(in.readLine(), containsString("Content-Length:"));
             assertThat(in.readLine(), containsString("Connection: close"));
+            assertThat(in.readLine(), containsString("Content-Length:"));
             assertThat(in.readLine(), containsString("Server:"));
             in.readLine();
             assertThat(in.readLine(), containsString("XXXXXXX"));
@@ -328,6 +323,7 @@ public class AsyncRequestReadTest
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             assertThat(in.readLine(), containsString("HTTP/1.1 200 OK"));
+            assertThat(in.readLine(), containsString("Connection: close"));
             assertThat(in.readLine(), containsString("Content-Length:"));
             assertThat(in.readLine(), containsString("Server:"));
             in.readLine();

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,6 +21,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -36,18 +32,23 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.MessageHandler;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
 public class ChatWebSocketServer
 {
+    protected static final Logger LOG = LoggerFactory.getLogger(ChatWebSocketServer.class);
+
     private final Set<MessageHandler> members = new HashSet<>();
 
-    private FrameHandler negotiate(Negotiation negotiation)
+    private FrameHandler negotiate(WebSocketNegotiation negotiation)
     {
         // Finalize negotiations in API layer involves:
         //  + MAY mutate the policy
@@ -113,7 +114,9 @@ public class ChatWebSocketServer
         server.setHandler(context);
 
         ChatWebSocketServer chat = new ChatWebSocketServer();
-        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(WebSocketNegotiator.from(chat::negotiate));
+        WebSocketComponents components = new WebSocketComponents();
+        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(components);
+        upgradeHandler.addMapping(new ServletPathSpec("/*"), WebSocketNegotiator.from(chat::negotiate));
         context.setHandler(upgradeHandler);
 
         upgradeHandler.setHandler(new AbstractHandler()

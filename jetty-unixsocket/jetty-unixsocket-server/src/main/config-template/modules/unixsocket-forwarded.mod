@@ -5,8 +5,13 @@ Adds a forwarded request customizer for the  Unix Domain Socket connector.
 For use when behind a proxy operating in HTTP mode that adds forwarded-for style HTTP headers. 
 Typically this is an alternate to the Proxy Protocol used mostly for TCP mode.
 
+[deprecated]
+Module 'unixsocket-forwarded' is deprecated for removal.
+Use 'unixdomain-http' instead (requires Java 16 or later).
+
 [tags]
 connector
+deprecated
 
 [depend]
 unixsocket-http

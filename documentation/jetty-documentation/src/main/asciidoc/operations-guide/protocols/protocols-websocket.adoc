@@ -1,0 +1,117 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-websocket]]
+==== WebSocket
+
+WebSocket is a network protocol for bidirectional data communication initiated via the link:https://tools.ietf.org/html/rfc7230#section-6.7[HTTP/1.1 upgrade mechanism].
+WebSocket provides a simple, low-level, framing protocol layered over TCP.
+One or more WebSocket frames compose a WebSocket _message_ that is either a UTF-8 _text_ message or _binary_ message.
+
+Jetty provides an implementation of the following standards and specifications.
+
+http://tools.ietf.org/html/rfc6455[RFC-6455] - The WebSocket Protocol::
+Jetty supports version 13 of the released and final specification.
+
+http://www.jcp.org/en/jsr/detail?id=356[JSR-356] - The Java WebSocket API (`javax.websocket`)::
+This is the official Java API for working with WebSockets.
+
+https://tools.ietf.org/html/rfc7692[RFC-7692] - WebSocket Per-Message Deflate Extension::
+This is the replacement for perframe-compression, switching the compression to being based on the entire message, not the individual frames.
+
+https://tools.ietf.org/html/rfc8441[RFC-8441] - Bootstrapping WebSockets with HTTP/2::
+Allows a single stream of an HTTP/2 connection to be upgraded to WebSocket.
+This allows one TCP connection to be shared by both protocols and extends HTTP/2's more efficient use of the network to WebSockets.
+
+[[og-protocols-websocket-configure]]
+===== Configuring WebSocket
+
+Jetty provides two WebSocket implementations: one based on the Java WebSocket APIs defined by JSR 356, provided by module `websocket-javax`, and one based on Jetty specific WebSocket APIs, provided by module `websocket-jetty`.
+The Jetty `websocket` module enables both implementations, but each implementation can be enabled independently.
+
+NOTE: Remember that a WebSocket connection is always initiated from the HTTP protocol (either an HTTP/1.1 upgrade or an HTTP/2 connect), therefore to enable WebSocket you need to enable HTTP.
+
+To enable WebSocket support, you also need to decide what version of the HTTP protocol you want WebSocket to be initiated from, and whether you want secure HTTP.
+
+For example, to enable clear-text WebSocket from HTTP/1.1, use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,websocket
+----
+
+To enable secure WebSocket from HTTP/2, use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http2,websocket
+----
+
+When enabling secure protocols you need a valid KeyStore (read xref:og-keystore[this section] to create your own KeyStore).
+As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+To enable WebSocket on both HTTP/1.1 and HTTP/2, both clear-text and secure, use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,https,http2c,http2,websocket
+----
+
+[[og-protocols-websocket-disable]]
+===== Selectively Disabling WebSocket
+
+Enabling the WebSocket Jetty modules comes with a startup cost because Jetty must perform two steps:
+
+. Scan web applications `+*.war+` files (and all the jars and classes inside it) looking for WebSocket EndPoints classes (either annotated with WebSocket API annotations or extending/implementing WebSocket API classes/interfaces).
+This can be a significant cost if your web application contains a lot of classes and/or jar files.
+
+. Configure and wire WebSocket EndPoints so that WebSocket messages are delivered to the correspondent WebSocket EndPoint.
+
+WebSocket support is by default enabled for all web applications.
+
+For a specific web application, you can disable step 2 for Java WebSocket support (i.e. when the `websocket-javax` module is enabled) by setting the context attribute `org.eclipse.jetty.websocket.javax` to `false`:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+  <!-- Disable Javax WebSocket -->
+  <context-param>
+    <param-name>org.eclipse.jetty.websocket.javax</param-name>
+    <param-value>false</param-value>
+  </context-param>
+
+  ...
+
+</web-app>
+----
+
+Furthermore, for a specific web application, you can disable step 1 (and therefore also step 2) as described in the xref:og-annotations[annotations processing section].
+
+[[og-protocols-websocket-webapp-client]]
+===== Using WebSocket Client in WebApps
+
+Web applications may need to use a WebSocket client to communicate with third party WebSocket services.
+
+If the web application uses the Java WebSocket APIs, the WebSocket client APIs are provided by the Servlet Container and are available to the web application by enabling the WebSocket server APIs, and therefore you must enable the `websocket-javax` Jetty module.
+
+However, the Java WebSocket Client APIs are quite limited (for example, they do not support secure WebSocket).
+For this reason, web applications may want to use the Jetty WebSocket Client APIs.
+
+When using the Jetty WebSocket Client APIs, web applications should include the required jars and their dependencies in the `WEB-INF/lib` directory of the `+*.war+` file.
+Alternatively, when deploying your web applications in Jetty, you can enable the `websocket-jetty-client` Jetty module to allow web applications to use the Jetty WebSocket Client APIs provided by Jetty, without the need to include jars and their dependencies in the `+*.war+` file.

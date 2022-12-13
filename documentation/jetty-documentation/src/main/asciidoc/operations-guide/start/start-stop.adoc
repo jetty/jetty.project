@@ -1,0 +1,78 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-start-stop]]
+==== Stopping Jetty
+
+When Jetty is started, the Jetty components that you have configured by enabling Jetty modules are assembled and started.
+
+If you have started Jetty from a terminal, you can exit the Jetty JVM by hitting kbd:[Ctrl+C] on the same terminal.
+
+Similarly, from a different terminal, you can exit the Jetty JVM using `kill -INT <pid>` or `kill -TERM <pid>`.
+
+In the three cases above, the JVM is exited, but by default Jetty components are not stopped.
+If you want to stop the Jetty components, to stop Jetty more gracefully, you can start Jetty with this property:
+
+[source,subs=quotes]
+----
+$ java -jar $JETTY_HOME/start.jar ##jetty.server.stopAtShutdown=true##
+----
+
+This property can also be set in `$JETTY_BASE/start.d/server.ini` so that it is persistently configured across Jetty restarts (see also xref:og-module-server[the `server` module]).
+
+The `jetty.server.stopAtShutdown` property configures a JVM shutdown hook that is run, stopping the `Server` instance, when the JVM exits.
+
+Obviously, the JVM can also be stopped with `kill -KILL <pid>` that exits the process abruptly without running the JVM shutdown hooks.
+
+[[og-start-stop-remote]]
+===== Stopping Jetty from Remote
+
+You can configure a Jetty server so that it can be stopped by remote clients using a command sent through a TCP socket.
+
+You can start Jetty with the following properties:
+
+* `stop.host`, the host name Jetty will bind to listen for stop commands. Defaults to `127.0.0.1` which means that the stop command can be issued only clients that run on the same host as Jetty.
+* `stop.port`, the port number Jetty will listen to for stop commands. Defaults to `-1`, which means that Jetty will not listen to any port.
+* `stop.key`, the password to verify when a stop command is received. Defaults to a password that is randomly generated and printed when Jetty starts.
+
+[source,subs=quotes]
+----
+$ java -jar $JETTY_HOME/start.jar ##stop.port=8181##
+----
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupArgs="--add-modules=http",args="stop.port=8181",highlight="(?i)stop.key"]
+----
+
+In the example above, Jetty is started with just the `stop.port` property, and the `stop.key` is printed on the terminal when Jetty starts.
+
+CAUTION: You can choose your own `stop.key`, but make sure it's a strong password.
+
+A remote client can now use the Jetty start mechanism to stop the remote Jetty server:
+
+[source,subs=normal]
+----
+$ java -jar $JETTY_HOME/start.jar ##--stop## stop.port=8181 stop.key=<stop.key>
+----
+
+Note the `--stop` command along with the `stop.port` and `stop.key` properties.
+The `stop.key` must be the same as the one of remote Jetty server, either the one you chose, or the one printed on the terminal when Jetty starts.
+
+Remote clients can wait for the remote Jetty server to shut down by specifying the `stop.wait` property with the number of seconds to wait:
+
+----
+$ java -jar $JETTY_HOME/start.jar --stop stop.port=8181 stop.key=<stop.key> stop.wait=15
+----
+
+If the time specified elapses, without the confirmation that the remote Jetty server stopped, then the `--stop` command exits with a non-zero return code.

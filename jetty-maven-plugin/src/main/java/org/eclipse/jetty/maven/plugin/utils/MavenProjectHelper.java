@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,15 +25,16 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
-import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
-import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolverException;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.jetty.maven.plugin.OverlayManager;
 import org.eclipse.jetty.maven.plugin.WarPluginInfo;
 
@@ -51,7 +47,7 @@ import org.eclipse.jetty.maven.plugin.WarPluginInfo;
 public class MavenProjectHelper
 {
     private MavenProject project;
-    private ArtifactResolver artifactResolver;
+    private RepositorySystem repositorySystem;
     private List<ArtifactRepository> remoteRepositories;
     private MavenSession session;
     private final Map<String, MavenProject> artifactToReactorProjectMap;
@@ -67,14 +63,14 @@ public class MavenProjectHelper
     
     /**
      * @param project the project being built
-     * @param artifactResolver a resolve for artifacts
+     * @param repositorySystem a resolve for artifacts
      * @param remoteRepositories repositories from which to resolve artifacts
      * @param session the current maven build session
      */
-    public MavenProjectHelper(MavenProject project, ArtifactResolver artifactResolver, List<ArtifactRepository> remoteRepositories, MavenSession session)
+    public MavenProjectHelper(MavenProject project, RepositorySystem repositorySystem, List<ArtifactRepository> remoteRepositories, MavenSession session)
     {
         this.project = project;
-        this.artifactResolver = artifactResolver;
+        this.repositorySystem = repositorySystem;
         this.remoteRepositories = remoteRepositories;
         this.session = session;
         //work out which dependent projects are in the reactor
@@ -110,6 +106,8 @@ public class MavenProjectHelper
      */
     public MavenProject getMavenProjectFor(Artifact artifact)
     {
+        if (artifact == null)
+            return null;
         return artifactToReactorProjectMap.get(artifact.getId());
     }
 
@@ -140,6 +138,14 @@ public class MavenProjectHelper
         }
         return path;
     }
+
+    public Path getAssembledPathFor(Artifact artifact)
+    {
+        MavenProject mavenProject = getMavenProjectFor(artifact);
+        if (mavenProject != null)
+            return mavenProject.getFile().toPath();
+        return null;
+    }
     
     /**
      * Given the coordinates for an artifact, resolve the artifact from the
@@ -150,26 +156,18 @@ public class MavenProjectHelper
      * @param version the version of the artifact to resolve
      * @param type the type of the artifact to resolve
      * @return a File representing the location of the artifact or null if not resolved
-     * @throws ArtifactResolverException
+     * @throws ArtifactResolutionException
      */
     public File resolveArtifact(String groupId, String artifactId, String version, String type)
-        throws ArtifactResolverException
+        throws ArtifactResolutionException
     {
-        DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
-        coordinate.setGroupId(groupId);
-        coordinate.setArtifactId(artifactId);
-        coordinate.setVersion(version);
-        coordinate.setExtension(type);
+        ArtifactRequest request = new ArtifactRequest();
+        request.setRepositories(RepositoryUtils.toRepos(remoteRepositories));
+        request.setArtifact(new DefaultArtifact(groupId, artifactId, "", type, version));
+        ArtifactResult result = repositorySystem.resolveArtifact(session.getRepositorySession(), request);
 
-        ProjectBuildingRequest buildingRequest =
-                new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
-
-        buildingRequest.setRemoteRepositories(remoteRepositories);
-
-        Artifact a = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
-
-        if (a != null)
-            return a.getFile();
+        if (result.isResolved())
+            return result.getArtifact().getFile();
         return null;
     }
     

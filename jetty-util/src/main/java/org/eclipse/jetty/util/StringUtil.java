@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,9 +14,11 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Fast String Utilities.
@@ -33,8 +30,6 @@ import java.util.List;
  */
 public class StringUtil
 {
-    private static final Trie<String> CHARSETS = new ArrayTrie<>(256);
-
     public static final String ALL_INTERFACES = "0.0.0.0";
     public static final String CRLF = "\r\n";
     public static final String DEFAULT_DELIMS = ",;";
@@ -43,15 +38,15 @@ public class StringUtil
     public static final String __UTF8 = "utf-8";
     public static final String __UTF16 = "utf-16";
 
-    static
-    {
-        CHARSETS.put("utf-8", __UTF8);
-        CHARSETS.put("utf8", __UTF8);
-        CHARSETS.put("utf-16", __UTF16);
-        CHARSETS.put("utf16", __UTF16);
-        CHARSETS.put("iso-8859-1", __ISO_8859_1);
-        CHARSETS.put("iso_8859_1", __ISO_8859_1);
-    }
+    private static final Index<String> CHARSETS = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("utf-8", __UTF8)
+        .with("utf8", __UTF8)
+        .with("utf-16", __UTF16)
+        .with("utf16", __UTF16)
+        .with("iso-8859-1", __ISO_8859_1)
+        .with("iso_8859_1", __ISO_8859_1)
+        .build();
 
     /**
      * Convert alternate charset names (eg utf8) to normalized
@@ -82,8 +77,7 @@ public class StringUtil
     }
 
     // @checkstyle-disable-check : IllegalTokenTextCheck
-
-    public static final char[] lowercases =
+    private static final char[] LOWERCASES =
     {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
         '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
@@ -103,7 +97,72 @@ public class StringUtil
         '\170', '\171', '\172', '\173', '\174', '\175', '\176', '\177'
     };
 
+    // @checkstyle-disable-check : IllegalTokenTextCheck
+    private static final char[] UPPERCASES =
+    {
+        '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
+        '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
+        '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
+        '\030', '\031', '\032', '\033', '\034', '\035', '\036', '\037',
+        '\040', '\041', '\042', '\043', '\044', '\045', '\046', '\047',
+        '\050', '\051', '\052', '\053', '\054', '\055', '\056', '\057',
+        '\060', '\061', '\062', '\063', '\064', '\065', '\066', '\067',
+        '\070', '\071', '\072', '\073', '\074', '\075', '\076', '\077',
+        '\100', '\101', '\102', '\103', '\104', '\105', '\106', '\107',
+        '\110', '\111', '\112', '\113', '\114', '\115', '\116', '\117',
+        '\120', '\121', '\122', '\123', '\124', '\125', '\126', '\127',
+        '\130', '\131', '\132', '\133', '\134', '\135', '\136', '\137',
+        '\140', '\101', '\102', '\103', '\104', '\105', '\106', '\107',
+        '\110', '\111', '\112', '\113', '\114', '\115', '\116', '\117',
+        '\120', '\121', '\122', '\123', '\124', '\125', '\126', '\127',
+        '\130', '\131', '\132', '\173', '\174', '\175', '\176', '\177'
+    };
+
     // @checkstyle-enable-check : IllegalTokenTextCheck
+
+    /**
+     * fast lower case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the char to convert
+     * @return a lower case version of c
+     */
+    public static char asciiToLowerCase(char c)
+    {
+        return (c < 0x80) ? LOWERCASES[c] : c;
+    }
+
+    /**
+     * fast lower case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the byte to convert
+     * @return a lower case version of c
+     */
+    public static byte asciiToLowerCase(byte c)
+    {
+        return (c > 0) ? (byte)LOWERCASES[c] : c;
+    }
+
+    /**
+     * fast upper case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the char to convert
+     * @return a upper case version of c
+     */
+    public static char asciiToUpperCase(char c)
+    {
+        return (c < 0x80) ? UPPERCASES[c] : c;
+    }
+
+    /**
+     * fast upper case conversion. Only works on ascii (not unicode)
+     *
+     * @param c the byte to convert
+     * @return a upper case version of c
+     */
+    public static byte asciiToUpperCase(byte c)
+    {
+        return (c > 0) ? (byte)UPPERCASES[c] : c;
+    }
 
     /**
      * fast lower case conversion. Only works on ascii (not unicode)
@@ -124,7 +183,7 @@ public class StringUtil
             char c1 = s.charAt(i);
             if (c1 <= 127)
             {
-                char c2 = lowercases[c1];
+                char c2 = LOWERCASES[c1];
                 if (c1 != c2)
                 {
                     c = s.toCharArray();
@@ -136,9 +195,45 @@ public class StringUtil
         while (i-- > 0)
         {
             if (c[i] <= 127)
-                c[i] = lowercases[c[i]];
+                c[i] = LOWERCASES[c[i]];
         }
 
+        return c == null ? s : new String(c);
+    }
+
+    /**
+     * fast upper case conversion. Only works on ascii (not unicode)
+     *
+     * @param s the string to convert
+     * @return a lower case version of s
+     */
+    public static String asciiToUpperCase(String s)
+    {
+        if (s == null)
+            return null;
+
+        char[] c = null;
+        int i = s.length();
+        // look for first conversion
+        while (i-- > 0)
+        {
+            char c1 = s.charAt(i);
+            if (c1 <= 127)
+            {
+                char c2 = UPPERCASES[c1];
+                if (c1 != c2)
+                {
+                    c = s.toCharArray();
+                    c[i] = c2;
+                    break;
+                }
+            }
+        }
+        while (i-- > 0)
+        {
+            if (c[i] <= 127)
+                c[i] = UPPERCASES[c[i]];
+        }
         return c == null ? s : new String(c);
     }
 
@@ -206,9 +301,9 @@ public class StringUtil
             if (c1 != c2)
             {
                 if (c1 <= 127)
-                    c1 = lowercases[c1];
+                    c1 = LOWERCASES[c1];
                 if (c2 <= 127)
-                    c2 = lowercases[c2];
+                    c2 = LOWERCASES[c2];
                 if (c1 != c2)
                     return false;
             }
@@ -236,9 +331,9 @@ public class StringUtil
             if (c1 != c2)
             {
                 if (c1 <= 127)
-                    c1 = lowercases[c1];
+                    c1 = LOWERCASES[c1];
                 if (c2 <= 127)
-                    c2 = lowercases[c2];
+                    c2 = LOWERCASES[c2];
                 if (c1 != c2)
                     return false;
             }
@@ -485,6 +580,10 @@ public class StringUtil
         return new String(b, offset, length, StandardCharsets.UTF_8);
     }
 
+    /**
+     * @deprecated use {@link String#String(byte[], int, int, Charset)} instead
+     */
+    @Deprecated(since = "10", forRemoval = true)
     public static String toString(byte[] b, int offset, int length, String charset)
     {
         try
@@ -604,6 +703,16 @@ public class StringUtil
     }
 
     /**
+     * Get the length of a string where a null string is length 0.
+     * @param s the string.
+     * @return the length of the string.
+     */
+    public static int getLength(String s)
+    {
+        return (s == null) ? 0 : s.length();
+    }
+
+    /**
      * Test if a string is not null and contains at least 1 non-whitespace characters in it.
      * <p>
      * Note: uses codepoint version of {@link Character#isWhitespace(int)} to support Unicode better.
@@ -664,6 +773,47 @@ public class StringUtil
             }
         }
         return true;
+    }
+
+    public static byte[] fromHexString(String s)
+    {
+        if (s.length() % 2 != 0)
+            throw new IllegalArgumentException(s);
+        byte[] array = new byte[s.length() / 2];
+        for (int i = 0; i < array.length; i++)
+        {
+            int b = Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16);
+            array[i] = (byte)(0xff & b);
+        }
+        return array;
+    }
+
+    public static String toHexString(byte b)
+    {
+        return toHexString(new byte[]{b}, 0, 1);
+    }
+
+    public static String toHexString(byte[] b)
+    {
+        return toHexString(Objects.requireNonNull(b, "ByteBuffer cannot be null"), 0, b.length);
+    }
+
+    public static String toHexString(byte[] b, int offset, int length)
+    {
+        StringBuilder buf = new StringBuilder();
+        for (int i = offset; i < offset + length; i++)
+        {
+            int bi = 0xff & b[i];
+            int c = '0' + (bi / 16) % 16;
+            if (c > '9')
+                c = 'A' + (c - '0' - 10);
+            buf.append((char)c);
+            c = '0' + bi % 16;
+            if (c > '9')
+                c = 'a' + (c - '0' - 10);
+            buf.append((char)c);
+        }
+        return buf.toString();
     }
 
     public static String printable(String name)

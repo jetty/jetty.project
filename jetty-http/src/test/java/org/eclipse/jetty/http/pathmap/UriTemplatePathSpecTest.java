@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,7 +22,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for URI Template Path Specs
@@ -145,6 +142,20 @@ public class UriTemplatePathSpecTest
         assertThat("Spec.pathParams", mapped, notNullValue());
         assertThat("Spec.pathParams.size", mapped.size(), is(1));
         assertEquals("b", mapped.get("var"), "Spec.pathParams[var]");
+    }
+
+    @Test
+    public void testPathInfo()
+    {
+        UriTemplatePathSpec spec = new UriTemplatePathSpec("/test/{var}");
+        assertTrue(spec.matches("/test/info"));
+        assertThat(spec.getPathMatch("/test/info"), equalTo("/test"));
+        assertThat(spec.getPathInfo("/test/info"), equalTo("info"));
+
+        spec = new UriTemplatePathSpec("/{x}/test/{y}");
+        assertTrue(spec.matches("/try/test/info"));
+        assertThat(spec.getPathMatch("/try/test/info"), equalTo("/try/test/info"));
+        assertThat(spec.getPathInfo("/try/test/info"), nullValue());
     }
 
     @Test

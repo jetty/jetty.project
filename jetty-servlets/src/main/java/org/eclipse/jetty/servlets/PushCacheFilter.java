@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,7 +25,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -46,6 +40,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -82,7 +77,7 @@ public class PushCacheFilter implements Filter
     private final ConcurrentMap<String, PrimaryResource> _cache = new ConcurrentHashMap<>();
     private long _associatePeriod = 4000L;
     private int _maxAssociations = 16;
-    private long _renew = System.nanoTime();
+    private long _renew = NanoTime.now();
     private boolean _useQueryInKey;
 
     @Override
@@ -130,7 +125,7 @@ public class PushCacheFilter implements Filter
             return;
         }
 
-        long now = System.nanoTime();
+        long now = NanoTime.now();
 
         boolean conditional = false;
         String referrer = null;
@@ -189,10 +184,10 @@ public class PushCacheFilter implements Filter
                             PrimaryResource primaryResource = _cache.get(referrerPath);
                             if (primaryResource != null)
                             {
-                                long primaryTimestamp = primaryResource._timestamp.get();
-                                if (primaryTimestamp != 0)
+                                long primaryNanoTime = primaryResource._nanoTime.get();
+                                if (primaryNanoTime != 0)
                                 {
-                                    if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
+                                    if (NanoTime.millisElapsed(primaryNanoTime, now) < _associatePeriod)
                                     {
                                         Set<String> associated = primaryResource._associated;
                                         // Not strictly concurrent-safe, just best effort to limit associations.
@@ -244,14 +239,14 @@ public class PushCacheFilter implements Filter
             PrimaryResource r = new PrimaryResource();
             primaryResource = _cache.putIfAbsent(path, r);
             primaryResource = primaryResource == null ? r : primaryResource;
-            primaryResource._timestamp.compareAndSet(0, now);
+            primaryResource._nanoTime.compareAndSet(0, now);
             if (LOG.isDebugEnabled())
                 LOG.debug("Cached primary resource {}", path);
         }
         else
         {
-            long last = primaryResource._timestamp.get();
-            if (last < _renew && primaryResource._timestamp.compareAndSet(last, now))
+            long last = primaryResource._nanoTime.get();
+            if (NanoTime.isBefore(last, _renew) && primaryResource._nanoTime.compareAndSet(last, now))
             {
                 primaryResource._associated.clear();
                 if (LOG.isDebugEnabled())
@@ -306,7 +301,7 @@ public class PushCacheFilter implements Filter
     @ManagedOperation(value = "Renews the push cache contents", impact = "ACTION")
     public void renewPushCache()
     {
-        _renew = System.nanoTime();
+        _renew = NanoTime.now();
     }
 
     @ManagedOperation(value = "Clears the push cache contents", impact = "ACTION")
@@ -318,6 +313,6 @@ public class PushCacheFilter implements Filter
     private static class PrimaryResource
     {
         private final Set<String> _associated = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        private final AtomicLong _timestamp = new AtomicLong();
+        private final AtomicLong _nanoTime = new AtomicLong();
     }
 }

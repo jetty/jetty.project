@@ -78,7 +78,7 @@
     <Call class="org.eclipse.jetty.webapp.Configurations" name="setServerDefault">
       <Arg><Ref refid="Server"/></Arg>
       <Call name="add">
-        <Arg>
+        <Arg name="configClass">
           <Array type="String">
             <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
             <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>

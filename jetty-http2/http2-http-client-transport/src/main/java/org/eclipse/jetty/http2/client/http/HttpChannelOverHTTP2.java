@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -111,21 +106,26 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void release()
     {
         setStream(null);
-        connection.release(this);
-        getHttpDestination().release(getHttpConnection());
+        boolean released = connection.release(this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("released channel? {} {}", released, this);
+        if (released)
+            getHttpDestination().release(getHttpConnection());
     }
 
     @Override
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
+        Stream stream = getStream();
+        if (LOG.isDebugEnabled())
+            LOG.debug("exchange terminated {} {}", result, stream);
         if (result.isSucceeded())
         {
             release();
         }
         else
         {
-            Stream stream = getStream();
             if (stream != null)
                 stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), new ReleaseCallback());
             else
@@ -186,7 +186,14 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public void onData(Stream stream, DataFrame frame, Callback callback)
+        public void onBeforeData(Stream stream)
+        {
+            // Don't demand here, as the initial demand is controlled by
+            // the application via DemandedContentListener.onBeforeContent().
+        }
+
+        @Override
+        public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
             channel.onData(frame, callback);

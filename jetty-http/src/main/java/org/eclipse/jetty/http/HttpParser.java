@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,16 +15,17 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
-import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +63,7 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_F
  * </p>
  * <p>
  * For performance, the parse is heavily dependent on the
- * {@link Trie#getBest(ByteBuffer, int, int)} method to look ahead in a
+ * {@link Index#getBest(ByteBuffer, int, int)} method to look ahead in a
  * single pass for both the structure ( : and CRLF ) and semantic (which
  * header and value) of a header.  Specifically the static {@link HttpHeader#CACHE}
  * is used to lookup common combinations of headers and values
@@ -106,7 +102,73 @@ public class HttpParser
      * determine the header name even if the name:value combination is not cached
      * </ul>
      */
-    public static final Trie<HttpField> CACHE = new ArrayTrie<>(2048);
+    public static final Index<HttpField> CACHE = new Index.Builder<HttpField>()
+        .caseSensitive(false)
+        .with(new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
+        .with(new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE))
+        .with(new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.UPGRADE))
+        .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip"))
+        .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate"))
+        .with(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate, br"))
+        .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-US,enq=0.5"))
+        .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-GB,en-USq=0.8,enq=0.6"))
+        .with(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-AU,enq=0.9,it-ITq=0.8,itq=0.7,en-GBq=0.6,en-USq=0.5"))
+        .with(new HttpField(HttpHeader.ACCEPT_CHARSET, "ISO-8859-1,utf-8q=0.7,*q=0.3"))
+        .with(new HttpField(HttpHeader.ACCEPT, "*/*"))
+        .with(new HttpField(HttpHeader.ACCEPT, "image/png,image/*q=0.8,*/*q=0.5"))
+        .with(new HttpField(HttpHeader.ACCEPT, "text/html,application/xhtml+xml,application/xmlq=0.9,*/*q=0.8"))
+        .with(new HttpField(HttpHeader.ACCEPT, "text/html,application/xhtml+xml,application/xmlq=0.9,image/webp,image/apng,*/*q=0.8"))
+        .with(new HttpField(HttpHeader.ACCEPT_RANGES, HttpHeaderValue.BYTES))
+        .with(new HttpField(HttpHeader.PRAGMA, "no-cache"))
+        .with(new HttpField(HttpHeader.CACHE_CONTROL, "private, no-cache, no-cache=Set-Cookie, proxy-revalidate"))
+        .with(new HttpField(HttpHeader.CACHE_CONTROL, "no-cache"))
+        .with(new HttpField(HttpHeader.CACHE_CONTROL, "max-age=0"))
+        .with(new HttpField(HttpHeader.CONTENT_LENGTH, "0"))
+        .with(new HttpField(HttpHeader.CONTENT_ENCODING, "gzip"))
+        .with(new HttpField(HttpHeader.CONTENT_ENCODING, "deflate"))
+        .with(new HttpField(HttpHeader.TRANSFER_ENCODING, "chunked"))
+        .with(new HttpField(HttpHeader.EXPIRES, "Fri, 01 Jan 1990 00:00:00 GMT"))
+        .withAll(() ->
+        {
+            Map<String, HttpField> map = new LinkedHashMap<>();
+            // Add common Content types as fields
+            for (String type : new String[]{
+                "text/plain", "text/html", "text/xml", "text/json", "application/json", "application/x-www-form-urlencoded"
+            })
+            {
+                HttpField field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type);
+                map.put(field.toString(), field);
+
+                for (String charset : new String[]{"utf-8", "iso-8859-1"})
+                {
+                    PreEncodedHttpField field1 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset);
+                    map.put(field1.toString(), field1);
+                    PreEncodedHttpField field2 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset);
+                    map.put(field2.toString(), field2);
+                    PreEncodedHttpField field3 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset.toUpperCase(Locale.ENGLISH));
+                    map.put(field3.toString(), field3);
+                    PreEncodedHttpField field4 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset.toUpperCase(Locale.ENGLISH));
+                    map.put(field4.toString(), field4);
+                }
+            }
+            return map;
+        })
+        .withAll(() ->
+        {
+            Map<String, HttpField> map = new LinkedHashMap<>();
+            for (HttpHeader h : HttpHeader.values())
+            {
+                HttpField httpField = new HttpField(h, (String)null);
+                map.put(httpField.toString(), httpField);
+            }
+            return map;
+        })
+        .build();
+    private static final Index.Mutable<HttpField> NO_CACHE = new Index.Builder<HttpField>()
+        .caseSensitive(false)
+        .mutable()
+        .maxCapacity(0)
+        .build();
 
     // States
     public enum FieldState
@@ -147,6 +209,7 @@ public class HttpParser
 
     private static final EnumSet<State> __idleStates = EnumSet.of(State.START, State.END, State.CLOSE, State.CLOSED);
     private static final EnumSet<State> __completeStates = EnumSet.of(State.END, State.CLOSE, State.CLOSED);
+    private static final EnumSet<State> __terminatedStates = EnumSet.of(State.CLOSE, State.CLOSED);
 
     private final boolean debugEnabled = LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler _handler;
@@ -155,6 +218,8 @@ public class HttpParser
     private final ComplianceViolation.Listener _complianceListener;
     private final int _maxHeaderBytes;
     private final HttpCompliance _complianceMode;
+    private final Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH);
+    private final FieldCache _fieldCache = new FieldCache();
     private HttpField _field;
     private HttpHeader _header;
     private String _headerString;
@@ -169,7 +234,6 @@ public class HttpParser
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
-    private Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
     private boolean _hasContentLength;
     private boolean _hasTransferEncoding;
@@ -180,64 +244,8 @@ public class HttpParser
     private boolean _headResponse;
     private boolean _cr;
     private ByteBuffer _contentChunk;
-    private Trie<HttpField> _fieldCache;
     private int _length;
     private final StringBuilder _string = new StringBuilder();
-    private int _headerCacheSize = 1024;
-    private boolean _headerCacheCaseSensitive;
-
-    static
-    {
-        CACHE.put(new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
-        CACHE.put(new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE));
-        CACHE.put(new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.UPGRADE));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip, deflate, br"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip,deflate,sdch"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-US,en;q=0.5"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-GB,en-US;q=0.8,en;q=0.6"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-AU,en;q=0.9,it-IT;q=0.8,it;q=0.7,en-GB;q=0.6,en-US;q=0.5"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_CHARSET, "ISO-8859-1,utf-8;q=0.7,*;q=0.3"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT, "*/*"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT, "image/png,image/*;q=0.8,*/*;q=0.5"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"));
-        CACHE.put(new HttpField(HttpHeader.ACCEPT_RANGES, HttpHeaderValue.BYTES));
-        CACHE.put(new HttpField(HttpHeader.PRAGMA, "no-cache"));
-        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL, "private, no-cache, no-cache=Set-Cookie, proxy-revalidate"));
-        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL, "no-cache"));
-        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL, "max-age=0"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_LENGTH, "0"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING, "gzip"));
-        CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING, "deflate"));
-        CACHE.put(new HttpField(HttpHeader.TRANSFER_ENCODING, "chunked"));
-        CACHE.put(new HttpField(HttpHeader.EXPIRES, "Fri, 01 Jan 1990 00:00:00 GMT"));
-
-        // Add common Content types as fields
-        for (String type : new String[]{
-            "text/plain", "text/html", "text/xml", "text/json", "application/json", "application/x-www-form-urlencoded"
-        })
-        {
-            HttpField field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type);
-            CACHE.put(field);
-
-            for (String charset : new String[]{"utf-8", "iso-8859-1"})
-            {
-                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset));
-                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset));
-                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset.toUpperCase(Locale.ENGLISH)));
-                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset.toUpperCase(Locale.ENGLISH)));
-            }
-        }
-
-        // Add headers with null values so HttpParser can avoid looking up name again for unknown values
-        for (HttpHeader h : HttpHeader.values())
-        {
-            if (!CACHE.put(new HttpField(h, (String)null)))
-                throw new IllegalStateException("CACHE FULL");
-        }
-    }
 
     private static HttpCompliance compliance()
     {
@@ -296,22 +304,22 @@ public class HttpParser
 
     public int getHeaderCacheSize()
     {
-        return _headerCacheSize;
+        return _fieldCache.getCapacity();
     }
 
     public void setHeaderCacheSize(int headerCacheSize)
     {
-        _headerCacheSize = headerCacheSize;
+        _fieldCache.setCapacity(headerCacheSize);
     }
 
     public boolean isHeaderCacheCaseSensitive()
     {
-        return _headerCacheCaseSensitive;
+        return _fieldCache.isCaseSensitive();
     }
 
     public void setHeaderCacheCaseSensitive(boolean headerCacheCaseSensitive)
     {
-        _headerCacheCaseSensitive = headerCacheCaseSensitive;
+        _fieldCache.setCaseSensitive(headerCacheCaseSensitive);
     }
 
     protected void checkViolation(Violation violation) throws BadMessageException
@@ -415,6 +423,11 @@ public class HttpParser
     public boolean isComplete()
     {
         return __completeStates.contains(_state);
+    }
+
+    public boolean isTerminated()
+    {
+        return __terminatedStates.contains(_state);
     }
 
     public boolean isState(State state)
@@ -738,6 +751,7 @@ public class HttpParser
                             break;
 
                         case LF:
+                            _fieldCache.prepare();
                             setState(State.HEADER);
                             _responseHandler.startResponse(_version, _responseStatus, null);
                             break;
@@ -843,6 +857,7 @@ public class HttpParser
                         case LF:
                             if (_responseHandler != null)
                             {
+                                _fieldCache.prepare();
                                 setState(State.HEADER);
                                 _responseHandler.startResponse(_version, _responseStatus, null);
                             }
@@ -873,12 +888,7 @@ public class HttpParser
                                 _version = HttpVersion.CACHE.get(takeString());
                             }
                             checkVersion();
-
-                            // Should we try to cache header fields?
-                            int headerCache = getHeaderCacheSize();
-                            if (_fieldCache == null && _version.getVersion() >= HttpVersion.HTTP_1_1.getVersion() && headerCache > 0)
-                                _fieldCache = new ArrayTernaryTrie<>(headerCache);
-
+                            _fieldCache.prepare();
                             setState(State.HEADER);
 
                             _requestHandler.startRequest(_methodString, _uri.toString(), _version);
@@ -902,6 +912,7 @@ public class HttpParser
                     {
                         case LF:
                             String reason = takeString();
+                            _fieldCache.prepare();
                             setState(State.HEADER);
                             _responseHandler.startResponse(_version, _responseStatus, reason);
                             continue;
@@ -951,7 +962,7 @@ public class HttpParser
             // Handle known headers
             if (_header != null)
             {
-                boolean addToConnectionTrie = false;
+                boolean addToFieldCache = false;
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
@@ -1017,20 +1028,24 @@ public class HttpParser
                         break;
 
                     case HOST:
+                        if (_host)
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Host: multiple headers");
                         _host = true;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
                         {
                             _field = new HostPortHttpField(_header,
                                 CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode) ? _headerString : _header.asString(),
                                 _valueString);
-                            addToConnectionTrie = _fieldCache != null;
+                            addToFieldCache = _fieldCache.isEnabled();
                         }
                         break;
 
                     case CONNECTION:
                         // Don't cache headers if not persistent
-                        if (HttpHeaderValue.CLOSE.is(_valueString) || new QuotedCSV(_valueString).getValues().stream().anyMatch(HttpHeaderValue.CLOSE::is))
-                            _fieldCache = null;
+                        if (_field == null)
+                            _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
+                        if (getHeaderCacheSize() > 0 && _field.contains(HttpHeaderValue.CLOSE.asString()))
+                            _fieldCache.setCapacity(-1);
                         break;
 
                     case AUTHORIZATION:
@@ -1041,18 +1056,20 @@ public class HttpParser
                     case COOKIE:
                     case CACHE_CONTROL:
                     case USER_AGENT:
-                        addToConnectionTrie = _fieldCache != null && _field == null;
+                        addToFieldCache = _field == null && _fieldCache.cacheable(_header, _valueString);
                         break;
 
                     default:
                         break;
                 }
 
-                if (addToConnectionTrie && !_fieldCache.isFull() && _header != null && _valueString != null)
+                // Cache field?
+                if (addToFieldCache)
                 {
                     if (_field == null)
                         _field = new HttpField(_header, caseInsensitiveHeader(_headerString, _header.asString()), _valueString);
-                    _fieldCache.put(_field);
+
+                    _fieldCache.add(_field);
                 }
             }
             _handler.parsedHeader(_field != null ? _field : new HttpField(_header, _headerString, _valueString));
@@ -1231,7 +1248,7 @@ public class HttpParser
                             if (buffer.hasRemaining())
                             {
                                 // Try a look ahead for the known header name and value.
-                                HttpField cachedField = _fieldCache == null ? null : _fieldCache.getBest(buffer, -1, buffer.remaining());
+                                HttpField cachedField = _fieldCache.getBest(buffer, -1, buffer.remaining());
                                 if (cachedField == null)
                                     cachedField = CACHE.getBest(buffer, -1, buffer.remaining());
 
@@ -1546,7 +1563,7 @@ public class HttpParser
                 if (debugEnabled && whiteSpace > 0)
                     LOG.debug("Discarded {} CR or LF characters", whiteSpace);
             }
-            else if (isClose() || isClosed())
+            else if (isTerminated())
             {
                 BufferUtil.clear(buffer);
             }
@@ -1672,8 +1689,8 @@ public class HttpParser
                     {
                         _contentChunk = buffer.asReadOnlyBuffer();
 
-                        // limit content by expected size
-                        if (remaining > content)
+                        // limit content by expected size if _contentLength is >= 0 (i.e.: not infinite)
+                        if (_contentLength > -1 && remaining > content)
                         {
                             // We can cast remaining to an int as we know that it is smaller than
                             // or equal to length which is already an int.
@@ -1875,6 +1892,13 @@ public class HttpParser
         _headerComplete = false;
     }
 
+    public void servletUpgrade()
+    {
+        setState(State.CONTENT);
+        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
+        _contentLength = -1;
+    }
+
     protected void setState(State state)
     {
         if (debugEnabled)
@@ -1889,9 +1913,10 @@ public class HttpParser
         _fieldState = state;
     }
 
-    public Trie<HttpField> getFieldCache()
+    public Index<HttpField> getFieldCache()
     {
-        return _fieldCache;
+        _fieldCache.prepare();
+        return _fieldCache.getCache();
     }
 
     @Override
@@ -1985,6 +2010,89 @@ public class HttpParser
             super(400, String.format("Illegal character %s", token));
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("Illegal character %s in state=%s for buffer %s", token, state, BufferUtil.toDetailString(buffer)));
+        }
+    }
+
+    private static class FieldCache
+    {
+        private int _size = 1024;
+        private Index.Mutable<HttpField> _cache;
+        private List<HttpField> _cacheableFields;
+        private boolean _caseSensitive;
+
+        public int getCapacity()
+        {
+            return _size;
+        }
+
+        public void setCapacity(int size)
+        {
+            _size = size;
+            if (_size <= 0)
+                _cache = NO_CACHE;
+            else
+                _cache = null;
+        }
+
+        public boolean isCaseSensitive()
+        {
+            return _caseSensitive;
+        }
+
+        public void setCaseSensitive(boolean caseSensitive)
+        {
+            _caseSensitive = caseSensitive;
+        }
+
+        public boolean isEnabled()
+        {
+            return _cache != NO_CACHE;
+        }
+
+        public Index<HttpField> getCache()
+        {
+            return _cache;
+        }
+
+        public HttpField getBest(ByteBuffer buffer, int i, int remaining)
+        {
+            Index.Mutable<HttpField> cache = _cache;
+            return cache == null ? null : _cache.getBest(buffer, i, remaining);
+        }
+
+        public void add(HttpField field)
+        {
+            if (_cache == null)
+            {
+                if (_cacheableFields == null)
+                    _cacheableFields = new ArrayList<>();
+                _cacheableFields.add(field);
+            }
+            else if (!_cache.put(field))
+            {
+                _cache.clear();
+                _cache.put(field);
+            }
+        }
+
+        public boolean cacheable(HttpHeader header, String valueString)
+        {
+            return isEnabled() && header != null && valueString.length() <= _size;
+        }
+
+        private void prepare()
+        {
+            if (_cache == null && _cacheableFields != null)
+            {
+                _cache = Index.buildMutableVisibleAsciiAlphabet(_caseSensitive, _size);
+                for (HttpField f : _cacheableFields)
+                {
+                    if (!_cache.put(f))
+                        break;
+                }
+                _cacheableFields.clear();
+                _cacheableFields = null;
+            }
         }
     }
 }

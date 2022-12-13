@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,11 +14,9 @@
 package org.eclipse.jetty.jaas.spi;
 
 import java.io.IOException;
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -34,9 +27,9 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
-import org.eclipse.jetty.jaas.JAASPrincipal;
 import org.eclipse.jetty.jaas.JAASRole;
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.security.UserPrincipal;
 
 /**
  * AbstractLoginModule
@@ -50,35 +43,22 @@ public abstract class AbstractLoginModule implements LoginModule
 
     private boolean authState = false;
     private boolean commitState = false;
-    private JAASUserInfo currentUser;
+    private JAASUser currentUser;
     private Subject subject;
 
-    /**
-     * JAASUserInfo
-     *
-     * This class unites the UserInfo data with jaas concepts
-     * such as Subject and Principals
-     */
-    public class JAASUserInfo
+    public abstract static class JAASUser
     {
-        private UserInfo user;
-        private Principal principal;
-        private List<JAASRole> roles;
-
-        public JAASUserInfo(UserInfo u)
+        private final UserPrincipal _user;
+        private List<JAASRole> _roles;
+        
+        public JAASUser(UserPrincipal u)
         {
-            this.user = u;
-            this.principal = new JAASPrincipal(u.getUserName());
+            _user = u;
         }
 
         public String getUserName()
         {
-            return this.user.getUserName();
-        }
-
-        public Principal getPrincipal()
-        {
-            return this.principal;
+            return _user.getName();
         }
 
         /**
@@ -86,12 +66,12 @@ public abstract class AbstractLoginModule implements LoginModule
          */
         public void setJAASInfo(Subject subject)
         {
-            subject.getPrincipals().add(this.principal);
-            if (this.user.getCredential() != null)
-            {
-                subject.getPrivateCredentials().add(this.user.getCredential());
-            }
-            subject.getPrincipals().addAll(roles);
+            if (_user == null)
+                return;
+
+            _user.configureSubject(subject);
+            if (_roles != null)
+                subject.getPrincipals().addAll(_roles);
         }
 
         /**
@@ -99,35 +79,29 @@ public abstract class AbstractLoginModule implements LoginModule
          */
         public void unsetJAASInfo(Subject subject)
         {
-            subject.getPrincipals().remove(this.principal);
-            if (this.user.getCredential() != null)
-            {
-                subject.getPrivateCredentials().remove(this.user.getCredential());
-            }
-            subject.getPrincipals().removeAll(this.roles);
+            if (_user == null)
+                return;
+            _user.deconfigureSubject(subject);
+            if (_roles != null)
+                subject.getPrincipals().removeAll(_roles);
         }
 
         public boolean checkCredential(Object suppliedCredential)
         {
-            return this.user.checkCredential(suppliedCredential);
+            return _user.authenticate(suppliedCredential);
         }
 
         public void fetchRoles() throws Exception
         {
-            this.user.fetchRoles();
-            this.roles = new ArrayList<JAASRole>();
-            if (this.user.getRoleNames() != null)
-            {
-                Iterator<String> itor = this.user.getRoleNames().iterator();
-                while (itor.hasNext())
-                {
-                    this.roles.add(new JAASRole((String)itor.next()));
-                }
-            }
+            List<String> rolenames = doFetchRoles();
+            if (rolenames != null)
+                _roles = rolenames.stream().map(JAASRole::new).collect(Collectors.toList());
         }
+        
+        public abstract List<String> doFetchRoles() throws Exception;
     }
 
-    public abstract UserInfo getUserInfo(String username) throws Exception;
+    public abstract JAASUser getUser(String username) throws Exception;
 
     public Subject getSubject()
     {
@@ -139,12 +113,12 @@ public abstract class AbstractLoginModule implements LoginModule
         this.subject = s;
     }
 
-    public JAASUserInfo getCurrentUser()
+    public JAASUser getCurrentUser()
     {
         return this.currentUser;
     }
 
-    public void setCurrentUser(JAASUserInfo u)
+    public void setCurrentUser(JAASUser u)
     {
         this.currentUser = u;
     }
@@ -252,15 +226,15 @@ public abstract class AbstractLoginModule implements LoginModule
                 throw new FailedLoginException();
             }
 
-            UserInfo userInfo = getUserInfo(webUserName);
+            JAASUser user = getUser(webUserName);
 
-            if (userInfo == null)
+            if (user == null)
             {
                 setAuthenticated(false);
                 throw new FailedLoginException();
             }
 
-            currentUser = new JAASUserInfo(userInfo);
+            currentUser = user;
             setAuthenticated(currentUser.checkCredential(webCredential));
 
             if (isAuthenticated())

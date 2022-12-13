@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -25,15 +20,17 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
-import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +42,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     public BlockingQueue<ByteBuffer> binaryMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<String> events = new LinkedBlockingDeque<>();
 
+    private final ByteBufferPool bufferPool = new NullByteBufferPool();
     private final MethodHandle wholeTextHandle;
     private final MethodHandle wholeBinaryHandle;
     private MessageSink messageSink;
@@ -121,16 +119,19 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
 
         if (OpCode.isDataFrame(frame.getOpCode()))
         {
-            messageSink.accept(Frame.copy(frame), callback);
+            Frame copy = Frame.copy(frame);
+            messageSink.accept(copy, Callback.from(() -> {}, Throwable::printStackTrace));
             if (frame.isFin())
-            {
                 messageSink = null;
-            }
         }
-        else
-        {
-            callback.succeeded();
-        }
+
+        callback.succeeded();
+    }
+
+    @Override
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
     }
 
     @SuppressWarnings("unused")

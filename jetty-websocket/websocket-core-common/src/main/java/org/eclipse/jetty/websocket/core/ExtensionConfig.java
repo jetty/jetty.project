@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -29,23 +24,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.
  */
 public class ExtensionConfig
 {
-    private static final Trie<ExtensionConfig> CACHE = new ArrayTrie<>(512);
-
-    static
-    {
-        CACHE.put("identity", new ExtensionConfig("identity"));
-        CACHE.put("permessage-deflate", new ExtensionConfig("permessage-deflate"));
-        CACHE.put("permessage-deflate; client_max_window_bits", new ExtensionConfig("permessage-deflate; client_max_window_bits"));
-    }
+    private static final Index<ExtensionConfig> CACHE = new Index.Builder<ExtensionConfig>()
+        .caseSensitive(false)
+        .with("identity", new ExtensionConfig("identity"))
+        .with("permessage-deflate", new ExtensionConfig("permessage-deflate"))
+        .with("permessage-deflate; client_max_window_bits", new ExtensionConfig("permessage-deflate; client_max_window_bits"))
+        .build();
 
     /**
      * Parse a single parameterized name.

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -45,17 +40,17 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +68,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MethodHandle pongHandle;
     private JavaxWebSocketMessageMetadata textMetadata;
     private JavaxWebSocketMessageMetadata binaryMetadata;
-    private UpgradeRequest upgradeRequest;
+    private final UpgradeRequest upgradeRequest;
     private EndpointConfig endpointConfig;
     private final Map<Byte, RegisteredMessageHandler> messageHandlerMap = new HashMap<>();
     private MessageSink textSink;
@@ -84,6 +79,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     protected byte dataType = OpCode.UNDEFINED;
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
+                                      UpgradeRequest upgradeRequest,
                                       Object endpointInstance,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       JavaxWebSocketMessageMetadata textMetadata,
@@ -94,6 +90,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         this.logger = LoggerFactory.getLogger(endpointInstance.getClass());
 
         this.container = container;
+        this.upgradeRequest = upgradeRequest;
         if (endpointInstance instanceof ConfiguredEndpoint)
         {
             RuntimeException oops = new RuntimeException("ConfiguredEndpoint needs to be unwrapped");
@@ -101,7 +98,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             throw oops;
         }
         this.endpointInstance = endpointInstance;
-
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
         this.errorHandle = errorHandle;
@@ -137,6 +133,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             // Rewire EndpointConfig to call CoreSession setters if Jetty specific properties are set.
             endpointConfig = getWrappedEndpointConfig();
             session = new JavaxWebSocketSession(container, coreSession, this, endpointConfig);
+            if (!session.isOpen())
+                throw new IllegalStateException("Session is not open");
+
             openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
             closeHandle = InvokerUtils.bindTo(closeHandle, session);
             errorHandle = InvokerUtils.bindTo(errorHandle, session);
@@ -175,8 +174,11 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 openHandle.invoke();
 
-            container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
+            if (session.isOpen())
+                container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
+
             callback.succeeded();
+            coreSession.demand(1);
         }
         catch (Throwable cause)
         {
@@ -270,6 +272,10 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
+
+        // Close AvailableEncoders and AvailableDecoders to call destroy() on any instances of Encoder/Encoder created.
+        session.getDecoders().close();
+        session.getEncoders().close();
     }
 
     private void notifyOnClose(CloseStatus closeStatus, Callback callback)
@@ -314,6 +320,12 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             wsError.addSuppressed(cause);
             callback.failed(wsError);
         }
+    }
+
+    @Override
+    public boolean isDemanding()
+    {
+        return true;
     }
 
     public Set<MessageHandler> getMessageHandlers()
@@ -572,6 +584,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
+            coreSession.demand(1);
             return;
         }
 
@@ -583,9 +596,11 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public void onPing(Frame frame, Callback callback)
     {
-        ByteBuffer payload = BufferUtil.copy(frame.getPayload());
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, false);
-        callback.succeeded();
+        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(frame.getPayload()), Callback.from(() ->
+        {
+            callback.succeeded();
+            coreSession.demand(1);
+        }), false);
     }
 
     public void onPong(Frame frame, Callback callback)
@@ -608,6 +623,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             }
         }
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     public void onText(Frame frame, Callback callback)
@@ -639,11 +655,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             default:
                 throw new ProtocolException("Unable to process continuation during dataType " + dataType);
         }
-    }
-
-    public void setUpgradeRequest(UpgradeRequest upgradeRequest)
-    {
-        this.upgradeRequest = upgradeRequest;
     }
 
     public UpgradeRequest getUpgradeRequest()

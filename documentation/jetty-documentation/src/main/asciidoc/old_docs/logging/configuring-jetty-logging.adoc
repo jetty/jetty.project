@@ -1,0 +1,68 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-jetty-logging]]
+=== Configuring Jetty Logging
+
+Jetty provides logging via its own `org.eclipse.jetty.util.log.Logger` layer, and does not natively use any existing Java logging framework.
+All logging events, produced via the Jetty logging layer, have a name, a level, and a message.
+The name is a FQCN (fully qualified class name) similar to how all existing Java logging frameworks operate.
+
+Jetty logging, however, has a slightly different set of levels that it uses internally:
+
+WARN::
+  For events serious enough to inform and log, but not fatal.
+INFO::
+  Informational events.
+DEBUG::
+  Debugging events (very noisy).
+IGNORE::
+  Exception events that you can safely ignore, but useful for some people.
+  You might see this level as DEBUG under some Java logging framework configurations, where it retains the _ignore_ phrase somewhere in the logging.
+____
+[NOTE]
+Jetty logging produces no FATAL or SEVERE events.
+____
+
+[[selecting-log-framework]]
+==== Selecting the Log Framework
+
+Configure the Jetty logging layer via the `org.eclipse.jetty.util.log.Log` class, following link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/log/Log.java[these rules].
+
+1.  Load Properties
+* First from a Classpath Resource called `jetty-logging.properties` (if found).
+* Then from the `System.getProperties()`.
+2.  Determine the log implementation.
+* If property `org.eclipse.jetty.util.log.class` is defined, load the class it defines as the logger implementation from the server `classpath`.
+* If the class `org.slf4j.Logger` exists in server classpath, the Jetty implementation becomes `org.eclipse.jetty.util.log.Slf4jLog`.
+* If no logger implementation is specified, default to `org.eclipse.jetty.util.log.StdErrLog`.
+____
+[NOTE]
+You can create your own custom logging by providing an implementation of the link:{JDURL}org/eclipse/jetty/util/log/Logger.html[Jetty Logger API].
+For an example of a custom logger, see link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/log/JavaUtilLog.java[JavaUtilLog.java].
+____
+
+[[configuring-jetty-stderrlog]]
+==== The jetty-logging.properties file
+
+By default, the internal Jetty Logging discovery mechanism will load logging specific properties from a classpath resource called `jetty-logging.properties` and then initialize the Logging from a combination of properties found in that file, along with any System Properties.
+A typical jetty-logging.properties file will include at least the declaration of which logging implementation you want to use by defining a value for the `org.eclipse.jetty.util.log.class` property.
+
+Examples for various logging frameworks can be found later in this documentation.
+
+* Default Logging with link:#default-logging-with-stderrlog[Jetty's StdErrLog]
+* Using link:#example-logging-log4j[Log4j or Log4j2 via SLF4J]
+* Using link:#example-logging-logback[Logback via SLF4J]
+* Using link:#example-logging-java-util-logging[Java Util Logging via SLF4J]
+* Using link:#example-logging-java-commons-logging[Java Commons Logging via SLF4J]
+* link:#example-logging-logback-centralized[Centralized Logging with Logback and Sfl4jLog]

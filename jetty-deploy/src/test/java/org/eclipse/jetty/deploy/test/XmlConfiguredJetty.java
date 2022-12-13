@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -31,6 +26,7 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +66,51 @@ public class XmlConfiguredJetty
     private String _scheme = HttpScheme.HTTP.asString();
     private File _jettyHome;
 
+    public static Server loadConfigurations(List<Resource> configurations, Map<String, String> properties)
+        throws Exception
+    {
+        XmlConfiguration last = null;
+        Object[] obj = new Object[configurations.size()];
+
+        // Configure everything
+        for (int i = 0; i < configurations.size(); i++)
+        {
+            Resource config = configurations.get(i);
+            XmlConfiguration configuration = new XmlConfiguration(config);
+            if (last != null)
+                configuration.getIdMap().putAll(last.getIdMap());
+            configuration.getProperties().putAll(properties);
+            obj[i] = configuration.configure();
+            last = configuration;
+        }
+
+        // Test for Server Instance.
+        Server foundServer = null;
+        int serverCount = 0;
+        for (int i = 0; i < configurations.size(); i++)
+        {
+            if (obj[i] instanceof Server)
+            {
+                if (obj[i].equals(foundServer))
+                {
+                    // Identical server instance found
+                    break;
+                }
+                foundServer = (Server)obj[i];
+                serverCount++;
+            }
+        }
+
+        if (serverCount <= 0)
+        {
+            throw new Exception("Load failed to configure a " + Server.class.getName());
+        }
+
+        assertEquals(1, serverCount, "Server load count");
+
+        return foundServer;
+    }
+
     public XmlConfiguredJetty(Path testdir) throws IOException
     {
         _xmlConfigurations = new ArrayList<>();
@@ -78,11 +119,11 @@ public class XmlConfiguredJetty
         String jettyHomeBase = testdir.toString();
         // Ensure we have a new (pristene) directory to work with.
         int idx = 0;
-        _jettyHome = new File(jettyHomeBase + "#" + idx);
+        _jettyHome = new File(jettyHomeBase + "--" + idx);
         while (_jettyHome.exists())
         {
             idx++;
-            _jettyHome = new File(jettyHomeBase + "#" + idx);
+            _jettyHome = new File(jettyHomeBase + "--" + idx);
         }
         deleteContents(_jettyHome);
         // Prepare Jetty.Home (Test) dir
@@ -153,6 +194,11 @@ public class XmlConfiguredJetty
     {
         _xmlConfigurations.add(xmlConfig);
     }
+    
+    public List<Resource> getConfigurations()
+    {
+        return Collections.unmodifiableList(_xmlConfigurations);
+    }
 
     public void assertNoWebAppContexts()
     {
@@ -173,7 +219,7 @@ public class XmlConfiguredJetty
         URL url = destUri.toURL();
 
         URLConnection conn = url.openConnection();
-
+        conn.addRequestProperty("Connection", "close");
         InputStream in = null;
         try
         {
@@ -326,46 +372,8 @@ public class XmlConfiguredJetty
 
     public void load() throws Exception
     {
-        XmlConfiguration last = null;
-        Object[] obj = new Object[this._xmlConfigurations.size()];
-
-        // Configure everything
-        for (int i = 0; i < this._xmlConfigurations.size(); i++)
-        {
-            Resource configResource = this._xmlConfigurations.get(i);
-            XmlConfiguration configuration = new XmlConfiguration(configResource);
-            if (last != null)
-                configuration.getIdMap().putAll(last.getIdMap());
-            configuration.getProperties().putAll(_properties);
-            obj[i] = configuration.configure();
-            last = configuration;
-        }
-
-        // Test for Server Instance.
-        Server foundServer = null;
-        int serverCount = 0;
-        for (int i = 0; i < this._xmlConfigurations.size(); i++)
-        {
-            if (obj[i] instanceof Server)
-            {
-                if (obj[i].equals(foundServer))
-                {
-                    // Identical server instance found
-                    break;
-                }
-                foundServer = (Server)obj[i];
-                serverCount++;
-            }
-        }
-
-        if (serverCount <= 0)
-        {
-            throw new Exception("Load failed to configure a " + Server.class.getName());
-        }
-
-        assertEquals(1, serverCount, "Server load count");
-
-        this._server = foundServer;
+        this._server = loadConfigurations(_xmlConfigurations, _properties);
+        this._server.setStopTimeout(10);
     }
 
     public void removeWebapp(String name)

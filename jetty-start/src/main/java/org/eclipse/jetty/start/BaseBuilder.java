@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -44,7 +39,7 @@ import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
 
 /**
- * Build a start configuration in <code>${jetty.base}</code>, including
+ * Build a start configuration in {@code ${jetty.base}}, including
  * ini files, directories, and libs. Also handles License management.
  */
 public class BaseBuilder
@@ -52,7 +47,7 @@ public class BaseBuilder
     public static interface Config
     {
         /**
-         * Add a module to the start environment in <code>${jetty.base}</code>
+         * Add a module to the start environment in {@code ${jetty.base}}
          *
          * @param module the module to add
          * @param props The properties to substitute into a template
@@ -168,7 +163,7 @@ public class BaseBuilder
         }
 
         // generate the files
-        List<FileArg> files = new ArrayList<FileArg>();
+        List<FileArg> files = new ArrayList<>();
         AtomicReference<BaseBuilder.Config> builder = new AtomicReference<>();
         AtomicBoolean modified = new AtomicBoolean();
 
@@ -189,18 +184,24 @@ public class BaseBuilder
             if (Files.exists(startd))
             {
                 // Copy start.d files into start.ini
-                DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>()
+                DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<>()
                 {
-                    PathMatcher iniMatcher = PathMatchers.getMatcher("glob:**/start.d/*.ini");
+                    private final PathMatcher iniMatcher = PathMatchers.getMatcher("glob:**/start.d/*.ini");
+
                     @Override
-                    public boolean accept(Path entry) throws IOException
+                    public boolean accept(Path entry)
                     {
                         return iniMatcher.matches(entry);
                     }
                 };
                 List<Path> paths = new ArrayList<>();
-                for (Path path : Files.newDirectoryStream(startd, filter))
-                    paths.add(path);
+                try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(startd, filter))
+                {
+                    for (Path path : dirStream)
+                    {
+                        paths.add(path);
+                    }
+                }
                 paths.sort(new NaturalSort.Paths());
 
                 // Read config from start.d
@@ -217,12 +218,16 @@ public class BaseBuilder
                 try (FileWriter out = new FileWriter(startini.toFile(), true))
                 {
                     for (String line : startLines)
+                    {
                         out.append(line).append(System.lineSeparator());
+                    }
                 }
 
                 // delete start.d files
                 for (Path path : paths)
+                {
                     Files.delete(path);
+                }
                 Files.delete(startd);
             }
         }
@@ -269,56 +274,66 @@ public class BaseBuilder
             StartLog.warn("Use of both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
 
         builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
-        newlyAdded.stream().map(modules::get).forEach(module ->
-        {
-            String ini = null;
-            try
-            {
-                if (module.isSkipFilesValidation())
-                {
-                    StartLog.debug("Skipping [files] validation on %s", module.getName());
-                }
-                else
-                {
-                    // if (explicitly added and ini file modified)
-                    if (startArgs.getStartModules().contains(module.getName()))
-                    {
-                        ini = builder.get().addModule(module, startArgs.getProperties());
-                        if (ini != null)
-                            modified.set(true);
-                    }
-                    for (String file : module.getFiles())
-                    {
-                        files.add(new FileArg(module, startArgs.getProperties().expand(file)));
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
 
-            if (module.isDynamic())
+        // Collect the filesystem operations to perform,
+        // only for those modules that are enabled.
+        newlyAdded.stream()
+            .map(modules::get)
+            .filter(Module::isEnabled)
+            .forEach(module ->
             {
-                for (String s : module.getEnableSources())
+                String ini = null;
+                try
                 {
-                    StartLog.info("%-15s %s", module.getName(), s);
+                    if (module.isSkipFilesValidation())
+                    {
+                        StartLog.debug("Skipping [files] validation on %s", module.getName());
+                    }
+                    else
+                    {
+                        // if (explicitly added and ini file modified)
+                        if (startArgs.getStartModules().contains(module.getName()))
+                        {
+                            ini = builder.get().addModule(module, startArgs.getProperties());
+                            if (ini != null)
+                                modified.set(true);
+                        }
+                        for (String file : module.getFiles())
+                        {
+                            files.add(new FileArg(module, startArgs.getProperties().expand(file)));
+                        }
+                    }
                 }
-            }
-            else if (module.isTransitive())
-            {
-                if (module.hasIniTemplate())
-                    StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
-                        module.getName(),
-                        module.getName());
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+
+                if (module.isDynamic())
+                {
+                    for (String s : module.getEnableSources())
+                    {
+                        StartLog.info("%-15s %s", module.getName(), s);
+                    }
+                }
+                else if (module.isTransitive())
+                {
+                    if (module.hasIniTemplate())
+                    {
+                        StartLog.info("%-15s transitively enabled, ini template available with --add-module=%s",
+                            module.getName(),
+                            module.getName());
+                    }
+                    else
+                    {
+                        StartLog.info("%-15s transitively enabled", module.getName());
+                    }
+                }
                 else
-                    StartLog.info("%-15s transitively enabled", module.getName());
-            }
-            else
-            {
-                StartLog.info("%-15s initialized in %s", module.getName(), ini);
-            }
-        });
+                {
+                    StartLog.info("%-15s initialized in %s", module.getName(), ini);
+                }
+            });
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))
@@ -375,7 +390,7 @@ public class BaseBuilder
      * @param files the list of {@link FileArg}s to process
      * @return true if base directory modified, false if left untouched
      */
-    private boolean processFileResources(List<FileArg> files) throws IOException
+    private boolean processFileResources(List<FileArg> files)
     {
         if ((files == null) || (files.isEmpty()))
         {

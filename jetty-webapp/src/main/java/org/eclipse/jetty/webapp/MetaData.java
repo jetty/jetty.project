@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -61,7 +56,7 @@ public class MetaData
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
-    protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
+    protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
 
@@ -463,7 +458,7 @@ public class MetaData
         if (isOrdered())
         {
             orderedWebInfJars = getWebInfResources(true);
-            List<String> orderedLibs = new ArrayList<String>();
+            List<String> orderedLibs = new ArrayList<>();
             for (Resource webInfJar : orderedWebInfJars)
             {
                 //get just the name of the jar file
@@ -497,7 +492,7 @@ public class MetaData
         List<Resource> resources = new ArrayList<>();
         resources.add(EmptyResource.INSTANCE); //always apply annotations with no resource first
         resources.addAll(_orderedContainerResources); //next all annotations from container path
-        resources.addAll(_webInfClasses);//next everything from web-inf classes
+        resources.addAll(_webInfClasses); //next everything from web-inf classes
         resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
 
         for (Resource r : resources)
@@ -616,11 +611,11 @@ public class MetaData
      */
     public Resource getJarForFragmentName(String name)
     {
-        Resource jar = null;
-
         FragmentDescriptor f = getFragmentDescriptor(name);
         if (f == null)
             return null;
+
+        Resource jar = null;
 
         for (Map.Entry<Resource, FragmentDescriptor> entry : _webFragmentResourceMap.entrySet())
         {

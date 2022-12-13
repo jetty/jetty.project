@@ -1,0 +1,73 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-session-mongo]]
+==== Modules for Persistent HTTP Sessions: MongoDB
+
+Enabling the `session-store-mongo` module configures Jetty to store session data in MongoDB.
+
+Because MongoDB is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case) during the install.
+Jars needed by MongoDB are downloaded and stored into a directory named `$JETTY_BASE/lib/nosql/`.
+
+IMPORTANT: If you want to use updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+
+===== Configuration
+
+The `$JETTY_BASE/start.d/session-store-mongo.ini` file contains these configurable properties:
+
+jetty.session.mongo.dbName::
+Default is "HttpSessions".
+This is the name of the database in MongoDB used to store the session collection.
+
+jetty.session.mongo.collectionName::
+Default is "jettySessions".
+This is the name of the collection in MongoDB used to store all of the sessions.
+
+The connection type-::
+You can connect to MongoDB either using a host/port combination, or a URI.
+By default, the host/port method is selected, but you can change this by commenting out the unwanted method, and uncommenting the other one.
+connection-type=address:::
+Used when utilizing a direct connection to the MongoDB server.
+jetty.session.mongo.host::::
+Host name or address for the remote MongoDB instance.
+jetty.session.mongo.port::::
+Port number for the remote MongoDB instance.
+connection-type=uri:::
+Used when utilizing MongoURI for secured connections.
+jetty.session.mongo.connectionString::::
+The string defining the MongoURI value, such as `+mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]+`.
+More information on how to format the MongoURI string can be found in the link:https://docs.mongodb.com/manual/reference/connection-string/[official documentation for mongo].
+[NOTE]
+====
+You will only use *one* `connection-type` at a time, either `address` or `uri`.
+If both are utilized in your `session-store-mongo.ini`, only the _last_ `connection-type` configured in the file will be used.
+====
+
+jetty.session.gracePeriod.seconds::
+Integer, in seconds.
+Default 3600.
+Used during session xref:og-session-base-scavenge[scavenging].
+Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:og-session-base-scavenge[scavenged].
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====

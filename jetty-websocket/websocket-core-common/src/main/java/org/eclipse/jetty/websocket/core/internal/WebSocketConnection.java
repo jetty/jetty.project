@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,6 +15,7 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -32,6 +28,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -57,6 +54,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private final AutoLock lock = new AutoLock();
     private final ByteBufferPool bufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketCoreSession coreSession;
@@ -82,9 +80,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool bufferPool,
+                               RetainableByteBufferPool retainableByteBufferPool,
                                WebSocketCoreSession coreSession)
     {
-        this(endp, executor, scheduler, bufferPool, coreSession, null);
+        this(endp, executor, scheduler, bufferPool, retainableByteBufferPool, coreSession, null);
     }
 
     /**
@@ -97,6 +96,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * @param executor A thread executor to use for WS callbacks.
      * @param scheduler A scheduler to use for timeouts
      * @param bufferPool A pool of buffers to use.
+     * @param retainableByteBufferPool A pool of retainable buffers to use.
      * @param coreSession The WC core session to which frames are delivered.
      * @param randomMask A Random used to mask frames. If null then SecureRandom will be created if needed.
      */
@@ -104,6 +104,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool bufferPool,
+                               RetainableByteBufferPool retainableByteBufferPool,
                                WebSocketCoreSession coreSession,
                                Random randomMask)
     {
@@ -113,8 +114,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(coreSession, "Session");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
+        Objects.requireNonNull(retainableByteBufferPool, "RetainableByteBufferPool");
 
         this.bufferPool = bufferPool;
+        this.retainableByteBufferPool = retainableByteBufferPool;
         this.coreSession = coreSession;
         this.generator = new Generator();
         this.parser = new Parser(bufferPool, coreSession);
@@ -147,14 +150,40 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return parser;
     }
 
+    /**
+     * @return the local InetSocketAddress
+     * @deprecated use {@link #getLocalSocketAddress()} instead
+     */
+    @Deprecated
     public InetSocketAddress getLocalAddress()
     {
-        return getEndPoint().getLocalAddress();
+        SocketAddress local = getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
     }
 
+    public SocketAddress getLocalSocketAddress()
+    {
+        return getEndPoint().getLocalSocketAddress();
+    }
+
+    /**
+     * @return the remote InetSocketAddress
+     * @deprecated use {@link #getRemoteSocketAddress()} instead
+     */
+    @Deprecated
     public InetSocketAddress getRemoteAddress()
     {
-        return getEndPoint().getRemoteAddress();
+        SocketAddress remote = getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return getEndPoint().getRemoteSocketAddress();
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -241,9 +270,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 frame.close();
                 if (referenced != null)
                     referenced.release();
-
-                if (!coreSession.isDemanding())
-                    demand(1);
             }
 
             @Override
@@ -288,7 +314,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private RetainableByteBuffer newNetworkBuffer(int capacity)
     {
-        return new RetainableByteBuffer(bufferPool, capacity, isUseInputDirectByteBuffers());
+        return retainableByteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()
@@ -442,7 +468,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 }
 
                 // If more references that 1(us), don't refill into buffer and risk compaction.
-                if (networkBuffer.getReferences() > 1)
+                if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 int filled = getEndPoint().fill(networkBuffer.getBuffer()); // TODO check if compact is possible.

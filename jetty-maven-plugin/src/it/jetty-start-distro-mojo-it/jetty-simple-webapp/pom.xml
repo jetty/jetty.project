@@ -16,7 +16,7 @@
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-distro-port.txt</jetty.port.file>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
-    <jetty.deployMode>HOME</jetty.deployMode>
+    <jetty.deployMode>EXTERNAL</jetty.deployMode>
   </properties>
 
   <dependencies>
@@ -103,6 +103,7 @@
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
               <modules>jsp,jstl,testmod</modules>
+              <jettyOptions>--debug</jettyOptions>
             </configuration>
           </execution>
         </executions>

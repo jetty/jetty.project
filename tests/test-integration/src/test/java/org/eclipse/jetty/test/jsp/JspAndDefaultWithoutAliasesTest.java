@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,7 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -61,13 +58,21 @@ public class JspAndDefaultWithoutAliasesTest
 
         data.add(Arguments.of("/dump.jsp"));
         data.add(Arguments.of("/dump.jsp/"));
-        data.add(Arguments.of("/dump.jsp%00"));
-        data.add(Arguments.of("/dump.jsp%00x"));
-        data.add(Arguments.of("/dump.jsp%00x/dump.jsp"));
-        data.add(Arguments.of("/dump.jsp%00/dump.jsp"));
-        data.add(Arguments.of("/dump.jsp%00/index.html"));
-        data.add(Arguments.of("/dump.jsp%00/"));
-        data.add(Arguments.of("/dump.jsp%00x/"));
+        data.add(Arguments.of("/dump.jsp%1e"));
+        data.add(Arguments.of("/dump.jsp%1ex"));
+        data.add(Arguments.of("/dump.jsp%1ex/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp%1e/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp%1e/index.html"));
+        data.add(Arguments.of("/dump.jsp%1e/"));
+        data.add(Arguments.of("/dump.jsp%1ex/"));
+        // The _00_ is later replaced with a real null character in a customizer
+        data.add(Arguments.of("/dump.jsp_00_"));
+        data.add(Arguments.of("/dump.jsp_00_"));
+        data.add(Arguments.of("/dump.jsp_00_/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp_00_/dump.jsp"));
+        data.add(Arguments.of("/dump.jsp_00_/index.html"));
+        data.add(Arguments.of("/dump.jsp_00_/"));
+        data.add(Arguments.of("/dump.jsp_00_/"));
 
         return data.stream();
     }
@@ -102,6 +107,17 @@ public class JspAndDefaultWithoutAliasesTest
 
         // add context
         server.setHandler(context);
+
+        // Add customizer to convert "_00_" to a real null
+        server.getContainedBeans(HttpConfiguration.class).forEach(config ->
+        {
+            config.addCustomizer((connector, channelConfig, request) ->
+            {
+                HttpURI uri = request.getHttpURI();
+                if (uri.getPath().contains("_00_"))
+                    request.setHttpURI(HttpURI.build(uri, uri.getPath().replace("_00_", "\000"), uri.getParam(), uri.getQuery()));
+            });
+        });
 
         server.start();
 

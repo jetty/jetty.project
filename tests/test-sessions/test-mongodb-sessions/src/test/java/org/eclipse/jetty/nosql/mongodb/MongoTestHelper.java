@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -34,9 +29,9 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -52,45 +47,35 @@ public class MongoTestHelper
 
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
+    
+    private static final int MONGO_PORT = 27017;
 
-    static GenericContainer mongo =
-        new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
-            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG))
-            .waitingFor(new LogMessageWaitStrategy()
-                            .withRegEx(".*waiting for connections.*"));
+    static MongoDBContainer mongo =
+            new MongoDBContainer(DockerImageName.parse("mongo:" + System.getProperty("mongo.docker.version", "3.2.20")))
+            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
 
     static MongoClient mongoClient;
 
     static String mongoHost;
     static int mongoPort;
 
-    static
-    {
-        try
-        {
-            long start = System.currentTimeMillis();
-            mongo.start();
-            mongoHost =  mongo.getHost();
-            mongoPort = mongo.getMappedPort(27017);
-            LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
-                     System.currentTimeMillis() - start);
-            mongoClient = new MongoClient(mongoHost, mongoPort);
-        }
-        catch (Exception e)
-        {
-            LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
-    }
-
     public static MongoClient getMongoClient() throws UnknownHostException
     {
+        if (mongoClient == null)
+        {
+            mongoClient = new MongoClient(mongoHost, mongoPort);
+        }
         return mongoClient;
     }
 
     public static void dropCollection() throws Exception
     {
         getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
+    }
+
+    public static void shutdown() throws Exception
+    {
+        mongo.stop();
     }
 
     public static void createCollection() throws UnknownHostException, MongoException
@@ -105,6 +90,25 @@ public class MongoTestHelper
 
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory()
     {
+        if (!mongo.isRunning())
+        {
+            try
+            {
+                long start = System.currentTimeMillis();
+                mongo.start();
+                mongoHost = mongo.getHost();
+                mongoPort = mongo.getMappedPort(MONGO_PORT);
+                LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
+                        System.currentTimeMillis() - start);
+                mongoClient = new MongoClient(mongoHost, mongoPort);
+            }
+            catch (Exception e)
+            {
+                LOG.error(e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        }
+
         MongoSessionDataStoreFactory storeFactory = new MongoSessionDataStoreFactory();
         storeFactory.setHost(mongoHost);
         storeFactory.setPort(mongoPort);

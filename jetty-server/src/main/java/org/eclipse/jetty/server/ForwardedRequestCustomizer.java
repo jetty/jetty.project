@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -33,10 +28,9 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -159,7 +153,10 @@ public class ForwardedRequestCustomizer implements Customizer
     private String _forwardedCipherSuiteHeader = "Proxy-auth-cert";
     private String _forwardedSslSessionIdHeader = "Proxy-ssl-id";
     private boolean _sslIsSecure = true;
-    private Trie<MethodHandle> _handles;
+    private final Index.Mutable<MethodHandle> _handles = new Index.Builder<MethodHandle>()
+        .caseSensitive(false)
+        .mutable()
+        .build();
 
     public ForwardedRequestCustomizer()
     {
@@ -596,52 +593,35 @@ public class ForwardedRequestCustomizer implements Customizer
 
     private void updateHandles()
     {
-        int size = 0;
+        _handles.clear();
+
         MethodHandles.Lookup lookup = MethodHandles.lookup();
-
-        // Loop to grow capacity of ArrayTrie for all headers
-        while (true)
+        try
         {
-            try
-            {
-                size += 128; // experimented good baseline size
-                _handles = new ArrayTrie<>(size);
-
-                if (updateForwardedHandle(lookup, getForwardedHeader(), "handleRFC7239"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedHostHeader(), "handleForwardedHost"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedForHeader(), "handleForwardedFor"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedPortHeader(), "handleForwardedPort"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedProtoHeader(), "handleProto"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedHttpsHeader(), "handleHttps"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedServerHeader(), "handleForwardedServer"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedCipherSuiteHeader(), "handleCipherSuite"))
-                    continue;
-                if (updateForwardedHandle(lookup, getForwardedSslSessionIdHeader(), "handleSslSessionId"))
-                    continue;
-                break;
-            }
-            catch (NoSuchMethodException | IllegalAccessException e)
-            {
-                throw new IllegalStateException(e);
-            }
+            updateForwardedHandle(lookup, getForwardedHeader(), "handleRFC7239");
+            updateForwardedHandle(lookup, getForwardedHostHeader(), "handleForwardedHost");
+            updateForwardedHandle(lookup, getForwardedForHeader(), "handleForwardedFor");
+            updateForwardedHandle(lookup, getForwardedPortHeader(), "handleForwardedPort");
+            updateForwardedHandle(lookup, getForwardedProtoHeader(), "handleProto");
+            updateForwardedHandle(lookup, getForwardedHttpsHeader(), "handleHttps");
+            updateForwardedHandle(lookup, getForwardedServerHeader(), "handleForwardedServer");
+            updateForwardedHandle(lookup, getForwardedCipherSuiteHeader(), "handleCipherSuite");
+            updateForwardedHandle(lookup, getForwardedSslSessionIdHeader(), "handleSslSessionId");
+        }
+        catch (NoSuchMethodException | IllegalAccessException e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 
-    private boolean updateForwardedHandle(MethodHandles.Lookup lookup, String headerName, String forwardedMethodName) throws NoSuchMethodException, IllegalAccessException
+    private void updateForwardedHandle(MethodHandles.Lookup lookup, String headerName, String forwardedMethodName) throws NoSuchMethodException, IllegalAccessException
     {
         final MethodType type = methodType(void.class, HttpField.class);
 
         if (StringUtil.isBlank(headerName))
-            return false;
+            return;
 
-        return !_handles.put(headerName, lookup.findVirtual(Forwarded.class, forwardedMethodName, type));
+        _handles.put(headerName, lookup.findVirtual(Forwarded.class, forwardedMethodName, type));
     }
 
     private static class MutableHostPort

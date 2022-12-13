@@ -1,0 +1,67 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-troubleshooting-logging]]
+==== Enabling DEBUG Logging
+
+Enabling DEBUG level logging for the `org.eclipse.jetty` logger name provides the maximum amount of information to troubleshoot Jetty issues.
+
+Refer to the xref:og-server-logging[logging section] for more information about how to configure logging in Jetty.
+
+[CAUTION]
+====
+Enabling DEBUG level logging for `org.eclipse.jetty` is very, *very* expensive.
+
+Your server could be slowed down to almost a halt, especially if it is under heavy load.
+Furthermore, the log file could quickly fill up the entire filesystem (unless configured to roll over), so you want to be really careful using DEBUG logging.
+
+For production servers, consider using the xref:og-troubleshooting-dump[Jetty Server Dump] first, and enable DEBUG logging only as a last resort.
+====
+
+However, sometimes issues are such that only DEBUG logging can really tell what's going on in the system, and enabling DEBUG logging is your best chance to figure the issue out.
+Below you can find few suggestions that can help you reduce the impact when you have to enable DEBUG logging.
+
+[[og-troubleshooting-logging-backend]]
+===== Jetty Behind a Load Balancer
+
+If Jetty instances are behind a load balancer, you may configure the load balancer to send less load to a particular Jetty instance, and enable DEBUG logging in that instance only.
+
+[[og-troubleshooting-logging-jmx]]
+===== Enabling DEBUG Logging for a Short Time
+
+In certain cases the issue can be reproduced reliably, but only in the production environment.
+
+You can use JMX to temporarily enable DEBUG logging, reproduce the issue, and then disable DEBUG logging.
+
+Alternatively, if you cannot reliably reproduce the issue, but you _know_ it is happening, you can temporarily enable DEBUG logging for a small period of time, let's say 10-60 seconds, and then disable DEBUG logging.
+
+Changing the log level at runtime is a feature of the logging implementation that you are using.
+
+The Jetty SLF4J implementation, used by default, exposes via JMX method `boolean JettyLoggerFactoryMBean.setLoggerLevel(String loggerName, String levelName)` that you can invoke via a JMX console to change the level for the specified logger name.
+The method returns `true` if the logger level was successfully changed.
+
+For example, you can pass the string `org.eclipse.jetty` as the first parameter, and the string `DEBUG` (upper case) as the second parameter.
+You can then use the string `INFO` or `WARN` (upper case) to restore the logging level to its previous value.
+
+[[og-troubleshooting-logging-subpackages]]
+===== Enabling DEBUG Logging for SubPackages
+
+Enabling DEBUG logging for the `org.eclipse.jetty` logger name implies that all children logger names, recursively, inherit the DEBUG level.
+
+Processing a single HTTP request involves many Jetty components: the I/O subsystem (under `org.eclipse.jetty.io`), the thread pool (under `org.eclipse.jetty.util`), the HTTP/1.1 parsing (under `org.eclipse.jetty.http`), etc.
+
+If you can cut the amount of DEBUG logging to just what you need to troubleshoot the issue, the impact of enabling DEBUG logging will be much less than enabling it for all Jetty components.
+
+For example, if you need to troubleshoot a client that sends bad HTTP/1.1 requests, it may be enough to enable only the `org.eclipse.jetty.http` logger name, therefore saving the large amount of DEBUG logging produced by the I/O subsystem and by the thread pool.
+
+In another case, you may need to troubleshoot only HTTP/2 requests, and therefore enabling only the `org.eclipse.jetty.http2` logger name could be enough.

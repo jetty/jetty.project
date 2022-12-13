@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -31,6 +26,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
+import org.eclipse.jetty.rewrite.handler.VirtualHostRuleContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
@@ -40,6 +37,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BalancerServletTest
@@ -100,7 +100,6 @@ public class BalancerServletTest
         {
             DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
             sessionIdManager.setWorkerName(nodeName);
-            server.setSessionIdManager(sessionIdManager);
         }
 
         return server;
@@ -111,12 +110,17 @@ public class BalancerServletTest
         return server.getURI().getPort();
     }
 
-    protected byte[] sendRequestToBalancer(String path) throws Exception
+    protected ContentResponse getBalancedResponse(String path) throws Exception
     {
-        ContentResponse response = client.newRequest("localhost", getServerPort(balancer))
+        return client.newRequest("localhost", getServerPort(balancer))
             .path(CONTEXT_PATH + SERVLET_PATH + path)
             .timeout(5, TimeUnit.SECONDS)
             .send();
+    }
+
+    protected byte[] sendRequestToBalancer(String path) throws Exception
+    {
+        ContentResponse response = getBalancedResponse(path);
         return response.getContent();
     }
 
@@ -160,10 +164,42 @@ public class BalancerServletTest
         assertEquals("success", msg);
     }
 
+    @Test
+    public void testRewrittenBalancerWithEncodedURI() throws Exception
+    {
+        startBalancer(DumpServlet.class);
+        balancer.stop();
+        RewriteHandler rewrite = new RewriteHandler();
+        rewrite.setHandler(balancer.getHandler());
+        balancer.setHandler(rewrite);
+        rewrite.setRewriteRequestURI(true);
+        rewrite.addRule(new VirtualHostRuleContainer());
+        balancer.start();
+
+        ContentResponse response = getBalancedResponse("/test/%0A");
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%0A'"));
+        assertThat(response.getContentAsString(), containsString("servletPath='/mapping'"));
+        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\n'"));
+    }
+
     private String readFirstLine(byte[] responseBytes) throws IOException
     {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(responseBytes)));
         return reader.readLine();
+    }
+
+    public static final class DumpServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setContentType("text/plain");
+            resp.getWriter().printf("requestURI='%s'%n", req.getRequestURI());
+            resp.getWriter().printf("servletPath='%s'%n", req.getServletPath());
+            resp.getWriter().printf("pathInfo='%s'%n", req.getPathInfo());
+            resp.getWriter().flush();
+        }
     }
 
     public static final class CounterServlet extends HttpServlet

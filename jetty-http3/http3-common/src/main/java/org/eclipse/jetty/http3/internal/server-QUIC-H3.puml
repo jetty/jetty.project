@@ -1,0 +1,88 @@
+@startuml
+title "H3 Server"
+
+participant QuicConnection
+participant QuicProducer
+participant DatagramChannelEndPoint
+participant QuicSession
+participant ProtocolSession as "ProtocolSession\nServerProtocolSession\nServerHTTP3Session"
+participant StreamsProducer as "ProtocolSession.\nStreamsProducer"
+participant QuicStreamEndPoint
+participant HTTP3StreamConnection as "HTTP3StreamConnection\nServerHTTP3StreamConnection"
+participant HTTP3SessionServer as "HTTP3Session\nHTTP3SessionServer"
+participant HTTP3Stream as "Stream\nHTTP3Stream"
+participant Stream.Listener
+participant Handler
+
+autoactivate on
+
+ -> QuicConnection : onFillable()
+  QuicConnection -> QuicConnection: strategy.produce()
+    QuicConnection -> QuicProducer: produce()
+      QuicProducer -> QuicConnection: receiveAndProcess()
+        QuicConnection -> DatagramChannelEndPoint: receive(cipherBuffer)
+        return SocketAddress
+        QuicConnection -> QuicSession: process(socketAddress, cipherBuffer)
+          QuicSession -> ProtocolSession : getProducerTask()
+            note over ProtocolSession
+              Runnable is
+              ProtocolSession::produce
+            end note
+          return Runnable
+        return Runnable
+      return Runnable
+    return Runnable
+note over QuicConnection, Handler
+  ExecutionStrategy: EPC execution
+end note
+    QuicConnection -> ProtocolSession: produce()
+      ProtocolSession -> ProtocolSession: strategy.produce()
+        ProtocolSession -> StreamsProducer: produce()
+          StreamsProducer -> ProtocolSession: processWritableStreams()
+            ProtocolSession -> QuicSession: getWritableStreamIds()
+            return
+          return
+          StreamsProducer -> ProtocolSession: processReadableStreams()
+            ProtocolSession -> QuicSession: getReadableStreamIds()
+            return
+            ProtocolSession -> ProtocolSession: onReadable(readableStreamId)
+              ProtocolSession -> ProtocolSession: getOrCreateStreamEndPoint(readableStreamId)
+                ProtocolSession -> QuicSession: getOrCreateStreamEndPoint
+                return
+              return QuicStreamEndPoint
+              ProtocolSession -> QuicStreamEndPoint: onReadable()
+                QuicStreamEndPoint -> QuicStreamEndPoint: getFillInterest().fillable()
+                  QuicStreamEndPoint -> HTTP3StreamConnection: onFillable()
+                    HTTP3StreamConnection -> HTTP3StreamConnection: processDataFrames()
+                      HTTP3StreamConnection -> HTTP3StreamConnection: processDataDemand()
+                        HTTP3StreamConnection -> HTTP3StreamConnection: onDataAvailable()
+                          HTTP3StreamConnection -> ProtocolSession: onDataAvailable(streamId)
+                            ProtocolSession -> HTTP3SessionServer: onDataAvailable(streamId)
+                              HTTP3SessionServer -> HTTP3Stream: onDataAvailable()
+                                HTTP3Stream -> HTTP3Stream: notifyDataAvailable()
+                                  HTTP3Stream -> Stream.Listener: onDataAvailable(this)
+                                  return
+                                return
+                              return
+                            return
+                          return
+                        return
+                      return
+                    return
+                  return
+                return
+              return
+            return
+          return
+        return Runnable
+note over QuicConnection, Handler
+  ExecutionStrategy: EPC execution
+end note
+        ProtocolSession -> Handler: handle()
+        return
+      return
+    return
+  return
+return
+
+@enduml

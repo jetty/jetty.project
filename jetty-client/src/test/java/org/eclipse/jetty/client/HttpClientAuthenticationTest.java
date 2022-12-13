@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,6 +17,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -79,17 +76,25 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 {
     private String realm = "TestRealm";
 
-    public void startBasic(final Scenario scenario, Handler handler) throws Exception
+    public void startBasic(Scenario scenario, Handler handler) throws Exception
     {
-        start(scenario, new BasicAuthenticator(), handler);
+        startBasic(scenario, handler, null);
     }
 
-    public void startDigest(final Scenario scenario, Handler handler) throws Exception
+    public void startBasic(Scenario scenario, Handler handler, Charset charset) throws Exception
+    {
+        BasicAuthenticator authenticator = new BasicAuthenticator();
+        if (charset != null)
+            authenticator.setCharset(charset);
+        start(scenario, authenticator, handler);
+    }
+
+    public void startDigest(Scenario scenario, Handler handler) throws Exception
     {
         start(scenario, new DigestAuthenticator(), handler);
     }
 
-    private void start(final Scenario scenario, Authenticator authenticator, Handler handler) throws Exception
+    private void start(Scenario scenario, Authenticator authenticator, Handler handler) throws Exception
     {
         server = new Server();
         File realmFile = MavenTestingUtils.getTestResourceFile("realm.properties");
@@ -143,6 +148,16 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testBasicWithUTF8Password(Scenario scenario) throws Exception
+    {
+        startBasic(scenario, new EmptyServerHandler(), StandardCharsets.UTF_8);
+        URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+        testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic_utf8", "\u20AC"));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void testDigestAuthentication(Scenario scenario) throws Exception
     {
         startDigest(scenario, new EmptyServerHandler());
@@ -159,11 +174,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         testAuthentication(scenario, new DigestAuthentication(uri, ANY_REALM, "digest", "digest"));
     }
 
-    private void testAuthentication(final Scenario scenario, Authentication authentication) throws Exception
+    private void testAuthentication(Scenario scenario, Authentication authentication) throws Exception
     {
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
-        final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(1));
         Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
@@ -247,7 +262,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
-        final CountDownLatch requests = new CountDownLatch(3);
+        CountDownLatch requests = new CountDownLatch(3);
         Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
@@ -286,7 +301,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
-        final CountDownLatch requests = new CountDownLatch(3);
+        CountDownLatch requests = new CountDownLatch(3);
         Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
@@ -314,7 +329,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     {
         startBasic(scenario, new EmptyServerHandler());
 
-        final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(2));
+        AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(2));
         Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
@@ -386,7 +401,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         // Request without Authentication would cause a 401,
         // but the client will throw an exception trying to
         // send the credentials to the server.
-        final String cause = "thrown_explicitly_by_test";
+        String cause = "thrown_explicitly_by_test";
         client.getAuthenticationStore().addAuthentication(new Authentication()
         {
             @Override
@@ -402,7 +417,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/secure")

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -46,9 +41,26 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         THROWABLE, STATUS_CODE, GLOBAL
     }
 
-    protected ServletContext _servletContext;
     private final Map<String, String> _errorPages = new HashMap<>(); // code or exception to URL
     private final List<ErrorCodeRange> _errorPageList = new ArrayList<>(); // list of ErrorCode by range
+    protected ServletContext _servletContext;
+    private boolean _unwrapServletException = false;
+
+    /**
+     * @return True if ServletException is unwrapped for {@link Dispatcher#ERROR_EXCEPTION}
+     */
+    public boolean isUnwrapServletException()
+    {
+        return _unwrapServletException;
+    }
+
+    /**
+     * @param unwrapServletException True if ServletException should be unwrapped for {@link Dispatcher#ERROR_EXCEPTION}
+     */
+    public void setUnwrapServletException(boolean unwrapServletException)
+    {
+        _unwrapServletException = unwrapServletException;
+    }
 
     @Override
     public String getErrorPage(HttpServletRequest request)
@@ -58,14 +70,15 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         PageLookupTechnique pageSource = null;
 
         Class<?> matchedThrowable = null;
-        Throwable th = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable error = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable cause = error;
 
         // Walk the cause hierarchy
-        while (errorPage == null && th != null)
+        while (errorPage == null && cause != null)
         {
             pageSource = PageLookupTechnique.THROWABLE;
 
-            Class<?> exClass = th.getClass();
+            Class<?> exClass = cause.getClass();
             errorPage = _errorPages.get(exClass.getName());
 
             // walk the inheritance hierarchy
@@ -80,7 +93,17 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             if (errorPage != null)
                 matchedThrowable = exClass;
 
-            th = (th instanceof ServletException) ? ((ServletException)th).getRootCause() : null;
+            cause = (cause instanceof ServletException) ? ((ServletException)cause).getRootCause() : null;
+        }
+
+        if (error instanceof ServletException && _unwrapServletException)
+        {
+            Throwable unwrapped = ((ServletException)error).getRootCause();
+            if (unwrapped != null)
+            {
+                request.setAttribute(Dispatcher.ERROR_EXCEPTION, unwrapped);
+                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE, unwrapped.getClass());
+            }
         }
 
         Integer errorStatusCode = null;
@@ -134,7 +157,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     Throwable originalThrowable = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
                     dbg.append(originalThrowable.getClass().getName());
                     dbg.append(')');
-                    LOG.debug(dbg.toString(), th);
+                    LOG.debug(dbg.toString(), cause);
                     break;
                 case STATUS_CODE:
                     dbg.append(" (from status code ");
@@ -230,9 +253,9 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
     private static class ErrorCodeRange
     {
-        private int _from;
-        private int _to;
-        private String _uri;
+        private final int _from;
+        private final int _to;
+        private final String _uri;
 
         ErrorCodeRange(int from, int to, String uri)
             throws IllegalArgumentException

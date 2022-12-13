@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,13 +22,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class URIUtilCanonicalPathTest
 {
-    public static Stream<Arguments> data()
+    public static Stream<Arguments> paths()
     {
         String[][] canonical =
             {
+                // Examples from RFC
+                {"/a/b/c/./../../g", "/a/g"},
+                {"mid/content=5/../6", "mid/6"},
+
                 // Basic examples (no changes expected)
                 {"/hello.html", "/hello.html"},
                 {"/css/main.css", "/css/main.css"},
@@ -56,8 +56,12 @@ public class URIUtilCanonicalPathTest
                 {"/aaa/./bbb/", "/aaa/bbb/"},
                 {"/aaa/./bbb", "/aaa/bbb"},
                 {"./bbb/", "bbb/"},
+                {"./aaa", "aaa"},
+                {"./aaa/", "aaa/"},
+                {"/./aaa/", "/aaa/"},
                 {"./aaa/../bbb/", "bbb/"},
                 {"/foo/.", "/foo/"},
+                {"/foo/./", "/foo/"},
                 {"./", ""},
                 {".", ""},
                 {".//", "/"},
@@ -80,6 +84,7 @@ public class URIUtilCanonicalPathTest
                 {"/foo/../bar//", "/bar//"},
                 {"/ctx/../bar/../ctx/all/index.txt", "/ctx/all/index.txt"},
                 {"/down/.././index.html", "/index.html"},
+                {"/aaa/bbb/ccc/..", "/aaa/bbb/"},
 
                 // Path traversal up past root
                 {"..", null},
@@ -92,10 +97,8 @@ public class URIUtilCanonicalPathTest
                 {"a/../..", null},
                 {"/foo/../../bar", null},
 
-                // Query parameter specifics
-                {"/ctx/dir?/../index.html", "/ctx/index.html"},
-                {"/get-files?file=/etc/passwd", "/get-files?file=/etc/passwd"},
-                {"/get-files?file=../../../../../passwd", null},
+                // Encoded ?
+                {"/ctx/dir%3f/../index.html", "/ctx/index.html"},
 
                 // Known windows shell quirks
                 {"file.txt  ", "file.txt  "}, // with spaces
@@ -117,10 +120,13 @@ public class URIUtilCanonicalPathTest
                 {"/%2e%2e/", "/%2e%2e/"},
 
                 // paths with parameters are not elided
-                // canonicalPath() is not responsible for decoding characters
                 {"/foo/.;/bar", "/foo/.;/bar"},
                 {"/foo/..;/bar", "/foo/..;/bar"},
                 {"/foo/..;/..;/bar", "/foo/..;/..;/bar"},
+
+                // Trailing / is preserved
+                {"/foo/bar/..", "/foo/"},
+                {"/foo/bar/../", "/foo/"},
             };
 
         ArrayList<Arguments> ret = new ArrayList<>();
@@ -132,9 +138,43 @@ public class URIUtilCanonicalPathTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("paths")
     public void testCanonicalPath(String input, String expectedResult)
     {
-        assertThat("Canonical", URIUtil.canonicalPath(input), is(expectedResult));
+        // Check canonicalPath
+        assertThat(URIUtil.canonicalPath(input), is(expectedResult));
+
+        // Check canonicalURI
+        if (expectedResult == null)
+        {
+            assertThat(URIUtil.canonicalURI(input), nullValue());
+        }
+        else
+        {
+            // mostly encodedURI will be the same
+            assertThat(URIUtil.canonicalURI(input), is(expectedResult));
+            // but will terminate on fragments and queries
+            assertThat(URIUtil.canonicalURI(input + "?/foo/../bar/."), is(expectedResult + "?/foo/../bar/."));
+            assertThat(URIUtil.canonicalURI(input + "#/foo/../bar/."), is(expectedResult + "#/foo/../bar/."));
+        }
+    }
+
+    public static Stream<Arguments> queries()
+    {
+        String[][] data =
+            {
+                {"/ctx/../dir?/../index.html", "/dir?/../index.html"},
+                {"/get-files?file=/etc/passwd", "/get-files?file=/etc/passwd"},
+                {"/get-files?file=../../../../../passwd", "/get-files?file=../../../../../passwd"}
+            };
+        return Stream.of(data).map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("queries")
+    public void testQuery(String input, String expectedPath)
+    {
+        String actual = URIUtil.canonicalURI(input);
+        assertThat(actual, is(expectedPath));
     }
 }

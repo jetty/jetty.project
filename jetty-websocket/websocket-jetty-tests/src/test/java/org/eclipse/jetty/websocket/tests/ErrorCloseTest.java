@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,11 +17,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
@@ -39,7 +32,6 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,22 +46,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorCloseTest
 {
-    private Server server = new Server();
-    private WebSocketClient client = new WebSocketClient();
-    private ThrowingSocket serverSocket = new ThrowingSocket();
-    private CountDownLatch serverCloseListener = new CountDownLatch(1);
-    private ServerConnector connector;
+    private final Server server = new Server();
+    private final WebSocketClient client = new WebSocketClient();
+    private final ThrowingSocket serverSocket = new ThrowingSocket();
+    private final CountDownLatch serverCloseListener = new CountDownLatch(1);
     private URI serverUri;
 
     @BeforeEach
     public void start() throws Exception
     {
-        connector = new ServerConnector(server);
+        ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
-        contextHandler.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
             container.addMapping("/", (req, resp) -> serverSocket);
@@ -140,7 +130,7 @@ public class ErrorCloseTest
         serverSocket.methodsToThrow.add("onOpen");
         EventSocket clientSocket = new EventSocket();
 
-        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
             client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
             assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
@@ -262,6 +252,7 @@ public class ErrorCloseTest
         serverSocket.methodsToThrow.add(methodToThrow);
         EventSocket clientSocket = new EventSocket();
         client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketSession.class))
         {

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <artifactId>jetty-project</artifactId>
+    <groupId>org.eclipse.jetty</groupId>
+    <version>10.0.14-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.quic</groupId>
+  <artifactId>quic-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Jetty :: QUIC</name>
+
+  <modules>
+    <module>quic-quiche</module>
+    <module>quic-common</module>
+    <module>quic-server</module>
+    <module>quic-client</module>
+  </modules>
+
+</project>

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -24,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,7 +28,10 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Applications can disable redirection via {@link Request#followRedirects(boolean)}
  * and then rely on this class to perform the redirect in a simpler way, for example:
- * <pre>
+ * <pre>{@code
  * HttpRedirector redirector = new HttpRedirector(httpClient);
  *
  * Request request = httpClient.newRequest("http://host/path").followRedirects(false);
@@ -56,7 +55,7 @@ import org.slf4j.LoggerFactory;
  *     request = result.getRequest();
  *     response = result.getResponse();
  * }
- * </pre>
+ * }</pre>
  */
 public class HttpRedirector
 {
@@ -88,11 +87,11 @@ public class HttpRedirector
     {
         switch (response.getStatus())
         {
-            case 301:
-            case 302:
-            case 303:
-            case 307:
-            case 308:
+            case HttpStatus.MOVED_PERMANENTLY_301:
+            case HttpStatus.MOVED_TEMPORARILY_302:
+            case HttpStatus.SEE_OTHER_303:
+            case HttpStatus.TEMPORARY_REDIRECT_307:
+            case HttpStatus.PERMANENT_REDIRECT_308:
                 return true;
             default:
                 return false;
@@ -111,8 +110,8 @@ public class HttpRedirector
      */
     public Result redirect(Request request, Response response) throws InterruptedException, ExecutionException
     {
-        final AtomicReference<Result> resultRef = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         Request redirect = redirect(request, response, new BufferingResponseListener()
         {
             @Override
@@ -194,7 +193,7 @@ public class HttpRedirector
         int status = response.getStatus();
         switch (status)
         {
-            case 301:
+            case HttpStatus.MOVED_PERMANENTLY_301:
             {
                 String method = request.getMethod();
                 if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
@@ -204,7 +203,7 @@ public class HttpRedirector
                 fail(request, response, new HttpResponseException("HTTP protocol violation: received 301 for non GET/HEAD/POST/PUT request", response));
                 return null;
             }
-            case 302:
+            case HttpStatus.MOVED_TEMPORARILY_302:
             {
                 String method = request.getMethod();
                 if (HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
@@ -212,7 +211,7 @@ public class HttpRedirector
                 else
                     return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
             }
-            case 303:
+            case HttpStatus.SEE_OTHER_303:
             {
                 String method = request.getMethod();
                 if (HttpMethod.HEAD.is(method))
@@ -220,8 +219,8 @@ public class HttpRedirector
                 else
                     return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
             }
-            case 307:
-            case 308:
+            case HttpStatus.TEMPORARY_REDIRECT_307:
+            case HttpStatus.PERMANENT_REDIRECT_308:
             {
                 // Keep same method
                 return redirect(request, response, listener, newURI, request.getMethod());
@@ -307,16 +306,53 @@ public class HttpRedirector
         }
     }
 
-    private Request sendRedirect(final HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request sendRedirect(HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
     {
         try
         {
             Request redirect = client.copyRequest(httpRequest, location);
-            // Disable the timeout so that only the one from the initial request applies.
-            redirect.timeout(0, TimeUnit.MILLISECONDS);
 
-            // Use given method
+            // Use the given method.
             redirect.method(method);
+
+            if (HttpMethod.GET.is(method))
+            {
+                redirect.body(null);
+                redirect.headers(headers ->
+                {
+                    headers.remove(HttpHeader.CONTENT_LENGTH);
+                    headers.remove(HttpHeader.CONTENT_TYPE);
+                });
+            }
+
+            Request.Content body = redirect.getBody();
+            if (body != null && !body.isReproducible())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not redirect to {}, request body is not reproducible", location);
+                HttpConversation conversation = httpRequest.getConversation();
+                conversation.updateResponseListeners(null);
+                notifier.forwardSuccessComplete(conversation.getResponseListeners(), httpRequest, response);
+                return null;
+            }
+
+            // Adjust the timeout of the new request, taking into account the
+            // timeout of the previous request and the time already elapsed.
+            long timeoutNanoTime = httpRequest.getTimeoutNanoTime();
+            if (timeoutNanoTime < Long.MAX_VALUE)
+            {
+                long newTimeout = NanoTime.until(timeoutNanoTime);
+                if (newTimeout > 0)
+                {
+                    redirect.timeout(newTimeout, TimeUnit.NANOSECONDS);
+                }
+                else
+                {
+                    TimeoutException failure = new TimeoutException("Total timeout " + httpRequest.getConversation().getTimeout() + " ms elapsed");
+                    fail(httpRequest, failure, response);
+                    return null;
+                }
+            }
 
             redirect.onRequestBegin(request ->
             {
@@ -330,17 +366,27 @@ public class HttpRedirector
         }
         catch (Throwable x)
         {
-            fail(httpRequest, response, x);
+            fail(httpRequest, x, response);
             return null;
         }
     }
 
     protected void fail(Request request, Response response, Throwable failure)
     {
+        fail(request, null, response, failure);
+    }
+
+    protected void fail(Request request, Throwable failure, Response response)
+    {
+        fail(request, failure, response, failure);
+    }
+
+    private void fail(Request request, Throwable requestFailure, Response response, Throwable responseFailure)
+    {
         HttpConversation conversation = ((HttpRequest)request).getConversation();
         conversation.updateResponseListeners(null);
         List<Response.ResponseListener> listeners = conversation.getResponseListeners();
-        notifier.notifyFailure(listeners, response, failure);
-        notifier.notifyComplete(listeners, new Result(request, response, failure));
+        notifier.notifyFailure(listeners, response, responseFailure);
+        notifier.notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
     }
 }

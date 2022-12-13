@@ -1,0 +1,95 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-start-start-jpms]]
+==== Starting Jetty using JPMS
+
+Jetty modules are proper link:https://en.wikipedia.org/wiki/Java_Platform_Module_System[JPMS] modules: each Jetty module has a `module-info.class` file.
+This makes possible to run Jetty from the module-path, rather than the class-path.
+
+To start Jetty on the module-path rather than the class-path, it is enough to add the `--jpms` option to the command line, for example:
+
+----
+$ java -jar $JETTY_HOME/start.jar --jpms
+----
+
+[NOTE]
+====
+The `--jpms` option implies the `--exec` option.
+
+When running on the module-path using the `--jpms` option, the Jetty start mechanism will fork a second JVM passing it the right JVM options to run on the module-path.
+
+Therefore, you will have two JVMs running: one that runs `start.jar` and one that runs Jetty on the module-path.
+====
+
+When Jetty is started in JPMS mode, all JPMS modules in the module-path are added to the set of JPMS _root modules_ through the JVM option `--add-modules ALL_MODULE_PATH`.
+
+For a `+*.jar+` file that is not a JPMS module, but is on the module-path, the JVM will assume internally it is an automatic JPMS module, with a JPMS module name derived from the `+*.jar+` file name.
+
+Rather than adding the `--jpms` option to the command line, you can use a custom Jetty module to centralize your JPMS configuration, where you can specify additional JPMS directives.
+
+Create the `$JETTY_BASE/modules/jpms.mod` file:
+
+.jpms.mod
+----
+include::jpms.mod[]
+----
+
+The `[ini]` section with `--jpms` is equivalent to passing the `--jpms` option to the command line (see also xref:og-modules-directive-ini[this section]).
+
+The `[jpms]` section allows you to specify additional JPMS configuration, for example additional `--add-modules` options, or `--add-opens` options, etc. (see also xref:og-modules-directive-jpms[this section]).
+
+Then enable it:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=jpms
+----
+
+Now you can start Jetty without extra command line options, and it will start in JPMS mode because you have enabled the `jpms` module.
+
+[[og-start-start-jpms-advanced]]
+===== Advanced JPMS Configuration
+
+Web applications may need additional services from the Servlet Container, such as JDBC `DataSource` references or JTA `UserTransaction` references.
+
+For example, for JDBC it is typical to store, in JNDI, a reference to the connection pool's `DataSource` or directly a reference to the JDBC driver's `DataSource` (for example, `org.postgresql.ds.PGConnectionPoolDataSource`).
+Jetty needs to be able to instantiate those classes and therefore needs to be able to load those classes and all their super-classes, among which includes `javax.sql.DataSource`.
+
+When Jetty runs on the class-path, this is easily achieved by using a xref:og-modules-custom[custom module] as explained in xref:og-start-configure-custom-module[this section].
+
+However, when running on the module-path, things are quite different.
+
+When Jetty tries to load, for example, class `org.postgresql.ds.PGConnectionPoolDataSource`, it must be in a JPMS module that is resolved in the run-time module graph.
+Furthermore, any dependency, for example classes from the `java.sql` JPMS module, must also be in a module present in the resolved module graph.
+
+Thanks to the fact that when Jetty starts in JPMS mode the `--add-modules ALL_MODULE_PATH` option is added to the JVM command line, every `+*.jar+` file in the module-path is also present in the module graph.
+
+There are now two cases for the `postgresql-<version>.jar` file: either it is a proper JPMS module, or it is an automatic JPMS module (either an explicit automatic JPMS module with the `Automatic-Module-Name` attribute in the manifest, or an implicit automatic JPMS module whose name is derived from the `+*.jar+` file name).
+
+If the `postgresql-<version>.jar` file is a proper JPMS module, then there is nothing more that you should do: the `postgresql-<version>.jar` file is in the module-path, and all the modules in the module-path are in the module graph, and any dependency declared in the `module-info.class` will be added to the module graph.
+
+Otherwise, `postgresql-<version>.jar` file is an automatic module, and will likely have a dependency on the JDK-bundled `java.sql` JPMS module.
+However, the `java.sql` JPMS module is not in the module graph, because automatic modules do not have a way to declare their dependencies.
+
+For this reason, you have to manually add the `java.sql` dependency to the module graph.
+Using the `postgresql.mod` introduced in xref:og-start-configure-custom-module[this section] as an example, modify your custom module in the following way:
+
+.postgresql.mod
+----
+...
+
+[jpms]
+add-modules: java.sql
+----
+
+The `[jpms]` section is only used when Jetty is started on the module-path.

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -591,7 +586,7 @@ public class HttpClientTransportDynamicTest
         int proxyPort = connector.getLocalPort();
         // The proxy speaks both http/1.1 and h2c.
         Origin.Protocol proxyProtocol = new Origin.Protocol(List.of("http/1.1", "h2c"), false);
-        client.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, proxyProtocol));
+        client.getProxyConfiguration().addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), false, proxyProtocol));
 
         // Make an upgrade request from HTTP/1.1 to H2C.
         int serverPort = proxyPort + 1; // Any port will do.
@@ -718,7 +713,7 @@ public class HttpClientTransportDynamicTest
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                jettyRequest.getHttpChannel().getEndPoint().getConnection().close();
+                jettyRequest.getHttpChannel().getEndPoint().close();
             }
         });
         ClientConnector clientConnector = new ClientConnector();

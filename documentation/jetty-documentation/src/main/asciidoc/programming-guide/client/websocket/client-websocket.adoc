@@ -1,0 +1,204 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-client-websocket]]
+=== WebSocket Client
+
+Jetty's `WebSocketClient` is a more powerful alternative to the WebSocket client provided by the standard JSR 356 `javax.websocket` APIs.
+
+Similarly to Jetty's xref:pg-client-http[`HttpClient`], the `WebSocketClient` is non-blocking and asynchronous, making it very efficient in resource utilization.
+A synchronous, blocking, API is also offered for simpler cases.
+
+Since the first step of establishing a WebSocket communication is an HTTP request, `WebSocketClient` makes use of `HttpClient` and therefore depends on it.
+
+The Maven artifact coordinates are the following:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.websocket</groupId>
+  <artifactId>websocket-jetty-client</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+[[pg-client-websocket-start]]
+==== Starting WebSocketClient
+
+The main class is `org.eclipse.jetty.websocket.client.WebSocketClient`; you instantiate it, configure it, and then start it like may other Jetty components.
+This is a minimal example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=start]
+----
+
+However, it is recommended that you explicitly pass an `HttpClient` instance to `WebSocketClient` so that you can have control over the HTTP configuration as well:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=startWithHttpClient]
+----
+
+You may create multiple instances of `WebSocketClient`, but typically one instance is enough for most applications.
+Creating multiple instances may be necessary for example when you need to specify different configuration parameters for different instances.
+For example, you may need different instances when you need to configure the `HttpClient` differently: different transports, different proxies, different cookie stores, different authentications, etc.
+
+WebSocket specific configuration may be typically be given a default value in `WebSocketClient` and then overridden more specifically, see for example xref:pg-websocket-session-configure[this section].
+
+[[pg-client-websocket-stop]]
+==== Stopping WebSocketClient
+
+It is recommended that when your application stops, you also stop the `WebSocketClient` instance (or instances) that you are using.
+
+Similarly to xref:pg-client-http-stop[stopping `HttpClient`], you want to stop `WebSocketClient` from a thread that is not owned by `WebSocketClient` itself, for example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=stop]
+----
+
+[[pg-client-websocket-connect]]
+==== Connecting to a Remote Host
+
+A WebSocket client may initiate the communication with the server either xref:pg-client-websocket-connect-http11[using HTTP/1.1] or xref:pg-client-websocket-connect-http2[using HTTP/2].
+The two mechanism are quite different and detailed in the following sections.
+
+[[pg-client-websocket-connect-http11]]
+===== Using HTTP/1.1
+
+Initiating a WebSocket communication with a server using HTTP/1.1 is detailed in link:https://tools.ietf.org/html/rfc6455#section-1.8[RFC 6455].
+
+A WebSocket client first establishes a TCP connection to the server, then sends an HTTP/1.1 _upgrade_ request.
+
+If the server supports upgrading to WebSocket, it responds with HTTP status code `101`, and then switches the communication over that connection, either incoming or outgoing, to happen using the WebSocket protocol.
+
+When the client receives the HTTP status code `101`, it switches the communication over that connection, either incoming or outgoing, to happen using the WebSocket protocol.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant ClientEndPoint
+participant WebSocketClient
+participant HttpClient
+participant Server
+participant ServerEndPoint
+
+WebSocketClient -> HttpClient : connect()
+HttpClient -> Server : TCP/TLS connect
+HttpClient -> Server : GET / HTTP/1.1\nUpgrade: websocket
+Server -> ServerEndPoint ** : create
+Server -> HttpClient : HTTP/1.1 101\nUpgrade: websocket
+HttpClient -> WebSocketClient
+WebSocketClient -> ClientEndPoint ** : create
+ClientEndPoint -> WebSocketClient : WebSocket Frame A
+WebSocketClient -> Server : WebSocket Frame A
+Server -> ServerEndPoint : WebSocket Frame A
+ServerEndPoint -> Server : WebSocket Frame B
+Server -> WebSocketClient : WebSocket Frame B
+WebSocketClient -> ClientEndPoint : WebSocket Frame B
+----
+
+In code:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=connectHTTP11]
+----
+
+`WebSocketClient.connect()` links the client-side WebSocket _endpoint_ to a specific server URI, and returns a `CompletableFuture` of an `org.eclipse.jetty.websocket.api.Session`.
+
+The endpoint offers APIs to _receive_ WebSocket data (or errors) from the server, while the session offers APIs to _send_ WebSocket data to the server.
+
+[[pg-client-websocket-connect-http2]]
+===== Using HTTP/2
+
+Initiating a WebSocket communication with a server using HTTP/1.1 is detailed in link:https://tools.ietf.org/html/rfc8441[RFC 8441].
+
+A WebSocket client establishes a TCP connection to the server or reuses an existing one currently used for HTTP/2, then sends an HTTP/2 _connect_ request over an HTTP/2 stream.
+
+If the server supports upgrading to WebSocket, it responds with HTTP status code `200`, then switches the communication over that stream, either incoming or outgoing, to happen using HTTP/2 `DATA` frames wrapping WebSocket frames.
+
+When the client receives the HTTP status code `200`, it switches the communication over that stream, either incoming or outgoing, to happen using HTTP/2 `DATA` frames wrapping WebSocket frames.
+
+From an external point of view, it will look like client is sending chunks of an infinite HTTP/2 request upload, and the server is sending chunks of an infinite HTTP/2 response download, as they will exchange HTTP/2 `DATA` frames; but the HTTP/2 `DATA` frames will contain each one or more WebSocket frames that both client and server know how to deliver to the respective WebSocket endpoints.
+
+When either WebSocket endpoint decides to terminate the communication, the HTTP/2 stream will be closed as well.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant ClientEndPoint
+participant WebSocketClient
+participant HttpClient
+participant Server
+participant ServerEndPoint
+
+WebSocketClient -> HttpClient : connect()
+HttpClient --> Server : TCP/TLS connect
+HttpClient -> Server : HEADERS\n:method: CONNECT\n:protocol: websocket
+Server -> ServerEndPoint ** : create
+Server -> HttpClient : HEADERS\n:status: 200\n: websocket
+HttpClient -> WebSocketClient
+WebSocketClient -> ClientEndPoint ** : create
+ClientEndPoint -> HttpClient : WebSocket Frame A
+HttpClient -> Server : DATA\nWebSocket Frame A
+Server -> ServerEndPoint : WebSocket Frame A
+ServerEndPoint -> Server : WebSocket Frame B
+Server -> HttpClient : DATA\nWebSocket Frame B
+HttpClient -> ClientEndPoint : WebSocket Frame B
+----
+
+In code:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=connectHTTP2]
+----
+
+Alternatively, you can use the xref:pg-client-http-transport-dynamic[dynamic `HttpClient` transport]:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=connectHTTP2Dynamic]
+----
+
+[[pg-client-websocket-connect-custom-http-request]]
+===== Customizing the Initial HTTP Request
+
+Sometimes you need to add custom cookies, or other HTTP headers, or specify a WebSocket sub-protocol to the HTTP request that initiates the WebSocket communication.
+
+You can do this by using overloaded versions of the `WebSocketClient.connect(...)` method:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=customHTTPRequest]
+----
+
+[[pg-client-websocket-connect-inspect-http-response]]
+===== Inspecting the Initial HTTP Response
+
+If you want to inspect the HTTP response returned by the server as a reply to the  HTTP request that initiates the WebSocket communication, you may provide a `JettyUpgradeListener`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=inspectHTTPResponse]
+----
+
+include::../../websocket.adoc[]

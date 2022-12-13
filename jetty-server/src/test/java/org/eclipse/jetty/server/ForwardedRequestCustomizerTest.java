@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -456,6 +451,18 @@ public class ForwardedRequestCustomizerTest
                     .secure(false)
                     .requestURL("http://myhost/")
                     .remoteAddr("10.9.8.7").remotePort(1111)
+            ),
+            Arguments.of(new Request("X-Forwarded-For (IPv6 without port)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 2001:db8:cafe::17"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("[2001:db8:cafe::17]").remotePort(0)
             ),
             Arguments.of(new Request("X-Forwarded-For (IPv6 with port)")
                     .headers(
@@ -1103,6 +1110,57 @@ public class ForwardedRequestCustomizerTest
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(400));
+    }
+
+    public static Stream<Arguments> customHeaderNameRequestCases()
+    {
+        return Stream.of(
+            Arguments.of(new Request("Old name then new name")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-For: 1.1.1.1",
+                        "X-Custom-For: 2.2.2.2"
+                    )
+                    .configureCustomizer((forwardedRequestCustomizer) ->
+                        forwardedRequestCustomizer.setForwardedForHeader("X-Custom-For")),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("2.2.2.2").remotePort(0)
+            ),
+            Arguments.of(new Request("New name then old name")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Custom-For: 2.2.2.2",
+                        "X-Forwarded-For: 1.1.1.1"
+                    )
+                    .configureCustomizer((forwardedRequestCustomizer) ->
+                        forwardedRequestCustomizer.setForwardedForHeader("X-Custom-For")),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("2.2.2.2").remotePort(0)
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("customHeaderNameRequestCases")
+    public void testCustomHeaderName(Request request, Expectations expectations) throws Exception
+    {
+        request.configure(customizer);
+
+        String rawRequest = request.getRawRequest((header) -> header);
+        // System.out.println(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertThat("status", response.getStatus(), is(200));
+
+        expectations.accept(actual);
     }
 
     private static class Request

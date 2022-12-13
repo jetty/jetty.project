@@ -1,0 +1,33 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-deploy]]
+===== Module `deploy`
+
+The `deploy` module provides the deployment feature through a `DeploymentManager` component that watches a directory for changes (see xref:og-deploy[how to deploy web applications] for more information).
+
+Files or directories added in this monitored directory cause the `DeploymentManager` to deploy them as web applications; updating files already existing in this monitored directory cause the `DeploymentManager` to re-deploy the correspondent web application; removing files in this monitored directory cause the `DeploymentManager` to undeploy the correspondent web application (see also xref:og-deploy-rules[here] for more information).
+
+The module file is `$JETTY_HOME/modules/deploy.mod`:
+
+----
+include::{JETTY_HOME}/modules/deploy.mod[]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.deploy.monitoredDir`::
+The name of the monitored directory.
+`jetty.deploy.scanInterval`::
+The scan period in seconds, that is how frequently the `DeploymentManager` wakes up to scan the monitored directory for changes.
+Setting `jetty.deploy.scanInterval=0` disabled _hot_ deployment so that only static deployment will be possible (see also xref:og-deploy-hot-static[here] for more information).

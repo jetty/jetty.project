@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -37,6 +32,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +42,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -52,6 +50,8 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,9 +64,11 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionTest
@@ -502,48 +504,24 @@ public class HttpConnectionTest
     public void testBadPathDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
-        checkContains(response, 0, "reason: Bad URI");
-    }
-
-    @Test
-    public void testOKPathEncodedDotDotPath() throws Exception
-    {
-        String response = connector.getResponse("GET /ooops/%2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 200 OK");
-        checkContains(response, 0, "pathInfo=/path");
-    }
-
-    @Test
-    public void testBadPathEncodedDotDotPath() throws Exception
-    {
-        String response = connector.getResponse("GET /ooops/%2e%2e/%2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
-        checkContains(response, 0, "reason: Bad URI");
+        checkContains(response, 0, "HTTP/1.1 400 ");
+        checkContains(response, 0, "reason: Bad Request");
     }
 
     @Test
     public void testBadDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
-        checkContains(response, 0, "reason: Bad URI");
+        checkContains(response, 0, "HTTP/1.1 400 ");
+        checkContains(response, 0, "reason: Bad Request");
     }
 
     @Test
     public void testBadSlashDotDotPath() throws Exception
     {
         String response = connector.getResponse("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
-        checkContains(response, 0, "reason: Bad URI");
-    }
-
-    @Test
-    public void testEncodedBadDotDotPath() throws Exception
-    {
-        String response = connector.getResponse("GET %2e%2e/path HTTP/1.0\r\nHost: localhost:80\r\n\n");
-        checkContains(response, 0, "HTTP/1.1 400 Bad Request");
-        checkContains(response, 0, "reason: Bad URI");
+        checkContains(response, 0, "HTTP/1.1 400 ");
+        checkContains(response, 0, "reason: Bad Request");
     }
 
     @Test
@@ -850,7 +828,7 @@ public class HttpConnectionTest
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
-        checkContains(response, 0, "HTTP/1.1 200"); //now fallback to iso-8859-1
+        checkContains(response, 0, "HTTP/1.1 400");
 
         response = connector.getResponse("GET /bad/utf8%c1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -1021,9 +999,9 @@ public class HttpConnectionTest
                 "5;\r\n" +
                 "12345\r\n";
 
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long start = NanoTime.now();
         String response = connector.getResponse(requests, 2000, TimeUnit.MILLISECONDS);
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThanOrEqualTo(2000L));
+        assertThat(NanoTime.millisSince(start), lessThanOrEqualTo(2000L));
 
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "pathInfo=/R1");
@@ -1380,6 +1358,68 @@ public class HttpConnectionTest
                 System.err.println(response);
             throw e;
         }
+    }
+
+    @Test
+    public void testBytesIn() throws Exception
+    {
+        String chunk1 = "0123456789ABCDEF";
+        String chunk2 = IntStream.range(0, 64).mapToObj(i -> chunk1).collect(Collectors.joining());
+        long dataLength = chunk1.length() + chunk2.length();
+        server.stop();
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                jettyRequest.setHandled(true);
+                IO.copy(request.getInputStream(), IO.getNullStream());
+
+                HttpConnection connection = HttpConnection.getCurrentConnection();
+                long bytesIn = connection.getBytesIn();
+                assertThat(bytesIn, greaterThan(dataLength));
+            }
+        });
+        server.start();
+
+        LocalEndPoint localEndPoint = connector.executeRequest("" +
+            "POST / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Length: " + dataLength + "\r\n" +
+            "\r\n" +
+            chunk1);
+
+        // Wait for the server to block on the read().
+        Thread.sleep(500);
+
+        // Send more content.
+        localEndPoint.addInput(chunk2);
+
+        HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse());
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        localEndPoint.close();
+
+        localEndPoint = connector.executeRequest("" +
+            "POST / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            "\r\n" +
+            Integer.toHexString(chunk1.length()) + "\r\n" +
+            chunk1 + "\r\n");
+
+        // Wait for the server to block on the read().
+        Thread.sleep(500);
+
+        // Send more content.
+        localEndPoint.addInput("" +
+            Integer.toHexString(chunk2.length()) + "\r\n" +
+            chunk2 + "\r\n" +
+            "0\r\n" +
+            "\r\n");
+
+        response = HttpTester.parseResponse(localEndPoint.getResponse());
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        localEndPoint.close();
     }
 
     private int checkContains(String s, int offset, String c)

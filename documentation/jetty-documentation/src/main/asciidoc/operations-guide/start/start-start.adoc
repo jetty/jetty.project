@@ -1,0 +1,108 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-start-start]]
+==== Starting Jetty
+
+After you have configured the `$JETTY_BASE` directory, as explained in xref:og-start-configure[this section], you can start Jetty as a standalone server.
+
+In the _start_ mode, the Jetty start mechanism computes a JVM command line with JVM options, system properties, class-path, module-path, main class and program arguments, and then executes it, forking a new JVM if necessary.
+
+The Jetty start mechanism performs these steps:
+
+. Loads all the Jetty modules files (that have extension `+*.mod+`) from the `modules/` subdirectory of each configuration source directory (see xref:og-start-configure[this section] for the list of configuration sources).
+In this way, a Jetty module graph can be built in memory, where the module dependencies form the edges of the graph and each node contains the metadata information declared by each module (for example, the libraries that it needs, the XML files to process, and so on), in preparation for the next step.
+. Reads the Jetty module configuration files (that have extension `+*.ini+`) from the `start.d/` subdirectory of each configuration source directory and from the command line.
+This step produces a list of _enabled_ modules; for each enabled module all its dependencies are transitively resolved by navigating the graph built in the previous steps.
+. Processes the list of enabled (explicitly and transitively) modules, gathering the list of libraries to add to the class-path, the JPMS directives to add to the command line, the properties and XML files to add as program arguments, etc., so that a full JVM command line can be generated.
+. Executes the command line, either in-JVM or by forking a second JVM (if the `--exec` option is present or implied by other options such as `--jpms`), and waits for the JVM, or the forked JVM, to exit.
+
+[[og-start-start-class-path]]
+===== Server Class-Path
+
+When the Jetty server is started in-JVM, the server class-path gathered by processing the enabled modules is organized in a `URLClassLoader`, the Jetty Start ClassLoader, that is a child of the System ClassLoader:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle "Jetty Start JVM" {
+  rectangle "System ClassLoader" as system
+  rectangle "Jetty Start ClassLoader" as start
+
+  note right of system: start.jar
+  note right of start: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
+
+  system <-- start
+}
+----
+
+The System ClassLoader only has `$JETTY_HOME/start.jar` in its class-path, since the JVM was started with `java -jar $JETTY_HOME/start.jar`.
+The Jetty Start ClassLoader has in its class-path the `+*.jar+` files gathered by processing the enabled modules, typically from `+$JETTY_HOME/lib/jetty-*.jar+`, but possibly also from `+$JETTY_BASE/lib/*.jar+` if custom modules extend the server class-path with their own `+*.jar+` files.
+
+When the Jetty server is started in a forked JVM, there will be two JVMs: one started by you with `java -jar $JETTY_HOME/start.jar` and one forked by the Jetty start mechanism.
+In the forked JVM, the System ClassLoader has the server class-path and/or module-path in its class-path, since the forked JVM is started with `+java --class-path $JETTY_HOME/lib/jetty-server-<version>.jar:...+`:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle "Jetty Start JVM" as startJVM {
+  rectangle "System ClassLoader" as system1
+  note right of system1: start.jar
+}
+
+rectangle "Forked JVM" as forkedJVM {
+  rectangle "System ClassLoader" as system2
+
+  note right of system2: jetty-server.jar\njetty-http.jar\njetty-io.jar\njetty-util.jar\njetty-xml.jar\netc.
+}
+
+startJVM --> forkedJVM: " waits for"
+----
+
+It is worth mentioning that there are two standard Jetty modules that allow you to easily add entries to the Jetty server class-path:
+
+* The `resources` module, that adds the `$JETTY_BASE/resources/` directory to the server class-path.
+This is useful if you have third party libraries that lookup resources from the class-path: just put those resources in the `$JETTY_BASE/resources/` directory. +
+Logging libraries often perform class-path lookup of their configuration files (for example, `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so `$JETTY_BASE/resources/` is the ideal place to add those files. +
+* The the `ext` module, that adds all the `+*.jar+` files under the `$JETTY_BASE/lib/ext/` directory, and subdirectories recursively, to the server class-path. +
++
+[CAUTION]
+====
+On one hand, the `ext` module provides a handy place to put third party libraries and their dependencies; on the other hand, the `$JETTY_BASE/lib/ext/` directory may become a confused mixture of many `+*.jar+` files from different third party libraries.
+
+Prefer to group third party libraries and their dependencies into their own directories using xref:og-modules-custom[custom modules], or at least group them into `$JETTY_BASE/lib/ext/` subdirectories such as `$JETTY_BASE/lib/ext/util/` or `$JETTY_BASE/lib/ext/acme/`.
+====
+
+[[og-start-start-xml]]
+===== Assembling Jetty Components
+
+The Jetty start mechanism eventually invokes, by default, main class `org.eclipse.jetty.xml.XmlConfiguration`, passing properties and xref:og-xml[Jetty XML files] as program arguments.
+
+The Jetty XML files are nothing more than Java code in XML format.
+
+The XML files are processed to instantiate Jetty components such as `org.eclipse.jetty.server.Server` or `org.eclipse.jetty.util.ssl.SslContextFactory`.
+The components are then assembled together to provide the configured Jetty features.
+
+The Jetty XML files are parametrized using properties; a property is just a name/value pair.
+
+This parametrization of the XML files allows an XML file that resides in `$JETTY_HOME/etc/` to _declare_ a property such as `jetty.http.port`, and allow this property to be set in a `$JETTY_BASE/start.d/http.ini` file, so that you don't need to change the XML files in `$JETTY_HOME`, but only change files in your `$JETTY_BASE`.
+
+You can write your own xref:og-modules-custom[custom modules] with your own Jetty XML files, and your own properties, to further customize Jetty.

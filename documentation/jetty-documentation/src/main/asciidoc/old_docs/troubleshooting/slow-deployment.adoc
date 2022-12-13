@@ -1,0 +1,46 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[troubleshooting-slow-deployment]]
+=== Troubleshooting Slow Deployment
+
+After upgrading to a version of Jetty that supports Servlet Spec 3.0 or above, enabling some new modules, or introducing some new jars to your webapp, you notice that your deployment time is increased.
+This could be due to scanning for classes caused by a ServletContainerInitializer.
+
+As documented in the section on link:#using-annotations[Using Annotations], even if your webapp has set `metadata-complete=true` in web.xml, all jars within your webapp may still be scanned due to one or more ServletContainerInitializers that have a http://docs.oracle.com/javaee/6/api/javax/servlet/annotation/HandlesTypes.html[&#64;HandlesTypes] annotation listing the names of classes in which it is interested.
+
+There are 3 ways to speed up deployment time:
+
+* limit which ServletContainerInitializers to include
+* limit which jars to scan
+* limit the scan to the first deployment only
+
+==== Remedies
+
+===== Limit Which ServletContainerInitializers to Execute
+
+As documented in the section link:#excluding-scis[Excluding ServletContainerInitializers], you can provide a context attribute that defines a pattern of ServletContainerInitializer (SCI) class names to ignore.
+These SCIs will not be examined for http://docs.oracle.com/javaee/6/api/javax/servlet/annotation/HandlesTypes.html[&#64;HandlesTypes] and will not be executed.
+This is useful if you have included a 3rd party jar that has a SCI on which your code does not rely.
+
+===== Limit Which Jars to Scan
+
+As documented in the section link:#jars-scanned-for-annotations[Jars Scanned for Annotations], you can explicitly define which jars to include in the scanning process.
+This is helpful if you have a lot of jars in your webapp, and you know that they do not contain any classes referenced by an @HandlesTypes annotation on a ServletContainerInitializer that will be executed.
+
+===== Limit Scanning to First Deployment Only (Quickstart)
+
+The link:#quickstart-webapp[quickstart mechanism] will do a normal deployment - obeying any limits on SCIs and jars to scan as documented here - the first time the webapp is deployed only.
+Subsequent deployments will re-use the information discovered during the first deployment.
+This is useful if you cannot limit the scan significantly by using any of the mechanisms described here, but you don't want to incur the cost of scanning on every redeployment.
+The link:#quickstart-webapp[quickstart mechanism] and how to use it is described link:#quickstart-webapp[here].

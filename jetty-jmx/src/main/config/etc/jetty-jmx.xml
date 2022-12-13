@@ -18,6 +18,12 @@
         <Arg>
           <Ref refid="MBeanServer" />
         </Arg>
+        <Call name="beanAdded">
+          <Arg/>
+          <Arg>
+            <Get name="ILoggerFactory" class="org.slf4j.LoggerFactory"/>
+          </Arg>
+        </Call>
       </New>
     </Arg>
   </Call>

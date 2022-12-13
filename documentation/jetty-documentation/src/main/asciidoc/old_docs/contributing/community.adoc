@@ -1,0 +1,38 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[community]]
+=== Community
+
+Developers and users alike are welcome to engage the Jetty community.
+We all have day jobs here so don't just ask questions and get frustrated if no one answers right away.
+Stick around to hear an answer, one is likely coming at some point!
+
+[[community-mailing-lists]]
+==== Mailing Lists
+
+We have a number of options for people that wish to subscribe to our mailing lists.
+
+* Jetty Developers List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-dev
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-dev/
+* Jetty Users List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-users
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-users/
+* Jetty Announcements List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-announce/
+* Jetty Commit List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-commit
+** Archives - https://dev.eclipse.org/mhonarc/lists/jetty-commit/
+

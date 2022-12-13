@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -38,6 +33,7 @@ public class CloseStatus
     public static final int SHUTDOWN = 1001;
     public static final int PROTOCOL = 1002;
     public static final int BAD_DATA = 1003;
+    public static final int RESERVED = 1004;
     public static final int NO_CODE = 1005;
     public static final int NO_CLOSE = 1006;
     public static final int BAD_PAYLOAD = 1007;
@@ -45,6 +41,9 @@ public class CloseStatus
     public static final int MESSAGE_TOO_LARGE = 1009;
     public static final int EXTENSION_ERROR = 1010;
     public static final int SERVER_ERROR = 1011;
+    public static final int SERVICE_RESTART = 1012;
+    public static final int TRY_AGAIN_LATER = 1013;
+    public static final int BAD_GATEWAY = 1014;
     public static final int FAILED_TLS_HANDSHAKE = 1015;
 
     public static final CloseStatus NO_CODE_STATUS = new CloseStatus(NO_CODE);
@@ -189,7 +188,6 @@ public class CloseStatus
 
         this.code = statusCode;
         this.reason = null;
-        return;
     }
 
     public static CloseStatus getCloseStatus(Frame frame)
@@ -244,8 +242,7 @@ public class CloseStatus
         {
             byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
             reasonBytes = truncateToFit(utf8Bytes, CloseStatus.MAX_REASON_PHRASE);
-
-            if ((reasonBytes != null) && (reasonBytes.length > 0))
+            if (reasonBytes.length > 0)
                 len += reasonBytes.length;
         }
 
@@ -291,27 +288,13 @@ public class CloseStatus
      */
     public static boolean isTransmittableStatusCode(int statusCode)
     {
-        // Outside of range?
-        if ((statusCode <= 999) || (statusCode >= 5000))
-        {
-            return false;
-        }
+        // Transmittable status codes pre-defined by RFC6455 and IANA.
+        if ((statusCode >= 1000 && statusCode <= 1003) || (statusCode >= 1007 && statusCode <= 1014))
+            return true;
 
-        // Specifically called out as not-transmittable?
-        if ((statusCode == NO_CODE) ||
-            (statusCode == NO_CLOSE) ||
-            (statusCode == FAILED_TLS_HANDSHAKE))
-        {
-            return false;
-        }
-
-        // Reserved / not yet allocated
-        // RFC6455 Not allowed to be used for any purpose
-        return (statusCode != 1004) && // Reserved in RFC6455 (might be defined in the future)
-            ((statusCode < 1016) || (statusCode > 2999)) && // Reserved in RFC6455 (for future revisions, and extensions)
-            (statusCode < 5000);
-
-        // All others are allowed
+        // Codes 3000-3999 reserved for libraries, frameworks, and applications.
+        // Codes 4000-4999 reserved for private use.
+        return statusCode >= 3000 && statusCode < 5000;
     }
 
     public Frame toFrame()
@@ -343,6 +326,8 @@ public class CloseStatus
                 return "PROTOCOL";
             case BAD_DATA:
                 return "BAD_DATA";
+            case RESERVED:
+                return "RESERVED";
             case NO_CODE:
                 return "NO_CODE";
             case NO_CLOSE:
@@ -357,6 +342,12 @@ public class CloseStatus
                 return "EXTENSION_ERROR";
             case SERVER_ERROR:
                 return "SERVER_ERROR";
+            case SERVICE_RESTART:
+                return "SERVICE_RESTART";
+            case TRY_AGAIN_LATER:
+                return "TRY_AGAIN_LATER";
+            case BAD_GATEWAY:
+                return "BAD_GATEWAY";
             case FAILED_TLS_HANDSHAKE:
                 return "FAILED_TLS_HANDSHAKE";
             default:

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -40,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -99,6 +95,7 @@ public class SessionRenewTest
                 //verify the contents of the cache changed
                 assertTrue(context.getSessionHandler().getSessionCache().contains(newSessionId));
                 assertFalse(context.getSessionHandler().getSessionCache().contains(oldSessionId));
+                assertFalse(((AbstractSessionCache)context.getSessionHandler().getSessionCache()).doGet(newSessionId).isIdChanged());
                 super.verify(context, oldSessionId, newSessionId);
             }
         });
@@ -183,8 +180,6 @@ public class SessionRenewTest
         String contextPath = "";
         String servletMapping = "/server";
         WebAppContext context = _server.addWebAppContext(".", contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server.getServerConnector().addBean(scopeListener);
         context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();
@@ -199,32 +194,27 @@ public class SessionRenewTest
             client.start();
 
             //make a request to create a session
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             assertFalse(testListener.isCalled());
 
             //make a request to change the sessionid
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
-           
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());
+            
+            request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
+            ContentResponse checkResponse = request.send();
+            assertEquals(HttpServletResponse.SC_OK, checkResponse.getStatus());
+            assertNull(checkResponse.getHeaders().get("Set-Cookie"));
 
             if (verifier != null)
                 verifier.verify(context, TestServer.extractSessionId(sessionCookie), TestServer.extractSessionId(renewSessionCookie));
@@ -315,10 +305,10 @@ public class SessionRenewTest
 
                 assertTrue(sessionIdManager.isIdInUse(afterSessionId)); //new session id should be in use
                 assertFalse(sessionIdManager.isIdInUse(beforeSessionId));
-
-
-                if (((Session)afterSession).isIdChanged())
-                    ((org.eclipse.jetty.server.Response)response).replaceCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
+            }
+            else
+            {
+                request.getSession(false);
             }
         }
     }

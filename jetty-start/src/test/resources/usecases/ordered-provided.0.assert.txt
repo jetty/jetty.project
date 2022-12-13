@@ -1,7 +1,0 @@
-
-PROP|implA=implA
-PROP|implB=implB
-
-## The XMLs we expect (order is important)
-XML|${jetty.base}/etc/implB.xml
-XML|${jetty.base}/etc/implA.xml

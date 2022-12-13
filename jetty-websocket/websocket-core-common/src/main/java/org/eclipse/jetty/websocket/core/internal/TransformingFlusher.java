@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import java.util.Queue;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.slf4j.Logger;
@@ -38,6 +34,7 @@ import org.slf4j.LoggerFactory;
 public abstract class TransformingFlusher
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
 
     private final AutoLock lock = new AutoLock();
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
@@ -82,6 +79,41 @@ public abstract class TransformingFlusher
             notifyCallbackFailure(callback, failure);
     }
 
+    /**
+     * Used to close this flusher when there is no explicit failure.
+     */
+    public void closeFlusher()
+    {
+        failFlusher(SENTINEL_CLOSE_EXCEPTION);
+    }
+
+    /**
+     * Used to fail this flusher possibly from an external event such as a callback.
+     * @param t the failure.
+     */
+    public void failFlusher(Throwable t)
+    {
+        boolean failed = false;
+        try (AutoLock l = lock.lock())
+        {
+            if (failure == null)
+            {
+                failure = t;
+                failed = true;
+            }
+            else
+            {
+                failure.addSuppressed(t);
+            }
+        }
+
+        if (failed)
+        {
+            flusher.failed(t);
+            flusher.iterate();
+        }
+    }
+
     private void onFailure(Throwable t)
     {
         try (AutoLock l = lock.lock())
@@ -108,8 +140,14 @@ public abstract class TransformingFlusher
         private FrameEntry current;
 
         @Override
-        protected Action process()
+        protected Action process() throws Throwable
         {
+            try (AutoLock l = lock.lock())
+            {
+                if (failure != null)
+                    throw failure;
+            }
+
             if (finished)
             {
                 if (current != null)
@@ -139,8 +177,11 @@ public abstract class TransformingFlusher
             if (log.isDebugEnabled())
                 log.debug("onCompleteFailure {}", t.toString());
 
-            notifyCallbackFailure(current.callback, t);
-            current = null;
+            if (current != null)
+            {
+                notifyCallbackFailure(current.callback, t);
+                current = null;
+            }
             onFailure(t);
         }
     }

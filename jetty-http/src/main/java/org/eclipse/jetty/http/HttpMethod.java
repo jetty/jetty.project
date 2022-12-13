@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,143 +15,76 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 
 /**
- *
+ * Known HTTP Methods
  */
 public enum HttpMethod
 {
-    GET,
-    POST,
-    HEAD,
-    PUT,
-    OPTIONS,
-    DELETE,
-    TRACE,
-    CONNECT,
-    MOVE,
-    PROXY,
-    PRI;
+    // From https://www.iana.org/assignments/http-methods/http-methods.xhtml
+    ACL(Type.IDEMPOTENT),
+    BASELINE_CONTROL(Type.IDEMPOTENT),
+    BIND(Type.IDEMPOTENT),
+    CHECKIN(Type.IDEMPOTENT),
+    CHECKOUT(Type.IDEMPOTENT),
+    CONNECT(Type.NORMAL),
+    COPY(Type.IDEMPOTENT),
+    DELETE(Type.IDEMPOTENT),
+    GET(Type.SAFE),
+    HEAD(Type.SAFE),
+    LABEL(Type.IDEMPOTENT),
+    LINK(Type.IDEMPOTENT),
+    LOCK(Type.NORMAL),
+    MERGE(Type.IDEMPOTENT),
+    MKACTIVITY(Type.IDEMPOTENT),
+    MKCALENDAR(Type.IDEMPOTENT),
+    MKCOL(Type.IDEMPOTENT),
+    MKREDIRECTREF(Type.IDEMPOTENT),
+    MKWORKSPACE(Type.IDEMPOTENT),
+    MOVE(Type.IDEMPOTENT),
+    OPTIONS(Type.SAFE),
+    ORDERPATCH(Type.IDEMPOTENT),
+    PATCH(Type.NORMAL),
+    POST(Type.NORMAL),
+    PRI(Type.SAFE),
+    PROPFIND(Type.SAFE),
+    PROPPATCH(Type.IDEMPOTENT),
+    PUT(Type.IDEMPOTENT),
+    REBIND(Type.IDEMPOTENT),
+    REPORT(Type.SAFE),
+    SEARCH(Type.SAFE),
+    TRACE(Type.SAFE),
+    UNBIND(Type.IDEMPOTENT),
+    UNCHECKOUT(Type.IDEMPOTENT),
+    UNLINK(Type.IDEMPOTENT),
+    UNLOCK(Type.IDEMPOTENT),
+    UPDATE(Type.IDEMPOTENT),
+    UPDATEREDIRECTREF(Type.IDEMPOTENT),
+    VERSION_CONTROL(Type.IDEMPOTENT),
 
-    /**
-     * Optimized lookup to find a method name and trailing space in a byte array.
-     *
-     * @param bytes Array containing ISO-8859-1 characters
-     * @param position The first valid index
-     * @param limit The first non valid index
-     * @return An HttpMethod if a match or null if no easy match.
-     */
-    public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
+    // Other methods
+    PROXY(Type.NORMAL);
+
+    // The type of the method
+    private enum Type
     {
-        int length = limit - position;
-        if (length < 4)
-            return null;
-        switch (bytes[position])
-        {
-            case 'G':
-                if (bytes[position + 1] == 'E' && bytes[position + 2] == 'T' && bytes[position + 3] == ' ')
-                    return GET;
-                break;
-            case 'P':
-                if (bytes[position + 1] == 'O' && bytes[position + 2] == 'S' && bytes[position + 3] == 'T' && length >= 5 && bytes[position + 4] == ' ')
-                    return POST;
-                if (bytes[position + 1] == 'R' && bytes[position + 2] == 'O' && bytes[position + 3] == 'X' && length >= 6 && bytes[position + 4] == 'Y' && bytes[position + 5] == ' ')
-                    return PROXY;
-                if (bytes[position + 1] == 'U' && bytes[position + 2] == 'T' && bytes[position + 3] == ' ')
-                    return PUT;
-                if (bytes[position + 1] == 'R' && bytes[position + 2] == 'I' && bytes[position + 3] == ' ')
-                    return PRI;
-                break;
-            case 'H':
-                if (bytes[position + 1] == 'E' && bytes[position + 2] == 'A' && bytes[position + 3] == 'D' && length >= 5 && bytes[position + 4] == ' ')
-                    return HEAD;
-                break;
-            case 'O':
-                if (bytes[position + 1] == 'P' && bytes[position + 2] == 'T' && bytes[position + 3] == 'I' && length >= 8 &&
-                    bytes[position + 4] == 'O' && bytes[position + 5] == 'N' && bytes[position + 6] == 'S' && bytes[position + 7] == ' ')
-                    return OPTIONS;
-                break;
-            case 'D':
-                if (bytes[position + 1] == 'E' && bytes[position + 2] == 'L' && bytes[position + 3] == 'E' && length >= 7 &&
-                    bytes[position + 4] == 'T' && bytes[position + 5] == 'E' && bytes[position + 6] == ' ')
-                    return DELETE;
-                break;
-            case 'T':
-                if (bytes[position + 1] == 'R' && bytes[position + 2] == 'A' && bytes[position + 3] == 'C' && length >= 6 &&
-                    bytes[position + 4] == 'E' && bytes[position + 5] == ' ')
-                    return TRACE;
-                break;
-            case 'C':
-                if (bytes[position + 1] == 'O' && bytes[position + 2] == 'N' && bytes[position + 3] == 'N' && length >= 8 &&
-                    bytes[position + 4] == 'E' && bytes[position + 5] == 'C' && bytes[position + 6] == 'T' && bytes[position + 7] == ' ')
-                    return CONNECT;
-                break;
-            case 'M':
-                if (bytes[position + 1] == 'O' && bytes[position + 2] == 'V' && bytes[position + 3] == 'E' && length >= 5 && bytes[position + 4] == ' ')
-                    return MOVE;
-                break;
-
-            default:
-                break;
-        }
-        return null;
+        NORMAL,
+        IDEMPOTENT,
+        SAFE
     }
 
-    /**
-     * Optimized lookup to find a method name and trailing space in a byte array.
-     *
-     * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
-     * @return An HttpMethod if a match or null if no easy match.
-     */
-    public static HttpMethod lookAheadGet(ByteBuffer buffer)
-    {
-        if (buffer.hasArray())
-            return lookAheadGet(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.arrayOffset() + buffer.limit());
-
-        int l = buffer.remaining();
-        if (l >= 4)
-        {
-            HttpMethod m = CACHE.getBest(buffer, 0, l);
-            if (m != null)
-            {
-                int ml = m.asString().length();
-                if (l > ml && buffer.get(buffer.position() + ml) == ' ')
-                    return m;
-            }
-        }
-        return null;
-    }
-
-    public static final Trie<HttpMethod> INSENSITIVE_CACHE = new ArrayTrie<>();
-
-    static
-    {
-        for (HttpMethod method : HttpMethod.values())
-        {
-            INSENSITIVE_CACHE.put(method.toString(), method);
-        }
-    }
-
-    public static final Trie<HttpMethod> CACHE = new ArrayTernaryTrie<>(false);
-
-    static
-    {
-        for (HttpMethod method : HttpMethod.values())
-        {
-            CACHE.put(method.toString(), method);
-        }
-    }
-
-    private final ByteBuffer _buffer;
+    private final String _method;
     private final byte[] _bytes;
+    private final ByteBuffer _buffer;
+    private final Type _type;
 
-    HttpMethod()
+    HttpMethod(Type type)
     {
-        _bytes = StringUtil.getBytes(toString());
+        _method = name().replace('_', '-');
+        _type = type;
+        _bytes = StringUtil.getBytes(_method);
         _buffer = ByteBuffer.wrap(_bytes);
     }
 
@@ -170,6 +98,28 @@ public enum HttpMethod
         return toString().equalsIgnoreCase(s);
     }
 
+    /**
+     * An HTTP method is safe if it doesn't alter the state of the server.
+     * In other words, a method is safe if it leads to a read-only operation.
+     * Several common HTTP methods are safe: GET , HEAD , or OPTIONS .
+     * All safe methods are also idempotent, but not all idempotent methods are safe
+     * @return if the method is safe.
+     */
+    public boolean isSafe()
+    {
+        return _type == Type.SAFE;
+    }
+
+    /**
+     * An idempotent HTTP method is an HTTP method that can be called many times without different outcomes.
+     * It would not matter if the method is called only once, or ten times over. The result should be the same.
+     * @return true if the method is idempotent.
+     */
+    public boolean isIdempotent()
+    {
+        return _type.ordinal() >= Type.IDEMPOTENT.ordinal();
+    }
+
     public ByteBuffer asBuffer()
     {
         return _buffer.asReadOnlyBuffer();
@@ -177,11 +127,89 @@ public enum HttpMethod
 
     public String asString()
     {
-        return toString();
+        return _method;
+    }
+
+    public String toString()
+    {
+        return _method;
+    }
+
+    public static final Index<HttpMethod> INSENSITIVE_CACHE = new Index.Builder<HttpMethod>()
+        .caseSensitive(false)
+        .withAll(HttpMethod.values(), HttpMethod::asString)
+        .build();
+    public static final Index<HttpMethod> CACHE = new Index.Builder<HttpMethod>()
+        .caseSensitive(true)
+        .withAll(HttpMethod.values(), HttpMethod::asString)
+        .build();
+    public static final Index<HttpMethod> LOOK_AHEAD = new Index.Builder<HttpMethod>()
+        .caseSensitive(true)
+        .withAll(HttpMethod.values(), httpMethod -> httpMethod.asString() + ' ')
+        .build();
+    public static final int ACL_AS_INT = ('A' & 0xff) << 24 | ('C' & 0xFF) << 16 | ('L' & 0xFF) << 8 | (' ' & 0xFF);
+    public static final int GET_AS_INT = ('G' & 0xff) << 24 | ('E' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
+    public static final int PRI_AS_INT = ('P' & 0xff) << 24 | ('R' & 0xFF) << 16 | ('I' & 0xFF) << 8 | (' ' & 0xFF);
+    public static final int PUT_AS_INT = ('P' & 0xff) << 24 | ('U' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
+    public static final int POST_AS_INT = ('P' & 0xff) << 24 | ('O' & 0xFF) << 16 | ('S' & 0xFF) << 8 | ('T' & 0xFF);
+    public static final int HEAD_AS_INT = ('H' & 0xff) << 24 | ('E' & 0xFF) << 16 | ('A' & 0xFF) << 8 | ('D' & 0xFF);
+
+    /**
+     * Optimized lookup to find a method name and trailing space in a byte array.
+     *
+     * @param bytes Array containing ISO-8859-1 characters
+     * @param position The first valid index
+     * @param limit The first non valid index
+     * @return An HttpMethod if a match or null if no easy match.
+     * @deprecated Not used
+     */
+    @Deprecated
+    public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
+    {
+        return LOOK_AHEAD.getBest(bytes, position, limit - position);
     }
 
     /**
-     * Converts the given String parameter to an HttpMethod
+     * Optimized lookup to find a method name and trailing space in a byte array.
+     *
+     * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
+     * @return An HttpMethod if a match or null if no easy match.
+     */
+    public static HttpMethod lookAheadGet(ByteBuffer buffer)
+    {
+        int len = buffer.remaining();
+        // Short cut for 3 char methods, mostly for GET optimisation
+        if (len > 3)
+        {
+            switch (buffer.getInt(buffer.position()))
+            {
+                case ACL_AS_INT:
+                    return ACL;
+                case GET_AS_INT:
+                    return GET;
+                case PRI_AS_INT:
+                    return PRI;
+                case PUT_AS_INT:
+                    return PUT;
+                case POST_AS_INT:
+                    if (len > 4 && buffer.get(buffer.position() + 4) == ' ')
+                        return POST;
+                    break;
+                case HEAD_AS_INT:
+                    if (len > 4 && buffer.get(buffer.position() + 4) == ' ')
+                        return HEAD;
+                    break;
+                default:
+                    break;
+            }
+        }
+        return LOOK_AHEAD.getBest(buffer, 0, len);
+    }
+
+    /**
+     * Converts the given String parameter to an HttpMethod.
+     * The string may differ from the Enum name as a '-'  in the method
+     * name is represented as a '_' in the Enum name.
      *
      * @param method the String to get the equivalent HttpMethod from
      * @return the HttpMethod or null if the parameter method is unknown

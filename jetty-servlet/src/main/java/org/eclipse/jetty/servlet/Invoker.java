@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -31,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -71,7 +67,7 @@ public class Invoker extends HttpServlet
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
-    private ServletHandler.MappedServlet _invokerEntry;
+    private MatchedResource<ServletHandler.MappedServlet> _invokerEntry;
     private Map<String, String> _parameters;
     private boolean _nonContextServlets;
     private boolean _verbose;
@@ -167,16 +163,16 @@ public class Invoker extends HttpServlet
             try (AutoLock l = _servletHandler.lock())
             {
                 // find the entry for the invoker (me)
-                _invokerEntry = _servletHandler.getMappedServlet(servletPath);
+                _invokerEntry = _servletHandler.getMatchedServlet(servletPath);
 
                 // Check for existing mapping (avoid threaded race).
                 String path = URIUtil.addPaths(servletPath, servlet);
-                ServletHandler.MappedServlet entry = _servletHandler.getMappedServlet(path);
+                MatchedResource<ServletHandler.MappedServlet> entry = _servletHandler.getMatchedServlet(path);
 
-                if (entry != null && !entry.equals(_invokerEntry))
+                if (entry != null && !entry.getResource().equals(_invokerEntry.getResource()))
                 {
                     // Use the holder
-                    holder = (ServletHolder)entry.getServletHolder();
+                    holder = entry.getResource().getServletHolder();
                 }
                 else
                 {
@@ -229,6 +225,7 @@ public class Invoker extends HttpServlet
         if (holder != null)
         {
             final Request baseRequest = Request.getBaseRequest(request);
+            holder.prepare(baseRequest, request, response);
             holder.handle(baseRequest,
                 new InvokedRequest(request, included, servlet, servletPath, pathInfo),
                 response);

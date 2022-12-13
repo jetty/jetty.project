@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletRequest;
@@ -44,6 +40,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -646,12 +643,23 @@ public class ContextHandlerTest
     public void testProtected() throws Exception
     {
         ContextHandler handler = new ContextHandler();
-        String[] protectedTargets = {"/foo-inf", "/bar-inf"};
+        String[] protectedTargets = {"/FOO-INF", "/BAR-INF"};
         handler.setProtectedTargets(protectedTargets);
 
+        assertTrue(handler.isProtectedTarget("/foo-inf"));
+        assertTrue(handler.isProtectedTarget("/Foo-Inf"));
+        assertTrue(handler.isProtectedTarget("/FOO-INF"));
+        assertTrue(handler.isProtectedTarget("/foo-inf/"));
+        assertTrue(handler.isProtectedTarget("/FOO-inf?"));
+        assertTrue(handler.isProtectedTarget("/FOO-INF;"));
+        assertTrue(handler.isProtectedTarget("/foo-INF#"));
+        assertTrue(handler.isProtectedTarget("//foo-inf"));
+        assertTrue(handler.isProtectedTarget("//foo-inf//some//path"));
+        assertTrue(handler.isProtectedTarget("///foo-inf"));
         assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
-        assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
         assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
+
+        assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
         assertFalse(handler.isProtectedTarget("/foo-inf-bar"));
 
         protectedTargets = new String[4];
@@ -781,6 +789,71 @@ public class ContextHandlerTest
 
         String classpath = handler.getClassPath();
         assertThat("classpath", classpath, containsString(jar.toString()));
+    }
+
+    @Test
+    public void testNonDurableContextListener() throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        AtomicInteger initialized = new AtomicInteger();
+        AtomicInteger destroyed = new AtomicInteger();
+
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                initialized.incrementAndGet();
+                context.addEventListener(new ServletContextListener()
+                {
+                    @Override
+                    public void contextInitialized(ServletContextEvent sce)
+                    {
+                        initialized.incrementAndGet();
+                    }
+
+                    @Override
+                    public void contextDestroyed(ServletContextEvent sce)
+                    {
+                        destroyed.incrementAndGet();
+                    }
+                });
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
+
+        LoggerFactory.getLogger(ContextHandler.class).info("Expect WARN ContextListener ... add whilst starting ...");
+        server.start();
+        assertThat(initialized.get(), is(2));
+
+        LoggerFactory.getLogger(ContextHandler.class).info("Expect WARN ContextListener ... add after starting ...");
+        context.addEventListener(new ServletContextListener()
+        {
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                // This should not get called because added after started
+                initialized.incrementAndGet();
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
+
+        assertThat(initialized.get(), is(2));
+
+        server.stop();
+        assertThat(destroyed.get(), is(3));
     }
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException

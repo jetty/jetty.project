@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -196,7 +192,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
         Resource rez = resource.addPath("rez/");
 
         assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
@@ -224,7 +220,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
         Resource rez = resource.addPath("rez/oddities/");
 
         assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
@@ -248,7 +244,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource resource = new JarFileResource(URI.create(uri).toURL(), false);
         Resource anotherDir = resource.addPath("rez/another dir/");
 
         assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
@@ -264,7 +260,10 @@ public class JarResourceTest
 
     private List<Path> listFiles(Path dir) throws IOException
     {
-        return Files.list(dir).collect(Collectors.toList());
+        try (Stream<Path> s = Files.list(dir))
+        {
+            return s.collect(Collectors.toList());
+        }
     }
 
     private List<Path> listFiles(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException

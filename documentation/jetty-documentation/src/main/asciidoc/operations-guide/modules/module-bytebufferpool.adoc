@@ -1,0 +1,40 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-bytebufferpool]]
+===== Module `bytebufferpool`
+
+The `bytebufferpool` module allows you to configure the server-wide `ByteBuffer` pool.
+Pooling ``ByteBuffer``s results in less memory usage and less pressure on the Garbage Collector.
+
+``ByteBuffer``s are pooled in _buckets_; each bucket as a capacity that is a multiple of a capacity factor that you can configure.
+For example, if a request for a `ByteBuffer` of capacity 2000 is requested, and the capacity factor is 1024, then the pool will allocate a buffer from the second bucket, of capacity 2048 (1024 * 2).
+
+Applications that need to sustain many concurrent requests -- or load spikes -- may require many buffers during peak load. These buffers will remain pooled once the system transitions to a lighter load (or becomes idle), and it may be undesirable to retain a lot of memory for an idle system.
+
+It is possible to configure the max heap memory and the max direct memory that the pool retains.
+Excess buffers will not be pooled and will be eventually garbage collected.
+
+The module file is `$JETTY_HOME/modules/bytebufferpool.mod`:
+
+----
+include::{JETTY_HOME}/modules/bytebufferpool.mod[]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.byteBufferPool.maxHeapMemory`::
+This property allows you to cap the max heap memory retained by the pool.
+
+`jetty.byteBufferPool.maxDirectMemory`::
+This property allows you to cap the max direct memory retained by the pool.

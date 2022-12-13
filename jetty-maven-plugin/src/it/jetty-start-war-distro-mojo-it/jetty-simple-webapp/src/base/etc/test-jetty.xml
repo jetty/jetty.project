@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Ref id="httpConnector">
+  <Ref refid="httpConnector">
         <Call name="addEventListener">
           <Arg>
             <New class="org.eclipse.jetty.maven.plugin.ServerConnectorListener">

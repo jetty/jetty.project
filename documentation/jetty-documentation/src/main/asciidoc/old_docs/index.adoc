@@ -1,0 +1,60 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+:doctitle: Eclipse Jetty: Old Documentation
+:toc-title: Old Jetty Documentation
+:sub-order: attributes+
+
+include::../config.adoc[]
+
+== OLD JETTY DOCUMENTATION
+
+[IMPORTANT]
+====
+The Jetty documentation that follows refers to old Jetty versions, and it is currently being ported to the current Jetty version.
+
+Please be patient if you find incorrect documentation for the current Jetty version: eventually, the old documentation will be ported to the current Jetty version and it will be up to date.
+====
+
+include::alpn/chapter.adoc[]
+include::annotations/chapter.adoc[]
+include::ant/chapter.adoc[]
+include::architecture/chapter.adoc[]
+include::connectors/chapter.adoc[]
+include::contexts/chapter.adoc[]
+//include::contributing/chapter.adoc[]
+include::debugging/chapter.adoc[]
+include::deploying/chapter.adoc[]
+include::embedding/chapter.adoc[]
+include::extras/chapter.adoc[]
+include::fastcgi/chapter.adoc[]
+include::frameworks/chapter.adoc[]
+include::gettingstarted/introduction/chapter.adoc[]
+include::gettingstarted/getting-started/chapter.adoc[]
+include::gettingstarted/configuring/chapter.adoc[]
+include::gettingstarted/upgrading/chapter.adoc[]
+include::http2/chapter.adoc[]
+include::jetty-xml/chapter.adoc[]
+include::jmx/chapter.adoc[]
+include::jndi/chapter.adoc[]
+include::jsp/chapter.adoc[]
+include::logging/chapter.adoc[]
+include::maven/jetty-maven-scanning.adoc[]
+include::platforms/chapter.adoc[]
+include::runner/chapter.adoc[]
+include::security/chapter.adoc[]
+include::startup/chapter.adoc[]
+include::troubleshooting/chapter.adoc[]
+include::tuning/chapter.adoc[]
+include::websockets/jetty/chapter.adoc[]
+include::websockets/java/chapter.adoc[]

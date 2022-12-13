@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -155,6 +150,46 @@ public interface Container
     default List<EventListener> getEventListeners()
     {
         return Collections.unmodifiableList(new ArrayList<>(getBeans(EventListener.class)));
+    }
+
+    /**
+     * A utility method to add a bean to a container.
+     * @param parent the parent container.
+     * @param child the child bean.
+     * @return true if the child was added as a bean, false if parent was not instance of {@link Container} or bean was already present.
+     */
+    static boolean addBean(Object parent, Object child)
+    {
+        if (parent instanceof Container)
+            return ((Container)parent).addBean(child);
+        return false;
+    }
+
+    /**
+     * A utility method to add a bean to a container.
+     * @param parent the parent container.
+     * @param child the child bean.
+     * @param managed whether to managed the lifecycle of the bean.
+     * @return true if the child was added as a bean, false if parent was not instance of {@link Container} or bean was already present.
+     */
+    static boolean addBean(Object parent, Object child, boolean managed)
+    {
+        if (parent instanceof Container)
+            return ((Container)parent).addBean(child, managed);
+        return false;
+    }
+
+    /**
+     * A utility method to remove a bean from a container.
+     * @param parent the parent container.
+     * @param child the child bean.
+     * @return true if parent was an instance of {@link Container} and the bean was removed.
+     */
+    static boolean removeBean(Object parent, Object child)
+    {
+        if (parent instanceof Container)
+            return ((Container)parent).removeBean(child);
+        return false;
     }
 
     /**

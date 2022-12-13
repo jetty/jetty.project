@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -31,10 +26,11 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.decoders.IntegerDecoder;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class AvailableDecodersTest
 {
     private AvailableDecoders availableDecoders;
+    private WebSocketComponents components = new WebSocketComponents();
 
     @SafeVarargs
     public final void init(Class<? extends Decoder>... decoder)
@@ -54,7 +51,7 @@ public class AvailableDecodersTest
         EndpointConfig testConfig = ClientEndpointConfig.Builder.create()
             .decoders(Arrays.asList(decoder))
             .build();
-        this.availableDecoders = new AvailableDecoders(testConfig);
+        this.availableDecoders = new AvailableDecoders(testConfig, components);
     }
 
     public <T extends Decoder> T getInstanceFor(Class<?> type)

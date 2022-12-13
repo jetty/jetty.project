@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -39,6 +34,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
@@ -159,6 +155,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private long _shutdownIdleTimeout = 1000L;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
+    /* The name used to link up virtual host configuration to named connectors */
     private String _name;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
@@ -189,10 +186,27 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             scheduler = _server.getBean(Scheduler.class);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler(String.format("Connector-Scheduler-%x", hashCode()), false);
         addBean(_scheduler);
-        if (pool == null)
-            pool = _server.getBean(ByteBufferPool.class);
-        _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
-        addBean(_byteBufferPool);
+
+        synchronized (server)
+        {
+            if (pool == null)
+            {
+                // Look for (and cache) a common pool on the server
+                pool = server.getBean(ByteBufferPool.class);
+                if (pool == null)
+                {
+                    pool = new LogarithmicArrayByteBufferPool();
+                    server.addBean(pool, true);
+                }
+                addBean(pool, false);
+            }
+            else
+            {
+                addBean(pool, true);
+            }
+        }
+        _byteBufferPool = pool;
+        addBean(pool.asRetainableByteBufferPool());
 
         addEventListener(new Container.Listener()
         {
@@ -349,6 +363,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
+
         super.doStart();
 
         for (int i = 0; i < _acceptors.length; i++)

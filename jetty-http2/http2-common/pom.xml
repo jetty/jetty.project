@@ -3,18 +3,21 @@
   <parent>
     <groupId>org.eclipse.jetty.http2</groupId>
     <artifactId>http2-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>http2-common</artifactId>
   <name>Jetty :: HTTP2 :: Common</name>
 
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>http2-hpack</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -24,7 +27,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -38,9 +40,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
-  </properties>
 
 </project>

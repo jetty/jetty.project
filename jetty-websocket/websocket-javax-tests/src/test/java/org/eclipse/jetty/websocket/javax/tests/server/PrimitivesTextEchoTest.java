@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,18 +14,20 @@
 package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
+import javax.websocket.Session;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
+import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.tests.EventSocket;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,6 +36,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test various {@link javax.websocket.Decoder.Text Decoder.Text} / {@link javax.websocket.Encoder.Text Encoder.Text} echo behavior of Java Primitives
@@ -228,7 +229,7 @@ public class PrimitivesTextEchoTest
 
     private static void addCase(List<Arguments> data, Class<?> endpointClass, String sendText, String expectText)
     {
-        data.add(Arguments.of(endpointClass.getSimpleName(), endpointClass, sendText, expectText));
+        data.add(Arguments.of(endpointClass, sendText, expectText));
     }
 
     public static Stream<Arguments> data()
@@ -341,6 +342,7 @@ public class PrimitivesTextEchoTest
     }
 
     private static LocalServer server;
+    private static JavaxWebSocketClientContainer client;
 
     @BeforeAll
     public static void startServer() throws Exception
@@ -365,32 +367,32 @@ public class PrimitivesTextEchoTest
         container.addEndpoint(LongEchoSocket.class);
         container.addEndpoint(LongObjEchoSocket.class);
         container.addEndpoint(StringEchoSocket.class);
+
+        client = new JavaxWebSocketClientContainer();
+        client.start();
     }
 
     @AfterAll
     public static void stopServer() throws Exception
     {
+        client.stop();
         server.stop();
     }
 
     @ParameterizedTest(name = "{0}: {2}")
     @MethodSource("data")
-    public void testPrimitiveEcho(String endpointClassname, Class<?> endpointClass, String sendText, String expectText) throws Exception
+    public void testPrimitiveEcho(Class<?> endpointClass, String sendText, String expectText) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
-
-        List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload(sendText));
-        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-
-        List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload(expectText));
-        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
-
-        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
+        EventSocket clientSocket = new EventSocket();
+        URI uri = server.getWsUri().resolve(requestPath);
+        try (Session session = client.connectToServer(clientSocket, uri))
         {
-            session.sendBulk(send);
-            session.expect(expect);
+            session.getBasicRemote().sendText(sendText);
+            assertThat(clientSocket.textMessages.poll(5, TimeUnit.SECONDS), is(expectText));
         }
+
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientSocket.closeReason.getCloseCode().getCode(), is(CloseStatus.NORMAL));
     }
 }

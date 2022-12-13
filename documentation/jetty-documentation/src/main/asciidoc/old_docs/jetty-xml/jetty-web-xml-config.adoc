@@ -1,0 +1,64 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[jetty-web-xml-config]]
+=== jetty-web.xml
+
+`jetty-web.xml` is a Jetty configuration file that you can bundle with a specific web application.
+The format of `jetty-web.xml` is the same as xref:jetty-xml-config[] – it is an XML mapping of the Jetty API.
+
+This document offers an overview for using the `jetty-web.xml` configuration file.
+For a more in-depth look at the syntax, see xref:jetty-xml-syntax[].
+
+[[root-element-jetty-web-xml]]
+==== Root Element
+
+`jetty-web.xml` applies on a per-webapp basis, and configures an instance of `org.eclipse.jetty.webapp.WebAppContext`.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+ ..
+</Configure>
+----
+
+____
+[CAUTION]
+Make sure you are applying the configuration to an instance of the proper class. `jetty-web.xml` configures an instance of `WebAppContext`; `jetty.xml` configures an instance of `Server`.
+____
+
+[[using-jetty-web-xml]]
+==== Using jetty-web.xml
+
+Place the `jetty-web.xml` into your web application's `WEB-INF` folder.
+When Jetty deploys a web application, it looks for a file called `WEB-INF/jetty-web.xml` or `WEB-INF/web-jetty.xml` within the web application (or WAR) and applies the configuration found there.
+Be aware that `jetty-web.xml` is called _after_ all other configuration has been applied to the web application.
+
+____
+[IMPORTANT]
+It is important to note that `jetty-web.xml` files utilize the webapp classpath, not the classpath of the server.
+____
+
+[[jetty-web-xml-examples]]
+==== jetty-web.xml Examples
+
+The distribution contains an example of `jetty-web.xml` inside the WEB-INF folder of the `test` webapp WAR (`$JETTY_HOME/demo-base/webapps/test.war/WEB-INF/jetty-web.xml`).
+
+[[additional-jetty-web-xml-resources]]
+==== Additional `jetty-web.xml` Resources
+
+* xref:jetty-xml-syntax[] –in-depth reference for Jetty-specific configuration XML syntax.
+* xref:jetty-xml-config[] –configuration file for configuring the entire server

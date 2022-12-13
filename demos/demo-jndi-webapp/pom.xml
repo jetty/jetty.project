@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <artifactId>demo-jndi-webapp</artifactId>
   <name>Demo :: JNDI :: WebApp</name>
@@ -21,14 +21,14 @@
             <id>generate-xml-files</id>
             <phase>process-resources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <concat destfile="${project.build.directory}/plugin-context.xml">
                   <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml" />
                 </concat>
                 <concat destfile="${project.build.directory}/test-jndi.xml">
                   <filelist dir="src/main/templates/" files="jetty-test-jndi-header.xml,env-definitions.xml" />
                 </concat>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -76,7 +76,7 @@
             <dependency>
               <groupId>org.eclipse.jetty.orbit</groupId>
               <artifactId>javax.mail.glassfish</artifactId>
-              <version>1.4.1.v201005082020</version>
+              <version>${javax.mail.glassfish.version}</version>
             </dependency>
           </dependencies>
         </plugin>
@@ -87,7 +87,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-mock-resources</artifactId>
-      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -103,7 +102,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>

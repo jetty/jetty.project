@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,11 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
+import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -40,6 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -82,6 +78,7 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile int _localPort = -1;
     private volatile int _acceptQueueSize = 0;
     private volatile boolean _reuseAddress = true;
+    private volatile boolean _reusePort = false;
     private volatile boolean _acceptedTcpNoDelay = true;
     private volatile int _acceptedReceiveBufferSize = -1;
     private volatile int _acceptedSendBufferSize = -1;
@@ -333,21 +330,48 @@ public class ServerConnector extends AbstractNetworkConnector
 
         if (serverChannel == null)
         {
-            serverChannel = ServerSocketChannel.open();
-
             InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
-            serverChannel.socket().setReuseAddress(getReuseAddress());
+            serverChannel = ServerSocketChannel.open();
+            setSocketOption(serverChannel, StandardSocketOptions.SO_REUSEADDR, getReuseAddress());
+            setSocketOption(serverChannel, StandardSocketOptions.SO_REUSEPORT, isReusePort());
             try
             {
-                serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+                serverChannel.bind(bindAddress, getAcceptQueueSize());
             }
-            catch (BindException e)
+            catch (Throwable e)
             {
+                IO.close(serverChannel);
                 throw new IOException("Failed to bind to " + bindAddress, e);
             }
         }
 
         return serverChannel;
+    }
+
+    private <T> void setSocketOption(ServerSocketChannel channel, SocketOption<T> option, T value)
+    {
+        try
+        {
+            channel.setOption(option, value);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not configure {} to {} on {}", option, value, channel, x);
+        }
+    }
+
+    private <T> void setSocketOption(SocketChannel channel, SocketOption<T> option, T value)
+    {
+        try
+        {
+            channel.setOption(option, value);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("Could not configure {} to {} on {}", option, value, channel, x);
+        }
     }
 
     @Override
@@ -390,25 +414,12 @@ public class ServerConnector extends AbstractNetworkConnector
     private void accepted(SocketChannel channel) throws IOException
     {
         channel.configureBlocking(false);
-        Socket socket = channel.socket();
-        configure(socket);
+        setSocketOption(channel, StandardSocketOptions.TCP_NODELAY, _acceptedTcpNoDelay);
+        if (_acceptedReceiveBufferSize > -1)
+            setSocketOption(channel, StandardSocketOptions.SO_RCVBUF, _acceptedReceiveBufferSize);
+        if (_acceptedSendBufferSize > -1)
+            setSocketOption(channel, StandardSocketOptions.SO_SNDBUF, _acceptedSendBufferSize);
         _manager.accept(channel);
-    }
-
-    protected void configure(Socket socket)
-    {
-        try
-        {
-            socket.setTcpNoDelay(_acceptedTcpNoDelay);
-            if (_acceptedReceiveBufferSize > -1)
-                socket.setReceiveBufferSize(_acceptedReceiveBufferSize);
-            if (_acceptedSendBufferSize > -1)
-                socket.setSendBufferSize(_acceptedSendBufferSize);
-        }
-        catch (SocketException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
     }
 
     @ManagedAttribute("The Selector Manager")
@@ -455,7 +466,7 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @return whether the server socket reuses addresses
+     * @return whether rebinding the server socket is allowed with sockets in tear-down states
      * @see ServerSocket#getReuseAddress()
      */
     @ManagedAttribute("Server Socket SO_REUSEADDR")
@@ -465,12 +476,29 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @param reuseAddress whether the server socket reuses addresses
+     * @param reuseAddress whether rebinding the server socket is allowed with sockets in tear-down states
      * @see ServerSocket#setReuseAddress(boolean)
      */
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+    /**
+     * @return whether it is allowed to bind multiple server sockets to the same host and port
+     */
+    @ManagedAttribute("Server Socket SO_REUSEPORT")
+    public boolean isReusePort()
+    {
+        return _reusePort;
+    }
+
+    /**
+     * @param reusePort whether it is allowed to bind multiple server sockets to the same host and port
+     */
+    public void setReusePort(boolean reusePort)
+    {
+        _reusePort = reusePort;
     }
 
     /**

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,9 +13,11 @@
 
 package org.eclipse.jetty.security.openid;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,20 +25,26 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
+@SuppressWarnings("unchecked")
 public class OpenIdAuthenticationTest
 {
     public static final String CLIENT_ID = "testClient101";
@@ -93,24 +96,29 @@ public class OpenIdAuthenticationTest
 
         // security handler
         ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-        securityHandler.setRealmName("OpenID Connect Authentication");
+        assertThat(securityHandler.getKnownAuthenticatorFactories().size(), greaterThanOrEqualTo(2));
+
+        securityHandler.setAuthMethod(Constraint.__OPENID_AUTH);
+        securityHandler.setRealmName(openIdProvider.getProvider());
         securityHandler.addConstraintMapping(profileMapping);
         securityHandler.addConstraintMapping(loginMapping);
         securityHandler.addConstraintMapping(adminMapping);
 
         // Authentication using local OIDC Provider
-        OpenIdConfiguration configuration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
-
-        // Configure OpenIdLoginService optionally providing a base LoginService to provide user roles
-        OpenIdLoginService loginService = new OpenIdLoginService(configuration);//, hashLoginService);
-        securityHandler.setLoginService(loginService);
-
-        Authenticator authenticator = new OpenIdAuthenticator(configuration, "/error");
-        securityHandler.setAuthenticator(authenticator);
+        server.addBean(new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET));
+        securityHandler.setInitParameter(OpenIdAuthenticator.REDIRECT_PATH, "/redirect_path");
+        securityHandler.setInitParameter(OpenIdAuthenticator.ERROR_PAGE, "/error");
+        securityHandler.setInitParameter(OpenIdAuthenticator.LOGOUT_REDIRECT_PATH, "/");
         context.setSecurityHandler(securityHandler);
 
+        File datastoreDir = MavenTestingUtils.getTargetTestingDir("datastore");
+        IO.delete(datastoreDir);
+        FileSessionDataStoreFactory fileSessionDataStoreFactory = new FileSessionDataStoreFactory();
+        fileSessionDataStoreFactory.setStoreDir(datastoreDir);
+        server.addBean(fileSessionDataStoreFactory);
+
         server.start();
-        String redirectUri = "http://localhost:" + connector.getLocalPort() + "/j_security_check";
+        String redirectUri = "http://localhost:" + connector.getLocalPort() + "/redirect_path";
         openIdProvider.addRedirectUri(redirectUri);
 
         client = new HttpClient();
@@ -127,41 +135,57 @@ public class OpenIdAuthenticationTest
     @Test
     public void testLoginLogout() throws Exception
     {
+        openIdProvider.setUser(new OpenIdProvider.User("123456789", "Alice"));
+
         String appUriString = "http://localhost:" + connector.getLocalPort();
 
         // Initially not authenticated
         ContentResponse response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        String[] content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("not authenticated"));
+        String content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
 
         // Request to login is success
         response = client.GET(appUriString + "/login");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("success"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("success"));
 
         // Now authenticated we can get info
         response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(3));
-        assertThat(content[0], is("userId: 123456789"));
-        assertThat(content[1], is("name: Alice"));
-        assertThat(content[2], is("email: Alice@example.com"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
 
         // Request to admin page gives 403 as we do not have admin role
         response = client.GET(appUriString + "/admin");
         assertThat(response.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
+        // We can restart the server and still be logged in as we have persistent session datastore.
+        server.stop();
+        server.start();
+        appUriString = "http://localhost:" + connector.getLocalPort();
+
+        // After restarting server the authentication is saved as a session authentication.
+        response = client.GET(appUriString + "/");
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        content = response.getContentAsString();
+        assertThat(content, containsString("userId: 123456789"));
+        assertThat(content, containsString("name: Alice"));
+        assertThat(content, containsString("email: Alice@example.com"));
+
         // We are no longer authenticated after logging out
         response = client.GET(appUriString + "/logout");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("[\r\n]+");
-        assertThat(content.length, is(1));
-        assertThat(content[0], is("not authenticated"));
+        content = response.getContentAsString();
+        assertThat(content, containsString("not authenticated"));
+
+        // Test that the user was logged out successfully on the openid provider.
+        assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(0L));
+        assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
+        assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
     }
 
     public static class LoginPage extends HttpServlet
@@ -169,17 +193,18 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
+            response.setContentType("text/html");
             response.getWriter().println("success");
+            response.getWriter().println("<br><a href=\"/\">Home</a>");
         }
     }
 
     public static class LogoutPage extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            request.getSession().invalidate();
-            response.sendRedirect("/");
+            request.logout();
         }
     }
 
@@ -188,7 +213,7 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
+            Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
             response.getWriter().println(userInfo.get("sub") + ": success");
         }
     }
@@ -198,18 +223,20 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            response.setContentType("text/plain");
+            response.setContentType("text/html");
             Principal userPrincipal = request.getUserPrincipal();
             if (userPrincipal != null)
             {
-                Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
-                response.getWriter().println("userId: " + userInfo.get("sub"));
-                response.getWriter().println("name: " + userInfo.get("name"));
-                response.getWriter().println("email: " + userInfo.get("email"));
+                Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
+                response.getWriter().println("userId: " + userInfo.get("sub") + "<br>");
+                response.getWriter().println("name: " + userInfo.get("name") + "<br>");
+                response.getWriter().println("email: " + userInfo.get("email") + "<br>");
+                response.getWriter().println("<br><a href=\"/logout\">Logout</a>");
             }
             else
             {
                 response.getWriter().println("not authenticated");
+                response.getWriter().println("<br><a href=\"/login\">Login</a>");
             }
         }
     }
@@ -219,8 +246,9 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            response.setContentType("text/plain");
+            response.setContentType("text/html");
             response.getWriter().println("not authorized");
+            response.getWriter().println("<br><a href=\"/\">Home</a>");
         }
     }
 }

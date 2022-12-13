@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -74,8 +70,24 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param address the address to connect to
      * @param context the context information to establish the connection
+     * @deprecated use {@link #connect(SocketAddress, Map)} instead.
      */
+    @Deprecated
     public void connect(InetSocketAddress address, Map<String, Object> context);
+
+    /**
+     * Establishes a physical connection to the given {@code address}.
+     *
+     * @param address the address to connect to
+     * @param context the context information to establish the connection
+     */
+    public default void connect(SocketAddress address, Map<String, Object> context)
+    {
+        if (address instanceof InetSocketAddress)
+            connect((InetSocketAddress)address, context);
+        else
+            throw new UnsupportedOperationException("Unsupported SocketAddress " + address);
+    }
 
     /**
      * @return the factory for ConnectionPool instances

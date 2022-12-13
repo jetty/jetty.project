@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,6 +14,7 @@
 package org.eclipse.jetty.demos;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,13 +60,9 @@ public class LikeJettyXml
 {
     public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
-        // Find jetty home and base directories
-        Path jettyHome = JettyHome.get();
-        Path jettyBase = JettyDemoBase.get();
-
-        // Configure jetty.home and jetty.base system properties
-        System.setProperty("jetty.home", jettyHome.toString());
-        System.setProperty("jetty.base", jettyBase.toString());
+        Path configDir = Paths.get("src/main/resources/demo").toAbsolutePath();
+        Path runtimeDir = Paths.get("target/embedded/" + LikeJettyXml.class.getSimpleName()).toAbsolutePath();
+        mkdir(runtimeDir);
 
         // === jetty.xml ===
         // Setup Threadpool
@@ -145,9 +137,19 @@ public class LikeJettyXml
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
 
+        Path webappsDir = runtimeDir.resolve("webapps");
+        mkdir(webappsDir);
+
+        Path testWebapp = webappsDir.resolve("test.war");
+        if (!Files.exists(testWebapp))
+        {
+            Path testWebappSrc = JettyDemos.find("demo-simple-webapp/target/demo-simple-webapp-@VER@.war");
+            Files.copy(testWebappSrc, testWebapp);
+        }
+
         WebAppProvider webAppProvider = new WebAppProvider();
-        webAppProvider.setMonitoredDirName(jettyBase + "/webapps");
-        webAppProvider.setDefaultsDescriptor(jettyHome + "/etc/webdefault.xml");
+        webAppProvider.setMonitoredDirName(webappsDir.toString());
+        webAppProvider.setDefaultsDescriptor(configDir.resolve("webdefault.xml").toString());
         webAppProvider.setScanInterval(1);
         webAppProvider.setExtractWars(true);
         webAppProvider.setConfigurationManager(new PropertiesConfigurationManager());
@@ -171,7 +173,9 @@ public class LikeJettyXml
         rewrite.addRule(new ValidUrlRule());
 
         // === jetty-requestlog.xml ===
-        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jettyBase + "/logs/yyyy_mm_dd.request.log");
+        Path logsDir = runtimeDir.resolve("logs");
+        mkdir(logsDir);
+        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(logsDir.resolve("yyyy_mm_dd.request.log").toString());
         logWriter.setFilenameDateFormat("yyyy_MM_dd");
         logWriter.setRetainDays(90);
         logWriter.setTimeZone("GMT");
@@ -190,11 +194,18 @@ public class LikeJettyXml
         // === test-realm.xml ===
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jettyBase + "/etc/demo-realm.properties");
+        login.setConfig(configDir.resolve("demo-realm.properties").toString());
         login.setHotReload(false);
         server.addBean(login);
 
         return server;
+    }
+
+    private static void mkdir(Path path) throws IOException
+    {
+        if (Files.exists(path))
+            return;
+        Files.createDirectories(path);
     }
 
     public static void main(String[] args) throws Exception

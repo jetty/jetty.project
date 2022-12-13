@@ -1,0 +1,55 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[setting-context-path]]
+=== Setting a Context Path
+
+The context path is the prefix of a URL path that is used to select the context(s) to which an incoming request is passed. Typically a URL in a Java servlet server is of the format `http://hostname.com/contextPath/servletPath/pathInfo`, where each of the path elements can be zero or more / separated elements. 
+If there is no context path, the context is referred to as the _root_ context. 
+The root context must be configured as `/` but is reported as the empty string by the servlet API `getContextPath()` method.
+
+How you set the context path depends on how you deploy the web application (or `ContextHandler`).
+
+[[using-embedded-deployment]]
+==== Using Embedded Deployment
+
+If you run Jetty from code as an embedded server (see link:#advanced-embedding[Embedding]), setting the context path is a matter of calling the `setContextPath` method on the `ContextHandler` instance (or `WebAppContext` instance).
+
+[[usng-the-context-provider]]
+==== By naming convention
+
+If a web application is deployed using the WebAppProvider of the DeploymentManager without an XML IoC file, then the name of the WAR file is used to set the context path:
+
+* If the WAR file is named myapp.war, then the context will be deployed with a context path of `/myapp`
+* If the WAR file is named ROOT.WAR (or any case insensitive variation), then the context will be deployed with a context path of `/`
+* If the WAR file is named ROOT-foobar.war ( or any case insensitive variation), then the context will be deployed with a context path of `/` and a virtual host of "foobar"
+
+[[using-the-webapp-provider]]
+==== By Deployer configuration
+
+If a web application is deployed using the `WebAppProvider` of the `DeploymentManager` with an XML IoC file to configure the context, then the `setContextPath` method can be called within that file. 
+For example:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/test</Set>
+  ...
+</Configure>
+----
+
+[[embedding-web-inf-jetty-web.xml-file]]
+==== Embedding a WEB-INF/jetty-web.xml File
+
+You can also set the context path for webapps by embedding a `WEB-INF/jetty-web.xml` file in the WAR, which uses the same XML IoC format as the deployer example above. 
+However this is not the preferred method as it requires the web application to be modified.

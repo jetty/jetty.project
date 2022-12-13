@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -32,6 +27,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,6 +37,36 @@ public class ShutdownMonitorTest
     public void dispose()
     {
         ShutdownMonitor.reset();
+    }
+    
+    @Test
+    public void testPid() throws Exception
+    {
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        monitor.setExitVm(false);
+        monitor.start();
+        String key = monitor.getKey();
+        int port = monitor.getPort();
+
+        // Try more than once to be sure that the ServerSocket has not been closed.
+        for (int i = 0; i < 2; ++i)
+        {
+            try (Socket socket = new Socket("localhost", port))
+            {
+                OutputStream output = socket.getOutputStream();
+                String command = "pid";
+                output.write((key + "\r\n" + command + "\r\n").getBytes());
+                output.flush();
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String reply = input.readLine();
+                String pid = String.valueOf(ProcessHandle.current().pid());
+                assertEquals(pid, reply);
+                // Socket must be closed afterwards.
+                assertNull(input.readLine());
+            }
+        }
     }
 
     @Test
@@ -73,21 +99,8 @@ public class ShutdownMonitorTest
         }
     }
 
-    @Disabled("Issue #2626")
     @Test
     public void testStartStopDifferentPortDifferentKey() throws Exception
-    {
-        testStartStop(false);
-    }
-
-    @Disabled("Issue #2626")
-    @Test
-    public void testStartStopSamePortDifferentKey() throws Exception
-    {
-        testStartStop(true);
-    }
-
-    private void testStartStop(boolean reusePort) throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         // monitor.setDebug(true);
@@ -105,7 +118,7 @@ public class ShutdownMonitorTest
         assertTrue(!monitor.isAlive());
 
         // Should be able to change port and key because it is stopped.
-        monitor.setPort(reusePort ? port : 0);
+        monitor.setPort(0);
         String newKey = "foo";
         monitor.setKey(newKey);
         monitor.start();
@@ -120,6 +133,81 @@ public class ShutdownMonitorTest
         assertTrue(!monitor.isAlive());
     }
 
+    /*
+     * Disable these config tests because ShutdownMonitor is a 
+     * static singleton that cannot be unset, and thus would
+     * need each of these methods executed it its own jvm -
+     * current surefire settings only fork for a single test 
+     * class.
+     * 
+     * Undisable to test individually as needed.
+     */
+    @Disabled
+    @Test
+    public void testNoExitSystemProperty() throws Exception
+    {
+        System.setProperty("STOP.EXIT", "false");
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertFalse(monitor.isExitVm());
+        monitor.start();
+
+        try (CloseableServer server = new CloseableServer())
+        {
+            server.setStopAtShutdown(true);
+            server.start();
+
+            //shouldn't be registered for shutdown on jvm
+            assertTrue(ShutdownThread.isRegistered(server));
+            assertTrue(ShutdownMonitor.isRegistered(server));
+
+            String key = monitor.getKey();
+            int port = monitor.getPort();
+
+            stop("stop", port, key, true);
+            monitor.await();
+
+            assertTrue(!monitor.isAlive());
+            assertTrue(server.stopped);
+            assertTrue(!server.destroyed);
+            assertTrue(!ShutdownThread.isRegistered(server));
+            assertTrue(!ShutdownMonitor.isRegistered(server));
+        }
+    }
+    
+    @Disabled
+    @Test
+    public void testExitVmDefault() throws Exception
+    {
+        //Test that the default is to exit
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertTrue(monitor.isExitVm());
+    }
+
+    @Disabled
+    @Test
+    public void testExitVmTrue() throws Exception
+    {
+        //Test setting exit true
+        System.setProperty("STOP.EXIT", "true");
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertTrue(monitor.isExitVm());
+    }
+    
+    @Disabled
+    @Test
+    public void testExitVmFalse() throws Exception
+    {
+        //Test setting exit false
+        System.setProperty("STOP.EXIT", "false");
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        assertFalse(monitor.isExitVm());
+    }
+    
+    @Disabled
     @Test
     public void testForceStopCommand() throws Exception
     {
@@ -155,7 +243,6 @@ public class ShutdownMonitorTest
     public void testOldStopCommandWithStopOnShutdownTrue() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        // monitor.setDebug(true);
         monitor.setPort(0);
         monitor.setExitVm(false);
         monitor.start();
@@ -216,7 +303,6 @@ public class ShutdownMonitorTest
 
     public void stop(String command, int port, String key, boolean check) throws Exception
     {
-        // System.out.printf("Attempting to send " + command + " to localhost:%d (%b)%n", port, check);
         try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), port))
         {
             // send stop command

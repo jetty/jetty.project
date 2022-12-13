@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -27,6 +22,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -38,8 +34,12 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
@@ -47,7 +47,8 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Container for Client use of the javax.websocket API.
@@ -57,6 +58,16 @@ import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 @ManagedObject("JSR356 Client Container")
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketClientContainer.class);
+    private static final AtomicReference<ContainerLifeCycle> SHUTDOWN_CONTAINER = new AtomicReference<>();
+
+    public static void setShutdownContainer(ContainerLifeCycle container)
+    {
+        SHUTDOWN_CONTAINER.set(container);
+        if (LOG.isDebugEnabled())
+            LOG.debug("initialized {} to {}", String.format("%s@%x", SHUTDOWN_CONTAINER.getClass().getSimpleName(), SHUTDOWN_CONTAINER.hashCode()), container);
+    }
+
     protected WebSocketCoreClient coreClient;
     protected Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
@@ -75,22 +86,12 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
      */
     public JavaxWebSocketClientContainer(final HttpClient httpClient)
     {
-        this(new WebSocketComponents(), (wsComponents) ->
-        {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient(httpClient, wsComponents);
-            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
-            return coreClient;
-        });
+        this(new WebSocketComponents(), (components) -> new WebSocketCoreClient(httpClient, components));
     }
 
     public JavaxWebSocketClientContainer(WebSocketComponents components)
     {
-        this(components, (wsComponents) ->
-        {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient(wsComponents);
-            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
-            return coreClient;
-        });
+        this(components, WebSocketCoreClient::new);
     }
 
     public JavaxWebSocketClientContainer(WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory)
@@ -228,9 +229,16 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     @Override
     public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig providedConfig, final URI path) throws DeploymentException, IOException
     {
-        ClientEndpointConfig config = providedConfig;
-        if (config == null)
+        ClientEndpointConfig config;
+        if (providedConfig == null)
+        {
             config = new BasicClientEndpointConfig();
+        }
+        else
+        {
+            config = providedConfig;
+            components.getObjectFactory().decorate(providedConfig.getConfigurator());
+        }
 
         ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
         return connect(instance, path);
@@ -239,6 +247,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
+        // The Configurator will be decorated when it is created in the getAnnotatedConfig method.
         ClientEndpointConfig config = getAnnotatedConfig(endpoint);
         ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
         return connect(instance, path);
@@ -274,6 +283,125 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         if (anno == null)
             throw new DeploymentException("Could not get ClientEndpoint annotation for " + endpoint.getClass().getName());
 
-        return new AnnotatedClientEndpointConfig(anno);
+        return new AnnotatedClientEndpointConfig(anno, components);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        doClientStart();
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        doClientStop();
+    }
+
+    protected void doClientStart()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("doClientStart() {}", this);
+
+        // If we are running in Jetty register shutdown with the ContextHandler.
+        if (addToContextHandler())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutdown registered with ContextHandler");
+            return;
+        }
+
+        // If we are running inside a different ServletContainer we can register with the SHUTDOWN_CONTAINER static.
+        ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
+        if (shutdownContainer != null)
+        {
+            shutdownContainer.addManaged(this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutdown registered with ShutdownContainer {}", shutdownContainer);
+            return;
+        }
+
+        ShutdownThread.register(this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutdown registered with ShutdownThread");
+    }
+
+    protected void doClientStop()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("doClientStop() {}", this);
+
+        // Remove from context handler if running in Jetty server.
+        removeFromContextHandler();
+
+        // Remove from the Shutdown Container.
+        ContainerLifeCycle shutdownContainer = SHUTDOWN_CONTAINER.get();
+        if (shutdownContainer != null && shutdownContainer.contains(this))
+        {
+            // Un-manage first as we don't want to call stop again while in STOPPING state.
+            shutdownContainer.unmanage(this);
+            shutdownContainer.removeBean(this);
+        }
+
+        // If not running in a server we need to de-register with the shutdown thread.
+        ShutdownThread.deregister(this);
+    }
+
+    private boolean addToContextHandler()
+    {
+        try
+        {
+            Object context = getClass().getClassLoader()
+                .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
+                .getMethod("getCurrentContext")
+                .invoke(null);
+
+            Object contextHandler = context.getClass()
+                .getMethod("getContextHandler")
+                .invoke(context);
+
+            contextHandler.getClass()
+                .getMethod("addManaged", LifeCycle.class)
+                .invoke(contextHandler, this);
+
+            return true;
+        }
+        catch (Throwable throwable)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("error from addToContextHandler() for {}", this, throwable);
+            return false;
+        }
+    }
+
+    private void removeFromContextHandler()
+    {
+        try
+        {
+            Object context = getClass().getClassLoader()
+                .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
+                .getMethod("getCurrentContext")
+                .invoke(null);
+
+            Object contextHandler = context.getClass()
+                .getMethod("getContextHandler")
+                .invoke(context);
+
+            // Un-manage first as we don't want to call stop again while in STOPPING state.
+            contextHandler.getClass()
+                .getMethod("unmanage", Object.class)
+                .invoke(contextHandler, this);
+
+            contextHandler.getClass()
+                .getMethod("removeBean", Object.class)
+                .invoke(contextHandler, this);
+        }
+        catch (Throwable throwable)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("error from removeFromContextHandler() for {}", this, throwable);
+        }
     }
 }

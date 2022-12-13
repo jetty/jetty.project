@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -59,11 +54,11 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("2018.02.13").setFin(true), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
-        finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);
-        assertThat("FinCallback.done", finCallback.isDone(), is(true));
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("02-13-2018"));
+        assertThat("FinCallback.done", finCallback.isDone(), is(true));
     }
 
     @Test
@@ -80,16 +75,17 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
         FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.TEXT).setPayload("2023").setFin(false), callback1);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".08").setFin(false), callback2);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".22").setFin(true), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
-        finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);
+        assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("08-22-2023"));
         assertThat("Callback1.done", callback1.isDone(), is(true));
         assertThat("Callback2.done", callback2.isDone(), is(true));
         assertThat("finCallback.done", finCallback.isDone(), is(true));
-
-        assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("08-22-2023"));
     }
 
     private String format(Date date, String formatPattern)

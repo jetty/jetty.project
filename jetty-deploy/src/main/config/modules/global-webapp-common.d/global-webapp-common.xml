@@ -7,12 +7,10 @@
       <Arg>
         <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
           <Set name="jettyXml">
-            <Property>
-              <Name>jetty.deploy.webappCommonConfig</Name>
-              <Default>
-                <Property name="jetty.base"/>/etc/webapp-common.xml
-              </Default>
-            </Property>
+            <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+              <Arg><Property name="jetty.base"/></Arg>
+              <Arg><Property name="jetty.deploy.webappCommonConfig" default="etc/webapp-common.xml"/></Arg>
+            </Call>
           </Set>
         </New>
       </Arg>

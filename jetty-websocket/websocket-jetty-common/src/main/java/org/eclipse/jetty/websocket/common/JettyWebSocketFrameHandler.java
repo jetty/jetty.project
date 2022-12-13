@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -40,14 +35,14 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +82,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private WebSocketSession session;
     private SuspendState state = SuspendState.DEMANDING;
     private Runnable delayedOnFrame;
+    private CoreSession coreSession;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
                                       Object endpointInstance,
@@ -155,7 +151,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
+            this.coreSession = coreSession;
             session = new WebSocketSession(container, coreSession, this);
+            if (!session.isOpen())
+                throw new IllegalStateException("Session is not open");
 
             frameHandle = InvokerUtils.bindTo(frameHandle, session);
             openHandle = InvokerUtils.bindTo(openHandle, session);
@@ -177,7 +176,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 openHandle.invoke();
 
-            container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
+            if (session.isOpen())
+                container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 
             callback.succeeded();
             demand();
@@ -225,43 +225,25 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
         }
 
-        // Demand after succeeding any received frame
-        Callback demandingCallback = Callback.from(() ->
-            {
-                try
-                {
-                    demand();
-                }
-                catch (Throwable t)
-                {
-                    callback.failed(t);
-                    return;
-                }
-
-                callback.succeeded();
-            },
-            callback::failed
-        );
-
         switch (frame.getOpCode())
         {
             case OpCode.CLOSE:
                 onCloseFrame(frame, callback);
                 break;
             case OpCode.PING:
-                onPingFrame(frame, demandingCallback);
+                onPingFrame(frame, callback);
                 break;
             case OpCode.PONG:
-                onPongFrame(frame, demandingCallback);
+                onPongFrame(frame, callback);
                 break;
             case OpCode.TEXT:
-                onTextFrame(frame, demandingCallback);
+                onTextFrame(frame, callback);
                 break;
             case OpCode.BINARY:
-                onBinaryFrame(frame, demandingCallback);
+                onBinaryFrame(frame, callback);
                 break;
             case OpCode.CONTINUATION:
-                onContinuationFrame(frame, demandingCallback);
+                onContinuationFrame(frame, callback);
                 break;
             default:
                 callback.failed(new IllegalStateException());
@@ -344,6 +326,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
+            demand();
             return;
         }
 
@@ -382,14 +365,31 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             {
                 throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PING method error: " + cause.getMessage(), cause);
             }
+
+            callback.succeeded();
+            demand();
         }
         else
         {
-            // Automatically respond
-            ByteBuffer payload = BufferUtil.copy(frame.getPayload());
-            getSession().getRemote().sendPong(payload, WriteCallback.NOOP);
+            // Automatically respond.
+            getSession().getRemote().sendPong(frame.getPayload(), new WriteCallback()
+            {
+                @Override
+                public void writeSuccess()
+                {
+                    callback.succeeded();
+                    demand();
+                }
+
+                @Override
+                public void writeFailed(Throwable x)
+                {
+                    // Ignore failures, we might be output closed and receive ping.
+                    callback.succeeded();
+                    demand();
+                }
+            });
         }
-        callback.succeeded();
     }
 
     private void onPongFrame(Frame frame, Callback callback)
@@ -409,7 +409,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
             }
         }
+
         callback.succeeded();
+        demand();
     }
 
     private void onTextFrame(Frame frame, Callback callback)

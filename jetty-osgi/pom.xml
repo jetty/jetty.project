@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,9 +12,20 @@
   <packaging>pom</packaging>
 
   <properties>
-    <osgi-version>3.6.0.v20100517</osgi-version>
-    <osgi-services-version>3.2.100.v20100503</osgi-services-version>
+    <osgi-version>3.18.100</osgi-version>
+    <osgi-services-version>3.11.0</osgi-services-version>
+    <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
+    <osgi-service-component-version>1.5.0</osgi-service-component-version>
+    <osgi-service-event-version>1.4.1</osgi-service-event-version>
+    <osgi-util-version>3.7.100</osgi-util-version>
+    <osgi-util-function-version>1.2.0</osgi-util-function-version>
+    <osgi-util-promise-version>1.2.0</osgi-util-promise-version>
+    <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
+    <osgi-util-position-version>1.0.1</osgi-util-position-version>
+    <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
+    <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
 
   <modules>
@@ -58,78 +69,12 @@
         </excludes>
       </resource>
     </resources>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <configuration>
-          <manifest>prevent/overwriting/by/pointing/to/nonexisting/MANIFEST.MF</manifest>
-          <pde>true</pde>
-          <downloadSources>true</downloadSources>
-          <sourceExcludes>
-            <sourceExclude>**/.svn/**</sourceExclude>
-          </sourceExcludes>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-annotations</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-websocket</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jmx</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-deploy</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-nested</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlets</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.osgi</groupId>
+        <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
         <version>${osgi-services-version}</version>
         <exclusions>
@@ -146,39 +91,34 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.osgi</groupId>
+        <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi</artifactId>
         <version>${osgi-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.cm</artifactId>
+        <version>${osgi-service-cm-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.component</artifactId>
+        <version>${osgi-service-component-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.event</artifactId>
+        <version>${osgi-service-event-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.tracker</artifactId>
+        <version>${osgi-util-tracker-version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.equinox.http</groupId>
         <artifactId>servlet</artifactId>
         <version>${equinox-http-servlet-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>log4j-over-slf4j</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
-        <version>${logback.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-        <version>${logback.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

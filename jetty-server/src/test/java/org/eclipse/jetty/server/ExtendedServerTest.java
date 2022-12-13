@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -24,7 +19,6 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,6 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,7 +74,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         @Override
         public Runnable onSelected()
         {
-            _lastSelected = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            _lastSelected = NanoTime.now();
             return super.onSelected();
         }
 
@@ -120,11 +115,11 @@ public class ExtendedServerTest extends HttpServerTestBase
         {
             OutputStream os = client.getOutputStream();
 
-            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long start = NanoTime.now();
             os.write("GET / HTTP/1.0\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
             Thread.sleep(200);
-            long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            long end = NanoTime.now();
             os.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
 
             // Read the response.
@@ -137,8 +132,8 @@ public class ExtendedServerTest extends HttpServerTestBase
             s = s.substring(0, s.indexOf('\n'));
             long dispatched = Long.parseLong(s);
 
-            assertThat(dispatched, Matchers.greaterThanOrEqualTo(start));
-            assertThat(dispatched, Matchers.lessThan(end));
+            assertThat(NanoTime.elapsed(start, dispatched), Matchers.greaterThanOrEqualTo(0L));
+            assertThat(NanoTime.elapsed(dispatched, end), Matchers.greaterThanOrEqualTo(0L));
         }
     }
 

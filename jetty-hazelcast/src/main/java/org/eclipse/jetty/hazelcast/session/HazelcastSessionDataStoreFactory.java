@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -36,6 +31,8 @@ import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factory to construct {@link HazelcastSessionDataStore}
@@ -44,7 +41,8 @@ public class HazelcastSessionDataStoreFactory
     extends AbstractSessionDataStoreFactory
     implements SessionDataStoreFactory
 {
-
+    private static final Logger LOG = LoggerFactory.getLogger(HazelcastSessionDataStoreFactory.class);
+    
     private String hazelcastInstanceName = "JETTY_DISTRIBUTED_SESSION_INSTANCE";
 
     private boolean onlyClient;
@@ -60,6 +58,10 @@ public class HazelcastSessionDataStoreFactory
     private boolean useQueries = false;
 
     private String addresses;
+
+    private ClientConfig clientConfig;
+
+    private Config serverConfig;
 
     public boolean isUseQueries()
     {
@@ -83,9 +85,17 @@ public class HazelcastSessionDataStoreFactory
             {
                 if (onlyClient)
                 {
+                    ClientConfig config;
                     if (StringUtil.isEmpty(configurationLocation))
                     {
-                        ClientConfig config = new ClientConfig();
+                        if (clientConfig == null)
+                        {
+                            config = new ClientConfig();
+                        }
+                        else
+                        {
+                            config = clientConfig;
+                        }
 
                         if (addresses != null && !addresses.isEmpty())
                         {
@@ -96,24 +106,41 @@ public class HazelcastSessionDataStoreFactory
                             .setImplementation(new SessionDataSerializer())
                             .setTypeClass(SessionData.class);
                         config.getSerializationConfig().addSerializerConfig(sc);
-                        hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                     }
                     else
                     {
-                        hazelcastInstance = HazelcastClient.newHazelcastClient(
-                            new XmlClientConfigBuilder(configurationLocation).build());
+                        if (clientConfig == null)
+                        {
+                            config = new XmlClientConfigBuilder(configurationLocation).build();
+                        }
+                        else
+                        {
+                            LOG.warn("Both configurationLocation and clientConfig are set, using clientConfig");
+                            config = clientConfig;
+                        }
+                        if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
+                            SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
+                            LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
+                    
+                    hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                 }
                 else
                 {
                     Config config;
                     if (StringUtil.isEmpty(configurationLocation))
                     {
-
                         SerializerConfig sc = new SerializerConfig()
                             .setImplementation(new SessionDataSerializer())
                             .setTypeClass(SessionData.class);
-                        config = new Config();
+                        if (serverConfig == null)
+                        {
+                            config = new Config();
+                        }
+                        else
+                        {
+                            config = serverConfig;
+                        }
                         config.getSerializationConfig().addSerializerConfig(sc);
                         // configure a default Map if null
                         if (mapConfig == null)
@@ -130,7 +157,18 @@ public class HazelcastSessionDataStoreFactory
                     }
                     else
                     {
-                        config = new XmlConfigBuilder(configurationLocation).build();
+                        if (serverConfig == null)
+                        {
+                            config = new XmlConfigBuilder(configurationLocation).build();
+                        }
+                        else
+                        {
+                            LOG.warn("Both configurationLocation and serverConfig are set, using serverConfig");
+                            config = serverConfig;
+                        }
+                        if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
+                            SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
+                            LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
                     config.setInstanceName(hazelcastInstanceName);
                     hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance(config);
@@ -156,7 +194,7 @@ public class HazelcastSessionDataStoreFactory
 
     /**
      * @param onlyClient if <code>true</code> the session manager will only connect to an external Hazelcast instance
-     * and not use this JVM to start an Hazelcast instance
+     * and not use this JVM to start a Hazelcast instance
      */
     public void setOnlyClient(boolean onlyClient)
     {
@@ -168,6 +206,12 @@ public class HazelcastSessionDataStoreFactory
         return configurationLocation;
     }
 
+    /**
+     * @param configurationLocation the location of the XML Hazelcast configuration file to load.
+     *                              Depending on whether {@link #setOnlyClient(boolean)} is set to {@code true}
+     *                              or not, this will be used to configure either a Hazelcast client or a Hazelcast server.
+     *                              This parameter is mutually exclusive with {@link #setClientConfig(ClientConfig)} and {@link #setServerConfig(Config)}.
+     */
     public void setConfigurationLocation(String configurationLocation)
     {
         this.configurationLocation = configurationLocation;
@@ -221,5 +265,35 @@ public class HazelcastSessionDataStoreFactory
     public void setAddresses(String addresses)
     {
         this.addresses = addresses;
+    }
+
+    public ClientConfig getClientConfig()
+    {
+        return clientConfig;
+    }
+
+    /**
+     * @param clientConfig the client configuration to use to connect to Hazelcast.
+     *                     Only used if {@link #setOnlyClient(boolean)} is set to {@code true}.
+     *                     Overrides any configuration set via {@link #setConfigurationLocation(String)}
+     */
+    public void setClientConfig(ClientConfig clientConfig)
+    {
+        this.clientConfig = clientConfig;
+    }
+
+    public Config getServerConfig()
+    {
+        return serverConfig;
+    }
+
+    /**
+     * @param serverConfig the server configuration to use to configure the embedded Hazelcast cluster.
+     *                     Only used if {@link #setOnlyClient(boolean)} is set to {@code false}.
+     *                     Overrides any configuration set via {@link #setConfigurationLocation(String)}
+     */
+    public void setServerConfig(Config serverConfig)
+    {
+        this.serverConfig = serverConfig;
     }
 }

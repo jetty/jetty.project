@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -34,9 +29,13 @@ import org.eclipse.jetty.session.infinispan.RemoteQueryManager;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.infinispan.query.dsl.QueryResult;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -44,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * RemoteInfinispanSessionDataStoreTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
     static
@@ -53,10 +53,20 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
 
     public static RemoteInfinispanTestSupport __testSupport;
 
+    public RemoteInfinispanSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+
+    @BeforeAll
+    public static void initRemoteSupport() throws Exception
+    {
+        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
+    }
+
     @BeforeEach
     public void setup() throws Exception
     {
-        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
         __testSupport.setup();
     }
 
@@ -64,6 +74,12 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     public void teardown() throws Exception
     {
         __testSupport.teardown();
+    }
+
+    @AfterAll
+    public static void shutdown() throws Exception
+    {
+        __testSupport.shutdown();
     }
 
     @Override
@@ -78,7 +94,17 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        __testSupport.createSession((InfinispanSessionData)data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            __testSupport.createSession((InfinispanSessionData)data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+        
     }
 
     @Override
@@ -90,7 +116,16 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionExists((InfinispanSessionData)data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return __testSupport.checkSessionExists((InfinispanSessionData)data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     @Override
@@ -143,23 +178,29 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     {
         InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
         sd1.setLastNode("fred1");
+        sd1.serializeAttributes();
         __testSupport.getCache().put("session1", sd1);
 
         InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
         sd2.setLastNode("fred2");
+        sd2.serializeAttributes();
         __testSupport.getCache().put("session2", sd2);
 
         InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
         sd3.setLastNode("fred3");
+        sd3.serializeAttributes();
         __testSupport.getCache().put("session3", sd3);
 
         QueryFactory qf = Search.getQueryFactory(__testSupport.getCache());
+        Query<InfinispanSessionData> query = qf.create("from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
+            " expiry < :time");
 
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
-            assertEquals(i, q.list().size());
+            query.setParameter("time", now);
+            QueryResult<InfinispanSessionData> result = query.execute();
+            assertEquals(i, result.list().size());
             Thread.sleep(1000);
         }
     }

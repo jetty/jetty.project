@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -28,18 +23,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.TryExecutor;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,14 +41,11 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 {
     protected static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
 
-    // TODO remove this once we are sure EWYK is OK for http2
-    private static final boolean PEC_MODE = Boolean.getBoolean("org.eclipse.jetty.http2.PEC_MODE");
-
     private final AutoLock lock = new AutoLock();
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
@@ -62,16 +53,14 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    protected HTTP2Connection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
         super(endPoint, executor);
-        this.byteBufferPool = byteBufferPool;
+        this.retainableByteBufferPool = retainableByteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        if (PEC_MODE)
-            executor = new TryExecutor.NoTryExecutor(executor);
-        this.strategy = new EatWhatYouKill(producer, executor);
+        this.strategy = new AdaptiveExecutionStrategy(producer, executor);
         LifeCycle.start(strategy);
         parser.init(ParserListener::new);
     }
@@ -267,7 +256,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         {
             Runnable task = pollTask();
             if (LOG.isDebugEnabled())
-                LOG.debug("Dequeued task {}", task);
+                LOG.debug("Dequeued task {}", String.valueOf(task));
             if (task != null)
                 return task;
 
@@ -298,7 +287,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                             return task;
 
                         // If more references than 1 (ie not just us), don't refill into buffer and risk compaction.
-                        if (networkBuffer.getReferences() > 1)
+                        if (networkBuffer.isRetained())
                             reacquireNetworkBuffer();
                     }
 
@@ -426,16 +415,43 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
     }
 
-    private class NetworkBuffer extends RetainableByteBuffer implements Callback
+    private class NetworkBuffer implements Callback
     {
+        private final RetainableByteBuffer delegate;
+
         private NetworkBuffer()
         {
-            super(byteBufferPool, bufferSize, isUseInputDirectByteBuffers());
+            delegate = retainableByteBufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
+        }
+
+        public ByteBuffer getBuffer()
+        {
+            return delegate.getBuffer();
+        }
+
+        public boolean isRetained()
+        {
+            return delegate.isRetained();
+        }
+
+        public boolean hasRemaining()
+        {
+            return delegate.hasRemaining();
+        }
+
+        public boolean release()
+        {
+            return delegate.release();
+        }
+
+        public void retain()
+        {
+            delegate.retain();
         }
 
         private void put(ByteBuffer source)
         {
-            BufferUtil.append(getBuffer(), source);
+            BufferUtil.append(delegate.getBuffer(), source);
         }
 
         @Override
@@ -452,7 +468,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void completed(Throwable failure)
         {
-            if (release() == 0)
+            if (delegate.release())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Released retained {}", this, failure);

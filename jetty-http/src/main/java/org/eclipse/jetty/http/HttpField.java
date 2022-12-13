@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -150,10 +145,8 @@ public class HttpField
             return false;
         if (_value == null)
             return false;
-        if (search.equals(_value))
+        if (search.equalsIgnoreCase(_value))
             return true;
-
-        search = StringUtil.asciiToLowerCase(search);
 
         int state = 0;
         int match = 0;
@@ -161,7 +154,7 @@ public class HttpField
 
         for (int i = 0; i < _value.length(); i++)
         {
-            char c = _value.charAt(i);
+            char c = StringUtil.asciiToLowerCase(_value.charAt(i));
             switch (state)
             {
                 case 0: // initial white space
@@ -186,7 +179,7 @@ public class HttpField
                             break;
 
                         default: // character
-                            match = Character.toLowerCase(c) == search.charAt(0) ? 1 : -1;
+                            match = c == StringUtil.asciiToLowerCase(search.charAt(0)) ? 1 : -1;
                             state = 1;
                             break;
                     }
@@ -211,7 +204,7 @@ public class HttpField
                             if (match > 0)
                             {
                                 if (match < search.length())
-                                    match = Character.toLowerCase(c) == search.charAt(match) ? (match + 1) : -1;
+                                    match = c == StringUtil.asciiToLowerCase(search.charAt(match)) ? (match + 1) : -1;
                                 else if (c != ' ' && c != '\t')
                                     match = -1;
                             }
@@ -234,7 +227,7 @@ public class HttpField
                             if (match >= 0)
                             {
                                 if (match < search.length())
-                                    match = Character.toLowerCase(c) == search.charAt(match) ? (match + 1) : -1;
+                                    match = c == StringUtil.asciiToLowerCase(search.charAt(match)) ? (match + 1) : -1;
                                 else
                                     match = -1;
                             }
@@ -245,7 +238,7 @@ public class HttpField
                     if (match >= 0)
                     {
                         if (match < search.length())
-                            match = Character.toLowerCase(c) == search.charAt(match) ? (match + 1) : -1;
+                            match = c == StringUtil.asciiToLowerCase(search.charAt(match)) ? (match + 1) : -1;
                         else
                             match = -1;
                     }
@@ -295,7 +288,7 @@ public class HttpField
                             if (param >= 0)
                             {
                                 if (param < __zeroquality.length())
-                                    param = Character.toLowerCase(c) == __zeroquality.charAt(param) ? (param + 1) : -1;
+                                    param = c == __zeroquality.charAt(param) ? (param + 1) : -1;
                                 else if (c != '0' && c != '.')
                                     param = -1;
                             }

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -54,12 +49,14 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.opentest4j.TestAbortedException;
 
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -184,7 +181,6 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testTimeoutOnListenerWithExplicitConnection(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
         init(transport);
 
         long timeout = 1000;
@@ -211,7 +207,6 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testTimeoutIsCancelledOnSuccessWithExplicitConnection(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
         init(transport);
 
         long timeout = 1000;
@@ -288,26 +283,31 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         init(transport);
         testConnectTimeoutFailsRequest(true);
     }
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         init(transport);
         testConnectTimeoutFailsRequest(false);
     }
 
     private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -333,13 +333,17 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
+    @Tag("external")
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
-        String host = "10.255.255.1";
-        int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -367,13 +371,17 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void retryAfterConnectTimeout(Transport transport) throws Exception
+    @Tag("external")
+    public void testRetryAfterConnectTimeout(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
-        final String host = "10.255.255.1";
-        final int port = 80;
+        // Using IANA hosted example.com:81 to reliably produce a Connect Timeout.
+        final String host = "example.com";
+        final int port = 81;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
@@ -424,15 +432,14 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testTimeoutCancelledWhenSendingThrowsException(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
         init(transport);
 
         scenario.start(new EmptyServerHandler());
 
         long timeout = 1000;
         String uri = "badscheme://0.0.0.1";
-        if (scenario.getNetworkConnectorLocalPort().isPresent())
-            uri += ":" + scenario.getNetworkConnectorLocalPort().get();
+        if (scenario.getServerPort().isPresent())
+            uri += ":" + scenario.getServerPort().getAsInt();
         Request request = scenario.client.newRequest(uri);
 
         // TODO: assert a more specific Throwable
@@ -448,11 +455,6 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         // If the task was not cancelled, it aborted the request.
         assertNull(request.getAbortCause());
-    }
-
-    private void assumeRealNetwork(Transport transport)
-    {
-        Assumptions.assumeTrue(transport != UNIX_SOCKET);
     }
 
     @ParameterizedTest
@@ -497,6 +499,83 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testRequestQueuedDoesNotCancelTimeoutOfQueuedRequests(Transport transport) throws Exception
+    {
+        init(transport);
+
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        scenario.start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                if (request.getRequestURI().startsWith("/one"))
+                {
+                    try
+                    {
+                        serverLatch.await();
+                    }
+                    catch (InterruptedException x)
+                    {
+                        throw new InterruptedIOException();
+                    }
+                }
+            }
+        });
+
+        scenario.client.setMaxConnectionsPerDestination(1);
+        scenario.setMaxRequestsPerConnection(1);
+
+        // Send the first request so that the others get queued.
+        CountDownLatch latch1 = new CountDownLatch(1);
+        scenario.client.newRequest(scenario.newURI())
+            .path("/one")
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                latch1.countDown();
+            });
+
+        // Queue a second request, it should expire in the queue.
+        long timeout = 1000;
+        CountDownLatch latch2 = new CountDownLatch(1);
+        scenario.client.newRequest(scenario.newURI())
+            .path("/two")
+            .timeout(2 * timeout, TimeUnit.MILLISECONDS)
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                assertThat(result.getFailure(), Matchers.instanceOf(TimeoutException.class));
+                latch2.countDown();
+            });
+
+        Thread.sleep(timeout);
+
+        // Queue a third request, it should not reset the timeout of the second request.
+        CountDownLatch latch3 = new CountDownLatch(1);
+        scenario.client.newRequest(scenario.newURI())
+            .path("/three")
+            .timeout(2 * timeout, TimeUnit.MILLISECONDS)
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                latch3.countDown();
+            });
+
+        // We have already slept a timeout, expect the second request to be back in another timeout.
+        assertTrue(latch2.await(2 * timeout, TimeUnit.MILLISECONDS));
+
+        // Release the first request so the third can be served as well.
+        serverLatch.countDown();
+
+        assertTrue(latch1.await(2 * timeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch3.await(2 * timeout, TimeUnit.MILLISECONDS));
     }
 
     private void assumeConnectTimeout(String host, int port, int connectTimeout)

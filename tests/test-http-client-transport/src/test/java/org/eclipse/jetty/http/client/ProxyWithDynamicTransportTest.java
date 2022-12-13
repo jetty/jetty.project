@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -265,7 +260,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxySecure ? proxyTLSConnector.getLocalPort() : proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
-        client.getProxyConfiguration().getProxies().add(proxy);
+        client.getProxyConfiguration().addProxy(proxy);
 
         String scheme = serverSecure ? "https" : "http";
         int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
@@ -301,7 +296,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy proxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
-        client.getProxyConfiguration().getProxies().add(proxy);
+        client.getProxyConfiguration().addProxy(proxy);
 
         long idleTimeout = 1000;
         http2Client.setStreamIdleTimeout(idleTimeout);
@@ -342,7 +337,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
-        client.getProxyConfiguration().getProxies().add(httpProxy);
+        client.getProxyConfiguration().addProxy(httpProxy);
         proxy.stop();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -377,7 +372,7 @@ public class ProxyWithDynamicTransportTest
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
         HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
-        client.getProxyConfiguration().getProxies().add(httpProxy);
+        client.getProxyConfiguration().addProxy(httpProxy);
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())

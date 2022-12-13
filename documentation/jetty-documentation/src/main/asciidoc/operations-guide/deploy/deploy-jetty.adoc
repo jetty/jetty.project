@@ -1,0 +1,75 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-deploy-jetty]]
+==== Deploying Jetty Context XML Files
+
+A Jetty context XML file is a xref:og-xml[Jetty XML file] that allows you to customize the deployment of web applications.
+
+NOTE: Recall that the `DeploymentManager` component of the Jetty `deploy` module xref:og-deploy-rules[gives priority] to Jetty context XML files over `+*.war+` files or directories.
+
+To deploy a web application using a Jetty context XML file, simply place the file in the `$JETTY_BASE/webapps` directory.
+
+A simple Jetty context XML file, for example named `wiki.xml` is the following:
+
+.wiki.xml
+[source,xml,subs=verbatim]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
+  <Set name="contextPath">/wiki</Set> <2>
+  <Set name="war">/opt/myapps/myapp.war</Set> <3>
+</Configure>
+----
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<2> Specifies the web application `contextPath`, which may be different from the `+*.war+` file name.
+<3> Specifies the file system path of the `+*.war+` file.
+
+The `$JETTY_BASE` directory would look like this:
+
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+├── start.d
+│   ├── deploy.ini
+│   └── http.ini
+└── webapps
+    └── wiki.xml
+----
+
+TIP: The `+*.war+` file may be placed anywhere in the file system and does not need to be placed in the `$JETTY_BASE/webapps` directory.
+
+IMPORTANT: If you place both the Jetty context XML file _and_ the `+*.war+` file in the `$JETTY_BASE/webapps` directory, remember that they must have the same file name, for example `wiki.xml` and `wiki.war`, so that the `DeploymentManager` deploys the web application only once using the Jetty context XML file (and not the `+*.war+` file).
+
+You can use the features of xref:og-xml[Jetty XML files] to avoid to hard-code file system paths or other configurations in your Jetty context XML files, for example by using system properties:
+
+.wiki.xml
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war"><SystemProperty name="myapps.dir"/>/myapp.war</Set>
+</Configure>
+----
+
+Note how the `+*.war+` file path is now obtained by resolving the system property `myapps.dir` that you can specify on the command line when you start Jetty:
+
+----
+$ java -jar $JETTY_HOME/start.jar -Dmyapps.dir=/opt/myapps
+----

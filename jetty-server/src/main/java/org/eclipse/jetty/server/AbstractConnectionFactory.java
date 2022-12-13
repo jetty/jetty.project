@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,8 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -39,18 +32,18 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 {
     private final String _protocol;
     private final List<String> _protocols;
-    private int _inputbufferSize = 8192;
+    private int _inputBufferSize = 8192;
 
     protected AbstractConnectionFactory(String protocol)
     {
         _protocol = protocol;
-        _protocols = Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
+        _protocols = List.of(protocol);
     }
 
     protected AbstractConnectionFactory(String... protocols)
     {
         _protocol = protocols[0];
-        _protocols = Collections.unmodifiableList(Arrays.asList(protocols));
+        _protocols = List.of(protocols);
     }
 
     @Override
@@ -69,12 +62,12 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     @ManagedAttribute("The buffer size used to read from the network")
     public int getInputBufferSize()
     {
-        return _inputbufferSize;
+        return _inputBufferSize;
     }
 
     public void setInputBufferSize(int size)
     {
-        _inputbufferSize = size;
+        _inputBufferSize = size;
     }
 
     protected String findNextProtocol(Connector connector)

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -229,7 +224,7 @@ public class AsyncContextTest
     @Test
     public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
-        String request = "GET /ctx/test/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
+        String request = "GET /ctx/test/hello%20there?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
@@ -253,10 +248,10 @@ public class AsyncContextTest
 
         // async run attributes
         assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/test"));
-        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello/there"));
+        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello there"));
         assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
-        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%2fthere"));
+        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%20there"));
         assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:test"));
         assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/test/*"));
         assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
@@ -266,7 +261,7 @@ public class AsyncContextTest
     @Test
     public void testDispatchAsyncContextSelfEncodedUrl() throws Exception
     {
-        String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
+        String request = "GET /ctx/self/hello%20there?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
@@ -276,8 +271,8 @@ public class AsyncContextTest
 
         String responseBody = response.getContent();
 
-        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURI:/ctx/self/hello%2fthere"));
-        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%2fthere"));
+        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURI:/ctx/self/hello%20there"));
+        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%20there"));
     }
 
     @Test

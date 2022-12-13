@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -108,23 +103,17 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri, "Input URI must not be null");
         String httpScheme = inputUri.getScheme();
+        if (httpScheme == null)
+            throw new URISyntaxException(inputUri.toString(), "Undefined HTTP scheme");
+
         if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
-        {
-            // keep as-is
             return inputUri;
-        }
 
+        String afterScheme = inputUri.toString().substring(httpScheme.length());
         if ("http".equalsIgnoreCase(httpScheme))
-        {
-            // convert to ws
-            return new URI("ws" + inputUri.toString().substring(httpScheme.length()));
-        }
-
+            return new URI("ws" + afterScheme);
         if ("https".equalsIgnoreCase(httpScheme))
-        {
-            // convert to wss
-            return new URI("wss" + inputUri.toString().substring(httpScheme.length()));
-        }
+            return new URI("wss" + afterScheme);
 
         throw new URISyntaxException(inputUri.toString(), "Unrecognized HTTP scheme");
     }

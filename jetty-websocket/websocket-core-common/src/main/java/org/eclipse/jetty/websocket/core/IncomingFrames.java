@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -26,14 +21,16 @@ import org.eclipse.jetty.util.Callback;
 public interface IncomingFrames
 {
     /**
-     * Process the incoming frame.
-     * <p>
-     * Note: if you need to hang onto any information from the frame, be sure
-     * to copy it, as the information contained in the Frame will be released
-     * and/or reused by the implementation.
+     * <p>Process the incoming frame.</p>
      *
-     * @param frame the frame to process
-     * @param callback the read completion
+     * <p>Note: if you need to hang onto any information from the frame, be sure
+     * to copy it, as the information contained in the Frame will be released
+     * and/or reused by the implementation.</p>
+     *
+     * <p>Failure of the callback will propagate the failure back to the {@link CoreSession}
+     * to fail the connection and attempt to send a close {@link Frame} if one has not been sent.</p>
+     * @param frame the frame to process.
+     * @param callback the read completion.
      */
     void onFrame(Frame frame, Callback callback);
 }

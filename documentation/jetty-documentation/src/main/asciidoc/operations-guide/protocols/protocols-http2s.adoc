@@ -1,0 +1,58 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-http2s]]
+==== Secure HTTP/2
+
+When you enable secure HTTP/2 you typically want to enable also secure HTTP/1.1, for backwards compatibility reasons: in this way, old browsers or other clients that do not support HTTP/2 will be able to connect to your server.
+
+You need to enable:
+
+* the `ssl` Jetty module, which provides the secure connector and the KeyStore and TLS configuration
+* the `http2` Jetty module, which adds ALPN handling and adds the HTTP/2 protocol to the secured connector
+* optionally, the `https` Jetty module, which adds the HTTP/1.1 protocol to the secured connector
+
+Use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,http2,https
+----
+
+As when enabling the `https` Jetty module, you need a valid KeyStore (read xref:og-keystore[this section] to create your own KeyStore).
+
+As a quick example, you can enable the xref:og-module-test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupArgs="--add-modules=ssl,http2,https,test-keystore",highlight="(\{.*:8443})"]
+----
+
+Note how Jetty is listening on port `8443` and the protocols supported are the sequence `(ssl, alpn, h2, http/1.1)`.
+
+The (ordered) list of protocols after `alpn` are the _application protocols_, in the example above `(h2, http/1.1)`.
+
+When a new connection is accepted by the connector, Jetty first interprets the TLS bytes, then it handles the ALPN negotiation knowing that the application protocols are (in order) `h2` and then `http/1.1`.
+
+You can customize the list of application protocols and the default protocol to use in case the ALPN negotiation fails by editing the xref:og-module-alpn[`alpn` module] properties.
+
+The HTTP/2 protocol parameters can be configured by editing the xref:og-module-http2[`http2` module] properties.

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,19 +16,16 @@ package org.eclipse.jetty.osgi.test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
 import org.eclipse.jetty.annotations.ClassInheritanceHandler;
 import org.eclipse.jetty.osgi.annotations.AnnotationParser;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -47,6 +39,8 @@ import org.osgi.framework.BundleContext;
 
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+
+
 /**
  * TestJettyOSGiAnnotationParser
  *
@@ -64,8 +58,14 @@ public class TestJettyOSGiAnnotationParser
         ArrayList<Option> options = new ArrayList<>();
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.coreJettyDependencies());
-        
+        TestOSGiUtil.coreJettyDependencies(options);
+        TestOSGiUtil.coreJspDependencies(options);
+        //The jetty-alpn-client jars aren't used by this test, but as
+        //TestOSGiUtil.coreJettyDependencies deploys the jetty-client,
+        //we need them deployed to satisfy the dependency.
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
+
         //get a reference to a pre-prepared module-info
         Path path = Paths.get("src", "test", "resources", "module-info.clazz");
         File moduleInfo = path.toFile();
@@ -81,6 +81,8 @@ public class TestJettyOSGiAnnotationParser
     @Test
     public void testParse() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            TestOSGiUtil.diagnoseBundles(bundleContext);
         
         //test the osgi annotation parser ignore the module-info.class file in the fake bundle
         //Get a reference to the deployed fake bundle

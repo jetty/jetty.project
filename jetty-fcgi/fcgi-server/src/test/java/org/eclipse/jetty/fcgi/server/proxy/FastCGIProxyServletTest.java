@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,9 +14,12 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -34,18 +32,22 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -54,19 +56,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FastCGIProxyServletTest
 {
-    public static Stream<Arguments> factories()
-    {
-        return Stream.of(
-            true, // send status 200
-            false // don't send status 200
-        ).map(Arguments::of);
-    }
-
+    private final Map<String, String> fcgiParams = new HashMap<>();
     private Server server;
     private ServerConnector httpConnector;
-    private ServerConnector fcgiConnector;
+    private Connector fcgiConnector;
     private ServletContextHandler context;
     private HttpClient client;
+    private Path unixDomainPath;
 
     public void prepare(boolean sendStatus200, HttpServlet servlet) throws Exception
     {
@@ -76,19 +72,32 @@ public class FastCGIProxyServletTest
         httpConnector = new ServerConnector(server);
         server.addConnector(httpConnector);
 
-        fcgiConnector = new ServerConnector(server, new ServerFCGIConnectionFactory(new HttpConfiguration(), sendStatus200));
+        ServerFCGIConnectionFactory fcgi = new ServerFCGIConnectionFactory(new HttpConfiguration(), sendStatus200);
+        if (unixDomainPath == null)
+        {
+            fcgiConnector = new ServerConnector(server, fcgi);
+        }
+        else
+        {
+            UnixDomainServerConnector connector = new UnixDomainServerConnector(server, fcgi);
+            connector.setUnixDomainPath(unixDomainPath);
+            fcgiConnector = connector;
+        }
         server.addConnector(fcgiConnector);
 
-        final String contextPath = "/";
+        String contextPath = "/";
         context = new ServletContextHandler(server, contextPath);
 
-        final String servletPath = "/script";
+        String servletPath = "/script";
         FastCGIProxyServlet fcgiServlet = new FastCGIProxyServlet()
         {
             @Override
             protected String rewriteTarget(HttpServletRequest request)
             {
-                return "http://localhost:" + fcgiConnector.getLocalPort() + servletPath + request.getServletPath();
+                String uri = "http://localhost";
+                if (unixDomainPath == null)
+                    uri += ":" + ((ServerConnector)fcgiConnector).getLocalPort();
+                return uri + servletPath + request.getServletPath();
             }
         };
         ServletHolder fcgiServletHolder = new ServletHolder(fcgiServlet);
@@ -96,6 +105,7 @@ public class FastCGIProxyServletTest
         fcgiServletHolder.setInitParameter(FastCGIProxyServlet.SCRIPT_ROOT_INIT_PARAM, "/scriptRoot");
         fcgiServletHolder.setInitParameter("proxyTo", "http://localhost");
         fcgiServletHolder.setInitParameter(FastCGIProxyServlet.SCRIPT_PATTERN_INIT_PARAM, "(.+?\\.php)");
+        fcgiParams.forEach(fcgiServletHolder::setInitParameter);
         context.addServlet(fcgiServletHolder, "*.php");
 
         context.addServlet(new ServletHolder(servlet), servletPath + "/*");
@@ -116,36 +126,36 @@ public class FastCGIProxyServletTest
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @MethodSource("factories")
+    @ValueSource(booleans = {true, false})
     public void testGETWithSmallResponseContent(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 1024, 0);
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @MethodSource("factories")
+    @ValueSource(booleans = {true, false})
     public void testGETWithLargeResponseContent(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 16 * 1024 * 1024, 0);
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @MethodSource("factories")
+    @ValueSource(booleans = {true, false})
     public void testGETWithLargeResponseContentWithSlowClient(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 16 * 1024 * 1024, 1);
     }
 
-    private void testGETWithResponseContent(boolean sendStatus200, int length, final long delay) throws Exception
+    private void testGETWithResponseContent(boolean sendStatus200, int length, long delay) throws Exception
     {
-        final byte[] data = new byte[length];
+        byte[] data = new byte[length];
         new Random().nextBytes(data);
 
-        final String path = "/foo/index.php";
+        String path = "/foo/index.php";
         prepare(sendStatus200, new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 assertTrue(request.getRequestURI().endsWith(path));
                 response.setContentLength(data.length);
@@ -178,16 +188,20 @@ public class FastCGIProxyServletTest
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @MethodSource("factories")
+    @ValueSource(booleans = {true, false})
     public void testURIRewrite(boolean sendStatus200) throws Exception
     {
         String originalPath = "/original/index.php";
         String originalQuery = "foo=bar";
         String remotePath = "/remote/index.php";
+        String pathAttribute = "_path_attribute";
+        String queryAttribute = "_query_attribute";
+        fcgiParams.put(FastCGIProxyServlet.ORIGINAL_URI_ATTRIBUTE_INIT_PARAM, pathAttribute);
+        fcgiParams.put(FastCGIProxyServlet.ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM, queryAttribute);
         prepare(sendStatus200, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), Matchers.startsWith(originalPath));
                 assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
@@ -195,11 +209,6 @@ public class FastCGIProxyServletTest
             }
         });
         context.stop();
-        String pathAttribute = "_path_attribute";
-        String queryAttribute = "_query_attribute";
-        ServletHolder fcgi = context.getServletHandler().getServlet("fcgi");
-        fcgi.setInitParameter(FastCGIProxyServlet.ORIGINAL_URI_ATTRIBUTE_INIT_PARAM, pathAttribute);
-        fcgi.setInitParameter(FastCGIProxyServlet.ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM, queryAttribute);
         context.insertHandler(new HandlerWrapper()
         {
             @Override
@@ -220,5 +229,35 @@ public class FastCGIProxyServletTest
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    @EnabledForJreRange(min = JRE.JAVA_16)
+    public void testUnixDomain() throws Exception
+    {
+        int maxUnixDomainPathLength = 108;
+        Path path = Files.createTempFile("unix", ".sock");
+        if (path.normalize().toAbsolutePath().toString().length() > maxUnixDomainPathLength)
+            path = Files.createTempFile(Path.of("/tmp"), "unix", ".sock");
+        assertTrue(Files.deleteIfExists(path));
+        unixDomainPath = path;
+        fcgiParams.put("unixDomainPath", path.toString());
+        byte[] content = new byte[512];
+        new Random().nextBytes(content);
+        prepare(true, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.getOutputStream().write(content);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", httpConnector.getLocalPort())
+            .path("/index.php")
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertArrayEquals(content, response.getContent());
     }
 }

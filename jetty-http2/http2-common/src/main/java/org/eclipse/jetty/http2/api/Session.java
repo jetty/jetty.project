@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,6 +14,7 @@
 package org.eclipse.jetty.http2.api;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -113,8 +109,6 @@ public interface Session
     /**
      * <p>Closes the session by sending a GOAWAY frame with the given error code
      * and payload.</p>
-     * <p>The GOAWAY frame is sent only once; subsequent or concurrent attempts to
-     * close the session will have no effect.</p>
      *
      * @param error the error code
      * @param payload an optional payload (may be null)
@@ -144,14 +138,36 @@ public interface Session
     /**
      * @return the local network address this session is bound to,
      * or {@code null} if this session is not bound to a network address
+     * @deprecated use {@link #getLocalSocketAddress()} instead
      */
+    @Deprecated
     public InetSocketAddress getLocalAddress();
+
+    /**
+     * @return the local network address this session is bound to,
+     * or {@code null} if this session is not bound to a network address
+     */
+    public default SocketAddress getLocalSocketAddress()
+    {
+        return getLocalAddress();
+    }
+
+    /**
+     * @return the remote network address this session is connected to,
+     * or {@code null} if this session is not connected to a network address
+     * @deprecated use {@link #getRemoteSocketAddress()} instead
+     */
+    @Deprecated
+    public InetSocketAddress getRemoteAddress();
 
     /**
      * @return the remote network address this session is connected to,
      * or {@code null} if this session is not connected to a network address
      */
-    public InetSocketAddress getRemoteAddress();
+    public default SocketAddress getRemoteSocketAddress()
+    {
+        return getRemoteAddress();
+    }
 
     /**
      * <p>A {@link Listener} is the passive counterpart of a {@link Session} and
@@ -225,6 +241,16 @@ public interface Session
          *
          * @param session the session
          * @param frame the GOAWAY frame received
+         */
+        default void onGoAway(Session session, GoAwayFrame frame)
+        {
+        }
+
+        /**
+         * <p>Callback method invoked when a GOAWAY frame caused the session to be closed.</p>
+         *
+         * @param session the session
+         * @param frame the GOAWAY frame that caused the session to be closed
          * @param callback the callback to notify of the GOAWAY processing
          */
         public default void onClose(Session session, GoAwayFrame frame, Callback callback)

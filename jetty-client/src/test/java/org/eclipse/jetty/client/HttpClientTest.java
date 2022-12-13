@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -45,13 +40,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
-import javax.servlet.ServletException;
+import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -76,6 +73,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -88,15 +86,16 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -129,9 +128,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        long start = System.nanoTime();
+        long start = NanoTime.now();
         HttpConnectionOverHTTP connection = null;
-        while (connection == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+        while (connection == null && NanoTime.secondsSince(start) < 5)
         {
             connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
             TimeUnit.MILLISECONDS.sleep(10);
@@ -533,6 +532,41 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testRetryWithDestinationIdleTimeoutEnabled(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.setIdleTimeout(1000);
+        client.setMaxConnectionsPerDestination(1);
+        client.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/one")
+                .send();
+
+            int idleTimeout = 100;
+            Thread.sleep(idleTimeout * 2);
+
+            // After serving a request over a connection that hasn't timed out, serving a second
+            // request with a shorter idle timeout will make the connection timeout immediately
+            // after being taken out of the pool. This triggers the retry mechanism.
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/two")
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .send();
+        }
+
+        // Wait for the sweeper to remove the idle HttpDestination.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void testExchangeIsCompleteOnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
@@ -578,7 +612,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .file(file)
             .onRequestSuccess(request ->
             {
-                requestTime.set(System.nanoTime());
+                requestTime.set(NanoTime.now());
                 latch.countDown();
             })
             .send(new Response.Listener.Adapter()
@@ -586,22 +620,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 @Override
                 public void onSuccess(Response response)
                 {
-                    responseTime.set(System.nanoTime());
+                    responseTime.set(NanoTime.now());
                     latch.countDown();
                 }
 
                 @Override
                 public void onComplete(Result result)
                 {
-                    exchangeTime.set(System.nanoTime());
+                    exchangeTime.set(NanoTime.now());
                     latch.countDown();
                 }
             });
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-        assertTrue(requestTime.get() <= exchangeTime.get());
-        assertTrue(responseTime.get() <= exchangeTime.get());
+        assertTrue(NanoTime.isBeforeOrSame(requestTime.get(), exchangeTime.get()));
+        assertTrue(NanoTime.isBeforeOrSame(responseTime.get(), exchangeTime.get()));
 
         // Give some time to the server to consume the request content
         // This is just to avoid exception traces in the test output
@@ -687,48 +721,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void testRequestIdleTimeout(Scenario scenario) throws Exception
-    {
-        long idleTimeout = 1000;
-        start(scenario, new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
-            {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
-            }
-        });
-
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        assertThrows(TimeoutException.class, () ->
-            client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
-
-        // Make another request without specifying the idle timeout, should not fail
-        ContentResponse response = client.newRequest(host, port)
-            .scheme(scenario.getScheme())
-            .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-            .send();
-
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
     }
 
     @ParameterizedTest
@@ -1580,8 +1572,18 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
+                assertThat(connection, Matchers.instanceOf(HttpConnectionOverHTTP.class));
+                HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
+                EndPoint endPoint = httpConnection.getEndPoint();
+                assertTrue(endPoint.isOpen());
 
-                // Test that I can send another request on the same connection.
+                // After a CONNECT+200, this connection is in "tunnel mode",
+                // and applications that want to deal with tunnel bytes must
+                // likely access the underlying EndPoint.
+                // For the purpose of this test, we just re-enable fill interest
+                // so that we can send another clear-text HTTP request.
+                httpConnection.fillInterested();
+
                 request = client.newRequest(host, port);
                 listener = new FutureResponseListener(request);
                 connection.send(request, listener);
@@ -1653,6 +1655,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .timeout(123231, TimeUnit.SECONDS)
             .idleTimeout(232342, TimeUnit.SECONDS)
             .followRedirects(false)
+            .tag("tag")
             .headers(headers -> headers.put(HttpHeader.ACCEPT, "application/json"))
             .headers(headers -> headers.put("X-Some-Other-Custom-Header", "some-other-value")));
 
@@ -1879,6 +1882,121 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testHttpParserCloseWithAsyncReads(Scenario scenario) throws Exception
+    {
+        CountDownLatch serverOnErrorLatch = new CountDownLatch(1);
+
+        start(scenario, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                jettyRequest.setHandled(true);
+                if (request.getDispatcherType() != DispatcherType.REQUEST)
+                    return;
+
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(2000); // allow async to timeout
+                ServletInputStream input = request.getInputStream();
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int read = input.read();
+                            if (read < 0)
+                                break;
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        asyncContext.complete();
+                        serverOnErrorLatch.countDown();
+                    }
+                });
+                // Close the parser to cause the issue.
+                org.eclipse.jetty.server.HttpConnection.getCurrentConnection().getParser().close();
+            }
+        });
+        server.start();
+
+        int length = 16;
+        ByteBuffer chunk1 = ByteBuffer.allocate(length / 2);
+        AsyncRequestContent content = new AsyncRequestContent(chunk1)
+        {
+            @Override
+            public long getLength()
+            {
+                return length;
+            }
+        };
+        CountDownLatch clientResultLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .body(content)
+            .send(result -> clientResultLatch.countDown());
+
+        Thread.sleep(1000);
+
+        ByteBuffer chunk2 = ByteBuffer.allocate(length / 2);
+        content.offer(chunk2);
+        content.close();
+
+        assertTrue(clientResultLatch.await(5, TimeUnit.SECONDS), "clientResultLatch didn't finish");
+        assertTrue(serverOnErrorLatch.await(5, TimeUnit.SECONDS), "serverOnErrorLatch didn't finish");
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testBindAddress(Scenario scenario) throws Exception
+    {
+        String bindAddress = "127.0.0.2";
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(bindAddress, request.getRemoteAddr());
+            }
+        });
+
+        client.setBindAddress(new InetSocketAddress(bindAddress, 0));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/1")
+            .onRequestBegin(r ->
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .path("/2")
+                    .send(result ->
+                    {
+                        assertTrue(result.isSucceeded());
+                        assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                        latch.countDown();
+                    });
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
     private void assertCopyRequest(Request original)
     {
         Request copy = client.copyRequest((HttpRequest)original, original.getURI());
@@ -1889,6 +2007,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertEquals(original.getIdleTimeout(), copy.getIdleTimeout());
         assertEquals(original.getTimeout(), copy.getTimeout());
         assertEquals(original.isFollowRedirects(), copy.isFollowRedirects());
+        assertEquals(original.getTag(), copy.getTag());
         assertEquals(original.getHeaders(), copy.getHeaders());
     }
 

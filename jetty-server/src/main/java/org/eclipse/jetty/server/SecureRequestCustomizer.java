@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashSet;
 import java.util.Set;
@@ -57,6 +53,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     public static final String JAVAX_SERVLET_REQUEST_CIPHER_SUITE = "javax.servlet.request.cipher_suite";
     public static final String JAVAX_SERVLET_REQUEST_KEY_SIZE = "javax.servlet.request.key_size";
     public static final String JAVAX_SERVLET_REQUEST_SSL_SESSION_ID = "javax.servlet.request.ssl_session_id";
+    public static final String X509_CERT = "org.eclipse.jetty.server.x509_cert";
 
     private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
 
@@ -249,24 +246,24 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (isSniRequired() || isSniHostCheck())
         {
             String sniHost = (String)sslSession.getValue(SslContextFactory.Server.SNI_HOST);
-            X509 cert = new X509(null, (X509Certificate)sslSession.getLocalCertificates()[0]);
+            X509 x509 = (X509)sslSession.getValue(X509_CERT);
+            if (x509 == null)
+            {
+                Certificate[] certificates = sslSession.getLocalCertificates();
+                if (certificates == null || certificates.length == 0 || !(certificates[0] instanceof X509Certificate))
+                    throw new BadMessageException(400, "Invalid SNI");
+                x509 = new X509(null, (X509Certificate)certificates[0]);
+                sslSession.putValue(X509_CERT, x509);
+            }
             String serverName = request.getServerName();
             if (LOG.isDebugEnabled())
-                LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, cert);
+                LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, x509);
 
-            if (isSniRequired())
-            {
-                if (sniHost == null)
-                    throw new BadMessageException(400, "Invalid SNI");
-                if (!cert.matches(sniHost))
-                    throw new BadMessageException(400, "Invalid SNI");
-            }
+            if (isSniRequired() && (sniHost == null || !x509.matches(sniHost)))
+                throw new BadMessageException(400, "Invalid SNI");
 
-            if (isSniHostCheck())
-            {
-                if (!cert.matches(serverName))
-                    throw new BadMessageException(400, "Invalid SNI");
-            }
+            if (isSniHostCheck() && !x509.matches(serverName))
+                throw new BadMessageException(400, "Invalid SNI");
         }
 
         request.setAttributes(new SslAttributes(request, sslSession));
@@ -338,10 +335,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
             try
             {
-                _certs = getSslSessionData().getCerts();
+                SslSessionData sslSessionData = getSslSessionData();
+                _certs = sslSessionData.getCerts();
                 _cipherSuite = _session.getCipherSuite();
-                _keySize = getSslSessionData().getKeySize();
-                _sessionId = getSslSessionData().getIdStr();
+                _keySize = sslSessionData.getKeySize();
+                _sessionId = sslSessionData.getIdStr();
                 _sessionAttribute = getSslSessionAttribute();
             }
             catch (Exception e)

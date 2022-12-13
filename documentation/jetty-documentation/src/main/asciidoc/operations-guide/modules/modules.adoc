@@ -1,0 +1,494 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-modules]]
+=== Jetty Modules
+
+A Jetty _module_ provides one or more Java components that work together to implement one or more features.
+Such features could be listening for clear-text HTTP/1.1 requests, exposing Jetty components to JMX, provide hot-deployment of web applications, etc.
+
+Every Jetty feature is provided by a Jetty module.
+
+A Jetty module is defined in a `<name>.mod` file, where `<name>` is the module name (see also the xref:og-modules-names[section about module names]).
+
+Jetty module files are read from the typical xref:og-start-configure[configuration source directories], under the `modules/` subdirectory; from higher priority to lower priority:
+
+* The `$JETTY_BASE/modules/` directory.
+* If a directory is specified with the `--include-jetty-dir` option, its `modules/` subdirectory.
+* The `$JETTY_HOME/modules/` directory.
+
+The standard Jetty modules that Jetty provides out-of-the-box are under `$JETTY_HOME/modules/`.
+
+xref:og-modules-custom[Custom Jetty modules] should be put under `$JETTY_BASE/modules/`.
+
+[[og-modules-names]]
+==== Module Names
+
+A Jetty module has a unique name.
+The module name is by default derived from the file name, so module file `acme.mod` identifies a module named `acme`.
+
+However, a module file may specify a xref:og-modules-directive-provides[+[provides]+] directive for a _virtual_ module, so that many modules may provide a different implementation for the same feature.
+
+For example, among the standard modules provided by Jetty, the `server` module depends on the `logging` module, but there is no correspondent `logging.mod` file.
+
+However, the `logging-jetty.mod` file has, among others, this section:
+
+.logging-jetty.mod
+----
+[provides]
+logging|default
+----
+
+This section means that the `logging-jetty.mod` file provides the virtual module `logging`, and it is the default provider.
+
+The `logging-log4j2.mod` file has a similar section:
+
+.logging-log4j2.mod
+----
+[provides]
+logging
+----
+
+If there are no enabled modules that provide the `logging` virtual module, either explicitly or transitively, then the default provider is used, in this case `logging-jetty.mod`.
+
+Otherwise, a module that provides the `logging` virtual module is explicitly or transitively enabled, and the default provider is not used.
+
+[[og-modules-components]]
+==== Module Components
+
+A Jetty module may provide one or more Java components that implement a feature.
+These Java components are nothing more than regular Java classes that are instantiated and configured via xref:og-xml[Jetty XML] files.
+
+The Jetty XML file of a Jetty module may instantiate and assemble together its own components, or reference existing components from other Jetty modules to enhance or reconfigure them.
+
+The Jetty module's XML files are read from the typical xref:og-start-configure[configuration source directories], under the `etc/` subdirectory; from higher priority to lower priority:
+
+* The `$JETTY_BASE/etc/` directory.
+* If a directory is specified with the `--include-jetty-dir` option, its `etc/` subdirectory.
+* The `$JETTY_HOME/etc/` directory.
+
+The standard Jetty modules XML files that Jetty provides out-of-the-box are under `$JETTY_HOME/etc/`.
+
+For example, a Jetty XML file that allocates Jetty's `QueuedThreadPool` could be as simple as:
+
+[source,xml]
+.jetty-threadpool.xml
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure>
+  <New id="threadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+    <Set name="maxThreads" type="int">
+      <Property name="jetty.threadPool.maxThreads" default="256"/>
+    </Set>
+  </New>
+</Configure>
+----
+
+Note how the Jetty XML file above is allocating (with the `<New>` element) a `QueuedThreadPool` instance, giving it the unique `id` of `threadPool` (so that other modules can reference it, if they need to).
+It is then calling the setter method `QueuedThreadPool.setMaxThreads(int)` with the value defined by the xref:og-modules-properties[module property] `jetty.threadPool.maxThreads`; if the property value is not defined, it will have the default value of `256`.
+
+This is nothing more than Java code in XML format with configurable properties support that can be leveraged by the xref:og-start[Jetty start mechanism].
+
+The Jetty module's XML files make easy to instantiate and assemble Java components (just write the equivalent Java code in XML format), and make easy to configure them by declaring module properties that can be easily customized elsewhere (for example, in `+*.ini+` files as described in xref:og-start-configure-enable[this section], or on the command line as described in xref:og-start-start[this section]).
+
+[IMPORTANT]
+====
+Remember that the standard Jetty XML files in `$JETTY_HOME/etc/` should not be modified.
+
+Even if you need to modify a standard Jetty component, write a new Jetty XML file, save it under `$JETTY_BASE/etc/`, and create a xref:og-modules-custom[custom Jetty module] so that it gets processed when Jetty starts.
+====
+
+[[og-modules-properties]]
+==== Module Properties
+
+A Jetty module property is declared in the xref:og-modules-components[module XML file(s)] via the `<Property>` element.
+Modules properties are used to parametrize Jetty components so that you can customize their values when Jetty starts, rather than hard-coding it in the XML files.
+
+NOTE: You can declare your own properties, but the `+jetty.*+` namespace is reserved.
+
+A module property can be given a value in a Jetty module `[ini]` section (see xref:og-modules-directive-ini[here]), in a `+*.ini+` file as described in xref:og-start-configure-enable[this section], or on the command line as described in xref:og-start-start[this section].
+
+The syntax to specify a property value is the following:
+
+<name>=<value>::
+Sets the property value unconditionally.
+<name>+=<value>::
+Appends the value to the existing value.
+This is useful to append a value to properties that accept a comma separated list of values, for example:
++
+----
+jetty.webapp.addServerClasses+=,com.acme
+----
++
+// TODO: check what happens if the property is empty and +=,value is done: is the comma stripped? If so add a sentence about this.
+<name>?=<value>::
+Sets the property value only if it is not already set.
+This is useful to define default values, for example for "version" properties, where the "version" property can be explicitly configured to a newer version, but if it is not explicitly configured it will have a default version (see also xref:og-start-configure-custom-module[here]).
+For example:
++
+----
+conscrypt.version?=2.5.1
+jetty.sslContext.provider?=Conscrypt
+----
+
+[[og-modules-directives]]
+==== Module Directives
+
+Lines that start with `#` are comments.
+
+[[og-modules-directive-description]]
+===== [description]
+
+A text that describes the module.
+
+This text will be shown by the xref:og-start-configure[Jetty start mechanism] when using the `--list-modules` command.
+
+[[og-modules-directive-tags]]
+===== [tags]
+
+A list of words that characterize the module.
+
+Modules that have the same tags will be shown by the Jetty start mechanism when using the `--list-modules=<tag>` command.
+
+.example.mod
+----
+[tags]
+demo
+webapp
+jsp
+----
+
+[[og-modules-directive-provides]]
+===== [provides]
+
+A module name with an optional `default` specifier.
+
+As explained in the xref:og-modules-names[module name section], there can be many module files each providing a different implementation for the same feature.
+
+The format is:
+
+----
+[provides]
+<module_name>[|default]
+----
+
+where the `|default` part is optional and specifies that the module is the default provider.
+
+[[og-modules-directive-depends]]
+===== [depends]
+
+A list of module names that this module depends on.
+
+For example, the standard module `http` depends on module `server`.
+Enabling the `http` module also enables, transitively, the `server` module, since the `http` module cannot work without the `server` module; when the `server` module is transitively enabled, the modules it depends on will be transitively enabled, and so on recursively.
+
+The `[depends]` directive establishes a link:https://en.wikipedia.org/wiki/Partially_ordered_set[_partial order_] relationship among modules so that enabled modules can be sorted and organized in a graph.
+Circular dependencies are not allowed.
+
+The order of the enabled modules is used to determine the processing of the configuration, for example the order of processing of the xref:og-modules-directive-files[+[files]+] section, the order of processing of XML files defined in the xref:og-modules-directive-xml[+[xml]+] section, etc.
+
+[[og-modules-directive-after]]
+===== [after]
+
+This directive indicates that this module is ordered after the listed module names, if they are enabled.
+
+For example, module `https` is `[after]` module `http2`.
+Enabling the `https` module _does not_ enable the `http2` module.
+
+However, if the `http2` module is enabled (explicitly or transitively), then the `https` module is xref:og-modules-directive-depends[sorted] _after_ the `http2` module.
+In this way, you are guaranteed that the `https` module is processed after the `http2` module.
+
+[[og-modules-directive-before]]
+===== [before]
+
+This directive indicates that this module is ordered before the listed module names, if they are enabled.
+
+One use of this directive is to create a prerequisite module without the need to modify the `depends` directive of an existing module.
+For example, to create a custom `org.eclipse.jetty.server.Server` subclass instance to be used by the standard `server` module, without modifying the existing `server.mod` file nor the `jetty.xml` file that it uses. This can be achieved by creating the `custom-server` xref:og-modules-custom[Jetty custom module]:
+
+.custom-server.mod
+----
+[description]
+This module creates a custom Server subclass instance.
+
+[before]
+server
+
+[xml]
+etc/custom-server.xml
+----
+
+The `custom-server.xml` file is the following:
+
+.custom-server.xml
+[source,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="Server" class="com.acme.server.CustomJettyServer">
+</Configure>
+----
+
+The presence of the `[before]` directive in `custom-server.mod` causes the processing of the `custom-server.xml` file to happen before the processing of the standard `jetty.xml` file referenced by the standard `server.mod` Jetty module.
+
+Thus, the instance assigned to the `Server` identifier is your custom `com.acme.server.CustomJettyServer` instance from the  `custom-server.xml` file; this instance is then used while processing the `jetty.xml` file.
+
+[[og-modules-directive-files]]
+===== [files]
+
+A list of paths (directories and/or files) that are necessary for the module, created or resolved when the module is enabled.
+
+Each path may be of the following types:
+
+Path Name::
+A path name representing a file, or a directory if the path name ends with `/`, such as `webapps/`.
+The file or directory will be created relative to `$JETTY_BASE`, if not already present.
++
+For example:
++
+----
+[files]
+logs/
+----
+
+Maven Artifact::
+An URI representing a Maven artifact to be downloaded from Maven Central, if not already present.
+Property expansion is supported.
++
+The format is:
++
+----
+[files]
+maven://<groupId>/<artifactId>/<version>[/<type>]|<pathName>
+----
++
+where `<type>` is optional, and `<pathName>` after the `|` is the path under `$JETTY_BASE` where the downloaded file should be saved.
++
+For example:
++
+[source,options=nowrap]
+----
+[files]
+maven://org.postgresql/postgresql/${postgresql-version}|lib/postgresql-${postgresql-version}.jar
+----
+
+BaseHome::
+An URI representing a `$JETTY_HOME` resource to be copied in `$JETTY_BASE`, if not already present.
+URIs of this type are typically only used by standard Jetty modules; custom modules should not need to use it.
++
+The format is:
++
+----
+[files]
+basehome:<jettyHomePathName>|<pathName>
+----
++
+For example:
++
+----
+[files]
+basehome:modules/demo.d/demo-moved-context.xml|webapps/demo-moved-context.xml
+----
+
+HTTP URL::
+
+An `http://` or `https://` URL to be downloaded, if not already present.
++
+The format is:
++
+----
+[files]
+<httpURL>|<pathName>
+----
++
+For example:
++
+----
+[files]
+https://acme.com/favicon.ico|webapps/acme/favicon.ico
+----
+
+[[og-modules-directive-libs]]
+===== [libs]
+
+A list of paths, relative to the xref:og-start-configure[configuration source directories], of `+*.jar+` library files and/or directories that are added to the server class-path (or module-path when xref:og-start-start-jpms[running in JPMS mode]).
+
+The `[libs]` section if often used in conjunction with the `[files]` section.
+
+For example:
+
+----
+[files]
+maven://org.postgresql/postgresql/${postgresql-version}|lib/postgresql-${postgresql-version}.jar
+
+[libs]
+lib/postgresql-${postgresql-version}.jar
+----
+
+The `postgresql-<version>.jar` artifact is downloaded from Maven Central, if not already present, into the `$JETTY_BASE/lib/` directory when the module is enabled.
+
+When Jetty starts, the `$JETTY_BASE/lib/postgresql-<version>.jar` will be in the server class-path (or module-path).
+
+[[og-modules-directive-xml]]
+===== [xml]
+
+A list of paths, relative to the xref:og-start-configure[configuration source directories], of Jetty `+*.xml+` files that are passed as program arguments to be processed when Jetty starts (see the xref:og-start-start-xml[section about assembling Jetty components]).
+
+Jetty XML files are read from the typical xref:og-start-configure[configuration source directories], under the `etc/` subdirectory.
+Standard Jetty XML files are under `$JETTY_HOME/etc/`, while custom Jetty XML files are typically under `$JETTY_BASE/etc/`.
+
+For example:
+
+----
+[xml]
+etc/custom/components.xml
+----
+
+[[og-modules-directive-ini]]
+===== [ini]
+
+A list of program arguments to pass to the command line when Jetty is started.
+
+The program arguments may include any command line option (see xref:og-start-reference[here] for the list of command line options), xref:og-modules-properties[module properties] and/or xref:og-modules-components[module XML files].
+
+A property defined in the `[ini]` section is available in the `+*.mod+` module file for property expansion, for example:
+
+----
+[ini]
+postgresql-version?=42.2.18
+
+[lib]
+lib/postgresql-${postgresql-version}.jar
+----
+
+In the example above, the `[lib]` section contains `${postgresql-version}`, a reference to property `postgresql-version` whose value is defined in the `[ini]` section.
+The expression `${<property>}` _expands_ the property replacing the expression with the property value.
+
+See also the xref:og-start-start-jpms[JPMS section] for additional examples about the `[ini]` section.
+
+[[og-modules-directive-ini-template]]
+===== [ini-template]
+
+A list of properties to be copied in the `+*.ini+` file generated when xref:og-start-configure-enable[the module is enabled].
+
+The list of properties is derived from the xref:og-modules-components[module XML file(s)] that declare them.
+
+The properties are typically assigned their default value and commented out, so that it is evident which properties have been uncommented and customized with a non-default value.
+
+[[og-modules-directive-exec]]
+===== [exec]
+
+A list of JVM command line options and/or system properties passed to a forked JVM.
+
+When the `[exec]` section is present, the JVM running the Jetty start mechanism will fork another JVM, passing the JVM command line options and system properties listed in the `[exec]` sections of the enabled modules.
+
+This is necessary because JVM options such as `-Xmx` (that specifies the max JVM heap size) cannot be changed in a running JVM.
+For an example, see xref:og-start-configure-custom-module-exec[this section].
+
+You can avoid that the Jetty start mechanism forks the second JVM, as explained in xref:og-start-configure-dry-run[this section].
+
+[[og-modules-directive-jpms]]
+===== [jpms]
+
+A list of JVM command line options related to the Java Module System.
+
+This section is processed only when Jetty is xref:og-start-start-jpms[started in JPMS mode].
+
+The directives are:
+
+add-modules::
+Equivalent to the JVM option `--add-modules`.
+The format is:
++
+----
+[jpms]
+add-modules: <module>(,<module>)*
+----
++
+where `module` is a JPMS module name.
+
+patch-module::
+Equivalent to the JVM option `--patch-module`.
+The format is:
++
+----
+[jpms]
+patch-module: <module>=<file>(:<file>)*
+----
+where `module` is a JPMS module name.
+
+add-opens::
+Equivalent to the JVM option `--add-opens`.
+The format is:
++
+----
+[jpms]
+add-opens: <module>/<package>=<target-module>(,<target-module>)*
+----
+where `module` and `target-module` are a JPMS module names.
+
+add-exports::
+Equivalent to the JVM option `--add-exports`.
+The format is:
++
+----
+[jpms]
+add-exports: <module>/<package>=<target-module>(,<target-module>)*
+----
+where `module` and `target-module` are a JPMS module names.
+
+add-reads::
+Equivalent to the JVM option `--add-exports`.
+The format is:
++
+----
+[jpms]
+add-reads: <module>=<target-module>(,<target-module>)*
+----
+where `module` and `target-module` are a JPMS module names.
+
+[[og-modules-directive-license]]
+===== [license]
+
+The license under which the module is released.
+
+A Jetty module may be released under a license that is different from Jetty's, or use libraries that require end-users to accept their licenses in order to be used.
+
+You can put the license text in the `[license]` section, and when the Jetty module is enabled the license text will be printed on the terminal, and the user prompted to accept the license.
+If the user does not accept the license, the module will not be enabled.
+
+For example:
+
+----
+[license]
+Acme Project is an open source project hosted on GitHub
+and released under the Apache 2.0 license.
+https://www.apache.org/licenses/LICENSE-2.0.txt
+----
+
+[[og-modules-directive-version]]
+===== [version]
+
+The minimum Jetty version for which this module is valid.
+
+For example, a module may only be valid for Jetty 10 and later, but not for earlier Jetty versions (because it references components that have been introduced in Jetty 10).
+
+For example:
+
+----
+[version]
+10.0
+----
+
+A Jetty module with such a section will only work for Jetty 10.0.x or later.

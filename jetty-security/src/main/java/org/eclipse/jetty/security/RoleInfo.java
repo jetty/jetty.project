@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -41,7 +36,7 @@ public class RoleInfo
     /**
      * List of permitted roles
      */
-    private final Set<String> _roles = new CopyOnWriteArraySet<String>();
+    private final Set<String> _roles = new CopyOnWriteArraySet<>();
 
     public RoleInfo()
     {
@@ -140,26 +135,28 @@ public class RoleInfo
     {
         if (other._forbidden)
             setForbidden(true);
-        else if (!other._checked) // TODO is this the right way around???
-            setChecked(true);
-        else if (other._isAnyRole)
-            setAnyRole(true);
-        else if (other._isAnyAuth)
-            setAnyAuth(true);
-        else if (!_isAnyRole)
+        else if (other._checked)
         {
-            for (String r : other._roles)
-            {
-                _roles.add(r);
-            }
-        }
+            setChecked(true);
+            if (other._isAnyAuth)
+                setAnyAuth(true);
+            if (other._isAnyRole)
+                setAnyRole(true);
 
+            _roles.addAll(other._roles);
+        }
         setUserDataConstraint(other._userDataConstraint);
     }
 
     @Override
     public String toString()
     {
-        return "{RoleInfo" + (_forbidden ? ",F" : "") + (_checked ? ",C" : "") + (_isAnyRole ? ",*" : _roles) + (_userDataConstraint != null ? "," + _userDataConstraint : "") + "}";
+        return String.format("RoleInfo@%x{%s%s%s%s,%s}",
+            hashCode(),
+            (_forbidden ? "Forbidden," : ""),
+            (_checked ? "Checked," : ""),
+            (_isAnyAuth ? "AnyAuth," : ""),
+            (_isAnyRole ? "*" : _roles),
+            _userDataConstraint);
     }
 }

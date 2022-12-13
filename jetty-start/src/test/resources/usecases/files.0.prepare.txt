@@ -1,2 +1,0 @@
---create-startd
---add-to-start=demo

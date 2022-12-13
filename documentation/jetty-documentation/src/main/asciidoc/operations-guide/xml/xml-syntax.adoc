@@ -1,0 +1,506 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-xml-syntax]]
+==== Jetty XML Syntax
+
+The Jetty XML syntax defines XML element that allow you to call any Java API and that allow you to interact in a simpler way with the xref:og-modules[Jetty module system] and the xref:og-deploy[Jetty deploy system].
+
+The Jetty XML elements define attributes such as `id`, `name`, `class`, etc. that may be replaced by correspondent elements, so that these XML documents are equivalent:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Get id="stderr" class="java.lang.System" name="err">
+    <Call name="println" arg="HELLO" />
+  </Get>
+</Configure>
+----
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Get>
+    <Id>stderr</Id>
+    <Name>err</Name>
+    <Class>java.lang.System</Class>
+    <Call>
+      <Name>println</Name>
+      <Arg>HELLO</Arg>
+    </Call>
+  </Get>
+</Configure>
+----
+
+The version using attributes is typically shorter and nicer to read, but sometimes the attribute value cannot be a literal string (for example, it could be the value of a system property) and that's where elements gives you the required flexibility.
+
+[[og-xml-syntax-configure]]
+===== `<Configure>`
+
+Element `Configure` must be the root element of the XML document.
+
+The following Jetty XML creates an empty `String` and assigns it the id `mystring`:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="mystring" class="java.lang.String" />
+----
+
+This is equivalent to the following Java code:
+
+[source,java]
+----
+var mystring = new String();
+----
+
+If an object with the id `mystring` already exists, then it is not created again but rather just referenced.
+
+Within element `<Configure>`, the created object (if any) is in xref:og-xml-syntax-scope[scope] and may be the implicit target of other, nested, elements.
+
+Typically the `<Configure>` element is used to configure a `Server` instance or `ContextHandler` subclasses such as `WebAppContext` that represent web applications.
+
+[[og-xml-syntax-arg]]
+===== `<Arg>`
+
+Element `Arg` is used to pass arguments to xref:og-xml-syntax-new[constructors] and xref:og-xml-syntax-call[method calls].
+
+The following example creates a minimal Jetty `Server`:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.server.Server">
+  <Arg type="int">8080</Arg>
+</Configure>
+----
+
+Arguments may have a `type` attribute that explicitly performs xref:og-xml-syntax-types[type coercion].
+
+Arguments may also have a `name` attribute, which is matched with the corresponding Java annotation in the source class, that helps to identify arguments:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.server.Server">
+  <Arg name="port" type="int">8080</Arg>
+</Configure>
+----
+
+[[og-xml-syntax-new]]
+===== `<New>`
+
+Element `<New>` creates a new object of the type specified by the mandatory `class` attribute.
+A sequence of `Arg` elements, that must be contiguous and before other elements, may be present to specify the constructor arguments.
+
+Within element `<New>` the newly created object is in xref:og-xml-syntax-scope[scope] and may be the implicit target of other, nested, elements.
+
+The following example creates an `ArrayList`:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <New id="mylist" class="java.util.ArrayList">
+    <Arg type="int">16</Arg>
+  </New>
+</Configure>
+----
+
+This is equivalent to the following Java code:
+
+[source,java]
+----
+var mylist = new ArrayList(16);
+----
+
+[[og-xml-syntax-call]]
+===== `<Call>`
+
+Element `<Call>` invokes a method specified by the mandatory `name` attribute.
+A sequence of `Arg` elements, that must be contiguous and before other elements, may be present to specify the method arguments.
+
+Within element `<Call>` the return value, if the return type is not `void`, is in xref:og-xml-syntax-scope[scope] and may be the implicit target of other, nested, elements.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <New class="java.util.ArrayList">
+    <Call name="listIterator">
+      <Arg type="int">0</Arg>
+    </Call>
+    <Call name="next" />
+  </New>
+</Configure>
+----
+
+This is equivalent to the following Java code:
+
+[source,java]
+----
+new ArrayList().listIterator(0).next();
+----
+
+It is possible to call `static` methods by specifying the `class` attribute:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Call id="myhost" name="getByName" class="java.net.InetAddress">
+    <Arg>jdk.java.net</Arg>
+  </Call>
+</Configure>
+----
+
+This is equivalent to the following Java code:
+
+[source,java]
+----
+var myhost = InetAddress.getByName("jdk.java.net");
+----
+
+The `class` attribute (or `<Class>` element) can also be used to specify the Java class or interface to use to lookup the non-``static`` method name.
+This is necessary when the object in scope, onto which the `<Call>` would be applied, is an instance of a class that is not visible to Jetty classes, or not accessible because it is not `public`.
+For example:
+
+[source,xml,subs=normal]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Call class="java.util.concurrent.Executors" name="newSingleThreadScheduledExecutor">
+    #<Call class="java.util.concurrent.ExecutorService" name="shutdown" />#
+  </Call>
+</Configure>
+----
+
+In the example above, `Executors.newSingleThreadScheduledExecutor()` returns an object whose class is a private JDK implementation class.
+Without an explicit `class` attribute (or `<Class>` element), it is not possible to invoke the method `shutdown()` when it is obtained via reflection from the private JDK implementation class, because while the method is `public`, the private JDK implementation class is not, therefore this exception is thrown:
+
+[source]
+----
+java.lang.IllegalAccessException: class org.eclipse.jetty.xml.XmlConfiguration$JettyXmlConfiguration (in module org.eclipse.jetty.xml) cannot access a member of class java.util.concurrent.Executors$DelegatedExecutorService (in module java.base) with modifiers "public"
+----
+
+The solution is to explicitly use the `class` attribute (or `<Class>` element) of the `<Call>` element that is invoking the `shutdown()` method, specifying a publicly accessible class or interface that the object in scope extends or implements (in the example above `java.util.concurrent.ExecutorService`).
+
+[[og-xml-syntax-get]]
+===== `<Get>`
+
+Element `<Get>` retrieves the value of a JavaBean property specified by the mandatory `name` attribute.
+
+If the JavaBean property is `foo` (or `Foo`), `<Get>` first attempts to invoke _method_ `getFoo()` or _method_ `isFoo()`; failing that, attempts to retrieve the value from _field_ `foo` (or `Foo`).
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="server" class="org.eclipse.jetty.server.Server">
+  <!-- Invokes getter method server.getVersion() -->
+  <Get id="version" name="version" />
+
+  <!-- Gets the System.err field -->
+  <Get class="java.lang.System" name="err">
+    <Call name="println">
+      <Arg>Jetty</Arg>
+    </Call>
+  </Get>
+</Configure>
+----
+
+The `class` attribute (or `<Class>` element) allows to perform `static` calls, or to lookup the getter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
+
+[[og-xml-syntax-set]]
+===== `<Set>`
+
+Element `<Set>` stores the value of a JavaBean property specified by the mandatory `name` attribute.
+
+If the JavaBean property is `foo` (or `Foo`), `<Set>` first attempts to invoke _method_ `setFoo(...)` with the value in the xref:og-xml-syntax-scope[scope] as argument; failing that, attempts to store the value in the scope to _field_ `foo` (or `Foo`).
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="server" class="org.eclipse.jetty.server.Server">
+  <!-- The value in the <Set> scope is the string "true" -->
+  <Set name="dryRun">true</Set>
+
+  <!-- The value in the <Set> scope is the instance created by <New> -->
+  <Set name="requestLog">
+    <New class="org.eclipse.jetty.server.CustomRequestLog" />
+  </Set>
+</Configure>
+----
+
+The `class` attribute (or `<Class>` element) allows to perform `static` calls, or to lookup the setter method from the specified class, as described in the xref:og-xml-syntax-call[`<Call>` section].
+
+[[og-xml-syntax-map]]
+===== `<Map>` and `<Entry>`
+
+Element `<Map>` allows the creation of a new `java.util.Map` implementation, specified by the `class` attribute -- by default a `HashMap`.
+
+The map entries are specified with a sequence of `<Entry>` elements, each with exactly 2 `<Item>` elements, for example:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Map class="java.util.concurrent.ConcurrentHashMap">
+    <Entry>
+      <Item>host</Item>
+      <Item>
+        <Call class="java.net.InetAddress" name="getByName">
+          <Arg>localhost</Arg>
+        </Call>
+      </Item>
+    </Entry>
+  </Map>
+</Configure>
+----
+
+[[og-xml-syntax-put]]
+===== `<Put>`
+
+Element `<Put>` is a convenience element that puts a key/value pair into objects that implement `java.util.Map`.
+You can only specify the key value via the `name` attribute, so the key can only be a literal string (for keys that are not literal strings, use the `<Call>` element).
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <New class="java.util.Properties">
+    <Put name="host">
+      <Call class="java.net.InetAddress" name="getByName">
+        <Arg>localhost</Arg>
+      </Call>
+    </Put>
+  </New>
+</Configure>
+----
+
+[[og-xml-syntax-array]]
+===== `<Array>` and `<Item>`
+
+Element `<Array>` creates a new array, whose component type may be specified by the `type` attribute, or by a `Type` child element.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Array type="java.lang.Object">
+    <Item /> <!-- null -->
+    <Item>literalString</Item>
+    <Item type="String"></Item> <!-- empty string -->
+    <Item type="Double">1.0D</Item>
+    <Item>
+      <New class="java.lang.Exception" />
+    </Item>
+  </Array>
+</Configure>
+----
+
+[[og-xml-syntax-ref]]
+===== `<Ref>`
+
+Element `<Ref>` allows you to reference an object via the `refid` attribute`, putting it into xref:og-xml-syntax-scope[scope] so that nested elements can operate on it.
+You must give a unique `id` attribute to the objects you want to reference.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- The Jetty Server has id="server" -->
+<Configure id="server" class="org.eclipse.jetty.server.Server">
+  <Get class="java.lang.System" name="err">
+    <!-- Here the System.err field is in scope, but you
+         want to operate on the server to get its version -->
+    <Ref refid="server">
+      <!-- Store the server version under id="myversion" -->
+      <Get id="myversion" name="version" />
+    </Ref>
+
+    <Call name="println">
+      <!-- Reference the server version stored above -->
+      <Arg>Server version is: <Ref refid="myversion" /></Arg>
+    </Call>
+  </Get>
+</Configure>
+----
+
+[[og-xml-syntax-property]]
+===== `<Property>`
+
+Element `<Property>` retrieves the value of the Jetty module property specified by the `name` attribute, and it is mostly used when creating xref:og-modules-custom[custom Jetty modules] or when using xref:og-deploy-jetty[Jetty context XML files].
+
+The `deprecated` attribute allows you to specify a comma separated list of old, deprecated, property names for backward compatibility.
+
+The `default` attribute allows you to specify a default value for the property, if it has not been explicitly defined.
+
+For example, you may want to configure the context path of your web application in this way:
+
+[source,xml,subs=normal]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">
+    #<Property name="com.myapps.mywiki.context.path" default="/wiki" />#
+  </Set>
+  <Set name="war">/opt/myapps/mywiki.war</Set>
+</Configure>
+----
+
+The `contextPath` value is resolved by looking for the Jetty module property `com.myapps.mywiki.context.path`; if this property is not set, then the default value of `/wiki` is used.
+
+[[og-xml-syntax-system-property]]
+===== `<SystemProperty>`
+
+Element `<SystemProperty>` retrieves the value of the JVM system property specified by the `name` attribute, via `System.getProperty(...)`.
+
+The `deprecated` attribute allows you to specify a comma separated list of old, deprecated, system property names for backward compatibility.
+
+The `default` attribute allows you to specify a default value for the system property value, if it has not been explicitly defined.
+
+The following example creates a minimal Jetty `Server` that listens on a port specified by the `com.acme.http.port` system property:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="server" class="org.eclipse.jetty.server.Server">
+  <Arg type="int">
+    <SystemProperty name="com.acme.http.port" default="8080" />
+  </Arg>
+</Configure>
+----
+
+[[og-xml-syntax-env]]
+===== `<Env>`
+
+Element `<Env>` retrieves the value of the environment variable specified by the `name` attribute, via `System.getenv(...)`.
+
+The `deprecated` attribute allows you to specify a comma separated list of old, deprecated, environment variable names for backward compatibility.
+
+The `default` attribute allows you to specify a default value for the environment variable value, if it has not been explicitly defined.
+
+The following example creates a minimal Jetty `Server` that listens on a port specified by the `COM_ACME_HTTP_PORT` environment variable:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="server" class="org.eclipse.jetty.server.Server">
+  <Arg type="int">
+    <Env name="COM_ACME_HTTP_PORT" default="8080" />
+  </Arg>
+</Configure>
+----
+
+[[og-xml-syntax-types]]
+===== Type Coercion
+
+Elements that have the `type` attribute explicitly perform the type coercion of the string value present in the XML document to the Java type specified by the `type` attribute.
+
+Supported types are the following:
+
+* all primitive types and their boxed equivalents, for example `type="int"` but also `type="Integer"` (short form) and `type="java.lang.Integer"` (fully qualified form)
+* `java.lang.String`, in both short form and fully qualified form
+* `java.net.URL`, in both short form and fully qualified form
+* `java.net.InetAddress`, in both short form and fully qualified form
+
+[[og-xml-syntax-scope]]
+===== Scopes
+
+Elements that create new objects or that return a value create a _scope_.
+Within these elements there may be nested elements that will operate on that scope, i.e. on the new object or returned value.
+
+The following example illustrates how scopes work:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="server" class="org.eclipse.jetty.server.Server">
+  <Arg type="int">8080</Arg>
+  <!-- Here the Server object has been created and is in scope -->
+
+  <!-- Calls the setter on the Server object that is in scope -->
+  <Set name="stopTimeout">5000</Set>
+
+  <!-- Creates a new object -->
+  <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+    <!-- Here the HttpConfiguration just created is in a nested scope -->
+
+    <!-- Calls the setter on the HttpConfiguration object that is in scope -->
+    <Set name="secureScheme">https</Set>
+  </New>
+
+  <!-- Calls the getter on the Server object that is in scope -->
+  <Get name="ThreadPool">
+    <!-- Here the ThreadPool object returned by the getter is in a nested scope -->
+
+    <!-- Calls the setter on the ThreadPool object that is in scope -->
+    <Set name="maxThreads" type="int">256</Set>
+  </Get>
+
+  <!-- Gets the System.err field -->
+  <Get class="java.lang.System" name="err">
+    <!-- Here the System.err object is in scope -->
+
+    <!-- Equivalent to: var myversion = server.getVersion() -->
+    <Ref refid="server">
+      <!-- Here the "server" object is in scope -->
+      <Get id="myversion" name="version" />
+    </Ref>
+
+    <!-- Calls println() on the System.err object -->
+    <Call name="println">
+      <Arg>Server version is: <Ref refid="myversion" /></Arg>
+    </Call>
+  </Get>
+</Configure>
+----

@@ -1,0 +1,43 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-websocket]]
+=== WebSocket Server
+
+Jetty provides two API implementations of the WebSocket protocol:
+
+* An implementation for the standard `javax.websocket` APIs provided by link:https://www.jcp.org/en/jsr/detail?id=356[JSR 356], described in xref:pg-server-websocket-standard[this section].
+* An implementation for Jetty-specific WebSocket APIs, described in xref:pg-server-websocket-jetty[this section].
+
+Using the standard `javax.websocket` APIs allows your applications to depend only on standard APIs, and your applications may be deployed in any compliant WebSocket Container that supports JSR 356.
+
+The standard APIs provide few features that are not present in the Jetty WebSocket APIs:
+
+* Encoders and Decoders for automatic conversion of text or binary messages to objects.
+* `Reader` and `InputStream` for simple, blocking, message streaming.
+* Simple URI template matching.
+
+On the other hand, the Jetty WebSocket APIs are more efficient and offer greater and more fine-grained control, and provide features that are not present in the standard APIs:
+
+* Suspend/resume to control backpressure.
+* Remote socket address (IP address and port) information.
+* WebSocket upgrade handling via Filter or Servlet.
+* Advanced URI matching with Servlet WebSocket upgrade.
+* Control of the idle timeout.
+* Configuration of the network buffer capacity.
+
+If your application needs specific features that are not provided by the standard APIs, the Jetty WebSocket APIs may provide such features -- and if they do not, you may ask for these features by submitting an issue to the Jetty Project without waiting for the standard process to approve them.
+
+include::server-websocket-standard.adoc[]
+include::server-websocket-jetty.adoc[]
+include::server-websocket-filter.adoc[]

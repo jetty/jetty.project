@@ -4,25 +4,16 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <artifactId>demo-jaas-webapp</artifactId>
   <name>Demo :: JAAS :: WebApp</name>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
+    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DEMO Project, Must Deploy -->
-          <skip>false</skip>
-        </configuration>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -33,9 +24,9 @@
             <scan>10</scan>
             <systemProperties>
               <!-- This is for convenience so that the src/etc/login.conf file can stay unmodified when copied to $jetty.home/etc directory -->
-              <jetty.base>${basedir}/src/main/config/demo-base</jetty.base>
+                <jetty.base>${basedir}/src/main/config/modules/demo.d</jetty.base>
               <!-- Mandatory. This system property tells JAAS where to find the login module configuration file -->
-              <java.security.auth.login.config>${basedir}/src/main/config/demo-base/etc/login.conf</java.security.auth.login.config>
+                <java.security.auth.login.config>${basedir}/src/main/config/modules/demo.d/demo-login.conf</java.security.auth.login.config>
             </systemProperties>
             <webApp>
               <contextPath>/test-jaas</contextPath>

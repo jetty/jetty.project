@@ -1,0 +1,297 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-webapps]]
+=== Deployment Processing of WebAppContexts
+
+Web applications require a certain amount of processing before they can go into service: they may need to be unpacked, a special classloader created for their jar files, `web.xml` and `web-fragment.xml` descriptors processed, and classes scanned for annotations amongst other things.
+As web applications have become more complex, Jetty has added ways to assist with customization by either broadening or lessening the amount of processing that is done at deployment time.
+This section will examine this processing and it can be tailored to fit individual needs.
+
+If instead you're looking for information on how to configure a specific `WebAppContext` - such as its context path, whether it should be unpacked or not - then you can find that in the section entitled link:#configuring-specific-webapp-deployment[Configuring a Specific WebApp Deployment].
+
+[[webapp-configurations]]
+==== Configuration Classes
+
+As a webapp is being deployed, a series of link:{JDURL}/org/eclipse/jetty/webapp/Configuration.html[org.eclipse.jetty.webapp.Configuration] classes are applied to it, each one performing a specific function.
+The ordering of these Configurations is significant as subsequent Configurations tend to build on information extracted or setup in foregoing Configurations.
+These are the default list, in order, of Configurations that are applied to each link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[org.eclipse.jetty.webapp.WebAppContex]t:
+
+.Default Configuration classes
+[cols=",",]
+|=======================================================================
+|link:{JDURL}/org/eclipse/jetty/webapp/WebInfConfiguration.html[org.eclipse.jetty.webapp.WebInfConfiguration]
+|Extracts war, orders jars and defines classpath
+
+|link:{JDURL}/org/eclipse/jetty/webapp/WebXmlConfiguration.html[org.eclipse.jetty.webapp.WebXmlConfiguration]
+|Processes a WEB-INF/web.xml file
+
+|link:{JDURL}/org/eclipse/jetty/webapp/MetaInfConfiguration.html[org.eclipse.jetty.webapp.MetaInfConfiguration]
+|Looks in container and webapp jars for META-INF/resources and
+META-INF/web-fragment.xml
+
+|link:{JDURL}/org/eclipse/jetty/webapp/FragmentConfiguration.html[org.eclipse.jetty.webapp.FragmentConfiguration]
+|Processes all discovered META-INF/web-fragment.xml files
+
+|link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration]
+|Processes a WEB-INF/jetty-web.xml file
+|=======================================================================
+
+===== Anatomy of a Configuration Class
+
+A Configuration class is called 5 times in different phases of the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext's`] lifecycle:
+
+preConfigure::
+  As the `WebAppContext` is starting up this phase is executed.
+  The `Configuration` should discover any of the resources it will need during the subsequent phases.
+configure::
+  This phase is where the work of the class is done, usually using the resources discovered during the `preConfigure` phase.
+postConfigure::
+  This phase allows the `Configuration` to clear down any resources that may have been created during the previous 2 phases that are not needed for the lifetime of the `WebAppContext`.
+deconfigure::
+  This phase occurs whenever a `WebAppContext` is being stopped and allows the Configuration to undo any resources/metadata that it created.
+  A `WebAppContext` should be able to be cleanly start/stopped multiple times without resources being held.
+destroy::
+  This phase is called when a `WebAppContext` is actually removed from service.
+  For example, the war file associated with it is deleted from the $JETTY_HOME/webapps directory.
+
+Each phase is called on each `Configuration` class in the order in which the `Configuration` class is listed.
+Using the default `Configuration` classes as an example, `preConfigure()` will be called on `WebInfConfiguration`, `WebXmlConfiguration`, `MetaInfConfiguration`, `FragmentConfiguration` and then `JettyWebXmlConfiguration`.
+The cycle begins again for the `configure()` phase and again for the `postConfigure()` phases.
+The cycle is repeated _in reverse order_ for the `deconfigure()` and eventually the `destroy()` phases.
+
+===== Extending Container Support by Creating Extra Configurations
+
+As shown, there is a default set of Configurations that support basic deployment of a webapp.
+JavaEE features such as JNDI and advanced servlet spec features such as annotations have not been mentioned.
+Jetty's philosophy is to allow the user to tailor the container exactly to their needs.
+If these features are not needed, then Jetty does not pay the price for them - an important consideration because features such as annotations require extensive and time-consuming scanning of `WEB-INF/lib` jars.
+As modern webapps may have scores of these jars, it can be a source of significant deployment delay.
+We will see in the section link:#webapp-context-attributes[Other Configuration] another helpful webapp facility that Jetty provides for cutting down the time spent analyzing jars.
+
+Jetty makes use of the flexibility of Configurations to make JNDI and annotation support pluggable.
+
+Firstly, lets look at how Configurations help enable JNDI.
+
+[[jndi-configuration-classes]]
+====== Example: JNDI Configurations
+
+JNDI lookups within web applications require the container to hookup resources defined in the container's environment to that of the web application.
+To achieve that, we use 2 extra Configurations:
+
+.JNDI Configuration classes
+[cols=",",]
+|=======================================================================
+|link:{JDURL}/org/eclipse/jetty/plus/webapp/EnvConfiguration.html[org.eclipse.jetty.plus.webapp.EnvConfiguration]
+|Creates `java:comp/env` for the webapp, applies a `WEB-INF/jetty-env.xml` file
+
+|link:{JDURL}/org/eclipse/jetty/plus/webapp/PlusConfiguration.html[org.eclipse.jetty.plus.webapp.PlusConfiguration]
+|Processes JNDI related aspects of `WEB-INF/web.xml` and hooks up naming entries
+|=======================================================================
+
+These configurations must be added in _exactly_ the order shown above and should be inserted _immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations.
+To fully support JNDI additional configuration is required, full details of which can be found link:#jndi[here].
+
+====== Example: Annotation Configurations
+
+We need just one extra Configuration class to help provide servlet annotation scanning:
+
+.Annotation Configuration classes
+[cols=",",]
+|=======================================================================
+|link:{JDURL}/org/eclipse/jetty/annotations.AnnotationConfiguration.html[org.eclipse.jetty.annotations.AnnotationConfiguration]
+|Scan container and web app jars looking for @WebServlet, @WebFilter,
+@WebListener etc
+|=======================================================================
+
+The above configuration class must be _inserted immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations.
+To fully support annotations additional configuration is require, details of which can be found link:#webapp-context-attributes[below.]
+
+===== How to Set the List of Configurations
+
+You have a number of options for how to make Jetty use a different list of Configurations.
+
+====== Setting the list directly on the WebAppContext
+
+If you have only one webapp that you wish to affect, this may be the easiest option.
+You will, however, either need to have a context xml file that represents your web app, or you need to call the equivalent in code.
+Let's see an example of how we would add in the Configurations for both JNDI _and_ annotations:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+  <Set name="war"><SystemProperty name="jetty.base" default="."/>/webapps/my-cool-webapp</Set>
+
+  <Set name="configurationClasses">
+    <Array type="java.lang.String">
+      <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+      <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+      <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+      <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+    </Array>
+  </Set>
+
+</Configure>
+----
+
+Of course, you can also use this method to reduce the Configurations applied to a specific `WebAppContext`.
+
+====== Setting the list for all webapps via the Deployer
+
+If you use the link:#deployment-architecture[deployer], you can set up the list of Configuration classes on the link:#default-web-app-provider[WebAppProvider].
+They will then be applied to each `WebAppContext` deployed by the deployer:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+        <Call id="webappprovider" name="addAppProvider">
+          <Arg>
+            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <Set name="monitoredDirName"><Property name="jetty.base" default="." />/webapps</Set>
+              <Set name="configurationClasses">
+                <Array type="java.lang.String">
+                  <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+                  <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+                  <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+                  <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+                </Array>
+              </Set>
+            </New>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+====== Adding or inserting to an existing list
+
+Instead of having to enumerate the list in its entirety, you can simply nominate classes that you want to add, and indicate whereabouts in the list you want them inserted.
+Let's look at an example of using this method to add in Configuration support for JNDI - as usual you can either do this in an xml file, or via equivalent code.
+This example uses an xml file, in fact it is the `$JETTY_HOME/etc/jetty-plus.xml` file from the Jetty distribution:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Add plus Configuring classes to all webapps for this Server -->
+  <!-- =========================================================== -->
+  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call name="addAfter">
+      <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
+      <Arg>
+        <Array type="String">
+          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Call>
+
+</Configure>
+----
+
+The link:{JDURL}/org/eclipse/jetty/webapp/Configuration.html[org.eclipse.jetty.webapp.Configuration.ClassList] class provides these methods for insertion:
+
+addAfter::
+  Inserts the supplied list of `Configuration` class names after the given Configuration class name.
+addBefore::
+  Inserts the supplied list of `Configuration` class names before the given Configuration class name.
+
+[[webapp-context-attributes]]
+==== Other Configuration
+
+[[container-include-jar-pattern]]
+===== org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern
+
+This is a link:#context_attributes[context attribute] that can be set on link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[an org.eclipse.jetty.webapp.WebAppContext] to control which parts of the _container's_ classpath should be processed for things like annotations, `META-INF/resources`, `META-INF/web-fragment.xml` and `tlds` inside `META-INF`.
+
+Normally, nothing from the container classpath will be included for processing.
+However, sometimes you will need to include some.
+For example, you may have some libraries that are shared amongst your webapps and thus you have put them into a `$JETTY_HOME/lib` directory.
+The libraries contain annotations and therefore must be scanned.
+
+The value of this attribute is a regexp that defines which _jars_ and _class directories_ from the container's classpath should be examined.
+
+Here's an example from a context xml file (although as always, you could have accomplished the same in code), which would match any jar whose name starts with "foo-" or "bar-", or a directory named "classes":
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
+      <Arg>.*/foo-[^/]*\.jar$|.*/bar-[^/]*\.jar$|.*/classes/.*</Arg>
+    </Call>
+
+</Configure>
+----
+
+Note that the order of the patterns defines the ordering of the scanning of the jars or class directories.
+
+[[web-inf-include-jar-pattern]]
+===== org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern
+
+Similarly to the previous link:#context_attributes[context attribute], this attribute controls which jars are processed for things like annotations, `META-INF/resources`, `META-INF/web-fragment.xml` and `tlds` in `META-INF`.
+However, this attribute controls which jars from the _webapp's_ classpath (usually `WEB-INF/lib`) are processed.
+This can be particularly useful when you have dozens of jars in `WEB-INF/lib`, but you know that only a few need to be scanned.
+
+Here's an example in a xml file of a pattern that matches any jar that starts with `spring-`:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern</Arg>
+      <Arg>.*/spring-[^/]*\.jar$</Arg>
+    </Call>
+
+</Configure>
+----
+
+Note that the order of the patterns defines the ordering of the scanning of jar files.

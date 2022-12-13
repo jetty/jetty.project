@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-context</artifactId>
@@ -10,20 +10,21 @@
   <description>Test Jetty OSGi bundle with a ContextHandler</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.testcontext</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.osgi</groupId>
+      <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.osgi</groupId>
+      <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi.services</artifactId>
       <scope>provided</scope>
     </dependency>
@@ -38,27 +39,7 @@
         <directory>src/main/context</directory>
       </resource>
     </resources>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <!-- No point building javadoc on testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -74,7 +55,15 @@
             compilation time. -->
             <_nouses>true</_nouses>
             <Import-Package>
-              javax.servlet;version="[3.1,4.1)", javax.servlet.resources;version="[3.1,4.1)", org.osgi.framework, org.osgi.service.cm;version="1.2.0", org.osgi.service.packageadmin, org.osgi.service.startlevel;version="1.0.0", org.osgi.service.url;version="1.0.0", org.osgi.util.tracker;version="1.3.0", org.slf4j;resolution:=optional, org.slf4j.spi;resolution:=optional, org.slf4j.helpers;resolution:=optional, org.xml.sax, org.xml.sax.helpers, *
+              javax.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              javax.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              org.osgi.framework,
+              org.osgi.service.cm;version="${osgi-service-cm-version}",
+              org.osgi.service.packageadmin,
+              org.osgi.service.startlevel;version="1.0.0",
+              org.osgi.service.url;version="1.0.0",
+              org.osgi.util.tracker;version="${osgi-util-tracker-version}",
+              *
             </Import-Package>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
           </instructions>

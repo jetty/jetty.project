@@ -1,0 +1,83 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[default-servlet]]
+=== Default Servlet
+
+[[default-servlet-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.servlet.DefaultServlet`
+* Maven Artifact: org.eclipse.jetty:jetty-servlet
+* Javadoc: {JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html
+
+[[default-servlet-usage]]
+==== Usage
+
+The `DefaultServlet` implements the `ResourceFactory` interface and extends the `HttpServlet` abstract class.
+It is usually mapped to "/" and provides handling for static content, `OPTION` and `TRACE` methods for the context.
+The `MOVE` method is allowed if `PUT` and `DELETE` are allowed.
+See the `DefaultServlet` link:{JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html[javadoc].
+
+[[default-servlet-init]]
+==== Init Parameters
+
+Jetty supports the following `initParameters`:
+
+acceptRanges::
+If `true`, range requests and responses are supported.
+dirAllowed::
+If `true`, directory listings are returned if no welcome file is found.
+Otherwise 403 Forbidden displays.
+redirectWelcome::
+If `true`, welcome files are redirected rather that forwarded.
+welcomeServlets::
+If `true`, attempt to dispatch to welcome files that are servlets, but only after no matching static
+resources could be found. If `false`, then a welcome file must exist on disk. If `exact`, then exact
+servlet matches are supported without an existing file. Default is `false`. This must be `false` if you want directory listings,
+but have index.jsp in your welcome file list.
+precompressed::
+If set to a comma separated list of encoding types (that may be listed in a requests Accept-Encoding header) to file extension mappings to look for and serve. 
+For example: `br=.br,gzip=.gz,bzip2=.bz`.
+If set to a boolean `true`, then a default set of compressed formats will be used, otherwise no precompressed formats supported.
+gzip::
+Deprecated. Use `precompressed` instead. If set to `true`, then static content is served as gzip content encoded if a matching resource is found ending with ".gz".
+resourceBase::
+Set to replace the context resource base.
+resourceCache::
+If set, this is a context attribute name, which the servlet will use to look for a shared ResourceCache instance.
+relativeResourceBase::
+Set with a pathname relative to the base of the servlet context root. Useful for only serving static content out of only specific subdirectories.
+cacheControl::
+If set, all static content will have this value set as the cache-control header.
+pathInfoOnly::
+If `true`, only the path info will be applied to the resourceBase
+stylesheet::
+Set with the location of an optional stylesheet that will be used to decorate the directory listing html.
+etags::
+If `true`, weak etags will be generated and handled.
+maxCacheSize::
+Maximum total size of the cache or 0 for no cache.
+maxCachedFileSize::
+Maximum size of a file to cache.
+maxCachedFiles::
+Maximum number of files to cache.
+useFileMappedBuffer::
+If set to `true`, mapped file buffer serves static content.
+Setting this value to `false` means that a direct buffer is used instead of a mapped file buffer.
+By default, this is set to `true`.
+otherGzipFileExtensions::
+A comma separated list of other file extensions that signify that a file is gzip compressed.
+If you don't explicitly set this, it defaults to `.svgz`.
+encodingHeaderCacheSize::
+Max entries in a cache of ACCEPT-ENCODING headers

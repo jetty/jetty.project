@@ -1,3 +1,0 @@
-
-[xml]
-etc/implB.xml

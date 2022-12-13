@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -25,12 +20,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -186,6 +183,35 @@ public class ReservedThreadExecutorTest
     }
 
     @Test
+    public void testBusyShrink() throws Exception
+    {
+        final long IDLE = 1000;
+
+        _reservedExecutor.stop();
+        _reservedExecutor.setIdleTimeout(IDLE, TimeUnit.MILLISECONDS);
+        _reservedExecutor.start();
+        assertThat(_reservedExecutor.getAvailable(), is(0));
+
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+
+        _executor.startThread();
+        _executor.startThread();
+
+        waitForAvailable(2);
+
+        int available = _reservedExecutor.getAvailable();
+        assertThat(available, is(2));
+
+        for (int i = 10; i-- > 0;)
+        {
+            assertThat(_reservedExecutor.tryExecute(NOOP), is(true));
+            Thread.sleep(200);
+        }
+        assertThat(_reservedExecutor.getAvailable(), is(1));
+    }
+
+    @Test
     public void testReservedIdleTimeoutWithOneReservedThread() throws Exception
     {
         long idleTimeout = 500;
@@ -207,11 +233,10 @@ public class ReservedThreadExecutorTest
 
     protected void waitForAvailable(int size) throws InterruptedException
     {
-        long started = System.nanoTime();
+        long started = NanoTime.now();
         while (_reservedExecutor.getAvailable() < size)
         {
-            long elapsed = System.nanoTime() - started;
-            if (elapsed > TimeUnit.SECONDS.toNanos(10))
+            if (NanoTime.secondsSince(started) > 10)
                 fail("Took too long");
             Thread.sleep(10);
         }
@@ -266,7 +291,7 @@ public class ReservedThreadExecutorTest
         }
     }
 
-    @Disabled
+    @Tag("stress")
     @Test
     public void stressTest() throws Exception
     {
@@ -276,9 +301,9 @@ public class ReservedThreadExecutorTest
         reserved.setIdleTimeout(0, null);
         reserved.start();
 
-        final int LOOPS = 1000000;
+        final int LOOPS = 200000;
         final AtomicInteger executions = new AtomicInteger(LOOPS);
-        final CountDownLatch executed = new CountDownLatch(executions.get());
+        final CountDownLatch executed = new CountDownLatch(LOOPS);
         final AtomicInteger usedReserved = new AtomicInteger(0);
         final AtomicInteger usedPool = new AtomicInteger(0);
 
@@ -327,10 +352,14 @@ public class ReservedThreadExecutorTest
 
         assertTrue(executed.await(60, TimeUnit.SECONDS));
 
+        // ensure tryExecute is still working
+        while (!reserved.tryExecute(() -> {}))
+            Thread.yield();
+
         reserved.stop();
         pool.stop();
 
+        assertThat(usedReserved.get(), greaterThan(0));
         assertThat(usedReserved.get() + usedPool.get(), is(LOOPS));
-        System.err.printf("reserved=%d pool=%d total=%d%n", usedReserved.get(), usedPool.get(), LOOPS);
     }
 }

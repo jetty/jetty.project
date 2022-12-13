@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -48,7 +43,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(StatisticsHandler.class);
     private final AtomicLong _statsStartedAt = new AtomicLong();
-    private volatile Shutdown _shutdown;
+    private final Shutdown _shutdown;
 
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
@@ -60,6 +55,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _expires = new LongAdder();
     private final LongAdder _errors = new LongAdder();
 
+    private final LongAdder _responsesThrown = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -92,26 +88,32 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         @Override
         public void onComplete(AsyncEvent event)
         {
-            HttpChannelState state = ((AsyncContextEvent)event).getHttpChannelState();
-
-            Request request = state.getBaseRequest();
-            final long elapsed = System.currentTimeMillis() - request.getTimeStamp();
-
-            long numRequests = _requestStats.decrement();
+            Request request = ((AsyncContextEvent)event).getHttpChannelState().getBaseRequest();
+            long elapsed = System.currentTimeMillis() - request.getTimeStamp();
+            _requestStats.decrement();
             _requestTimeStats.record(elapsed);
-
-            updateResponse(request);
-
+            updateResponse(request, false);
             _asyncWaitStats.decrement();
 
-            if (numRequests == 0 && _gracefulShutdownWaitsForRequests)
-            {
-                Shutdown shutdown = _shutdown;
-                if (shutdown != null)
-                    shutdown.check();
-            }
+            if (_shutdown.isShutdown())
+                _shutdown.check();
         }
     };
+
+    public StatisticsHandler()
+    {
+        _shutdown = new Shutdown(this)
+        {
+            @Override
+            public boolean isShutdownDone()
+            {
+                if (_gracefulShutdownWaitsForRequests)
+                    return _requestStats.getCurrent() == 0;
+                else
+                    return _dispatchedStats.getCurrent() == 0;
+            }
+        };
+    }
 
     /**
      * Resets the current request statistics.
@@ -165,17 +167,22 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             _asyncDispatches.increment();
         }
 
+        boolean thrownError = false;
         try
         {
             handler.handle(path, baseRequest, request, response);
+        }
+        catch (Throwable t)
+        {
+            thrownError = true;
+            throw t;
         }
         finally
         {
             final long now = System.currentTimeMillis();
             final long dispatched = now - start;
 
-            long numRequests = -1;
-            long numDispatches = _dispatchedStats.decrement();
+            _dispatchedStats.decrement();
             _dispatchedTimeStats.record(dispatched);
 
             if (state.isInitial())
@@ -187,26 +194,25 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 }
                 else
                 {
-                    numRequests = _requestStats.decrement();
+                    _requestStats.decrement();
                     _requestTimeStats.record(dispatched);
-                    updateResponse(baseRequest);
+                    updateResponse(baseRequest, thrownError);
                 }
             }
 
-            Shutdown shutdown = _shutdown;
-            if (shutdown != null)
-            {
-                response.flushBuffer();
-                if (_gracefulShutdownWaitsForRequests ? (numRequests == 0) : (numDispatches == 0))
-                    shutdown.check();
-            }
+            if (_shutdown.isShutdown())
+                _shutdown.check();
         }
     }
 
-    protected void updateResponse(Request request)
+    protected void updateResponse(Request request, boolean thrownError)
     {
         Response response = request.getResponse();
-        if (request.isHandled())
+        if (thrownError)
+        {
+            _responsesThrown.increment();
+        }
+        else if (request.isHandled())
         {
             switch (response.getStatus() / 100)
             {
@@ -230,8 +236,11 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             }
         }
         else
+        {
             // will fall through to not found handler
             _responses4xx.increment();
+        }
+
         _responsesTotalBytes.add(response.getContentCount());
     }
 
@@ -240,17 +249,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     {
         if (getHandler() == null)
             throw new IllegalStateException("StatisticsHandler has no Wrapped Handler");
-        _shutdown = new Shutdown(this)
-        {
-            @Override
-            public boolean isShutdownDone()
-            {
-                if (_gracefulShutdownWaitsForRequests)
-                    return _requestStats.getCurrent() == 0;
-                else
-                    return _dispatchedStats.getCurrent() == 0;
-            }
-        };
+        _shutdown.cancel();
         super.doStart();
         statsReset();
     }
@@ -258,8 +257,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStop() throws Exception
     {
+        _shutdown.cancel();
         super.doStop();
-        _shutdown = null;
     }
 
     /**
@@ -550,6 +549,18 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     }
 
     /**
+     * @return the number of requests that threw an exception during handling
+     * since {@link #statsReset()} was last called. These may have resulted in
+     * some error responses which were unrecorded by the {@link StatisticsHandler}.
+     */
+    @ManagedAttribute("number of requests that threw an exception during handling")
+    public int getResponsesThrown()
+    {
+        return _responsesThrown.intValue();
+    }
+
+
+    /**
      * @return the milliseconds since the statistics were started with {@link #statsReset()}.
      */
     @ManagedAttribute("time in milliseconds stats have been collected for")
@@ -602,6 +613,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("3xx responses: ").append(getResponses3xx()).append("<br />\n");
         sb.append("4xx responses: ").append(getResponses4xx()).append("<br />\n");
         sb.append("5xx responses: ").append(getResponses5xx()).append("<br />\n");
+        sb.append("responses thrown: ").append(getResponsesThrown()).append("<br />\n");
         sb.append("Bytes sent total: ").append(getResponsesBytesTotal()).append("<br />\n");
 
         return sb.toString();
@@ -610,17 +622,13 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        Shutdown shutdown = _shutdown;
-        if (shutdown == null)
-            return CompletableFuture.completedFuture(null);
-        return shutdown.shutdown();
+        return _shutdown.shutdown();
     }
 
     @Override
     public boolean isShutdown()
     {
-        Shutdown shutdown = _shutdown;
-        return shutdown == null || shutdown.isShutdown();
+        return _shutdown.isShutdown();
     }
 
     @Override

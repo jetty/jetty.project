@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,6 +15,7 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.util.AbstractSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -34,7 +30,7 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     @Override
     public boolean test(String s)
     {
-        return specs.getMatch(s) != null;
+        return specs.getMatched(s) != null;
     }
 
     @Override
@@ -53,17 +49,14 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
         {
             return (PathSpec)o;
         }
-        if (o instanceof String)
-        {
-            return PathMappings.asPathSpec((String)o);
-        }
-        return PathMappings.asPathSpec(o.toString());
+
+        return PathSpec.from(Objects.toString(o));
     }
 
     @Override
     public boolean add(String s)
     {
-        return specs.put(PathMappings.asPathSpec(s), Boolean.TRUE);
+        return specs.put(PathSpec.from(s), Boolean.TRUE);
     }
 
     @Override

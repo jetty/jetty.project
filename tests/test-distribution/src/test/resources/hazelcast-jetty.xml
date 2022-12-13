@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2008-2017, Hazelcast, Inc. All Rights Reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!--
+    The default Hazelcast configuration. This is used when no hazelcast.xml is present.
+    Please see the schema for how to configure Hazelcast at https://hazelcast.com/schema/config/hazelcast-config-3.8.xsd
+    or the documentation at https://hazelcast.org/documentation/
+-->
+<hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.8.xsd"
+           xmlns="http://www.hazelcast.com/schema/config"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <network>
+    <port port-count="20">5705</port>
+    <join>
+      <multicast enabled="false">
+      </multicast>
+      <tcp-ip enabled="true">
+        <member-list>
+          <member>hazelcast_ip:hazelcast_port</member>
+        </member-list>
+      </tcp-ip>
+      <aws enabled="false"/>
+    </join>
+  </network>
+  <properties>
+    <property name="hazelcast.rest.enabled">true</property>
+  </properties>
+
+  <serialization>
+    <serializers>
+      <serializer type-class="org.eclipse.jetty.server.session.SessionData"
+                  class-name="org.eclipse.jetty.hazelcast.session.SessionDataSerializer" />
+    </serializers>
+  </serialization>
+
+</hazelcast>

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -65,10 +61,18 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             Tag tag = (Tag)destination.getOrigin().getTag();
             if (tag == null)
             {
-                InetSocketAddress local = endPoint.getLocalAddress();
-                InetSocketAddress remote = endPoint.getRemoteAddress();
-                boolean ipv4 = local.getAddress() instanceof Inet4Address;
-                tag = new Tag(ipv4 ? "TCP4" : "TCP6", local.getAddress().getHostAddress(), local.getPort(), remote.getAddress().getHostAddress(), remote.getPort());
+                SocketAddress local = endPoint.getLocalSocketAddress();
+                InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
+                InetAddress localAddress = inetLocal == null ? null : inetLocal.getAddress();
+                SocketAddress remote = endPoint.getRemoteSocketAddress();
+                InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
+                InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
+                String family = local == null || inetLocal == null ? "UNKNOWN" : localAddress instanceof Inet4Address ? "TCP4" : "TCP6";
+                tag = new Tag(family,
+                    localAddress == null ? null : localAddress.getHostAddress(),
+                    inetLocal == null ? 0 : inetLocal.getPort(),
+                    remoteAddress == null ? null : remoteAddress.getHostAddress(),
+                    inetRemote == null ? 0 : inetRemote.getPort());
             }
             return new ProxyProtocolConnectionV1(endPoint, executor, getClientConnectionFactory(), context, tag);
         }
@@ -203,10 +207,21 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             Tag tag = (Tag)destination.getOrigin().getTag();
             if (tag == null)
             {
-                InetSocketAddress local = endPoint.getLocalAddress();
-                InetSocketAddress remote = endPoint.getRemoteAddress();
-                boolean ipv4 = local.getAddress() instanceof Inet4Address;
-                tag = new Tag(Tag.Command.PROXY, ipv4 ? Tag.Family.INET4 : Tag.Family.INET6, Tag.Protocol.STREAM, local.getAddress().getHostAddress(), local.getPort(), remote.getAddress().getHostAddress(), remote.getPort(), null);
+                SocketAddress local = endPoint.getLocalSocketAddress();
+                InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
+                InetAddress localAddress = inetLocal == null ? null : inetLocal.getAddress();
+                SocketAddress remote = endPoint.getRemoteSocketAddress();
+                InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
+                InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
+                Tag.Family family = local == null || inetLocal == null ? Tag.Family.UNSPEC : localAddress instanceof Inet4Address ? Tag.Family.INET4 : Tag.Family.INET6;
+                tag = new Tag(Tag.Command.PROXY,
+                    family,
+                    Tag.Protocol.STREAM,
+                    localAddress == null ? null : localAddress.getHostAddress(),
+                    inetLocal == null ? 0 : inetLocal.getPort(),
+                    remoteAddress == null ? null : remoteAddress.getHostAddress(),
+                    inetRemote == null ? 0 : inetRemote.getPort(),
+                    null);
             }
             return new ProxyProtocolConnectionV2(endPoint, executor, getClientConnectionFactory(), context, tag);
         }
@@ -225,14 +240,14 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
              */
             public static final Tag LOCAL = new Tag(Command.LOCAL, Family.UNSPEC, Protocol.UNSPEC, null, 0, null, 0, null);
 
-            private Command command;
-            private Family family;
-            private Protocol protocol;
-            private String srcIP;
-            private int srcPort;
-            private String dstIP;
-            private int dstPort;
-            private List<TLV> tlvs;
+            private final Command command;
+            private final Family family;
+            private final Protocol protocol;
+            private final String srcIP;
+            private final int srcPort;
+            private final String dstIP;
+            private final int dstPort;
+            private final List<TLV> tlvs;
 
             /**
              * <p>Creates a Tag whose metadata will be derived from the underlying EndPoint.</p>
@@ -519,32 +534,36 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         {
             try
             {
-                InetSocketAddress localAddress = endPoint.getLocalAddress();
-                InetSocketAddress remoteAddress = endPoint.getRemoteAddress();
+                SocketAddress local = endPoint.getLocalSocketAddress();
+                InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
+                InetAddress localAddress = inetLocal == null ? null : inetLocal.getAddress();
+                SocketAddress remote = endPoint.getRemoteSocketAddress();
+                InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
+                InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
                 String family = tag.getFamily();
                 String srcIP = tag.getSourceAddress();
                 int srcPort = tag.getSourcePort();
                 String dstIP = tag.getDestinationAddress();
                 int dstPort = tag.getDestinationPort();
                 if (family == null)
-                    family = localAddress.getAddress() instanceof Inet4Address ? "TCP4" : "TCP6";
+                    family = local == null || inetLocal == null ? "UNKNOWN" : localAddress instanceof Inet4Address ? "TCP4" : "TCP6";
                 family = family.toUpperCase(Locale.ENGLISH);
                 boolean unknown = family.equals("UNKNOWN");
                 StringBuilder builder = new StringBuilder(64);
                 builder.append("PROXY ").append(family);
                 if (!unknown)
                 {
-                    if (srcIP == null)
-                        srcIP = localAddress.getAddress().getHostAddress();
+                    if (srcIP == null && localAddress != null)
+                        srcIP = localAddress.getHostAddress();
                     builder.append(" ").append(srcIP);
-                    if (dstIP == null)
-                        dstIP = remoteAddress.getAddress().getHostAddress();
+                    if (dstIP == null && remoteAddress != null)
+                        dstIP = remoteAddress.getHostAddress();
                     builder.append(" ").append(dstIP);
-                    if (srcPort <= 0)
-                        srcPort = localAddress.getPort();
+                    if (srcPort <= 0 && inetLocal != null)
+                        srcPort = inetLocal.getPort();
                     builder.append(" ").append(srcPort);
-                    if (dstPort <= 0)
-                        dstPort = remoteAddress.getPort();
+                    if (dstPort <= 0 && inetRemote != null)
+                        dstPort = inetRemote.getPort();
                     builder.append(" ").append(dstPort);
                 }
                 builder.append("\r\n");
@@ -595,16 +614,19 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 buffer.put((byte)versionAndCommand);
                 V2.Tag.Family family = tag.getFamily();
                 String srcAddr = tag.getSourceAddress();
-                if (srcAddr == null)
-                    srcAddr = endPoint.getLocalAddress().getAddress().getHostAddress();
+                SocketAddress local = endPoint.getLocalSocketAddress();
+                InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
+                InetAddress localAddress = inetLocal == null ? null : inetLocal.getAddress();
+                if (srcAddr == null && localAddress != null)
+                    srcAddr = localAddress.getHostAddress();
                 int srcPort = tag.getSourcePort();
-                if (srcPort <= 0)
-                    srcPort = endPoint.getLocalAddress().getPort();
+                if (srcPort <= 0 && inetLocal != null)
+                    srcPort = inetLocal.getPort();
                 if (family == null)
-                    family = InetAddress.getByName(srcAddr) instanceof Inet4Address ? V2.Tag.Family.INET4 : V2.Tag.Family.INET6;
+                    family = local == null || inetLocal == null ? V2.Tag.Family.UNSPEC : localAddress instanceof Inet4Address ? V2.Tag.Family.INET4 : V2.Tag.Family.INET6;
                 V2.Tag.Protocol protocol = tag.getProtocol();
                 if (protocol == null)
-                    protocol = V2.Tag.Protocol.STREAM;
+                    protocol = local == null ? V2.Tag.Protocol.UNSPEC : V2.Tag.Protocol.STREAM;
                 int familyAndProtocol = (family.ordinal() << 4) | protocol.ordinal();
                 buffer.put((byte)familyAndProtocol);
                 int length = 0;
@@ -627,11 +649,14 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 length += vectorsLength;
                 buffer.putShort((short)length);
                 String dstAddr = tag.getDestinationAddress();
-                if (dstAddr == null)
-                    dstAddr = endPoint.getRemoteAddress().getAddress().getHostAddress();
+                SocketAddress remote = endPoint.getRemoteSocketAddress();
+                InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
+                InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
+                if (dstAddr == null && remoteAddress != null)
+                    dstAddr = remoteAddress.getHostAddress();
                 int dstPort = tag.getDestinationPort();
-                if (dstPort <= 0)
-                    dstPort = endPoint.getRemoteAddress().getPort();
+                if (dstPort <= 0 && inetRemote != null)
+                    dstPort = inetRemote.getPort();
                 switch (family)
                 {
                     case UNSPEC:
@@ -645,9 +670,14 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                         break;
                     case UNIX:
                         int position = buffer.position();
-                        buffer.put(srcAddr.getBytes(StandardCharsets.US_ASCII));
-                        buffer.position(position + 108);
-                        buffer.put(dstAddr.getBytes(StandardCharsets.US_ASCII));
+                        if (srcAddr != null)
+                            buffer.put(srcAddr.getBytes(StandardCharsets.US_ASCII));
+                        position = position + 108;
+                        buffer.position(position);
+                        if (dstAddr != null)
+                            buffer.put(dstAddr.getBytes(StandardCharsets.US_ASCII));
+                        position = position + 108;
+                        buffer.position(position);
                         break;
                     default:
                         throw new IllegalStateException();

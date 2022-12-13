@@ -1,0 +1,261 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-proxy]]
+==== Jetty Behind a Load Balancer or Reverse Proxy
+
+You may need to configure one or more Jetty instances behind an _intermediary_, typically a load balancer such as link:https://haproxy.org[HAProxy], or a reverse proxy such as link:https://httpd.apache.org[Apache HTTP Server] or link:https://nginx.org[Nginx].
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam padding 5
+
+scale 1.5
+
+rectangle client
+rectangle proxy
+rectangle "Jetty" as jetty1
+rectangle "Jetty" as jetty2
+
+client -- proxy
+proxy -- jetty1
+proxy -- jetty2
+----
+
+[WARNING]
+====
+HAProxy can communicate either HTTP/1.1 or HTTP/2 to backend servers such as Jetty.
+
+Apache HTTP Server and Nginx can only speak HTTP/1.1 to backend servers such as Jetty, and have no plans to support HTTP/2 towards backend servers.
+====
+
+In these setups, typically the proxy performs TLS offloading, and the communication with backend servers happens in clear-text.
+It is possible, however, to configure the proxy so that all the bytes arriving from the client are tunnelled opaquely to the backend Jetty server (that therefore needs to perform the TLS offloading) and viceversa the bytes arriving from the Jetty server are tunnelled opaquely to the client.
+
+Also in these setups, the TCP/IP connection terminating on the Jetty servers does not originate from the client, but from the proxy, so that the remote IP address and port number may be reported incorrectly in backend server logs, or worse applications may not work because they need to be able to differentiate different clients based on the client IP address.
+
+For this reason, intermediaries typically implement at least one of several _de facto_ standards to communicate information about the original client connection to the backend Jetty server.
+
+Jetty supports two methods to process client information sent by intermediaries:
+
+* The `Forwarded` HTTP header, defined in link:https://tools.ietf.org/html/rfc7239[RFC 7239] and replacing the old `X-Forwarded-*` headers, defined in xref:og-protocols-proxy-forwarded[this section].
+* The link:https://www.haproxy.org/download/2.2/doc/proxy-protocol.txt[Proxy Protocol], defined in xref:og-protocols-proxy-protocol[this section].
+
+In both methods, web applications that call `HttpServletRequest.getRemoteAddr()` will receive the remote client IP address as specified by the client information sent by the intermediary, not the physical IP address of TCP connection with the intermediary.
+Likewise, `HttpServletRequest.getRemotePort()` will return the remote client IP port as specified by the client information sent by the intermediary, and `HttpServletRequest.isSecure()` will return whether the client made a secure request using the `https` scheme as specified by the client information sent by the intermediary.
+
+[[og-protocols-proxy-forwarded]]
+===== Configuring the Forwarded Header
+
+The `Forwarded` HTTP header is added by the intermediary with information about the client and the client request, for example:
+
+----
+GET / HTTP/1.1
+Host: domain.com
+Forwarded: for=2.36.72.144:21216;proto=https
+----
+
+In the example above, the intermediary added the `Forwarded` header specifying that the client remote address is `2.36.72.144:21216` and that the request was made with the `https` scheme.
+
+Let's assume you have already configured Jetty with the HTTP/1.1 protocol with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+
+Support for the `Forwarded` HTTP header (and its predecessor `X-Forwarded-*` headers) is enabled with the `http-forwarded` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http-forwarded
+----
+
+[source,options=nowrap]
+----
+include::jetty[setupArgs="--add-module=http",args="--add-module=http-forwarded"]
+----
+
+With the `http-forwarded` Jetty module enabled, Jetty interprets the `Forwarded` header and makes its information available to web applications via the standard Servlet APIs.
+
+For further information about configuring the `http-forwarded` Jetty module, see xref:og-module-http-forwarded[this section].
+
+[[og-protocols-proxy-protocol]]
+===== Configuring the Proxy Protocol
+
+The link:https://www.haproxy.org/download/2.2/doc/proxy-protocol.txt[Proxy Protocol] is the _de facto_ standard, introduced by link:https://haproxy.org[HAProxy], to communicate client information to backend servers via the TCP connection, rather than via HTTP headers.
+
+The information about the client connection is sent as a small data frame on each newly established connection.
+This mechanism is therefore independent of any protocol, so it can be used for TLS, HTTP/1.1, HTTP/2, etc.
+
+[NOTE]
+====
+There are 2 versions of the proxy protocol: v1 and v2, both supported by Jetty.
+
+Proxy protocol v1 is human readable, but it only carries information about the client TCP connection (IP address and IP port).
+
+Proxy protocol v2 has a binary format, carries the information about the client TCP connection, and can carry additional arbitrary information encoded in pairs `(type, value)` where `type` is a single byte that indicates the value's meaning, and `value` is a variable length byte array that can encode user-defined data.
+====
+
+Support for the proxy protocol can be enabled for the clear-text connector or for the secure connector (or both).
+
+Let's assume you have already configured Jetty with the HTTP/1.1 clear-text protocol with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+
+To enable proxy protocol support for the clear-text connector, enable the `proxy-protocol` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol
+----
+
+[source,options=nowrap]
+----
+include::jetty[setupArgs="--add-module=http",args="--add-module=proxy-protocol"]
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[args="--module=proxy-protocol",highlight="(\{.*:8080})"]
+----
+
+Note how in the example above the list of protocols for the clear-text connector is first `proxy` and then `http/1.1`.
+For every new TCP connection, Jetty first interprets the proxy protocol bytes with the client information; after this initial proxy protocol processing, Jetty interprets the incoming bytes as HTTP/1.1 bytes.
+
+Enabling proxy protocol support for the secure connector is similar.
+
+Let's assume you have already configured Jetty with the HTTP/1.1 secure protocol and the test KeyStore with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=https,test-keystore
+----
+
+Enable the `proxy-protocol-ssl` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol-ssl
+----
+
+[source,options=nowrap]
+----
+include::jetty[setupArgs="--add-module=https",args="--add-module=proxy-protocol-ssl"]
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupArgs="--add-modules=https,test-keystore,proxy-protocol-ssl",highlight="(\{.*:8443})"]
+----
+
+Note how in the example above the list of protocols for the secure connector is first `proxy`, then `ssl` and then `http/1.1`.
+
+[[og-protocols-proxy-haproxy]]
+===== HAProxy and Jetty with HTTP/1.1 and HTTP/2
+
+link:https://haproxy.org[HAProxy] is an open source solution that offers load balancing and proxying for TCP and HTTP based application, and can be used as a replacement for Apache or Nginx when these are used as reverse proxies.
+
+The deployment proposed here has HAProxy playing the role that Apache and Nginx usually do: to perform the TLS offloading (that is, decrypt incoming bytes and encrypt outgoing bytes) and then forwarding the now clear-text traffic to a backend Jetty server, speaking either HTTP/1.1 or HTTP/2.
+Since HAProxy's TLS offloading is based on OpenSSL, it is much more efficient than the Java implementation shipped with OpenJDK.
+
+After you have installed HAProxy on your system, you want to configure it so that it can perform TLS offloading.
+
+HAProxy will need a single file containing the X509 certificates and the private key, all in link:https://en.wikipedia.org/wiki/X.509[PEM format], with the following order:
+
+1.  The site certificate; this certificate's Common Name refers to the site domain (for example: CN=*.webtide.com) and is signed by Certificate Authority #1.
+2.  The Certificate Authority #1 certificate; this certificate may be signed by Certificate Authority #2.
+3.  The Certificate Authority #2 certificate; this certificate may be signed by Certificate Authority #3; and so on until the Root Certificate Authority.
+4.  The Root Certificate Authority certificate.
+5.  The private key corresponding to the site certificate.
+
+Refer to the xref:og-keystore[section about KeyStores] for more information about generating the required certificates and private key.
+
+Now you can create the HAProxy configuration file (in Linux it's typically `/etc/haproxy/haproxy.cfg`).
+This is a minimal configuration:
+
+.haproxy.cfg
+[source,subs=verbatim]
+----
+global
+tune.ssl.default-dh-param 1024
+
+defaults
+timeout connect 10000ms
+timeout client 60000ms
+timeout server 60000ms
+
+frontend fe_http <1>
+mode http
+bind *:80
+# Redirect to https
+redirect scheme https code 301
+
+frontend fe_https <2>
+mode tcp
+bind *:443 ssl no-sslv3 crt /path/to/domain.pem ciphers TLSv1.2 alpn h2,http/1.1
+default_backend be_http
+
+backend be_http <3>
+mode tcp
+server domain 127.0.0.1:8282 send-proxy-v2
+----
+<1> The `fe_http` front-end accepts connections on port 80 and redirects them to use the `https` scheme.
+<2> The `fe_https` front-end accepts connections on port 443, and it is where the TLS decryption/encryption happens.
+You must specify the path to the PEM file containing the TLS key material (the `crt /path/to/domain.pem` part), the ciphers that are suitable for HTTP/2 (`ciphers TLSv1.2`), and the ALPN protocols supported (`alpn h2,http/1.1`).
+This front-end then forwards the now decrypted bytes to the backend in `mode tcp`.
+The `mode tcp` says that HAProxy will not try to interpret the bytes but instead opaquely forwards them to the backend.
+<3> The `be_http` backend will forward (again in `mode tcp`) the clear-text bytes to a Jetty connector that talks clear-text HTTP/2 and HTTP/1.1 on port 8282.
+The `send-proxy-v2` directive sends the proxy protocol v2 bytes to the backend server.
+
+On the Jetty side, you need to enable the following modules:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=proxy-protocol,http2c,http,deploy
+----
+
+You need to specify the host (`127.0.0.1`) and port (`8282`) you have configured in HAProxy when you start Jetty:
+
+----
+$ java -jar $JETTY_HOME/start.jar jetty.http.host=127.0.0.1 jetty.http.port=8282
+----
+
+[NOTE]
+====
+You want the Jetty connector that listens on port `8282` to be available only to HAProxy, and not to remote clients.
+
+For this reason, you want to specify the `jetty.http.host` property on the command line (or in `$JETTY_BASE/start.d/http.ini` to make this setting persistent) to bind the Jetty connector only on the loopback interface (`127.0.0.1`), making it available to HAProxy but not to remote clients.
+
+If your Jetty instance runs on a different machine and/or on a different (sub)network, you may want to adjust both the back-end section of the HAProxy configuration file and the `jetty.http.host` property to match accordingly.
+====
+
+With this configuration for HAProxy and Jetty, browsers supporting HTTP/2 will connect to HAProxy, which will decrypt the traffic and send it to Jetty.
+Likewise, HTTP/1.1 clients will connect to HAProxy, which will decrypt the traffic and send it to Jetty.
+
+The Jetty connector, configured with the `http2c` and the `http` modules is able to distinguish whether the incoming bytes are HTTP/2 or HTTP/1.1 and will handle the request accordingly.
+
+The response is relayed back to HAProxy, which will encrypt it and send it back to the remote client.
+
+This configuration offers you efficient TLS offloading, HTTP/2 support and transparent fallback to HTTP/1.1 for clients that don't support HTTP/1.1.

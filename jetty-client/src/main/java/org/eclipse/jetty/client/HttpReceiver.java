@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -77,8 +72,8 @@ public abstract class HttpReceiver
 
     private final AutoLock lock = new AutoLock();
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
+    private final ContentListeners contentListeners = new ContentListeners();
     private final HttpChannel channel;
-    private ContentListeners contentListeners;
     private Decoder decoder;
     private Throwable failure;
     private long demand;
@@ -296,7 +291,7 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
         notifier.notifyHeaders(responseListeners, response);
-        contentListeners = new ContentListeners(responseListeners);
+        contentListeners.reset(responseListeners);
         contentListeners.notifyBeforeContent(response);
 
         if (!contentListeners.isEmpty())
@@ -416,9 +411,8 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifySuccess(listeners, response);
 
-        // Special case for 100 Continue that cannot
-        // be handled by the ContinueProtocolHandler.
-        if (exchange.getResponse().getStatus() == HttpStatus.CONTINUE_100)
+        // Interim responses do not terminate the exchange.
+        if (HttpStatus.isInterim(exchange.getResponse().getStatus()))
             return true;
 
         // Mark atomically the response as terminated, with
@@ -476,9 +470,9 @@ public abstract class HttpReceiver
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(exchange, result);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
             List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request/Response {}: {}, notifying {}", failure == null ? "succeeded" : "failed", result, listeners);
             ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
             notifier.notifyComplete(listeners, result);
             if (ordered)
@@ -513,7 +507,7 @@ public abstract class HttpReceiver
 
     private void cleanup()
     {
-        contentListeners = null;
+        contentListeners.clear();
         if (decoder != null)
             decoder.destroy();
         decoder = null;
@@ -658,15 +652,22 @@ public abstract class HttpReceiver
     {
         private final Map<Object, Long> demands = new ConcurrentHashMap<>();
         private final LongConsumer demand = HttpReceiver.this::demand;
-        private final List<Response.DemandedContentListener> listeners;
+        private final List<Response.DemandedContentListener> listeners = new ArrayList<>(2);
 
-        private ContentListeners(List<Response.ResponseListener> responseListeners)
+        private void clear()
         {
-            listeners = new ArrayList<>(responseListeners.size());
-            responseListeners.stream()
-                .filter(Response.DemandedContentListener.class::isInstance)
-                .map(Response.DemandedContentListener.class::cast)
-                .forEach(listeners::add);
+            demands.clear();
+            listeners.clear();
+        }
+
+        private void reset(List<Response.ResponseListener> responseListeners)
+        {
+            clear();
+            for (Response.ResponseListener listener : responseListeners)
+            {
+                if (listener instanceof Response.DemandedContentListener)
+                    listeners.add((Response.DemandedContentListener)listener);
+            }
         }
 
         private boolean isEmpty()

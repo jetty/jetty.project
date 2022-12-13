@@ -1,0 +1,86 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+=== Example: Logging with Java's java.util.logging via JavaUtilLog
+
+It is possible to have the Jetty Server logging configured so that
+`java.util.logging` controls the output of logging events produced by
+Jetty.
+
+This example demonstrates how to configuring Jetty for logging to
+`java.util.logging` via Jetty's own JavaUtilLog implementation.
+
+____
+[IMPORTANT]
+While this is a valid setup, the Jetty project recommends always using the link:#example-logging-java-util-logging[slf4j to java.util.logging configuration] for memory and performance reasons.
+This native implementation is very non-performant and is not guaranteed to exist in the future.
+____
+
+A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with `java.util.logging`.
+
+[source,screen,subs="{sub-order}"]
+....
+[mybase]$ mkdir modules
+[mybase]$ cd modules
+
+[modules]$ curl -O https://raw.githubusercontent.com/jetty-project/logging-modules/master/java.util.logging-native/logging.mod
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   623  100   623    0     0   1879      0 --:--:-- --:--:-- --:--:--  1876
+[modules]$ cd ..
+
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging
+INFO: logging         initialised in ${jetty.base}/start.ini (appended)
+MKDIR: ${jetty.base}/logs
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/java.util.logging-native/jetty-logging.xml to etc/jetty-logging.xml
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/java.util.logging-native/logging.properties to resources/logging.properties
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/java.util.logging-native/jetty-logging.properties to resources/jetty-logging.properties
+INFO: resources       initialised transitively
+INFO: resources       enabled in     ${jetty.base}/${jetty.base}
+
+[my-base]$ java -jar /path/to/jetty-home/start.jar
+....
+
+The replacement `logging.mod` performs a number of tasks.
+
+. `mybase` is a `${jetty.base}` directory.
+. The jetty-home is unpacked (and untouched) into `/opt/jetty-home/` and becomes the `${jetty.home}` directory for this demonstration.
+. The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by `mybase` only.
+. The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}`
+configuration.
+.. The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.
+.. Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
+.. Required configuration files are downloaded (if not present already): `jetty-logging.properties`, and `logging.properties`
+* The configuration files are put in the `${jetty.base}/resources/` directory.
+.. Required `java.util.logging` initialization commands are downloaded (if not present already): `jetty-logging.xml`.
+* The xml file is put in the `${jetty.base}/etc/` directory.
+
+At this point the Jetty `mybase` is configured so that the Jetty server itself will log using `java.util.logging`, using the `java.util.logging` configuration found in `mybase/resources/logging.properties`.
+
+The server classpath can be verified by using the `start.jar --list-config` command.
+
+In essence, Jetty is now configured to use `org.eclipse.jetty.util.log.JavaUtilLog`, which emit its own logging events to `java.util.logging`, making all Jetty and `java.util.logging` events emitted by the Jetty server go to `java.util.logging` for routing (to console, file, etc...).
+
+If there any custom `java.util.logging` handlers to be used, put the implementation jar in the `${jetty.base}/lib/logging/` directory and reference them in the `${jetty.base}/resources/logging.properties` file.
+
+____
+[NOTE]
+`java.util.logging` is configured via the `${jetty.base}/resources/logging.properties` file during a valid startup of Jetty.
+
+This means that if there is any startup errors that occur before `java.util.logging` is configured, they will likely be lost and/or not routed through your configuration.
+
+Other logging frameworks are more reliable in that they always initialize and configure on first use, unlike `java.util.logging`.
+
+* While it is possible to configure `java.util.logging` sooner, even at JVM startup, the example demonstrated here does not show this technique.
+For more information consult the official `java.util.logging.LogManager` javadoc http://docs.oracle.com/javase/7/docs/api/java/util/logging/LogManager.html[documentation from Oracle].
+____

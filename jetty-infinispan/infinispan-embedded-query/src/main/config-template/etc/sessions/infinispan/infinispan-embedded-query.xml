@@ -18,7 +18,7 @@
         <New class="org.hibernate.search.cfg.SearchMapping">
           <Call name="entity">
             <Arg>
-              <Get class="org.eclipse.jetty.server.session.infinispan.InfinispanSessionData" name="class"/>
+              <Get class="org.eclipse.jetty.session.infinispan.InfinispanSessionData" name="class"/>
             </Arg>
             <Call name="indexed">
               <Call name="providedId">
@@ -39,7 +39,7 @@
   
   <New id="cacheMgr" class="org.infinispan.manager.DefaultCacheManager">
     <Arg>
-      <Property name="jetty.base" default="."/>/etc/infinispan.xml
+      <Property name="jetty.base"/>/etc/infinispan.xml
     </Arg>
     <Get id="defaultConfig" name="defaultCacheConfiguration"/>
   </New>
@@ -57,7 +57,7 @@
           </Arg>
           <Call name="addIndexedEntity">
             <Arg>
-              <Get class="org.eclipse.jetty.server.session.infinispan.InfinispanSessionData" name="class"/>
+              <Get class="org.eclipse.jetty.session.infinispan.InfinispanSessionData" name="class"/>
             </Arg>
             <Call name="withProperties">
               <Arg>

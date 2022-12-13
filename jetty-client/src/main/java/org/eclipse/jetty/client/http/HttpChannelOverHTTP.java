@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,6 +25,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,6 +96,7 @@ public class HttpChannelOverHTTP extends HttpChannel
     {
         super.exchangeTerminated(exchange, result);
 
+        String method = exchange.getRequest().getMethod();
         Response response = result.getResponse();
         HttpFields responseHeaders = response.getHeaders();
 
@@ -108,7 +105,7 @@ public class HttpChannelOverHTTP extends HttpChannel
             closeReason = "failure";
         else if (receiver.isShutdown())
             closeReason = "server close";
-        else if (sender.isShutdown())
+        else if (sender.isShutdown() && response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
             closeReason = "client close";
 
         if (closeReason == null)
@@ -118,7 +115,7 @@ public class HttpChannelOverHTTP extends HttpChannel
                 // HTTP 1.0 must close the connection unless it has
                 // an explicit keep alive or it's a CONNECT method.
                 boolean keepAlive = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                boolean connect = HttpMethod.CONNECT.is(exchange.getRequest().getMethod());
+                boolean connect = HttpMethod.CONNECT.is(method);
                 if (!keepAlive && !connect)
                     closeReason = "http/1.0";
             }
@@ -134,11 +131,15 @@ public class HttpChannelOverHTTP extends HttpChannel
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing, reason: {} - {}", closeReason, connection);
-            connection.close();
+            if (result.isFailed())
+                connection.close(result.getFailure());
+            else
+                connection.close();
         }
         else
         {
-            if (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+            int status = response.getStatus();
+            if (status == HttpStatus.SWITCHING_PROTOCOLS_101 || isTunnel(method, status))
                 connection.remove();
             else
                 release();
@@ -153,6 +154,11 @@ public class HttpChannelOverHTTP extends HttpChannel
     protected long getMessagesOut()
     {
         return outMessages.longValue();
+    }
+
+    boolean isTunnel(String method, int status)
+    {
+        return MetaData.isTunnel(method, status);
     }
 
     @Override

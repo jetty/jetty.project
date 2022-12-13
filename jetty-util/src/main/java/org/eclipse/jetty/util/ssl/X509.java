@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -25,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
@@ -45,6 +41,10 @@ public class X509
      */
     private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME = 2;
     private static final int SUBJECT_ALTERNATIVE_NAMES__IP_ADDRESS = 7;
+    private static final String IPV4 = "([0-9]{1,3})(\\.[0-9]{1,3}){3}";
+    private static final Pattern IPV4_REGEXP = Pattern.compile("^" + IPV4 + "$");
+    // Look-ahead for 2 ':' + IPv6 characters + optional IPv4 at the end.
+    private static final Pattern IPV6_REGEXP = Pattern.compile("(?=.*:.*:)^([0-9a-fA-F:\\[\\]]+)(:" + IPV4 + ")?$");
 
     public static boolean isCertSign(X509Certificate x509)
     {
@@ -187,21 +187,32 @@ public class X509
                 return true;
         }
 
-        InetAddress address = toInetAddress(host);
-        if (address != null)
-            return _addresses.contains(address);
+        // Check if the host looks like an IP address to avoid
+        // DNS lookup for host names that did not match.
+        if (seemsIPAddress(host))
+        {
+            InetAddress address = toInetAddress(host);
+            if (address != null)
+                return _addresses.contains(address);
+        }
 
         return false;
+    }
+
+    private static boolean seemsIPAddress(String host)
+    {
+        return IPV4_REGEXP.matcher(host).matches() || IPV6_REGEXP.matcher(host).matches();
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x(%s,h=%s,w=%s)",
+        return String.format("%s@%x(%s,h=%s,a=%s,w=%s)",
             getClass().getSimpleName(),
             hashCode(),
             _alias,
             _hosts,
+            _addresses,
             _wilds);
     }
 }

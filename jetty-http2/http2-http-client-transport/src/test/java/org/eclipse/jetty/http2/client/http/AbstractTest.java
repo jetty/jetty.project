@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -23,6 +18,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -35,6 +31,7 @@ public class AbstractTest
 {
     protected Server server;
     protected ServerConnector connector;
+    protected HTTP2Client http2Client;
     protected HttpClient client;
 
     protected void start(ServerSessionListener listener) throws Exception
@@ -63,12 +60,14 @@ public class AbstractTest
         server.addConnector(connector);
     }
 
-    protected void prepareClient() throws Exception
+    protected void prepareClient()
     {
-        client = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()));
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
-        client.setExecutor(clientExecutor);
+        ClientConnector connector = new ClientConnector();
+        connector.setExecutor(clientExecutor);
+        http2Client = new HTTP2Client(connector);
+        client = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
     }
 
     @AfterEach

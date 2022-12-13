@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -35,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.eclipse.jetty.http.CompressedContentFormat.BR;
+import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class GZIPContentDecoderTest
 {
     private ArrayByteBufferPool pool;
-    private AtomicInteger buffers = new AtomicInteger(0);
+    private final AtomicInteger buffers = new AtomicInteger(0);
 
     @BeforeEach
     public void before()
@@ -80,9 +77,25 @@ public class GZIPContentDecoderTest
     {
         assertTrue(CompressedContentFormat.tagEquals("tag", "tag"));
         assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag\""));
-        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag--gzip\""));
-        assertFalse(CompressedContentFormat.tagEquals("Zag", "Xag--gzip"));
+        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag" + GZIP.getEtagSuffix() + "\""));
+        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag" + BR.getEtagSuffix() + "\""));
+        assertTrue(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234567\""));
+        assertTrue(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234567" + GZIP.getEtagSuffix() + "\""));
+
+        assertFalse(CompressedContentFormat.tagEquals("Zag", "Xag" + GZIP.getEtagSuffix()));
         assertFalse(CompressedContentFormat.tagEquals("xtag", "tag"));
+        assertFalse(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234111\""));
+        assertFalse(CompressedContentFormat.tagEquals("W/\"1234567\"", "W/\"1234111" + GZIP.getEtagSuffix() + "\""));
+
+        assertTrue(CompressedContentFormat.tagEquals("12345", "\"12345\""));
+        assertTrue(CompressedContentFormat.tagEquals("\"12345\"", "12345"));
+        assertTrue(CompressedContentFormat.tagEquals("12345", "\"12345" + GZIP.getEtagSuffix() + "\""));
+        assertTrue(CompressedContentFormat.tagEquals("\"12345\"", "12345" + GZIP.getEtagSuffix()));
+
+        assertThat(GZIP.stripSuffixes("12345"), is("12345"));
+        assertThat(GZIP.stripSuffixes("12345, 666" + GZIP.getEtagSuffix()), is("12345, 666"));
+        assertThat(GZIP.stripSuffixes("12345, 666" + GZIP.getEtagSuffix() + ",W/\"9999" + GZIP.getEtagSuffix() + "\""),
+            is("12345, 666,W/\"9999\""));
     }
 
     @Test
@@ -119,24 +132,26 @@ public class GZIPContentDecoderTest
         {
             baos.write(read);
         }
-        assertEquals(data, new String(baos.toByteArray(), StandardCharsets.UTF_8));
+        assertEquals(data, baos.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testNoBlocks() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testNoBlocks(boolean useDirectBuffers) throws Exception
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.close();
         byte[] bytes = baos.toByteArray();
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048, useDirectBuffers);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
         assertEquals(0, decoded.remaining());
     }
 
-    @Test
-    public void testSmallBlock() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSmallBlock(boolean useDirectBuffers) throws Exception
     {
         String data = "0";
 
@@ -146,14 +161,15 @@ public class GZIPContentDecoderTest
         output.close();
         byte[] bytes = baos.toByteArray();
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048, useDirectBuffers);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
         assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
         decoder.release(decoded);
     }
 
-    @Test
-    public void testSmallBlockWithGZIPChunkedAtBegin() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSmallBlockWithGZIPChunkedAtBegin(boolean useDirectBuffers) throws Exception
     {
         String data = "0";
 
@@ -169,7 +185,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048, useDirectBuffers);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(0, decoded.capacity());
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
@@ -177,8 +193,9 @@ public class GZIPContentDecoderTest
         decoder.release(decoded);
     }
 
-    @Test
-    public void testSmallBlockWithGZIPChunkedAtEnd() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSmallBlockWithGZIPChunkedAtEnd(boolean useDirectBuffers) throws Exception
     {
         String data = "0";
 
@@ -194,7 +211,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048, useDirectBuffers);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
         assertFalse(decoder.isFinished());
@@ -205,8 +222,9 @@ public class GZIPContentDecoderTest
         decoder.release(decoded);
     }
 
-    @Test
-    public void testSmallBlockWithGZIPTrailerChunked() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSmallBlockWithGZIPTrailerChunked(boolean useDirectBuffers) throws Exception
     {
         String data = "0";
 
@@ -222,7 +240,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048, useDirectBuffers);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(0, decoded.capacity());
         decoder.release(decoded);
@@ -231,8 +249,9 @@ public class GZIPContentDecoderTest
         decoder.release(decoded);
     }
 
-    @Test
-    public void testTwoSmallBlocks() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testTwoSmallBlocks(boolean useDirectBuffers) throws Exception
     {
         String data1 = "0";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -252,7 +271,7 @@ public class GZIPContentDecoderTest
         System.arraycopy(bytes1, 0, bytes, 0, bytes1.length);
         System.arraycopy(bytes2, 0, bytes, bytes1.length, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048, useDirectBuffers);
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         ByteBuffer decoded = decoder.decode(buffer);
         assertEquals(data1, StandardCharsets.UTF_8.decode(decoded).toString());
@@ -266,8 +285,9 @@ public class GZIPContentDecoderTest
         decoder.release(decoded);
     }
 
-    @Test
-    public void testBigBlock() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testBigBlock(boolean useDirectBuffers) throws Exception
     {
         String data = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
@@ -281,7 +301,7 @@ public class GZIPContentDecoderTest
         byte[] bytes = baos.toByteArray();
 
         String result = "";
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048, useDirectBuffers);
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
         {
@@ -361,11 +381,8 @@ public class GZIPContentDecoderTest
     // Signed Integer Max
     static final long INT_MAX = Integer.MAX_VALUE;
 
-    // Unsigned Integer Max == 2^32
-    static final long UINT_MAX = 0xFFFFFFFFL;
-
     @ParameterizedTest
-    @ValueSource(longs = {INT_MAX, INT_MAX + 1 /* TODO too slow , UINT_MAX, UINT_MAX + 1 */ })
+    @ValueSource(longs = {INT_MAX, INT_MAX + 1})
     public void testLargeGzipStream(long origSize) throws IOException
     {
         // Size chosen for trade off between speed of I/O vs speed of Gzip

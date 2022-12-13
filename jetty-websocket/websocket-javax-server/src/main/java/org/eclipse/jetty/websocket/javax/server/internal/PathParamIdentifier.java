@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,8 +17,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import javax.websocket.server.PathParam;
 
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 
 /**
  * Method argument identifier for {@link javax.websocket.server.PathParam} annotations.
@@ -57,13 +52,21 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
     public static void validateType(Class<?> type)
     {
         if (!String.class.isAssignableFrom(type) &&
+            !Integer.class.isAssignableFrom(type) &&
             !Integer.TYPE.isAssignableFrom(type) &&
+            !Long.class.isAssignableFrom(type) &&
             !Long.TYPE.isAssignableFrom(type) &&
+            !Short.class.isAssignableFrom(type) &&
             !Short.TYPE.isAssignableFrom(type) &&
+            !Float.class.isAssignableFrom(type) &&
             !Float.TYPE.isAssignableFrom(type) &&
+            !Double.class.isAssignableFrom(type) &&
             !Double.TYPE.isAssignableFrom(type) &&
+            !Boolean.class.isAssignableFrom(type) &&
             !Boolean.TYPE.isAssignableFrom(type) &&
+            !Character.class.isAssignableFrom(type) &&
             !Character.TYPE.isAssignableFrom(type) &&
+            !Byte.class.isAssignableFrom(type) &&
             !Byte.TYPE.isAssignableFrom(type))
             throw new InvalidSignatureException("Unsupported PathParam Type: " + type);
     }

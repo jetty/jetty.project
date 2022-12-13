@@ -1,0 +1,162 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-arch]]
+=== Architecture Overview
+
+[[og-arch-concepts]]
+==== Main Concepts
+
+Jetty is an HTTP server and Servlet Container, and supports deployments of web applications.
+
+The xref:og-server[Jetty server] listens on one or more network ports using one or more xref:og-protocols[protocol connectors].
+
+Clients send HTTP requests for specific URIs, such as `+https://host/store/cart+`.
+
+The HTTP requests arrive to the connectors through the network; the Jetty server processes the requests and, based on their URIs, forwards them to the appropriate xref:og-deploy[deployed web application].
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+scale 1.25
+
+cloud Internet as internet
+rectangle "Jetty Server" as server
+rectangle "HTTP/1.1 Connector" as http
+rectangle "HTTP/2 Connector" as http2
+rectangle "WebApp "Store"" as store
+rectangle "WebApp "Catalog"" as catalog
+
+internet -- http
+internet -- http2
+http -- server
+http2 -- server
+server -- store
+server -- catalog
+----
+
+There are three main concepts on which the Jetty standalone server is based:
+
+* The xref:og-arch-modules[Jetty _module_ system], where Jetty modules provides Jetty features.
+* The xref:og-arch-jetty-base[`$JETTY_BASE` directory], that provides a place where you configure which Jetty modules you want to enable, configure the properties of each enabled module, and therefore configure the features you need for your web applications.
+* The xref:og-arch-start[Jetty start mechanism], that starts a JVM that runs Jetty with the configuration you specified.
+
+After installing Jetty, you will want to set up a xref:og-arch-jetty-base[`$JETTY_BASE` directory] where you configure xref:og-arch-modules[Jetty modules].
+
+[[og-arch-modules]]
+==== Jetty Modules
+
+The Jetty standalone server is made of Java components that are assembled together, configured and started to provide different features.
+
+A Jetty _module_ provides one or more components that work together to provide typically one feature, although they may provide more than one feature.
+
+A Jetty module is nothing more than Jetty components assembled together like you would do using Java APIs, just done in a declarative way using configuration files.
+What you can do in Java code to assemble Jetty components can be done using Jetty modules.
+
+A Jetty module may be dependent on other Jetty modules: for example, the `http` Jetty module depends on the `server` Jetty module which in turn depends on the `threadpool` and `logging` Jetty modules.
+
+Every feature in a Jetty server is enabled by enabling the corresponding Jetty module(s).
+
+For example, if you enable only the `http` Jetty module, then your Jetty standalone server will only be able to listen to a network port for clear-text HTTP requests.
+It will not be able to process secure HTTP (i.e. `https`) requests, it will not be able to process WebSocket, or HTTP/2, or HTTP/3 or any other protocol because the correspondent modules have not been enabled.
+
+You can even start a Jetty server _without_ listening on a network port -- for example because you have enabled a custom module you wrote that provides the features you need.
+
+This allows the Jetty standalone server to be as small as necessary: modules that are not enabled are not loaded, don't waste memory, and you don't risk a client using a module that you did not know was even there.
+
+For more detailed information about the Jetty module system, see xref:og-modules[this section].
+
+[[og-arch-jetty-base]]
+==== `$JETTY_HOME` and `$JETTY_BASE`
+
+Instead of managing multiple Jetty distributions out of many locations, it is possible to maintain a separation between the binary installation of the standalone Jetty, known as `$JETTY_HOME`, and the customizations for your specific environment(s), known as `$JETTY_BASE`.
+
+This separation between the binary installation directory and the specific configuration directory allows managing multiple, different, server configurations, and allows for quick, drop-in upgrades of Jetty.
+
+There should always only be *one* `$JETTY_HOME` (per version of Jetty), but there can be many `$JETTY_BASE` directories that reference it.
+
+This separation between `$JETTY_HOME` and `$JETTY_BASE` allows Jetty upgrades without affecting your web applications.
+`$JETTY_HOME` contains the Jetty runtime and libraries and the default configuration, while a `$JETTY_BASE` contains your web applications and any override of the default configuration.
+
+For example, with the `$JETTY_HOME` installation the default value for the network port for clear-text HTTP is `8080`.
+However, you may want that port to be `6060`, because xref:og-protocols-proxy[Jetty is behind a load balancer] that is configured to forward to the backend on port `6060`.
+In this case, you configure the clear-text HTTP port in `$JETTY_BASE`, not in `$JETTY_HOME`.
+When you upgrade Jetty, you will upgrade only the files in `$JETTY_HOME`, and all the configuration in `$JETTY_BASE` will remain unchanged, keeping your clear-text HTTP port at `6060`.
+
+Installing the Jetty runtime and libraries in `$JETTY_HOME` also allows you to leverage file system permissions: `$JETTY_HOME` may be owned by an administrator user (so that only administrators can upgrade it), while `$JETTY_BASE` directories may be owned by a less privileged user.
+
+If you had changed the default configuration in `$JETTY_HOME`, when you upgrade Jetty, say from version `10.0.0` to version `10.0.1`, your changes would be lost.
+Maintaining all the changes in `$JETTY_HOME`, and having to reconfigure these with each upgrade results in a massive commitment of time and effort.
+
+To recap:
+
+`$JETTY_HOME`::
+This is the location for the Jetty binaries.
+`$JETTY_BASE`::
+This is the location for your configurations and customizations to the Jetty binaries.
+
+[[og-arch-start]]
+==== Start Mechanism
+
+The Jetty start mechanism provides two features:
+
+* The mean to configure your `$JETTY_BASE` by enabling the desired modules, and to display the configuration of your `$JETTY_BASE`.
+* The mean to start Jetty itself, by starting a JVM that reads the Jetty configuration in `$JETTY_BASE`, which is then executed to assemble and start the Jetty components.
+
+The Jetty start mechanism is invoked by executing `$JETTY_HOME/start.jar` from within your `$JETTY_BASE`, and you can think of it as the Jetty command line program, similar to many Unix/Windows command line programs.
+
+For example, you can ask for help:
+
+----
+$ java -jar $JETTY_HOME/start.jar --help
+----
+
+Or you can list all available modules (or only those with a specific tag):
+
+----
+# List all the modules.
+$ java -jar $JETTY_HOME/start.jar --list-modules=*
+
+# List all the modules tagged as "demo".
+$ java -jar $JETTY_HOME/start.jar --list-modules=demo
+----
+
+You can enable a module, for example the `http` module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+
+Once you have one or more module enabled, you can display the current configuration, to verify that the configuration is correct:
+
+----
+$ java -jar $JETTY_HOME/start.jar --list-config
+----
+
+You can enable a Jetty demo module, which will deploy a demo web application:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=demo-simple
+----
+
+Finally, you can start Jetty:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+Read more information at the xref:og-start[Jetty start mechanism section].

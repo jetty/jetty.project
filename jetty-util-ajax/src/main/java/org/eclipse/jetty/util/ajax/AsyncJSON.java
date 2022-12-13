@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -24,12 +19,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON.Convertible;
@@ -68,6 +64,8 @@ import org.eclipse.jetty.util.ajax.JSON.Convertor;
  * </pre>
  * <p>Class {@code com.acme.Person} must either implement {@link Convertible},
  * or be mapped with a {@link Convertor} via {@link Factory#putConvertor(String, Convertor)}.</p>
+ * <p>JSON arrays are by default represented with a {@code List<Object>}, but the
+ * Java representation can be customized via {@link Factory#setArrayConverter(Function)}.</p>
  */
 public class AsyncJSON
 {
@@ -79,9 +77,32 @@ public class AsyncJSON
      */
     public static class Factory
     {
-        private Trie<CachedString> cache;
+        private Index.Mutable<CachedString> cache;
         private Map<String, Convertor> convertors;
+        private Function<List<?>, Object> arrayConverter = list -> list;
         private boolean detailedParseException;
+
+        /**
+         * @return the function to customize the Java representation of JSON arrays
+         * @see #setArrayConverter(Function)
+         */
+        public Function<List<?>, Object> getArrayConverter()
+        {
+            return arrayConverter;
+        }
+
+        /**
+         * <p>Sets the function to convert JSON arrays from their default Java
+         * representation, a {@code List<Object>}, to another Java data structure
+         * such as an {@code Object[]}.</p>
+         *
+         * @param arrayConverter the function to customize the Java representation of JSON arrays
+         * @see #getArrayConverter()
+         */
+        public void setArrayConverter(Function<List<?>, Object> arrayConverter)
+        {
+            this.arrayConverter = Objects.requireNonNull(arrayConverter);
+        }
 
         /**
          * @return whether a parse failure should report the whole JSON string or just the last chunk
@@ -106,7 +127,10 @@ public class AsyncJSON
         public boolean cache(String value)
         {
             if (cache == null)
-                cache = new ArrayTernaryTrie.Growing<>(false, 64, 64);
+                cache = new Index.Builder<CachedString>()
+                    .caseSensitive(true)
+                    .mutable()
+                    .build();
 
             CachedString cached = new CachedString(value);
             if (cached.isCacheable())
@@ -873,9 +897,10 @@ public class AsyncJSON
                 case ']':
                 {
                     buffer.get();
-                    Object array = stack.peek().value;
+                    @SuppressWarnings("unchecked")
+                    List<Object> array = (List<Object>)stack.peek().value;
                     stack.pop();
-                    stack.peek().value(array);
+                    stack.peek().value(convertArray(array));
                     return true;
                 }
                 case ',':
@@ -1068,6 +1093,11 @@ public class AsyncJSON
         map.put(name, value);
 
         return true;
+    }
+
+    private Object convertArray(List<?> array)
+    {
+        return factory.getArrayConverter().apply(array);
     }
 
     private Object convertObject(Map<String, Object> object)

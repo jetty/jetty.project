@@ -1,0 +1,189 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[using-annotations-embedded]]
+=== Using Annotations with Jetty Embedded
+
+==== Setting up the Classpath
+
+You will need to place the following Jetty jar files onto the classpath of your application.
+You can obtain them from the https://www.eclipse.org/jetty/download.html[Jetty distribution], or the https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
+
+....
+jetty-plus.jar
+jetty-annotations.jar
+....
+
+You will also need the http://asm.ow2.org/[asm] jar, which you can obtain from link:{MVNCENTRAL}/org/eclipse/jetty/orbit/org.objectweb.asm/3.3.1.v201105211655/org.objectweb.asm-3.3.1.v201105211655.jar[this link.]
+
+==== Example
+
+Here's an example application that sets up a Jetty server, performs some setup to ensure that annotations are scanned, and then deploys a webapp that uses annotations.
+This example also uses the @Resource annotation which involves JNDI, so we would also link:#jndi-embedded[add the necessary JNDI jars to the classpath].
+The example also adds in the configuration classes that are responsible for JNDI (see line 19).
+
+The code is as follows:
+
+[source, java, subs="{sub-order}"]
+----
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.WebAppContext;
+
+/**
+ * ServerWithAnnotations
+ *
+ *
+ */
+public class ServerWithAnnotations
+{
+    public static final void main(String args[]) throws Exception
+    {
+        //Create the server
+        Server server = new Server(8080);
+
+        //Enable parsing of jndi-related parts of web.xml and jetty-env.xml
+        org.eclipse.jetty.webapp.Configuration.ClassList classlist = org.eclipse.jetty.webapp.Configuration.ClassList.setServerDefault(server);
+        classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration", "org.eclipse.jetty.plus.webapp.EnvConfiguration", "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration", "org.eclipse.jetty.annotations.AnnotationConfiguration");
+
+        //Create a WebApp
+        WebAppContext webapp = new WebAppContext();
+        webapp.setContextPath("/");
+        webapp.setWar("../../tests/test-webapps/test-servlet-spec/test-spec-webapp/target/test-spec-webapp-9.0.4-SNAPSHOT.war");
+        server.setHandler(webapp);
+
+        //Register new transaction manager in JNDI
+        //At runtime, the webapp accesses this as java:comp/UserTransaction
+        org.eclipse.jetty.plus.jndi.Transaction transactionMgr = new org.eclipse.jetty.plus.jndi.Transaction(new com.acme.MockUserTransaction());
+
+        //Define an env entry with webapp scope.
+        org.eclipse.jetty.plus.jndi.EnvEntry maxAmount = new org.eclipse.jetty.plus.jndi.EnvEntry (webapp, "maxAmount", new Double(100), true);
+
+
+        // Register a  mock DataSource scoped to the webapp
+        org.eclipse.jetty.plus.jndi.Resource mydatasource = new org.eclipse.jetty.plus.jndi.Resource(webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+
+        // Configure a LoginService
+        HashLoginService loginService = new HashLoginService();
+        loginService.setName("Test Realm");
+        loginService.setConfig("src/test/resources/realm.properties");
+        server.addBean(loginService);
+
+
+        server.start();
+        server.join();
+    }
+
+}
+----
+
+On line 19 the configuration classes responsible for setting up JNDI and `java:comp/env` are added.
+
+On line 20 we add in the configuration class that ensures annotations are inspected.
+
+On lines 30, 33 and 37 JNDI resources that we will be able to reference with @Resource annotations are configured.
+
+With the setup above, a servlet that uses annotations and Jetty will honour the annotations when the webapp is deployed can be created:
+
+[source, java, subs="{sub-order}"]
+----
+import javax.annotation.security.DeclareRoles;
+import javax.annotation.security.RunAs;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+import javax.transaction.UserTransaction;
+
+/**
+ * AnnotationTest
+ *
+ * Use servlet 3.0 annotations from within Jetty.
+ *
+ * Also uses servlet 2.5 resource injection and lifecycle callbacks
+ */
+
+@RunAs("special")
+@WebServlet(urlPatterns = {"/","/test/*"}, name="AnnotationTest", initParams={@WebInitParam(name="fromAnnotation", value="xyz")})
+@DeclareRoles({"user","client"})
+public class AnnotationTest extends HttpServlet
+{
+    private DataSource myDS;
+
+    @Resource(mappedName="UserTransaction")
+    private UserTransaction myUserTransaction;
+
+    @Resource(mappedName="maxAmount")
+    private Double maxAmount;
+
+
+    @Resource(mappedName="jdbc/mydatasource")
+    public void setMyDatasource(DataSource ds)
+    {
+        myDS=ds;
+    }
+
+
+    @PostConstruct
+    private void myPostConstructMethod ()
+    {
+        System.err.println("PostConstruct called");
+    }
+
+
+    @PreDestroy
+    private void myPreDestroyMethod()
+    {
+        System.err.println("PreDestroy called");
+    }
+
+    public void init(ServletConfig config) throws ServletException
+    {
+        super.init(config);
+    }
+
+
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doGet(request, response);
+    }
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        try
+        {
+            response.setContentType("text/html");
+            ServletOutputStream out = response.getOutputStream();
+            out.println("<html>");
+            out.println("<body>");
+            out.println("<h1>Results</h1>");
+            out.println(myDS.toString());
+            out.println("<br/>");
+            out.println(maxAmount.toString());
+            out.println("</body>");
+            out.println("</html>");
+            out.flush();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
+    }
+}
+----

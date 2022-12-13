@@ -1,18 +1,13 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Sabre Holdings.
+//  Copyright (c) 1995-2012 Sabre Holdings and others.
 //  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+//  This program and the accompanying materials are made available under the
+//  terms of the Eclipse Public License v. 2.0 which is available at
+//  https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+//  which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
-//
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
-//
-//  You may elect to redistribute this code under either of these licenses.
+//  SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 //  ========================================================================
 //
 
@@ -28,7 +23,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  */
 public class ContextHandlers
 {
-
     private List<ContextHandler> contextHandlers = new ArrayList<ContextHandler>();
 
     public void add(ContextHandler handler)

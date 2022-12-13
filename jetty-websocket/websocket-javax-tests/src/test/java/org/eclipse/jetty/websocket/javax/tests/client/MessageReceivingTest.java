@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -39,15 +34,15 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.internal.MessageHandler;
+import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.eclipse.jetty.websocket.javax.tests.DataUtils;
-import org.eclipse.jetty.websocket.util.TextUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -342,17 +337,18 @@ public class MessageReceivingTest
         }
     }
 
-    public static class ServerMessageNegotiator extends CoreServer.BaseNegotiator
+    public static class ServerMessageNegotiator extends WebSocketNegotiator.AbstractNegotiator
     {
         private static final int MAX_MESSAGE_SIZE = (1024 * 1024) + 2;
 
         public ServerMessageNegotiator()
         {
-            super();
+            setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            setMaxTextMessageSize(MAX_MESSAGE_SIZE);
         }
 
         @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
+        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
         {
             List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
 
@@ -377,13 +373,6 @@ public class MessageReceivingTest
             }
 
             return null;
-        }
-
-        @Override
-        public void customize(Configuration configurable)
-        {
-            configurable.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
-            configurable.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
         }
     }
 

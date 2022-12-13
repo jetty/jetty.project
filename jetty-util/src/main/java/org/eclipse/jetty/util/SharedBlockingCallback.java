@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
@@ -49,10 +45,10 @@ public class SharedBlockingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(SharedBlockingCallback.class);
 
-    private static Throwable IDLE = new ConstantThrowable("IDLE");
-    private static Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
+    private static final Throwable IDLE = new ConstantThrowable("IDLE");
+    private static final Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
 
-    private static Throwable FAILED = new ConstantThrowable("FAILED");
+    private static final Throwable FAILED = new ConstantThrowable("FAILED");
 
     private final ReentrantLock _lock = new ReentrantLock();
     private final Condition _idle = _lock.newCondition();
@@ -79,6 +75,26 @@ public class SharedBlockingCallback
         {
             _lock.unlock();
         }
+    }
+
+    public boolean fail(Throwable cause)
+    {
+        Objects.requireNonNull(cause);
+        _lock.lock();
+        try
+        {
+            if (_blocker._state == null)
+            {
+                _blocker._state = new BlockerFailedException(cause);
+                _complete.signalAll();
+                return true;
+            }
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+        return false;
     }
 
     protected void notComplete(Blocker blocker)
@@ -150,10 +166,12 @@ public class SharedBlockingCallback
                         _state = cause;
                     _complete.signalAll();
                 }
-                else if (_state instanceof BlockerTimeoutException)
+                else if (_state instanceof BlockerTimeoutException || _state instanceof BlockerFailedException)
                 {
                     // Failure arrived late, block() already
                     // modified the state, nothing more to do.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failed after {}", _state);
                 }
                 else
                 {
@@ -265,5 +283,13 @@ public class SharedBlockingCallback
 
     private static class BlockerTimeoutException extends TimeoutException
     {
+    }
+
+    private static class BlockerFailedException extends Exception
+    {
+        public BlockerFailedException(Throwable cause)
+        {
+            super(cause);
+        }
     }
 }

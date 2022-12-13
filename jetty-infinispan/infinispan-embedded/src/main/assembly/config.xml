@@ -7,7 +7,7 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>src/main/config-templates</directory>
+      <directory>${project.build.directory}/jetty-config-files</directory>
       <outputDirectory></outputDirectory>
       <includes>
         <include>**</include>
@@ -17,7 +17,7 @@
       </excludes>
     </fileSet>
     <fileSet>
-      <directory>target</directory>
+      <directory>${project.build.directory}</directory>
       <outputDirectory>modules/sessions/infinispan/embedded</outputDirectory>
       <includes>
         <include>infinispan-embedded-libs.mod</include>

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -33,14 +28,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.FileSessionDataStore;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -48,21 +45,24 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractDoSFilterTest
 {
-    protected ServletTester _tester;
-    protected String _host;
-    protected int _port;
+    private Server _server;
+    private ServerConnector _connector;
     protected long _requestMaxTime = 200;
 
     public void startServer(WorkDir workDir, Class<? extends Filter> filter) throws Exception
     {
-        _tester = new ServletTester("/ctx");
+        _server = new Server();
+        _connector = new ServerConnector(_server);
+        _server.addConnector(_connector);
+        ServletContextHandler context = new ServletContextHandler(_server, "/ctx", true, false);
 
-        DefaultSessionCache sessionCache = new DefaultSessionCache(_tester.getContext().getSessionHandler());
+        DefaultSessionCache sessionCache = new DefaultSessionCache(context.getSessionHandler());
         FileSessionDataStore fileStore = new FileSessionDataStore();
 
         Path p = workDir.getPathFile("sessions");
@@ -70,15 +70,11 @@ public abstract class AbstractDoSFilterTest
         fileStore.setStoreDir(p.toFile());
         sessionCache.setSessionDataStore(fileStore);
 
-        _tester.getContext().getSessionHandler().setSessionCache(sessionCache);
+        context.getSessionHandler().setSessionCache(sessionCache);
 
-        HttpURI uri = HttpURI.from(_tester.createConnector(true));
-        _host = uri.getHost();
-        _port = uri.getPort();
+        context.addServlet(TestServlet.class, "/*");
 
-        _tester.getContext().addServlet(TestServlet.class, "/*");
-
-        FilterHolder dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        FilterHolder dosFilter = context.addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
         dosFilter.setInitParameter("maxRequestsPerSec", "4");
         dosFilter.setInitParameter("delayMs", "200");
         dosFilter.setInitParameter("throttledRequests", "1");
@@ -87,7 +83,7 @@ public abstract class AbstractDoSFilterTest
         dosFilter.setInitParameter("remotePort", "false");
         dosFilter.setInitParameter("insertHeaders", "true");
 
-        FilterHolder timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        FilterHolder timeoutFilter = context.addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
         timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
         timeoutFilter.setInitParameter("delayMs", "200");
         timeoutFilter.setInitParameter("throttledRequests", "1");
@@ -97,18 +93,18 @@ public abstract class AbstractDoSFilterTest
         timeoutFilter.setInitParameter("insertHeaders", "true");
         timeoutFilter.setInitParameter("maxRequestMs", _requestMaxTime + "");
 
-        _tester.start();
+        _server.start();
     }
 
     @AfterEach
     public void stopServer() throws Exception
     {
-        _tester.stop();
+        LifeCycle.stop(_server);
     }
 
     protected String doRequests(String loopRequests, int loops, long pauseBetweenLoops, long pauseBeforeLast, String lastRequest) throws Exception
     {
-        try (Socket socket = new Socket(_host, _port))
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             socket.setSoTimeout(30000);
 
@@ -188,24 +184,20 @@ public abstract class AbstractDoSFilterTest
     @Test
     public void testThrottledIP() throws Exception
     {
-        Thread other = new Thread()
+        Thread other = new Thread(() ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    // Cause a delay, then sleep while holding pass
-                    String request = "GET /ctx/dos/sleeper HTTP/1.1\r\nHost: localhost\r\n\r\n";
-                    String last = "GET /ctx/dos/sleeper?sleep=2000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
-                    doRequests(request + request + request + request, 1, 0, 0, last);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                // Cause a delay, then sleep while holding pass
+                String request = "GET /ctx/dos/sleeper HTTP/1.1\r\nHost: localhost\r\n\r\n";
+                String last = "GET /ctx/dos/sleeper?sleep=2000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+                doRequests(request + request + request + request, 1, 0, 0, last);
             }
-        };
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
         other.start();
         Thread.sleep(1500);
 
@@ -224,24 +216,20 @@ public abstract class AbstractDoSFilterTest
     @Test
     public void testUnavailableIP() throws Exception
     {
-        Thread other = new Thread()
+        Thread other = new Thread(() ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    // Cause a delay, then sleep while holding pass
-                    String request = "GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
-                    String last = "GET /ctx/dos/test?sleep=5000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
-                    doRequests(request + request + request + request, 1, 0, 0, last);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                // Cause a delay, then sleep while holding pass
+                String request = "GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
+                String last = "GET /ctx/dos/test?sleep=5000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+                doRequests(request + request + request + request, 1, 0, 0, last);
             }
-        };
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
         other.start();
         Thread.sleep(500);
 
@@ -302,7 +290,8 @@ public abstract class AbstractDoSFilterTest
         String responses = doRequests(request1 + request2 + request1 + request2 + request1, 2, 1100, 1100, last);
 
         assertEquals(11, count(responses, "HTTP/1.1 200 OK"));
-        assertEquals(0, count(responses, "DoSFilter: delayed"));
+        // This test is system speed dependent, so allow some (20%-ish) requests to be delayed, but not more.
+        assertThat("delayed count", count(responses, "DoSFilter: delayed"), lessThan(2));
 
         // alternate between sessions
         responses = doRequests(request1 + request2 + request1 + request2 + request1, 2, 250, 250, last);
@@ -350,7 +339,7 @@ public abstract class AbstractDoSFilterTest
                 int count = Integer.parseInt(request.getParameter("lines"));
                 for (int i = 0; i < count; ++i)
                 {
-                    response.getWriter().append("Line: " + i + "\n");
+                    response.getWriter().append("Line: ").append(String.valueOf(i)).append("\n");
                     response.flushBuffer();
 
                     try

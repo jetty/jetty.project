@@ -18,6 +18,7 @@ requiredExecutable "sed"
 requiredExecutable "gpg"
 requiredExecutable "egrep"
 requiredExecutable "mvn"
+requiredExecutable "dot"
 
 proceedyn() {
     while true; do
@@ -87,11 +88,11 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-DskipTests -Dtest=None"
+DEPLOY_OPTS="-DskipTests"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
-export MAVEN_OPTS="-Xmx1g -XX:MaxPermSize=128m"
+export MAVEN_OPTS="-Xmx2g"
 
 echo ""
 echo "-----------------------------------------------"
@@ -130,19 +131,13 @@ reportMavenTestFailures() {
 
 echo ""
 if proceedyn "Are you sure you want to release using above? (y/N)" n; then
+    mvn clean install -pl build-resources
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
-        # Uncomment alternate JVM for jetty 9.2 builds
-        # JAVA_HOME_ORIG=$JAVA_HOME
-        # PATH_ORIG=$PATH
-        # JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_171.jdk/Contents/Home
-        # PATH=$JAVA_HOME/bin:$PATH
         mvn -N -Pupdate-version generate-resources
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup
-        # JAVA_HOME=$JAVA_HOME_ORIG
-        # PATH=$PATH_ORIG
         echo "VERIFY the following files (in a different console window) before continuing."
         echo "   VERSION.txt - top section"
         echo "   target/version-tag.txt - for the tag commit message"

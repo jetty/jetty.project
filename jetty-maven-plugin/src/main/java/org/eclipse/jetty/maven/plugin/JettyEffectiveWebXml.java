@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -19,6 +14,12 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -43,11 +44,30 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
     @Override
     public void configureWebApp() throws Exception
     {
-        //Use a nominated war file for which to generate the effective web.xml, or
-        //if that is not set, try to use the details of the current project's 
-        //unassembled webapp
         super.configureWebApp();
-        if (StringUtil.isBlank(webApp.getWar()))
+
+        //Try to determine if we're using an unassembled webapp, or an
+        //external||prebuilt webapp
+        String war = webApp.getWar();
+        Path path = null;
+        if (war != null)
+        {
+            try
+            {
+                URL url = new URL(war);
+                path = Paths.get(url.toURI());
+            }
+            catch (MalformedURLException e)
+            {
+                path = Paths.get(war);
+            }
+        }
+
+        Path start = path.getName(0);
+        int count = path.getNameCount();
+        Path end = path.getName(count > 0 ? count - 1 : count);
+        //if the war is not assembled, we must configure it
+        if (start.startsWith("src") || !end.toString().endsWith(".war"))
             super.configureUnassembledWebApp();
     }
     

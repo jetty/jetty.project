@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -60,6 +55,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final int DEFAULT_MAX_RETRIES = 5;
     public static final int DEFAULT_BACKOFF_MS = 1000;
+    public static final String DEFAULT_NAMESPACE = "";
 
     protected Datastore _datastore;
     protected KeyFactory _keyFactory;
@@ -70,7 +66,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected boolean _indexesPresent = false;
     protected EntityDataModel _model;
     protected boolean _modelProvided;
-    private String _namespace;
+    private String _namespace = DEFAULT_NAMESPACE;
+    private String _host;
+    private String _projectId;
 
     /**
      * EntityDataModel
@@ -436,7 +434,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         _namespace = namespace;
     }
 
-    @ManagedAttribute(value = "gclound namespace", readonly = true)
+    @ManagedAttribute(value = "gcloud namespace", readonly = true)
     public String getNamespace()
     {
         return _namespace;
@@ -459,15 +457,49 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         return _maxRetries;
     }
 
+    public void setHost(String host)
+    {
+        _host = host;
+    }
+
+    @ManagedAttribute(value = "gcloud host", readonly = true)
+    public String getHost()
+    {
+        return _host;
+    }
+
+    public void setProjectId(String projectId)
+    {
+        _projectId = projectId;
+    }
+
+    @ManagedAttribute(value = "gcloud project Id", readonly = true)
+    public String getProjectId()
+    {
+        return _projectId;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
         if (!_dsProvided)
         {
-            if (!StringUtil.isBlank(getNamespace()))
-                _datastore = DatastoreOptions.newBuilder().setNamespace(getNamespace()).build().getService();
+            boolean blankCustomnamespace = StringUtil.isBlank(getNamespace());
+            boolean blankCustomHost = StringUtil.isBlank(getHost());
+            boolean blankCustomProjectId = StringUtil.isBlank(getProjectId());
+            if (blankCustomnamespace && blankCustomHost && blankCustomProjectId)
+                 _datastore = DatastoreOptions.getDefaultInstance().getService();
             else
-                _datastore = DatastoreOptions.getDefaultInstance().getService();
+            {
+                DatastoreOptions.Builder builder = DatastoreOptions.newBuilder();
+                if (!blankCustomnamespace)
+                    builder.setNamespace(getNamespace());
+                if (!blankCustomHost)
+                    builder.setHost(getHost());
+                if (!blankCustomProjectId)
+                    builder.setProjectId(getProjectId());
+                _datastore = builder.build().getService();
+            }
         }
 
         if (_model == null)
@@ -876,7 +908,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 if (e.isRetryable())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
+                        LOG.debug(String.format("Datastore put retry=%s backoff=%s", attempts, backoff), e);
 
                     try
                     {

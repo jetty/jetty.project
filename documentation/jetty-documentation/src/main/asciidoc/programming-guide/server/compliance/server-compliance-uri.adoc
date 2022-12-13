@@ -1,0 +1,52 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-compliance-uri]]
+==== URI Compliance Modes
+
+Universal Resource Locators (URLs) where initially formalized in 1994 in link:https://datatracker.ietf.org/doc/html/rfc1738[RFC 1738] and then refined in 1995 with relative URLs by link:https://datatracker.ietf.org/doc/html/rfc1808[RFC 1808].
+
+In 1998, URLs were generalized to Universal Resource Identifiers (URIs) by link:https://datatracker.ietf.org/doc/html/rfc2396[RFC 2396], which also introduced features such a link:https://datatracker.ietf.org/doc/html/rfc2396#section-3.3[path parameter]s.
+
+This was then obsoleted in 2005 by link:https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986] which removed the definition for path parameters.
+
+Unfortunately by this stage the existence and use of such parameters had already been codified in the Servlet specification.
+For example, the relative URI `/foo/bar;JSESSIONID=a8b38cd02b1c` would define the path parameter `JSESSIONID` for the path segment `bar`, but the most recent RFC does not specify a formal definition of what this relative URI actually means.
+
+The current situation is that there may be URIs that are entirely valid for link:https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986], but are ambiguous when handled by the Servlet APIs:
+
+* A URI with `..` _and_ path parameters such as `/some/..;/path` is not link:https://datatracker.ietf.org/doc/html/rfc3986#section-5.2[_resolved_] by RFC 3986, since the resolution process only applies to the exact segment `..`, not to `..;`.
+However, once the path parameters are removed by the Servlet APIs, the resulting `/some/../path` can easily be resolved to `/path`, rather than be treated as a path that has `..;` as a segment.
+* A URI such as `/some/%2e%2e/path` is not resolved by RFC 3986, yet when URL-decoded by the Servlet APIs will result in `/some/../path` which can easily be resolved to `/path`, rather than be treated as a path that has `..` as a segment.
+* A URI with empty segments like `/some//../path` may be correctly resolved to `/some/path` (the `..` removes the previous empty segment) by the Servlet APIs.
+However, if the URI raw path is passed to some other APIs (for example, file system APIs) it can be interpreted as `/path` because the empty segment `//` is discarded and treated as `/`, and the `..` thus removes the `/some` segment.
+
+In order to avoid ambiguous URIs, Jetty imposes additional URI requirements in excess of what is required by link:https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986] compliance.
+
+These additional requirements may optionally be violated and are defined by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.Violation.html[`UriCompliance.Violation`] enumeration.
+
+These violations are then grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] class, which also defines several named modes that support common deployed sets of violations, with the default being link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#DEFAULT[`UriCompliance.DEFAULT`].
+
+For example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=uriCompliance]
+----
+
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=uriComplianceCustom]
+----

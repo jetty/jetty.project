@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -22,7 +17,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -51,7 +48,16 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
 {
     private static final Logger LOG = LoggerFactory.getLogger(WSServer.class);
     private final Path testDir;
-    private ContextHandlerCollection contexts = new ContextHandlerCollection();
+    private final ContextHandlerCollection contexts = new ContextHandlerCollection();
+
+    public WSServer()
+    {
+        String baseDirName = Long.toString(Math.abs(new Random().nextLong()));
+        this.testDir = MavenTestingUtils.getTargetTestingPath(baseDirName);
+        if (Files.exists(testDir))
+            throw new IllegalStateException("TestDir already exists.");
+        FS.ensureDirExists(testDir);
+    }
 
     public WSServer(Path testDir)
     {
@@ -94,6 +100,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             // Configure the WebAppContext.
             context = new WebAppContext();
             context.setContextPath("/" + contextName);
+            context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
             context.setBaseResource(new PathResource(contextDir));
             context.setAttribute("org.eclipse.jetty.websocket.javax", Boolean.TRUE);
             context.addConfiguration(new JavaxWebSocketConfiguration());
@@ -123,6 +130,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         {
             File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
             Path webXml = webInf.resolve("web.xml");
+            Files.deleteIfExists(webXml);
             IO.copy(testWebXml, webXml.toFile());
         }
 

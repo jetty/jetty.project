@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -161,7 +156,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
         if (_baseResource != null)
         {
-            path = URIUtil.canonicalPath(path);
             r = _baseResource.addPath(path);
 
             if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
@@ -174,8 +168,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         else if (_context != null)
         {
             r = _context.getResource(path);
-            if (r != null)
-                return r;
         }
 
         if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
@@ -212,10 +204,15 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         {
             if (_defaultStylesheet == null)
             {
-                _defaultStylesheet = Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+                _defaultStylesheet = getDefaultStylesheet();
             }
             return _defaultStylesheet;
         }
+    }
+
+    public static Resource getDefaultStylesheet()
+    {
+        return Resource.newResource(ResourceHandler.class.getResource("/jetty-dir.css"));
     }
 
     public String[] getWelcomeFiles()

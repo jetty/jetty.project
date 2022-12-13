@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,6 +15,7 @@ package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -36,6 +32,9 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+/**
+ * <p>A ClientConnectionFactory that creates client-side {@link SslConnection} instances.</p>
+ */
 public class SslClientConnectionFactory implements ClientConnectionFactory
 {
     public static final String SSL_ENGINE_CONTEXT_KEY = "org.eclipse.jetty.client.ssl.engine";
@@ -102,8 +101,21 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-        SSLEngine engine = sslContextFactory.newSSLEngine(address);
+        SSLEngine engine;
+        SocketAddress remote = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        if (remote instanceof InetSocketAddress)
+        {
+            InetSocketAddress inetRemote = (InetSocketAddress)remote;
+            String host = inetRemote.getHostString();
+            int port = inetRemote.getPort();
+            engine = sslContextFactory instanceof SslEngineFactory
+                ? ((SslEngineFactory)sslContextFactory).newSslEngine(host, port, context)
+                : sslContextFactory.newSSLEngine(host, port);
+        }
+        else
+        {
+            engine = sslContextFactory.newSSLEngine();
+        }
         engine.setUseClientMode(true);
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
@@ -139,6 +151,25 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         return ClientConnectionFactory.super.customize(connection, context);
     }
 
+    /**
+     * <p>A factory for {@link SSLEngine} objects.</p>
+     * <p>Typically implemented by {@link SslContextFactory.Client}
+     * to support more flexible creation of SSLEngine instances.</p>
+     */
+    public interface SslEngineFactory
+    {
+        /**
+         * <p>Creates a new {@link SSLEngine} instance for the given peer host and port,
+         * and with the given context to help the creation of the SSLEngine.</p>
+         *
+         * @param host the peer host
+         * @param port the peer port
+         * @param context the {@link ClientConnectionFactory} context
+         * @return a new SSLEngine instance
+         */
+        public SSLEngine newSslEngine(String host, int port, Map<String, Object> context);
+    }
+
     private class HTTPSHandshakeListener implements SslHandshakeListener
     {
         private final Map<String, Object> context;
@@ -154,20 +185,23 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             HostnameVerifier verifier = sslContextFactory.getHostnameVerifier();
             if (verifier != null)
             {
-                InetSocketAddress address = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-                String host = address.getHostString();
-                try
+                SocketAddress address = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+                if (address instanceof InetSocketAddress)
                 {
-                    if (!verifier.verify(host, event.getSSLEngine().getSession()))
-                        throw new SSLPeerUnverifiedException("Host name verification failed for host: " + host);
-                }
-                catch (SSLException x)
-                {
-                    throw x;
-                }
-                catch (Throwable x)
-                {
-                    throw (SSLException)new SSLPeerUnverifiedException("Host name verification failed for host: " + host).initCause(x);
+                    String host = ((InetSocketAddress)address).getHostString();
+                    try
+                    {
+                        if (!verifier.verify(host, event.getSSLEngine().getSession()))
+                            throw new SSLPeerUnverifiedException("Host name verification failed for host: " + host);
+                    }
+                    catch (SSLException x)
+                    {
+                        throw x;
+                    }
+                    catch (Throwable x)
+                    {
+                        throw (SSLException)new SSLPeerUnverifiedException("Host name verification failed for host: " + host).initCause(x);
+                    }
                 }
             }
         }

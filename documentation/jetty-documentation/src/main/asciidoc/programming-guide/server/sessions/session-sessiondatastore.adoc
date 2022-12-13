@@ -1,0 +1,78 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-session-datastore]]
+==== The SessionDataStore
+
+A link:{javadoc-url}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] mediates the storage, retrieval and deletion of `SessionData`.
+There is one `SessionDataStore` per `SessionCache`.
+The server libraries provide a number of alternative `SessionDataStore` implementations.
+
+[plantuml]
+----
+title SessionDataStores
+
+interface SessionDataStore
+class AbstractSessionDataStore
+class FileSessionDataStore
+class GCloudSessionDataStore
+class HazelcastSessionDataStore
+class InfinispanSessionDataStore
+class JDBCSessionDataStore
+class MongoSessionDataStore
+class CachingSessionDataStore
+
+
+SessionDataStore <|-- AbstractSessionDataStore
+AbstractSessionDataStore <|-- FileSessionDataStore
+AbstractSessionDataStore <|-- GCloudSessionDataStore
+AbstractSessionDataStore <|-- HazelcastSessionDataStore
+AbstractSessionDataStore <|-- InfinispanSessionDataStore
+AbstractSessionDataStore <|-- JDBCSessionDataStore
+AbstractSessionDataStore <|-- MongoSessionDataStore
+SessionDataStore <|-- CachingSessionDataStore
+----
+
+The link:{javadoc-url}/org/eclipse/jetty/server/session/AbstractSessionDataStore.html[AbstractSessionDataStore] provides most of the behaviour common to ``SessionDataStore``s:
+
+passivation::
+Supporting passivation means that session data is serialized.
+Some persistence mechanisms serialize, such as JDBC, GCloud Datastore etc.
+Others store an object in shared memory, e.g. Infinispan and thus don't serialize session data.
+Whether or not a persistence technology entails passivation controls whether or not ``HttpSessionActivationListener``s will be called.
+When implementing a custom `SessionDataStore` you need to decide whether or not passivation will be supported.
+
+[[pg-server-session-datastore-skip]]
+//tag::common-datastore-config[]
+savePeriod::
+This is an interval defined in seconds.
+It is used to reduce the frequency with which `SessionData` is written.
+Normally, whenever the last concurrent request leaves a `Session`, the `SessionData` for that `Session` is always persisted, even if the only thing that changed is the `lastAccessTime`.
+If the `savePeriod` is non-zero, the `SessionData` will not be persisted if no session attributes changed, _unless_ the time since the last save exceeds the `savePeriod`.
+Setting a non-zero value can reduce the load on the persistence mechanism, but in a clustered environment runs the risk that other nodes will see the session as expired because it has not been persisted sufficiently recently.
+
+gracePeriod::
+The `gracePeriod` is an interval defined in seconds. 
+It is an attempt to deal with the non-transactional nature of sessions with regard to finding sessions that have expired.
+In a clustered configuration - even with a sticky load balancer - it is always possible that a session is "live" on a node but not yet updated in the persistent store.
+This means that it can be hard to determine at any given moment whether a clustered session has truly expired.
+Thus, we use the `gracePeriod` to provide a bit of leeway around the moment of expiry during xref:pg-server-session-housekeeper[scavenge]:
+
+* on every xref:pg-server-session-housekeeper[scavenge] cycle an `AbstractSessionDataStore` searches for sessions that belong to the context that expired at least one `gracePeriod` ago
+* infrequently the `AbstractSessionDataStore` searches for and summarily deletes sessions - from any context - that expired at least 10 ``gracePeriod``s ago
+//end::common-datastore-config[]
+
+[NOTE]
+====
+The trivial link:{javadoc-url}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
+====

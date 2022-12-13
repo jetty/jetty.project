@@ -1,0 +1,25 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[cg-conclusion]]
+== Thank you!
+
+Your interest in contributing to Eclipse Jetty is welcome and if there is anything you feel this guide is lacking please let us know.
+Feel free to open an Issue as described in this document and perhaps even contribute your suggestion to {GITDOCURL}/contribution-guide[this document] itself!
+
+[[cg-contributing-guides]]
+
+Our current guides are:
+
+* {GUIDEBASEURL}/quickstart/[Distribution Quickstart Guide]
+* {GUIDEBASEURL}/contribution/[Contribution Guide]

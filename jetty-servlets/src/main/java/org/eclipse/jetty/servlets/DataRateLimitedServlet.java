@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -39,7 +34,7 @@ import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.util.ProcessorUtils;
 
 /**
- * A servlet that uses the Servlet 3.1 asynchronous IO API to server
+ * A demonstration servlet that uses the Servlet 3.1 asynchronous IO API to server
  * static content at a limited data rate.
  * <p>
  * Two implementations are supported: <ul>
@@ -47,8 +42,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
  * APIs, but produces more garbage due to the byte[] nature of the API.
  * <li>the <code>JettyDataStream</code> impl uses a Jetty API to write a ByteBuffer
  * and thus allow the efficient use of file mapped buffers without any
- * temporary buffer copies (I did tell the JSR that this was a good idea to
- * have in the standard!).
+ * temporary buffer copies.
  * </ul>
  * <p>
  * The data rate is controlled by setting init parameters:
@@ -58,7 +52,9 @@ import org.eclipse.jetty.util.ProcessorUtils;
  * <dt>pool</dt><dd>The size of the thread pool used to service the writes (defaults to available processors)</dd>
  * </dl>
  * Thus if buffersize = 1024 and pause = 100, the data rate will be limited to 10KB per second.
+ * @deprecated this is intended as a demonstration and not production quality.
  */
+@Deprecated
 public class DataRateLimitedServlet extends HttpServlet
 {
     private static final long serialVersionUID = -4771757707068097025L;

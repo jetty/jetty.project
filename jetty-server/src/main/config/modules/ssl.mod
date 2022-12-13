@@ -28,7 +28,7 @@ etc/jetty-ssl-context.xml
 # jetty.ssl.idleTimeout=30000
 
 ## The number of acceptors (-1 picks a default value based on number of cores).
-# jetty.ssl.acceptors=-1
+# jetty.ssl.acceptors=1
 
 ## The number of selectors (-1 picks a default value based on number of cores).
 # jetty.ssl.selectors=-1
@@ -41,6 +41,9 @@ etc/jetty-ssl-context.xml
 
 ## Whether to enable the SO_REUSEADDR socket option.
 # jetty.ssl.reuseAddress=true
+
+## Whether to enable the SO_REUSEPORT socket option.
+# jetty.ssl.reusePort=false
 
 ## Whether to enable the TCP_NODELAY socket option on accepted sockets.
 # jetty.ssl.acceptedTcpNoDelay=true
@@ -85,9 +88,13 @@ etc/jetty-ssl-context.xml
 
 ## The KeyStore file path (relative to $JETTY_BASE).
 # jetty.sslContext.keyStorePath=etc/keystore.p12
+## The KeyStore absolute file path.
+# jetty.sslContext.keyStoreAbsolutePath=${jetty.base}/etc/keystore.p12
 
 ## The TrustStore file path (relative to $JETTY_BASE).
 # jetty.sslContext.trustStorePath=etc/keystore.p12
+## The TrustStore absolute file path.
+# jetty.sslContext.trustStoreAbsolutePath=${jetty.base}/etc/keystore.p12
 
 ## The KeyStore password.
 # jetty.sslContext.keyStorePassword=

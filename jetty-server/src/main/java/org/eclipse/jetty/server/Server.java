@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -51,6 +46,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.Uptime;
@@ -111,7 +107,6 @@ public class Server extends HandlerWrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
-        addBean(_attributes);
     }
 
     /**
@@ -134,6 +129,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
+        addBean(_attributes);
         setServer(this);
     }
 
@@ -488,7 +484,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (getStopTimeout() > 0)
         {
-            long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
+            long end = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
             try
             {
                 Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
@@ -499,7 +495,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
             QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
             if (qtp != null)
-                qtp.setStopTimeout(Math.max(1000L, TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime())));
+                qtp.setStopTimeout(Math.max(1000L, NanoTime.millisUntil(end)));
         }
 
         // Now stop the connectors (this will close existing connections)
@@ -619,7 +615,7 @@ public class Server extends HandlerWrapper implements Attributes
                     {
                         encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
                         if (encodedPathQuery == null)
-                            throw new BadMessageException(500,"Bad dispatch path");
+                            throw new BadMessageException(500, "Bad dispatch path");
                     }
                 }
 

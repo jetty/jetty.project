@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -55,8 +50,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.Part;
-
-import org.slf4j.LoggerFactory;
 
 /**
  * Dump Servlet Request.
@@ -121,7 +114,7 @@ public class Dump extends HttpServlet
             }
             catch (ServletException e)
             {
-                getServletContext().log(e.toString());
+                getServletContext().log("Login fail", e);
             }
         }
 
@@ -346,12 +339,12 @@ public class Dump extends HttpServlet
                 }
                 catch (IOException e2)
                 {
-                    LoggerFactory.getLogger(Dump.class).trace("IGNORED", e2);
+                    getServletContext().log("Write fail", e2);
                 }
             }
             catch (IOException e)
             {
-                LoggerFactory.getLogger(Dump.class).trace("IGNORED", e);
+                getServletContext().log("Output fail", e);
             }
             return;
         }

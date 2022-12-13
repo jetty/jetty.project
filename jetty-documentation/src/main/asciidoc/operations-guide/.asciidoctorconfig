@@ -1,3 +1,0 @@
-// Asciidoctor IDE configuration file.
-// See https://github.com/asciidoctor/asciidoctor-intellij-plugin/wiki/Support-project-specific-configurations
-:JETTY_HOME: ../../../../../../jetty-home/target/jetty-home

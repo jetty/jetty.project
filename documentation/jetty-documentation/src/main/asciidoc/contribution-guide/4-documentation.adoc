@@ -1,0 +1,201 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[cg-documentation]]
+== Participate in the Documentation
+
+Another wonderful way to help with Eclipse Jetty is to help contribute to our corpus of documentation.
+We have made an effort to reduce the barriers to contributing to our documentation, and many contributors find our documentation as a low-key way to participate and learn the process.
+
+
+[[cg-documentation-format]]
+=== Source Control and Maven Build.
+
+The Jetty documentation is a module within the overall Jetty project and is build as a part of the standard build process.
+As such to checkout the documentation you can follow the link:#cg-community-source[same process] as checking out Jetty itself.
+
+As a part of the main Jetty project the documentation is build through the link:#cg-contributing-build[same process] as Jetty.
+However, it is a more independent module and can be worked with much simpler by building strictly the jetty-documentation module.
+
+[source, screen, subs="{sub-order}"]
+....
+
+$ git clone https://github.com/eclipse/jetty.project.git
+$ cd jetty.project/jetty-documentation
+$ mvn install
+
+....
+
+While maven is running you may see a lot of files being downloaded.
+If you are not familiar with Maven you are seeing Maven set up the execution environment for generating the documentation.
+
+The build is finished once you see a message akin to:
+
+[source, screen, subs="{sub-order}"]
+....
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 9.272 s
+[INFO] Finished at: 2018-04-09T13:06:10-05:00
+[INFO] Final Memory: 74M/247M
+[INFO] ------------------------------------------------------------------------
+....
+
+At this point you open your web browser and view the produced documentation (under the target/html directory)!
+
+[TIP]
+====
+Pay close attention to the build output for lines like:
+
+....
+asciidoctor: WARNING: 9-jsp.adoc: line 0: id assigned to section already in use: ag-http2
+....
+
+This indicates that an ID is being reused and should be resolved or else deep linking will work correctly.
+====
+
+[[cg-documentation-render]]
+=== The Render Chain Explained
+
+The Jetty documentation is all written in https://asciidoctor.org/docs/user-manual/[asciidoc].
+The maven build uses the asciidoctor-maven-plugin to process specific index.adoc[] files which act as the root structure for various guides (Administrative, Developer, QuickStart, etc).
+The main pom.xml file also provides a maven profile which when activated can produce the guides in both pdf and epub formats.
+
+[[cg-documentation-structure]]
+=== Project Structure
+
+It may be useful to understand the layout of the documentation before digging into the details.
+The following table lists some helpful directories and their purpose.
+
+.Documentation Layout
+[cols="2"]
+|===
+| src/main/asciidoc | root of asciidoc layout
+| src/main/asciidoc/*-guide | root structure for each individual guide
+| target/html | post build, where the rendered html files will appear
+| target/pdf | post build (-Palt-formats) pdf files
+| target/epub | post build (-Palt-formats) epub files
+|===
+
+[[cg-documentation-guide]]
+=== Guide Structure
+
+Each guide starts with an *index.adoc* file which acts as the point of origin for the document structure.
+It will declare useful metadata for the proper rendering of the overall guide and use the asciidoc *include* directive to pull in content for each chapter which are conveniently named by chapter number and name.
+
+[[cg-documentation-conventions]]
+=== Conventions
+
+Below is list of conventions that should be followed when developing documentation within this framework.
+These are not set in stone but you are encouraged to follow them when possible.
+
+ventilated prose::
+  Each sentence should generally be on its own line with a hard return at the end of the line.
+  Asciidoc rendering does not treat this style as separate lines and will produce paragraphs correctly.
+  The primary benefit is that you can easily see changes between versions of files, and it makes it trivial to quickly look through a pull request.
+  Additional benefits are the ability to comment out a sentence mid paragraph or move sentences around within a paragraph.
+  Enabling Soft Line Wrap in your favorite editor can make this a bit easier to stomach.
+
+id's::
+  Critically important for being able to generate url's that can be used in a persistent fashion.
+  Without sane id's the chapters and sections will have generated id which are rooted in some obscure location based
+  voodoo.
+  A url using these 'e12c8673' type links will not be durable across generations of the documentation.
+  These id's need to be used on chapters and sections two deep, and anywhere that you intend to cross link deeper.
+  The id values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there.
+  Links inside of a guides narrative structure should be prefixed with an acronym (contributor guide = cg-) while any links within the topics structure should be prefixed with t- and ideally the name of the topic it corresponds to.
+
+link vs xref::
+  The `link:` item should be generally used for linking around the document when you want to choose the text that will be rendered in the link itself.
+  However if you are linking to a section and want to use the title itself as the link text, use the `xref:` tag without the hashmark in front of the link id.
+
+cross guide linkage::
+  To link to another guide it is best to use a property to address it. The following guide shortcuts are provided.
+  * DISTGUIDE
+  * EMBEDGUIDE
+  * QUICKGUIDE
+  * CONTRIBUIDE
+
+....
+This is a test to link to link:{DISTGUIDE}[Distribution Guide]
+
+This is a test to deep link to link:{DISTGUIDE}#startup[Distribution Guide Deep Link]
+....
+
+This is a test to link to link:{DISTGUIDE}[Distribution Guide]
+
+This is a test to deep link to link:{DISTGUIDE}#startup[Distribution Guide Deep Link]
+
+images::
+  Images are placed in the `/images*` directory of the guide they should appear in and then referenced with a `image:` tag.
+
+....
+image:small_powered_by.gif[image,width=340]
+....
+
+image:small_powered_by.gif[image,width=340]
+
+version differences::
+  In general differences in functionality within a release should go into nested sections and use titles like 'Prior to: ##' or 'In version: ##'.
+
+license blocks::
+  Each adoc file should contain the license block that exists in the index.adoc file and a copy has been added to the bottom of this page as well for reference.
+
+....
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+....
+
+Some admonition examples:
+
+______________________________________________
+[NOTE]
+A note about the previous case to be aware of.
+______________________________________________
+
+________________________________________
+[IMPORTANT]
+Important notes are marked with an icon.
+________________________________________
+
+________________________________
+[TIP]
+Tips that make your life easier.
+________________________________
+
+_______________________________________________________
+[CAUTION]
+Places where you have to be careful what you are doing.
+_______________________________________________________
+
+__________________________________________________________________________________________________________________
+[WARNING]
+Where extreme care has to be taken. Data corruption or other nasty
+things may occur if these warnings are ignored.
+__________________________________________________________________________________________________________________
+
+==== Oddities
+
+* If an included file ends with a list entry, it needs to have two empty lines at the end of the file in order for the section rendering to work correctly.

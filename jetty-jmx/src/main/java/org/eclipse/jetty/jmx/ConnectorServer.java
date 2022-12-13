@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -42,6 +37,7 @@ import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
@@ -55,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * <li>participates in the {@code Server} lifecycle</li>
  * <li>starts the RMI registry if not there already</li>
  * <li>allows to bind the RMI registry and the RMI server to the loopback interface</li>
- * <li>makes it easy to use TLS for the JMX communication</li>
+ * <li>makes it easy to use TLS for the RMI communication</li>
  * </ul>
  */
 public class ConnectorServer extends AbstractLifeCycle
@@ -65,8 +61,8 @@ public class ConnectorServer extends AbstractLifeCycle
 
     private JMXServiceURL _jmxURL;
     private final Map<String, Object> _environment;
-    private final String _objectName;
-    private final SslContextFactory.Server _sslContextFactory;
+    private String _objectName;
+    private SslContextFactory.Server _sslContextFactory;
     private int _registryPort;
     private int _rmiPort;
     private JMXConnectorServer _connectorServer;
@@ -76,39 +72,90 @@ public class ConnectorServer extends AbstractLifeCycle
      * Constructs a ConnectorServer
      *
      * @param serviceURL the address of the new ConnectorServer
-     * @param name object name string to be assigned to ConnectorServer bean
+     * @param objectName object name string to be assigned to ConnectorServer bean
      */
-    public ConnectorServer(JMXServiceURL serviceURL, String name)
+    public ConnectorServer(JMXServiceURL serviceURL, String objectName)
     {
-        this(serviceURL, null, name);
+        this(serviceURL, null, objectName);
     }
 
     /**
      * Constructs a ConnectorServer
      *
-     * @param svcUrl the address of the new ConnectorServer
+     * @param serviceURL the address of the new ConnectorServer
      * @param environment a set of attributes to control the new ConnectorServer's behavior.
      * This parameter can be null. Keys in this map must
      * be Strings. The appropriate type of each associated value depends on
      * the attribute. The contents of environment are not changed by this call.
-     * @param name object name string to be assigned to ConnectorServer bean
+     * @param objectName object name string to be assigned to ConnectorServer bean
      */
-    public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name)
+    public ConnectorServer(JMXServiceURL serviceURL, Map<String, ?> environment, String objectName)
     {
-        this(svcUrl, environment, name, null);
+        this(serviceURL, environment, objectName, null);
     }
 
-    public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name, SslContextFactory.Server sslContextFactory)
+    /**
+     * Constructs a ConnectorServer
+     *
+     * @param serviceURL the address of the new ConnectorServer
+     * @param environment a set of attributes to control the new ConnectorServer's behavior.
+     * This parameter can be null. Keys in this map must
+     * be Strings. The appropriate type of each associated value depends on
+     * the attribute. The contents of environment are not changed by this call.
+     * @param objectName object name string to be assigned to ConnectorServer bean
+     * @param sslContextFactory the SslContextFactory.Server to use for secure communication
+     */
+    public ConnectorServer(JMXServiceURL serviceURL, Map<String, ?> environment, String objectName, SslContextFactory.Server sslContextFactory)
     {
-        this._jmxURL = svcUrl;
+        this._jmxURL = serviceURL;
         this._environment = environment == null ? new HashMap<>() : new HashMap<>(environment);
-        this._objectName = name;
+        this._objectName = objectName;
         this._sslContextFactory = sslContextFactory;
     }
 
+    /**
+     * @return the JMXServiceURL of this ConnectorServer
+     */
     public JMXServiceURL getAddress()
     {
         return _jmxURL;
+    }
+
+    /**
+     * Puts an attribute into the environment Map.
+     *
+     * @param name the attribute name
+     * @param value the attribute value
+     */
+    public void putAttribute(String name, Object value)
+    {
+        _environment.put(name, value);
+    }
+
+    /**
+     * @return the ObjectName of this ConnectorServer
+     */
+    public String getObjectName()
+    {
+        return _objectName;
+    }
+
+    /**
+     * @param objectName the ObjectName of this ConnectorServer
+     */
+    public void setObjectName(String objectName)
+    {
+        _objectName = objectName;
+    }
+
+    public SslContextFactory.Server getSslContextFactory()
+    {
+        return _sslContextFactory;
+    }
+
+    public void setSslContextFactory(SslContextFactory.Server sslContextFactory)
+    {
+        _sslContextFactory = sslContextFactory;
     }
 
     @Override
@@ -119,7 +166,7 @@ public class ConnectorServer extends AbstractLifeCycle
         {
             if (!_environment.containsKey(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE))
                 _environment.put(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE, new JMXRMIServerSocketFactory(_jmxURL.getHost(), port -> _rmiPort = port));
-            if (_sslContextFactory != null)
+            if (getSslContextFactory() != null)
             {
                 SslRMIClientSocketFactory csf = new SslRMIClientSocketFactory();
                 if (!_environment.containsKey(RMIConnectorServer.RMI_CLIENT_SOCKET_FACTORY_ATTRIBUTE))
@@ -147,7 +194,7 @@ public class ConnectorServer extends AbstractLifeCycle
 
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         _connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(_jmxURL, _environment, mbeanServer);
-        mbeanServer.registerMBean(_connectorServer, new ObjectName(_objectName));
+        mbeanServer.registerMBean(_connectorServer, new ObjectName(getObjectName()));
         _connectorServer.start();
         String rmiHost = normalizeHost(_jmxURL.getHost());
         // If _rmiPort is still zero, it's using the same port as the RMI registry.
@@ -166,7 +213,7 @@ public class ConnectorServer extends AbstractLifeCycle
         ShutdownThread.deregister(this);
         _connectorServer.stop();
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        mbeanServer.unregisterMBean(new ObjectName(_objectName));
+        mbeanServer.unregisterMBean(new ObjectName(getObjectName()));
         stopRegistry();
     }
 
@@ -244,7 +291,15 @@ public class ConnectorServer extends AbstractLifeCycle
             {
                 ServerSocket server = new ServerSocket();
                 server.setReuseAddress(true);
-                server.bind(new InetSocketAddress(address, port));
+                try
+                {
+                    server.bind(new InetSocketAddress(address, port));
+                }
+                catch (Throwable e)
+                {
+                    IO.close(server);
+                    throw e;
+                }
                 return server;
             }
             else

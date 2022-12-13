@@ -20,7 +20,7 @@ etc/jetty-openid.xml
 
 [ini-template]
 ## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")
-# jetty.openid.provider=https://id.example.com/~
+# jetty.openid.provider=https://id.example.com/
 
 ## The OpenID Identity Provider's authorization endpoint (optional if the metadata of the OP is accessible)
 # jetty.openid.provider.authorizationEndpoint=https://id.example.com/authorization
@@ -42,3 +42,6 @@ etc/jetty-openid.xml
 
 ## True if all certificates should be trusted by the default SslContextFactory
 # jetty.openid.sslContextFactory.trustAll=false
+
+## What authentication method to use with the Token Endpoint (client_secret_post, client_secret_basic).
+# jetty.openid.authMethod=client_secret_post

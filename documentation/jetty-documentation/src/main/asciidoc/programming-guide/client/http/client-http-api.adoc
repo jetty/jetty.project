@@ -1,0 +1,257 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-client-http-api]]
+==== HttpClient API Usage
+
+`HttpClient` provides two types of APIs: a blocking API and a non-blocking API.
+
+[[pg-client-http-blocking]]
+===== HttpClient Blocking APIs
+
+The simpler way to perform a HTTP request is the following:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=simpleBlockingGet]
+----
+
+The method `HttpClient.GET(...)` performs a HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
+
+The `ContentResponse` object contains the HTTP response information: status code, headers and possibly content.
+The content length is limited by default to 2 MiB; for larger content see xref:pg-client-http-content-response[the section on response content handling].
+
+If you want to customize the request, for example by issuing a `HEAD` request instead of a `GET`, and simulating a browser user agent, you can do it in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=headFluent]
+----
+
+This is a shorthand for:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=headNonFluent]
+----
+
+You first create a request object using `httpClient.newRequest(...)`, and then you customize it using the fluent API style (that is, a chained invocation of methods on the request object).
+When the request object is customized, you call `request.send()` that produces the `ContentResponse` when the request/response conversation is complete.
+
+Simple `POST` requests also have a shortcut method:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=postFluent]
+----
+
+The `POST` parameter values added via the `param()` method are automatically URL-encoded.
+
+Jetty's `HttpClient` automatically follows redirects, so it handles the typical web pattern link:http://en.wikipedia.org/wiki/Post/Redirect/Get[POST/Redirect/GET], and the response object contains the content of the response of the `GET` request.
+Following redirects is a feature that you can enable/disable on a per-request basis or globally.
+
+File uploads also require one line, and make use of `java.nio.file` classes:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=fileFluent]
+----
+
+It is possible to impose a total timeout for the request/response conversation using the `Request.timeout(...)` method as follows:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=totalTimeout]
+----
+
+In the example above, when the 5 seconds expire, the request/response cycle is aborted and a `java.util.concurrent.TimeoutException` is thrown.
+
+[[pg-client-http-non-blocking]]
+===== HttpClient Non-Blocking APIs
+
+So far we have shown how to use Jetty HTTP client in a blocking style -- that is, the thread that issues the request blocks until the request/response conversation is complete.
+
+This section will look at Jetty's `HttpClient` non-blocking, asynchronous APIs that are perfectly suited for large content downloads, for parallel processing of requests/responses and in cases where performance and efficient thread and resource utilization is a key factor.
+
+The asynchronous APIs rely heavily on listeners that are invoked at various stages of request and response processing.
+These listeners are implemented by applications and may perform any kind of logic.
+The implementation invokes these listeners in the same thread that is used to process the request or response.
+Therefore, if the application code in these listeners takes a long time to execute, the request or response processing is delayed until the listener returns.
+
+If you need to execute application code that takes long time inside a listener, you must spawn your own thread.
+
+Request and response processing are executed by two different threads and therefore may happen concurrently.
+A typical example of this concurrent processing is an echo server, where a large upload may be concurrent with the large download echoed back.
+
+NOTE: Remember that responses may be processed and completed _before_ requests; a typical example is a large upload that triggers a quick response, for example an error, by the server: the response may arrive and be completed while the request content is still being uploaded.
+
+The application thread that calls `Request.send(Response.CompleteListener)` performs the xref:pg-client-http-request-processing[processing of the request] until either the request is fully sent over the network or until it would block on I/O, then it returns (and therefore never blocks).
+If it would block on I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
+When such an event is fired, a thread taken from the `HttpClient` thread pool will resume the processing of the request.
+
+Response are processed from the I/O thread taken from the `HttpClient` thread pool that processes the event that bytes are ready to be read.
+Response processing continues until either the response is fully processed or until it would block for I/O.
+If it would block for I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
+When such an event is fired, a (possibly different) thread taken from the `HttpClient` thread pool will resume the processing of the response.
+
+When the request and the response are both fully processed, the thread that finished the last processing (usually the thread that processes the response, but may also be the thread that processes the request -- if the request takes more time than the response to be processed) is used to dequeue the next request for the same destination and to process it.
+
+A simple non-blocking `GET` request that discards the response content can be written in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=simpleNonBlocking]
+----
+
+Method `Request.send(Response.CompleteListener)` returns `void` and does not block; the `Response.CompleteListener` lambda provided as a parameter is notified when the request/response conversation is complete, and the `Result` parameter allows you to access the request and response objects as well as failures, if any.
+
+You can impose a total timeout for the request/response conversation in the same way used by the synchronous API:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=nonBlockingTotalTimeout]
+----
+
+The example above will impose a total timeout of 3 seconds on the request/response conversation.
+
+The HTTP client APIs use listeners extensively to provide hooks for all possible request and response events:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=listeners]
+----
+
+This makes Jetty HTTP client suitable for HTTP load testing because, for example, you can accurately time every step of the request/response conversation (thus knowing where the request/response time is really spent).
+
+Have a look at the link:{javadoc-url}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`] class to know about request events, and to the link:{javadoc-url}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`] class to know about response events.
+
+[[pg-client-http-content-request]]
+===== Request Content Handling
+
+Jetty's `HttpClient` provides a number of utility classes off the shelf to handle request content.
+
+You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.api.Request.Content`.
+Here’s an example that provides the request content using `java.nio.file.Paths`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=pathRequestContent]
+----
+
+Alternatively, you can use `FileInputStream` via the `InputStreamRequestContent` utility class:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=inputStreamRequestContent]
+----
+
+Since `InputStream` is blocking, then also the send of the request will block if the input stream blocks, even in case of usage of the non-blocking `HttpClient` APIs.
+
+If you have already read the content in memory, you can pass it as a `byte[]` (or a `String`) using the `BytesRequestContent` (or `StringRequestContent`) utility class:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=bytesStringRequestContent]
+----
+
+If the request content is not immediately available, but your application will be notified of the content to send, you can use `AsyncRequestContent` in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=asyncRequestContent]
+----
+
+While the request content is awaited and consequently uploaded by the client application, the server may be able to respond (at least with the response headers) completely asynchronously.
+In this case, `Response.Listener` callbacks will be invoked before the request is fully sent.
+This allows fine-grained control of the request/response conversation: for example the server may reject contents that are too big, send a response to the client, which in turn may stop the content upload.
+
+Another way to provide request content is by using an `OutputStreamRequestContent`, which allows applications to write request content when it is available to the `OutputStream` provided by `OutputStreamRequestContent`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=outputStreamRequestContent]
+----
+
+[[pg-client-http-content-response]]
+===== Response Content Handling
+
+Jetty's `HttpClient` allows applications to handle response content in different ways.
+
+You can buffer the response content in memory; this is done when using the xref:pg-client-http-blocking[blocking APIs] and the content is buffered within a `ContentResponse` up to 2 MiB.
+
+If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.util.FutureResponseListener` in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=futureResponseListener]
+----
+
+If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get(...)`.
+
+You can buffer the response content in memory also using the xref:pg-client-http-non-blocking[non-blocking APIs], via the `BufferingResponseListener` utility class:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=bufferingResponseListener]
+----
+
+If you want to avoid buffering, you can wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=inputStreamResponseListener]
+----
+
+Finally, let's look at the advanced usage of the response content handling.
+
+The response content is provided by the `HttpClient` implementation to application listeners following a reactive model similar to that of `java.util.concurrent.Flow`.
+
+The listener that follows this model is `Response.DemandedContentListener`.
+
+After the response headers have been processed by the `HttpClient` implementation, `Response.DemandedContentListener.onBeforeContent(response, demand)` is invoked.
+This allows the application to control whether to demand the first content or not.
+The default implementation of this method calls `demand.accept(1)`, which demands one chunk of content to the implementation.
+The implementation will deliver the chunk of content as soon as it is available.
+
+The chunks of content are delivered to the application by invoking `Response.DemandedContentListener.onContent(response, demand, buffer, callback)`.
+Applications implement this method to process the content bytes in the `buffer`.
+Succeeding the `callback` signals to the implementation that the application has consumed the `buffer` so that the implementation can dispose/recycle the `buffer`.
+Failing the `callback` signals to the implementation to fail the response (no more content will be delivered, and the _response failed_ event will be emitted).
+
+IMPORTANT: Succeeding the `callback` must be done only after the `buffer` bytes have been consumed.
+When the `callback` is succeeded, the `HttpClient` implementation may reuse the `buffer` and overwrite the bytes with different bytes; if the application looks at the `buffer` _after_ having succeeded the `callback` is may see other, unrelated, bytes.
+
+The application uses the `demand` object to demand more content chunks.
+Applications will typically demand for just one more content via `demand.accept(1)`, but may decide to demand for more via `demand.accept(2)` or demand "infinitely" once via `demand.accept(Long.MAX_VALUE)`.
+Applications that demand for more than 1 chunk of content must be prepared to receive all the content that they have demanded.
+
+Demanding for content and consuming the content are orthogonal activities.
+
+An application can demand "infinitely" and store aside the pairs `(buffer, callback)` to consume them later.
+If not done carefully, this may lead to excessive memory consumption, since the ``buffer``s are not consumed.
+Succeeding the ``callback``s will result in the ``buffer``s to be disposed/recycled and may be performed at any time.
+
+An application can also demand one chunk of content, consume it (by succeeding the associated `callback`) and then _not_ demand for more content until a later time.
+
+Subclass `Response.AsyncContentListener` overrides the behavior of `Response.DemandedContentListener`; when an application implementing its `onContent(response, buffer, callback)` succeeds the `callback`, it will have _both_ the effect of disposing/recycling the `buffer` _and_ the effect of demanding one more chunk of content.
+
+Subclass `Response.ContentListener` overrides the behavior of `Response.AsyncContentListener`; when an application implementing its `onContent(response, buffer)` returns from the method itself, it will _both_ the effect of disposing/recycling the `buffer` _and_ the effect of demanding one more chunk of content.
+
+Previous examples of response content handling were inefficient because they involved copying the `buffer` bytes, either to accumulate them aside so that the application could use them when the request was completed, or because they were provided to an API such as `InputStream` that made use of `byte[]` (and therefore a copy from `ByteBuffer` to `byte[]` is necessary).
+
+An application that implements a forwarder between two servers can be implemented efficiently by handling the response content without copying the `buffer` bytes as in the following example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=demandedContentListener]
+----

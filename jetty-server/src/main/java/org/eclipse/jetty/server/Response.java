@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -103,11 +98,39 @@ public class Response implements HttpServletResponse
 
     private enum EncodingFrom
     {
-        NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING
+        /**
+         * Character encoding was not set, or the encoding was cleared with {@code setCharacterEncoding(null)}.
+         */
+        NOT_SET,
+
+        /**
+         * Using the default character encoding from the context otherwise iso-8859-1.
+         */
+        DEFAULT,
+
+        /**
+         * Character encoding was inferred from the Content-Type and will be added as a parameter to the Content-Type.
+         */
+        INFERRED,
+
+        /**
+         * The default character encoding of the locale was used after a call to {@link #setLocale(Locale)}.
+         */
+        SET_LOCALE,
+
+        /**
+         * The character encoding has been explicitly set using the Content-Type charset parameter with {@link #setContentType(String)}.
+         */
+        SET_CONTENT_TYPE,
+
+        /**
+         * The character encoding has been explicitly set using {@link #setCharacterEncoding(String)}.
+         */
+        SET_CHARACTER_ENCODING
     }
 
-    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
-    private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE, EncodingFrom.SET_CHARACTER_ENCODING);
+    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.DEFAULT, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
+    private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE, EncodingFrom.SET_CHARACTER_ENCODING, EncodingFrom.SET_CONTENT_TYPE);
 
     public Response(HttpChannel channel, HttpOutput out)
     {
@@ -122,17 +145,20 @@ public class Response implements HttpServletResponse
 
     protected void recycle()
     {
+        // _channel need not be recycled
+        _fields.clear();
+        _errorSentAndIncludes.set(0);
+        _out.recycle();
         _status = HttpStatus.OK_200;
         _reason = null;
         _locale = null;
         _mimeType = null;
         _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
         _contentType = null;
         _outputType = OutputType.NONE;
+        // _writer does not need to be recycled
         _contentLength = -1;
-        _out.recycle();
-        _fields.clear();
-        _encodingFrom = EncodingFrom.NOT_SET;
         _trailers = null;
     }
 
@@ -316,6 +342,9 @@ public class Response implements HttpServletResponse
     @Override
     public String encodeURL(String url)
     {
+        if (url == null)
+            return null;
+
         final Request request = _channel.getRequest();
         SessionHandler sessionManager = request.getSessionHandler();
 
@@ -323,7 +352,8 @@ public class Response implements HttpServletResponse
             return url;
 
         HttpURI uri = null;
-        if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
+        boolean hasScheme = URIUtil.hasScheme(url);
+        if (sessionManager.isCheckingRemoteSessionIdEncoding() && hasScheme)
         {
             uri = HttpURI.from(url);
             String path = uri.getPath();
@@ -344,9 +374,6 @@ public class Response implements HttpServletResponse
         String sessionURLPrefix = sessionManager.getSessionIdPathParameterNamePrefix();
         if (sessionURLPrefix == null)
             return url;
-
-        if (url == null)
-            return null;
 
         // should not encode if cookies in evidence
         if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
@@ -378,9 +405,6 @@ public class Response implements HttpServletResponse
 
         String id = sessionManager.getExtendedId(session);
 
-        if (uri == null)
-            uri = HttpURI.from(url);
-
         // Already encoded
         int prefix = url.indexOf(sessionURLPrefix);
         if (prefix != -1)
@@ -395,20 +419,24 @@ public class Response implements HttpServletResponse
                 url.substring(suffix);
         }
 
+        // check for a null path
+        String nonNullPath = "";
+        if (hasScheme)
+        {
+            if (uri == null)
+                uri = HttpURI.from(url);
+            if (uri.getPath() == null)
+                nonNullPath = "/";
+        }
+
         // edit the session
         int suffix = url.indexOf('?');
         if (suffix < 0)
             suffix = url.indexOf('#');
         if (suffix < 0)
-        {
-            return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
-                sessionURLPrefix + id;
-        }
+            return url + nonNullPath + sessionURLPrefix + id;
 
-        return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
-            sessionURLPrefix + id + url.substring(suffix);
+        return url.substring(0, suffix) + nonNullPath + sessionURLPrefix + id + url.substring(suffix);
     }
 
     @Override
@@ -442,6 +470,7 @@ public class Response implements HttpServletResponse
      * <p>In addition to the servlet standard handling, this method supports some additional codes:</p>
      * <dl>
      * <dt>102</dt><dd>Send a partial PROCESSING response and allow additional responses</dd>
+     * <dt>103</dt><dd>Send a partial EARLY_HINT response as per <a href="https://datatracker.ietf.org/doc/html/rfc8297">RFC8297</a></dd>
      * <dt>-1</dt><dd>Abort the HttpChannel and close the connection/stream</dd>
      * </dl>
      * @param code The error code
@@ -462,6 +491,9 @@ public class Response implements HttpServletResponse
             case HttpStatus.PROCESSING_102:
                 sendProcessing();
                 break;
+            case HttpStatus.EARLY_HINT_103:
+                sendEarlyHint();
+                break;
             default:
                 _channel.getState().sendError(code, message);
                 break;
@@ -470,9 +502,8 @@ public class Response implements HttpServletResponse
 
     /**
      * Sends a 102-Processing response.
-     * If the connection is an HTTP connection, the version is 1.1 and the
-     * request has a Expect header starting with 102, then a 102 response is
-     * sent. This indicates that the request still be processed and real response
+     * If the request had an Expect header starting with 102, then
+     * a 102 response is sent. This indicates that the request still be processed and real response
      * can still be sent.   This method is called by sendError if it is passed 102.
      *
      * @throws IOException if unable to send the 102 response
@@ -487,6 +518,22 @@ public class Response implements HttpServletResponse
     }
 
     /**
+     * Sends a 103 Early Hint response.
+     *
+     * Send a 103 response as per <a href="https://datatracker.ietf.org/doc/html/rfc8297">RFC8297</a>
+     * This method is called by sendError if it is passed 103.
+     *
+     * @throws IOException if unable to send the 103 response
+     * @see javax.servlet.http.HttpServletResponse#sendError(int)
+     */
+    public void sendEarlyHint() throws IOException
+    {
+        if (!isCommitted())
+            _channel.sendResponse(new MetaData.Response(_channel.getRequest().getHttpVersion(), HttpStatus.EARLY_HINT_103,
+                _channel.getResponse()._fields.asImmutable()), null, true);
+    }
+
+    /**
      * Sends a response with one of the 300 series redirection codes.
      *
      * @param code the redirect status code
@@ -495,7 +542,37 @@ public class Response implements HttpServletResponse
      */
     public void sendRedirect(int code, String location) throws IOException
     {
-        if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
+        sendRedirect(code, location, false);
+    }
+
+    /**
+     * Sends a response with a HTTP version appropriate 30x redirection.
+     *
+     * @param location the location to send in {@code Location} headers
+     * @param consumeAll if True, consume any HTTP/1 request input before doing the redirection. If the input cannot
+     * be consumed without blocking, then add a `Connection: close` header to the response.
+     * @throws IOException if unable to send the redirect
+     */
+    public void sendRedirect(String location, boolean consumeAll) throws IOException
+    {
+        sendRedirect(getHttpChannel().getRequest().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER, location, consumeAll);
+    }
+
+    /**
+     * Sends a response with a given redirection code.
+     *
+     * @param code the redirect status code
+     * @param location the location to send in {@code Location} headers
+     * @param consumeAll if True, consume any HTTP/1 request input before doing the redirection. If the input cannot
+     * be consumed without blocking, then add a `Connection: close` header to the response.
+     * @throws IOException if unable to send the redirect
+     */
+    public void sendRedirect(int code, String location, boolean consumeAll) throws IOException
+    {
+        if (consumeAll)
+            getHttpChannel().ensureConsumeAllOrNotPersistent();
+        if (!HttpStatus.isRedirection(code))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
         if (!isMutable())
@@ -512,14 +589,14 @@ public class Response implements HttpServletResponse
             if (location.startsWith("/"))
             {
                 // absolute in context
-                location = URIUtil.canonicalEncodedPath(location);
+                location = URIUtil.canonicalURI(location);
             }
             else
             {
                 // relative to request
                 String path = _channel.getRequest().getRequestURI();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalEncodedPath(URIUtil.addEncodedPaths(parent, location));
+                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
                 if (location != null && !location.startsWith("/"))
                     buf.append('/');
             }
@@ -721,26 +798,61 @@ public class Response implements HttpServletResponse
     @Override
     public String getCharacterEncoding()
     {
-        if (_characterEncoding == null)
+        return getCharacterEncoding(false);
+    }
+
+    /**
+     * Private utility method to get the character encoding.
+     * A standard call to {@link #getCharacterEncoding()} should not change the Content-Type header.
+     * But when {@link #getWriter()} is called we must decide what Content-Type to use, so this will allow an inferred
+     * charset to be set in in the Content-Type.
+     * @param setContentType if true allow the Content-Type header to be changed if character encoding was inferred or the default encoding was used.
+     * @return the character encoding for this response.
+     */
+    private String getCharacterEncoding(boolean setContentType)
+    {
+        // First try explicit char encoding.
+        if (_characterEncoding != null)
+            return _characterEncoding;
+
+        String encoding;
+
+        // Try charset from mime type.
+        if (_mimeType != null && _mimeType.isCharsetAssumed())
+            return _mimeType.getCharsetString();
+
+        // Try charset assumed from content type (assumed charsets are not added to content type header).
+        encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+        if (encoding != null)
+            return encoding;
+
+        // Try char set inferred from content type.
+        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+        if (encoding != null)
         {
-            String encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
-            if (encoding != null)
-                return encoding;
-
-            encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
-            if (encoding != null)
-                return encoding;
-
-            Context context = _channel.getRequest().getContext();
-            if (context != null)
-            {
-                encoding = context.getResponseCharacterEncoding();
-                if (encoding != null)
-                    return encoding;
-            }
-            return StringUtil.__ISO_8859_1;
+            if (setContentType)
+                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
+            return encoding;
         }
-        return _characterEncoding;
+
+        // Try any default char encoding for the context.
+        Context context = _channel.getRequest().getContext();
+        if (context != null)
+        {
+            encoding = context.getResponseCharacterEncoding();
+            if (encoding != null)
+            {
+                if (setContentType)
+                    setCharacterEncoding(encoding, EncodingFrom.DEFAULT);
+                return encoding;
+            }
+        }
+
+        // Fallback to last resort iso-8859-1.
+        encoding = StringUtil.__ISO_8859_1;
+        if (setContentType)
+            setCharacterEncoding(encoding, EncodingFrom.DEFAULT);
+        return encoding;
     }
 
     @Override
@@ -781,46 +893,8 @@ public class Response implements HttpServletResponse
 
         if (_outputType == OutputType.NONE)
         {
-            //first try explicit char encoding
-            String encoding = _characterEncoding;
-
-            //try char set from mime type
-            if (encoding == null)
-            {
-                if (_mimeType != null && _mimeType.isCharsetAssumed())
-                    encoding = _mimeType.getCharsetString();
-            }
-
-            //try char set assumed from content type
-            if (encoding == null)
-            {
-                encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
-            }
-            
-            //try char set inferred from content type
-            if (encoding == null)
-            {
-                encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
-                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
-            }
-            
-            //try any default char encoding for the context
-            if (encoding == null)
-            {
-                Context context = _channel.getRequest().getContext();
-                if (context != null)
-                    encoding = context.getResponseCharacterEncoding();
-            }
-            
-            //fallback to last resort iso-8859-1
-            if (encoding == null)
-            {
-                encoding = StringUtil.__ISO_8859_1;
-                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
-            }
-
+            String encoding = getCharacterEncoding(true);
             Locale locale = getLocale();
-
             if (_writer != null && _writer.isFor(locale, encoding))
                 _writer.reopen();
             else
@@ -833,7 +907,7 @@ public class Response implements HttpServletResponse
                     _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
             }
 
-            // Set the output type at the end, because setCharacterEncoding() checks for it
+            // Set the output type at the end, because setCharacterEncoding() checks for it.
             _outputType = OutputType.WRITER;
         }
         return _writer;
@@ -955,52 +1029,45 @@ public class Response implements HttpServletResponse
 
     private void setCharacterEncoding(String encoding, EncodingFrom from)
     {
-        if (!isMutable() || isWriting())
+        if (!isMutable() || isWriting() || isCommitted())
             return;
 
-        if (_outputType != OutputType.WRITER && !isCommitted())
+        if (encoding == null)
         {
-            if (encoding == null)
+            _encodingFrom = EncodingFrom.NOT_SET;
+            if (_characterEncoding != null)
             {
-                _encodingFrom = EncodingFrom.NOT_SET;
-
-                // Clear any encoding.
-                if (_characterEncoding != null)
-                {
-                    _characterEncoding = null;
-
-                    if (_mimeType != null)
-                    {
-                        _mimeType = _mimeType.getBaseType();
-                        _contentType = _mimeType.asString();
-                        _fields.put(_mimeType.getContentTypeField());
-                    }
-                    else if (_contentType != null)
-                    {
-                        _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
-                    }
-                }
-            }
-            else
-            {
-                // No, so just add this one to the mimetype
-                _encodingFrom = from;
-                _characterEncoding = HttpGenerator.__STRICT ? encoding : StringUtil.normalizeCharset(encoding);
+                _characterEncoding = null;
                 if (_mimeType != null)
                 {
-                    _contentType = _mimeType.getBaseType().asString() + ";charset=" + _characterEncoding;
-                    _mimeType = MimeTypes.CACHE.get(_contentType);
-                    if (_mimeType == null || HttpGenerator.__STRICT)
-                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
-                    else
-                        _fields.put(_mimeType.getContentTypeField());
+                    _mimeType = _mimeType.getBaseType();
+                    _contentType = _mimeType.asString();
+                    _fields.put(_mimeType.getContentTypeField());
                 }
                 else if (_contentType != null)
                 {
-                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
+                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
                     _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
+            }
+        }
+        else
+        {
+            _encodingFrom = from;
+            _characterEncoding = HttpGenerator.__STRICT ? encoding : StringUtil.normalizeCharset(encoding);
+            if (_mimeType != null)
+            {
+                _contentType = _mimeType.getBaseType().asString() + ";charset=" + _characterEncoding;
+                _mimeType = MimeTypes.CACHE.get(_contentType);
+                if (_mimeType == null || HttpGenerator.__STRICT)
+                    _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                else
+                    _fields.put(_mimeType.getContentTypeField());
+            }
+            else if (_contentType != null)
+            {
+                _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
+                _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
             }
         }
     }
@@ -1037,18 +1104,8 @@ public class Response implements HttpServletResponse
                 {
                     case NOT_SET:
                         break;
+                    case DEFAULT:
                     case INFERRED:
-                        if (isWriting())
-                        {
-                            _contentType = _contentType + ";charset=" + _characterEncoding;
-                            _mimeType = MimeTypes.CACHE.get(_contentType);
-                        }
-                        else
-                        {
-                            _encodingFrom = EncodingFrom.NOT_SET;
-                            _characterEncoding = null;
-                        }
-                        break;
                     case SET_CONTENT_TYPE:
                     case SET_LOCALE:
                     case SET_CHARACTER_ENCODING:
@@ -1248,8 +1305,7 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength(), getTrailers());
-        return info;
+        return new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength(), getTrailers());
     }
 
     /**
@@ -1282,22 +1338,32 @@ public class Response implements HttpServletResponse
     @Override
     public void setLocale(Locale locale)
     {
-        if (locale == null || isCommitted() || !isMutable())
+        if (isCommitted() || !isMutable())
             return;
 
-        _locale = locale;
-        _fields.put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
+        if (locale == null)
+        {
+            _locale = null;
+            _fields.remove(HttpHeader.CONTENT_LANGUAGE);
+            if (_encodingFrom == EncodingFrom.SET_LOCALE)
+                setCharacterEncoding(null, EncodingFrom.NOT_SET);
+        }
+        else
+        {
+            _locale = locale;
+            _fields.put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
 
-        if (_outputType != OutputType.NONE)
-            return;
+            if (_outputType != OutputType.NONE)
+                return;
 
-        if (_channel.getRequest().getContext() == null)
-            return;
+            Context context = _channel.getRequest().getContext();
+            if (context == null)
+                return;
 
-        String charset = _channel.getRequest().getContext().getContextHandler().getLocaleEncoding(locale);
-
-        if (charset != null && charset.length() > 0 && __localeOverride.contains(_encodingFrom))
-            setCharacterEncoding(charset, EncodingFrom.SET_LOCALE);
+            String charset = context.getContextHandler().getLocaleEncoding(locale);
+            if (!StringUtil.isEmpty(charset) && __localeOverride.contains(_encodingFrom))
+                setCharacterEncoding(charset, EncodingFrom.SET_LOCALE);
+        }
     }
 
     @Override
@@ -1355,19 +1421,16 @@ public class Response implements HttpServletResponse
         HttpField ct = content.getContentType();
         if (ct != null)
         {
-            if (_characterEncoding != null &&
-                content.getCharacterEncoding() == null &&
-                content.getContentTypeValue() != null &&
-                __explicitCharset.contains(_encodingFrom))
-            {
-                setContentType(MimeTypes.getContentTypeWithoutCharset(content.getContentTypeValue()));
-            }
-            else
+            if (!__explicitCharset.contains(_encodingFrom))
             {
                 _fields.put(ct);
                 _contentType = ct.getValue();
                 _characterEncoding = content.getCharacterEncoding();
                 _mimeType = content.getMimeType();
+            }
+            else
+            {
+                setContentType(content.getContentTypeValue());
             }
         }
 

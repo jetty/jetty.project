@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -25,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
@@ -33,8 +29,10 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
@@ -141,26 +139,26 @@ public class Main
         }).start();
     }
 
-    private void dumpClasspathWithVersions(Classpath classpath)
+    private void dumpClasspathWithVersions(PrintStream out, Classpath classpath)
     {
         StartLog.endStartLog();
-        System.out.println();
-        System.out.println("Jetty Server Classpath:");
-        System.out.println("-----------------------");
+        out.println();
+        out.println("Jetty Server Classpath:");
+        out.println("-----------------------");
         if (classpath.count() == 0)
         {
-            System.out.println("No classpath entries and/or version information available show.");
+            out.println("No classpath entries and/or version information available show.");
             return;
         }
 
-        System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1) ? "ies" : "y") + " in the classpath.");
-        System.out.println("Note: order presented here is how they would appear on the classpath.");
-        System.out.println("      changes to the --module=name command line options will be reflected here.");
+        out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1) ? "ies" : "y") + " in the classpath.");
+        out.println("Note: order presented here is how they would appear on the classpath.");
+        out.println("      changes to the --module=name command line options will be reflected here.");
 
         int i = 0;
         for (File element : classpath.getElements())
         {
-            System.out.printf("%2d: %24s | %s\n", i++, getVersion(element), baseHome.toShortForm(element));
+            out.printf("%2d: %24s | %s\n", i++, getVersion(element), baseHome.toShortForm(element));
         }
     }
 
@@ -190,7 +188,7 @@ public class Main
 
     public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
     {
-        if (args.getEnabledModules().isEmpty())
+        if (args.getSelectedModules().isEmpty())
         {
             if (Files.exists(getBaseHome().getBasePath("start.jar")))
                 StartLog.error("Do not start with ${jetty.base} == ${jetty.home}!");
@@ -231,47 +229,51 @@ public class Main
         main.invoke(null, methodParams);
     }
 
-    public void listConfig(StartArgs args)
+    public void listConfig(PrintStream out, StartArgs args)
     {
         StartLog.endStartLog();
         Modules modules = args.getAllModules();
 
         // Dump Enabled Modules
-        modules.listEnabled();
+        modules.listEnabled(out);
 
         // Dump Jetty Home / Base
-        args.dumpEnvironment();
+        args.dumpEnvironment(out);
 
         // Dump JVM Args
-        args.dumpJvmArgs();
+        args.dumpJvmArgs(out);
 
         // Dump System Properties
-        args.dumpSystemProperties();
+        args.dumpSystemProperties(out);
 
         // Dump Properties
-        args.dumpProperties();
+        args.dumpProperties(out);
 
         // Dump Classpath
-        dumpClasspathWithVersions(args.getClasspath());
+        dumpClasspathWithVersions(out, args.getClasspath());
 
         // Dump Resolved XMLs
-        args.dumpActiveXmls();
+        args.dumpActiveXmls(out);
     }
 
-    public void listModules(StartArgs args)
+    public void listModules(PrintStream out, StartArgs args)
     {
         final List<String> tags = args.getListModules();
         StartLog.endStartLog();
         String t = tags.toString();
-        System.out.printf("%nModules %s:%n", t);
-        System.out.printf("=========%s%n", "=".repeat(t.length()));
-        args.getAllModules().listModules(tags);
+        out.printf("%nModules %s:%n", t);
+        out.printf("=========%s%n", "=".repeat(t.length()));
+        args.getAllModules().listModules(out, tags);
+
+        // for default module listings, also show enabled modules
+        if ("[-internal]".equals(t) || "[*]".equals(t))
+            args.getAllModules().listEnabled(out);
     }
 
-    public void showModules(StartArgs args)
+    public void showModules(PrintStream out, StartArgs args)
     {
         StartLog.endStartLog();
-        args.getAllModules().showModules(args.getShowModules());
+        args.getAllModules().showModules(out, args.getShowModules());
     }
 
     /**
@@ -324,12 +326,22 @@ public class Main
         modules.registerAll();
 
         // 4) Active Module Resolution
-        for (String enabledModule : modules.getSortedNames(args.getEnabledModules()))
+        List<String> selectedModules = args.getSelectedModules();
+        List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
+        List<String> unknownModules = new ArrayList<>(selectedModules);
+        unknownModules.removeAll(sortedSelectedModules);
+        if (unknownModules.size() >= 1)
         {
-            for (String source : args.getSources(enabledModule))
+            throw new UsageException(UsageException.ERR_UNKNOWN, "Unknown module%s=[%s] List available with --list-modules",
+                unknownModules.size() > 1 ? 's' : "",
+                String.join(", ", unknownModules));
+        }
+        for (String selectedModule : sortedSelectedModules)
+        {
+            for (String source : args.getSources(selectedModule))
             {
                 String shortForm = baseHome.toShortForm(source);
-                modules.enable(enabledModule, shortForm);
+                modules.enable(selectedModule, shortForm);
             }
         }
 
@@ -393,25 +405,25 @@ public class Main
         // Show the version information and return
         if (args.isListClasspath())
         {
-            dumpClasspathWithVersions(classpath);
+            dumpClasspathWithVersions(System.out, classpath);
         }
 
         // Show configuration
         if (args.isListConfig())
         {
-            listConfig(args);
+            listConfig(System.out, args);
         }
 
         // List modules
         if (args.getListModules() != null)
         {
-            listModules(args);
+            listModules(System.out, args);
         }
 
         // Show modules
         if (args.getShowModules() != null)
         {
-            showModules(args);
+            showModules(System.out, args);
         }
 
         // Generate Module Graph File
@@ -468,6 +480,14 @@ public class Main
         {
             CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
             cmd.debug();
+
+            List<String> execModules = args.getAllModules().getEnabled().stream()
+                // Keep only the forking modules.
+                .filter(module -> !module.getJvmArgs().isEmpty())
+                .map(Module::getName)
+                .collect(Collectors.toList());
+            StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
+
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();
             final Process process = pbuilder.start();
@@ -491,7 +511,11 @@ public class Main
 
         if (args.hasJvmArgs() || args.hasSystemProperties())
         {
-            StartLog.warn("System properties and/or JVM args set.  Consider using --dry-run or --exec");
+            StartLog.warn("Unknown Arguments detected.  Consider using --dry-run or --exec");
+            if (args.hasSystemProperties())
+                args.getSystemProperties().forEach((k, v) -> StartLog.warn("  Argument: -D%s=%s (interpreted as a System property, from %s)", k, System.getProperty(k), v));
+            if (args.hasJvmArgs())
+                args.getJvmArgSources().forEach((jvmArg, source) -> StartLog.warn("  Argument: %s (interpreted as a JVM argument, from %s)", jvmArg, source));
         }
 
         ClassLoader cl = classpath.getClassLoader();

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -58,6 +53,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -92,7 +88,7 @@ public class SessionListenerTest
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
-        TestHttpSessionListener listener = new TestHttpSessionListener(true);
+        TestHttpSessionListener listener = new TestHttpSessionListener(true, true);
         context.getSessionHandler().addEventListener(listener);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -125,6 +121,72 @@ public class SessionListenerTest
 
                 assertTrue(TestServlet.bindingListener.unbound);
                 assertTrue(listener.destroyedSessions.contains(sessionId));
+            }
+            finally
+            {
+                LifeCycle.stop(client);
+            }
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
+    }
+    
+    /**
+     * Test that if a session listener throws an exception during sessionDestroyed the session is still invalidated
+     */
+    @Test
+    public void testListenerWithInvalidationException() throws Exception
+    {
+        String contextPath = "";
+        String servletMapping = "/server";
+        int inactivePeriod = 6;
+        int scavengePeriod = -1;
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
+
+        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod,
+            cacheFactory, storeFactory);
+        ServletContextHandler context = server.addContext(contextPath);
+        ThrowingSessionListener listener = new ThrowingSessionListener();
+        context.getSessionHandler().addEventListener(listener);
+        TestServlet servlet = new TestServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        context.addServlet(holder, servletMapping);
+
+        try
+        {
+            server.start();
+            int port1 = server.getPort();
+
+            HttpClient client = new HttpClient();
+            client.start();
+            try
+            {
+                String url = "http://localhost:" + port1 + contextPath + servletMapping;
+                // Create the session
+                ContentResponse response1 = client.GET(url + "?action=init");
+                assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
+                String sessionCookie = response1.getHeaders().get("Set-Cookie");
+                assertNotNull(sessionCookie);
+                assertTrue(TestServlet.bindingListener.bound);
+
+                String sessionId = TestServer.extractSessionId(sessionCookie);
+
+                // Make a request which will invalidate the existing session
+                Request request2 = client.newRequest(url + "?action=test");
+                ContentResponse response2 = request2.send();
+                assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
+
+                assertTrue(TestServlet.bindingListener.unbound);
+                
+                //check session no longer exists
+                assertFalse(context.getSessionHandler().getSessionCache().contains(sessionId));
+                assertFalse(context.getSessionHandler().getSessionCache().getSessionDataStore().exists(sessionId));
             }
             finally
             {
@@ -177,7 +239,7 @@ public class SessionListenerTest
         ServletContextHandler context = server1.addContext(contextPath);
         context.setClassLoader(contextClassLoader);
         context.addServlet(holder, servletMapping);
-        TestHttpSessionListener listener = new TestHttpSessionListenerWithWebappClasses(true);
+        TestHttpSessionListener listener = new TestHttpSessionListenerWithWebappClasses(true, true);
         context.getSessionHandler().addEventListener(listener);
 
         try
@@ -206,7 +268,8 @@ public class SessionListenerTest
 
                 assertThat(sessionId, is(in(listener.destroyedSessions)));
 
-                assertNull(listener.ex);
+                assertNull(listener.attributeException);
+                assertNull(listener.accessTimeException);
             }
             finally
             {
@@ -241,7 +304,7 @@ public class SessionListenerTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
         context.addServlet(holder, servletMapping);
-        TestHttpSessionListener listener = new TestHttpSessionListener();
+        TestHttpSessionListener listener = new TestHttpSessionListener(true, true);
 
         context.getSessionHandler().addEventListener(listener);
 
@@ -276,7 +339,8 @@ public class SessionListenerTest
 
                 assertTrue(listener.destroyedSessions.contains("1234"));
 
-                assertNull(listener.ex);
+                assertNull(listener.attributeException);
+                assertNull(listener.accessTimeException);
             }
             finally
             {
@@ -300,6 +364,22 @@ public class SessionListenerTest
         public void sessionDestroyed(HttpSessionEvent se)
         {
         }
+    }
+    
+    public static class ThrowingSessionListener implements HttpSessionListener
+    {
+
+        @Override
+        public void sessionCreated(HttpSessionEvent se)
+        {
+        }
+
+        @Override
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+            throw new IllegalStateException("Exception during sessionDestroyed");
+        }
+        
     }
 
     @Test

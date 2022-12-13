@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -34,6 +29,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.Matchers;
@@ -60,11 +57,13 @@ public class RequestURITest
         ret.add(Arguments.of("/hello?type=wo&rld", "/hello", "type=wo&rld"));
         ret.add(Arguments.of("/hello?type=wo%20rld", "/hello", "type=wo%20rld"));
         ret.add(Arguments.of("/hello?type=wo+rld", "/hello", "type=wo+rld"));
+        ret.add(Arguments.of("/hello?type=/a/../b/", "/hello", "type=/a/../b/"));
         ret.add(Arguments.of("/It%27s%20me%21", "/It%27s%20me%21", null));
         // try some slash encoding (with case preservation tests)
         ret.add(Arguments.of("/hello%2fworld", "/hello%2fworld", null));
         ret.add(Arguments.of("/hello%2Fworld", "/hello%2Fworld", null));
         ret.add(Arguments.of("/%2f%2Fhello%2Fworld", "/%2f%2Fhello%2Fworld", null));
+
         // try some "?" encoding (should not see as query string)
         ret.add(Arguments.of("/hello%3Fworld", "/hello%3Fworld", null));
         // try some strange encodings (should preserve them)
@@ -72,8 +71,13 @@ public class RequestURITest
         ret.add(Arguments.of("/hello%u0025world", "/hello%u0025world", null));
         ret.add(Arguments.of("/hello-euro-%E2%82%AC", "/hello-euro-%E2%82%AC", null));
         ret.add(Arguments.of("/hello-euro?%E2%82%AC", "/hello-euro", "%E2%82%AC"));
-        // test the ascii control characters (just for completeness)
-        for (int i = 0x0; i < 0x1f; i++)
+
+        ret.add(Arguments.of("/hello/..;/world", "/hello/..;/world", null));
+        ret.add(Arguments.of("/hello/..;?/world", "/hello/..;", "/world"));
+
+        // Test the ascii control characters (just for completeness).
+        // Zero is not allowed in UTF-8 sequences so start from 1.
+        for (int i = 0x1; i < 0x1f; i++)
         {
             String raw = String.format("/hello%%%02Xworld", i);
             ret.add(Arguments.of(raw, raw, null));
@@ -112,6 +116,7 @@ public class RequestURITest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
@@ -196,7 +201,6 @@ public class RequestURITest
             // Read the response.
             String response = readResponse(client);
 
-            // TODO: is HTTP/1.1 response appropriate for an HTTP/1.0 request?
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("RequestURI: " + expectedReqUri));
             assertThat(response, Matchers.containsString("QueryString: " + expectedQuery));
@@ -221,6 +225,45 @@ public class RequestURITest
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("RequestURI: " + expectedReqUri));
             assertThat(response, Matchers.containsString("QueryString: " + expectedQuery));
+        }
+    }
+
+    public static Stream<Arguments> badData()
+    {
+        List<Arguments> ret = new ArrayList<>();
+        ret.add(Arguments.of("/hello\000"));
+        ret.add(Arguments.of("/hello%00"));
+        ret.add(Arguments.of("/hello%u0000"));
+        ret.add(Arguments.of("/hello\000/world"));
+        ret.add(Arguments.of("/hello%00world"));
+        ret.add(Arguments.of("/hello%u0000world"));
+        ret.add(Arguments.of("/hello%GG"));
+        ret.add(Arguments.of("/hello%;/world"));
+        ret.add(Arguments.of("/hello/../../world"));
+        ret.add(Arguments.of("/hello/%#x/../world"));
+        ret.add(Arguments.of("/../hello/world"));
+        ret.add(Arguments.of("/hello%u00u00/world"));
+        ret.add(Arguments.of("hello"));
+
+        return ret.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("badData")
+    public void testGetBadRequestsURIHTTP10(String rawpath) throws Exception
+    {
+        try (Socket client = newSocket(serverURI.getHost(), serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = String.format("GET %s HTTP/1.0\r\n\r\n", rawpath);
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
         }
     }
 }

@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,18 +15,20 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +36,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
+    @Test
+    public void testDemoAddServerClasses() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
+
+        String[] argsConfig = {
+            "--add-modules=demo"
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            try (JettyHomeTester.Run runListConfig = distribution.start("--list-config"))
+            {
+                assertTrue(runListConfig.awaitFor(5, TimeUnit.SECONDS));
+                assertEquals(0, runListConfig.getExitValue());
+                // Example of what we expect
+                // jetty.webapp.addServerClasses = org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
+                String addServerKey = " jetty.webapp.addServerClasses = ";
+                String addServerClasses = runListConfig.getLogs().stream()
+                    .filter(s -> s.startsWith(addServerKey))
+                    .findFirst()
+                    .orElseThrow(() ->
+                        new NoSuchElementException("Unable to find [" + addServerKey + "]"));
+                assertThat("'jetty.webapp.addServerClasses' entry count",
+                    addServerClasses.split(",").length,
+                    greaterThan(1));
+            }
+        }
+    }
+
     @Test
     public void testJspDump() throws Exception
     {
@@ -74,7 +114,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/jsp/dump.jsp");
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo-jsp/dump.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
@@ -212,7 +252,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
-            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertTrue(runConfig.awaitFor(20, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
             int httpPort = distribution.freePort();
@@ -225,11 +265,14 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                ContentResponse helloResponse = client.GET("http://localhost:" + httpPort + "/test/hello");
+                assertEquals(HttpStatus.OK_200, helloResponse.getStatus());
+
+                ContentResponse cssResponse = client.GET("http://localhost:" + httpPort + "/jetty-dir.css");
+                assertEquals(HttpStatus.OK_200, cssResponse.getStatus());
             }
         }
     }
@@ -296,26 +339,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 content = response.getContentAsString();
                 assertThat("Content", content, containsString("<b>Zed:</b> [alpha]<br/>"));
             }
-        }
-    }
-
-    private class ResponseDetails implements Supplier<String>
-    {
-        private final ContentResponse response;
-
-        public ResponseDetails(ContentResponse response)
-        {
-            this.response = response;
-        }
-
-        @Override
-        public String get()
-        {
-            StringBuilder ret = new StringBuilder();
-            ret.append(response.toString()).append(System.lineSeparator());
-            ret.append(response.getHeaders().toString()).append(System.lineSeparator());
-            ret.append(response.getContentAsString()).append(System.lineSeparator());
-            return ret.toString();
         }
     }
 }

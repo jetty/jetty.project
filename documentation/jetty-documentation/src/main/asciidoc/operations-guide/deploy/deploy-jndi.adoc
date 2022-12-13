@@ -1,0 +1,54 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-deploy-jndi]]
+==== Configuring JNDI Entries
+
+A web application may _reference_ a JNDI entry, such as a JDBC `DataSource` from the web application `web.xml` file.
+The JNDI entry must be _defined_ in a xref:og-jndi-xml[Jetty XML file], for example a context XML like so:
+
+.mywebapp.xml
+[source,xml,subs=normal]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/mywebapp</Set>
+  <Set name="war">/opt/webapps/mywebapp.war</Set>
+#&nbsp;&nbsp;<New class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid="wac"/></Arg>
+    <Arg>jdbc/myds</Arg>
+     <Arg>
+        <New class="com.mysql.cj.jdbc.MysqlConnectionPoolDataSource">
+           <Set name="url">jdbc:mysql://localhost:3306/databasename</Set>
+           <Set name="user">user</Set>
+           <Set name="password">password</Set>
+        </New>
+     </Arg>
+  </New>#
+</Configure>
+----
+
+For more information and examples on how to use JNDI in Jetty, refer to the xref:og-jndi[JNDI] feature section.
+
+[IMPORTANT]
+====
+Class `com.mysql.cj.jdbc.MysqlConnectionPoolDataSource` is present in the MySQL JDBC driver file, `mysql-connector-java-<version>.jar`, which must be available on the server's classpath .
+
+If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-env.xml` file - see the xref:og-jndi[JNDI] feature section for more information and examples.
+
+====
+// TODO: add a link to reference the section about how
+//  to add a JDBC driver jar to the server classpath.
+

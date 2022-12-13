@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.14-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-util</artifactId>
@@ -10,6 +10,7 @@
   <description>Utility classes for Jetty</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.util.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <resources>
@@ -19,13 +20,6 @@
       </resource>
     </resources>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.util.*</onlyAnalyze>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>buildnumber-maven-plugin</artifactId>
@@ -39,9 +33,20 @@
               <doCheck>false</doCheck>
               <doUpdate>false</doUpdate>
               <revisionOnScmFailure>${nonCanonicalRevision}</revisionOnScmFailure>
+              <providerImplementations>
+                <git>jgit</git>
+              </providerImplementations>
+              <scmDirectory>../</scmDirectory>
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-provider-jgit</artifactId>
+            <version>1.13.0</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
@@ -68,6 +73,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

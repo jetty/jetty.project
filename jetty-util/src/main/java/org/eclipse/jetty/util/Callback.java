@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -43,6 +38,24 @@ public interface Callback extends Invocable
             return InvocationType.NON_BLOCKING;
         }
     };
+
+    /**
+     * <p>Completes this callback with the given {@link CompletableFuture}.</p>
+     * <p>When the CompletableFuture completes normally, this callback is succeeded;
+     * when the CompletableFuture completes exceptionally, this callback is failed.</p>
+     *
+     * @param completable the CompletableFuture that completes this callback
+     */
+    default void completeWith(CompletableFuture<?> completable)
+    {
+        completable.whenComplete((o, x) ->
+        {
+            if (x == null)
+                succeeded();
+            else
+                failed(x);
+        });
+    }
 
     /**
      * <p>Callback invoked when the operation completes.</p>
@@ -113,13 +126,26 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a callback from the passed success and failure
+     * Creates a callback from the given success and failure lambdas.
      *
      * @param success Called when the callback succeeds
      * @param failure Called when the callback fails
      * @return a new Callback
      */
     static Callback from(Runnable success, Consumer<Throwable> failure)
+    {
+        return from(InvocationType.BLOCKING, success, failure);
+    }
+
+    /**
+     * Creates a callback with the given InvocationType from the given success and failure lambdas.
+     *
+     * @param invocationType the Callback invocation type
+     * @param success Called when the callback succeeds
+     * @param failure Called when the callback fails
+     * @return a new Callback
+     */
+    static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure)
     {
         return new Callback()
         {
@@ -134,11 +160,17 @@ public interface Callback extends Invocable
             {
                 failure.accept(x);
             }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
         };
     }
 
     /**
-     * Creaste a callback that runs completed when it succeeds or fails
+     * Creates a callback that runs completed when it succeeds or fails
      *
      * @param completed The completion to run on success or failure
      * @return a new callback
@@ -155,7 +187,27 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a nested callback that runs completed after
+     * <p>Creates a Callback with the given {@code invocationType},
+     * that runs the given {@code Runnable} when it succeeds or fails.</p>
+     *
+     * @param invocationType the invocation type of the returned Callback
+     * @param completed the Runnable to run when the callback either succeeds or fails
+     * @return a new Callback with the given invocation type
+     */
+    static Callback from(InvocationType invocationType, Runnable completed)
+    {
+        return new Completing(invocationType)
+        {
+            @Override
+            public void completed()
+            {
+                completed.run();
+            }
+        };
+    }
+
+    /**
+     * Creates a nested callback that runs completed after
      * completing the nested callback.
      *
      * @param callback The nested callback
@@ -174,7 +226,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a nested callback that runs completed before
+     * Creates a nested callback that runs completed before
      * completing the nested callback.
      *
      * @param callback The nested callback
@@ -217,7 +269,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a nested callback which always fails the nested callback on completion.
+     * Creates a nested callback which always fails the nested callback on completion.
      *
      * @param callback The nested callback
      * @param cause The cause to fail the nested callback, if the new callback is failed the reason
@@ -244,7 +296,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Create a callback which combines two other callbacks and will succeed or fail them both.
+     * Creates a callback which combines two other callbacks and will succeed or fail them both.
      * @param callback1 The first callback
      * @param callback2 The second callback
      * @return a new callback.
@@ -269,8 +321,23 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.</p>
+     */
     class Completing implements Callback
     {
+        private final InvocationType invocationType;
+
+        public Completing()
+        {
+            this(InvocationType.BLOCKING);
+        }
+
+        public Completing(InvocationType invocationType)
+        {
+            this.invocationType = invocationType;
+        }
+
         @Override
         public void succeeded()
         {
@@ -281,6 +348,12 @@ public interface Callback extends Invocable
         public void failed(Throwable x)
         {
             completed();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return invocationType;
         }
 
         public void completed()
@@ -344,10 +417,6 @@ public interface Callback extends Invocable
         }
     }
 
-    interface InvocableCallback extends Invocable, Callback
-    {
-    }
-
     static Callback combine(Callback cb1, Callback cb2)
     {
         if (cb1 == null || cb1 == cb2)
@@ -355,7 +424,7 @@ public interface Callback extends Invocable
         if (cb2 == null)
             return cb1;
 
-        return new InvocableCallback()
+        return new Callback()
         {
             @Override
             public void succeeded()
@@ -401,6 +470,32 @@ public interface Callback extends Invocable
      */
     class Completable extends CompletableFuture<Void> implements Callback
     {
+        /**
+         * Creates a completable future given a callback.
+         *
+         * @param callback The nested callback.
+         * @return a new Completable which will succeed this callback when completed.
+         */
+        public static Completable from(Callback callback)
+        {
+            return new Completable(callback.getInvocationType())
+            {
+                @Override
+                public void succeeded()
+                {
+                    callback.succeeded();
+                    super.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                    super.failed(x);
+                }
+            };
+        }
+
         private final InvocationType invocation;
 
         public Completable()

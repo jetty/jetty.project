@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addConnector">
+    <Arg>
+      <New id="unixDomainConnector" class="org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector">
+        <Arg><Ref refid="Server" /></Arg>
+        <Arg type="int"><Property name="jetty.unixdomain.acceptors" default="1"/></Arg>
+        <Arg type="int"><Property name="jetty.unixdomain.selectors" default="-1"/></Arg>
+        <Arg>
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <Item>
+              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                <Arg name="config"><Ref refid="httpConfig" /></Arg>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+        <Set name="unixDomainPath">
+          <Call class="java.nio.file.Path" name="of">
+            <Arg>
+              <Property name="jetty.unixdomain.path">
+                <Default><SystemProperty name="java.io.tmpdir" default="/tmp" />/jetty.sock</Default>
+              </Property>
+            </Arg>
+          </Call>
+        </Set>
+        <Set name="acceptQueueSize" property="jetty.unixdomain.acceptQueueSize" />
+        <Set name="acceptedReceiveBufferSize" property="jetty.unixdomain.acceptedReceiveBufferSize" />
+        <Set name="acceptedSendBufferSize" property="jetty.unixdomain.acceptedSendBufferSize" />
+      </New>
+    </Arg>
+  </Call>
+</Configure>

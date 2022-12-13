@@ -1,0 +1,69 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-quickstart]]
+=== Faster Web Application Deployment
+
+
+The auto discovery features of the Servlet Specification can make deployments slow and uncertain.
+Auto discovery of web application configuration can be useful during the development as it allows new features and frameworks to be enabled simply by dropping in a jar file.
+However for production deployment, the need to scan the contents of many jars can have a significant impact at startup time.
+
+The `quickstart` module allows a webapp to be pre-scanned, making startup predictable and faster.
+During scanning all declarative configuration (ie from web.xml, web-fragment.xml and annotations) are encoded into an effective `web.xml`, called `WEB-INF/quickstart-web.xml`, which can be inspected to understand what will be deployed.
+
+[NOTE]
+====
+Programmatic configuration is _not_ encoded into the generated `quickstart-web.xml` file.
+====
+
+With `quickstart`, webapps that took many seconds to scan and deploy can now be deployed in a few hundred milliseconds.
+
+==== Enabling 
+
+Enable the `quickstart` module for your jetty base:
+
+----
+$ cd $JETTY-BASE
+$ java -jar $JETTY_HOME/start.jar --add-module=quickstart
+----
+
+The `$JETTY-BASE/start.d/quickstart.ini` file contains these configurable parameters:
+
+jetty.quickstart.mode::
+ The values are:
+ 
+ AUTO:::
+ Allows jetty to run either with or without a `quickstart-web.xml` file.
+ If jetty detects the file, then it will be used, otherwise the app is started normally.
+ GENERATE:::
+ In this mode, jetty will generate a `quickstart-web.xml` file and then terminate.
+ Use this mode first before changing to either `AUTO` or `QUICKSTART`.
+ QUICKSTART:::
+ In this mode, if jetty does not detect a `quickstart-web.xml` file then jetty will not start.
+
+jetty.quickstart.origin::
+Use this parameter to set the name of the attribute in the `quickstart-web.xml` file that contains the origin of each element.
+Knowing the descriptor or annotation from which each element derives can be useful for debugging.
+Note that the origin attribute does not conform to the web xml schema, so if you deploy with xml validation, you'll see errors.
+It is probably best to do a few trial runs with the attribute set, then turn it off for final generation.
+
+jetty.quickstart.xml::
+Use this parameter to change the name of the generated file.
+By default this is `quickstart-web.xml` in the webapp's `WEB-INF` directory.
+The file named by this parameter will always be interpreted relative to `WEB-INF`.
+
+If your webapp is a war file, you will need to either first unpack it yourself, or use a context xml file (or code equivalent) that calls `WebAppContext.setExtractWAR(true)`.
+If you allow Jetty to do the unpacking, it will use the usual mechanisms to find the location to which to unpack.
+Note that by default Jetty unpacks to a temporary location which is _not_ reused between executions.
+So either specify the directory to which to unpack, or make a `work` directory in your base to ensure the unpacked war is preserved and reused across restarts.

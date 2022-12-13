@@ -1,0 +1,66 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-http2c]]
+==== Clear-Text HTTP/2
+
+When you enable clear-text HTTP/2 you typically want to enable also clear-text HTTP/1.1, for backwards compatibility reasons and to allow clients to link:https://tools.ietf.org/html/rfc7540#section-3.2[upgrade] from HTTP/1.1 to HTTP/2.
+
+You need to enable:
+
+* the `http` Jetty module, which provides the clear-text connector and adds the HTTP/1.1 protocol to the clear-text connector
+* the `http2c` Jetty module, which adds the HTTP/2 protocol to the clear-text connector
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,http2c
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[source,subs=quotes,options=nowrap]
+----
+include::jetty[setupArgs="--add-modules=http,http2c",highlight="(\{.+:8080})"]
+----
+
+Note how Jetty is listening on port `8080` and the protocols supported are HTTP/1.1 and `h2c` (i.e. clear-text HTTP/2).
+
+With this configuration, browsers and client applications will be able to connect to port `8080` using:
+
+* HTTP/1.1 directly (e.g. `curl --http1.1 ++http://localhost:8080++`):
+----
+GET / HTTP/1.1
+Host: localhost:8080
+----
+* HTTP/1.1 with upgrade to HTTP/2 (e.g. `curl --http2 ++http://localhost:8080++`):
+----
+GET / HTTP/1.1
+Host: localhost:8080
+Connection: Upgrade, HTTP2-Settings
+Upgrade: h2c
+HTTP2-Settings:
+----
+* HTTP/2 directly (e.g. `curl --http2-prior-knowledge ++http://localhost:8080++`):
+----
+50 52 49 20 2a 20 48 54 54 50 2f 32 2e 30 0d 0a
+0d 0a 53 4d 0d 0a 0d 0a 00 00 12 04 00 00 00 00
+00 00 03 00 00 00 64 00 04 40 00 00 00 00 02 00
+00 00 00 00 00 1e 01 05 00 00 00 01 82 84 86 41
+8a a0 e4 1d 13 9d 09 b8 f0 1e 07 7a 88 25 b6 50
+c3 ab b8 f2 e0 53 03 2a 2f 2a
+----
+
+The HTTP/2 protocol parameters can be configured by editing the xref:og-module-http2c[`http2c` module] properties.

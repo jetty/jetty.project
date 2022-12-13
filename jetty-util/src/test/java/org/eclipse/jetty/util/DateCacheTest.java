@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -30,12 +25,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * Util meta Tests.
- */
 public class DateCacheTest
 {
-
     @Test
     @SuppressWarnings("ReferenceEquality")
     public void testDateCache() throws Exception
@@ -46,18 +37,17 @@ public class DateCacheTest
 
         Thread.sleep(2000);
 
-        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        long end = now + 3000;
-        String f = dc.formatNow(now);
-        String last = f;
+        Instant now = Instant.now();
+        Instant end = now.plusSeconds(3);
+        String f = dc.formatNow(now.toEpochMilli());
 
         int hits = 0;
         int misses = 0;
 
-        while (now < end)
+        while (now.isBefore(end))
         {
-            last = f;
-            f = dc.formatNow(now);
+            String last = f;
+            f = dc.formatNow(now.toEpochMilli());
             // System.err.printf("%s %s%n",f,last==f);
             if (last == f)
                 hits++;
@@ -65,7 +55,7 @@ public class DateCacheTest
                 misses++;
 
             TimeUnit.MILLISECONDS.sleep(100);
-            now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            now = Instant.now();
         }
         assertThat(hits, Matchers.greaterThan(misses));
     }

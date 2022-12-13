@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -36,14 +31,10 @@ public class HostPortTest
 
         return Stream.of(
             Arguments.of("", "", null),
-            Arguments.of(":80", "", "80"),
             Arguments.of("host", "host", null),
             Arguments.of("host:80", "host", "80"),
             Arguments.of("10.10.10.1", "10.10.10.1", null),
             Arguments.of("10.10.10.1:80", "10.10.10.1", "80"),
-            Arguments.of("[0::0::0::1]", "[0::0::0::1]", null),
-            Arguments.of("[0::0::0::1]:80", "[0::0::0::1]", "80"),
-            Arguments.of("0:1:2:3:4:5:6", "[0:1:2:3:4:5:6]", null),
             Arguments.of("127.0.0.1:65535", "127.0.0.1", "65535"),
             // Localhost tests
             Arguments.of("localhost:80", "localhost", "80"),
@@ -73,18 +64,21 @@ public class HostPortTest
     {
         return Stream.of(
             null,
-            "host:",
-            "127.0.0.1:",
-            "[0::0::0::0::1]:",
-            "host:xxx",
-            "127.0.0.1:xxx",
-            "[0::0::0::0::1]:xxx",
-            "host:-80",
-            "127.0.0.1:-80",
-            "[0::0::0::0::1]:-80",
-            "127.0.0.1:65536"
-        )
-            .map(Arguments::of);
+            ":80", // no host, port only
+            "host:", // no port
+            "127.0.0.1:", // no port
+            "[0::0::0::0::1]:", // no port
+            "[0::0::0::1]", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
+            "[0::0::0::1]:80", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "Expected hex digits or IPv4 address"
+            "0:1:2:3:4:5:6", // not valid to Java (InetAddress, InetSocketAddress, or URI) : "IPv6 address too short"
+            "host:xxx", // invalid port
+            "127.0.0.1:xxx", // host + invalid port
+            "[0::0::0::0::1]:xxx", // ipv6 + invalid port
+            "host:-80", // host + invalid port
+            "127.0.0.1:-80", // ipv4 + invalid port
+            "[0::0::0::0::1]:-80", // ipv6 + invalid port
+            "127.0.0.1:65536" // ipv4 + port value too high
+        ).map(Arguments::of);
     }
 
     @ParameterizedTest

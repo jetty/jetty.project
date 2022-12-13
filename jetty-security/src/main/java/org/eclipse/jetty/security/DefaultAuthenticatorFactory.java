@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -18,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.util.Collection;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
@@ -26,8 +22,12 @@ import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.security.authentication.ConfigurableSpnegoAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.security.authentication.SslClientCertAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Default Authenticator Factory.
@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.security.Constraint;
  * <li>{@link org.eclipse.jetty.security.authentication.DigestAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.FormAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.ClientCertAuthenticator}</li>
+ * <li>{@link org.eclipse.jetty.security.authentication.SslClientCertAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link org.eclipse.jetty.security.authentication.LoginAuthenticator} are
  * wrapped with a {@link org.eclipse.jetty.security.authentication.DeferredAuthentication}
@@ -50,6 +51,9 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class DefaultAuthenticatorFactory implements Authenticator.Factory
 {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultAuthenticatorFactory.class);
+
     LoginService _loginService;
 
     @Override
@@ -58,7 +62,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         String auth = configuration.getAuthMethod();
         Authenticator authenticator = null;
 
-        if (auth == null || Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
+        if (Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
             authenticator = new BasicAuthenticator();
         else if (Constraint.__DIGEST_AUTH.equalsIgnoreCase(auth))
             authenticator = new DigestAuthenticator();
@@ -69,7 +73,25 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         else if (Constraint.__NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
             authenticator = new ConfigurableSpnegoAuthenticator(Constraint.__NEGOTIATE_AUTH);
         if (Constraint.__CERT_AUTH.equalsIgnoreCase(auth) || Constraint.__CERT_AUTH2.equalsIgnoreCase(auth))
-            authenticator = new ClientCertAuthenticator();
+        {
+            Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
+            if (sslContextFactories.size() != 1)
+            {
+                if (sslContextFactories.size() > 1)
+                {
+                    LOG.info("Multiple SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                }
+                else
+                {
+                    LOG.debug("No SslContextFactory instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                }
+                authenticator = new ClientCertAuthenticator();
+            }
+            else
+            {
+                authenticator = new SslClientCertAuthenticator(sslContextFactories.iterator().next());
+            }
+        }
 
         return authenticator;
     }

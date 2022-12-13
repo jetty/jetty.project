@@ -1,273 +1,267 @@
-Usage: java -jar start.jar [options...] [properties...] [configs...]
+Usage:
 
-  The start.jar builds a classpath and executes a main java class with
-  a classloader built from that classpath.  By default the start.jar
-  mechanism is configured to start the jetty server, but it can be
-  configured to start any java main class.
+$ java -jar $JETTY_HOME/start.jar [command] [options...]
 
-Command Line Options:
----------------------
+Commands can be of two types: report commands or configuration commands.
+Commands execute and then exit the JVM.
+Options can be specified with or without commands.
+When no command is specified, Jetty is started with the given options.
 
-  --help           This help / usage information.
+Report Commands:
+----------------
 
-  --version        Print the version information for Jetty and
-                   dependent jars, then exit.
+  --help
+                   Prints this help / usage information.
 
-  --list-classpath Print the classpath information that will be used to start
-                   Jetty
+  --version
+                   Prints the version information for Jetty and
+                   dependent jars, then exits.
 
-  --list-config    List the resolved configuration that will be used to
+  --list-classpath
+                   Prints the class-path (or module-path) information that
+                   will be used to start Jetty.
+
+  --list-config
+                   Lists the resolved configuration that will be used to
                    start Jetty.
                    Output includes:
-                     o  Java Environment
-                     o  Jetty Environment
-                     o  JVM Arguments
+                     o  Enabled Jetty modules
+                     o  Java environment
+                     o  Jetty environment
+                     o  Config file search order
+                     o  JVM arguments
+                     o  System properties
                      o  Properties
-                     o  Server Classpath
-                     o  Server XML Configuration
+                     o  Java class-path or module-path
+                     o  XML configuration files
 
-  --dry-run        Print the command line that the start.jar generates,
-                   then exit. This may be used to generate command lines
-                   when the start.ini includes -X or -D arguments:
+  --list-modules
+                   Lists the modules defined in ${jetty.base}/modules/*.mod
+                   and then in ${jetty.home}/modules/*.mod.
 
-                     java -jar start.jar --dry-run > jetty.sh
-                     . jetty.sh
+  --list-modules=<tag>(,<tag>)*
+                   Lists the modules by tag. Use '*' for all tags.
+                   Prefix a tag with '-' to exclude the tag.
+                   The special tag "internal" is always excluded unless it is
+                   explicitly included.
 
-  --dry-run=parts  Print specific parts of the command line. The parts
-                   are a comma separated list of
+  --list-all-modules
+                   Lists all modules.
+
+  --show-modules=<module>(,<module>)*
+                   Shows the detail of the listed modules, including
+                   dependencies, tags, libraries and XMLs.
+
+  --stop
+                   Sends a stop signal to the running Jetty instance.
+                   The running Jetty instance must have been started with a
+                   stop.port=<port> property and the --stop command must
+                   be executed with the same property.
+
+  --dry-run
+                   Prints the command line that start.jar generates,
+                   then exits.
+                   This may be used to generate command lines into scripts:
+                     $ java -jar start.jar --dry-run > jetty.sh
+
+  --dry-run=<part>(,<part>)*
+                   Prints specific parts of the command line. The parts are:
                      o  "java" - the JVM to run
-                     o  "opts" - the JVM options (eg -D and -X flags)
-                     o  "path" - the JVM class path or JPMS modules options
+                     o  "opts" - the JVM options (e.g. -D, -X and -XX flags)
+                     o  "path" - the JVM class-path and/or the JPMS module-path
                      o  "main" - the main class to run
                      o  "args" - the arguments passed to the main class
 
-                   It is possible to decompose the start command:
+Configure Commands:
+-------------------
 
-                     OPTS=$(java -jar start.jar --dry-run=opts,path)
-                     MAIN=$(java -jar start.jar --dry-run=main)
-                     ARGS=$(java -jar start.jar --dry-run=args)
-                     java $OPTS -Dextra=opt $MAIN $ARGS extra=arg
+  --add-modules=<moduleName>(,<moduleName>)*
+                   Adds the given modules to the list of modules enabled at
+                   when Jetty starts.
+                   Transitive dependencies are followed and dependent
+                   modules may also explicitly added.
+                   Modules are added by creating an *.ini file in the
+                   ${jetty.base}/start.d/ directory.
+                   The *.ini file contains the --module option that enables
+                   the module, and any other option defined in the module's
+                   [ini-template] section.
+                   If the *.ini file specifies properties, these may be
+                   overridden by specifying the same properties on the
+                   command line.
 
-                   Alternatively to create an args file for java:
+                   If a module is transitively enabled, its *.ini file will
+                   not be generated.
+                   To generate the *.ini file, the module must be explicitly
+                   listed in the --add-modules=... command.
 
-                     java -jar start.jar --dry-run=opts,path,main,args > /tmp/args
-                     java @/tmp/args
+                   This option replaces the deprecated --add-to-start and
+                   --add-to-startd commands.
 
-  --exec           Run the generated command line (see --dry-run) in
-                   a sub process. This can be used when start.ini
-                   contains -X or -D arguments, but creates an extra
-                   JVM instance.
-                   
+  --create-start-d
+                   Creates a ${jetty.base}/start.d directory.
+                   If the ${jetty.base}/start.ini file exists, then it is
+                   moved into the ${jetty.base}/start.d/ directory.
+                   Using a ${jetty.base}/start.d/ directory is the default and
+                   this option is only needed to either force the creation of
+                   the ${jetty.base}/start.d/ directory, or to move a
+                   ${jetty.base}/start.ini file to ${jetty.base}/start.d/.
+
+  --create-start-ini
+                   Creates a ${jetty.base}/start.ini file.
+                   If a ${jetty.base}/start.d/ directory exists, then all
+                   the contained *.ini files are concatenated into the
+                   ${jetty.base}/start.ini file.
+
+  --update-ini
+                   Scans all the ${jetty.base}/start.d/*.ini files and updates
+                   any property with values specified on the command line.
+                   For example:
+                     $ java -jar ${jetty.host}/start.jar --update-ini jetty.http.port=8888
+
+  --create-files
+                   Creates any missing files that are required by enabled
+                   modules, as specified in their [files] section.
+                   This may download a file from the network if a HTTP URI
+                   is specified in the [files] section.
+
+  --write-module-graph=<filename>
+                   Creates a graphviz *.dot file of the module graph as it
+                   is configured for the current ${jetty.base}.
+                   See https://graphviz.org/ for details on how to post-process
+                   this file into the output best suited for your needs.
+
+Options:
+--------
+
+  --module=<moduleName>(,<moduleName>)*
+                   Enables a module for this execution.
+                   To enable a module for all future executions, use the
+                   --add-modules command.
+                   Note: this option is used in the ${jetty.base}/start.ini
+                   file or in ${jetty.base}/start.d/*.ini files created by
+                   the --add-modules command.
+
+  --lib=<classpath>
+                   Adds the specified class-path entries to the the server
+                   class-path (or module-path).
+
+  --download=<http-uri>|<location>
+                   Downloads a file from the given HTTP URI, if it does
+                   not already exist at the given location.
+                   Note: the location is always relative to ${jetty.base}.
+                   You might need to escape the pipe "\|" to use it in
+                   some shell environments.
+
+  --exec
+                   Executes the generated command line in a forked JVM
+                   (see the --dry-run command).
+                   This can be used when ${jetty.base}/start.d/*.ini files
+                   contain -D, -X or -XX arguments, but creates an extra
+                   JVM process.
+
   --exec-properties=<filename>
-                   Assign a fixed name to the file used to transfer 
-                   properties to the sub process. This allows the 
+                   Assigns a fixed name to the file used to transfer
+                   properties to the sub process. This allows the
                    generated properties file to be saved and reused.
                    Without this option, a temporary file is used.
-                   
+
   --commands=<filename>
-                   Use each line of the file as arguments on the command
-                   line.
+                   Uses each line of the specified file as arguments on the
+                   JVM command line.
 
-Debug and Start Logging:
-------------------------
+  --jpms
+                   Starts Jetty in JPMS mode in a forked JVM (see also the
+                   --dry-run command).
+                   The library *.jar files are set on the forked JVM module-path
+                   (rather than the forked JVM class-path), while directories
+                   are set on the forked JVM class-path.
+                   The main class is specified with the JPMS option
+                   --module <moduleName>/<mainClassName>.
 
-  --debug          Enable debug output of the startup procedure.
-                   Note: this does not setup debug for Jetty itself.
-                   If you want debug for Jetty, configure your logging.
-                   https://www.eclipse.org/jetty/documentation/
+  --debug
+                   Enables debug output of the startup execution.
+                   Note: this does not setup debug logging for Jetty itself,
+                   only for the startup execution.
+                   If you want debug logging for Jetty, configure one of the
+                   available logging modules using the --add-modules command.
 
   --start-log-file=<filename>
                    A filename, relative to ${jetty.base}, where all startup
                    output will be sent.  This is useful for capturing startup
-                   issues where the jetty specific logger has not yet kicked
-                   in due to startup configuration errors.
-
-Jetty Module Management:
-------------------------
-
-  --list-modules   List Jetty modules defined in ${jetty.base}/modules/*.mod and
-                   then ${jetty.home}/modules/*.mod
-
-  --list-modules=<tag>(,<tag>)*
-                   List modules by tag. Use '*' for all tags. Prefix a tag 
-                   with '-' to exclude the tag.  The special tag "internal"
-                   is always excluded unless it is explicitly included.
-                   
-  --list-all-modules
-                   List all modules.
-
-  --show-modules=<module>(,<module>)*
-                   Show the detail of the listed modules, including
-                   dependencies, tags, libraries and XMLs
-
-  --module=<modulename>(,<modulename>)*
-                   Enable a module for this run.  To enable a module for all
-                   future runs, use --add-module
-                   Note: this option is used in the ${jetty.base}/start.ini
-                   or ${jetty.base}/start.d/*.ini files created by --add-module.
-                   
-  --add-module=<modulename>(,<modulename>)*
-                   Add the modules to the list of modules enabled at start. 
-                   Transitive dependencies are followed and dependent
-                   modules may also explicitly added.
-                   Modules are added to the start by creating an ini file
-                   that contains the --module argument and any other parameters
-                   defined in the modules ini template.                    
-                   If the ${jetty.base}/start.ini file exists, configuration is
-                   appended, otherwise the directory ${jetty.base}/start.d
-                   is used to create <modulename>.ini files.
-                   If the ini template contains properties, these may be 
-                   amended in the generated file by specifying those 
-                   properties on the command line.
-
-                   If a module is transitively enabled, its ini file will not
-                   be generated. An explicit --add-module is required to generate
-                   an ini file.
-
-                   This option replaces the deprecated --add-to-start and --add-to-startd.
-
-  --update-ini     Scan all start.ini and start.d/*.ini files and update
-                   any properties with values specified on the command
-                   line. e.g. --update-ini jetty.http.port=8888
-
-  --create-start-d
-                   Create a ${jetty.base}/start.d directory.  If a ${jetty.base}/start.ini
-                   files exists, then it is moved into start.d.  Using a start.d directory
-                   is the default and this option is only needed to either force the creation of a
-                   ${jetty.home}/start.d or to move a start.ini file to start.d
-
-  --create-start-ini
-                   Create a ${jetty.base}/start.ini file.  If a ${jetty.base}/start.d
-                   directory exists, then all its contained ini files are concatenated into
-                   the start.ini file.
-
-  --write-module-graph=<filename>
-                   Create a graphviz *.dot file of the module graph as it
-                   exists for the active ${jetty.base}.
-                   See http://graphviz.org/ for details on how to post-process
-                   this file into the output best suited for your needs.
-
-  --create-files   Create any missing files that are required by initialized
-                   modules.  This may download a file from the network if the
-                   module provides a URL.
-
-  --skip-file-validation=<modulename>(,<modulename)*
-                   Disable the [files] section validation of content
-                   in the ${jetty.base} directory for a specific
-                   module.  Useful for modules that have downloadable
-                   content that is being overridden with alternatives
-                   in the ${jetty.base} directory.
-                   CAUTION:
-                     This advanced option is for administrators that
-                     fully understand the configuration of their
-                     ${jetty.base} and are willing to forego some of the
-                     safety checks built into the jetty-start mechanism.
+                   issues when the Jetty logging module has not yet started
+                   due to configuration errors.
 
   --approve-all-licenses
-                   Approve all license questions. Useful for enabling
-                   modules from a script that does not require user interaction.
+                   Approves all license questions from modules that have
+                   particular license requirements.
+                   Useful for enabling modules from a script, so that it
+                   does not require user interaction.
 
-Startup / Shutdown Command Line:
---------------------------------
-
-  --stop           Send a stop signal to the running Jetty instance.
-                   The server must have been started with a STOP.PORT=<port>
-                   property set and the stop command must have the same property.
-
-Advanced Commands:
-------------------
-
-  --lib=<classpath>
-                   Add arbitrary classpath entries to the the server classpath.
+  --skip-file-validation=<moduleName>(,<moduleName>)*
+                   Disables the creation of files as specified by the
+                   [files] section of the specified modules.
+                   Useful if a logging module specifies a *.properties
+                   config file, but you want to use that module with an
+                   *.xml config file instead.
 
   --include-jetty-dir=<path>
-                   Include an extra jetty directory to use as a source
-                   for configuration details.  This directory behaves similarly
-                   to ${jetty.base} but sits at a layer between ${jetty.base}
-                   and ${jetty.home}.  This allows for some complex hierarchies
-                   of configuration details.
+                   Includes the specified directory as a configuration source.
+                   This directory behaves similarly to ${jetty.base} but sits
+                   at a layer between ${jetty.home} and ${jetty.base}.
+                   Useful when you want to apply a common "corporate"
+                   configuration to all specific ${jetty.base} directories
+                   without having to modify ${jetty.home}.
 
-  --download=<http-uri>|<location>
-                   Advanced usage, If the file does not exist at the given
-                   location, download it from the given http URI.
-                   Notes: location is always relative to ${jetty.base}.
-                          you might need to escape the slash "\|" to use
-                          this on some environments.
-  maven.repo.uri=[url]
-                  The url to use to download Maven dependencies.
-                  Default is https://repo1.maven.org/maven2/.
+  jetty.home=<directory>
+                   Sets the ${jetty.home} directory.
+                   By default it is resolved from the start.jar file path.
 
+  jetty.base=<directory>
+                   Sets the ${jetty.base} directory.
+                   By default it is resolved from the current directory path.
 
-Properties:
------------
-  Properties are used to parameterize:
-    + XML files using the <Property name="pname"/> element 
-    + Module files using the ${pname} syntax
+  stop.host=<string>
+                   Used with the --stop command.
+                   Specifies the host where the Jetty server to stop is
+                   running (defaults to 127.0.0.1).
 
-  Properties and System Properties may be set on the command line, 
-  in a ini file or in a [ini] section of a module using the following syntax:
+  stop.port=<number>
+                   Used with the --stop command.
+                   Specifies the port to use to contact the Jetty server
+                   to stop.
 
-    name=value
-      Set a property that can be expanded in XML files with the <Property> element.
+  stop.key=<alphanumeric>
+                   Used with the --stop command.
+                   The passphrase required to stop the Jetty server.
 
-    name+=value
-      Append value to an existing property value.
-      
-    name+=,value
-      Append value to an existing property value, using a comma separator if needed.
+  stop.wait=<number>
+                   Used with the --stop command.
+                   The time, in seconds, to wait for confirmation that the
+                   running Jetty server has stopped.
+                   If not specified, the stopper will not wait.
 
-    name?=value
-      Set a property only if it is not already set.
+  maven.repo.uri=<url>
+                  The base URL to use to download Maven dependencies.
+                  Defaults to: https://repo1.maven.org/maven2/.
 
-  If any of the previous formats is preceded by -D, then a system property is set 
-  as well as a start property.
-   
-  Each module may define its own properties. Start properties defined include:
+  <name>=<value>
+                  Specifies a property value that overrides the same
+                  property defined in a ${jetty.base}/start.d/*.ini file,
+                  or in the [ini] section of a *.mod file.
 
-    jetty.home=[directory]
-      Set the home directory of the jetty distribution.
+                  <name>=<value>
+                    Sets the property value unconditionally.
+                  <name>+=<value>
+                    Appends the given value to the existing value.
+                  <name>?=<value>
+                    Sets the property value only if it is not already set.
 
-    jetty.base=[directory]
-      Set the jetty configuration directory.  This is where the etc, webapps and start
-      files will be looked for. If not found in jetty.base, they are looked for in
-      jetty.home.
+  -D<name>=<value>
+                  Specifies a system property, as well as a start property.
+                  Note: this is a program argument that is interpreted and
+                  added to the existing JVM system properties.
 
-    STOP.HOST=[string]
-      The host to use to stop the running Jetty server (defaults to 127.0.0.1)
-      Required along with STOP.PORT if you want to use the --stop option above.
-      
-    STOP.PORT=[number]
-      The port to use to stop the running Jetty server.
-      Required along with STOP.KEY if you want to use the --stop option above.
-
-    STOP.KEY=[alphanumeric]
-      The passphrase defined to stop the server.
-      Required along with STOP.PORT if you want to use the --stop option above.
-
-    STOP.WAIT=[number]
-      The time (in seconds) to wait for confirmation that the running
-      Jetty server has stopped. If not specified, the stopper will wait
-      indefinitely. Use in conjunction with the --stop option.
-
-    maven.repo.uri=[url] default https://repo1.maven.org/maven2/.
-      The url to use to download Maven dependencies.
-
-
-Defaults:
----------
-
-  Command line arguments can come from any jetty configuration directory
-  (except ${jetty.home}), such as ${jetty.base} and any added jetty directories
-  (see --include-jetty-dir=<path>).  
-  The contents of <path>/start.ini and <path>/start.d/*.ini are all used
-  to build up your command line arguments.
-  In case of a conflict, the resolution of who wins, will look like this.
-    
-    1) <command-line itself>
-    2) ${jetty.base}/start.ini
-    3) ${jetty.base}/start.d/*.ini
-    4) <jetty-dir>/start.ini
-    5) <jetty-dir>/start.d/*.ini
-
-For more information on startup, see the online documentation at
-    https://www.eclipse.org/jetty/documentation/
+  <xml-file>
+                  Specifies a Jetty XML file relative to ${jetty.base}.
+                  This file is in addition to the Jetty XML files resolved
+                  from the [xml] sections of the enabled modules.

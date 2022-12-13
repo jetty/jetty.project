@@ -1,0 +1,23 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-http-forwarded]]
+===== Module `http-forwarded`
+
+The `http-forwarded` module provides support for processing the `Forwarded` HTTP header (defined in link:https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
+
+The module properties are:
+
+----
+include::{JETTY_HOME}/modules/http-forwarded.mod[tags=documentation]
+----

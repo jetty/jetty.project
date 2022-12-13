@@ -1,0 +1,112 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[header-filter]]
+=== Header Filter
+
+[[header-filter-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.servlets.HeaderFilter`
+* Maven Artifact: org.eclipse.jetty:jetty-servlets
+* Javadoc: {JDURL}/org/eclipse/jetty/servlets/HeaderFilter.html
+
+[[header-filter-usage]]
+==== Usage
+
+The header filter sets or adds headers to each response based on an optionally included/excluded list of path specs, mime types, and/or HTTP methods.
+This filter processes its configured headers before calling `doFilter` in the filter chain. Some of the headers configured in this filter may get overwritten by other filters and/or the servlet processing the request.
+
+===== Required JARs
+
+To use the Header Filter, these JAR files must be available in WEB-INF/lib:
+
+* $JETTY_HOME/lib/jetty-http.jar
+* $JETTY_HOME/lib/jetty-servlets.jar
+* $JETTY_HOME/lib/jetty-util.jar
+
+===== Sample Configuration
+
+Place the configuration in a webapp's `web.xml` or `jetty-web.xml`.
+This filter will perform the following actions on each response:
+
+* Set the X-Frame-Options header to DENY.
+* Add a Cache-Control header containing no-cache, no-store, must-revalidate
+* Set the Expires header to approximately one year in the future.
+* Add a Date header with the current system time.
+
+____
+[NOTE]
+Each action must be separated by a comma.
+____
+
+[source, xml, subs="{sub-order}"]
+----
+<filter>
+   <filter-name>HeaderFilter</filter-name>
+   <filter-class>org.eclipse.jetty.servlets.HeaderFilter</filter-class>
+   <init-param>
+     <param-name>headerConfig</param-name>
+     <param-value>
+      set X-Frame-Options: DENY,
+      "add Cache-Control: no-cache, no-store, must-revalidate",
+      setDate Expires: 31540000000,
+      addDate Date: 0
+     </param-value>
+   </init-param>
+ </filter>
+----
+
+[[header-filter-init]]
+===== Configuring Header Filter Parameters
+
+The following `init` parameters control the behavior of the filter:
+
+includedPaths::
+Optional. Comma separated values of included path specs.
+
+excludedPaths::
+Optional. Comma separated values of excluded path specs.
+
+includedMimeTypes::
+Optional. Comma separated values of included mime types. The mime type will be guessed from the extension at the end of the request URL if the content type has not been set on the response.
+
+excludedMimeTypes::
+Optional. Comma separated values of excluded mime types. The mime type will be guessed from the extension at the end of the request URL if the content type has not been set on the response.
+
+includedHttpMethods::
+Optional. Comma separated values of included http methods.
+
+excludedHttpMethods::
+Optional. Comma separated values of excluded http methods.
+
+headerConfig::
+Comma separated values of actions to perform on headers. The syntax for each action is `action headerName: headerValue`.
+
+Supported header actions:
+
+* `set` - causes set `setHeader` to be called on the response
+* `add` - causes set `addHeader` to be called on the response
+* `setDate` - causes `setDateHeader` to be called on the response.
+* `addDate` - causes `addDateHeader` to be called on the response.
+
+If `setDate` or `addDate` is used, `headerValue` should be the number of milliseconds to add to the current system time before writing the header value.
+
+If a property is both included and excluded by the filter configuration, then it will be considered excluded.
+
+Path spec rules:
+
+* If the spec starts with `^`, the spec is assumed to be a regex based path spec and will match with normal Java regex rules.
+* If the spec starts with `/`, the spec is assumed to be a Servlet url-pattern rules path spec for either an exact match or prefix based match.
+* If the spec starts with `*.`, the spec is assumed to be a Servlet url-pattern rules path spec for a suffix based match.
+* All other syntaxes are unsupported.

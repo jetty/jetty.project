@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -131,7 +126,9 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     {
         init(transport);
 
-        int bufferSize = 512;
+        // A small buffer size so the response content is
+        // read in multiple buffers, but big enough for HTTP/3.
+        int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
         scenario.startServer(new EmptyServerHandler()
@@ -145,7 +142,6 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         });
         scenario.startClient(client ->
         {
-            // A small buffer size so the response content is read in multiple buffers.
             client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
             client.setResponseBufferSize(bufferSize);
         });
@@ -292,7 +288,7 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     {
         init(transport);
 
-        int bufferSize = 512;
+        int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
         scenario.startServer(new EmptyServerHandler()

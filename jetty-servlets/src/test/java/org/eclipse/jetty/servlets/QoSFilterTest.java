@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -37,13 +32,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +53,9 @@ public class QoSFilterTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(QoSFilterTest.class);
 
-    private ServletTester _tester;
+    private Server server;
     private LocalConnector[] _connectors;
+    private ServletContextHandler context;
     private final int numConnections = 8;
     private final int numLoops = 6;
     private final int maxQos = 4;
@@ -65,25 +63,26 @@ public class QoSFilterTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        _tester = new ServletTester();
-        _tester.setContextPath("/context");
-        _tester.addServlet(TestServlet.class, "/test");
+        server = new Server();
+        context = new ServletContextHandler(server, "/context");
+        context.addServlet(TestServlet.class, "/test");
         TestServlet.__maxSleepers = 0;
         TestServlet.__sleepers = 0;
 
         _connectors = new LocalConnector[numConnections];
         for (int i = 0; i < _connectors.length; ++i)
         {
-            _connectors[i] = _tester.createLocalConnector();
+            _connectors[i] = new LocalConnector(server);
+            server.addConnector(_connectors[i]);
         }
 
-        _tester.start();
+        server.start();
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        _tester.stop();
+        LifeCycle.stop(server);
     }
 
     @Test
@@ -100,20 +99,16 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers <= maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
+        assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
     }
 
-    @Disabled("Issue #2627")
     @Test
     public void testBlockingQosFilter() throws Exception
     {
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, "" + maxQos);
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        context.getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker> workers = new ArrayList<>();
         for (int i = 0; i < numConnections; ++i)
@@ -126,10 +121,7 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertEquals(TestServlet.__maxSleepers, maxQos);
+        assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     @Test
@@ -138,7 +130,7 @@ public class QoSFilterTest
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, String.valueOf(maxQos));
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        context.getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker2> workers = new ArrayList<>();
         for (int i = 0; i < numConnections; ++i)
@@ -151,10 +143,7 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertEquals(TestServlet.__maxSleepers, maxQos);
+        assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     private void rethrowExceptions(List<Future<Void>> futures) throws Exception
@@ -167,7 +156,7 @@ public class QoSFilterTest
 
     class Worker implements Callable<Void>
     {
-        private int _num;
+        private final int _num;
 
         public Worker(int num)
         {
@@ -195,11 +184,11 @@ public class QoSFilterTest
         }
     }
 
-    class Worker2 implements Callable<Void>
+    private class Worker2 implements Callable<Void>
     {
-        private int _num;
+        private final int _num;
 
-        public Worker2(int num)
+        private Worker2(int num)
         {
             _num = num;
         }
@@ -208,9 +197,14 @@ public class QoSFilterTest
         public Void call() throws Exception
         {
             URL url = null;
+            ServerConnector connector = null;
             try
             {
-                String addr = _tester.createConnector(true);
+                connector = new ServerConnector(server);
+                server.addConnector(connector);
+                connector.start();
+
+                String addr = "http://localhost:" + connector.getLocalPort();
                 for (int i = 0; i < numLoops; i++)
                 {
                     url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
@@ -221,7 +215,14 @@ public class QoSFilterTest
             {
                 LOG.debug("Request " + url + " failed", e);
             }
-
+            finally
+            {
+                if (connector != null)
+                {
+                    connector.stop();
+                    server.removeConnector(connector);
+                }
+            }
             return null;
         }
     }

@@ -1,0 +1,114 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[framework-cdi]]
+=== CDI
+
+Contexts and Dependency Injection for Java EE (http://www.cdi-spec.org/[CDI]) is a standard implemented by frameworks such as http://seamframework.org/Weld[Weld] and https://openwebbeans.apache.org/[Apache OpenWebBeans].
+This is a common way to assemble and configure webapplications by a process often referred to as 'decoration'.
+
+Jetty integration of CDI frameworks allows CDI to be used to inject the Filters, Servlets and Listeners created within a Servlet Context.
+There are two approaches to integration:
+
+ * CDI implementation can integrate with Jetty.
+   This requires the CDI implementation to have Jetty specific code.
+   Since Jetty-9.4.20 a loosely bound mechanism has been available for CDI implementations to extends the Jetty `DecoratedObjectFactory` without hard API dependencies.
+   Prior to that, CDI implementations directly called jetty APIs that need to be explicitly exposed to the webapp.
+
+ * Alternately, Jetty can integrate with CDI implementations by using standard CDI SPIs.
+
+==== Jetty CDI Modules
+
+The Jetty distribution come with several CDI modules.
+These modules do not provide CDI, but instead enable one of more integration mechanisms.
+
+===== Jetty `cdi` Module
+The `cdi` module supports either two modes of CDI integration which can be selected either by the "org.eclipse.jetty.cdi" context init parameter or the "org.eclipse.jetty.cdi" server attribute (which is initialised from the "jetty.cdi.mode" start property).
+Supported modes are:
+
+ * `CdiSpiDecorator` Jetty will call the CDI SPI within the webapp to decorate objects (default).
+
+ * `CdiDecoratingLister` The webapp may register a decorator on the context attribute "org.eclipse.jetty.cdi.decorator".
+-------------------------
+cd $JETTY_BASE
+java -jar $JETTY_HOME/start.jar --add-to-start=cdi
+-------------------------
+
+===== Jetty `cdi-decorate` Module
+This module depends on the `cdi` module and sets the default mode to `CdiDecoratingListener`.
+This is the preferred mode for Weld integration.
+-------------------------
+cd $JETTY_BASE
+java -jar $JETTY_HOME/start.jar --add-to-start=cdi-decorate
+-------------------------
+
+===== Jetty `cdi-spi` Module
+This module depends on the `cdi` module and sets the default mode to `CdiSpiDecorator`.
+This is the preferred mode for Open Web Beans integration.
+-------------------------
+cd $JETTY_BASE
+java -jar $JETTY_HOME/start.jar --add-to-start=cdi-spi
+-------------------------
+
+===== Jetty `cdi2` Module
+This module supports the *deprecated* technique of exposing private Jetty decorate APIs to the CDI implementation in the webapp.
+
+-------------------------
+cd $JETTY_BASE
+java -jar $JETTY_HOME/start.jar --add-to-start=cdi2
+-------------------------
+
+This module is equivalent to directly modifying the class path configuration with a `jetty-web.xml` like:
+
+[source.XML, xml]
+-------------------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.util.Decorator</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.util.DecoratedObjectFactory</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.server.handler.ContextHandler.</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.server.handler.ContextHandler</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.servlet.ServletContextHandler</Arg>
+   </Call>
+</Configure>
+-------------------------------------------------------------
+
+____
+[TIP]
+The `cdi2` module or directly modifying the web application classpath will not work for Jetty 10.0.0 and later.
+It should only be used for versions prior to Jetty 9.4.20 and/or Weld 3.1.2.Final
+____
+
+
+[[cdi-embedded]]
+==== Embedded Jetty with CDI
+When starting embedded Jetty programmatically from the `main` method, to use CDI it may be
+necessary:
+
+ * enable a Jetty CDI integration mode
+
+ * and/or enable a CDI frame integration.
+
+However, depending on the exact configuration of the embedded server, either or both steps may not be required as `ServletContainerInitializer`s may be discovered.
+
+The details for embedding CDI is explained in the link:#weld-embedded[Embedded Jetty with Weld] section, which can also be adapted to other CDI frameworks.

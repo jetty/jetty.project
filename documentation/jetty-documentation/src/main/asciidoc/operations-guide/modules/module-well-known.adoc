@@ -1,0 +1,29 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-well-known]]
+===== Module `well-known`
+
+The `well-known` Jetty module creates a `ResourceHandler` deployed at the `/.well-known` context path which serves files from a directory.
+By default, the directory created at `$JETTY_BASE/.well-known` is used, but it can be configured from `well-known.ini` to anywhere in the filesystem.
+Note that the `.well-known` directory may be seen as a hidden directory by the filesystem.
+
+The concept of well-known URIs has been defined in link:https://datatracker.ietf.org/doc/html/rfc5785[RFC5785].
+This module can be used for things like the automatic renewal of link:https://letsencrypt.org/[Let's Encrypt] certificates.
+See link:https://www.iana.org/assignments/well-known-uris/well-known-uris.xhtml[IANA Well-Known URIs] for more possible examples of how this can be used.
+
+The module properties are:
+
+----
+include::{JETTY_HOME}/modules/well-known.mod[tags=documentation]
+----

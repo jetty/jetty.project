@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,8 +15,10 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.ServletException;
@@ -32,10 +29,9 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Trie;
+import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.thread.SerializedExecutor;
@@ -129,44 +125,9 @@ public class ContextHandlerCollection extends HandlerCollection
             entry.setValue(sorted);
         }
 
-        // Loop until we have a big enough trie to hold all the context paths
-        int capacity = 512;
-        Mapping mapping;
-        loop:
-        while (true)
-        {
-            mapping = new Mapping(handlers, capacity);
-            for (Map.Entry<String, Branch[]> entry : path2Branches.entrySet())
-            {
-                if (!mapping._pathBranches.put(entry.getKey().substring(1), entry))
-                {
-                    capacity += 512;
-                    continue loop;
-                }
-            }
-            break;
-        }
-
+        Mapping mapping = new Mapping(handlers, path2Branches);
         if (LOG.isDebugEnabled())
-        {
-            for (String ctx : mapping._pathBranches.keySet())
-            {
-                LOG.debug("{}->{}", ctx, Arrays.asList(mapping._pathBranches.get(ctx).getValue()));
-            }
-        }
-
-        // add new context branches to concurrent map
-        for (Branch[] branches : path2Branches.values())
-        {
-            for (Branch branch : branches)
-            {
-                for (ContextHandler context : branch.getContextHandlers())
-                {
-                    mapping._contextBranches.put(context, branch.getHandler());
-                }
-            }
-        }
-
+            LOG.debug("{}", mapping._pathBranches);
         return mapping;
     }
 
@@ -209,7 +170,7 @@ public class ContextHandlerCollection extends HandlerCollection
         // handle many contexts
         if (target.startsWith("/"))
         {
-            Trie<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
+            Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
             if (pathBranches == null)
                 return;
 
@@ -377,13 +338,38 @@ public class ContextHandlerCollection extends HandlerCollection
 
     private static class Mapping extends Handlers
     {
-        private final Map<ContextHandler, Handler> _contextBranches = new HashMap<>();
-        private final Trie<Map.Entry<String, Branch[]>> _pathBranches;
+        private final Map<ContextHandler, Handler> _contextBranches;
+        private final Index<Map.Entry<String, Branch[]>> _pathBranches;
 
-        private Mapping(Handler[] handlers, int capacity)
+        private Mapping(Handler[] handlers, Map<String, Branch[]> path2Branches)
         {
             super(handlers);
-            _pathBranches = new ArrayTernaryTrie<>(false, capacity);
+            _pathBranches = new Index.Builder<Map.Entry<String, Branch[]>>()
+                .caseSensitive(true)
+                .withAll(() ->
+                {
+                    Map<String, Map.Entry<String, Branch[]>> result = new LinkedHashMap<>();
+                    for (Map.Entry<String, Branch[]> entry : path2Branches.entrySet())
+                    {
+                        result.put(entry.getKey().substring(1), entry);
+                    }
+                    return result;
+                })
+                .build();
+
+            // add new context branches to map
+            Map<ContextHandler, Handler> contextBranches = new HashMap<>();
+            for (Branch[] branches : path2Branches.values())
+            {
+                for (Branch branch : branches)
+                {
+                    for (ContextHandler context : branch.getContextHandlers())
+                    {
+                        contextBranches.put(context, branch.getHandler());
+                    }
+                }
+            }
+            _contextBranches = Collections.unmodifiableMap(contextBranches);
         }
     }
 }

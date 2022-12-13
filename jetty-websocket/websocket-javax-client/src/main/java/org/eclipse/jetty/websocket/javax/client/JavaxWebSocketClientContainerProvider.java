@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -21,8 +16,8 @@ package org.eclipse.jetty.websocket.javax.client;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 
 /**
@@ -57,29 +52,19 @@ public class JavaxWebSocketClientContainerProvider extends ContainerProvider
     @Override
     protected WebSocketContainer getContainer()
     {
-        // See: https://github.com/javaee/websocket-spec/issues/212
-        // TODO: on multiple executions, do we warn?
-        // TODO: do we care?
-        // TODO: on multiple executions, do we share bufferPool/executors/etc?
-        // TODO: do we want to provide a non-standard way to configure to always return the same clientContainer based on a config somewhere? (system.property?)
+        return getContainer(null);
+    }
 
-        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer();
-
-        // Register as JVM runtime shutdown hook?
-        ShutdownThread.register(clientContainer);
-
-        if (!clientContainer.isStarted())
-        {
-            try
-            {
-                clientContainer.start();
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException("Unable to start Client Container", e);
-            }
-        }
-
+    /**
+     * Get a new instance of a client {@link WebSocketContainer} which uses a supplied {@link HttpClient}.
+     * @param httpClient a pre-configured {@link HttpClient} to be used by the implementation.
+     * @see #getContainer()
+     */
+    public static WebSocketContainer getContainer(HttpClient httpClient)
+    {
+        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer(httpClient);
+        // See: https://github.com/eclipse-ee4j/websocket-api/issues/212
+        LifeCycle.start(clientContainer);
         return clientContainer;
     }
 }

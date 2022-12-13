@@ -1,0 +1,72 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-protocols-http]]
+==== Clear-Text HTTP/1.1
+
+Clear text HTTP/1.1 is enabled with the `http` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+----
+INFO  : mkdir ${jetty.base}/start.d
+INFO  : server          transitively enabled, ini template available with --add-module=server
+INFO  : logging-jetty   transitively enabled
+INFO  : http            initialized in ${jetty.base}/start.d/http.ini
+INFO  : resources       transitively enabled
+INFO  : threadpool      transitively enabled, ini template available with --add-module=threadpool
+INFO  : logging/slf4j   dynamic dependency of logging-jetty
+INFO  : bytebufferpool  transitively enabled, ini template available with --add-module=bytebufferpool
+INFO  : mkdir ${jetty.base}/resources
+INFO  : copy ${jetty.home}/modules/logging/jetty/resources/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
+INFO  : Base directory was modified
+----
+
+After having enabled the `http` module, the `$JETTY_BASE` directory looks like this:
+
+[source,subs=quotes]
+----
+JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    └── #http.ini#
+----
+
+The `http.ini` file is the file that you want to edit to configure network and protocol parameters -- for more details see xref:og-module-http[this section].
+
+Note that the `http` Jetty module depends on the `server` Jetty module.
+
+Some parameters that you may want to configure are in fact common HTTP parameters that are applied not only for clear-text HTTP/1.1, but also for secure HTTP/1.1 or for clear-text HTTP/2 or for encrypted HTTP/2, or for HTTP/3, and these configuration parameters may be present in the `server` module configuration file.
+
+You can force the creation of the `server.ini` file via:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=server
+----
+
+Now the `$JETTY_BASE` directory looks like this:
+
+[source]
+----
+JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── server.ini
+----
+
+Now you can edit the `server.ini` file -- for more details see xref:og-module-server[this section].
+

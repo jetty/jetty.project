@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -97,7 +92,7 @@ public class ServerSupport
      * @param connector the connector
      * @param properties jetty properties
      */
-    public static void configureConnectors(Server server, Connector connector, Map<String,String> properties)
+    public static void configureConnectors(Server server, Connector connector, Map<String, String> properties)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -195,7 +190,7 @@ public class ServerSupport
         if (files == null || files.isEmpty())
             return server;
 
-        Map<String,Object> lastMap = new HashMap<String,Object>();
+        Map<String, Object> lastMap = new HashMap<>();
 
         if (server != null)
             lastMap.put("Server", server);

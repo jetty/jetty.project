@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,32 +15,41 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Retainable;
 
 /**
- * A Retainable ByteBuffer.
- * <p>Acquires a ByteBuffer from a {@link ByteBufferPool} and maintains a reference count that is
- * initially 1, incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
- * is released to the pool when the reference count is decremented to 0.</p>
+ * <p>A pooled ByteBuffer which maintains a reference count that is
+ * incremented with {@link #retain()} and decremented with {@link #release()}. The buffer
+ * is released to the pool when {@link #release()} is called one more time than {@link #retain()}.</p>
+ * <p>A {@code RetainableByteBuffer} can either be:
+ * <ul>
+ *     <li>in pool; in this case {@link #isRetained()} returns {@code false} and calling {@link #release()} throws {@link IllegalStateException}</li>
+ *     <li>out of pool but not retained; in this case {@link #isRetained()} returns {@code false} and calling {@link #release()} returns {@code true}</li>
+ *     <li>out of pool and retained; in this case {@link #isRetained()} returns {@code true} and calling {@link #release()} returns {@code false}</li>
+ * </ul>
+ * <p>Calling {@link #release()} on a out of pool and retained instance does not re-pool it while that re-pools it on a out of pool but not retained instance.</p>
  */
 public class RetainableByteBuffer implements Retainable
 {
-    private final ByteBufferPool pool;
     private final ByteBuffer buffer;
-    private final AtomicInteger references;
+    private final AtomicInteger references = new AtomicInteger();
+    private final Consumer<RetainableByteBuffer> releaser;
+    private final AtomicLong lastUpdate = new AtomicLong(NanoTime.now());
 
-    public RetainableByteBuffer(ByteBufferPool pool, int size)
+    RetainableByteBuffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
     {
-        this(pool, size, false);
+        this.releaser = releaser;
+        this.buffer = buffer;
     }
 
-    public RetainableByteBuffer(ByteBufferPool pool, int size, boolean direct)
+    public int capacity()
     {
-        this.pool = pool;
-        this.buffer = pool.acquire(size, direct);
-        this.references = new AtomicInteger(1);
+        return buffer.capacity();
     }
 
     public ByteBuffer getBuffer()
@@ -53,32 +57,66 @@ public class RetainableByteBuffer implements Retainable
         return buffer;
     }
 
-    public int getReferences()
+    public long getLastUpdate()
     {
-        return references.get();
+        return lastUpdate.getOpaque();
     }
 
+    /**
+     * Checks if {@link #retain()} has been called at least one more time than {@link #release()}.
+     * @return true if this buffer is retained, false otherwise.
+     */
+    public boolean isRetained()
+    {
+        return references.get() > 1;
+    }
+
+    public boolean isDirect()
+    {
+        return buffer.isDirect();
+    }
+
+    /**
+     * Increments the retained counter of this buffer. It must be done internally by
+     * the pool right after creation and after each un-pooling.
+     * The reason why this method exists on top of {@link #retain()} is to be able to
+     * have some safety checks that must know why the ref counter is being incremented.
+     */
+    void acquire()
+    {
+        if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
+            throw new IllegalStateException("re-pooled while still used " + this);
+    }
+
+    /**
+     * Increments the retained counter of this buffer.
+     */
     @Override
     public void retain()
     {
-        while (true)
-        {
-            int r = references.get();
-            if (r == 0)
-                throw new IllegalStateException("released " + this);
-            if (references.compareAndSet(r, r + 1))
-                break;
-        }
+        if (references.getAndUpdate(c -> c == 0 ? 0 : c + 1) == 0)
+            throw new IllegalStateException("released " + this);
     }
 
-    public int release()
+    /**
+     * Decrements the retained counter of this buffer.
+     * @return true if the buffer was re-pooled, false otherwise.
+     */
+    public boolean release()
     {
-        int ref = references.decrementAndGet();
+        int ref = references.updateAndGet(c ->
+        {
+            if (c == 0)
+                throw new IllegalStateException("already released " + this);
+            return c - 1;
+        });
         if (ref == 0)
-            pool.release(buffer);
-        else if (ref < 0)
-            throw new IllegalStateException("already released " + this);
-        return ref;
+        {
+            lastUpdate.setOpaque(NanoTime.now());
+            releaser.accept(this);
+            return true;
+        }
+        return false;
     }
 
     public int remaining()
@@ -104,6 +142,6 @@ public class RetainableByteBuffer implements Retainable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,r=%d}", getClass().getSimpleName(), hashCode(), BufferUtil.toDetailString(buffer), getReferences());
+        return String.format("%s@%x{%s,r=%d}", getClass().getSimpleName(), hashCode(), BufferUtil.toDetailString(buffer), references.get());
     }
 }

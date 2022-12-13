@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -59,9 +54,13 @@ public class PreEncodedHttpField extends HttpField
         });
 
         LOG.debug("HttpField encoders loaded: {}", encoders);
-        int size = encoders.size();
 
-        __encoders = new HttpFieldPreEncoder[size == 0 ? 1 : size];
+        int size = 1;
+        for (HttpFieldPreEncoder e : encoders)
+        {
+            size = Math.max(size, index(e.getHttpVersion()) + 1);
+        }
+        __encoders = new HttpFieldPreEncoder[size];
         for (HttpFieldPreEncoder e : encoders)
         {
             int i = index(e.getHttpVersion());
@@ -87,6 +86,9 @@ public class PreEncodedHttpField extends HttpField
             case HTTP_2:
                 return 1;
 
+            case HTTP_3:
+                return 2;
+
             default:
                 return -1;
         }
@@ -99,7 +101,8 @@ public class PreEncodedHttpField extends HttpField
         super(header, name, value);
         for (int i = 0; i < __encoders.length; i++)
         {
-            _encodedField[i] = __encoders[i].getEncodedField(header, name, value);
+            if (__encoders[i] != null)
+                _encodedField[i] = __encoders[i].getEncodedField(header, name, value);
         }
     }
 
@@ -116,5 +119,10 @@ public class PreEncodedHttpField extends HttpField
     public void putTo(ByteBuffer bufferInFillMode, HttpVersion version)
     {
         bufferInFillMode.put(_encodedField[index(version)]);
+    }
+
+    public int getEncodedLength(HttpVersion version)
+    {
+        return _encodedField[index(version)].length;
     }
 }

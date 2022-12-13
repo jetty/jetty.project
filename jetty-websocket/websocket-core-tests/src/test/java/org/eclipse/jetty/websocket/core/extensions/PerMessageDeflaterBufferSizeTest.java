@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -20,6 +15,7 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,16 +24,19 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketServer;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +64,7 @@ public class PerMessageDeflaterBufferSizeTest
         int inflateBufferSize = -1;
 
         @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
+        public FrameHandler negotiate(WebSocketNegotiation negotiation) throws IOException
         {
             for (ExtensionConfig extensionConfig : negotiation.getOfferedExtensions())
             {
@@ -291,7 +290,8 @@ public class PerMessageDeflaterBufferSizeTest
 
         // We should now only be able to send this message in multiple frames as it exceeds deflate_buffer_size.
         String message = "0123456789";
-        clientHandler.sendText(message);
+        ByteBuffer payload = toBuffer(message, true);
+        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.TEXT, payload), Callback.NOOP, false);
 
         // Verify the frame has been fragmented into multiple parts.
         int numFrames = 0;
@@ -314,5 +314,19 @@ public class PerMessageDeflaterBufferSizeTest
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
         assertNull(serverHandler.getError());
         assertNull(clientHandler.getError());
+    }
+
+    public ByteBuffer toBuffer(String string, boolean direct)
+    {
+        ByteBuffer buffer = BufferUtil.allocate(string.length(), direct);
+        BufferUtil.clearToFill(buffer);
+        BufferUtil.put(BufferUtil.toBuffer(string), buffer);
+        BufferUtil.flipToFlush(buffer, 0);
+
+        // Sanity checks.
+        assertThat(buffer.hasArray(), is(!direct));
+        assertThat(BufferUtil.toString(buffer), is(string));
+
+        return buffer;
     }
 }

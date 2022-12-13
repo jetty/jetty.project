@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -87,7 +82,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         File tempDirectory = context.getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
-        if (!context.isPersistTempDirectory() && !IO.isEmptyDir(tempDirectory))
+        if (!context.isPersistTempDirectory())
         {
             IO.delete(tempDirectory);
         }
@@ -170,8 +165,11 @@ public class WebInfConfiguration extends AbstractConfiguration
         //We need to make a temp dir. Check if the user has set a directory to use instead
         //of java.io.tmpdir as the parent of the dir
         File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
-        if (baseTemp != null && baseTemp.isDirectory() && baseTemp.canWrite())
+        if (baseTemp != null)
         {
+            if (!baseTemp.isDirectory() || !baseTemp.canWrite())
+                throw new IllegalStateException(WebAppContext.BASETEMPDIR + " is not a writable directory");
+
             //Make a temp directory as a child of the given base dir
             makeTempDirectory(baseTemp, context);
             return;
@@ -199,23 +197,20 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Given an Object, return File reference for object.
      * Typically used to convert anonymous Object from getAttribute() calls to a File object.
      *
-     * @param fileattr the file attribute to analyze and return from (supports type File and type String, all others return null
-     * @return the File object, null if null, or null if not a File or String
+     * @param fileattr the file attribute to analyze and return from (supports type File, Path, and String).
+     * @return the File object if it can be converted otherwise null.
      */
     private File asFile(Object fileattr)
     {
         if (fileattr == null)
-        {
             return null;
-        }
         if (fileattr instanceof File)
-        {
             return (File)fileattr;
-        }
         if (fileattr instanceof String)
-        {
             return new File((String)fileattr);
-        }
+        if (fileattr instanceof Path)
+            return ((Path)fileattr).toFile();
+
         return null;
     }
 
@@ -301,7 +296,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (webApp.isAlias())
             {
                 if (LOG.isDebugEnabled())
-                LOG.debug("{} anti-aliased to {}", webApp, webApp.getAlias());
+                    LOG.debug("{} anti-aliased to {}", webApp, webApp.getAlias());
                 webApp = context.newResource(webApp.getAlias());
             }
 
@@ -431,7 +426,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 webInfLibDir.mkdir();
 
                 if (LOG.isDebugEnabled())
-                LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
+                    LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
                 webInfLib.copyTo(webInfLibDir);
             }
 

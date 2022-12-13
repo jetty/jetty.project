@@ -1,7 +1,5 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Enables remote RMI access to JMX.
+Enables clear-text remote RMI access to platform MBeans.
 
 [depend]
 jmx
@@ -10,6 +8,7 @@ jmx
 etc/jetty-jmx-remote.xml
 
 [ini-template]
+# tag::documentation[]
 ## The host/address to bind the RMI server to.
 # jetty.jmxremote.rmiserverhost=localhost
 
@@ -21,3 +20,7 @@ etc/jetty-jmx-remote.xml
 
 ## The port the RMI registry listens to.
 # jetty.jmxremote.rmiregistryport=1099
+
+## The host name exported in the RMI stub.
+-Djava.rmi.server.hostname=localhost
+# end::documentation[]

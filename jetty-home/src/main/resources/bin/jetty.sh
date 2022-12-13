@@ -66,7 +66,8 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 #    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
 #
 # JETTY_BASE
-#   Where your Jetty base directory is.  If not set, the value from
+#   Where your Jetty base directory is.  If not set, then the currently
+#   directory is checked, otherwise the value from
 #   $JETTY_HOME will be used.
 #
 # JETTY_RUN
@@ -135,9 +136,9 @@ started()
   for ((T = 0; T < $(($3 / 4)); T++))
   do
     sleep 4
-    [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
-    [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
-    [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
+    [ -z "$(tail -1 $1 | grep STARTED 2>/dev/null)" ] || return 0
+    [ -z "$(tail -1 $1 | grep STOPPED 2>/dev/null)" ] || return 1
+    [ -z "$(tail -1 $1 | grep FAILED 2>/dev/null)" ] || return 1
     local PID=$(cat "$2" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
@@ -238,7 +239,6 @@ then
   fi
 fi
 
-
 ##################################################
 # No JETTY_HOME yet? We're out of luck!
 ##################################################
@@ -247,20 +247,23 @@ if [ -z "$JETTY_HOME" ]; then
   exit 1
 fi
 
+RUN_DIR=$(pwd)
 cd "$JETTY_HOME"
-JETTY_HOME=$PWD
-
+JETTY_HOME=$(pwd)
 
 ##################################################
 # Set JETTY_BASE
 ##################################################
+export JETTY_BASE
 if [ -z "$JETTY_BASE" ]; then
-  JETTY_BASE=$JETTY_HOME
+  if [ -d "$RUN_DIR/start.d" -o -f "$RUN_DIR/start.ini" ]; then
+    JETTY_BASE=$RUN_DIR
+  else
+    JETTY_BASE=$JETTY_HOME
+  fi
 fi
-
 cd "$JETTY_BASE"
-JETTY_BASE=$PWD
-
+JETTY_BASE=$(pwd)
 
 #####################################################
 # Check that jetty is where we think it is
@@ -411,7 +414,8 @@ TMPDIR="`cygpath -w $TMPDIR`"
 ;;
 esac
 
-JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
+BASE_JETTY_SYS_PROPS=$(echo -ne "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
+JETTY_SYS_PROPS=(${JETTY_SYS_PROPS[*]} $BASE_JETTY_SYS_PROPS)
 
 #####################################################
 # This is how the Jetty server will be started
@@ -430,8 +434,8 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-RUN_ARGS=(${JAVA_OPTIONS[@]} -jar "$JETTY_START" ${JETTY_ARGS[*]})
-RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
+RUN_ARGS=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
+RUN_CMD=("$JAVA" $JETTY_SYS_PROPS ${RUN_ARGS[@]})
 
 #####################################################
 # Comment these out after you're happy with what
@@ -459,10 +463,16 @@ case "$ACTION" in
       unset CH_USER
       if [ -n "$JETTY_USER" ]
       then
-        CH_USER="-c$JETTY_USER"
+        CH_USER="--chuid $JETTY_USER"
       fi
 
-      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_BASE" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_START_LOG"
+      start-stop-daemon --start $CH_USER \
+       --pidfile "$JETTY_PID" \
+       --chdir "$JETTY_BASE" \
+       --background \
+       --make-pidfile \
+       --startas "$JAVA" \
+       -- ${RUN_ARGS[@]} start-log-file="$JETTY_START_LOG"
 
     else
 

@@ -4,5 +4,4 @@
 <!-- ============================================================= -->
 <!-- Display a Warning Message if {jetty.home} == {jetty.base}     -->
 <!-- ============================================================= -->
-<Configure id="homeBaseWarning" class="org.eclipse.jetty.server.HomeBaseWarning">
-</Configure>
+<Configure id="homeBaseWarning" class="org.eclipse.jetty.server.HomeBaseWarning"/>

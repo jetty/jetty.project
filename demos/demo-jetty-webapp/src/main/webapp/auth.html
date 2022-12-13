@@ -3,34 +3,45 @@
     <title>Powered By Jetty - Auth Links</title>
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Cache-Control" content="no-cache,no-store">
+    <link rel="stylesheet" href="demo.css"/>
 </head>
 <body>
-<a href="http://jetty.eclipse.org"><img src="jetty_banner.gif"></A>
-<h1>Jetty Authentication Links</h1>
-<p>
-    This page contains several links to test the authentication constraints:
-<ul>
-    <li><a href="auth/file.txt">auth/file.txt</a> - Forbidden</li>
-    <li><a href="auth/relax.txt">auth/relax.txt</a> - Allowed</li>
-    <li><a href="auth2">auth2/index.html</a> - Authenticated (tests FormAuthenticator.setAlwaysSaveUri())</li>
-    <li><a href="dump/auth/noaccess/info">dump/auth/noaccess/*</a> - Forbidden</li>
-    <li><a href="dump/auth/relax/info">dump/auth/relax/*</a> - Allowed</li>
-    <li><a href="dump/auth/info">dump/auth/*</a> - Authenticated any user with any role</li>
-<li><a href="dump/auth/admin/info">dump/auth/admin/*</a> - Authenticated admin role (<a href="session/?Action=Invalidate">click</a> to invalidate session)</li>
-<li><a href="dump/auth/ssl/info">dump/auth/ssl/*</a> - Confidential</li>
-<li><a href="rego/info">rego/info/*</a> - Authenticated admin role from programmatic security (<a href="session/?Action=Invalidate">click</a> to invalidate session)</li>
-<li><a href="rego2/info">rego2/info/*</a> - Authenticated servlet-administrator role from programmatic security (login as admin/admin, <a href="session/?Action=Invalidate">click</a> to invalidate session)</li>
-<li><a href="login?action=login">login</a> - Programmatically login as the user jetty/jetty</li>
-<li><a href="login?action=x">check login status</a> - Check the request's login status</li>
-    <li><a href="login?action=logout">logout</a> - Programmatically logout the logged in user</li>
-    <li><a href="login?action=wrong">incorrect login</a> - Programmatically login with incorrect credentials</li>
-</ul>
-<p/>
-<p>
-    Usernames/Passwords are jetty/jetty admin/admin & user/password
-</p>
-<p>
-    Return to <a href=".">main menu</a>.
-</p>
+
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/demos/demo-jetty-webapp">Source</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
+
+    <div class="content">
+
+      <h1>Jetty Authentication Links</h1>
+      <p>
+      This page contains several links to test the authentication constraints:
+      <ul>
+          <li><a href="auth/file.txt">auth/file.txt</a> - Forbidden</li>
+          <li><a href="auth/relax.txt">auth/relax.txt</a> - Allowed</li>
+          <li><a href="auth2">auth2/index.html</a> - Authenticated (tests FormAuthenticator.setAlwaysSaveUri())</li>
+          <li><a href="dump/auth/noaccess/info">dump/auth/noaccess/*</a> - Forbidden</li>
+          <li><a href="dump/auth/relax/info">dump/auth/relax/*</a> - Allowed</li>
+          <li><a href="dump/auth/info">dump/auth/*</a> - Authenticated any user with any role</li>
+          <li><a href="dump/auth/admin/info">dump/auth/admin/*</a> - Authenticated admin role (<a href="session/?Action=Invalidate">click</a> to invalidate session)</li>
+          <li><a href="dump/auth/ssl/info">dump/auth/ssl/*</a> - Confidential</li>
+          <li><a href="rego/info">rego/info/*</a> - Authenticated admin role from programmatic security (<a href="session/?Action=Invalidate">click</a> to invalidate session)</li>
+          <li><a href="rego2/info">rego2/info/*</a> - Authenticated servlet-administrator role from programmatic security (login as admin/admin, <a href="session/?Action=Invalidate">click</a> to invalidate session)</li>
+         <li><a href="login?action=login">login</a> - Programmatically login as the user jetty/jetty</li>
+         <li><a href="login?action=x">check login status</a> - Check the request's login status</li>
+         <li><a href="login?action=logout">logout</a> - Programmatically logout the logged in user</li>
+         <li><a href="login?action=wrong">incorrect login</a> - Programmatically login with incorrect credentials</li>
+      </ul>
+     <p/>
+     <i>Usernames/Passwords are jetty/jetty admin/admin & user/password</i>
+   </div>
+
+   <div class="footer">
+      <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+   </div>
 </body>
 </html>

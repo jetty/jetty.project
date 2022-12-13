@@ -1,16 +1,11 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
-//
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
 //
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
@@ -37,6 +32,7 @@ import org.slf4j.LoggerFactory;
  * See http://java.net/jira/browse/GLASSFISH-1649
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=353095
  */
+@Deprecated
 public class ELContextCleaner implements ServletContextListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(ELContextCleaner.class);
@@ -56,6 +52,8 @@ public class ELContextCleaner implements ServletContextListener
 
             //Get a reference via reflection to the properties field which is holding class references
             Field field = getField(beanELResolver);
+
+            field.setAccessible(true);
 
             //Get rid of references
             purgeEntries(field);
