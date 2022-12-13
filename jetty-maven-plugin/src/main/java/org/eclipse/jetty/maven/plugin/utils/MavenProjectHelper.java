@@ -139,14 +139,6 @@ public class MavenProjectHelper
         return path;
     }
 
-    public Path getAssembledPathFor(Artifact artifact)
-    {
-        MavenProject mavenProject = getMavenProjectFor(artifact);
-        if (mavenProject != null)
-            return mavenProject.getFile().toPath();
-        return null;
-    }
-    
     /**
      * Given the coordinates for an artifact, resolve the artifact from the
      * remote repositories.
