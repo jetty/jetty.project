@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
-import org.eclipse.jetty.server.handler.gzip.GzipHandlerTest;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -1304,7 +1303,7 @@ public class HttpConnectionTest
         String chunk2 = IntStream.range(0, 64).mapToObj(i -> chunk1).collect(Collectors.joining());
         long dataLength = chunk1.length() + chunk2.length();
         _server.stop();
-        _server.setHandler(new GzipHandlerTest.DumpHandler.Blocking()
+        _server.setHandler(new Handler.Abstract.Blocking()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback)

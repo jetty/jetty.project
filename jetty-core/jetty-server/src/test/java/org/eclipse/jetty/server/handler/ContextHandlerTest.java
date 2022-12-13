@@ -44,7 +44,6 @@ import org.eclipse.jetty.server.MockHttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.gzip.GzipHandlerTest;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -363,7 +362,7 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new GzipHandlerTest.DumpHandler.Blocking()
+        Handler handler = new Handler.Abstract.Blocking()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
