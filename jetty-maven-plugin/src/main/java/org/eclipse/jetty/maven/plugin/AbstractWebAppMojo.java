@@ -431,7 +431,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
         catch (Exception e)
         {
-            e.printStackTrace();
             throw new MojoExecutionException("Webapp config failure", e);
         }
         
