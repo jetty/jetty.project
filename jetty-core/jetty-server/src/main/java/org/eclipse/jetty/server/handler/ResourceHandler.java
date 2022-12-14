@@ -104,11 +104,11 @@ public class ResourceHandler extends Handler.Wrapper
 
     protected HttpContent.Factory newHttpContentFactory()
     {
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(_resourceBase), _mimeTypes);
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new StaticHttpContentFactory(contentFactory, getStyleSheet());
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
         return contentFactory;
     }
 
@@ -154,6 +154,11 @@ public class ResourceHandler extends Handler.Wrapper
     public Resource getBaseResource()
     {
         return _resourceBase;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _byteBufferPool;
     }
 
     /**

@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.content.StaticHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -665,11 +666,11 @@ public class ResourceHandlerTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                // For testing the cache should be configured to validate the entry on every request.
                 HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
-                contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
-                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, _local.getByteBufferPool());
+                contentFactory = new StaticHttpContentFactory(contentFactory, getStyleSheet());
+                contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
+                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getByteBufferPool());
                 return contentFactory;
             }
         };
