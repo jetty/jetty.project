@@ -15,6 +15,7 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -42,6 +43,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
     private final Set<MappedResource<E>> _mappings = new TreeSet<>(Comparator.comparing(MappedResource::getPathSpec));
 
+    private boolean _nonServletPathSpecs;
     private boolean _optimizedExact = true;
     private final Index.Mutable<MappedResource<E>> _exactMap = new Index.Builder<MappedResource<E>>()
         .caseSensitive(true)
@@ -57,6 +59,8 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         .caseSensitive(true)
         .mutable()
         .build();
+
+    private MappedResource<E> _servletRoot;
 
     @Override
     public String dump()
@@ -86,6 +90,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         _mappings.clear();
         _prefixMap.clear();
         _suffixMap.clear();
+        _optimizedExact = true;
+        _optimizedPrefix = true;
+        _optimizedSuffix = true;
+        _nonServletPathSpecs = false;
+        _servletRoot = null;
     }
 
     public void removeIf(Predicate<MappedResource<E>> predicate)
@@ -123,29 +132,94 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     {
         boolean isRootPath = "/".equals(path);
 
-        List<MappedResource<E>> ret = new ArrayList<>();
+        if (_mappings.isEmpty())
+            return Collections.emptyList();
+
+        List<MappedResource<E>> matches = null;
         for (MappedResource<E> mr : _mappings)
         {
             switch (mr.getPathSpec().getGroup())
             {
                 case ROOT:
                     if (isRootPath)
-                        ret.add(mr);
+                    {
+                        if (matches == null)
+                            matches = new ArrayList<>();
+                        matches.add(mr);
+                    }
                     break;
                 case DEFAULT:
                     if (isRootPath || mr.getPathSpec().matched(path) != null)
-                        ret.add(mr);
+                    {
+                        if (matches == null)
+                            matches = new ArrayList<>();
+                        matches.add(mr);
+                    }
                     break;
                 default:
                     if (mr.getPathSpec().matched(path) != null)
-                        ret.add(mr);
+                    {
+                        if (matches == null)
+                            matches = new ArrayList<>();
+                        matches.add(mr);
+                    }
                     break;
             }
         }
-        return ret;
+        return matches == null ? Collections.emptyList() : matches;
     }
 
     public MatchedResource<E> getMatched(String path)
+    {
+        if (_mappings.isEmpty())
+            return null;
+
+        if (_nonServletPathSpecs)
+            return getMatchedMixed(path);
+
+        if (_servletRoot != null && "/".equals(path))
+            return new MatchedResource<>(_servletRoot.getResource(), _servletRoot.getPathSpec(), _servletRoot.getPathSpec().matched(path));
+
+        MappedResource<E> candidate = _exactMap.getBest(path);
+        if (candidate != null)
+        {
+            MatchedPath matchedPath = candidate.getPathSpec().matched(path);
+            if (matchedPath != null)
+                return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+        }
+
+        candidate = _prefixMap.getBest(path);
+        if (candidate != null)
+        {
+            MatchedPath matchedPath = candidate.getPathSpec().matched(path);
+            if (matchedPath != null)
+                return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+        }
+
+        if (!_suffixMap.isEmpty())
+        {
+            int i = 0;
+            // Loop through each suffix mark
+            // Input is "/a.b.c.foo"
+            //  Loop 1: "b.c.foo"
+            //  Loop 2: "c.foo"
+            //  Loop 3: "foo"
+            while ((i = path.indexOf('.', i + 1)) > 0)
+            {
+                candidate = _suffixMap.get(path, i + 1, path.length() - i - 1);
+                if (candidate == null)
+                    continue;
+
+                MatchedPath matchedPath = candidate.getPathSpec().matched(path);
+                if (matchedPath != null)
+                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+            }
+        }
+
+        return null;
+    }
+
+    private MatchedResource<E> getMatchedMixed(String path)
     {
         MatchedPath matchedPath;
         PathSpecGroup lastGroup = null;
@@ -173,18 +247,12 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     {
                         if (_optimizedExact)
                         {
-                            int i = path.length();
-                            while (i >= 0)
+                            MappedResource<E> candidate = _exactMap.getBest(path);
+                            if (candidate != null)
                             {
-                                MappedResource<E> candidate = _exactMap.getBest(path, 0, i--);
-                                if (candidate == null)
-                                    continue;
-
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
-                                {
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-                                }
                             }
                             // If we reached here, there's NO optimized EXACT Match possible, skip simple match below
                             skipRestOfGroup = true;
@@ -196,17 +264,14 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     {
                         if (_optimizedPrefix)
                         {
-                            int i = path.length();
-                            while (i >= 0)
+                            MappedResource<E> candidate = _prefixMap.getBest(path);
+                            if (candidate != null)
                             {
-                                MappedResource<E> candidate = _prefixMap.getBest(path, 0, i--);
-                                if (candidate == null)
-                                    continue;
-
                                 matchedPath = candidate.getPathSpec().matched(path);
                                 if (matchedPath != null)
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
                             }
+
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
                             skipRestOfGroup = true;
                         }
@@ -317,6 +382,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         // Note: Example exact in Regex that can cause problems `^/a\Q/b\E/` (which is only ever matching `/a/b/`)
                         // Note: UriTemplate can handle exact easily enough
                         _optimizedExact = false;
+                        _nonServletPathSpecs = true;
                     }
                     break;
                 case PREFIX_GLOB:
@@ -333,6 +399,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         // Note: Example Prefix in Regex that can cause problems `^/a/b+` or `^/a/bb*` ('b' one or more times)
                         // Note: Example Prefix in UriTemplate that might cause problems `/a/{b}/{c}`
                         _optimizedPrefix = false;
+                        _nonServletPathSpecs = true;
                     }
                     break;
                 case SUFFIX_GLOB:
@@ -349,8 +416,22 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         // Note: Example suffix in Regex that can cause problems `^.*/path/name.ext` or `^/a/.*(ending)`
                         // Note: Example suffix in UriTemplate that can cause problems `/{a}/name.ext`
                         _optimizedSuffix = false;
+                        _nonServletPathSpecs = true;
                     }
                     break;
+
+                case ROOT:
+                    if (pathSpec instanceof ServletPathSpec)
+                    {
+                        if (_servletRoot == null)
+                            _servletRoot = entry;
+                    }
+                    else
+                    {
+                        _nonServletPathSpecs = true;
+                    }
+                    break;
+
                 default:
             }
         }
@@ -387,6 +468,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _exactMap.remove(exact);
                         // Recalculate _optimizeExact
                         _optimizedExact = canBeOptimized(PathSpecGroup.EXACT);
+                        _nonServletPathSpecs = nonServletPathSpec();
                     }
                     break;
                 case PREFIX_GLOB:
@@ -396,6 +478,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _prefixMap.remove(prefix);
                         // Recalculate _optimizePrefix
                         _optimizedPrefix = canBeOptimized(PathSpecGroup.PREFIX_GLOB);
+                        _nonServletPathSpecs = nonServletPathSpec();
                     }
                     break;
                 case SUFFIX_GLOB:
@@ -405,7 +488,16 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _suffixMap.remove(suffix);
                         // Recalculate _optimizeSuffix
                         _optimizedSuffix = canBeOptimized(PathSpecGroup.SUFFIX_GLOB);
+                        _nonServletPathSpecs = nonServletPathSpec();
                     }
+                    break;
+
+                case ROOT:
+                    _servletRoot = _mappings.stream()
+                        .filter(mapping -> mapping.getPathSpec().getGroup() == PathSpecGroup.ROOT)
+                        .filter(mapping -> mapping.getPathSpec() instanceof ServletPathSpec)
+                        .findFirst().orElse(null);
+                    _nonServletPathSpecs = nonServletPathSpec();
                     break;
             }
         }
@@ -417,6 +509,12 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     {
         return _mappings.stream()
             .filter((mapping) -> mapping.getPathSpec().getGroup() == suffixGlob)
+            .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
+    }
+
+    private boolean nonServletPathSpec()
+    {
+        return _mappings.stream()
             .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
     }
 
