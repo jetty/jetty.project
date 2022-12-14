@@ -23,6 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class IncludeExcludeSetTest
 {
     @Test
+    public void testEmptySet()
+    {
+        IncludeExcludeSet<String, String> empty = new IncludeExcludeSet<>();
+
+        assertTrue(empty.test("abc"));
+    }
+
+    @Test
     public void testWithInetAddressSet() throws Exception
     {
         IncludeExcludeSet<String, InetAddress> set = new IncludeExcludeSet<>(InetAddressSet.class);

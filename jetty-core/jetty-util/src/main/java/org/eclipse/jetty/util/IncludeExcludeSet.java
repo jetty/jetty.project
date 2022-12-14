@@ -159,6 +159,8 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     {
         if (!_includes.isEmpty() && !_includePredicate.test(t))
             return false;
+        if (_excludes.isEmpty())
+            return true;
         return !_excludePredicate.test(t);
     }
 
