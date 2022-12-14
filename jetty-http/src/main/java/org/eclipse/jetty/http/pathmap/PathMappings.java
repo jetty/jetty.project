@@ -61,6 +61,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         .build();
 
     private MappedResource<E> _servletRoot;
+    private MappedResource<E> _servletDefault;
 
     @Override
     public String dump()
@@ -95,6 +96,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         _optimizedSuffix = true;
         _nonServletPathSpecs = false;
         _servletRoot = null;
+        _servletDefault = null;
     }
 
     public void removeIf(Predicate<MappedResource<E>> predicate)
@@ -215,6 +217,9 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
             }
         }
+
+        if (_servletDefault != null)
+            return new MatchedResource<>(_servletDefault.getResource(), _servletDefault.getPathSpec(), _servletDefault.getPathSpec().matched(path));
 
         return null;
     }
@@ -419,7 +424,6 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _nonServletPathSpecs = true;
                     }
                     break;
-
                 case ROOT:
                     if (pathSpec instanceof ServletPathSpec)
                     {
@@ -431,7 +435,17 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _nonServletPathSpecs = true;
                     }
                     break;
-
+                case DEFAULT:
+                    if (pathSpec instanceof ServletPathSpec)
+                    {
+                        if (_servletDefault == null)
+                            _servletDefault = entry;
+                    }
+                    else
+                    {
+                        _nonServletPathSpecs = true;
+                    }
+                    break;
                 default:
             }
         }
@@ -491,10 +505,16 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _nonServletPathSpecs = nonServletPathSpec();
                     }
                     break;
-
                 case ROOT:
                     _servletRoot = _mappings.stream()
                         .filter(mapping -> mapping.getPathSpec().getGroup() == PathSpecGroup.ROOT)
+                        .filter(mapping -> mapping.getPathSpec() instanceof ServletPathSpec)
+                        .findFirst().orElse(null);
+                    _nonServletPathSpecs = nonServletPathSpec();
+                    break;
+                case DEFAULT:
+                    _servletDefault = _mappings.stream()
+                        .filter(mapping -> mapping.getPathSpec().getGroup() == PathSpecGroup.DEFAULT)
                         .filter(mapping -> mapping.getPathSpec() instanceof ServletPathSpec)
                         .findFirst().orElse(null);
                     _nonServletPathSpecs = nonServletPathSpec();
