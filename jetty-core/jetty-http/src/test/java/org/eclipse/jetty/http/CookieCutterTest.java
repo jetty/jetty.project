@@ -206,7 +206,7 @@ public class CookieCutterTest
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
 
-        assertThat("Cookies.length", cookies.length, is(0));
+        assertThat("Cookies.length", cookies.length, is(1));
     }
 
     @Test
