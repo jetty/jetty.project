@@ -79,9 +79,9 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponseAndCallback(Request request, Response wrapped, Callback callback, GzipHandler handler)
+    public GzipResponseAndCallback(GzipHandler handler, Request request, Response response, Callback callback)
     {
-        super(request, wrapped);
+        super(request, response);
         _callback = callback;
         _factory = handler;
         _vary = handler.getVary();
@@ -161,8 +161,8 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             LOG.debug("commit(last={}, callback={}, content={})", last, callback, BufferUtil.toDetailString(content));
 
         // Are we excluding because of status?
-        Response response = GzipResponseAndCallback.this;
-        Request request = response.getRequest();
+        Request request = getRequest();
+        Response response = this;
 
         int sc = response.getStatus();
         if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))
@@ -193,7 +193,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         if (ct != null)
         {
             String baseType = HttpField.valueParameters(ct, null);
-            if (!_factory.isMimeTypeGzipable(baseType))
+            if (!_factory.isMimeTypeDeflatable(baseType))
             {
                 LOG.debug("{} exclude by mimeType {}", this, ct);
                 noCompression();
@@ -430,7 +430,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
         /**
          * This method is called by {@link #compressing(Deflater, ByteBuffer)}, once the last chunk is compressed;
-         * or directly from {@link #process()} if an earlier call to {@code finishing} was unable to complete.
+         * or directly from {@link #process()} if an earlier call to this method was unable to complete.
          */
         private Action finishing(Deflater deflater, ByteBuffer outputBuffer)
         {

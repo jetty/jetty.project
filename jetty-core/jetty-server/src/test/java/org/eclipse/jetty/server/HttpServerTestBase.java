@@ -1557,11 +1557,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(line, not(containsString("Transfer-Encoding")));
         }
 
-        do
-        {
+        while (line != null)
             line = in.readLine();
-        }
-        while (line != null);
     }
 
     private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract

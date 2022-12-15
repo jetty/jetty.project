@@ -137,7 +137,7 @@ public class HalfCloseTest
 
     public static class TestHandler extends Handler.Abstract
     {
-        transient int handled;
+        private int handled;
 
         public TestHandler()
         {
@@ -161,7 +161,7 @@ public class HalfCloseTest
 
     public static class AsyncHandler extends Handler.Abstract
     {
-        transient int handled;
+        private int handled;
 
         public AsyncHandler()
         {

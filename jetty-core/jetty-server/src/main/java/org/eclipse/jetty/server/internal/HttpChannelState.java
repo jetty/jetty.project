@@ -560,7 +560,6 @@ public class HttpChannelState implements HttpChannel, Components
                 LOG.debug("invoking handler in {}", HttpChannelState.this);
             Server server = _connectionMetaData.getConnector().getServer();
 
-            Request customized = request;
             Throwable failure = null;
             try
             {
@@ -583,6 +582,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Customize before processing.
                 HttpConfiguration configuration = getHttpConfiguration();
 
+                Request customized = request;
                 HttpFields.Mutable responseHeaders = request._response.getHeaders();
                 for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
                 {
@@ -601,8 +601,6 @@ public class HttpChannelState implements HttpChannel, Components
                 failure = t;
             }
 
-            boolean accepted;
-            boolean complete;
             HttpStream stream;
             boolean completeStream = false;
 
@@ -610,8 +608,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 stream = _stream;
 
-                complete = failure == null;
-                if (complete)
+                if (failure == null)
                 {
                     _processing = null;
                     _processed = true;
@@ -620,28 +617,14 @@ public class HttpChannelState implements HttpChannel, Components
                 }
             }
 
-            if (!complete)
+            if (failure != null)
             {
-                if (failure == null)
-                {
-                    try
-                    {
-                        Response.writeError(request, request._response, request._callback, HttpStatus.NOT_FOUND_404);
-                    }
-                    catch (Throwable x)
-                    {
-                        failure = x;
-                    }
-                }
-
-                if (failure != null)
-                    request._callback.failed(failure);
+                request._callback.failed(failure);
 
                 try (AutoLock ignored = _lock.lock())
                 {
                     _processing = null;
                     _processed = true;
-
                     failure = ExceptionUtil.combine(_failure, failure);
                     completeStream = _callbackCompleted && (failure != null || _writeState == WriteState.LAST_WRITE_COMPLETED);
                 }
