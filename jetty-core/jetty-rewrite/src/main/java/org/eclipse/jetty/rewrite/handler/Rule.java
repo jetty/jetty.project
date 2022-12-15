@@ -62,8 +62,8 @@ public abstract class Rule
     /**
      * <p>A {@link Request.Wrapper} that is also a {@link org.eclipse.jetty.server.Request.Processor},
      * used to chain a sequence of {@link Rule}s together.
-     * The tuple is initialized with only the request, then the processor is
-     * then passed to a chain of rules before the ultimate processor is
+     * The rule processor is initialized with the initial request, then it is
+     * passed to a chain of rules before the child {@code Handler} is
      * passed in {@link #setProcessor(Processor)}. Finally, the response
      * and callback are provided in a call to {@link #process(Request, Response, Callback)},
      * which calls the {@link #process(Response, Callback)}.</p>
