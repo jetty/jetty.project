@@ -86,7 +86,7 @@ public class CookieCutterLenientTest
             Arguments.of("abc=\"#hash\"", Collections.singletonMap("abc", "#hash")),
             // RFC2109 - other valid name types that conform to 'attr'/'token' syntax
             Arguments.of("!f!o!o!=wat", Collections.singletonMap("!f!o!o!", "wat")),
-            Arguments.of("__MyHost=Foo", Collections.singletonMap( "__MyHost", "Foo")),
+            Arguments.of("__MyHost=Foo", Collections.singletonMap("__MyHost", "Foo")),
             Arguments.of("some-thing-else=to-parse", Collections.singletonMap("some-thing-else", "to-parse")),
             // RFC2109 - names with attr/token syntax starting with '$' (and not a cookie reserved word)
             // See https://tools.ietf.org/html/draft-ietf-httpbis-cookie-prefixes-00#section-5.2
