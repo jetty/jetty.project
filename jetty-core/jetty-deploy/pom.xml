@@ -24,7 +24,6 @@
             @{argLine} ${jetty.surefire.argLine}
             --add-modules org.eclipse.jetty.jmx
             --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http
-            --add-reads org.eclipse.jetty.deploy=java.net.http
           </argLine>
         </configuration>
       </plugin>

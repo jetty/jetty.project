@@ -14,15 +14,14 @@
 package org.eclipse.jetty.deploy.test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -129,21 +129,13 @@ public class XmlConfiguredJetty
     public String getResponse(String path) throws IOException
     {
         URI destUri = getServerURI().resolve(path);
+        URL url = destUri.toURL();
 
-        HttpClient httpClient = HttpClient.newBuilder().build();
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-            .uri(destUri)
-            .version(HttpClient.Version.HTTP_1_1)
-            .build();
-
-        try
+        URLConnection conn = url.openConnection();
+        conn.addRequestProperty("Connection", "close");
+        try (InputStream in = conn.getInputStream())
         {
-            HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            return httpResponse.body();
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException(e);
+            return IO.toString(in);
         }
     }
 
