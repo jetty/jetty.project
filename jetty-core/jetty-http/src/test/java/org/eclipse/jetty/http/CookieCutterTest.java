@@ -146,9 +146,11 @@ public class CookieCutterTest
         assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 1, null);
 
         cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
-        assertThat("Cookies.length", cookies.length, is(2));
-        assertCookie("Cookies[0]", cookies[0], "session_id", "1234\", $Version=\"1", 0, null);
-        assertCookie("Cookies[1]", cookies[1], "session_id", "1111", 0, null);
+        assertThat("Cookies.length", cookies.length, is(4));
+        assertCookie("Cookies[0]", cookies[0], "$Version", "1", 0, null);
+        assertCookie("Cookies[0]", cookies[1], "session_id", "1234\", $Version=\"1", 0, null);
+        assertCookie("Cookies[1]", cookies[2], "session_id", "1111", 0, null);
+        assertCookie("Cookies[2]", cookies[3], "$Domain", ".cracker.edu", 0, null);
     }
 
     /**

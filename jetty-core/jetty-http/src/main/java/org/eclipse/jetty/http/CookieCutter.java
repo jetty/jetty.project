@@ -171,6 +171,21 @@ public abstract class CookieCutter
                                                 case "$version" -> cookieVersion = Integer.parseInt(value);
                                             }
                                         }
+                                        else if (CookieCompliance.RFC6265.equals(_complianceMode))
+                                        {
+                                            //$ prefixed names are treated as separate cookies, so add the completed last cookie if we have one
+                                            //and start a new cookie
+                                            if (cookieName != null)
+                                            {
+                                                if (!reject)
+                                                    addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
+                                                cookieDomain = null;
+                                                cookiePath = null;
+                                                cookieComment = null;
+                                            }
+                                            cookieName = name;
+                                            cookieValue = value;
+                                        }
                                     }
                                     else
                                     {
