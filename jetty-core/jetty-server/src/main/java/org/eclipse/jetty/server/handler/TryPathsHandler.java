@@ -177,11 +177,10 @@ public class TryPathsHandler extends Handler.Wrapper
         {
             if (trying)
             {
-                if (response.getStatus() != 404)
+                if (response.getStatus() != HttpStatus.NOT_FOUND_404)
                     return Action.SUCCEEDED;
                 trying = false;
                 response.reset();
-                response.setStatus(200);
             }
 
             while (paths.hasNext())
