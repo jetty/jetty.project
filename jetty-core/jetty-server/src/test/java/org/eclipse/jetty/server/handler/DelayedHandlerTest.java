@@ -70,15 +70,9 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected DelayedProcess newDelayedProcess(Handler next, Request request, Response response, Callback callback)
+            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
             {
                 return null;
-            }
-
-            @Override
-            protected void delay(DelayedProcess request)
-            {
-                throw new UnsupportedOperationException();
             }
         };
 
@@ -113,16 +107,16 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected DelayedProcess newDelayedProcess(Handler next, Request request, Response response, Callback callback)
+            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
             {
-                return new DelayedProcess(next, request, response, callback);
-            }
-
-            @Override
-            protected void delay(DelayedProcess request) throws InterruptedException
-            {
-                handleEx.exchange(request);
-
+                return new DelayedProcess(handler, request, response, callback)
+                {
+                    @Override
+                    protected void delay() throws Exception
+                    {
+                        handleEx.exchange(this::process);
+                    }
+                };
             }
         };
 
@@ -170,7 +164,7 @@ public class DelayedHandlerTest
     @Test
     public void testOnContent() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler.UntilContent();
+        DelayedHandler delayedHandler = new DelayedHandler();
 
         _server.setHandler(delayedHandler);
         CountDownLatch processing = new CountDownLatch(1);
@@ -219,22 +213,17 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected void delay(DelayedProcess delayed) throws Exception
+            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
             {
-                delayed.getRequest().getContext().execute(() ->
+                return new DelayedProcess(handler, request, response, callback)
                 {
-                    try
+                    @Override
+                    protected void delay() throws Exception
                     {
-                        if (!getHandler().process(delayed.getRequest(), delayed.getResponse(), delayed.getCallback()))
-                            Response.writeError(delayed.getRequest(), delayed.getResponse(), delayed.getCallback(), 404);
+                        getRequest().getContext().execute(this::process);
                     }
-                    catch (Throwable t)
-                    {
-                        Response.writeError(delayed.getRequest(), delayed.getResponse(), delayed.getCallback(), t);
-                    }
-                });
+                };
             }
-
         };
 
         _server.setHandler(delayedHandler);
@@ -272,7 +261,7 @@ public class DelayedHandlerTest
     @Test
     public void testDelayedFormFields() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler.UntilFormFields();
+        DelayedHandler delayedHandler = new DelayedHandler();
 
         _server.setHandler(delayedHandler);
         CountDownLatch processing = new CountDownLatch(2);

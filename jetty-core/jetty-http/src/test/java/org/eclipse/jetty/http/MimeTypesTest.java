@@ -127,6 +127,29 @@ public class MimeTypesTest
             MimeTypes.getContentTypeWithoutCharset(contentTypeWithCharset), is(expectedContentType));
     }
 
+    public static Stream<Arguments> mimeTypesGetBaseTypeCases()
+    {
+        return Stream.of(
+            Arguments.of("foo/bar", null),
+            Arguments.of("foo/bar;charset=abc;some=else", null),
+            Arguments.of("text/html", MimeTypes.Type.TEXT_HTML),
+            Arguments.of("text/html;charset=utf-8", MimeTypes.Type.TEXT_HTML),
+            Arguments.of("text/html; charset=iso-8859-1", MimeTypes.Type.TEXT_HTML),
+            Arguments.of("text/html;charset=utf-8;other=param", MimeTypes.Type.TEXT_HTML),
+            Arguments.of("text/html;other=param;charset=iso-8859-1", MimeTypes.Type.TEXT_HTML),
+
+            Arguments.of(null, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("mimeTypesGetBaseTypeCases")
+    public void testMimeTypesGetBaseType(String contentTypeWithCharset, MimeTypes.Type expectedType)
+    {
+        MimeTypes.CACHE.keySet().forEach(System.err::println);
+        assertThat(MimeTypes.getBaseType(contentTypeWithCharset), is(expectedType));
+    }
+
     @Test
     public void testWrapper()
     {

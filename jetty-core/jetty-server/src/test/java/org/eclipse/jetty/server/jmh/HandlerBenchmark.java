@@ -83,7 +83,7 @@ public class HandlerBenchmark
     {
         _server.addConnector(_connector);
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
-        DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
+        DelayedHandler delayedHandler = new DelayedHandler();
         _server.setHandler(delayedHandler);
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         delayedHandler.setHandler(contexts);
