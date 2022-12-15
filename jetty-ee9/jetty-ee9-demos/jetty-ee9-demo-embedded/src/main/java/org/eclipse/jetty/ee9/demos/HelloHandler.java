@@ -51,7 +51,7 @@ public class HelloHandler extends Handler.Abstract
         if (body == null)
             response.write(true, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"), callback);
         else
-            response.write(true, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"),
+            response.write(false, BufferUtil.toBuffer("<h1>" + greeting + "</h1>"),
                 Callback.from(() -> response.write(true, BufferUtil.toBuffer(body), callback), callback::failed));
         return true;
     }

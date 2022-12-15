@@ -23,6 +23,7 @@ public class EmptyServerHandler extends Handler.Abstract
     @Override
     public boolean process(Request request, Response response, Callback callback)
     {
+        callback.succeeded();
         return true;
     }
 }
