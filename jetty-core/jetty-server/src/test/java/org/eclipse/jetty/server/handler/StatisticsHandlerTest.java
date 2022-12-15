@@ -782,7 +782,7 @@ public class StatisticsHandlerTest
      * when the second barrier is reached, the callback is succeeded;
      * when the third barrier is reached, process() is returning
      */
-    private static class TripleBarrierHandlerProcessor extends Handler.Abstract.Blocking
+    private static class TripleBarrierHandlerProcessor extends Handler.Abstract
     {
         private final CyclicBarrier[] _barriers;
 

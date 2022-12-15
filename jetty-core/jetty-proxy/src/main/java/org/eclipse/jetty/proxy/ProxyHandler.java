@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * @see Forward
  * @see Reverse
  */
-public abstract class ProxyHandler extends Handler.Abstract.Blocking
+public abstract class ProxyHandler extends Handler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProxyHandler.class);
     private static final String CLIENT_TO_PROXY_REQUEST_ATTRIBUTE = ProxyHandler.class.getName() + ".clientToProxyRequest";

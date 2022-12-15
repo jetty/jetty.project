@@ -999,7 +999,7 @@ public class ForwardProxyTLSServerTest
         }
     }
 
-    private static class ServerHandler extends Handler.Abstract.Blocking
+    private static class ServerHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

@@ -422,7 +422,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         return bytes;
     }
 
-    private abstract static class AbstractMultiPartHandler extends Handler.Abstract.Blocking
+    private abstract static class AbstractMultiPartHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

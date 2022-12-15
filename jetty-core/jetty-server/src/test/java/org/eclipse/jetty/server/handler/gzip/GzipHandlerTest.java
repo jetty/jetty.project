@@ -1738,7 +1738,7 @@ public class GzipHandlerTest
         return HttpTester.parseResponse(_connector.getResponse(request.generate()));
     }
 
-    public static class MimeTypeContentHandler extends Handler.Abstract.Blocking
+    public static class MimeTypeContentHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -1764,7 +1764,7 @@ public class GzipHandlerTest
         }
     }
 
-    public static class TestHandler extends Handler.Abstract.Blocking
+    public static class TestHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -1801,7 +1801,7 @@ public class GzipHandlerTest
         }
     }
 
-    public static class WriteHandler extends Handler.Abstract.Blocking
+    public static class WriteHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -1865,7 +1865,7 @@ public class GzipHandlerTest
     /**
      * Handler that will write a ByteBuffer in two writes, causing a Transfer-Encoding: chunked.
      */
-    public static class ChunkedWriteHandler extends Handler.Abstract.Blocking
+    public static class ChunkedWriteHandler extends Handler.Abstract
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1913,7 +1913,7 @@ public class GzipHandlerTest
     /**
      * Handler that will write a ByteBuffer in a single write, resulting in a Content-Length response header.
      */
-    public static class SingleWriteHandler extends Handler.Abstract.Blocking
+    public static class SingleWriteHandler extends Handler.Abstract
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1960,7 +1960,7 @@ public class GzipHandlerTest
         }
     }
 
-    public static class EchoHandler extends Handler.Abstract.Blocking
+    public static class EchoHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -1974,7 +1974,7 @@ public class GzipHandlerTest
         }
     }
 
-    public static class DumpHandler extends Handler.Abstract.Blocking
+    public static class DumpHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

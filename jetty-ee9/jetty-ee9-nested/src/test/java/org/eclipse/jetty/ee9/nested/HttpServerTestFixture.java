@@ -87,7 +87,7 @@ public class HttpServerTestFixture
         _serverURI = _server.getURI();
     }
 
-    protected static class OptionsHandler extends Handler.Abstract.Blocking
+    protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
         public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -102,7 +102,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class HelloWorldHandler extends Handler.Abstract.Blocking
+    protected static class HelloWorldHandler extends Handler.Abstract
     {
         @Override
         public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
@@ -113,7 +113,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class SendErrorHandler extends Handler.Abstract.Blocking
+    protected static class SendErrorHandler extends Handler.Abstract
     {
         private final int code;
         private final String message;
@@ -132,7 +132,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadExactHandler extends Handler.Abstract.Blocking
+    protected static class ReadExactHandler extends Handler.Abstract
     {
         private final int expected;
 
@@ -186,7 +186,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadHandler extends Handler.Abstract.Blocking
+    protected static class ReadHandler extends Handler.Abstract
     {
         @Override
         public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
@@ -200,7 +200,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.Abstract.Blocking
+    protected static class DataHandler extends Handler.Abstract
     {
         @Override
         public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception

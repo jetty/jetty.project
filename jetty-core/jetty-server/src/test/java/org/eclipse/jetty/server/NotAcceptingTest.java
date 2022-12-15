@@ -258,7 +258,7 @@ public class NotAcceptingTest
         }
     }
 
-    public static class TestHandler extends Handler.Abstract.Blocking
+    public static class TestHandler extends Handler.Abstract
     {
         final Exchanger<String> exchange = new Exchanger<>();
         transient int handled;

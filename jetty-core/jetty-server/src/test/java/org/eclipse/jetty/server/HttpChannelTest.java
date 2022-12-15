@@ -1067,7 +1067,7 @@ public class HttpChannelTest
     @Test
     public void testDemandRecursion() throws Exception
     {
-        _server.setHandler(new Handler.Abstract.Blocking()
+        _server.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

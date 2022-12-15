@@ -18,7 +18,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyServerHandler extends Handler.Abstract.Blocking
+public class EmptyServerHandler extends Handler.Abstract
 {
     @Override
     public boolean process(Request request, Response response, Callback callback)

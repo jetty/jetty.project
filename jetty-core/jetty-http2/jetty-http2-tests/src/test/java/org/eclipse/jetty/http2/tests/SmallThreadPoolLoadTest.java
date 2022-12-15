@@ -189,7 +189,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         return !reset.get();
     }
 
-    private static class LoadHandler extends Handler.Abstract.Blocking
+    private static class LoadHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

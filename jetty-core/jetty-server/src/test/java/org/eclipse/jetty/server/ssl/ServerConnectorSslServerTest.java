@@ -208,7 +208,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         }
     }
 
-    public static class SecureRequestHandler extends Handler.Abstract.Blocking
+    public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

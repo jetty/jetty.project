@@ -256,7 +256,7 @@ public class PathMappingsHandlerTest
         assertThrows(IllegalStateException.class, () -> pathMappingsHandler.addMapping(new ServletPathSpec("/loop"), contextHandler));
     }
 
-    private static class SimpleHandler extends Handler.Abstract.Blocking
+    private static class SimpleHandler extends Handler.Abstract
     {
         private final String message;
 

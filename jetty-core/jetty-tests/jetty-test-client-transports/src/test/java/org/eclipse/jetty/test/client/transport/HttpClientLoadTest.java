@@ -321,7 +321,7 @@ public class HttpClientLoadTest extends AbstractTest
         }
     }
 
-    private static class LoadHandler extends Handler.Abstract.Blocking
+    private static class LoadHandler extends Handler.Abstract
     {
         @Override
         public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception

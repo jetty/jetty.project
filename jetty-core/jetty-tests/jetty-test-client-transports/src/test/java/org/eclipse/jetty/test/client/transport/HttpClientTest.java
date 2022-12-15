@@ -1068,7 +1068,7 @@ public class HttpClientTest extends AbstractTest
         return Content.Chunk.from(buffer, chunk.isLast());
     }
 
-    private static class TestProcessor extends Handler.Abstract.Blocking
+    private static class TestProcessor extends Handler.Abstract
     {
         private final int totalBytes;
 

@@ -21,7 +21,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-public class HelloHandler extends Handler.Abstract.Blocking
+public class HelloHandler extends Handler.Abstract
 {
     final String greeting;
     final String body;

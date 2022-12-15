@@ -387,14 +387,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             super.destroy();
         }
 
-        public abstract static class Blocking extends Abstract
-        {
-            public Blocking()
-            {
-                super(InvocationType.BLOCKING);
-            }
-        }
-
         public abstract static class NonBlocking extends Abstract
         {
             public NonBlocking()
@@ -409,6 +401,15 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
      */
     abstract class AbstractContainer extends Abstract implements Container
     {
+        protected AbstractContainer()
+        {
+        }
+
+        protected AbstractContainer(InvocationType invocationType)
+        {
+            super(invocationType);
+        }
+
         @Override
         public <T extends Handler> List<T> getDescendants(Class<T> type)
         {

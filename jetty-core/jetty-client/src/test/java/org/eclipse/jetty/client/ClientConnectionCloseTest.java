@@ -140,7 +140,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     public void testClientConnectionCloseServerPartialResponseClientIdleTimeout(Scenario scenario) throws Exception
     {
         long idleTimeout = 1000;
-        start(scenario, new Handler.Abstract.Blocking()
+        start(scenario, new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -202,7 +202,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testClientConnectionCloseServerNoConnectionCloseClientCloses(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Abstract.Blocking()
+        start(scenario, new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

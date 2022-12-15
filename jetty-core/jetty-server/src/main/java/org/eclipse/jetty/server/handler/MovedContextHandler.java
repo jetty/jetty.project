@@ -147,7 +147,7 @@ public class MovedContextHandler extends ContextHandler
         _cacheControl = cacheControl == null ? null : new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cacheControl);
     }
 
-    private class Redirector extends Blocking
+    private class Redirector extends Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

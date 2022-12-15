@@ -574,7 +574,7 @@ public class ForwardProxyWithDynamicTransportTest
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static class EmptyServerHandler extends Handler.Abstract.Blocking
+    private static class EmptyServerHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback)

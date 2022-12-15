@@ -75,7 +75,7 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new Handler.Abstract.Blocking()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

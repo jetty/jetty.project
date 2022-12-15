@@ -19,7 +19,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyServerHandler extends Handler.Abstract.Blocking
+public class EmptyServerHandler extends Handler.Abstract
 {
     protected Blocker.Shared _blocking = new Blocker.Shared();
 

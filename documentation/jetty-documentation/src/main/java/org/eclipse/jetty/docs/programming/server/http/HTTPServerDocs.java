@@ -474,7 +474,7 @@ public class HTTPServerDocs
 
     public void handlerTree()
     {
-        class LoggingHandler extends Handler.Abstract.Blocking
+        class LoggingHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -484,7 +484,7 @@ public class HTTPServerDocs
             }
         }
 
-        class App1Handler extends Handler.Abstract.Blocking
+        class App1Handler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -494,7 +494,7 @@ public class HTTPServerDocs
             }
         }
 
-        class App2Handler extends Handler.Abstract.Blocking
+        class App2Handler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -520,7 +520,7 @@ public class HTTPServerDocs
 
     public void handlerAPI()
     {
-        class MyHandler extends Handler.Abstract.Blocking
+        class MyHandler extends Handler.Abstract
         {
             @Override
             // tag::handlerAPI[]
@@ -535,7 +535,7 @@ public class HTTPServerDocs
     public void handlerHello() throws Exception
     {
         // tag::handlerHello[]
-        class HelloWorldHandler extends Handler.Abstract.Blocking
+        class HelloWorldHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback)
@@ -572,7 +572,7 @@ public class HTTPServerDocs
 
     public void handlerFilter() throws Exception
     {
-        class HelloWorldHandler extends Handler.Abstract.Blocking
+        class HelloWorldHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback)
@@ -625,7 +625,7 @@ public class HTTPServerDocs
     public void contextHandler() throws Exception
     {
         // tag::contextHandler[]
-        class ShopHandler extends Handler.Abstract.Blocking
+        class ShopHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -654,7 +654,7 @@ public class HTTPServerDocs
     public void contextHandlerCollection() throws Exception
     {
         // tag::contextHandlerCollection[]
-        class ShopHandler extends Handler.Abstract.Blocking
+        class ShopHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -664,7 +664,7 @@ public class HTTPServerDocs
             }
         }
 
-        class RESTHandler extends Handler.Abstract.Blocking
+        class RESTHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -843,7 +843,7 @@ public class HTTPServerDocs
 
     public void contextGzipHandler() throws Exception
     {
-        class ShopHandler extends Handler.Abstract.Blocking
+        class ShopHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -853,7 +853,7 @@ public class HTTPServerDocs
             }
         }
 
-        class RESTHandler extends Handler.Abstract.Blocking
+        class RESTHandler extends Handler.Abstract
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

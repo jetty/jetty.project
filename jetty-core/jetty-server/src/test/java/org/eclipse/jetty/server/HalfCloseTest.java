@@ -135,7 +135,7 @@ public class HalfCloseTest
         assertEquals(true, closed.await(1, TimeUnit.SECONDS));
     }
 
-    public static class TestHandler extends Handler.Abstract.Blocking
+    public static class TestHandler extends Handler.Abstract
     {
         transient int handled;
 
@@ -159,7 +159,7 @@ public class HalfCloseTest
         }
     }
 
-    public static class AsyncHandler extends Handler.Abstract.Blocking
+    public static class AsyncHandler extends Handler.Abstract
     {
         transient int handled;
 

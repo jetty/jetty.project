@@ -381,7 +381,7 @@ public class GracefulStopTest
         assertHandled(handlerB, false);
     }
 
-    static class TestHandler extends Handler.Abstract.Blocking
+    static class TestHandler extends Handler.Abstract
     {
         final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
         final AtomicBoolean handling = new AtomicBoolean(false);

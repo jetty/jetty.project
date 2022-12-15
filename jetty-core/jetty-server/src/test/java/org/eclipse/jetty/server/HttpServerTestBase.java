@@ -1113,7 +1113,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
-    protected static class BigBlockHandler extends Handler.Abstract.Blocking
+    protected static class BigBlockHandler extends Handler.Abstract
     {
         byte[] buf = new byte[128 * 1024];
 
@@ -1333,7 +1333,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorHandler extends Handler.Abstract.Blocking
+    public static class CommittedErrorHandler extends Handler.Abstract
     {
         public EndPoint _endp;
 
@@ -1564,7 +1564,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         while (line != null);
     }
 
-    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract.Blocking
+    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback)
@@ -1575,7 +1575,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class NoopHandler extends Handler.Abstract.Blocking
+    public static class NoopHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback)

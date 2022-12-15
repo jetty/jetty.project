@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConnectorTest
 {
-    public static class ReuseInfoHandler extends Handler.Abstract.Blocking
+    public static class ReuseInfoHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

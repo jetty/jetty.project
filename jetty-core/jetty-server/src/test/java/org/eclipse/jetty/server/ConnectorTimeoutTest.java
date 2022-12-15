@@ -722,7 +722,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         });
     }
 
-    protected static class SlowResponseHandler extends Handler.Abstract.Blocking
+    protected static class SlowResponseHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -748,7 +748,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
     }
 
-    protected static class HugeResponseHandler extends Handler.Abstract.Blocking
+    protected static class HugeResponseHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -766,7 +766,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
     }
 
-    protected static class WaitHandler extends Handler.Abstract.Blocking
+    protected static class WaitHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

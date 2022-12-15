@@ -509,7 +509,7 @@ public class StopTest
         assertFalse(context2Started.get());
     }
 
-    static class NoopHandler extends Handler.Abstract.Blocking
+    static class NoopHandler extends Handler.Abstract
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -526,7 +526,7 @@ public class StopTest
         }
     }
 
-    static class ABHandler extends Handler.Abstract.Blocking
+    static class ABHandler extends Handler.Abstract
     {
         final CountDownLatch latchA = new CountDownLatch(1);
         final CountDownLatch latchB = new CountDownLatch(1);

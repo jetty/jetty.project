@@ -196,7 +196,7 @@ public class ThreadLimitHandlerTest
         AtomicInteger count = new AtomicInteger(0);
         AtomicInteger total = new AtomicInteger(0);
         CountDownLatch latch = new CountDownLatch(1);
-        handler.setHandler(new Handler.Abstract.Blocking()
+        handler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

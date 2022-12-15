@@ -48,7 +48,7 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler1 extends Handler.Abstract.Blocking
+    public static class HelloHandler1 extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback)
@@ -95,7 +95,7 @@ public class HandlerDocs
         }
     }
 
-    public static class HelloHandler4 extends Handler.Abstract.Blocking
+    public static class HelloHandler4 extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws IOException

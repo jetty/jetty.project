@@ -549,7 +549,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
     }
 
-    private static class TimeoutHandler extends Handler.Abstract.Blocking
+    private static class TimeoutHandler extends Handler.Abstract
     {
         private final long timeout;
 

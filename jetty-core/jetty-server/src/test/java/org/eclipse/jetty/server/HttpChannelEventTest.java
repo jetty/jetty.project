@@ -342,7 +342,7 @@ public class HttpChannelEventTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    private static class TestHandler extends Handler.Abstract.Blocking
+    private static class TestHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

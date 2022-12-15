@@ -197,7 +197,7 @@ public class BufferedResponseHandlerTest
         assertThat(response, not(containsString("RESET")));
     }
 
-    public static class TestHandler extends Handler.Abstract.Blocking
+    public static class TestHandler extends Handler.Abstract
     {
         int _bufferSize = -1;
         String _mimeType;

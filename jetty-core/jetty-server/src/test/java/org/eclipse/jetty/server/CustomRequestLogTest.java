@@ -744,7 +744,7 @@ public class CustomRequestLogTest
         }
     }
 
-    private static class SimpleHandler extends Handler.Abstract.Blocking
+    private static class SimpleHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

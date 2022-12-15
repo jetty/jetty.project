@@ -362,7 +362,7 @@ public class ContextHandlerTest
         ScopeListener scopeListener = new ScopeListener();
         _contextHandler.addEventListener(scopeListener);
 
-        Handler handler = new Handler.Abstract.Blocking()
+        Handler handler = new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception

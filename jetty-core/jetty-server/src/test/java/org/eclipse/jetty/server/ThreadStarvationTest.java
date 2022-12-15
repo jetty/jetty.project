@@ -239,7 +239,7 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class ReadHandler extends Handler.Abstract.Blocking
+    protected static class ReadHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -337,7 +337,7 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class WriteHandler extends Handler.Abstract.Blocking
+    protected static class WriteHandler extends Handler.Abstract
     {
         byte[] content = new byte[BUFFER_SIZE];
 

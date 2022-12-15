@@ -52,7 +52,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * For requests to '/' a 404 with a list of known contexts is served.
  * For all other requests a normal 404 is served.
  */
-public class DefaultHandler extends Handler.Abstract.Blocking
+public class DefaultHandler extends Handler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 

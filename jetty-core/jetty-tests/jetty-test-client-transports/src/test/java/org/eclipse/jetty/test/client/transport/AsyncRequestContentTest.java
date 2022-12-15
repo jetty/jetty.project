@@ -205,7 +205,7 @@ public class AsyncRequestContentTest extends AbstractTest
         assertEquals(second, requestContent.get(1));
     }
 
-    private static class ConsumeInputHandler extends Handler.Abstract.Blocking
+    private static class ConsumeInputHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

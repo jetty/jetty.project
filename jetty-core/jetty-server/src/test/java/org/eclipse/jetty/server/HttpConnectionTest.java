@@ -1303,7 +1303,7 @@ public class HttpConnectionTest
         String chunk2 = IntStream.range(0, 64).mapToObj(i -> chunk1).collect(Collectors.joining());
         long dataLength = chunk1.length() + chunk2.length();
         _server.stop();
-        _server.setHandler(new Handler.Abstract.Blocking()
+        _server.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback)

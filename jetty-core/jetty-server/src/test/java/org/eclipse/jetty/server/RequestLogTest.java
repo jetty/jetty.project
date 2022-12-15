@@ -54,7 +54,7 @@ public class RequestLogTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestLogTest.class);
 
-    private static class NormalResponse extends Handler.Abstract.Blocking
+    private static class NormalResponse extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

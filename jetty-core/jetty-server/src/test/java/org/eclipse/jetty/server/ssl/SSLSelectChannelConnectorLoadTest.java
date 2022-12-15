@@ -316,7 +316,7 @@ public class SSLSelectChannelConnectorLoadTest
         }
     }
 
-    private static class TestHandler extends Handler.Abstract.Blocking
+    private static class TestHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

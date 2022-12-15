@@ -100,7 +100,7 @@ public class SSLCloseTest
         }
     }
 
-    private static class WriteHandler extends Handler.Abstract.Blocking
+    private static class WriteHandler extends Handler.Abstract
     {
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception

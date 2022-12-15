@@ -22,7 +22,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 
-public class HelloWorld extends Handler.Abstract.Blocking
+public class HelloWorld extends Handler.Abstract
 {
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception

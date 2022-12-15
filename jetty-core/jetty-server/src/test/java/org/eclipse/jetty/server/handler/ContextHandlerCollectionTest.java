@@ -416,7 +416,7 @@ public class ContextHandlerCollectionTest
         }
     }
 
-    private static final class IsHandledHandler extends Handler.Abstract.Blocking
+    private static final class IsHandledHandler extends Handler.Abstract
     {
         private boolean handled;
         private final String name;
