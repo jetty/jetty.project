@@ -185,7 +185,7 @@ public class TryPathsHandlerTest
                         try
                         {
                             Thread.sleep(100);
-                            Response.writeError(request, response, callback, 404);
+                            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
                         }
                         catch (InterruptedException e)
                         {

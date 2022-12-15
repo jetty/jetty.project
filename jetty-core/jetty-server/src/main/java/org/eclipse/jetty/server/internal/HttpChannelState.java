@@ -594,7 +594,7 @@ public class HttpChannelState implements HttpChannel, Components
                     request.setLoggedRequest(customized);
 
                 if (!server.process(customized, request._response, request._callback))
-                    Response.writeError(customized, request._response, request._callback, 404);
+                    Response.writeError(customized, request._response, request._callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {

@@ -81,7 +81,7 @@ public class StatisticsHandler extends Handler.Wrapper
         finally
         {
             _processStats.decrement();
-            _processTimeStats.record(NanoTime.since(statisticsRequest._startNanoTime));
+            _processTimeStats.record(NanoTime.since(statisticsRequest._startProcessingNanoTime));
         }
     }
 
@@ -244,18 +244,28 @@ public class StatisticsHandler extends Handler.Wrapper
         return _processTimeStats.getStdDev();
     }
 
-    protected class StatisticsRequest extends Request.Wrapper implements Connection.Listener
+    private class StatisticsRequest extends Request.Wrapper implements Connection.Listener
     {
-        protected final LongAdder _bytesRead = new LongAdder();
-        protected final LongAdder _bytesWritten = new LongAdder();
-        private final long _startNanoTime;
+        private final LongAdder _bytesRead = new LongAdder();
+        private final LongAdder _bytesWritten = new LongAdder();
+        private final long _startProcessingNanoTime;
 
         private StatisticsRequest(Request request)
         {
             super(request);
-            _startNanoTime = System.nanoTime();
+            _startProcessingNanoTime = NanoTime.now();
             addHttpStreamWrapper(this::asHttpStream);
 
+        }
+
+        public LongAdder getBytesRead()
+        {
+            return _bytesRead;
+        }
+
+        public LongAdder getBytesWritten()
+        {
+            return _bytesWritten;
         }
 
         @Override
@@ -290,9 +300,9 @@ public class StatisticsHandler extends Handler.Wrapper
             return (long)(dataCount / (spentTimeNs() / 1_000_000_000F));
         }
 
-        protected long spentTimeNs()
+        private long spentTimeNs()
         {
-            return NanoTime.since(_startNanoTime);
+            return NanoTime.since(getNanoTimeStamp());
         }
 
         protected class StatisticsHttpStream extends HttpStream.Wrapper
@@ -381,7 +391,7 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 if (_minimumReadRate > 0)
                 {
-                    long rr = dataRatePerSecond(_bytesRead.longValue());
+                    long rr = dataRatePerSecond(getBytesRead().longValue());
                     if (rr < _minimumReadRate)
                     {
                         // TODO should this be a QuietException to reduce log verbosity from bad clients?
@@ -409,7 +419,7 @@ public class StatisticsHandler extends Handler.Wrapper
                     {
                         if (_minimumWriteRate > 0)
                         {
-                            long bytesWritten = _bytesWritten.longValue();
+                            long bytesWritten = getBytesWritten().longValue();
                             if (bytesWritten > 0L)
                             {
                                 long wr = dataRatePerSecond(bytesWritten);

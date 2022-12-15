@@ -226,7 +226,7 @@ public class DelayedHandlerTest
                     try
                     {
                         if (!getHandler().process(delayed.getRequest(), delayed.getResponse(), delayed.getCallback()))
-                            Response.writeError(delayed.getRequest(), delayed.getResponse(), delayed.getCallback(), 404);
+                            Response.writeError(delayed.getRequest(), delayed.getResponse(), delayed.getCallback(), HttpStatus.NOT_FOUND_404);
                     }
                     catch (Throwable t)
                     {

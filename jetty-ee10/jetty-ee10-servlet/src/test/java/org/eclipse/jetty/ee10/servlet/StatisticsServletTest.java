@@ -124,7 +124,7 @@ public class StatisticsServletTest
         assertEquals(response.getStatus(), 200);
         // Trigger 4xx response
         response = getResponse("/nothing");
-        assertEquals(response.getStatus(), 404);
+        assertEquals(response.getStatus(), HttpStatus.NOT_FOUND_404);
 
         // Request stats again
         response = getResponse("/stats");
