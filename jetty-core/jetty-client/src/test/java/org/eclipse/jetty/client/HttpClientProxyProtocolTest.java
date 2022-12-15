@@ -181,7 +181,6 @@ public class HttpClientProxyProtocolTest
                 }
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
-
                 return true;
             }
         });

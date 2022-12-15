@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -893,7 +894,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (stream != null)
                 return stream.getNanoTimeStamp();
 
-            return System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
+            return NanoTime.now() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
         }
 
         @Override

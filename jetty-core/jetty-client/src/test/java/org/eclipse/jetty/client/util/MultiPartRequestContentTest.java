@@ -438,7 +438,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             formData.parse(request);
             try
             {
-                process(formData.join()); // May block waiting for
+                process(formData.join()); // May block waiting for multipart form data.
                 response.write(true, BufferUtil.EMPTY_BUFFER, callback);
             }
             catch (Exception x)

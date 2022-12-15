@@ -75,11 +75,12 @@ public class HostnameVerificationTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
                     Content.Sink.write(response, true, "foobar", blocker);
+                    blocker.block();
                     return true;
                 }
             }

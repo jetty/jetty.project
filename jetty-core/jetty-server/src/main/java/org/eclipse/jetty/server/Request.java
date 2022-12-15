@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -53,7 +54,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * <pre>{@code
  * public boolean process(Request request, Response response, Callback callback)
  * {
- *     // reject requests not appropriate for this handler
+ *     // Reject requests not appropriate for this handler.
  *     if (!request.getHttpURI().getPath().startsWith("/yourPath"))
  *         return false;
  *
@@ -190,17 +191,23 @@ public interface Request extends Attributes, Content.Source
     HttpFields getTrailers();
 
     /**
+     * <p>Get the millisecond timestamp that the request was created, relative to {@link System#currentTimeMillis()}.
+     * This method should be used for wall clock time, rather than {@link #getNanoTimeStamp()},
+     * which is appropriate for measuring latencies.</p>
      * @return The timestamp that the request was received/created in milliseconds, relative to the "wall clock" given
      * by {@link System#currentTimeMillis()}.
      */
     long getTimeStamp();
 
     /**
+     * <p>Get the nanosecond timestamp that the request was created, relative to {@link System#nanoTime()}.
+     * This method should be used when measuring latencies, rather than {@link #getTimeStamp()},
+     * which is appropriate for wall clock time.</p>
      * @return The timestamp that the request was received/created in nanoseconds, relative to {@link System#nanoTime()}.
      */
     default long getNanoTimeStamp()
     {
-        return System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
+        return NanoTime.now() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
     }
 
     // TODO: see above.

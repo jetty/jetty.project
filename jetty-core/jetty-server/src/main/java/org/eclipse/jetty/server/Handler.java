@@ -36,12 +36,9 @@ import org.slf4j.LoggerFactory;
  * then forward the wrapped instances to their children, so that they see a modified request;
  * and/or to intercept the read of the request content; and/or intercept the generation of the
  * response; and/or to intercept the completion of the callback.
- * <p>A {@code Handler} is an {@link Invocable}, so it has an
- * {@link InvocationType}, which is by default {@link InvocationType#BLOCKING} unless a
- * {@code NonBlocking} variant has been extended or a specific
- * {@link InvocationType} passed to a constructor.
- * Handler implementations must respect the {@link InvocationType}
- * they declare within a call to {@link #process(Request, Response, Callback)}.</p>
+ * <p>A {@code Handler} is an {@link Invocable} and implementations must respect
+ * the {@link InvocationType} they declare within calls to
+ * {@link #process(Request, Response, Callback)}.</p>
  * <p>A minimal tree structure could be:</p>
  * <pre>
  * Server
@@ -79,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * class YourHelloHandler extends Handler.Abstract.NonBlocking
  * {
  *     @Override
- *     public void process(Request request, Response response, Callback callback)
+ *     public boolean process(Request request, Response response, Callback callback)
  *     {
  *         if (request.getHttpURI().getPath().startsWith("/yourPath"))
  *         {
@@ -94,12 +91,12 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  * <p>An example of a {@code Handler} that decides whether to pass the request to
- * a child, without accepting:
+ * a child:
  * <pre>{@code
  * class ConditionalHandler extends Handler.Wrapper
  * {
  *     @Override
- *     public void process(Request request, Response response, Callback callback)
+ *     public boolean process(Request request, Response response, Callback callback)
  *     {
  *         if (request.getHttpURI().getPath().startsWith("/yourPath")
  *             return super.process(request, response, callback);
@@ -321,6 +318,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
     /**
      * <p>An abstract implementation of {@link Handler} that is a {@link ContainerLifeCycle}.</p>
+     * <p>The {@link InvocationType} is by default {@link InvocationType#BLOCKING} unless a
+     * {@code NonBlocking} variant has been extended or a specific
+     * {@link InvocationType} passed to a constructor.</p>
      */
     abstract class Abstract extends ContainerLifeCycle implements Handler
     {
@@ -557,6 +557,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
     class Collection extends AbstractContainer
     {
         private volatile List<Handler> _handlers = new ArrayList<>();
+        private volatile InvocationType _invocationType = InvocationType.BLOCKING;
 
         public Collection(Handler... handlers)
         {
@@ -566,12 +567,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
         public Collection(List<Handler> handlers)
         {
             setHandlers(handlers);
-        }
-
-        @Override
-        public String toString()
-        {
-            return super.toString();
         }
 
         @Override
@@ -602,6 +597,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
 
             Server server = getServer();
             InvocationType invocationType = server == null ? null : server.getInvocationType();
+            _invocationType = InvocationType.BLOCKING;  // switch to blocking invocation type whilst updating handlers;
 
             // Check for loops && InvocationType changes.
             for (Handler handler : newHandlers)
@@ -624,6 +620,13 @@ public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Proc
             updateBeans(_handlers, handlers);
 
             _handlers = newHandlers;
+            _invocationType = invocationType;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _invocationType == null ? super.getInvocationType() : _invocationType;
         }
 
         protected List<Handler> newHandlers(List<Handler> handlers)
