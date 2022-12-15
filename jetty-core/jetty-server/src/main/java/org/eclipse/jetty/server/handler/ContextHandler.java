@@ -702,6 +702,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
         finally
         {
+            // We exit scope here, even though process is asynchronous, as we have wrapped
+            // all our callbacks to re-enter the scope.
             exitScope(contextRequest, request.getContext(), lastLoader);
         }
     }

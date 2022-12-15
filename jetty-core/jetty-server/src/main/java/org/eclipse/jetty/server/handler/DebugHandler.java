@@ -44,10 +44,8 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        final Thread thread = Thread.currentThread();
-        final String old_name = thread.getName();
-
-        String name = old_name + ":" + request.getHttpURI();
+        Thread thread = Thread.currentThread();
+        String name = thread.getName() + ":" + request.getHttpURI();
 
         String ex = null;
         try

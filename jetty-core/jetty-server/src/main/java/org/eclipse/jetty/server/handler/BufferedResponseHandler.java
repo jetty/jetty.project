@@ -141,7 +141,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         }
 
         // If not a supported path this URI is always excluded.
-        final String path = Request.getPathInContext(request);
+        String path = Request.getPathInContext(request);
         if (!isPathBufferable(path))
         {
             if (LOG.isDebugEnabled())
@@ -164,7 +164,6 @@ public class BufferedResponseHandler extends Handler.Wrapper
             }
         }
 
-        // Install buffered interceptor and handle.
         BufferedResponse bufferedResponse = new BufferedResponse(request, response, callback);
         return next.process(request, bufferedResponse, bufferedResponse);
     }

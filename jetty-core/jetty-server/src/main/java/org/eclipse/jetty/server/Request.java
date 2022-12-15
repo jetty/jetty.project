@@ -476,12 +476,10 @@ public interface Request extends Attributes, Content.Source
     {
         /**
          * <p>Invoked to process the passed HTTP request and response.</p>
-         * <p>The the request is accepted by returning true, then processing <em>must</em> be concluded by
+         * <p>The request is accepted by returning true, then processing <em>must</em> be concluded by
          * completing the passed callback. The processing may be asynchronous, i.e. this method may return true and
          * complete the given callback later, possibly from a different thread.  If this method returns false,
          * then the callback must not be invoked and any mutation on the response reversed.</p>
-         * <p>Within an implementation of this method it is possible to read the
-         * request content (that was forbidden in {@link Handler#process(Request, Response, Callback)}.</p>
          * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
          * if present, otherwise a default HTTP 500 error is generated and the
          * callback completed while writing the error response.</p>
