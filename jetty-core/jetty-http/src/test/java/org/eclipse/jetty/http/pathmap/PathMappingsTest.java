@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -319,30 +324,40 @@ public class PathMappingsTest
         assertThat(p.get(new RegexPathSpec("/a/b/c")), nullValue());
     }
 
-    @Test
-    public void testServletMultipleSuffixMappings()
+    public static Stream<Arguments> suffixMatches()
+    {
+        return Stream.of(
+            Arguments.of("/a.b.c.foo", "resourceFoo"),
+            Arguments.of("/a.b.c.bar", "resourceBar"),
+            Arguments.of("/a.b.c.foo.bar", "resourceFooBar"),
+            Arguments.of("/a.b/c.d.foo", "resourceFoo"),
+            Arguments.of("/a.b/c.d.bar", "resourceBar"),
+            Arguments.of("/a.b/c.d.foo.bar", "resourceFooBar"),
+            Arguments.of("/a.b.c.pop", null),
+            Arguments.of("/a.foo.c.pop", null),
+            Arguments.of("/a.foop", null),
+            Arguments.of("/a%2Efoo", null)
+            );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suffixMatches")
+    public void testServletMultipleSuffixMappings(String path, String matched)
     {
         PathMappings<String> p = new PathMappings<>();
         p.put(new ServletPathSpec("*.foo"), "resourceFoo");
         p.put(new ServletPathSpec("*.bar"), "resourceBar");
+        p.put(new ServletPathSpec("*.foo.bar"), "resourceFooBar");
         p.put(new ServletPathSpec("*.zed"), "resourceZed");
 
-        MatchedResource<String> matched;
-
-        matched = p.getMatched("/a.b.c.foo");
-        assertThat(matched.getResource(), is("resourceFoo"));
-
-        matched = p.getMatched("/a.b.c.bar");
-        assertThat(matched.getResource(), is("resourceBar"));
-
-        matched = p.getMatched("/a.b.c.pop");
-        assertNull(matched);
-
-        matched = p.getMatched("/a.foo.c.pop");
-        assertNull(matched);
-
-        matched = p.getMatched("/a%2Efoo");
-        assertNull(matched);
+        MatchedResource<String> match = p.getMatched(path);
+        if (matched == null)
+            assertThat(match, nullValue());
+        else
+        {
+            assertThat(match, notNullValue());
+            assertThat(p.getMatched(path).getResource(), equalTo(matched));
+        }
     }
 
     @Test

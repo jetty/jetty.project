@@ -206,7 +206,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
         if (!_suffixMap.isEmpty())
         {
-            int i = 0;
+            int i = Math.max(0, path.lastIndexOf("/"));
             // Loop through each suffix mark
             // Input is "/a.b.c.foo"
             //  Loop 1: "b.c.foo"
