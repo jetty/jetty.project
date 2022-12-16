@@ -122,6 +122,7 @@ public abstract class IteratingCallback implements Callback
 
     private final AutoLock _lock = new AutoLock();
     private State _state;
+    private Throwable _failure;
     private boolean _iterate;
 
     protected IteratingCallback()
@@ -220,6 +221,7 @@ public abstract class IteratingCallback implements Callback
         // may happen concurrently, so state is not assumed.
 
         boolean onCompleteSuccess = false;
+        Throwable onCompleteFailure = null;
 
         // While we are processing
         processing:
@@ -254,7 +256,7 @@ public abstract class IteratingCallback implements Callback
                                     // yes, so skip idle and keep processing
                                     _iterate = false;
                                     _state = State.PROCESSING;
-                                    continue processing;
+                                    continue;
                                 }
 
                                 // No, so we can go idle
@@ -290,11 +292,15 @@ public abstract class IteratingCallback implements Callback
                             throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                         // we lost the race, so we have to keep processing
                         _state = State.PROCESSING;
-                        continue processing;
+                        continue;
                     }
 
-                    case SUCCEEDED:
                     case FAILED:
+                        onCompleteFailure = _failure;
+                        _failure = null;
+                        break processing;
+
+                    case SUCCEEDED:
                     case CLOSED:
                         break processing;
 
@@ -308,6 +314,8 @@ public abstract class IteratingCallback implements Callback
 
         if (onCompleteSuccess)
             onCompleteSuccess();
+        else if (onCompleteFailure != null)
+            onCompleteFailure(onCompleteFailure);
     }
 
     /**
@@ -370,12 +378,15 @@ public abstract class IteratingCallback implements Callback
                 case CALLED:
                     // too late!.
                     break;
-
                 case PENDING:
+                {
+                    failure = true;
+                    break;
+                }
                 case PROCESSING:
                 {
                     _state = State.FAILED;
-                    failure = true;
+                    _failure = x;
                     break;
                 }
                 default:
