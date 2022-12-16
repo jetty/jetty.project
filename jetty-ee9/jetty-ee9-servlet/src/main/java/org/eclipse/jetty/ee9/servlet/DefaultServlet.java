@@ -39,8 +39,8 @@ import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.content.StaticHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NoopByteBufferPool;
 import org.eclipse.jetty.server.Server;
@@ -253,7 +253,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
             if (_useFileMappedBuffer)
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
-            contentFactory = new StaticHttpContentFactory(contentFactory, _styleSheet);
+            contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");
             contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);

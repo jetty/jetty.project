@@ -47,8 +47,8 @@ import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
-import org.eclipse.jetty.http.content.StaticHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
+import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -668,7 +668,7 @@ public class ResourceHandlerTest
             {
                 HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
-                contentFactory = new StaticHttpContentFactory(contentFactory, getStyleSheet());
+                contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
                 contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getByteBufferPool());
                 return contentFactory;

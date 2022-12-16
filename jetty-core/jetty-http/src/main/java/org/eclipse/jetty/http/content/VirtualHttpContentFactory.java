@@ -17,23 +17,32 @@ import java.io.IOException;
 
 import org.eclipse.jetty.util.resource.Resource;
 
-public class StaticHttpContentFactory implements HttpContent.Factory
+/**
+ * An {@link HttpContent.Factory} implementation which takes a Resource and fakes this resource as
+ * an entry in every directory. If any request is made for this resources file name, and it is not
+ * already present in that directory then the resource contained in this factory will be served instead.
+ */
+public class VirtualHttpContentFactory implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
-    private final Resource _styleSheet;
+    private final Resource _resource;
+    private final String _contentType;
+    private final String _matchSuffix;
 
-    public StaticHttpContentFactory(HttpContent.Factory factory, Resource styleSheet)
+    public VirtualHttpContentFactory(HttpContent.Factory factory, Resource resource, String contentType)
     {
         _factory = factory;
-        _styleSheet = styleSheet;
+        _resource = resource;
+        _matchSuffix = "/" + _resource.getFileName();
+        _contentType = contentType;
     }
 
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    public Resource getStyleSheet()
+    public Resource getResource()
     {
-        return _styleSheet;
+        return _resource;
     }
 
     @Override
@@ -42,10 +51,13 @@ public class StaticHttpContentFactory implements HttpContent.Factory
         HttpContent content = _factory.getContent(path);
         if (content != null)
             return content;
-
-        if ((_styleSheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
-            return new ResourceHttpContent(_styleSheet, "text/css");
-
+        if (matchResource(path))
+            return new ResourceHttpContent(_resource, _contentType);
         return null;
+    }
+
+    protected boolean matchResource(String path)
+    {
+        return (_resource != null) && (path != null) && path.endsWith(_matchSuffix);
     }
 }
