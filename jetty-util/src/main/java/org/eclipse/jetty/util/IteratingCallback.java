@@ -410,7 +410,7 @@ public abstract class IteratingCallback implements Callback
                     _state = State.CLOSED;
                     break;
 
-                case PENDING:
+                case PROCESSING:
                     _failure = new IOException(String.format("Close %s in state %s", this, _state));
                     _state = State.CLOSED;
                     break;
