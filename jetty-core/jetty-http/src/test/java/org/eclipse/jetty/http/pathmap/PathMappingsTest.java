@@ -189,6 +189,9 @@ public class PathMappingsTest
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         p.put(new ServletPathSpec("/\u20ACuro/*"), "11");
         // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
+        p.put(new ServletPathSpec("/prefix"), "12");
+        p.put(new ServletPathSpec("/prefix/"), "13");
+        p.put(new ServletPathSpec("/prefix/*"), "14");
 
         p.put(new ServletPathSpec("/*"), "0");
 
@@ -209,6 +212,10 @@ public class PathMappingsTest
         assertEquals("0", p.getMatched("/suffix/path.tar.gz").getResource(), "Match longest suffix");
         assertEquals("0", p.getMatched("/suffix/path.gz").getResource(), "Match longest suffix");
         assertEquals("5", p.getMatched("/animal/path.gz").getResource(), "prefix rather than suffix");
+
+        assertEquals("12", p.getMatched("/prefix").getResource());
+        assertEquals("13", p.getMatched("/prefix/").getResource());
+        assertEquals("14", p.getMatched("/prefix/info").getResource());
 
         assertEquals("0", p.getMatched("/Other/path").getResource(), "default");
 

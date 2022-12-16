@@ -17,8 +17,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -44,12 +46,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
     private final Set<MappedResource<E>> _mappings = new TreeSet<>(Comparator.comparing(MappedResource::getPathSpec));
 
-    private boolean _nonServletPathSpecs;
+    /**
+     * When _orderIsSignificant is true, the order of the MappedResources is significant and a match needs to be iteratively
+     * tried against each mapping (ordered by group then add order) to find the first that matches.
+     */
+    private boolean _orderIsSignificant;
     private boolean _optimizedExact = true;
-    private final Index.Mutable<MappedResource<E>> _exactMap = new Index.Builder<MappedResource<E>>()
-        .caseSensitive(true)
-        .mutable()
-        .build();
+    private final Map<String, MappedResource<E>> _exactMap = new HashMap<>();
     private boolean _optimizedPrefix = true;
     private final Index.Mutable<MappedResource<E>> _prefixMap = new Index.Builder<MappedResource<E>>()
         .caseSensitive(true)
@@ -95,7 +98,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         _optimizedExact = true;
         _optimizedPrefix = true;
         _optimizedSuffix = true;
-        _nonServletPathSpecs = false;
+        _orderIsSignificant = false;
         _servletRoot = null;
         _servletDefault = null;
     }
@@ -138,11 +141,12 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
      */
     public List<MappedResource<E>> getMatches(String path)
     {
-        boolean isRootPath = "/".equals(path);
-
         if (_mappings.isEmpty())
             return Collections.emptyList();
 
+        boolean isRootPath = "/".equals(path);
+
+        // Iterator over all the mapping, adding only those that match.
         List<MappedResource<E>> matches = null;
         for (MappedResource<E> mr : _mappings)
         {
@@ -177,33 +181,44 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         return matches == null ? Collections.emptyList() : matches;
     }
 
+    /**
+     * <p>Find the best single match for a path.</p>
+     * <p>The match may be found by optimized direct lookups when possible, otherwise all mappings
+     * are iterated over and the first match returned</p>
+     * @param path The path to match
+     * @return A {@link MatchedResource} instance or null if no mappings matched.
+     * @see #getMatchedIteratively(String)
+     */
     public MatchedResource<E> getMatched(String path)
     {
         if (_mappings.isEmpty())
             return null;
 
-        if (_nonServletPathSpecs)
-            return getMatchedMixed(path);
+        // If order is significant, then we need to match by iterating over all mappings.
+        if (_orderIsSignificant)
+            return getMatchedIteratively(path);
 
+        // Otherwise, we can try optimized matches against each group
+
+        // Try a root match
         if (_servletRoot != null && "/".equals(path))
-            return new MatchedResource<>(_servletRoot.getResource(), _servletRoot.getPathSpec(), _servletRoot.getPathSpec().matched(path));
+            return _servletRoot.getPreMatched();
 
-        MappedResource<E> candidate = _exactMap.getBest(path);
-        if (candidate != null)
+        // try an exact match
+        MappedResource<E> exact = _exactMap.get(path);
+        if (exact != null)
+            return exact.getPreMatched();
+
+        // Try a prefix match
+        MappedResource<E> prefix = _prefixMap.getBest(path);
+        if (prefix != null)
         {
-            MatchedPath matchedPath = candidate.getPathSpec().matched(path);
+            MatchedPath matchedPath = prefix.getPathSpec().matched(path);
             if (matchedPath != null)
-                return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
         }
 
-        candidate = _prefixMap.getBest(path);
-        if (candidate != null)
-        {
-            MatchedPath matchedPath = candidate.getPathSpec().matched(path);
-            if (matchedPath != null)
-                return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-        }
-
+        // Try a suffix match
         if (!_suffixMap.isEmpty())
         {
             int i = Math.max(0, path.lastIndexOf("/"));
@@ -214,13 +229,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             //  Loop 3: "foo"
             while ((i = path.indexOf('.', i + 1)) > 0)
             {
-                candidate = _suffixMap.get(path, i + 1, path.length() - i - 1);
-                if (candidate == null)
+                prefix = _suffixMap.get(path, i + 1, path.length() - i - 1);
+                if (prefix == null)
                     continue;
 
-                MatchedPath matchedPath = candidate.getPathSpec().matched(path);
+                MatchedPath matchedPath = prefix.getPathSpec().matched(path);
                 if (matchedPath != null)
-                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
+                    return new MatchedResource<>(prefix.getResource(), prefix.getPathSpec(), matchedPath);
             }
         }
 
@@ -230,7 +245,13 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         return null;
     }
 
-    private MatchedResource<E> getMatchedMixed(String path)
+    /**
+     * <p>Iterate over all mappings, returning the first that matches.</p>
+     * @param path The path to match.
+     * @return A {@link MatchedResource} instance or null if no mappings matched.
+     * @see #getMatched(String)
+     */
+    private MatchedResource<E> getMatchedIteratively(String path)
     {
         MatchedPath matchedPath;
         PathSpecGroup lastGroup = null;
@@ -258,13 +279,9 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     {
                         if (_optimizedExact)
                         {
-                            MappedResource<E> candidate = _exactMap.getBest(path);
-                            if (candidate != null)
-                            {
-                                matchedPath = candidate.getPathSpec().matched(path);
-                                if (matchedPath != null)
-                                    return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
-                            }
+                            MappedResource<E> exact = _exactMap.get(path);
+                            if (exact != null)
+                                return exact.getPreMatched();
                             // If we reached here, there's NO optimized EXACT Match possible, skip simple match below
                             skipRestOfGroup = true;
                         }
@@ -373,7 +390,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         // Note: Example exact in Regex that can cause problems `^/a\Q/b\E/` (which is only ever matching `/a/b/`)
                         // Note: UriTemplate can handle exact easily enough
                         _optimizedExact = false;
-                        _nonServletPathSpecs = true;
+                        _orderIsSignificant = true;
                     }
                     break;
                 case PREFIX_GLOB:
@@ -390,7 +407,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         // Note: Example Prefix in Regex that can cause problems `^/a/b+` or `^/a/bb*` ('b' one or more times)
                         // Note: Example Prefix in UriTemplate that might cause problems `/a/{b}/{c}`
                         _optimizedPrefix = false;
-                        _nonServletPathSpecs = true;
+                        _orderIsSignificant = true;
                     }
                     break;
                 case SUFFIX_GLOB:
@@ -407,7 +424,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         // Note: Example suffix in Regex that can cause problems `^.*/path/name.ext` or `^/a/.*(ending)`
                         // Note: Example suffix in UriTemplate that can cause problems `/{a}/name.ext`
                         _optimizedSuffix = false;
-                        _nonServletPathSpecs = true;
+                        _orderIsSignificant = true;
                     }
                     break;
                 case ROOT:
@@ -418,7 +435,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     }
                     else
                     {
-                        _nonServletPathSpecs = true;
+                        _orderIsSignificant = true;
                     }
                     break;
                 case DEFAULT:
@@ -429,7 +446,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     }
                     else
                     {
-                        _nonServletPathSpecs = true;
+                        _orderIsSignificant = true;
                     }
                     break;
                 default:
@@ -468,7 +485,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _exactMap.remove(exact);
                         // Recalculate _optimizeExact
                         _optimizedExact = canBeOptimized(PathSpecGroup.EXACT);
-                        _nonServletPathSpecs = nonServletPathSpec();
+                        _orderIsSignificant = nonServletPathSpec();
                     }
                     break;
                 case PREFIX_GLOB:
@@ -478,7 +495,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _prefixMap.remove(prefix);
                         // Recalculate _optimizePrefix
                         _optimizedPrefix = canBeOptimized(PathSpecGroup.PREFIX_GLOB);
-                        _nonServletPathSpecs = nonServletPathSpec();
+                        _orderIsSignificant = nonServletPathSpec();
                     }
                     break;
                 case SUFFIX_GLOB:
@@ -488,7 +505,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         _suffixMap.remove(suffix);
                         // Recalculate _optimizeSuffix
                         _optimizedSuffix = canBeOptimized(PathSpecGroup.SUFFIX_GLOB);
-                        _nonServletPathSpecs = nonServletPathSpec();
+                        _orderIsSignificant = nonServletPathSpec();
                     }
                     break;
                 case ROOT:
@@ -496,14 +513,14 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                         .filter(mapping -> mapping.getPathSpec().getGroup() == PathSpecGroup.ROOT)
                         .filter(mapping -> mapping.getPathSpec() instanceof ServletPathSpec)
                         .findFirst().orElse(null);
-                    _nonServletPathSpecs = nonServletPathSpec();
+                    _orderIsSignificant = nonServletPathSpec();
                     break;
                 case DEFAULT:
                     _servletDefault = _mappings.stream()
                         .filter(mapping -> mapping.getPathSpec().getGroup() == PathSpecGroup.DEFAULT)
                         .filter(mapping -> mapping.getPathSpec() instanceof ServletPathSpec)
                         .findFirst().orElse(null);
-                    _nonServletPathSpecs = nonServletPathSpec();
+                    _orderIsSignificant = nonServletPathSpec();
                     break;
             }
         }
