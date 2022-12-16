@@ -296,12 +296,12 @@ public abstract class IteratingCallback implements Callback
                     }
 
                     case FAILED:
+                    case CLOSED:
                         onCompleteFailure = _failure;
                         _failure = null;
                         break processing;
 
                     case SUCCEEDED:
-                    case CLOSED:
                         break processing;
 
                     case IDLE:
@@ -407,6 +407,11 @@ public abstract class IteratingCallback implements Callback
                 case IDLE:
                 case SUCCEEDED:
                 case FAILED:
+                    _state = State.CLOSED;
+                    break;
+
+                case PENDING:
+                    _failure = new IOException(String.format("Close %s in state %s", this, _state));
                     _state = State.CLOSED;
                     break;
 
