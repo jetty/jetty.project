@@ -23,8 +23,6 @@ import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,59 +83,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    /**
-     * @return The current Interceptor, or null if none set
-     */
-    public Interceptor getInterceptor()
-    {
-        try (AutoLock lock = _lock.lock())
-        {
-            return _contentProducer.getInterceptor();
-        }
-    }
-
-    /**
-     * Set the interceptor.
-     *
-     * @param interceptor The interceptor to use.
-     */
-    public void setInterceptor(Interceptor interceptor)
-    {
-        try (AutoLock lock = _lock.lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("setting interceptor to {} on {}", interceptor, this);
-            _contentProducer.setInterceptor(interceptor);
-        }
-    }
-
-    /**
-     * Set the {@link Interceptor}, chaining it to the existing one if
-     * an {@link Interceptor} is already set.
-     *
-     * @param interceptor the next {@link Interceptor} in a chain
-     */
-    public void addInterceptor(Interceptor interceptor)
-    {
-        try (AutoLock lock = _lock.lock())
-        {
-            Interceptor currentInterceptor = _contentProducer.getInterceptor();
-            if (currentInterceptor == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("adding single interceptor: {} on {}", interceptor, this);
-                _contentProducer.setInterceptor(interceptor);
-            }
-            else
-            {
-                ChainedInterceptor chainedInterceptor = new ChainedInterceptor(currentInterceptor, interceptor);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("adding chained interceptor: {} on {}", chainedInterceptor, this);
-                _contentProducer.setInterceptor(chainedInterceptor);
-            }
-        }
-    }
-
     private int get(Content.Chunk chunk, byte[] bytes, int offset, int length)
     {
         length = Math.min(chunk.remaining(), length);
@@ -175,7 +120,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try (AutoLock lock = _lock.lock())
         {
-            return _contentProducer.getRawBytesArrived();
+            return _contentProducer.getBytesArrived();
         }
     }
 
@@ -449,112 +394,5 @@ public class HttpInput extends ServletInputStream implements Runnable
             " cs=" + _channelState +
             " cp=" + _contentProducer +
             " eof=" + _consumedEof;
-    }
-
-    /**
-     * <p>{@link Content.Chunk} interceptor that can be registered using {@link #setInterceptor(Interceptor)} or
-     * {@link #addInterceptor(Interceptor)}.
-     * When {@link Content.Chunk} instances are generated, they are passed to the registered interceptor (if any)
-     * that is then responsible for providing the actual content that is consumed by {@link #read(byte[], int, int)} and its
-     * sibling methods.</p>
-     * A minimal implementation could be as simple as:
-     * <pre>
-     * public HttpInput.Content readFrom(HttpInput.Content content)
-     * {
-     *     LOGGER.debug("read content: {}", asString(content));
-     *     return content;
-     * }
-     * </pre>
-     * which would not do anything with the content besides logging it. A more involved implementation could look like the
-     * following:
-     * <pre>
-     * public HttpInput.Content readFrom(HttpInput.Content content)
-     * {
-     *     if (content.hasContent())
-     *         this.processedContent = processContent(content.getByteBuffer());
-     *     if (content.isEof())
-     *         disposeResources();
-     *     return content.isSpecial() ? content : this.processedContent;
-     * }
-     * </pre>
-     * Implementors of this interface must keep the following in mind:
-     * <ul>
-     *     <li>Calling {@link Content.Chunk#getByteBuffer()} when {@link Content.Chunk#isTerminal()} returns <code>true</code> throws
-     *     {@link IllegalStateException}.</li>
-     *     <li>A {@link Content.Chunk} can both be non-special and have {@code content == Content.EOF} return <code>true</code>.</li>
-     *     <li>{@link Content.Chunk} extends {@link Callback} to manage the lifecycle of the contained byte buffer. The code calling
-     *     {@link #readFrom(Content.Chunk)} is responsible for managing the lifecycle of both the passed and the returned content
-     *     instances, once {@link ByteBuffer#hasRemaining()} returns <code>false</code> {@code HttpInput} will make sure
-     *     {@link Callback#succeeded()} is called, or {@link Callback#failed(Throwable)} if an error occurs.</li>
-     *     <li>After {@link #readFrom(Content.Chunk)} is called for the first time, subsequent {@link #readFrom(Content.Chunk)} calls will
-     *     occur only after the contained byte buffer is empty (see above) or at any time if the returned content was special.</li>
-     *     <li>Once {@link #readFrom(Content.Chunk)} returned a special content, subsequent calls to {@link #readFrom(Content.Chunk)} must
-     *     always return the same special content.</li>
-     *     <li>Implementations implementing both this interface and {@link Destroyable} will have their
-     *     {@link Destroyable#destroy()} method called when {@link #recycle()} is called.</li>
-     * </ul>
-     */
-    public interface Interceptor
-    {
-        /**
-         * @param content The content to be intercepted.
-         * The content will be modified with any data the interceptor consumes. There is no requirement
-         * that all the data is consumed by the interceptor but at least one byte must be consumed
-         * unless the returned content is the passed content instance.
-         * @return The intercepted content or null if interception is completed for that content.
-         */
-        Content.Chunk readFrom(Content.Chunk content);
-    }
-
-    /**
-     * An {@link Interceptor} that chains two other {@link Interceptor}s together.
-     * The {@link Interceptor#readFrom(Content.Chunk)} calls the previous {@link Interceptor}'s
-     * {@link Interceptor#readFrom(Content.Chunk)} and then passes any {@link Content.Chunk} returned
-     * to the next {@link Interceptor}.
-     */
-    private static class ChainedInterceptor implements Interceptor, Destroyable
-    {
-        private final Interceptor _prev;
-        private final Interceptor _next;
-
-        ChainedInterceptor(Interceptor prev, Interceptor next)
-        {
-            _prev = prev;
-            _next = next;
-        }
-
-        Interceptor getPrev()
-        {
-            return _prev;
-        }
-
-        Interceptor getNext()
-        {
-            return _next;
-        }
-
-        @Override
-        public Content.Chunk readFrom(Content.Chunk content)
-        {
-            Content.Chunk c = getPrev().readFrom(content);
-            if (c == null)
-                return null;
-            return getNext().readFrom(c);
-        }
-
-        @Override
-        public void destroy()
-        {
-            if (_prev instanceof Destroyable)
-                ((Destroyable)_prev).destroy();
-            if (_next instanceof Destroyable)
-                ((Destroyable)_next).destroy();
-        }
-
-        @Override
-        public String toString()
-        {
-            return getClass().getSimpleName() + "@" + hashCode() + " [p=" + _prev + ",n=" + _next + "]";
-        }
     }
 }

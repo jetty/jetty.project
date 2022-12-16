@@ -696,7 +696,7 @@ public class ServletContextRequest extends ContextRequest
             if (getRequestedSessionId() == null || _coreSession == null)
                 return false;
             //check requestedId (which may have worker suffix) against the actual session id
-            return getSessionManager().getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId());
+            return _coreSession.isValid() && getSessionManager().getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId());
         }
 
         @Override

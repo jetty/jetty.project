@@ -122,75 +122,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         UNREADY,  // write operating in progress, isReady has returned false
     }
     
-    /**
-     * The HttpOutput.Interceptor is a single intercept point for all
-     * output written to the HttpOutput: via writer; via output stream;
-     * asynchronously; or blocking.
-     * <p>
-     * The Interceptor can be used to implement translations (eg Gzip) or
-     * additional buffering that acts on all output.  Interceptors are
-     * created in a chain, so that multiple concerns may intercept.
-     * <p>
-     * The {@link DefaultInterceptor} is always the
-     * last link in any Interceptor chain.
-     * <p>
-     * Responses are committed by the first call to
-     * {@link #write(ByteBuffer, boolean, Callback)}
-     * and closed by a call to {@link #write(ByteBuffer, boolean, Callback)}
-     * with the last boolean set true.  If no content is available to commit
-     * or close, then a null buffer is passed.
-     */
-    public interface Interceptor
-    {
-        /**
-         * Write content.
-         * The response is committed by the first call to write and is closed by
-         * a call with last == true. Empty content buffers may be passed to
-         * force a commit or close.
-         *
-         * @param content The content to be written or an empty buffer.
-         * @param last True if this is the last call to write
-         * @param callback The callback to use to indicate {@link Callback#succeeded()}
-         * or {@link Callback#failed(Throwable)}.
-         */
-        void write(ByteBuffer content, boolean last, Callback callback);
-
-        /**
-         * @return The next Interceptor in the chain or null if this is the
-         * last Interceptor in the chain.
-         */
-        Interceptor getNextInterceptor();
-
-        /**
-         * Reset the buffers.
-         * <p>If the Interceptor contains buffers then reset them.
-         *
-         * @throws IllegalStateException Thrown if the response has been
-         * committed and buffers and/or headers cannot be reset.
-         */
-        default void resetBuffer() throws IllegalStateException
-        {
-            Interceptor next = getNextInterceptor();
-            if (next != null)
-                next.resetBuffer();
-        }
-    }
-
-    public class DefaultInterceptor implements Interceptor
-    {
-        @Override
-        public void write(ByteBuffer content, boolean last, Callback callback)
-        {
-            _response.write(last, content, callback);
-        }
-
-        @Override
-        public Interceptor getNextInterceptor()
-        {
-            return null;
-        }
-    }
-
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
@@ -198,13 +129,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private final ServletChannel _servletChannel;
     private final Response _response;
     private final ByteBufferPool _byteBufferPool;
-
-    private ServletRequestState _channelState;
-    private SharedBlockingCallback _writeBlocker;
+    private final ServletRequestState _channelState;
+    private final SharedBlockingCallback _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
     private State _state = State.OPEN;
     private boolean _softClose = false;
-    private Interceptor _interceptor;
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
@@ -223,7 +152,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _byteBufferPool = _response.getRequest().getComponents().getByteBufferPool();
 
         _channelState = _servletChannel.getState();
-        _interceptor = new DefaultInterceptor();
         _writeBlocker = new WriteBlocker(_servletChannel);
         HttpConfiguration config = _servletChannel.getHttpConfiguration();
         _bufferSize = config.getOutputBufferSize();
@@ -240,16 +168,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _response;
     }
     
-    public Interceptor getInterceptor()
-    {
-        return _interceptor;
-    }
-
-    public void setInterceptor(Interceptor interceptor)
-    {
-        _interceptor = interceptor;
-    }
-
     public boolean isWritten()
     {
         return _written > 0;
@@ -292,8 +210,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             else
                 _firstByteNanoTime = Long.MAX_VALUE;
         }
-
-        _interceptor.write(content, last, callback);
+        _response.write(last, content, callback);
     }
 
     private void onWriteComplete(boolean last, Throwable failure)
@@ -1316,9 +1233,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     /**
      * <p>Invoked when bytes have been flushed to the network.</p>
-     * <p>The number of flushed bytes may be different from the bytes written
-     * by the application if an {@link Interceptor} changed them, for example
-     * by compressing them.</p>
      *
      * @param bytes the number of bytes flushed
      * @throws IOException if the minimum data rate, when set, is not respected
@@ -1348,7 +1262,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
-            _interceptor = new DefaultInterceptor();
             HttpConfiguration config = _connectionMetaData.getHttpConfiguration();
             _bufferSize = config.getOutputBufferSize();
             _commitSize = config.getOutputAggregationSize();
@@ -1368,7 +1281,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock l = _channelState.lock())
         {
-            _interceptor.resetBuffer();
             if (BufferUtil.hasContent(_aggregate))
                 BufferUtil.clear(_aggregate);
             _written = 0;

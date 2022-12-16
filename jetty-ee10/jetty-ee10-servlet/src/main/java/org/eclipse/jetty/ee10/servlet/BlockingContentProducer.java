@@ -79,9 +79,9 @@ class BlockingContentProducer implements ContentProducer
     }
 
     @Override
-    public long getRawBytesArrived()
+    public long getBytesArrived()
     {
-        return _asyncContentProducer.getRawBytesArrived();
+        return _asyncContentProducer.getBytesArrived();
     }
 
     @Override
@@ -138,18 +138,6 @@ class BlockingContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("isReady = {}", ready);
         return ready;
-    }
-
-    @Override
-    public HttpInput.Interceptor getInterceptor()
-    {
-        return _asyncContentProducer.getInterceptor();
-    }
-
-    @Override
-    public void setInterceptor(HttpInput.Interceptor interceptor)
-    {
-        _asyncContentProducer.setInterceptor(interceptor);
     }
 
     @Override
