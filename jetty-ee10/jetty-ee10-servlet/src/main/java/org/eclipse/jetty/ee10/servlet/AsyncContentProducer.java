@@ -292,13 +292,14 @@ class AsyncContentProducer implements ContentProducer
                         LOG.debug("channel has no new chunk {}", this);
                     return null;
                 }
+                else
+                {
+                    _servletChannel.getState().onContentAdded();
+                }
             }
 
-            assert _chunk != null;
             // Release the chunk immediately, if it is empty.
-            if (!_chunk.hasRemaining() && !_chunk.isTerminal())
-            if (_transformedChunk != null)
-                _servletChannel.getState().onContentAdded();
+            if (_chunk != null && !_chunk.hasRemaining() && !_chunk.isTerminal())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("releasing empty chunk {}", this);
