@@ -486,7 +486,6 @@ public class ServletContextRequest extends ContextRequest
             List<HttpCookie> httpCookies = Request.getCookies(getRequest());
             if (httpCookies.isEmpty())
                 return null;
-            // TODO: optimize this.
             return httpCookies.stream()
                 .map(this::convertCookie)
                 .toArray(Cookie[]::new);
