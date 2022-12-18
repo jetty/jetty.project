@@ -106,6 +106,8 @@ public class MavenProjectHelper
      */
     public MavenProject getMavenProjectFor(Artifact artifact)
     {
+        if (artifact == null)
+            return null;
         return artifactToReactorProjectMap.get(artifact.getId());
     }
 
@@ -136,7 +138,7 @@ public class MavenProjectHelper
         }
         return path;
     }
-    
+
     /**
      * Given the coordinates for an artifact, resolve the artifact from the
      * remote repositories.
