@@ -83,8 +83,11 @@ public class ManyHandlers
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
         {
+            Handler next = getHandler();
+            if (next == null)
+                return false;
             response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-            return super.process(request, response, callback);
+            return next.process(request, response, callback);
         }
     }
 

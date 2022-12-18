@@ -115,7 +115,7 @@ public class ErrorProcessor implements Request.Processor
             catch (Throwable x)
             {
                 // TODO: cannot write the error response, give up and close the stream.
-                LOG.warn("Cannot generate error", x);
+                LOG.warn("Failure whilst generate error response", x);
             }
         }
         return true;

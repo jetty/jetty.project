@@ -20,5 +20,5 @@ public interface GzipFactory
 {
     DeflaterPool.Entry getDeflaterEntry(Request request, long contentLength);
 
-    boolean isMimeTypeGzipable(String mimetype);
+    boolean isMimeTypeDeflatable(String mimetype);
 }

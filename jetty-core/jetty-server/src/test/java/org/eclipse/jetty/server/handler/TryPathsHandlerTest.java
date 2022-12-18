@@ -23,10 +23,13 @@ import java.util.List;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.ResourceHttpContentFactory;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -43,6 +46,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -160,6 +164,97 @@ public class TryPathsHandlerTest
     }
 
     @Test
+    public void testTryPathsWithPathMappings() throws Exception
+    {
+        ResourceHandler resourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                // We don't want to cache not found entries for this test.
+                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+            }
+        };
+        resourceHandler.setDirAllowed(false);
+
+        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+        pathMappingsHandler.addMapping(new ServletPathSpec("/"), resourceHandler);
+        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(HttpStatus.OK_200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+                String message = "PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
+                Content.Sink.write(response, true, message, callback);
+                return true;
+            }
+        });
+        pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        start(List.of("/maintenance.txt", "$path", "/forward?p=$path"), pathMappingsHandler);
+
+        try (SocketChannel channel = SocketChannel.open())
+        {
+            channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
+
+            // Make a first request without existing file paths.
+            HttpTester.Request request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/last");
+            channel.write(request.generate());
+            HttpTester.Response response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+
+            // Create the specific static file that is requested.
+            String path = "idx.txt";
+            Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
+            // Make a second request with the specific file.
+            request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/" + path);
+            channel.write(request.generate());
+            response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("hello", response.getContent());
+
+            // Request an existing PHP file.
+            Files.writeString(rootPath.resolve("index.php"), "raw-php-contents", StandardOpenOption.CREATE);
+            request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/index.php");
+            channel.write(request.generate());
+            response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat(response.getContent(), startsWith("PHP: pathInContext=/index.php"));
+
+            // Create the "maintenance" file, it should be served first.
+            path = "maintenance.txt";
+            Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
+            // Make a second request with any path, we should get the maintenance file.
+            request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/whatever");
+            channel.write(request.generate());
+            response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("maintenance", response.getContent());
+        }
+    }
+
+    @Test
     public void testTryPathsAsync404() throws Exception
     {
         ResourceHandler resourceHandler = new ResourceHandler()
@@ -185,7 +280,7 @@ public class TryPathsHandlerTest
                         try
                         {
                             Thread.sleep(100);
-                            Response.writeError(request, response, callback, 404);
+                            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
                         }
                         catch (InterruptedException e)
                         {

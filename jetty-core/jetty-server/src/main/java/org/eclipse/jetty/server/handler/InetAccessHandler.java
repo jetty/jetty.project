@@ -18,6 +18,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -210,10 +211,10 @@ public class InetAccessHandler extends Handler.Wrapper
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (socketAddress instanceof InetSocketAddress inetSocketAddress &&
-            !isAllowed(inetSocketAddress.getAddress(), request))
+        if (socketAddress instanceof InetSocketAddress inetSocketAddress && !isAllowed(inetSocketAddress.getAddress(), request))
         {
-            Response.writeError(request, response, callback, 403);
+            // TODO a false return may be better here.
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return true;
         }
         return super.process(request, response, callback);

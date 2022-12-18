@@ -23,7 +23,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -134,12 +134,15 @@ public class TryPathsHandler extends Handler.Wrapper
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
+        Handler next = getHandler();
+        if (next == null)
+            return false;
         if (paths.size() == 0)
             return false;
         if (paths.size() == 1)
         {
             if (!super.process(new TryPathsRequest(request, interpolate(request, paths.get(0))), response, callback))
-                Response.writeError(request, response, callback, 404);
+                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
         }
         else
         {
@@ -155,19 +158,18 @@ public class TryPathsHandler extends Handler.Wrapper
         return value.replace("$path", path);
     }
 
-    private class PathsIterator extends IteratingCallback
+    private class PathsIterator extends IteratingNestedCallback
     {
         private final Request request;
         private final Response response;
-        private final Callback callback;
         private final Iterator<String> paths = TryPathsHandler.this.paths.iterator();
-        boolean trying;
+        private boolean trying;
 
         private PathsIterator(Request request, Response response, Callback callback)
         {
+            super(callback);
             this.request = request;
             this.response = response;
-            this.callback = callback;
         }
 
         @Override
@@ -175,11 +177,10 @@ public class TryPathsHandler extends Handler.Wrapper
         {
             if (trying)
             {
-                if (response.getStatus() != 404)
+                if (response.getStatus() != HttpStatus.NOT_FOUND_404)
                     return Action.SUCCEEDED;
                 trying = false;
                 response.reset();
-                response.setStatus(200);
             }
 
             while (paths.hasNext())
@@ -197,20 +198,8 @@ public class TryPathsHandler extends Handler.Wrapper
             if (response.isCommitted())
                 return Action.SUCCEEDED;
 
-            Response.writeError(request, response, this, 404);
+            Response.writeError(request, response, this, HttpStatus.NOT_FOUND_404);
             return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            callback.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            callback.failed(cause);
         }
     }
 

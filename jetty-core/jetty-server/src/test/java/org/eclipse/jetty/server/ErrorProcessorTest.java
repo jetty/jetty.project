@@ -24,6 +24,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
@@ -125,7 +126,7 @@ public class ErrorProcessorTest
                     return true;
                 }
 
-                Response.writeError(request, response, callback, 404);
+                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
                 return true;
             }
         });

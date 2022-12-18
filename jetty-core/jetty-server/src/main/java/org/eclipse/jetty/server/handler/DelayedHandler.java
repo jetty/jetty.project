@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
@@ -143,7 +144,7 @@ public class DelayedHandler extends Handler.Wrapper
             try
             {
                 if (!getHandler().process(getRequest(), getResponse(), getCallback()))
-                    Response.writeError(getRequest(), getResponse(), getCallback(), 404);
+                    Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {

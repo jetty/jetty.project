@@ -526,9 +526,9 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         if (Request.as(request, GzipRequest.class) != null)
             return next.process(request, response, callback);
 
-        final String path = Request.getPathInContext(request);
+        String path = Request.getPathInContext(request);
         boolean tryInflate = getInflateBufferSize() >= 0 && isPathInflatable(path);
-        boolean tryDeflate = _methods.test(request.getMethod()) && isPathGzipable(path) && isPathMimeTypeGzipable(request.getContext().getMimeTypes(), path);
+        boolean tryDeflate = _methods.test(request.getMethod()) && isPathDeflatable(path) && isPathMimeTypeGzipable(request.getContext().getMimeTypes(), path);
 
         // Can we skip looking at the request and wrapping request or response?
         if (!tryInflate && !tryDeflate)
@@ -563,7 +563,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         // Wrap the response and callback IFF we can be deflated and will try to deflate
         if (deflatable && tryDeflate)
         {
-            GzipResponseAndCallback gzipResponseAndCallback = new GzipResponseAndCallback(request, response, callback, this);
+            GzipResponseAndCallback gzipResponseAndCallback = new GzipResponseAndCallback(this, request, response, callback);
             response = gzipResponseAndCallback;
             callback = gzipResponseAndCallback;
         }
@@ -590,7 +590,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         if (mimeType != null)
         {
             mimeType = HttpField.valueParameters(mimeType, null);
-            return isMimeTypeGzipable(mimeType);
+            return isMimeTypeDeflatable(mimeType);
         }
         return true;
     }
@@ -602,7 +602,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
      * @return true if allowed, false otherwise
      */
     @Override
-    public boolean isMimeTypeGzipable(String mimetype)
+    public boolean isMimeTypeDeflatable(String mimetype)
     {
         return _mimeTypes.test(mimetype);
     }
@@ -613,7 +613,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
      * @param requestURI the request uri
      * @return whether compressing is allowed for the given the path
      */
-    protected boolean isPathGzipable(String requestURI)
+    protected boolean isPathDeflatable(String requestURI)
     {
         if (requestURI == null)
             return true;

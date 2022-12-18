@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -24,11 +23,11 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
@@ -167,10 +166,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             return false;
 
         if (!_enabled)
-        {
-            next.process(request, response, callback);
-            return false;
-        }
+            return next.process(request, response, callback);
 
         // Get the remote address of the request
         Remote remote = getRemote(request);
@@ -188,17 +184,10 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
     private static void getAndClose(CompletableFuture<Closeable> cf)
     {
-        try
-        {
-            LOG.debug("getting {}", cf);
-            Closeable closeable = cf.get();
-            LOG.debug("closing {}", closeable);
-            closeable.close();
-        }
-        catch (IOException | InterruptedException | ExecutionException e)
-        {
-            LOG.warn("Error closing permit enclosed in {}", cf, e);
-        }
+        LOG.debug("getting {}", cf);
+        Closeable closeable = cf.getNow(null);
+        LOG.debug("closing {}", closeable);
+        IO.close(closeable);
     }
 
     private Remote getRemote(Request baseRequest)
@@ -339,7 +328,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             try
             {
                 if (!_handler.process(this, _response, callback))
-                    Response.writeError(this, _response, callback, 404);
+                    Response.writeError(this, _response, callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable x)
             {
@@ -352,6 +341,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         {
             Runnable permittedDemand = () ->
             {
+                // TODO need to consider if we already have a permit!
                 CompletableFuture<Closeable> futurePermit = _remote.acquire();
 
                 if (futurePermit.isDone())
@@ -403,6 +393,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
                 @Override
                 public void succeeded()
                 {
+                    // TODO need to consider if we already have a permit!
                     CompletableFuture<Closeable> futurePermit = _remote.acquire();
                     if (futurePermit.isDone())
                     {
