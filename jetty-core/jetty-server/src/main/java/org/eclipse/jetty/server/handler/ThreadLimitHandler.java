@@ -341,7 +341,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
         {
             Runnable permittedDemand = () ->
             {
-                // TODO need to consider if we already have a permit!
                 CompletableFuture<Closeable> futurePermit = _remote.acquire();
 
                 if (futurePermit.isDone())
@@ -393,7 +392,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
                 @Override
                 public void succeeded()
                 {
-                    // TODO need to consider if we already have a permit!
                     CompletableFuture<Closeable> futurePermit = _remote.acquire();
                     if (futurePermit.isDone())
                     {
@@ -472,6 +470,8 @@ public class ThreadLimitHandler extends Handler.Wrapper
         private int _permits;
         private final Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
         private final CompletableFuture<Closeable> _permitted = CompletableFuture.completedFuture(this);
+        private final ThreadLocal<Boolean> _threadPermit = new ThreadLocal<>();
+        private static final CompletableFuture<Closeable> NOOP = CompletableFuture.completedFuture(() -> {});
 
         public Remote(String ip, int limit)
         {
@@ -483,13 +483,18 @@ public class ThreadLimitHandler extends Handler.Wrapper
         {
             try (AutoLock lock = _lock.lock())
             {
+                // Does this thread already have an available pass
+                if (_threadPermit.get() == Boolean.TRUE)
+                    return NOOP;
+
                 // Do we have available passes?
                 if (_permits < _limit)
                 {
                     // Yes - increment the allocated passes
                     _permits++;
+                    _threadPermit.set(Boolean.TRUE);
                     // return the already completed future
-                    return _permitted; // TODO is it OK to share/reuse this?
+                    return _permitted;
                 }
 
                 // No pass available, so queue a new future 
@@ -506,6 +511,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             {
                 // reduce the allocated passes
                 _permits--;
+                _threadPermit.set(Boolean.FALSE);
                 while (true)
                 {
                     // Are there any future passes waiting?

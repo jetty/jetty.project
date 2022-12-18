@@ -53,11 +53,13 @@ public class ServletMultiPartFormData
      * @param request the HTTP request with multipart content
      * @return a {@link Parts} object to access the individual {@link Part}s
      * @throws IOException if reading the request content fails
+     * @see org.eclipse.jetty.server.handler.DelayedHandler
      */
     public static Parts from(ServletContextRequest.ServletApiRequest request) throws IOException
     {
         try
         {
+            // Look for a previously read and parsed MultiPartFormData from the DelayedHandler
             MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
             if (formData != null)
                 return new Parts(formData);

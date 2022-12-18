@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -65,7 +67,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -87,6 +88,7 @@ public class HugeResourceTest
     public static Path multipartTempDir;
 
     public Server server;
+    HttpConfiguration httpConfig;
     public HttpClient client;
 
     @BeforeAll
@@ -106,6 +108,7 @@ public class HugeResourceTest
             String.format("FileStore %s of %s needs at least 30GB of free space for this test (only had %,.2fGB)",
                 baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
 
+        makeStaticFile(staticBase.resolve("test-1m.dat"), MB);
         makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
         makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
         // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
@@ -121,6 +124,7 @@ public class HugeResourceTest
     {
         ArrayList<Arguments> ret = new ArrayList<>();
 
+        ret.add(Arguments.of("test-1m.dat", MB));
         ret.add(Arguments.of("test-1g.dat", GB));
         ret.add(Arguments.of("test-4g.dat", 4 * GB));
         // ret.add(Arguments.of("test-10g.dat", 10 * GB));
@@ -190,7 +194,7 @@ public class HugeResourceTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig = new HttpConfiguration();
         ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig));
         connector.setPort(0);
         server.addConnector(connector);
@@ -201,6 +205,7 @@ public class HugeResourceTest
 
         context.addServlet(PostServlet.class, "/post");
         context.addServlet(ChunkedServlet.class, "/chunked/*");
+        context.addServlet(DefaultServlet.class, "/");
 
         String location = multipartTempDir.toString();
         long maxFileSize = Long.MAX_VALUE;
@@ -211,10 +216,11 @@ public class HugeResourceTest
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
-        DefaultHandler defaultHandler = new DefaultHandler();
-        defaultHandler.setServer(server);
+        DelayedHandler delayedHandler = new DelayedHandler();
+        server.setHandler(delayedHandler);
+        httpConfig.setDelayDispatchUntilContent(false);
 
-        server.setHandler(new Handler.Collection(context, defaultHandler));
+        delayedHandler.setHandler(new Handler.Collection(context, new DefaultHandler()));
         server.start();
     }
 
@@ -364,7 +370,14 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
-    @Disabled // TODO
+    public void testUploadDelayed(String filename, long expectedSize) throws Exception
+    {
+        httpConfig.setDelayDispatchUntilContent(true);
+        testUpload(filename, expectedSize);
+    }
+
+    @ParameterizedTest
+    @MethodSource("staticFiles")
     public void testUploadMultipart(String filename, long expectedSize) throws Exception
     {
         MultiPartRequestContent multipart = new MultiPartRequestContent();
@@ -384,6 +397,16 @@ public class HugeResourceTest
         String expectedResponse = String.format("part[%s].size=%d", name, expectedSize);
         assertThat("Response", responseBody, containsString(expectedResponse));
     }
+
+    @ParameterizedTest
+    @MethodSource("staticFiles")
+    public void testUploadMultipartDelayed(String filename, long expectedSize) throws Exception
+    {
+        httpConfig.setDelayDispatchUntilContent(true);
+        testUploadMultipart(filename, expectedSize);
+    }
+
+
 
     private void dumpResponse(Response response)
     {

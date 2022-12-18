@@ -88,19 +88,24 @@ public class DelayedHandler extends Handler.Wrapper
 
     protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
     {
+        // if no content is expected, then no delay
         if (!contentExpected)
             return null;
 
-        if (mimeType == null)
-            return request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent()
-                ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
+        // if we are not configured to delay dispatch, then no delay
+        if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
+            return null;
 
+        // If there is no known content type, then delay only until content is available
+        if (mimeType == null)
+            return new UntilContentDelayedProcess(handler, request, response, callback);
+
+        // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
         return switch (mimeType)
         {
             case FORM_ENCODED -> new UntilFormDelayedProcess(handler, request, response, callback, contentType);
             case MULTIPART_FORM_DATA -> new UntilMultiPartDelayedProcess(handler, request, response, callback, contentType);
-            default -> request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent()
-                ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
+            default -> new UntilContentDelayedProcess(handler, request, response, callback);
         };
     }
 
@@ -204,15 +209,17 @@ public class DelayedHandler extends Handler.Wrapper
         {
             super(handler, wrapped, response, callback);
             String boundary = MultiPart.extractBoundary(contentType);
-            _formData = new MultiPartFormData(boundary);
-            getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
+            _formData = boundary == null ? null : new MultiPartFormData(boundary);
         }
 
         @Override
         public void accept(MultiPartFormData.Parts parts, Throwable x)
         {
             if (x == null)
+            {
+                getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
                 super.process();
+            }
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
         }
@@ -220,11 +227,18 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         public void delay()
         {
-            readAndParse();
-            if (_formData.isDone())
+            if (_formData == null)
+            {
                 super.process();
+            }
             else
-                _formData.whenComplete(this);
+            {
+                readAndParse();
+                if (_formData.isDone())
+                    super.process();
+                else
+                    _formData.whenComplete(this);
+            }
         }
 
         private void readAndParse()
