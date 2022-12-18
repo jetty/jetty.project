@@ -176,6 +176,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
             {
                 Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
+
                 if (r.exists() && !r.isDirectory())
                 {
                     webApp.setDescriptor(r.toString());
@@ -192,7 +193,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 }
             }
         }
-
+        
         //process any overlays and the war type artifacts, and
         //sets up the base resource collection for the webapp
         mavenProjectHelper.getOverlayManager().applyOverlays(webApp);
