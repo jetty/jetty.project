@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,19 +96,11 @@ class BlockingContentProducer implements ContentProducer
     }
 
     @Override
-    public boolean releaseContent()
-    {
-        boolean eof = _asyncContentProducer.releaseContent();
-        _semaphore.release();
-        return eof;
-    }
-
-    @Override
-    public Content.Chunk nextContent()
+    public HttpInput.Content nextContent()
     {
         while (true)
         {
-            Content.Chunk content = _asyncContentProducer.nextContent();
+            HttpInput.Content content = _asyncContentProducer.nextContent();
             if (LOG.isDebugEnabled())
                 LOG.debug("nextContent async producer returned {}", content);
             if (content != null)
@@ -132,13 +123,13 @@ class BlockingContentProducer implements ContentProducer
             }
             catch (InterruptedException e)
             {
-                return Content.Chunk.from(e);
+                return new HttpInput.ErrorContent(e);
             }
         }
     }
 
     @Override
-    public void reclaim(Content.Chunk content)
+    public void reclaim(HttpInput.Content content)
     {
         _asyncContentProducer.reclaim(content);
     }

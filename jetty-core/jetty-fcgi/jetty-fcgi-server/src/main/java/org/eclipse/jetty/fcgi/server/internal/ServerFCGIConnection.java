@@ -371,8 +371,10 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
             if (stream != null)
             {
-                networkBuffer.retain();
-                stream.onContent(Content.Chunk.from(buffer, false, networkBuffer));
+                // No need to call networkBuffer.retain() here.
+                // The receiver of the chunk decides whether to consume/retain it.
+                Content.Chunk chunk = Content.Chunk.from(buffer, false, networkBuffer);
+                stream.onContent(chunk);
                 // Signal that the content is processed asynchronously, to ensure backpressure.
                 return true;
             }

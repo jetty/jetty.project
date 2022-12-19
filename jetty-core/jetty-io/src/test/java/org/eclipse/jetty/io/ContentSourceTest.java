@@ -64,8 +64,8 @@ public class ContentSourceTest
         AsyncContent asyncSource = new AsyncContent();
         try (asyncSource)
         {
-            asyncSource.write(Content.Chunk.from(UTF_8.encode("one"), false), Callback.NOOP);
-            asyncSource.write(Content.Chunk.from(UTF_8.encode("two"), false), Callback.NOOP);
+            asyncSource.write(false, UTF_8.encode("one"), Callback.NOOP);
+            asyncSource.write(false, UTF_8.encode("two"), Callback.NOOP);
         }
 
         ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
@@ -520,6 +520,9 @@ public class ContentSourceTest
 
         private void add(Content.Chunk chunk)
         {
+            // Retain the chunk because it is stored for later use.
+            if (chunk.canRetain())
+                chunk.retain();
             _chunks.add(chunk);
         }
 

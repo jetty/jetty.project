@@ -146,6 +146,7 @@ public class PathContentSource implements Content.Source
         }
         catch (Throwable x)
         {
+            retainableByteBuffer.release();
             return failure(x);
         }
 

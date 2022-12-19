@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,15 +29,14 @@ import java.util.zip.GZIPOutputStream;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +45,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-@Disabled // TODO
 public class AsyncContentProducerTest
 {
     private Server _server;
@@ -65,6 +62,7 @@ public class AsyncContentProducerTest
         _server.setHandler(_contextHandler);
         _testHandler = new TestHandler();
         _contextHandler.setHandler(_testHandler);
+        _server.start();
     }
 
     @AfterEach
@@ -101,7 +99,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.Chunk.EOF, null, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), _connector.getScheduler(), barrier));
 
         try (AutoLock ignored = contentProducer.lock())
         {
@@ -123,7 +121,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.Chunk.from(expectedError), null, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(expectedError), _connector.getScheduler(), barrier));
 
         try (AutoLock ignored = contentProducer.lock())
         {
@@ -144,7 +142,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.Chunk.EOF, null, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), _connector.getScheduler(), barrier));
         AccountingInterceptor interceptor = new AccountingInterceptor();
         try (AutoLock ignored = contentProducer.lock())
         {
@@ -153,17 +151,17 @@ public class AsyncContentProducerTest
             Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
             assertThat(error, nullValue());
 
-            Content.Chunk lastContent = contentProducer.nextContent();
-            assertThat(lastContent.isTerminal(), is(true));
-            assertThat(lastContent.isLast(), is(true));
+            HttpInput.Content lastContent = contentProducer.nextContent();
+            assertThat(lastContent.isSpecial(), is(true));
+            assertThat(lastContent.isEof(), is(true));
         }
 
         assertThat(interceptor.contents.size(), is(4));
-        assertThat(interceptor.contents.get(0).isTerminal(), is(false));
-        assertThat(interceptor.contents.get(1).isTerminal(), is(false));
-        assertThat(interceptor.contents.get(2).isTerminal(), is(false));
-        assertThat(interceptor.contents.get(3).isTerminal(), is(true));
-        assertThat(interceptor.contents.get(3).isLast(), is(true));
+        assertThat(interceptor.contents.get(0).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(1).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(2).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(3).isSpecial(), is(true));
+        assertThat(interceptor.contents.get(3).isEof(), is(true));
     }
 
     @Test
@@ -178,7 +176,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.Chunk.from(new Throwable("testAsyncContentProducerErrorContentIsPassedToInterceptor error")), null, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(new Throwable("testAsyncContentProducerErrorContentIsPassedToInterceptor error")), _connector.getScheduler(), barrier));
         AccountingInterceptor interceptor = new AccountingInterceptor();
         try (AutoLock ignored = contentProducer.lock())
         {
@@ -187,70 +185,91 @@ public class AsyncContentProducerTest
             Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
             assertThat(error.getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
 
-            Content.Chunk lastContent = contentProducer.nextContent();
-            assertThat(lastContent.isTerminal(), is(true));
-            assertThat(getError(lastContent).getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
+            HttpInput.Content lastContent = contentProducer.nextContent();
+            assertThat(lastContent.isSpecial(), is(true));
+            assertThat(lastContent.getError().getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
         }
 
         assertThat(interceptor.contents.size(), is(4));
-        assertThat(interceptor.contents.get(0).isTerminal(), is(false));
-        assertThat(interceptor.contents.get(1).isTerminal(), is(false));
-        assertThat(interceptor.contents.get(2).isTerminal(), is(false));
-        assertThat(interceptor.contents.get(3).isTerminal(), is(true));
-        assertThat(getError(interceptor.contents.get(3)).getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
+        assertThat(interceptor.contents.get(0).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(1).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(2).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(3).isSpecial(), is(true));
+        assertThat(interceptor.contents.get(3).getError().getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
     }
 
     @Test
     public void testAsyncContentProducerInterceptorGeneratesError()
     {
-        AtomicInteger contentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.EOF));
+        AtomicInteger contentSucceededCount = new AtomicInteger();
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void succeeded()
+            {
+                contentSucceededCount.incrementAndGet();
+            }
+        }), new HttpInput.EofContent()));
         try (AutoLock ignored = contentProducer.lock())
         {
-            contentProducer.setInterceptor(content -> Content.Chunk.from(new Throwable("testAsyncContentProducerInterceptorGeneratesError interceptor error")));
+            contentProducer.setInterceptor(content -> new HttpInput.ErrorContent(new Throwable("testAsyncContentProducerInterceptorGeneratesError interceptor error")));
 
             assertThat(contentProducer.isReady(), is(true));
             assertThat(contentProducer.isError(), is(true));
 
-            Content.Chunk content1 = contentProducer.nextContent();
-            assertThat(content1.isTerminal(), is(true));
-            assertThat(getError(content1).getMessage(), is("testAsyncContentProducerInterceptorGeneratesError interceptor error"));
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.getError().getMessage(), is("testAsyncContentProducerInterceptorGeneratesError interceptor error"));
 
-            Content.Chunk content2 = contentProducer.nextContent();
-            assertThat(content2.isTerminal(), is(true));
-            assertThat(getError(content2).getMessage(), is("testAsyncContentProducerInterceptorGeneratesError interceptor error"));
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.getError().getMessage(), is("testAsyncContentProducerInterceptorGeneratesError interceptor error"));
         }
-        assertThat(contentReleasedCount.get(), is(1));
+        assertThat(contentSucceededCount.get(), is(1));
     }
 
     @Test
     public void testAsyncContentProducerInterceptorGeneratesEof()
     {
-        AtomicInteger contentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.from(new Throwable("should not reach this"))));
+        AtomicInteger contentSucceededCount = new AtomicInteger();
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void succeeded()
+            {
+                contentSucceededCount.incrementAndGet();
+            }
+        }), new HttpInput.ErrorContent(new Throwable("should not reach this"))));
         try (AutoLock ignored = contentProducer.lock())
         {
-            contentProducer.setInterceptor(content -> Content.Chunk.EOF);
+            contentProducer.setInterceptor(content -> new HttpInput.EofContent());
 
             assertThat(contentProducer.isReady(), is(true));
             assertThat(contentProducer.isError(), is(false));
 
-            Content.Chunk content1 = contentProducer.nextContent();
-            assertThat(content1.isTerminal(), is(true));
-            assertThat(content1.isLast(), is(true));
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.isEof(), is(true));
 
-            Content.Chunk content2 = contentProducer.nextContent();
-            assertThat(content2.isTerminal(), is(true));
-            assertThat(content2.isLast(), is(true));
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.isEof(), is(true));
         }
-        assertThat(contentReleasedCount.get(), is(1));
+        assertThat(contentSucceededCount.get(), is(1));
     }
 
     @Test
     public void testAsyncContentProducerInterceptorThrows()
     {
-        AtomicInteger contentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.EOF));
+        AtomicInteger contentFailedCount = new AtomicInteger();
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                contentFailedCount.incrementAndGet();
+            }
+        }), new HttpInput.EofContent()));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content ->
@@ -261,53 +280,74 @@ public class AsyncContentProducerTest
             assertThat(contentProducer.isReady(), is(true));
             assertThat(contentProducer.isError(), is(true));
 
-            Content.Chunk content1 = contentProducer.nextContent();
-            assertThat(content1.isTerminal(), is(true));
-            assertThat(getError(content1).getCause().getMessage(), is("testAsyncContentProducerInterceptorThrows error"));
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.getError().getCause().getMessage(), is("testAsyncContentProducerInterceptorThrows error"));
 
-            Content.Chunk content2 = contentProducer.nextContent();
-            assertThat(content2.isTerminal(), is(true));
-            assertThat(getError(content2).getCause().getMessage(), is("testAsyncContentProducerInterceptorThrows error"));
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.getError().getCause().getMessage(), is("testAsyncContentProducerInterceptorThrows error"));
         }
-        assertThat(contentReleasedCount.get(), is(1));
+        assertThat(contentFailedCount.get(), is(1));
     }
 
     @Test
     public void testAsyncContentProducerInterceptorDoesNotConsume()
     {
-        AtomicInteger contentReleasedCount = new AtomicInteger();
-        AtomicInteger interceptorContentReleasedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(1), false)), Content.Chunk.EOF));
+        AtomicInteger contentFailedCount = new AtomicInteger();
+        AtomicInteger interceptorContentFailedCount = new AtomicInteger();
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                contentFailedCount.incrementAndGet();
+            }
+        }), new HttpInput.EofContent()));
         try (AutoLock ignored = contentProducer.lock())
         {
-            contentProducer.setInterceptor(content -> Content.Chunk.from(ByteBuffer.allocate(1), false));
+            contentProducer.setInterceptor(content -> new HttpInput.Content(ByteBuffer.allocate(1))
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    interceptorContentFailedCount.incrementAndGet();
+                }
+            });
 
             assertThat(contentProducer.isReady(), is(true));
 
-            Content.Chunk content1 = contentProducer.nextContent();
-            assertThat(content1.isTerminal(), is(true));
-            assertThat(getError(content1).getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
 
-            Content.Chunk content2 = contentProducer.nextContent();
-            assertThat(content2.isTerminal(), is(true));
-            assertThat(getError(content2).getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
         }
-        assertThat(contentReleasedCount.get(), is(1));
-        assertThat(interceptorContentReleasedCount.get(), is(1));
+        assertThat(contentFailedCount.get(), is(1));
+        assertThat(interceptorContentFailedCount.get(), is(1));
     }
 
     @Test
     public void testAsyncContentProducerInterceptorDoesNotConsumeEmptyContent()
     {
-        AtomicInteger contentReleasedCount = new AtomicInteger();
+        AtomicInteger contentSucceededCount = new AtomicInteger();
         AtomicInteger specialContentInterceptedCount = new AtomicInteger();
         AtomicInteger nullContentInterceptedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(Content.Chunk.from(ByteBuffer.allocate(0), false)), Content.Chunk.EOF));
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(0))
+        {
+            @Override
+            public void succeeded()
+            {
+                contentSucceededCount.incrementAndGet();
+            }
+        }), new HttpInput.EofContent()));
         try (AutoLock ignored = contentProducer.lock())
         {
             contentProducer.setInterceptor(content ->
             {
-                if (content.isTerminal())
+                if (content.isSpecial())
                 {
                     specialContentInterceptedCount.incrementAndGet();
                     return content;
@@ -316,15 +356,15 @@ public class AsyncContentProducerTest
                 return null;
             });
 
-            Content.Chunk content1 = contentProducer.nextContent();
-            assertThat(content1.isTerminal(), is(true));
-            assertThat(content1.isLast(), is(true));
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.isEof(), is(true));
 
-            Content.Chunk content2 = contentProducer.nextContent();
-            assertThat(content2.isTerminal(), is(true));
-            assertThat(content2.isLast(), is(true));
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.isEof(), is(true));
         }
-        assertThat(contentReleasedCount.get(), is(1));
+        assertThat(contentSucceededCount.get(), is(1));
         assertThat(specialContentInterceptedCount.get(), is(1));
         assertThat(nullContentInterceptedCount.get(), is(1));
     }
@@ -345,7 +385,7 @@ public class AsyncContentProducerTest
             else
                 isReadyFalseCount++;
 
-            Content.Chunk content = contentProducer.nextContent();
+            HttpInput.Content content = contentProducer.nextContent();
             nextContentCount++;
             if (content == null)
             {
@@ -355,11 +395,11 @@ public class AsyncContentProducerTest
             }
             assertThat(content, notNullValue());
 
-            if (content.isTerminal())
+            if (content.isSpecial())
             {
-                if (content.isLast())
+                if (content.isEof())
                     break;
-                error = getError(content);
+                error = content.getError();
                 break;
             }
 
@@ -367,7 +407,7 @@ public class AsyncContentProducerTest
             readBytes += b.length;
             content.getByteBuffer().get(b);
             consumedString += new String(b, StandardCharsets.ISO_8859_1);
-            content.getByteBuffer().position(content.getByteBuffer().position() + content.remaining());
+            content.skip(content.remaining());
         }
 
         assertThat(nextContentCount, is(totalContentCount));
@@ -420,25 +460,19 @@ public class AsyncContentProducerTest
         }
     }
 
-    private Throwable getError(Content.Chunk chunk)
+    private class ContentListHttpChannel extends HttpChannel
     {
-        return chunk instanceof Content.Chunk.Error error ? error.getCause() : null;
-    }
-
-    private static class ContentListHttpChannel extends HttpChannel
-    {
-        private final List<Content.Chunk> contents;
-        private final Content.Chunk finalContent;
+        private final List<HttpInput.Content> contents;
+        private final HttpInput.Content finalContent;
         private int index;
 
-        public ContentListHttpChannel(List<Content.Chunk> contents, Content.Chunk finalContent)
+        public ContentListHttpChannel(List<HttpInput.Content> contents, HttpInput.Content finalContent)
         {
-            super(null, null);
+            super(_contextHandler, new MockConnectionMetaData(_connector));
             this.contents = contents;
             this.finalContent = finalContent;
         }
 
-        /*
         @Override
         public boolean needContent()
         {
@@ -446,9 +480,9 @@ public class AsyncContentProducerTest
         }
 
         @Override
-        public Content produceContent()
+        public HttpInput.Content produceContent()
         {
-            Content c;
+            HttpInput.Content c;
             if (index < contents.size())
                 c = contents.get(index++);
             else
@@ -456,7 +490,11 @@ public class AsyncContentProducerTest
             return c;
         }
 
-         */
+        @Override
+        public boolean failAllContent(Throwable failure)
+        {
+            return false;
+        }
 
         @Override
         public boolean failed(Throwable failure)
@@ -471,23 +509,23 @@ public class AsyncContentProducerTest
         }
     }
 
-    private static class ArrayDelayedHttpChannel extends HttpChannel
+    private class ArrayDelayedHttpChannel extends HttpChannel
     {
         private final ByteBuffer[] byteBuffers;
-        private final Content.Chunk finalContent;
-        private final ScheduledExecutorService scheduledExecutorService;
+        private final HttpInput.Content finalContent;
+        private final Scheduler scheduler;
         private final CyclicBarrier barrier;
         private int counter;
-        private volatile Content.Chunk nextContent;
+        private volatile HttpInput.Content nextContent;
 
-        public ArrayDelayedHttpChannel(ByteBuffer[] byteBuffers, Content.Chunk finalContent, ScheduledExecutorService scheduledExecutorService, CyclicBarrier barrier)
+        public ArrayDelayedHttpChannel(ByteBuffer[] byteBuffers, HttpInput.Content finalContent, Scheduler scheduler, CyclicBarrier barrier)
         {
-            super(new ContextHandler(), new MockConnectionMetaData(new MockConnector(new Server())));
+            super(_contextHandler, new MockConnectionMetaData(_connector));
             getContextHandler().setServer(getConnectionMetaData().getConnector().getServer());
 
             this.byteBuffers = new ByteBuffer[byteBuffers.length];
             this.finalContent = finalContent;
-            this.scheduledExecutorService = scheduledExecutorService;
+            this.scheduler = scheduler;
             this.barrier = barrier;
             for (int i = 0; i < byteBuffers.length; i++)
             {
@@ -495,16 +533,15 @@ public class AsyncContentProducerTest
             }
         }
 
-        /*
         @Override
         public boolean needContent()
         {
             if (nextContent != null)
                 return true;
-            scheduledExecutorService.schedule(() ->
+            scheduler.schedule(() ->
             {
                 if (byteBuffers.length > counter)
-                    nextContent = new Content.Buffer(byteBuffers[counter++]);
+                    nextContent = new HttpInput.Content(byteBuffers[counter++]);
                 else
                     nextContent = finalContent;
                 try
@@ -520,9 +557,9 @@ public class AsyncContentProducerTest
         }
 
         @Override
-        public Content produceContent()
+        public HttpInput.Content produceContent()
         {
-            Content result = nextContent;
+            HttpInput.Content result = nextContent;
             nextContent = null;
             return result;
         }
@@ -534,7 +571,6 @@ public class AsyncContentProducerTest
             counter = byteBuffers.length;
             return false;
         }
-         */
 
         @Override
         public boolean failed(Throwable x)
@@ -560,7 +596,7 @@ public class AsyncContentProducerTest
         }
 
         @Override
-        public Content.Chunk readFrom(Content.Chunk content)
+        public HttpInput.Content readFrom(HttpInput.Content content)
         {
             return null;
         }
@@ -568,12 +604,12 @@ public class AsyncContentProducerTest
 
     private static class AccountingInterceptor implements HttpInput.Interceptor
     {
-        private final List<Content.Chunk> contents = new ArrayList<>();
+        private final List<HttpInput.Content> contents = new ArrayList<>();
 
         @Override
-        public Content.Chunk readFrom(Content.Chunk content)
+        public HttpInput.Content readFrom(HttpInput.Content content)
         {
-            if (content.isTerminal() || !contents.contains(content))
+            if (content.isSpecial() || !contents.contains(content))
                 contents.add(content);
             return content;
         }

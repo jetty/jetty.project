@@ -63,6 +63,12 @@ public abstract class ByteBufferChunk implements Content.Chunk
     }
 
     @Override
+    public boolean canRetain()
+    {
+        return false;
+    }
+
+    @Override
     public void retain()
     {
         throw new UnsupportedOperationException();
@@ -92,6 +98,12 @@ public abstract class ByteBufferChunk implements Content.Chunk
         public WithReferenceCount(ByteBuffer byteBuffer, boolean last)
         {
             super(byteBuffer, last);
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return true;
         }
 
         @Override
@@ -163,6 +175,12 @@ public abstract class ByteBufferChunk implements Content.Chunk
         {
             super(byteBuffer, last);
             this.retainable = retainable;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return true;
         }
 
         @Override

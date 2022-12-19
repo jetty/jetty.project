@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -24,13 +23,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -53,7 +51,7 @@ public class AsyncContentTest
             async.demand(latch::countDown);
             assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
-            async.write(Content.Chunk.from(UTF_8.encode("one"), false), Callback.NOOP);
+            async.write(false, UTF_8.encode("one"), Callback.NOOP);
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -85,7 +83,7 @@ public class AsyncContentTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            async.write(Content.Chunk.from(UTF_8.encode("one"), false), Callback.NOOP);
+            async.write(false, UTF_8.encode("one"), Callback.NOOP);
 
             Content.Chunk chunk = async.read();
             assertNotNull(chunk);
@@ -104,31 +102,8 @@ public class AsyncContentTest
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
-            async.write(Content.Chunk.EMPTY, Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
+            async.write(false, BufferUtil.EMPTY_BUFFER, Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
             assertTrue(failLatch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    @Test
-    public void testWriteErrorChunk() throws Exception
-    {
-        try (AsyncContent async = new AsyncContent())
-        {
-            CountDownLatch latch = new CountDownLatch(1);
-            async.demand(latch::countDown);
-            assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
-
-            Throwable error = new Throwable("test");
-            AtomicReference<Throwable> callback = new AtomicReference<>();
-            async.write(Content.Chunk.from(error), Callback.from(Invocable.NOOP, callback::set));
-
-            assertThat(callback.get(), sameInstance(error));
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-            Content.Chunk chunk = async.read();
-            assertNotNull(chunk);
-            assertThat(chunk, instanceOf(Content.Chunk.Error.class));
-            assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(error));
         }
     }
 
@@ -165,7 +140,8 @@ public class AsyncContentTest
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(1));
-            assertThat(chunk.isTerminal(), is(false));
+            assertThat(chunk.isLast(), is(false));
+            assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
             assertThat(successCounter.get(), is(1));
             assertThat(failureRef.get(), is(nullValue()));
@@ -184,7 +160,8 @@ public class AsyncContentTest
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(1));
-            assertThat(chunk.isTerminal(), is(true));
+            assertThat(chunk.isLast(), is(true));
+            assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
             assertThat(successCounter.get(), is(1));
             assertThat(failureRef.get(), is(nullValue()));
@@ -192,52 +169,21 @@ public class AsyncContentTest
     }
 
     @Test
-    public void testWriteAndReadErrors()
+    public void testReadAfterClose()
     {
         try (AsyncContent async = new AsyncContent())
         {
-            AssertingCallback callback = new AssertingCallback();
+            async.close();
 
-            Exception error1 = new Exception("error1");
-            async.write(Content.Chunk.from(error1), callback);
-            callback.assertSingleFailureSameInstanceNoSuccess(error1);
+            Content.Chunk chunk1 = async.read();
+            assertThat(chunk1.isLast(), is(true));
+            assertThat(chunk1.hasRemaining(), is(false));
 
-            Content.Chunk chunk = async.read();
-            assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(error1));
-            chunk = async.read();
-            assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(error1));
-            callback.assertNoFailureNoSuccess();
-
-            Exception error2 = new Exception("error2");
-            async.write(Content.Chunk.from(error2), callback);
-            callback.assertSingleFailureSameInstanceNoSuccess(error1);
-
-            async.write(Content.Chunk.from(ByteBuffer.wrap(new byte[1]), false), callback);
-            callback.assertSingleFailureSameInstanceNoSuccess(error1);
+            Content.Chunk chunk2 = async.read();
+            assertThat(chunk2.isLast(), is(true));
+            assertThat(chunk2.hasRemaining(), is(false));
+            assertSame(chunk1, chunk2);
         }
-    }
-
-    @Test
-    public void testCloseAfterWritingEof()
-    {
-        AssertingCallback callback = new AssertingCallback();
-        try (AsyncContent async = new AsyncContent())
-        {
-            async.write(Content.Chunk.EOF, callback);
-            callback.assertNoFailureNoSuccess();
-
-            Content.Chunk chunk = async.read();
-            assertThat(chunk.isTerminal(), is(true));
-            callback.assertNoFailureWithSuccesses(1);
-
-            chunk = async.read();
-            assertThat(chunk.isTerminal(), is(true));
-            callback.assertNoFailureWithSuccesses(0);
-
-            async.write(Content.Chunk.EOF, callback);
-            callback.assertSingleFailureIsInstanceNoSuccess(IOException.class);
-        }
-        callback.assertNoFailureNoSuccess();
     }
 
     @Test
@@ -317,13 +263,6 @@ public class AsyncContentTest
             assertThat(successCounter.get(), is(0));
             assertThat(throwables.size(), is(1));
             assertThat(throwables.remove(0), sameInstance(x));
-        }
-
-        public void assertSingleFailureIsInstanceNoSuccess(Class<? extends Throwable> clazz)
-        {
-            assertThat(successCounter.get(), is(0));
-            assertThat(throwables.size(), is(1));
-            assertThat(throwables.remove(0), instanceOf(clazz));
         }
     }
 }

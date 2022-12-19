@@ -827,7 +827,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void onContentSource(Response response, Content.Source contentSource)
             {
-                accumulateChunks(response, contentSource, chunks);
+                accumulateChunks(contentSource, chunks);
             }
         };
         client.newRequest(newURI(transport))
@@ -877,7 +877,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void onContentSource(Response response, Content.Source contentSource)
             {
-                new Thread(() -> accumulateChunksInSpawnedThread(response, contentSource, chunks))
+                new Thread(() -> accumulateChunksInSpawnedThread(contentSource, chunks))
                     .start();
             }
         };
@@ -904,9 +904,9 @@ public class HttpClientTest extends AbstractTest
 
         ContentResponse resp = client.newRequest(newURI(transport))
             .path("/")
-            .onResponseContentSource((response, contentSource) -> accumulateChunks(response, contentSource, chunks1))
-            .onResponseContentSource((response, contentSource) -> accumulateChunks(response, contentSource, chunks2))
-            .onResponseContentSource((response, contentSource) -> accumulateChunks(response, contentSource, chunks3))
+            .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks1))
+            .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks2))
+            .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks3))
             .send();
 
         assertThat(resp.getStatus(), is(200));
@@ -932,8 +932,8 @@ public class HttpClientTest extends AbstractTest
         List<Content.Chunk> chunks3 = new CopyOnWriteArrayList<>();
         ContentResponse contentResponse = client.newRequest(newURI(transport))
             .path("/")
-            .onResponseContentSource((response, contentSource) -> accumulateChunks(response, contentSource, chunks1))
-            .onResponseContentSource((response, contentSource) -> accumulateChunks(response, contentSource, chunks2))
+            .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks1))
+            .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks2))
             .onResponseContentSource((response, contentSource) ->
             {
                 contentSource.fail(new Exception("Synthetic Failure"));
@@ -963,8 +963,8 @@ public class HttpClientTest extends AbstractTest
         CountDownLatch chunks3Latch = new CountDownLatch(1);
         ContentResponse contentResponse = client.newRequest(newURI(transport))
             .path("/")
-            .onResponseContentSource((response, contentSource) -> accumulateChunks(response, contentSource, chunks1))
-            .onResponseContentSource((response, contentSource) -> accumulateChunks(response, contentSource, chunks2))
+            .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks1))
+            .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks2))
             .onResponseContentSource((response, contentSource) ->
                 new Thread(() ->
                 {
@@ -1025,47 +1025,52 @@ public class HttpClientTest extends AbstractTest
         }
     }
 
-    private static void accumulateChunks(Response response, Content.Source contentSource, List<Content.Chunk> chunks)
+    private static void accumulateChunks(Content.Source contentSource, List<Content.Chunk> chunks)
     {
         Content.Chunk chunk = contentSource.read();
         if (chunk == null)
         {
-            contentSource.demand(() -> accumulateChunks(response, contentSource, chunks));
+            contentSource.demand(() -> accumulateChunks(contentSource, chunks));
             return;
         }
 
-        chunks.add(duplicateAndRelease(chunk));
-
-        if (!chunk.isLast())
-            contentSource.demand(() -> accumulateChunks(response, contentSource, chunks));
-    }
-
-    private static void accumulateChunksInSpawnedThread(Response response, Content.Source contentSource, List<Content.Chunk> chunks)
-    {
-        Content.Chunk chunk = contentSource.read();
-        if (chunk == null)
-        {
-            contentSource.demand(() -> new Thread(() -> accumulateChunks(response, contentSource, chunks)).start());
-            return;
-        }
-
-        chunks.add(duplicateAndRelease(chunk));
-
-        if (!chunk.isLast())
-            contentSource.demand(() -> new Thread(() -> accumulateChunks(response, contentSource, chunks)).start());
-    }
-
-    private static Content.Chunk duplicateAndRelease(Content.Chunk chunk)
-    {
-        if (chunk == null || chunk.isTerminal())
-            return chunk;
-
-        ByteBuffer buffer = BufferUtil.allocate(chunk.remaining());
-        int pos = BufferUtil.flipToFill(buffer);
-        buffer.put(chunk.getByteBuffer());
-        BufferUtil.flipToFlush(buffer, pos);
+        chunks.add(duplicate(chunk));
         chunk.release();
-        return Content.Chunk.from(buffer, chunk.isLast());
+
+        if (!chunk.isLast())
+            contentSource.demand(() -> accumulateChunks(contentSource, chunks));
+    }
+
+    private static void accumulateChunksInSpawnedThread(Content.Source contentSource, List<Content.Chunk> chunks)
+    {
+        Content.Chunk chunk = contentSource.read();
+        if (chunk == null)
+        {
+            contentSource.demand(() -> new Thread(() -> accumulateChunks(contentSource, chunks)).start());
+            return;
+        }
+
+        chunks.add(duplicate(chunk));
+        chunk.release();
+
+        if (!chunk.isLast())
+            contentSource.demand(() -> new Thread(() -> accumulateChunks(contentSource, chunks)).start());
+    }
+
+    private static Content.Chunk duplicate(Content.Chunk chunk)
+    {
+        if (chunk.hasRemaining())
+        {
+            ByteBuffer byteBuffer = BufferUtil.allocate(chunk.remaining());
+            int pos = BufferUtil.flipToFill(byteBuffer);
+            byteBuffer.put(chunk.getByteBuffer());
+            BufferUtil.flipToFlush(byteBuffer, pos);
+            return Content.Chunk.from(byteBuffer, chunk.isLast());
+        }
+        else
+        {
+            return chunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
+        }
     }
 
     private static class TestProcessor extends Handler.Abstract

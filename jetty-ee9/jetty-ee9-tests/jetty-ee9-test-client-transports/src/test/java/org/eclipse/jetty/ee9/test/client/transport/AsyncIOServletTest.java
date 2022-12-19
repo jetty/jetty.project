@@ -63,7 +63,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.internal.HttpChannelState;
@@ -1211,71 +1210,71 @@ public class AsyncIOServletTest extends AbstractTest
                 httpInput.addInterceptor(new HttpInput.Interceptor()
                 {
                     int state = 0;
-                    Content.Chunk saved;
+                    HttpInput.Content saved;
 
                     @Override
-                    public Content.Chunk readFrom(Content.Chunk chunk)
+                    public HttpInput.Content readFrom(HttpInput.Content content)
                     {
                         switch (state)
                         {
                             case 0:
                                 // null transform
-                                chunk.skip(chunk.remaining());
-                                chunk.release();
+                                content.skip(content.remaining());
+                                content.succeeded();
                                 state++;
                                 return null;
 
                             case 1:
                             {
                                 // copy transform
-                                if (!chunk.hasRemaining())
+                                if (!content.hasContent())
                                 {
                                     state++;
-                                    return chunk;
+                                    return content;
                                 }
-                                ByteBuffer copy = wrap(toArray(chunk.getByteBuffer()));
-                                chunk.skip(copy.remaining());
-                                chunk.release();
-                                return Content.Chunk.from(copy, false);
+                                ByteBuffer copy = wrap(toArray(content.getByteBuffer()));
+                                content.skip(copy.remaining());
+                                content.succeeded();
+                                return new HttpInput.Content(copy);
                             }
 
                             case 2:
                                 // byte by byte
-                                if (!chunk.hasRemaining())
+                                if (!content.hasContent())
                                 {
                                     state++;
-                                    return chunk;
+                                    return content;
                                 }
                                 byte[] b = new byte[1];
-                                int l = chunk.get(b, 0, 1);
-                                if (!chunk.hasRemaining())
-                                    chunk.release();
-                                return Content.Chunk.from(wrap(b, 0, l), false);
+                                int l = content.get(b, 0, 1);
+                                if (!content.hasContent())
+                                    content.succeeded();
+                                return new HttpInput.Content(wrap(b, 0, l));
 
                             case 3:
                             {
                                 // double vision
-                                if (!chunk.hasRemaining())
+                                if (!content.hasContent())
                                 {
                                     if (saved == null)
                                     {
                                         state++;
-                                        return chunk;
+                                        return content;
                                     }
-                                    Content.Chunk ref = saved;
+                                    HttpInput.Content ref = saved;
                                     saved = null;
                                     return ref;
                                 }
 
-                                byte[] data = toArray(chunk.getByteBuffer());
-                                chunk.skip(data.length);
-                                chunk.release();
-                                saved = Content.Chunk.from(wrap(data), false);
-                                return Content.Chunk.from(wrap(data), false);
+                                byte[] data = toArray(content.getByteBuffer());
+                                content.skip(data.length);
+                                content.succeeded();
+                                saved = new HttpInput.Content(wrap(data));
+                                return new HttpInput.Content(wrap(data));
                             }
 
                             default:
-                                return chunk;
+                                return content;
                         }
                     }
                 });
@@ -1560,7 +1559,7 @@ public class AsyncIOServletTest extends AbstractTest
                 HttpInput httpInput = ((org.eclipse.jetty.ee9.nested.Request)request).getHttpInput();
                 httpInput.addInterceptor(chunk ->
                 {
-                    if (!chunk.hasRemaining())
+                    if (!chunk.hasContent())
                         return chunk;
 
                     // skip contents with odd numbers
@@ -1568,16 +1567,16 @@ public class AsyncIOServletTest extends AbstractTest
                     duplicate.get();
                     byte integer = duplicate.get();
                     int idx = Character.getNumericValue(integer);
-                    Content.Chunk chunkCopy = Content.Chunk.from(chunk.getByteBuffer().duplicate(), false);
+                    HttpInput.Content chunkCopy = new HttpInput.Content(chunk.getByteBuffer().duplicate());
                     chunk.skip(chunk.remaining());
-                    chunk.release();
+                    chunk.succeeded();
                     if (idx % 2 == 0)
                         return chunkCopy;
                     return null;
                 });
                 httpInput.addInterceptor(chunk ->
                 {
-                    if (!chunk.hasRemaining())
+                    if (!chunk.hasContent())
                         return chunk;
 
                     // reverse the bytes
@@ -1585,7 +1584,7 @@ public class AsyncIOServletTest extends AbstractTest
                     byte[] bytes = new byte[2];
                     bytes[1] = byteBuffer.get();
                     bytes[0] = byteBuffer.get();
-                    return Content.Chunk.from(wrap(bytes), false);
+                    return new HttpInput.Content(wrap(bytes));
                 });
 
                 AsyncContext asyncContext = request.startAsync();

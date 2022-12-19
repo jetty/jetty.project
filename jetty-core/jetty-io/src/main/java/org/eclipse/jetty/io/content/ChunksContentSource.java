@@ -115,7 +115,7 @@ public class ChunksContentSource implements Content.Source
     @Override
     public void fail(Throwable failure)
     {
-        List<Content.Chunk> toFail = List.of();
+        List<Content.Chunk> chunksToRelease;
         try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
@@ -123,10 +123,14 @@ public class ChunksContentSource implements Content.Source
             terminated = Content.Chunk.from(failure);
             if (iterator != null)
             {
-                toFail = new ArrayList<>();
-                iterator.forEachRemaining(toFail::add);
+                chunksToRelease = new ArrayList<>();
+                iterator.forEachRemaining(chunksToRelease::add);
+            }
+            else
+            {
+                chunksToRelease = List.copyOf(chunks);
             }
         }
-        toFail.forEach(Content.Chunk::release);
+        chunksToRelease.forEach(Content.Chunk::release);
     }
 }

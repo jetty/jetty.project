@@ -589,7 +589,7 @@ public abstract class HttpReceiver
                     return _chunk;
 
                 // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
-                if (retain && _chunk.hasRemaining())
+                if (retain && _chunk.canRetain())
                     _chunk.retain();
                 if (LOG.isDebugEnabled())
                     LOG.debug("decoding: {}", _chunk);

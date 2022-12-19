@@ -147,8 +147,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (data == null)
                 return null;
 
+            // The data instance should be released after readData() above;
+            // the chunk is stored below for later use, so should be retained;
+            // the two actions cancel each other, no need to further retain or release.
             chunk = createChunk(data);
-            data.release();
 
             // Some content is read, but the 100 Continue interim
             // response has not been sent yet, then don't bother
@@ -204,8 +206,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
             return null;
         }
 
+        // The data instance should be released after readData() above;
+        // the chunk is stored below for later use, so should be retained;
+        // the two actions cancel each other, no need to further retain or release.
         Content.Chunk chunk = createChunk(data);
-        data.release();
 
         try (AutoLock ignored = lock.lock())
         {
@@ -235,9 +239,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (data == Stream.Data.EOF)
             return Content.Chunk.EOF;
-
-        // As we are passing the ByteBuffer to the Chunk we need to retain.
-        data.retain();
         return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data);
     }
 

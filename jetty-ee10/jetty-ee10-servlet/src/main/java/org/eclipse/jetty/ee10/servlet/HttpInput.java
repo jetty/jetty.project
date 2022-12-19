@@ -245,7 +245,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             Content.Chunk chunk = _contentProducer.nextChunk();
             if (chunk == null)
                 throw new IllegalStateException("read on unready input");
-            if (!chunk.isTerminal())
+            if (chunk.hasRemaining())
             {
                 int read = buffer == null ? get(chunk, b, off, len) : get(chunk, buffer);
                 if (LOG.isDebugEnabled())
@@ -343,31 +343,28 @@ public class HttpInput extends ServletInputStream implements Runnable
             return;
         }
 
-        if (chunk.isTerminal())
+        if (chunk instanceof Content.Chunk.Error errorChunk)
         {
-            if (chunk instanceof Content.Chunk.Error errorChunk)
+            Throwable error = errorChunk.getCause();
+            if (LOG.isDebugEnabled())
+                LOG.debug("running error={} {}", error, this);
+            // TODO is this necessary to add here?
+            _servletChannel.getResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
+            _readListener.onError(error);
+        }
+        else if (chunk.isLast() && !chunk.hasRemaining())
+        {
+            try
             {
-                Throwable error = errorChunk.getCause();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("running error={} {}", error, this);
-                // TODO is this necessary to add here?
-                _servletChannel.getResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
-                _readListener.onError(error);
+                    LOG.debug("running at EOF {}", this);
+                _readListener.onAllDataRead();
             }
-            else if (chunk == Content.Chunk.EOF)
+            catch (Throwable x)
             {
-                try
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("running at EOF {}", this);
-                    _readListener.onAllDataRead();
-                }
-                catch (Throwable x)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("running failed onAllDataRead {}", this, x);
-                    _readListener.onError(x);
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("running failed onAllDataRead {}", this, x);
+                _readListener.onError(x);
             }
         }
         else

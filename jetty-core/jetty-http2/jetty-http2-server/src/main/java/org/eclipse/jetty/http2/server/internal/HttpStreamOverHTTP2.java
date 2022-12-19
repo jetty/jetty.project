@@ -139,6 +139,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Content.Chunk read()
     {
+        // Tunnel requests do not have HTTP content, avoid
+        // returning chunks meant for a different protocol.
+        if (tunnelSupport != null)
+            return null;
+
         while (true)
         {
             Content.Chunk chunk;
@@ -154,8 +159,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (data == null)
                 return null;
 
+            // The data instance should be released after readData() above;
+            // the chunk is stored below for later use, so should be retained;
+            // the two actions cancel each other, no need to further retain or release.
             chunk = createChunk(data);
-            data.release();
 
             // Some content is read, but the 100 Continue interim
             // response has not been sent yet, then don't bother
@@ -243,9 +250,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         DataFrame frame = data.frame();
         if (frame.isEndStream() && frame.remaining() == 0)
             return Content.Chunk.EOF;
-
-        // We need to retain because we are passing the ByteBuffer to the Chunk.
-        data.retain();
         return Content.Chunk.from(frame.getData(), frame.isEndStream(), data);
     }
 
@@ -536,7 +540,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Throwable consumeAvailable()
     {
-        if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+        if (tunnelSupport != null)
             return null;
         return HttpStream.super.consumeAvailable();
     }

@@ -58,11 +58,12 @@ class AsyncContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("recycling {}", this);
 
-        // Make sure that the chunk has been fully consumed before destroying the interceptor and also make sure
-        // that asking this instance for chunks between recycle and reopen will only produce error'ed chunks.
+        // Make sure that asking this instance for chunks between
+        // recycle() and reopen() will only produce error chunks.
         if (_chunk == null)
             _chunk = RECYCLED_ERROR_CHUNK;
-        else if (!_chunk.isTerminal())
+        // The chunk must be fully consumed.
+        else if (!_chunk.isLast() || _chunk.hasRemaining())
             throw new IllegalStateException("ContentProducer with unconsumed chunk cannot be recycled");
     }
 
@@ -168,15 +169,14 @@ class AsyncContentProducer implements ContentProducer
 
     private boolean consumeCurrentChunk()
     {
-        if (_chunk != null && !_chunk.isTerminal())
+        if (_chunk != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("releasing current chunk {}", this);
+                LOG.debug("consuming and releasing current chunk {}", this);
             _chunk.skip(_chunk.remaining());
             _chunk.release();
             _chunk = _chunk.isLast() ? Content.Chunk.EOF : null;
         }
-
         return _chunk != null && _chunk.isLast();
     }
 
@@ -191,8 +191,8 @@ class AsyncContentProducer implements ContentProducer
 
             chunk.release();
 
-            if (chunk.isTerminal())
-                return chunk.isLast();
+            if (chunk.isLast())
+                return true;
         }
     }
 
@@ -266,7 +266,7 @@ class AsyncContentProducer implements ContentProducer
         {
             if (_chunk != null)
             {
-                if (_chunk.isTerminal() || _chunk.hasRemaining())
+                if (_chunk.isLast() || _chunk.hasRemaining())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("chunk not yet depleted, returning it {}", this);
@@ -276,7 +276,6 @@ class AsyncContentProducer implements ContentProducer
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("current chunk depleted {}", this);
-
                     _chunk.release();
                     _chunk = null;
                 }
@@ -299,7 +298,7 @@ class AsyncContentProducer implements ContentProducer
             }
 
             // Release the chunk immediately, if it is empty.
-            if (_chunk != null && !_chunk.hasRemaining() && !_chunk.isTerminal())
+            if (_chunk != null && !_chunk.hasRemaining() && !_chunk.isLast())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("releasing empty chunk {}", this);

@@ -51,7 +51,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -988,13 +987,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (stream == null || stream._chunk != null || _retainableByteBuffer == null)
                 throw new IllegalStateException();
 
-            _retainableByteBuffer.retain();
-
             if (LOG.isDebugEnabled())
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
-            RetainableByteBuffer retainable = _retainableByteBuffer;
-            stream._chunk = Content.Chunk.from(buffer, false, new ChunkRetainable(retainable, buffer));
+            _retainableByteBuffer.retain();
+            stream._chunk = Content.Chunk.from(buffer, false, _retainableByteBuffer);
             return true;
         }
 
@@ -1106,26 +1103,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         LOG.debug(record);
                 }
             }
-        }
-    }
-
-    private class ChunkRetainable extends Retainable.Wrapper
-    {
-        private final ByteBuffer buffer;
-
-        private ChunkRetainable(Retainable retainable, ByteBuffer buffer)
-        {
-            super(retainable);
-            this.buffer = buffer;
-        }
-
-        @Override
-        public boolean release()
-        {
-            boolean released = super.release();
-            if (LOG.isDebugEnabled())
-                LOG.debug("content released {} {}/{} for {}", released, BufferUtil.toDetailString(buffer), getWrapped(), HttpConnection.this);
-            return released;
         }
     }
 

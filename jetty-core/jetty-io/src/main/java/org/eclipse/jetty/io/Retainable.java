@@ -27,6 +27,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 public interface Retainable
 {
     /**
+     * <p>Returns whether this resource can be retained, that is whether {@link #retain()}
+     * can be called safely.</p>
+     * <p>Implementations may decide that special resources are not retainable (for example,
+     * {@code static} constants) so calling {@link #retain()} is not safe because it may throw.</p>
+     *
+     * @return whether it is safe to call {@link #retain()}
+     */
+    default boolean canRetain()
+    {
+        return true;
+    }
+
+    /**
      * <p>Retains this resource, incrementing the reference count.</p>
      */
     void retain();
@@ -40,6 +53,9 @@ public interface Retainable
      */
     boolean release();
 
+    /**
+     * A wrapper of {@link Retainable} instances.
+     */
     class Wrapper implements Retainable
     {
         private final Retainable wrapped;
@@ -52,6 +68,12 @@ public interface Retainable
         public Retainable getWrapped()
         {
             return wrapped;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return getWrapped().canRetain();
         }
 
         @Override

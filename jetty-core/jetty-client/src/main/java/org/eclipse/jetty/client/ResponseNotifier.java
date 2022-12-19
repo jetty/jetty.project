@@ -308,6 +308,7 @@ public class ResponseNotifier
             {
                 demultiplexerContentSource.onChunk(chunk);
             }
+            chunk.release();
         }
 
         private void registerFailure(Throwable failure)
@@ -369,6 +370,12 @@ public class ResponseNotifier
                 }
 
                 @Override
+                public boolean canRetain()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
                 public void retain()
                 {
                     throw new UnsupportedOperationException();
@@ -383,7 +390,7 @@ public class ResponseNotifier
                 @Override
                 public String toString()
                 {
-                    return "ALREADY_READ_CHUNK";
+                    return "AlreadyReadChunk";
                 }
             };
             private final int index;
@@ -401,9 +408,17 @@ public class ResponseNotifier
                 if (LOG.isDebugEnabled())
                     LOG.debug("Registering content in multiplexed content source #{} that contains {}", index, currentChunk);
                 if (currentChunk == null || currentChunk == ALREADY_READ_CHUNK)
-                    this.chunk = chunk.slice();
+                {
+                    Content.Chunk slice = chunk.slice();
+                    // Retain the slice because it is stored for later reads.
+                    if (slice.canRetain())
+                        slice.retain();
+                    this.chunk = slice;
+                }
                 else if (!currentChunk.isLast())
+                {
                     throw new IllegalStateException("Cannot overwrite chunk");
+                }
                 onDemandCallback();
             }
 
@@ -436,8 +451,8 @@ public class ResponseNotifier
                 }
 
                 Content.Chunk result = chunk;
-                if (result != null && !result.isTerminal())
-                    chunk = ALREADY_READ_CHUNK;
+                if (result != null)
+                    chunk = result.isLast() ? Content.Chunk.next(result) : ALREADY_READ_CHUNK;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} reading current chunk {}", index, result);
                 return result;

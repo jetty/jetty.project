@@ -214,7 +214,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     case '=' ->
                     {
                         _name = _builder.takeString();
-                        checkLength(chunk, _name);
+                        checkLength(_name);
                     }
                     case '+' -> _builder.append((byte)' ');
                     case '%' -> _percent++;
@@ -228,7 +228,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     case '&' ->
                     {
                         value = _builder.takeString();
-                        checkLength(chunk, value);
+                        checkLength(value);
                         break loop;
                     }
                     case '+' -> _builder.append((byte)' ');
@@ -248,7 +248,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     _builder.append(_percentCode);
                 }
                 value = _builder.takeString();
-                checkLength(chunk, value);
+                checkLength(value);
             }
 
             if (value != null)
@@ -262,16 +262,13 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         return null;
     }
 
-    private void checkLength(Content.Chunk chunk, String nameOrValue)
+    private void checkLength(String nameOrValue)
     {
         if (_maxLength >= 0)
         {
             _length += nameOrValue.length();
             if (_length > _maxLength)
-            {
-                chunk.release();
                 throw new IllegalStateException("form too large");
-            }
         }
     }
 }
