@@ -47,7 +47,7 @@ public interface HttpStream extends Callback
     /**
      * @return the nanoTime when this HttpStream was created
      */
-    long getNanoTimeStamp();
+    long getNanoTime();
 
     /**
      * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
@@ -148,9 +148,9 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public final long getNanoTimeStamp()
+        public final long getNanoTime()
         {
-            return getWrapped().getNanoTimeStamp();
+            return getWrapped().getNanoTime();
         }
 
         @Override

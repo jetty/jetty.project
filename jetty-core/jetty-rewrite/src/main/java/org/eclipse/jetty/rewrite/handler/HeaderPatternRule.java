@@ -78,13 +78,13 @@ public class HeaderPatternRule extends PatternRule
         return new Processor(input)
         {
             @Override
-            public void process(Response response, Callback callback) throws Exception
+            public boolean process(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), getHeaderValue());
                 else
                     response.getHeaders().put(getHeaderName(), getHeaderValue());
-                super.process(response, callback);
+                return super.process(response, callback);
             }
         };
     }

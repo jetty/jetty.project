@@ -48,13 +48,14 @@ public class H2SpecServer
 
         // H2Spec requires the server to read the request
         // content and respond with 200 and some content.
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, Callback.NOOP);
                 response.write(true, UTF_8.encode("hello"), callback);
+                return true;
             }
         });
 

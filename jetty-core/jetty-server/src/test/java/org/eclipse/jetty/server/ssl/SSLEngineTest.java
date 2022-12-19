@@ -364,10 +364,10 @@ public class SSLEngineTest
         return sb.toString();
     }
 
-    private static class TestHandler extends Handler.Processor
+    private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
@@ -391,6 +391,7 @@ public class SSLEngineTest
             {
                 response.write(true, BufferUtil.toBuffer(HELLO_WORLD), callback);
             }
+            return true;
         }
     }
 }

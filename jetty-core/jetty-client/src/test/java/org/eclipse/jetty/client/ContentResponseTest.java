@@ -39,12 +39,13 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
     {
         final byte[] content = new byte[1024];
         new Random().nextBytes(content);
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 
@@ -65,13 +66,14 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
     {
         final String content = "The quick brown fox jumped over the lazy dog";
         final String mediaType = "text/plain";
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, mediaType);
                 Content.Sink.write(response, true, content, callback);
+                return true;
             }
         });
 
@@ -94,13 +96,14 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         final String mediaType = "text/plain";
         final String encoding = "UTF-8";
         final String contentType = mediaType + "; charset=" + encoding;
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
                 response.write(true, ByteBuffer.wrap(content.getBytes(encoding)), callback);
+                return true;
             }
         });
 
@@ -123,13 +126,14 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         final String mediaType = "text/plain";
         final String encoding = "UTF-8";
         final String contentType = mediaType + "; charset=\"" + encoding + "\"";
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
                 response.write(true, ByteBuffer.wrap(content.getBytes(encoding)), callback);
+                return true;
             }
         });
 

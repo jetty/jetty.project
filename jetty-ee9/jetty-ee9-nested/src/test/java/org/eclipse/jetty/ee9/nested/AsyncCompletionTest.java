@@ -44,6 +44,7 @@ import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -116,11 +117,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         org.eclipse.jetty.server.Handler.Nested terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
-                org.eclipse.jetty.server.Request.Processor processor = super.handle(request);
-                if (processor == null)
-                    return null;
                 request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
                     @Override
@@ -137,7 +135,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         super.failed(x);
                     }
                 });
-                return processor;
+                return super.process(request, response, callback);
             }
         };
         _server.insertHandler(terminateHandler);

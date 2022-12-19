@@ -239,12 +239,13 @@ public class OptionalSslConnectionTest
         }
     }
 
-    private static class EmptyServerHandler extends Handler.Processor
+    private static class EmptyServerHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             callback.succeeded();
+            return true;
         }
     }
 }

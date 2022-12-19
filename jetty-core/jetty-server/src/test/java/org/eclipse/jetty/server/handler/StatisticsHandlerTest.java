@@ -15,12 +15,14 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -83,10 +85,10 @@ public class StatisticsHandlerTest
     {
         AtomicLong readRate = new AtomicLong(-1L);
 
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
@@ -94,7 +96,7 @@ public class StatisticsHandlerTest
                     if (chunk == null)
                     {
                         request.demand(() -> process(request, response, callback));
-                        return;
+                        return true;
                     }
                     chunk.release();
                     if (chunk.isLast())
@@ -103,17 +105,19 @@ public class StatisticsHandlerTest
                         readRate.set(rr);
                         //System.err.println("over; read rate=" + rr + " b/s");
                         callback.succeeded();
-                        return;
+                        return true;
                     }
                 }
             }
         });
         _server.start();
 
-        String request = "POST / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Length: 1000\r\n" +
-            "\r\n";
+        String request = """
+            POST / HTTP/1.1\r
+            Host: localhost\r
+            Content-Length: 1000\r
+            \r
+            """;
 
         LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
 
@@ -134,10 +138,10 @@ public class StatisticsHandlerTest
         AtomicLong writeRate = new AtomicLong(-1L);
         CountDownLatch latch = new CountDownLatch(1);
 
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -159,6 +163,7 @@ public class StatisticsHandlerTest
                         latch.countDown();
                     }
                 });
+                return true;
             }
 
             private void write(Response response, int counter, Callback finalCallback)
@@ -198,9 +203,11 @@ public class StatisticsHandlerTest
         });
         _server.start();
 
-        String request = "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n";
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
 
         _connector.executeRequest(request);
 
@@ -212,10 +219,10 @@ public class StatisticsHandlerTest
     public void testMinimumDataReadRateHandler() throws Exception
     {
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(1100, 0);
-        mdrh.setHandler(new Handler.Processor()
+        mdrh.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
@@ -223,20 +230,20 @@ public class StatisticsHandlerTest
                     if (chunk == null)
                     {
                         request.demand(() -> process(request, response, callback));
-                        return;
+                        return true;
                     }
 
                     if (chunk instanceof Content.Chunk.Error errorContent)
                     {
                         callback.failed(errorContent.getCause());
-                        return;
+                        return true;
                     }
 
                     chunk.release();
                     if (chunk.isLast())
                     {
                         callback.succeeded();
-                        return;
+                        return true;
                     }
                 }
             }
@@ -245,10 +252,12 @@ public class StatisticsHandlerTest
         _latchHandler.setHandler(mdrh);
         _server.start();
 
-        String request = "POST / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Length: 1000\r\n" +
-                "\r\n";
+        String request = """
+            POST / HTTP/1.1\r
+            Host: localhost\r
+            Content-Length: 1000\r
+            \r
+            """;
 
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
@@ -274,10 +283,10 @@ public class StatisticsHandlerTest
         CountDownLatch latch = new CountDownLatch(1);
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1100);
         int expectedContentLength = 1000;
-        mdrh.setHandler(new Handler.Processor()
+        mdrh.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 write(response, 0, new Callback()
                 {
@@ -295,6 +304,7 @@ public class StatisticsHandlerTest
                         latch.countDown();
                     }
                 });
+                return true;
             }
 
             private void write(Response response, int counter, Callback finalCallback)
@@ -358,9 +368,11 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
         _server.start();
 
-        String request = "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n";
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
 
         // 1st request
         _connector.executeRequest(request);
@@ -370,7 +382,6 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getHandlings());
         assertEquals(1, _statsHandler.getProcessings());
         assertEquals(1, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -382,13 +393,9 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getHandlings());
         assertEquals(1, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
-//        assertEquals(0, _statsHandler.getAsyncRequests());
-//        assertEquals(0, _statsHandler.getAsyncDispatches());
-//        assertEquals(0, _statsHandler.getExpires());
         assertEquals(1, _statsHandler.getResponses2xx());
 
         _latchHandler.reset();
@@ -404,7 +411,6 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(1, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
@@ -417,13 +423,9 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
-//        assertEquals(0, _statsHandler.getAsyncRequests());
-//        assertEquals(0, _statsHandler.getAsyncDispatches());
-//        assertEquals(0, _statsHandler.getExpires());
         assertEquals(2, _statsHandler.getResponses2xx());
     }
 
@@ -435,9 +437,11 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
         _server.start();
 
-        String request = "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n";
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
 
         _connector.executeRequest(request);
         _connector.executeRequest(request);
@@ -447,7 +451,6 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(2, _statsHandler.getProcessingsActive());
         assertEquals(2, _statsHandler.getProcessingsMax());
@@ -459,214 +462,82 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandlings());
         assertEquals(2, _statsHandler.getProcessings());
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(2, _statsHandler.getProcessingsMax());
-//        assertEquals(0, _statsHandler.getAsyncRequests());
-//        assertEquals(0, _statsHandler.getAsyncDispatches());
-//        assertEquals(0, _statsHandler.getExpires());
         assertEquals(2, _statsHandler.getResponses2xx());
     }
 
-// TODO
-//    @Test
-//    public void testSuspendResume() throws Exception
-//    {
-//        final long dispatchTime = 10;
-//        final long requestTime = 50;
-//        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-//        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
-//            {
-//                request.setHandled(true);
-//                try
-//                {
-//                    barrier[0].await();
-//
-//                    Thread.sleep(dispatchTime);
-//
-//                    if (asyncHolder.get() == null)
-//                        asyncHolder.set(request.startAsync());
-//                }
-//                catch (Exception x)
-//                {
-//                    throw new ServletException(x);
-//                }
-//                finally
-//                {
-//                    try
-//                    {
-//                        barrier[1].await();
-//                    }
-//                    catch (Exception ignored)
-//                    {
-//                    }
-//                }
-//            }
-//        });
-//        _server.start();
-//
-//        String request = "GET / HTTP/1.1\r\n" +
-//            "Host: localhost\r\n" +
-//            "\r\n";
-//        _connector.executeRequest(request);
-//
-//        barrier[0].await();
-//
-//        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
-//
-//        barrier[1].await();
-//        assertTrue(_latchHandler.await());
-//        assertNotNull(asyncHolder.get());
-//
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//
-//        _latchHandler.reset();
-//        barrier[0].reset();
-//        barrier[1].reset();
-//
-//        Thread.sleep(requestTime);
-//
-//        asyncHolder.get().addListener(new AsyncListener()
-//        {
-//            @Override
-//            public void onTimeout(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onStartAsync(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onError(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onComplete(AsyncEvent event)
-//            {
-//                try
-//                {
-//                    barrier[2].await();
-//                }
-//                catch (Exception ignored)
-//                {
-//                }
-//            }
-//        });
-//        asyncHolder.get().dispatch();
-//
-//        barrier[0].await(); // entered app handler
-//
-//        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
-//        assertEquals(2, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
-//
-//        barrier[1].await(); // exiting app handler
-//        assertTrue(_latchHandler.await()); // exited stats handler
-//        barrier[2].await(); // onComplete called
-//
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(0, _statsHandler.getRequestsActive());
-//        assertEquals(2, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//
-//        assertEquals(1, _statsHandler.getAsyncRequests());
-//        assertEquals(1, _statsHandler.getAsyncDispatches());
-//        assertEquals(0, _statsHandler.getExpires());
-//        assertEquals(1, _statsHandler.getResponses2xx());
-//
-//        assertThat(_statsHandler.getRequestTimeTotal(), greaterThanOrEqualTo(requestTime * 3 / 4));
-//        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
-//        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 0.01);
-//
-//        assertThat(_statsHandler.getDispatchedTimeTotal(), greaterThanOrEqualTo(dispatchTime * 2 * 3 / 4));
-//        assertTrue(_statsHandler.getDispatchedTimeMean() + dispatchTime <= _statsHandler.getDispatchedTimeTotal());
-//        assertTrue(_statsHandler.getDispatchedTimeMax() + dispatchTime <= _statsHandler.getDispatchedTimeTotal());
-//    }
-//
     @Test
-    public void testHandlingsIncrementThenProcessingsIncrement() throws Exception
+    public void testProcessingIncrementThenAcceptingIncrement() throws Exception
     {
         CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 barrier[0].await();
                 barrier[1].await();
-                return (rq, rs, callback) ->
-                {
-                    barrier[2].await();
-                    barrier[3].await();
-                    callback.succeeded();
-                    barrier[4].await();
-                };
+
+                barrier[2].await();
+                barrier[3].await();
+                
+                callback.succeeded();
+                
+                barrier[4].await();
+                return true;
             }
         });
         _server.start();
 
-        String request = "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n";
-        _connector.executeRequest(request);
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
+        try (LocalConnector.LocalEndPoint endp = _connector.executeRequest(request))
+        {
+            barrier[0].await();
 
-        barrier[0].await();
+            assertEquals(1, _statistics.getConnections());
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(1, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getProcessings());
+            assertEquals(1, _statsHandler.getProcessingsActive());
+            assertEquals(1, _statsHandler.getProcessingsMax());
+            barrier[1].await();
+            barrier[2].await();
 
-        assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getHandlings());
-        assertEquals(0, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(0, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(0, _statsHandler.getProcessingsMax());
-        barrier[1].await();
-        barrier[2].await();
+            assertEquals(1, _statistics.getConnections());
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(1, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getProcessings());
+            assertEquals(1, _statsHandler.getProcessingsActive());
+            assertEquals(1, _statsHandler.getProcessingsMax());
+            barrier[3].await();
+            barrier[4].await();
 
-        assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getHandlings());
-        assertEquals(1, _statsHandler.getProcessings());
-        assertEquals(1, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
-        barrier[3].await();
-        barrier[4].await();
+            String response = endp.getResponse();
+            assertThat(response, containsString(" 200 OK"));
+            await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
 
-        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
-
-        assertEquals(1, _statistics.getConnections());
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getHandlings());
-        assertEquals(1, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(1, _statsHandler.getProcessingsMax());
+            assertEquals(1, _statistics.getConnections());
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(0, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getProcessings());
+            assertEquals(0, _statsHandler.getProcessingsActive());
+            assertEquals(1, _statsHandler.getProcessingsMax());
+        }
     }
 
     @Test
-    public void testThrownHandles() throws Exception
+    public void testThrownInProcess() throws Exception
     {
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public Request.Processor handle(Request request)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 throw new IllegalStateException("expected");
             }
@@ -675,54 +546,15 @@ public class StatisticsHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+            String request = """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                \r
+                """;
             String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
-        assertEquals(1, _statsHandler.getHandlings());
-        assertEquals(0, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(0, _statsHandler.getRequestsActiveMax());
-
-        // We get no recorded status, but we get a recorded thrown response.
-        assertEquals(0, _statsHandler.getResponses1xx());
-        assertEquals(0, _statsHandler.getResponses2xx());
-        assertEquals(0, _statsHandler.getResponses3xx());
-        assertEquals(0, _statsHandler.getResponses4xx());
-        assertEquals(0, _statsHandler.getResponses5xx());
-        assertEquals(1, _statsHandler.getHandlingErrors());
-        assertEquals(0, _statsHandler.getProcessingErrors());
-    }
-
-    @Test
-    public void testThrownProcesses() throws Exception
-    {
-        _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
-        {
-            @Override
-            public Request.Processor handle(Request request)
-            {
-                return (req, resp, cp) ->
-                {
-                    throw new IllegalStateException("expected");
-                };
-            }
-        });
-        _server.start();
-
-        try (StacklessLogging ignored = new StacklessLogging(Response.class))
-        {
-            String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
-            String response = _connector.getResponse(request);
-            assertThat(response, containsString("HTTP/1.1 500 Server Error"));
-        }
-
-        assertEquals(1, _statsHandler.getHandlings());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
@@ -733,314 +565,132 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getResponses3xx());
         assertEquals(0, _statsHandler.getResponses4xx());
         assertEquals(1, _statsHandler.getResponses5xx());
-        assertEquals(0, _statsHandler.getHandlingErrors());
         assertEquals(1, _statsHandler.getProcessingErrors());
     }
 
-//
-//    @Test
-//    public void waitForSuspendedRequestTest() throws Exception
-//    {
-//        CyclicBarrier barrier = new CyclicBarrier(3);
-//        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-//        final CountDownLatch dispatched = new CountDownLatch(1);
-//        _statsHandler.setGracefulShutdownWaitsForRequests(true);
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
-//            {
-//                request.setHandled(true);
-//
-//                try
-//                {
-//                    if (path.contains("async"))
-//                    {
-//                        asyncHolder.set(request.startAsync());
-//                        barrier.await();
-//                    }
-//                    else
-//                    {
-//                        barrier.await();
-//                        dispatched.await();
-//                    }
-//                }
-//                catch (Exception e)
-//                {
-//                    throw new ServletException(e);
-//                }
-//            }
-//        });
-//        _server.start();
-//
-//        // One request to block while dispatched other will go async.
-//        _connector.executeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
-//        _connector.executeRequest("GET /async HTTP/1.1\r\nHost: localhost\r\n\r\n");
-//
-//        // Ensure the requests have been dispatched and async started.
-//        barrier.await();
-//        AsyncContext asyncContext = Objects.requireNonNull(asyncHolder.get());
-//
-//        // Shutdown should timeout as there are two active requests.
-//        Future<Void> shutdown = _statsHandler.shutdown();
-//        assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
-//
-//        // When the dispatched thread exits we should still be waiting on the async request.
-//        dispatched.countDown();
-//        assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
-//
-//        // Shutdown should complete only now the AsyncContext is completed.
-//        asyncContext.complete();
-//        shutdown.get(5, TimeUnit.MILLISECONDS);
-//    }
-//
-//    @Test
-//    public void doNotWaitForSuspendedRequestTest() throws Exception
-//    {
-//        CyclicBarrier barrier = new CyclicBarrier(3);
-//        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-//        final CountDownLatch dispatched = new CountDownLatch(1);
-//        _statsHandler.setGracefulShutdownWaitsForRequests(false);
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
-//            {
-//                request.setHandled(true);
-//
-//                try
-//                {
-//                    if (path.contains("async"))
-//                    {
-//                        asyncHolder.set(request.startAsync());
-//                        barrier.await();
-//                    }
-//                    else
-//                    {
-//                        barrier.await();
-//                        dispatched.await();
-//                    }
-//                }
-//                catch (Exception e)
-//                {
-//                    throw new ServletException(e);
-//                }
-//            }
-//        });
-//        _server.start();
-//
-//        // One request to block while dispatched other will go async.
-//        _connector.executeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
-//        _connector.executeRequest("GET /async HTTP/1.1\r\nHost: localhost\r\n\r\n");
-//
-//        // Ensure the requests have been dispatched and async started.
-//        barrier.await();
-//        assertNotNull(asyncHolder.get());
-//
-//        // Shutdown should timeout as there is a request dispatched.
-//        Future<Void> shutdown = _statsHandler.shutdown();
-//        assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
-//
-//        // When the dispatched thread exits we should shutdown even though we have a waiting async request.
-//        dispatched.countDown();
-//        shutdown.get(5, TimeUnit.MILLISECONDS);
-//    }
-//
-//    @Test
-//    public void testSuspendExpire() throws Exception
-//    {
-//        final long dispatchTime = 10;
-//        final long timeout = 100;
-//        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-//        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
-//            {
-//                request.setHandled(true);
-//                try
-//                {
-//                    barrier[0].await();
-//
-//                    Thread.sleep(dispatchTime);
-//
-//                    if (asyncHolder.get() == null)
-//                    {
-//                        AsyncContext async = request.startAsync();
-//                        asyncHolder.set(async);
-//                        async.setTimeout(timeout);
-//                    }
-//                }
-//                catch (Exception x)
-//                {
-//                    throw new ServletException(x);
-//                }
-//                finally
-//                {
-//                    try
-//                    {
-//                        barrier[1].await();
-//                    }
-//                    catch (Exception ignored)
-//                    {
-//                    }
-//                }
-//            }
-//        });
-//        _server.start();
-//
-//        String request = "GET / HTTP/1.1\r\n" +
-//            "Host: localhost\r\n" +
-//            "\r\n";
-//        _connector.executeRequest(request);
-//
-//        barrier[0].await();
-//
-//        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
-//
-//        barrier[1].await();
-//        assertTrue(_latchHandler.await());
-//        assertNotNull(asyncHolder.get());
-//        asyncHolder.get().addListener(new AsyncListener()
-//        {
-//            @Override
-//            public void onTimeout(AsyncEvent event)
-//            {
-//                event.getAsyncContext().complete();
-//            }
-//
-//            @Override
-//            public void onStartAsync(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onError(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onComplete(AsyncEvent event)
-//            {
-//                try
-//                {
-//                    barrier[2].await();
-//                }
-//                catch (Exception ignored)
-//                {
-//                }
-//            }
-//        });
-//
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//
-//        barrier[2].await();
-//
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(0, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//
-//        assertEquals(1, _statsHandler.getAsyncRequests());
-//        assertEquals(0, _statsHandler.getAsyncDispatches());
-//        assertEquals(1, _statsHandler.getExpires());
-//        assertEquals(1, _statsHandler.getResponses2xx());
-//
-//        assertTrue(_statsHandler.getRequestTimeTotal() >= (timeout + dispatchTime) * 3 / 4);
-//        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
-//        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 0.01);
-//
-//        assertThat(_statsHandler.getDispatchedTimeTotal(), greaterThanOrEqualTo(dispatchTime * 3 / 4));
-//    }
+    @Test
+    public void testThrownInProcessAfterCallback() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                throw new IllegalStateException("expected");
+            }
+        });
+        _server.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            String request = """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                \r
+                """;
+            String response = _connector.getResponse(request);
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+        }
+
+        Awaitility.waitAtMost(Duration.ofSeconds(10)).until(() -> _statsHandler.getRequestsActive() == 0);
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+
+        // We get no recorded status, but we get a recorded thrown response.
+        assertEquals(0, _statsHandler.getResponses1xx());
+        assertEquals(1, _statsHandler.getResponses2xx());
+        assertEquals(0, _statsHandler.getResponses3xx());
+        assertEquals(0, _statsHandler.getResponses4xx());
+        assertEquals(0, _statsHandler.getResponses5xx());
+        assertEquals(1, _statsHandler.getProcessingErrors());
+    }
 
     @Test
     public void testHandlingProcessingTime() throws Exception
     {
-        final long handleTime = 10;
-        final long processTime = 35;
+        final long acceptingTime = 250;
+        final long acceptedTime = 500;
+        final long wastedTime = 250;
+        final long requestTime = acceptingTime + acceptedTime;
+        final long processTime = acceptingTime + acceptedTime + wastedTime;
         final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
 
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 barrier[0].await();
-                Thread.sleep(handleTime);
-                return (rq, rs, callback) ->
+                Thread.sleep(acceptingTime);
+                try
+                {
+                    barrier[1].await();
+                    Thread.sleep(acceptedTime);
+                    callback.succeeded();
+                }
+                finally
                 {
                     try
                     {
-                        barrier[1].await();
-                        Thread.sleep(processTime);
-                        callback.succeeded();
+                        barrier[2].await();
+                        Thread.sleep(wastedTime);
                     }
-                    finally
+                    catch (Throwable x)
                     {
-                        try
-                        {
-                            barrier[2].await();
-                        }
-                        catch (Throwable x)
-                        {
-                            callback.failed(x);
-                        }
+                        callback.failed(x);
                     }
-                };
+                }
+                return true;
             }
         });
         _server.start();
 
-        String request = "GET / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "\r\n";
-        _connector.executeRequest(request);
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
+        try (LocalConnector.LocalEndPoint endp = _connector.executeRequest(request))
+        {
+            barrier[0].await();
 
-        barrier[0].await();
+            assertEquals(1, _statistics.getConnections());
 
-        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
+            barrier[1].await();
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(1, _statsHandler.getRequestsActive());
+            barrier[2].await();
+            assertTrue(_latchHandler.await());
+            await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
+            String response = endp.getResponse();
+            assertThat(response, containsString(" 200 OK"));
 
-        barrier[1].await();
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsActive());
-        barrier[2].await();
-        assertTrue(_latchHandler.await());
-        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
+            assertEquals(1, _statsHandler.getRequests());
+            assertEquals(0, _statsHandler.getRequestsActive());
+            assertEquals(1, _statsHandler.getResponses2xx());
 
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//        assertEquals(1, _statsHandler.getAsyncRequests());
-//        assertEquals(0, _statsHandler.getAsyncDispatches());
-//        assertEquals(0, _statsHandler.getExpires());
-        assertEquals(1, _statsHandler.getResponses2xx());
+            _statsHandler.dumpStdErr();
 
-        assertThat(_statsHandler.getRequestTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 5)));
-        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
-        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
+            // TODO currently the wasted time is included in the request time and the accepted time, because those
+            //      timers are stopped in the stream completion (rather than the callback completion), which is
+            //      serialized on the return of the call to process.   Perhaps we should wrap the callback for
+            //      those times?
 
-        assertThat(_statsHandler.getHandlingTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 5)));
-        assertTrue(_statsHandler.getHandlingTimeTotal() < _statsHandler.getRequestTimeTotal());
-        assertEquals(_statsHandler.getHandlingTimeTotal(), _statsHandler.getHandlingTimeMax());
-        assertEquals(_statsHandler.getHandlingTimeTotal(), _statsHandler.getHandlingTimeMean(), 1.0);
+            assertThat(_statsHandler.getRequestTimeTotal(), allOf(
+                greaterThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 3 / 4),
+                lessThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 5 / 4)));
+            assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
+            assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
 
-        assertThat(_statsHandler.getProcessingTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 5)));
-        assertTrue(_statsHandler.getProcessingTimeTotal() < _statsHandler.getRequestTimeTotal());
-        assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMax());
-        assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMean(), 1.0);
-
-        assertThat(_statsHandler.getRequestTimeTotal(), greaterThan(_statsHandler.getHandlingTimeTotal() + _statsHandler.getProcessingTimeTotal()));
+            assertThat(_statsHandler.getProcessingTimeTotal(), allOf(
+                greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 3 / 4),
+                lessThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 5 / 4)));
+            assertTrue(_statsHandler.getProcessingTimeTotal() < _statsHandler.getRequestTimeTotal());
+            assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMax());
+            assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMean(), 1.0);
+        }
     }
 //
 //    @Test
@@ -1098,21 +748,17 @@ public class StatisticsHandlerTest
         private volatile CountDownLatch _latch = new CountDownLatch(1);
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             CountDownLatch latch = _latch;
-            Request.Processor wrappedProcessor = super.handle(request);
-            return new Request.WrapperProcessor(request).wrapProcessor((rq, rs, callback) ->
+            try
             {
-                try
-                {
-                    wrappedProcessor.process(rq, rs, callback);
-                }
-                finally
-                {
-                    latch.countDown();
-                }
-            });
+                return super.process(request, response, callback);
+            }
+            finally
+            {
+                latch.countDown();
+            }
         }
 
         private void reset()
@@ -1136,7 +782,7 @@ public class StatisticsHandlerTest
      * when the second barrier is reached, the callback is succeeded;
      * when the third barrier is reached, process() is returning
      */
-    private static class TripleBarrierHandlerProcessor extends Handler.Processor.Blocking
+    private static class TripleBarrierHandlerProcessor extends Handler.Abstract
     {
         private final CyclicBarrier[] _barriers;
 
@@ -1148,7 +794,7 @@ public class StatisticsHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             try
             {
@@ -1163,6 +809,7 @@ public class StatisticsHandlerTest
                 callback.failed(x);
                 throw new IOException(x);
             }
+            return true;
         }
     }
 }

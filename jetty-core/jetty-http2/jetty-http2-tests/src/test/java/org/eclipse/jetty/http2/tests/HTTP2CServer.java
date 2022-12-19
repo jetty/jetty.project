@@ -18,7 +18,6 @@ import java.util.Date;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -53,10 +52,10 @@ public class HTTP2CServer extends Server
 //        server.start();
 //    }
 
-    private static class SimpleHandler extends Handler.Processor
+    private static class SimpleHandler extends NonBlocking
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             Fields fields = Request.extractQueryParameters(request);
 
@@ -71,6 +70,7 @@ public class HTTP2CServer extends Server
             content += "date=" + new Date() + "\n";
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length());
             Content.Sink.write(response, true, content, callback);
+            return true;
         }
     }
 }

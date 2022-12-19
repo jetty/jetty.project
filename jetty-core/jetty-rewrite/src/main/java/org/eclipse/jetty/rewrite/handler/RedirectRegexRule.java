@@ -81,12 +81,13 @@ public class RedirectRegexRule extends RegexRule
         return new Processor(input)
         {
             @Override
-            public void process(Response response, Callback callback)
+            public boolean process(Response response, Callback callback)
             {
                 String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);
                 response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
                 callback.succeeded();
+                return true;
             }
         };
     }

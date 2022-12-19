@@ -186,31 +186,28 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
             TunnelSupport tunnelSupport = request.getTunnelSupport();
-            if (tunnelSupport != null)
+            if (tunnelSupport == null)
             {
-                if (tunnelSupport.getProtocol() == null)
-                {
-                    return (req, res, cbk) ->
-                    {
-                        HttpURI httpURI = req.getHttpURI();
-                        String serverAddress = httpURI.getAuthority();
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("CONNECT request for {}", serverAddress);
-                        handleConnect(req, res, cbk, serverAddress);
-                    };
-                }
+                Response.writeError(request, response, callback, HttpStatus.NOT_IMPLEMENTED_501);
+                return true;
             }
-            else
+
+            if (tunnelSupport.getProtocol() == null)
             {
-                return (req, res, cbk) -> Response.writeError(req, res, cbk, HttpStatus.NOT_IMPLEMENTED_501);
+                HttpURI httpURI = request.getHttpURI();
+                String serverAddress = httpURI.getAuthority();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("CONNECT request for {}", serverAddress);
+                handleConnect(request, response, callback, serverAddress);
+                return true;
             }
         }
-        return super.handle(request);
+        return super.process(request, response, callback);
     }
 
     /**

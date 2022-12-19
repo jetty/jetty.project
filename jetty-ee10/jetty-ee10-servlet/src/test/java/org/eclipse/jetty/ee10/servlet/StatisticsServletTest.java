@@ -31,6 +31,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
@@ -124,7 +125,7 @@ public class StatisticsServletTest
         assertEquals(response.getStatus(), 200);
         // Trigger 4xx response
         response = getResponse("/nothing");
-        assertEquals(response.getStatus(), 404);
+        assertEquals(response.getStatus(), HttpStatus.NOT_FOUND_404);
 
         // Request stats again
         response = getResponse("/stats");

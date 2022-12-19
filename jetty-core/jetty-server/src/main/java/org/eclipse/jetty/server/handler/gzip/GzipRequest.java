@@ -14,38 +14,101 @@
 package org.eclipse.jetty.server.handler.gzip;
 
 import java.nio.ByteBuffer;
+import java.util.regex.Pattern;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.GZIPContentDecoder;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
-public class GzipRequest extends Request.WrapperProcessor
+public class GzipRequest extends Request.Wrapper
 {
+    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
+    private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
+
     // TODO: use InflaterPool from somewhere.
     private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);
 
-    private final boolean _inflateInput;
-    private Decoder _decoder;
-    private GzipTransformer gzipTransformer;
-    private final int _inflateBufferSize;
-    private final GzipHandler _gzipHandler;
     private final HttpFields _fields;
+    private Decoder _decoder;
+    private GzipTransformer _gzipTransformer;
 
-    public GzipRequest(Request wrapped, GzipHandler gzipHandler, boolean inflateInput, HttpFields fields)
+    public GzipRequest(Request request, int inflateBufferSize)
     {
-        super(wrapped);
-        _gzipHandler = gzipHandler;
-        _inflateInput = inflateInput;
-        _inflateBufferSize = gzipHandler.getInflateBufferSize();
-        _fields = fields;
+        super(request);
+        _fields = updateRequestFields(request, inflateBufferSize > 0);
+
+        if (inflateBufferSize > 0)
+        {
+            Components components = getComponents();
+            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), inflateBufferSize);
+            _gzipTransformer = new GzipTransformer(getWrapped());
+        }
+    }
+
+    private HttpFields updateRequestFields(Request request, boolean inflatable)
+    {
+        HttpFields fields = request.getHeaders();
+        HttpFields.Mutable newFields = HttpFields.build(fields.size());
+        for (HttpField field : fields)
+        {
+            HttpHeader header = field.getHeader();
+            if (header == null)
+            {
+                newFields.add(field);
+                continue;
+            }
+
+            switch (header)
+            {
+                case CONTENT_ENCODING ->
+                {
+                    if (inflatable)
+                    {
+                        if (field.getValue().equalsIgnoreCase("gzip"))
+                        {
+                            newFields.add(X_CE_GZIP);
+                            continue;
+                        }
+
+                        if (COMMA_GZIP.matcher(field.getValue()).matches())
+                        {
+                            String v = field.getValue();
+                            v = v.substring(0, v.lastIndexOf(','));
+                            newFields.add(X_CE_GZIP);
+                            newFields.add(new HttpField(HttpHeader.CONTENT_ENCODING, v));
+                            continue;
+                        }
+                    }
+                    newFields.add(field);
+                }
+                case IF_MATCH, IF_NONE_MATCH ->
+                {
+                    String etags = field.getValue();
+                    String etagsNoSuffix = CompressedContentFormat.GZIP.stripSuffixes(etags);
+                    if (!etagsNoSuffix.equals(etags))
+                    {
+                        newFields.add(new HttpField(field.getHeader(), etagsNoSuffix));
+                        request.setAttribute(GzipHandler.GZIP_HANDLER_ETAGS, etags);
+                        continue;
+                    }
+                    newFields.add(field);
+                }
+                case CONTENT_LENGTH -> newFields.add(inflatable ? new HttpField("X-Content-Length", field.getValue()) : field);
+                default -> newFields.add(field);
+            }
+        }
+        fields = newFields.takeAsImmutable();
+        return fields;
     }
 
     @Override
@@ -57,49 +120,26 @@ public class GzipRequest extends Request.WrapperProcessor
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
-    {
-        if (_inflateInput)
-        {
-            Components components = request.getComponents();
-            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
-            gzipTransformer = new GzipTransformer(request);
-        }
-
-        int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        GzipResponse gzipResponse = new GzipResponse(this, response, _gzipHandler, _gzipHandler.getVary(), outputBufferSize, _gzipHandler.isSyncFlush());
-        Callback cb = Callback.from(() -> destroy(gzipResponse), callback);
-        super.process(this, gzipResponse, cb);
-    }
-
-    @Override
     public Content.Chunk read()
     {
-        if (_inflateInput)
-            return gzipTransformer.read();
+        if (_gzipTransformer != null)
+            return _gzipTransformer.read();
         return super.read();
     }
 
     @Override
     public void demand(Runnable demandCallback)
     {
-        if (_inflateInput)
-            gzipTransformer.demand(demandCallback);
+        if (_gzipTransformer != null)
+            _gzipTransformer.demand(demandCallback);
         else
             super.demand(demandCallback);
     }
 
-    private void destroy(GzipResponse response)
+    void destroy()
     {
-        // We need to do this to intercept the committing of the response
-        // and possibly change headers in case write is never called.
-        response.write(true, null, Callback.NOOP);
-
         if (_decoder != null)
-        {
             _decoder.destroy();
-            _decoder = null;
-        }
     }
 
     private class GzipTransformer extends ContentSourceTransformer

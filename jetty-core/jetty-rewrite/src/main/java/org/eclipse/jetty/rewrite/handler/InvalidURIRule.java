@@ -95,7 +95,7 @@ public class InvalidURIRule extends Rule
         return new Processor(input)
         {
             @Override
-            public void process(Response response, Callback callback)
+            public boolean process(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))
@@ -107,6 +107,7 @@ public class InvalidURIRule extends Rule
                 {
                     Response.writeError(this, response, callback, getCode(), message);
                 }
+                return true;
             }
         };
     }

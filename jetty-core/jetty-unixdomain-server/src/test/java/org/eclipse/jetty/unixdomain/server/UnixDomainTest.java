@@ -108,10 +108,10 @@ public class UnixDomainTest
     public void testHTTPOverUnixDomain() throws Exception
     {
         String uri = "http://localhost:1234/path";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 // Verify the URI is preserved.
                 assertEquals(uri, request.getHttpURI().asString());
@@ -133,6 +133,7 @@ public class UnixDomainTest
                 assertDoesNotThrow(endPoint::toString);
 
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -158,16 +159,17 @@ public class UnixDomainTest
     {
         int fakeProxyPort = 4567;
         int fakeServerPort = 5678;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 // Proxied requests must have an absolute URI.
                 HttpURI uri = request.getHttpURI();
                 assertNotNull(uri.getScheme());
                 assertEquals(fakeServerPort, uri.getPort());
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -196,10 +198,10 @@ public class UnixDomainTest
         String srcAddr = "/proxySrcAddr";
         String dstAddr = "/proxyDstAddr";
         factories = new ConnectionFactory[]{new ProxyConnectionFactory(), new HttpConnectionFactory()};
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
@@ -222,6 +224,7 @@ public class UnixDomainTest
                     Assertions.fail("Invalid PROXY protocol version " + target);
                 }
                 callback.succeeded();
+                return true;
             }
         });
 

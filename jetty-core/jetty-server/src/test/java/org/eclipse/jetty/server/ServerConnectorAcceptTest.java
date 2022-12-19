@@ -43,12 +43,13 @@ public class ServerConnectorAcceptTest
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server, acceptors, 1);
         server.addConnector(connector);
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
         server.start();

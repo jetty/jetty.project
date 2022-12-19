@@ -87,12 +87,13 @@ public class JDK9ALPNTest
     @Test
     public void testClientNotSupportingALPNServerSpeaksDefaultProtocol() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -129,12 +130,13 @@ public class JDK9ALPNTest
     @Test
     public void testClientSupportingALPNServerSpeaksNegotiatedProtocol() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -174,12 +176,13 @@ public class JDK9ALPNTest
     @Test
     public void testClientSupportingALPNCannotNegotiateProtocol() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 

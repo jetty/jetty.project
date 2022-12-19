@@ -134,10 +134,10 @@ public class ClientAuthProxyTest
 
     private void startServer() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
                 X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
                 Assertions.assertNotNull(certificates);
@@ -145,6 +145,7 @@ public class ClientAuthProxyTest
                 X500Principal principal = certificate.getSubjectX500Principal();
                 String body = "%s\r\n%d\r\n".formatted(principal.toString(), org.eclipse.jetty.server.Request.getRemotePort(request));
                 Content.Sink.write(response, true, body, callback);
+                return true;
             }
         });
     }

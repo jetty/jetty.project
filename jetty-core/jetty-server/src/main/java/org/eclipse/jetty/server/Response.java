@@ -266,8 +266,8 @@ public interface Response extends Content.Sink
             Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
             try
             {
-                errorProcessor.process(errorRequest, response, callback);
-                return;
+                if (errorProcessor.process(errorRequest, response, callback))
+                    return;
             }
             catch (Exception e)
             {

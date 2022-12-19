@@ -91,13 +91,14 @@ public class SslConnectionFactoryTest
 
         _server.addConnector(https);
 
-        _server.setHandler(new Handler.Processor()
+        _server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)), callback);
+                return true;
             }
         });
 

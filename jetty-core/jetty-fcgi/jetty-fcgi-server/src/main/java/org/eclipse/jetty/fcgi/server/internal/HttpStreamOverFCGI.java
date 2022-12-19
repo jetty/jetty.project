@@ -83,7 +83,7 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public long getNanoTimeStamp()
+    public long getNanoTime()
     {
         return _nanoTime;
     }

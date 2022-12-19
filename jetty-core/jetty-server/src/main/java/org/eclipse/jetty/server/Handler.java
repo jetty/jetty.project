@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -30,22 +29,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A Jetty component that handles HTTP requests, of any version (HTTP/1.1, HTTP/2 or HTTP/3).</p>
- * <p>{@code Handler}s are organized in a tree structure.</p>
- * <p>An incoming HTTP request is first delivered to the {@link Server} instance
- * (itself the root {@code Handler}), which forwards it to one or more children {@code Handler}s,
- * which may recursively forward it to their children {@code Handler}s, until one of them
- * returns a non-null {@link Request.Processor}.</p>
- * <p>Returning a non-null {@code Request.Processor} indicates that the {@code Handler}
- * will process the HTTP request, and subsequent sibling or children {@code Handler}s
- * are not invoked.</p>
- * <p>If none of the {@code Handler}s returns a {@code Request.Processor}, a default HTTP 404
- * response is generated.</p>
- * <p>{@code Handler}s may wrap the {@link Request} and then forward the wrapped instance
- * to their children, so that they see modified HTTP headers or a modified HTTP URI,
- * or to intercept the read of the request content.</p>
- * <p>Similarly, {@code Handler}s may wrap the {@link Request.Processor} returned by one
- * of the descendants.</p>
+ * <p>A Jetty component that handles HTTP requests, of any version (HTTP/1.1, HTTP/2 or HTTP/3).
+ * A {@code Handler} is a {@link Request.Processor} with the addition of {@link LifeCycle}
+ * behaviours, plus variants that allow organizing {@code Handler}s as a tree structure.</p>
+ * <p>{@code Handler}s may wrap the {@link Request}, {@link Response} and/or {@link Callback} and
+ * then forward the wrapped instances to their children, so that they see a modified request;
+ * and/or to intercept the read of the request content; and/or intercept the generation of the
+ * response; and/or to intercept the completion of the callback.
+ * <p>A {@code Handler} is an {@link Invocable} and implementations must respect
+ * the {@link InvocationType} they declare within calls to
+ * {@link #process(Request, Response, Callback)}.</p>
  * <p>A minimal tree structure could be:</p>
  * <pre>
  * Server
@@ -65,42 +58,54 @@ import org.slf4j.LoggerFactory;
  * </pre>
  * <p>A simple {@code Handler} implementation could be:</p>
  * <pre>{@code
- * class SimpleHandler extends Handler.Processor
+ * class SimpleHandler extends Handler.Abstract.NonBlocking
  * {
  *     @Override
- *     public void process(Request request, Response response, Callback callback)
+ *     public boolean process(Request request, Response response, Callback callback)
  *     {
- *         // Mark the processing as completed.
  *         // Implicitly sends a 200 OK response with no content.
  *         callback.succeeded();
+ *         return true;
  *     }
  * }
  * }</pre>
+ *
  * <p>A more sophisticated example of a {@code Handler} that decides whether to handle
  * requests based on their URI path:</p>
  * <pre>{@code
- * class YourHelloHandler extends Handler.Abstract
+ * class YourHelloHandler extends Handler.Abstract.NonBlocking
  * {
  *     @Override
- *     public Processor handle(Request request)
+ *     public boolean process(Request request, Response response, Callback callback)
+ *     {
+ *         if (request.getHttpURI().getPath().startsWith("/yourPath"))
+ *         {
+ *             // The request is for this Handler
+ *             response.setStatus(200);
+ *             // The callback is completed when the write is completed.
+ *             response.write(true, callback, "hello");
+ *             return true;
+ *         }
+ *         return false;
+ *     }
+ * }
+ * }</pre>
+ * <p>An example of a {@code Handler} that decides whether to pass the request to
+ * a child:
+ * <pre>{@code
+ * class ConditionalHandler extends Handler.Wrapper
+ * {
+ *     @Override
+ *     public boolean process(Request request, Response response, Callback callback)
  *     {
  *         if (request.getHttpURI().getPath().startsWith("/yourPath")
+ *             return super.process(request, response, callback);
+ *         if (request.getHttpURI().getPath().startsWith("/wrong"))
  *         {
- *             // The request is for this Handler, process it.
- *             return this::process;
+ *             Response.writeError(request, response, callback, 400);
+ *             return true;
  *         }
- *         else
- *         {
- *             // The request is not for this Handler.
- *             return null;
- *         }
- *     }
- *
- *     private void process(Request request, Response response, Callback callback)
- *     {
- *         response.setStatus(200);
- *         // The callback is completed when the write is completed.
- *         response.write(true, callback, "hello");
+ *         return false;
  *     }
  * }
  * }</pre>
@@ -108,35 +113,8 @@ import org.slf4j.LoggerFactory;
  * @see Request.Processor
  */
 @ManagedObject("Handler")
-public interface Handler extends LifeCycle, Destroyable, Invocable
+public interface Handler extends LifeCycle, Destroyable, Invocable, Request.Processor
 {
-    /**
-     * <p>Invoked to decide whether to handle the given HTTP request.</p>
-     * <p>If the HTTP request can be handled by this {@code Handler},
-     * this method must return a non-null {@link Request.Processor}.</p>
-     * <p>Otherwise, the HTTP request is not handled by this {@code Handler}
-     * (for example, the HTTP request's URI does not match those handled
-     * by this {@code Handler}), and this method must return {@code null}.</p>
-     * <p>This method may inspect the HTTP request with the following rules:</p>
-     * <ul>
-     * <li>it may access read-only fields such as the HTTP headers, or the HTTP URI, etc.</li>
-     * <li>it may wrap the {@link Request} in a {@link Request.Wrapper}, for example
-     * to modify HTTP headers or modify the HTTP URI, etc.</li>
-     * <li>it may directly modify {@link Request#getAttribute(String) request attributes}</li>
-     * <li>it may directly add/remove request listeners supported in the {@link Request} APIs</li>
-     * <li>it must <em>not</em> read the request content (otherwise an {@link IllegalStateException}
-     * will be thrown)</li>
-     * </ul>
-     * <p>Exceptions thrown by this method are processed by an {@link ErrorProcessor},
-     * if present, otherwise a default HTTP 500 error is generated.</p>
-     *
-     * @param request the incoming HTTP request to analyze
-     * @return a non-null {@link Request.Processor} that processes the request/response,
-     * or null if this {@code Handler} does not handle the request
-     * @throws Exception Thrown if there is a problem handling.
-     */
-    Request.Processor handle(Request request) throws Exception;
-
     /**
      * @return the {@code Server} associated with this {@code Handler}
      */
@@ -336,11 +314,13 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
             return handler;
         }
-
     }
 
     /**
      * <p>An abstract implementation of {@link Handler} that is a {@link ContainerLifeCycle}.</p>
+     * <p>The {@link InvocationType} is by default {@link InvocationType#BLOCKING} unless a
+     * {@code NonBlocking} variant has been extended or a specific
+     * {@link InvocationType} passed to a constructor.</p>
      */
     abstract class Abstract extends ContainerLifeCycle implements Handler
     {
@@ -406,6 +386,14 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
                 throw new IllegalStateException(getState());
             super.destroy();
         }
+
+        public abstract static class NonBlocking extends Abstract
+        {
+            public NonBlocking()
+            {
+                super(InvocationType.NON_BLOCKING);
+            }
+        }
     }
 
     /**
@@ -413,6 +401,15 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
      */
     abstract class AbstractContainer extends Abstract implements Container
     {
+        protected AbstractContainer()
+        {
+        }
+
+        protected AbstractContainer(InvocationType invocationType)
+        {
+            super(invocationType);
+        }
+
         @Override
         public <T extends Handler> List<T> getDescendants(Class<T> type)
         {
@@ -538,10 +535,10 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             Handler next = getHandler();
-            return next == null ? null : next.handle(request);
+            return next != null && next.process(request, response, callback);
         }
 
         @Override
@@ -560,6 +557,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     class Collection extends AbstractContainer
     {
         private volatile List<Handler> _handlers = new ArrayList<>();
+        private volatile InvocationType _invocationType = InvocationType.BLOCKING;
 
         public Collection(Handler... handlers)
         {
@@ -572,21 +570,14 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public String toString()
-        {
-            return super.toString();
-        }
-
-        @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             for (Handler h : _handlers)
             {
-                Request.Processor processor = h.handle(request);
-                if (processor != null)
-                    return processor;
+                if (h.process(request, response, callback))
+                    return true;
             }
-            return null;
+            return false;
         }
 
         @Override
@@ -606,6 +597,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
             Server server = getServer();
             InvocationType invocationType = server == null ? null : server.getInvocationType();
+            _invocationType = InvocationType.BLOCKING;  // switch to blocking invocation type whilst updating handlers;
 
             // Check for loops && InvocationType changes.
             for (Handler handler : newHandlers)
@@ -628,6 +620,13 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             updateBeans(_handlers, handlers);
 
             _handlers = newHandlers;
+            _invocationType = invocationType;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _invocationType == null ? super.getInvocationType() : _invocationType;
         }
 
         protected List<Handler> newHandlers(List<Handler> handlers)
@@ -647,47 +646,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             List<Handler> list = new ArrayList<>(getHandlers());
             if (list.remove(handler))
                 setHandlers(list);
-        }
-    }
-
-    /**
-     * <p>A {@link Handler} that itself implements {@link Request.Processor}
-     * and that returns itself from a call to {@link Handler#handle(Request)}.
-     * Subclasses only need to implement 
-     * {@link #process(Request, Response, Callback)}.</p>
-     */
-    abstract class Processor extends Abstract implements Request.Processor
-    {
-        public Processor()
-        {
-            super();
-        }
-
-        public Processor(InvocationType type)
-        {
-            super(type);
-        }
-
-        @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            return this;
-        }
-
-        public abstract static class Blocking extends Processor
-        {
-            public Blocking()
-            {
-                super(InvocationType.BLOCKING);
-            }
-        }
-
-        public abstract static class NonBlocking extends Processor
-        {
-            public NonBlocking()
-            {
-                super(InvocationType.NON_BLOCKING);
-            }
         }
     }
 }
