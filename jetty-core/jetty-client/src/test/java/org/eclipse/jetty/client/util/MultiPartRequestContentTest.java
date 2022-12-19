@@ -23,8 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
@@ -204,8 +204,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         String name = "file";
         String fileName = "upload.png";
         String contentType = "image/png";
-        byte[] data = new byte[512];
-        new Random().nextBytes(data);
+        byte[] data = randomBytes(512);
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
@@ -298,8 +297,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
     public void testFieldWithFile(Scenario scenario) throws Exception
     {
         // Prepare a file to upload.
-        byte[] data = new byte[1024];
-        new Random().nextBytes(data);
+        byte[] data = randomBytes(1024);
         Path tmpDir = MavenTestingUtils.getTargetTestingPath();
         Path tmpPath = Files.createTempFile(tmpDir, "multipart_", ".txt");
         try (OutputStream output = Files.newOutputStream(tmpPath, StandardOpenOption.CREATE))
@@ -359,8 +357,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
     {
         String value = "text";
         Charset encoding = StandardCharsets.US_ASCII;
-        byte[] fileData = new byte[1024];
-        new Random().nextBytes(fileData);
+        byte[] fileData = randomBytes(1024);
         start(scenario, new AbstractMultiPartHandler()
         {
             @Override
@@ -412,6 +409,17 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         fieldContent.close();
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private byte[] randomBytes(int length)
+    {
+        byte[] bytes = new byte[length];
+        ThreadLocalRandom.current().nextBytes(bytes);
+        // Make sure the last 2 bytes are not \r\n,
+        // otherwise the multipart parser gets confused.
+        bytes[length - 2] = 0;
+        bytes[length - 1] = 0;
+        return bytes;
     }
 
     private abstract static class AbstractMultiPartHandler extends Handler.Processor

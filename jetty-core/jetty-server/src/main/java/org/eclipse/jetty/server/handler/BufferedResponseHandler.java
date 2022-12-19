@@ -165,7 +165,6 @@ public class BufferedResponseHandler extends Handler.Wrapper
             }
         }
 
-        // Install buffered interceptor and handle.
         return (rq, rs, callback) ->
         {
             BufferedResponse bufferedResponse = new BufferedResponse(rq, rs, callback);
