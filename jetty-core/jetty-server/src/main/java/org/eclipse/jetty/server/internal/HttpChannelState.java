@@ -319,7 +319,6 @@ public class HttpChannelState implements HttpChannel, Components
             onContent = _onContentAvailable;
             _onContentAvailable = null;
         }
-
         return _serializedInvoker.offer(onContent);
     }
 
