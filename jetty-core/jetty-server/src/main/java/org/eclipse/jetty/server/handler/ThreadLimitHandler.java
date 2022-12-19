@@ -479,7 +479,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             _limit = limit;
         }
 
-        public CompletableFuture<Closeable> acquire()
+        private CompletableFuture<Closeable> acquire()
         {
             try (AutoLock lock = _lock.lock())
             {
@@ -507,31 +507,24 @@ public class ThreadLimitHandler extends Handler.Wrapper
         @Override
         public void close()
         {
+            CompletableFuture<Closeable> permit;
+
             try (AutoLock lock = _lock.lock())
             {
                 // reduce the allocated passes
                 _permits--;
                 _threadPermit.set(Boolean.FALSE);
-                while (true)
-                {
-                    // Are there any future passes waiting?
-                    CompletableFuture<Closeable> permit = _queue.pollFirst();
+                // Are there any future passes waiting?
+                permit = _queue.pollFirst();
 
-                    // No - we are done
-                    if (permit == null)
-                        break;
-
-                    // Yes - if we can complete them, we are done
-                    if (permit.complete(this))
-                    {
-                        _permits++;
-                        break;
-                    }
-
-                    // Somebody else must have completed/failed that future pass,
-                    // so let's try for another.
-                }
+                // No - we are done
+                if (permit != null)
+                    _permits++;
             }
+
+            if (permit != null)
+                if (!permit.complete(this))
+                    throw new IllegalStateException();
         }
 
         @Override

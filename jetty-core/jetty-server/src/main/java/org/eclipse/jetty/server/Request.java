@@ -183,6 +183,10 @@ public interface Request extends Attributes, Content.Source
      */
     HttpFields getHeaders();
 
+    // TODO document serialization here and in write callback
+    @Override
+    void demand(Runnable demandCallback);
+
     /**
      * @return the HTTP trailers of this request, or {@code null} if they are not present
      */
