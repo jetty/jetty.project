@@ -14,10 +14,13 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -71,6 +74,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
@@ -81,6 +85,7 @@ import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -775,7 +780,64 @@ public class ServletContextRequest extends ContextRequest
             if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
                 throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
             if (_parts == null)
+            {
                 _parts = ServletMultiPartFormData.from(this);
+                Collection<Part> parts = _parts.getParts();
+
+                String formCharset = null;
+                Part charsetPart = _parts.getPart("_charset_");
+                if (charsetPart != null)
+                {
+                    try (InputStream is = charsetPart.getInputStream())
+                    {
+                        ByteArrayOutputStream os = new ByteArrayOutputStream();
+                        IO.copy(is, os);
+                        formCharset = os.toString(StandardCharsets.UTF_8);
+                    }
+                }
+
+                /*
+                Select Charset to use for this part. (NOTE: charset behavior is for the part value only and not the part header/field names)
+                    1. Use the part specific charset as provided in that part's Content-Type header; else
+                    2. Use the overall default charset. Determined by:
+                        a. if part name _charset_ exists, use that part's value.
+                        b. if the request.getCharacterEncoding() returns a value, use that.
+                            (note, this can be either from the charset field on the request Content-Type
+                            header, or from a manual call to request.setCharacterEncoding())
+                        c. use utf-8.
+                 */
+                Charset defaultCharset;
+                if (formCharset != null)
+                    defaultCharset = Charset.forName(formCharset);
+                else if (getCharacterEncoding() != null)
+                    defaultCharset = Charset.forName(getCharacterEncoding());
+                else
+                    defaultCharset = StandardCharsets.UTF_8;
+
+                ByteArrayOutputStream os = null;
+                for (Part p : parts)
+                {
+                    if (p.getSubmittedFileName() == null)
+                    {
+                        // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
+                        String charset = null;
+                        if (p.getContentType() != null)
+                            charset = MimeTypes.getCharsetFromContentType(p.getContentType());
+
+                        try (InputStream is = p.getInputStream())
+                        {
+                            if (os == null)
+                                os = new ByteArrayOutputStream();
+                            IO.copy(is, os);
+
+                            String content = os.toString(charset == null ? defaultCharset : Charset.forName(charset));
+                            _contentParameters.add(p.getName(), content);
+                        }
+                        os.reset();
+                    }
+                }
+            }
+
             return _parts.getParts();
         }
 
@@ -1076,18 +1138,44 @@ public class ServletContextRequest extends ContextRequest
                 // by a processing happening after a form-based authentication.
                 if (_contentParameters == null)
                 {
-                    try
+
+                    int contentLength = getContentLength();
+                    if (contentLength != 0 && _inputState == INPUT_NONE)
                     {
-                        int maxKeys = getServletRequestState().getContextHandler().getMaxFormKeys();
-                        int maxContentSize = getServletRequestState().getContextHandler().getMaxFormContentSize();
-                        _contentParameters =  FormFields.from(getRequest(), maxKeys, maxContentSize).get();
-                        if (_contentParameters == null || _contentParameters.isEmpty())
-                            _contentParameters = NO_PARAMS;
-                    }
-                    catch (IllegalStateException | IllegalArgumentException | ExecutionException | InterruptedException e)
-                    {
-                        LOG.warn(e.toString());
-                        throw new BadMessageException("Unable to parse form content", e);
+                        String baseType = HttpField.valueParameters(getContentType(), null);
+                        if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
+                            getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                        {
+                            try
+                            {
+                                int maxKeys = getServletRequestState().getContextHandler().getMaxFormKeys();
+                                int maxContentSize = getServletRequestState().getContextHandler().getMaxFormContentSize();
+                                _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
+                                if (_contentParameters == null || _contentParameters.isEmpty())
+                                    _contentParameters = NO_PARAMS;
+                            }
+                            catch (IllegalStateException | IllegalArgumentException | ExecutionException |
+                                   InterruptedException e)
+                            {
+                                LOG.warn(e.toString());
+                                throw new BadMessageException("Unable to parse form content", e);
+                            }
+                        }
+                        else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
+                            getAttribute(__MULTIPART_CONFIG_ELEMENT) != null)
+                        {
+                            try
+                            {
+                                getParts();
+                            }
+                            catch (IOException | ServletException e)
+                            {
+                                String msg = "Unable to extract content parameters";
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug(msg, e);
+                                throw new RuntimeIOException(msg, e);
+                            }
+                        }
                     }
                 }
             }
