@@ -27,7 +27,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -50,6 +53,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -59,6 +63,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -76,6 +81,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("large-disk-resource")
 public class HugeResourceTest
@@ -109,8 +115,8 @@ public class HugeResourceTest
                 baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
 
         makeStaticFile(staticBase.resolve("test-1m.dat"), MB);
-        makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
-        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
+//        makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
+//        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
         // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
@@ -125,8 +131,8 @@ public class HugeResourceTest
         ArrayList<Arguments> ret = new ArrayList<>();
 
         ret.add(Arguments.of("test-1m.dat", MB));
-        ret.add(Arguments.of("test-1g.dat", GB));
-        ret.add(Arguments.of("test-4g.dat", 4 * GB));
+//        ret.add(Arguments.of("test-1g.dat", GB));
+//        ret.add(Arguments.of("test-4g.dat", 4 * GB));
         // ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
@@ -192,6 +198,7 @@ public class HugeResourceTest
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
 
         QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setDetailedDump(true);
         serverThreads.setName("server");
         server = new Server(serverThreads);
         httpConfig = new HttpConfiguration();
@@ -373,7 +380,57 @@ public class HugeResourceTest
     public void testUploadDelayed(String filename, long expectedSize) throws Exception
     {
         httpConfig.setDelayDispatchUntilContent(true);
-        testUpload(filename, expectedSize);
+        Path inputFile = staticBase.resolve(filename);
+
+        AtomicBoolean stalled = new AtomicBoolean(true);
+        AtomicReference<Runnable> demand = new AtomicReference<>();
+        PathRequestContent content = new PathRequestContent(inputFile)
+        {
+            @Override
+            public Content.Chunk read()
+            {
+                if (stalled.get())
+                    return null;
+                return super.read();
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                if (stalled.get())
+                    demand.set(demandCallback);
+                else
+                    super.demand(demandCallback);
+            }
+        };
+
+        URI destUri = server.getURI().resolve("/post");
+        Request request = client.newRequest(destUri).method(HttpMethod.POST).body(content);
+
+        StringBuilder responseBody = new StringBuilder();
+        request.onResponseContent((r,b) ->
+        {
+            if (b.hasRemaining())
+                responseBody.append(BufferUtil.toString(b));
+        });
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        request.send(e ->
+        {
+            responseRef.set(e.getResponse());
+            complete.countDown();
+        });
+
+        while(demand.get() == null)
+            Thread.onSpinWait();
+        Thread.sleep(100);
+        stalled.set(false);
+        demand.get().run();
+        assertTrue(complete.await(30, TimeUnit.SECONDS));
+        Response response = responseRef.get();
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+
+       assertThat("Response", responseBody.toString(), containsString("bytes-received=" + expectedSize));
     }
 
     @ParameterizedTest
@@ -405,8 +462,6 @@ public class HugeResourceTest
         httpConfig.setDelayDispatchUntilContent(true);
         testUploadMultipart(filename, expectedSize);
     }
-
-
 
     private void dumpResponse(Response response)
     {

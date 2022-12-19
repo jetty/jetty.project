@@ -138,7 +138,7 @@ public class SerializedInvoker
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x{tail=%s}", getClass().getSimpleName(), hashCode(), _tail);
     }
 
     protected void onError(Runnable task, Throwable t)

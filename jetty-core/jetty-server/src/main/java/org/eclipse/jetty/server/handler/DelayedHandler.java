@@ -160,7 +160,7 @@ public class DelayedHandler extends Handler.Wrapper
         protected abstract void delay() throws Exception;
     }
 
-    protected static class UntilContentDelayedProcess extends DelayedProcess
+    protected static class UntilContentDelayedProcess extends DelayedProcess implements Runnable
     {
         public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
         {
@@ -170,7 +170,14 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            getRequest().demand(this::process);
+            getRequest().demand(this);
+        }
+
+        @Override
+        public void run()
+        {
+            // We must execute here, because demand callbacks are serialized and process may block on a demand callback
+            getRequest().getComponents().getThreadPool().execute(this::process);
         }
     }
 
@@ -195,7 +202,8 @@ public class DelayedHandler extends Handler.Wrapper
         public void accept(Fields fields, Throwable x)
         {
             if (x == null)
-                process();
+                // We must execute here as process should not be serialized with other demand calls.
+                getRequest().getComponents().getThreadPool().execute(super::process);
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
         }
@@ -218,7 +226,8 @@ public class DelayedHandler extends Handler.Wrapper
             if (x == null)
             {
                 getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
-                super.process();
+                // We must execute here as process should not be serialized with other demand calls.
+                getRequest().getComponents().getThreadPool().execute(super::process);
             }
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);

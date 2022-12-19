@@ -34,7 +34,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     @Override
     public void demand(Runnable demandCallback)
     {
-        super.demand(() -> _context.run(demandCallback, this));
+        super.demand(new ContextDemand(demandCallback));
     }
 
     @Override
@@ -65,5 +65,21 @@ public class ContextRequest extends Request.Wrapper implements Invocable
             case "o.e.j.s.h.ScopedRequest.pathInContext" -> Request.getPathInContext(this);
             default -> super.getAttribute(name);
         };
+    }
+
+    private class ContextDemand implements Runnable
+    {
+        private final Runnable _demandCallback;
+
+        public ContextDemand(Runnable demandCallback)
+        {
+            _demandCallback = demandCallback;
+        }
+
+        @Override
+        public void run()
+        {
+            _context.run(_demandCallback, ContextRequest.this);
+        }
     }
 }

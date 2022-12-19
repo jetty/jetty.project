@@ -136,50 +136,7 @@ public class HttpChannelState implements HttpChannel, Components
     {
         _connectionMetaData = connectionMetaData;
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
-        _serializedInvoker = new SerializedInvoker()
-        {
-            @Override
-            protected void onError(Runnable task, Throwable failure)
-            {
-                ChannelRequest request;
-                Content.Chunk.Error error;
-                boolean callbackCompleted;
-                try (AutoLock ignore = _lock.lock())
-                {
-                    callbackCompleted = _callbackCompleted;
-                    request = _request;
-                    error = _request == null ? null : _error;
-                }
-
-                if (request == null || callbackCompleted)
-                {
-                    // It is too late to handle error, so just log it
-                    super.onError(task, failure);
-                }
-                else if (error == null)
-                {
-                    // Try to fail the request, but we might lose a race.
-                    try
-                    {
-                        request._callback.failed(failure);
-                    }
-                    catch (Throwable t)
-                    {
-                        if (ExceptionUtil.areNotAssociated(failure, t))
-                            failure.addSuppressed(t);
-                        super.onError(task, failure);
-                    }
-                }
-                else
-                {
-                    // We are already in error, so we will not handle this one,
-                    // but we will add as suppressed if we have not seen it already.
-                    Throwable cause = error.getCause();
-                    if (cause != null && ExceptionUtil.areNotAssociated(cause, failure))
-                        error.getCause().addSuppressed(failure);
-                }
-            }
-        };
+        _serializedInvoker = new HttpChannelSerializedInvoker();
     }
 
     @Override
@@ -364,6 +321,7 @@ public class HttpChannelState implements HttpChannel, Components
             onContent = _onContentAvailable;
             _onContentAvailable = null;
         }
+
         return _serializedInvoker.offer(onContent);
     }
 
@@ -711,8 +669,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     public static class ChannelRequest implements Attributes, Request
     {
-        private static final Logger LOG = LoggerFactory.getLogger(ChannelResponse.class);
-
         private final long _timeStamp = System.currentTimeMillis();
         private final ChannelCallback _callback = new ChannelCallback(this);
         private final String _id;
@@ -930,6 +886,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 HttpChannelState httpChannel = lockedGetHttpChannel();
 
+                if (LOG.isDebugEnabled())
+                    LOG.debug("demand {}", httpChannel);
+
                 error = httpChannel._error != null;
                 if (!error)
                 {
@@ -1009,8 +968,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     public static class ChannelResponse implements Response, Callback
     {
-        private static final Logger LOG = LoggerFactory.getLogger(ChannelResponse.class);
-
         private final ChannelRequest _request;
         private int _status;
         private long _contentBytesWritten;
@@ -1257,8 +1214,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     private static class ChannelCallback implements Callback
     {
-        private static final Logger LOG = LoggerFactory.getLogger(ChannelCallback.class);
-
         private final ChannelRequest _request;
         private Throwable _completedBy;
 
@@ -1502,6 +1457,51 @@ public class HttpChannelState implements HttpChannel, Components
             if (ExceptionUtil.areNotAssociated(_failure, x))
                 _failure.addSuppressed(x);
             _request.getHttpChannel()._handlerInvoker.failed(_failure);
+        }
+    }
+
+    private class HttpChannelSerializedInvoker extends SerializedInvoker
+    {
+        @Override
+        protected void onError(Runnable task, Throwable failure)
+        {
+            ChannelRequest request;
+            Content.Chunk.Error error;
+            boolean callbackCompleted;
+            try (AutoLock ignore = _lock.lock())
+            {
+                callbackCompleted = _callbackCompleted;
+                request = _request;
+                error = _request == null ? null : _error;
+            }
+
+            if (request == null || callbackCompleted)
+            {
+                // It is too late to handle error, so just log it
+                super.onError(task, failure);
+            }
+            else if (error == null)
+            {
+                // Try to fail the request, but we might lose a race.
+                try
+                {
+                    request._callback.failed(failure);
+                }
+                catch (Throwable t)
+                {
+                    if (ExceptionUtil.areNotAssociated(failure, t))
+                        failure.addSuppressed(t);
+                    super.onError(task, failure);
+                }
+            }
+            else
+            {
+                // We are already in error, so we will not handle this one,
+                // but we will add as suppressed if we have not seen it already.
+                Throwable cause = error.getCause();
+                if (cause != null && ExceptionUtil.areNotAssociated(cause, failure))
+                    error.getCause().addSuppressed(failure);
+            }
         }
     }
 }
