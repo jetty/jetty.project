@@ -116,7 +116,7 @@ public class HugeResourceTest
 
         makeStaticFile(staticBase.resolve("test-1m.dat"), MB);
         makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
-        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
+        // makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
         // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
@@ -132,7 +132,7 @@ public class HugeResourceTest
 
         ret.add(Arguments.of("test-1m.dat", MB));
         ret.add(Arguments.of("test-1g.dat", GB));
-        ret.add(Arguments.of("test-4g.dat", 4 * GB));
+        // ret.add(Arguments.of("test-4g.dat", 4 * GB));
         // ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
