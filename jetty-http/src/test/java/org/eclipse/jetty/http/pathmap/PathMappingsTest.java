@@ -478,6 +478,7 @@ public class PathMappingsTest
         PathMappings<String> p = new PathMappings<>();
         p.put(new ServletPathSpec(""), "resourceR");
         p.put(new ServletPathSpec("/"), "resourceD");
+        p.put(new ServletPathSpec("/exact"), "resourceE");
         p.put(new ServletPathSpec("/a/*"), "resourceP");
         p.put(new ServletPathSpec("*.do"), "resourceS");
 
@@ -487,6 +488,7 @@ public class PathMappingsTest
 
         assertThat(p.getMatched("/").getResource(), equalTo("resourceR"));
         assertThat(p.getMatched("/something").getResource(), equalTo("resourceD"));
+        assertThat(p.getMatched("/exact").getResource(), equalTo("resourceE"));
         assertThat(p.getMatched("/a").getResource(), equalTo("resourceP"));
         assertThat(p.getMatched("/a/").getResource(), equalTo("resourceP"));
         assertThat(p.getMatched("/a/info").getResource(), equalTo("resourceP"));
@@ -501,6 +503,7 @@ public class PathMappingsTest
 
         assertThat(p.getMatched("/").getResource(), equalTo("resourceR"));
         assertThat(p.getMatched("/something").getResource(), equalTo("resourceD"));
+        assertThat(p.getMatched("/exact").getResource(), equalTo("resourceE"));
         assertThat(p.getMatched("/a").getResource(), equalTo("resourceP"));
         assertThat(p.getMatched("/a/").getResource(), equalTo("resourceP"));
         assertThat(p.getMatched("/a/info").getResource(), equalTo("resourceP"));
