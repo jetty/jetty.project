@@ -34,7 +34,6 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -47,7 +46,6 @@ public class ConscryptHTTP2ClientTest
 {
     @Tag("external")
     @Test
-    @Disabled("issue google/conscrypt#667")
     public void testConscryptHTTP2Client() throws Exception
     {
         String host = "webtide.com";
