@@ -333,6 +333,10 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Object getAttribute(String name)
         {
+            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
+            if (_named != null && name != null && name.startsWith(__INCLUDE_PREFIX))
+                return null;
+            
             switch (name)
             {
                 case RequestDispatcher.INCLUDE_MAPPING:
@@ -355,7 +359,11 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Enumeration<String> getAttributeNames()
         {
+            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+            if (_named != null)
+                return Collections.enumeration(names);
+            
             names.add(RequestDispatcher.INCLUDE_MAPPING);
             names.add(RequestDispatcher.INCLUDE_SERVLET_PATH);
             names.add(RequestDispatcher.INCLUDE_PATH_INFO);

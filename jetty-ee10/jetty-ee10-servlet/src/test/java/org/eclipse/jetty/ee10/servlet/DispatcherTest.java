@@ -219,7 +219,7 @@ public class DispatcherTest
     public void testNamedInclude() throws Exception
     {
         _contextHandler.addServlet(NamedIncludeServlet.class, "/include/*");
-        String echo = _contextHandler.addServlet(EchoURIServlet.class, "/echo/*").getName();
+        String echo = _contextHandler.addServlet(IncludeNamedEchoURIServlet.class, "/echo/*").getName();
 
         String responses = _connector.getResponse("""
             GET /context/include/info;param=value?name=@ECHO@ HTTP/1.1\r
@@ -230,13 +230,19 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 62\r
+            Content-Length: 98\r
             Connection: close\r
             \r
             /context\r
             /include\r
             /info\r
             /context/include/info;param=value\r
+            null\r
+            null\r
+            null\r
+            null\r
+            null\r
+            null\r
             """;
 
         assertEquals(expected, responses);
@@ -1120,6 +1126,26 @@ public class DispatcherTest
             response.getOutputStream().println(request.getRequestURI());
         }
     }
+    
+    public static class IncludeNamedEchoURIServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().println(request.getContextPath());
+            response.getOutputStream().println(request.getServletPath());
+            response.getOutputStream().println(request.getPathInfo());
+            response.getOutputStream().println(request.getRequestURI());
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_MAPPING));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_QUERY_STRING));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI));
+            response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH));
+        }
+    } 
 
     public static class AssertForwardServlet extends HttpServlet implements Servlet
     {
