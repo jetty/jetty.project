@@ -63,6 +63,8 @@ public class ServletMultiPartFormData
             MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
             if (formData != null)
                 return new Parts(formData);
+
+            // TODO set the files directory
             return new ServletMultiPartFormData().parse(request);
         }
         catch (Throwable x)

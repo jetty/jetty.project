@@ -115,8 +115,8 @@ public class HugeResourceTest
                 baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
 
         makeStaticFile(staticBase.resolve("test-1m.dat"), MB);
-//        makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
-//        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
+        makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
+        makeStaticFile(staticBase.resolve("test-4g.dat"), 4 * GB);
         // makeStaticFile(staticBase.resolve("test-10g.dat"), 10 * GB);
 
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
@@ -131,8 +131,8 @@ public class HugeResourceTest
         ArrayList<Arguments> ret = new ArrayList<>();
 
         ret.add(Arguments.of("test-1m.dat", MB));
-//        ret.add(Arguments.of("test-1g.dat", GB));
-//        ret.add(Arguments.of("test-4g.dat", 4 * GB));
+        ret.add(Arguments.of("test-1g.dat", GB));
+        ret.add(Arguments.of("test-4g.dat", 4 * GB));
         // ret.add(Arguments.of("test-10g.dat", 10 * GB));
 
         return ret.stream();
@@ -460,7 +460,63 @@ public class HugeResourceTest
     public void testUploadMultipartDelayed(String filename, long expectedSize) throws Exception
     {
         httpConfig.setDelayDispatchUntilContent(true);
-        testUploadMultipart(filename, expectedSize);
+        AtomicBoolean stalled = new AtomicBoolean(true);
+        AtomicReference<Runnable> demand = new AtomicReference<>();
+        MultiPartRequestContent multipart = new MultiPartRequestContent()
+        {
+            @Override
+            public Content.Chunk read()
+            {
+                if (stalled.get())
+                    return null;
+                return super.read();
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                if (stalled.get())
+                    demand.set(demandCallback);
+                else
+                    super.demand(demandCallback);
+            }
+        };
+        Path inputFile = staticBase.resolve(filename);
+        String name = String.format("file-%d", expectedSize);
+        multipart.addPart(new MultiPart.PathPart(name, filename, HttpFields.EMPTY, inputFile));
+        multipart.close();
+
+        URI destUri = server.getURI().resolve("/multipart");
+        client.setIdleTimeout(90_000);
+        Request request = client.newRequest(destUri).method(HttpMethod.POST).body(multipart);
+
+        StringBuilder responseBody = new StringBuilder();
+        request.onResponseContent((r,b) ->
+        {
+            if (b.hasRemaining())
+                responseBody.append(BufferUtil.toString(b));
+        });
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        request.send(e ->
+        {
+            responseRef.set(e.getResponse());
+            complete.countDown();
+        });
+
+        while(demand.get() == null)
+            Thread.onSpinWait();
+        Thread.sleep(100);
+        stalled.set(false);
+        demand.get().run();
+        assertTrue(complete.await(30, TimeUnit.SECONDS));
+        Response response = responseRef.get();
+
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+        // dumpResponse(response);
+
+        String expectedResponse = String.format("part[%s].size=%d", name, expectedSize);
+        assertThat("Response", responseBody.toString(), containsString(expectedResponse));
     }
 
     private void dumpResponse(Response response)
