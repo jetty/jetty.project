@@ -302,7 +302,7 @@ public class StatisticsHandler extends Handler.Wrapper
 
         private long spentTimeNs()
         {
-            return NanoTime.since(getNanoTimeStamp());
+            return NanoTime.since(getNanoTime());
         }
 
         protected class StatisticsHttpStream extends HttpStream.Wrapper
@@ -346,7 +346,7 @@ public class StatisticsHandler extends Handler.Wrapper
             public void succeeded()
             {
                 _requestStats.decrement();
-                _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
+                _requestTimeStats.record(NanoTime.since(getNanoTime()));
                 super.succeeded();
             }
 
@@ -354,7 +354,7 @@ public class StatisticsHandler extends Handler.Wrapper
             public void failed(Throwable x)
             {
                 _requestStats.decrement();
-                _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
+                _requestTimeStats.record(NanoTime.since(getNanoTime()));
                 super.failed(x);
             }
         }

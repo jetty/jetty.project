@@ -528,7 +528,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
 
         String path = Request.getPathInContext(request);
         boolean tryInflate = getInflateBufferSize() >= 0 && isPathInflatable(path);
-        boolean tryDeflate = _methods.test(request.getMethod()) && isPathDeflatable(path) && isPathMimeTypeGzipable(request.getContext().getMimeTypes(), path);
+        boolean tryDeflate = _methods.test(request.getMethod()) && isPathDeflatable(path) && isMimeTypeDeflatable(request.getContext().getMimeTypes(), path);
 
         // Can we skip looking at the request and wrapping request or response?
         if (!tryInflate && !tryDeflate)
@@ -583,7 +583,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         return false;
     }
 
-    protected boolean isPathMimeTypeGzipable(MimeTypes mimeTypes, String requestURI)
+    protected boolean isMimeTypeDeflatable(MimeTypes mimeTypes, String requestURI)
     {
         // Exclude non-compressible mime-types known from URI extension
         String mimeType = mimeTypes.getMimeByExtension(requestURI);

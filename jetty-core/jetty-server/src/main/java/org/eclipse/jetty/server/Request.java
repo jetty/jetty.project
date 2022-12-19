@@ -21,7 +21,6 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -42,7 +41,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -191,24 +189,20 @@ public interface Request extends Attributes, Content.Source
     HttpFields getTrailers();
 
     /**
-     * <p>Get the millisecond timestamp that the request was created, relative to {@link System#currentTimeMillis()}.
-     * This method should be used for wall clock time, rather than {@link #getNanoTimeStamp()},
+     * <p>Get the millisecond timestamp at which the request was created, obtained via {@link System#currentTimeMillis()}.
+     * This method should be used for wall clock time, rather than {@link #getNanoTime()},
      * which is appropriate for measuring latencies.</p>
-     * @return The timestamp that the request was received/created in milliseconds, relative to the "wall clock" given
-     * by {@link System#currentTimeMillis()}.
+     * @return The timestamp that the request was received/created in milliseconds
      */
     long getTimeStamp();
 
     /**
-     * <p>Get the nanosecond timestamp that the request was created, relative to {@link System#nanoTime()}.
+     * <p>Get the nanoTime at which the request was created, obtained via {@link System#nanoTime()}.
      * This method should be used when measuring latencies, rather than {@link #getTimeStamp()},
      * which is appropriate for wall clock time.</p>
-     * @return The timestamp that the request was received/created in nanoseconds, relative to {@link System#nanoTime()}.
+     * @return The nanoTime at which the request was received/created in nanoseconds
      */
-    default long getNanoTimeStamp()
-    {
-        return NanoTime.now() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
-    }
+    long getNanoTime();
 
     // TODO: see above.
     boolean isSecure();
@@ -577,9 +571,9 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public long getNanoTimeStamp()
+        public long getNanoTime()
         {
-            return getWrapped().getNanoTimeStamp();
+            return getWrapped().getNanoTime();
         }
 
         @Override
