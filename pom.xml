@@ -146,7 +146,8 @@
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
-    <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
+    <maven.invoker.plugin.version>3.4.0</maven.invoker.plugin.version>
+    <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.7.0</maven.plugin-tools.version>
@@ -644,13 +645,6 @@
               <localRepo>${localRepoPath}</localRepo>
             </filterProperties>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.ant</groupId>
-              <artifactId>ant</artifactId>
-              <version>${ant.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -2453,25 +2447,6 @@
         <license.skip>true</license.skip>
         <spotbugs.skip>true</spotbugs.skip>
       </properties>
-    </profile>
-    <profile>
-      <id>jdk19</id>
-      <activation>
-        <jdk>19</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-invoker-plugin</artifactId>
-              <configuration>
-                <skipInvocation>true</skipInvocation>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
     </profile>
   </profiles>
 
