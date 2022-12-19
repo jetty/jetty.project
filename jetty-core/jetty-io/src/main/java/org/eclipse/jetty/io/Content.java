@@ -305,9 +305,12 @@ public class Content
         /**
          * <p>Demands to invoke the given demand callback parameter when a chunk of content is available.</p>
          * <p>See how to use this method <a href="#idiom">idiomatically</a>.</p>
-         * <p>Implementations must guarantee that calls to this method are safely reentrant, to avoid
-         * stack overflows in the case of mutual recursion between the execution of the {@code Runnable}
-         * callback and a call to this method.</p>
+         * <p>Implementations guarantee that calls to this method are safely reentrant so that
+         * stack overflows are avoided in the case of mutual recursion between the execution of
+         * the {@code Runnable} callback and a call to this method.  Invocations of the passed
+         * {@code Runnable} are serialized and a callback for {@code demand} call is
+         * not invoked until any previous {@code demand} callback has returned.
+         * Thus the {@code Runnable} should not block waiting for a callback of a future demand call.</p>
          * <p>The demand callback may be invoked <em>spuriously</em>: a subsequent call to {@link #read()}
          * may return {@code null}.</p>
          * <p>Calling this method establishes a <em>pending demand</em>, which is fulfilled when the demand
@@ -399,7 +402,9 @@ public class Content
          *
          * @param last whether the String is the last to write
          * @param utf8Content the String to write
-         * @param callback the callback to notify when the write operation is complete
+         * @param callback the callback to notify when the write operation is complete.
+         *                 Implementations have the same guarantees for invocation of this
+         *                 callback as for {@link #write(boolean, ByteBuffer, Callback)}.
          */
         static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
@@ -409,6 +414,12 @@ public class Content
         /**
          * <p>Writes the given {@link ByteBuffer}, notifying the {@link Callback}
          * when the write is complete.</p>
+         * <p>Implementations guarantee that calls to this method are safely reentrant so that
+         * stack overflows are avoided in the case of mutual recursion between the execution of
+         * the {@code Callback} and a call to this method.  Invocations of the passed
+         * {@code Callback} are serialized and a callback for a completed {@code write} call is
+         * not invoked until any previous {@code write} callback has returned.
+         * Thus the {@code Callback} should not block waiting for a callback of a future write call.</p>
          *
          * @param last whether the ByteBuffer is the last to write
          * @param byteBuffer the ByteBuffer to write

@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -272,6 +273,16 @@ public class ThreadLimitHandler extends Handler.Wrapper
         return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
     }
 
+    private interface Permit
+    {
+
+        boolean isDone();
+
+        void release();
+
+        void thenAccept(Consumer<Permit> p);
+    }
+    
     private static class LimitedRequest extends Request.Wrapper
     {
         private final Remote _remote;
@@ -305,7 +316,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
         protected void process() throws Exception
         {
-            CompletableFuture<Closeable> futurePermit = _remote.acquire();
+            Permit futurePermit = _remote.acquire();
 
             // Did we get a permit?
             if (futurePermit.isDone())
@@ -318,13 +329,13 @@ public class ThreadLimitHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Threadlimited {}", _remote);
-                futurePermit.thenAccept(c -> process(futurePermit));
+                futurePermit.thenAccept(this::process);
             }
         }
 
-        protected void process(CompletableFuture<Closeable> futurePermit)
+        protected void process(Permit futurePermit)
         {
-            Callback callback = Callback.from(_callback, () -> getAndClose(futurePermit));
+            Callback callback = Callback.from(_callback, futurePermit::release);
             try
             {
                 if (!_handler.process(this, _response, callback))
@@ -461,7 +472,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             super.write(last, byteBuffer, permittedCallback);
         }
     }
-
+    
     private static final class Remote implements Closeable
     {
         private final String _ip;
@@ -479,7 +490,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
             _limit = limit;
         }
 
-        private CompletableFuture<Closeable> acquire()
+        private Permit acquire()
         {
             try (AutoLock lock = _lock.lock())
             {
@@ -507,24 +518,29 @@ public class ThreadLimitHandler extends Handler.Wrapper
         @Override
         public void close()
         {
-            CompletableFuture<Closeable> permit;
+            CompletableFuture<Closeable> pending;
 
             try (AutoLock lock = _lock.lock())
             {
                 // reduce the allocated passes
                 _permits--;
                 _threadPermit.set(Boolean.FALSE);
-                // Are there any future passes waiting?
-                permit = _queue.pollFirst();
+                // Are there any future passes pending?
+                pending = _queue.pollFirst();
 
-                // No - we are done
-                if (permit != null)
+                // yes, allocate them a permit
+                if (pending != null)
                     _permits++;
             }
 
-            if (permit != null)
-                if (!permit.complete(this))
+            if (pending != null)
+            {
+                // We cannot complete the pending in this thread, as we may be in a process, demand or write callback
+                // that is serialized and other actions are waiting for the return.  Thus we must execute.
+                
+                if (!pending.complete(this))
                     throw new IllegalStateException();
+            }
         }
 
         @Override
