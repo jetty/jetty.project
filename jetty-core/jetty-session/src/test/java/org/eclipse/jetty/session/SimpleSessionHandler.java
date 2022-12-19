@@ -60,16 +60,15 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
+        Handler next = getHandler();
+        if (next == null)
+            return false;
+
         SessionRequest sessionRequest = new SessionRequest(request);
-
-        Request.Processor processor = getHandler().handle(sessionRequest);
-        if (processor == null)
-            return null;
-
         addSessionStreamWrapper(request);
-        return sessionRequest.wrapProcessor(processor);
+        return sessionRequest.process(next, response, callback);
     }
 
     @Override
@@ -84,7 +83,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         return new SessionAPI(session);
     }
 
-    public class SessionRequest extends Request.WrapperProcessor
+    public class SessionRequest extends Request.Wrapper
     {
         private final AtomicReference<Session> _session = new AtomicReference<>();
         private String _requestedSessionId;
@@ -124,8 +123,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             return session == null || session.isInvalid() ? null : session.getAPISession();
         }
 
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        public boolean process(Handler handler, Response response, Callback callback) throws Exception
         {
             _response = response;
 
@@ -141,7 +139,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
                     Response.replaceCookie(_response, cookie);
             }
 
-            super.process(ignored, _response, callback);
+            return handler.process(this, _response, callback);
         }
     }
 

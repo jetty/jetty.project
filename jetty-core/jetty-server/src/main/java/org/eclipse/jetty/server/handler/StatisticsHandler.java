@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
@@ -38,13 +41,10 @@ public class StatisticsHandler extends Handler.Wrapper
 {
     private final Set<String> _connectionStats = ConcurrentHashMap.newKeySet();
     private final CounterStatistic _requestStats = new CounterStatistic();
-    private final CounterStatistic _handleStats = new CounterStatistic();
     private final CounterStatistic _processStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
-    private final SampleStatistic _handleTimeStats = new SampleStatistic();
     private final SampleStatistic _processTimeStats = new SampleStatistic();
     private final LongAdder _processingErrors = new LongAdder();
-    private final LongAdder _handlingErrors = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -52,26 +52,60 @@ public class StatisticsHandler extends Handler.Wrapper
     private final LongAdder _responses5xx = new LongAdder();
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        long beginNanoTime = NanoTime.now();
-        _handleStats.increment();
-        StatisticsRequest statisticsRequest = new StatisticsRequest(request);
+        Handler next = getHandler();
+        if (next == null)
+            return false;
 
+        StatisticsRequest statisticsRequest = newStatisticsRequest(request);
         try
         {
-            return statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
+            _processStats.increment();
+            _requestStats.increment();
+
+            String id = statisticsRequest.getConnectionMetaData().getId();
+            if (_connectionStats.add(id))
+                statisticsRequest.getConnectionMetaData().getConnection().addEventListener(statisticsRequest);
+
+            if (next.process(statisticsRequest, response, callback))
+                return true;
+            _requestStats.decrement();
+            return false;
         }
         catch (Throwable t)
         {
-            _handlingErrors.increment();
+            _processingErrors.increment();
             throw t;
         }
         finally
         {
-            _handleStats.decrement();
-            _handleTimeStats.record(NanoTime.since(beginNanoTime));
+            _processStats.decrement();
+            _processTimeStats.record(NanoTime.since(statisticsRequest._startProcessingNanoTime));
         }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent,
+            new DumpableCollection("connectionStats", _connectionStats),
+            Dumpable.named("requestStats", _requestStats),
+            Dumpable.named("requestTimeStats", _requestTimeStats),
+            Dumpable.named("processStats", _processStats),
+            Dumpable.named("processTimeStats", _processTimeStats),
+            Dumpable.named("processingErrors", _processingErrors),
+            Dumpable.named("1xxResponses", _responses1xx),
+            Dumpable.named("2xxResponses", _responses2xx),
+            Dumpable.named("3xxResponses", _responses3xx),
+            Dumpable.named("4xxResponses", _responses4xx),
+            Dumpable.named("5xxResponses", _responses5xx)
+        );
+    }
+
+    protected StatisticsRequest newStatisticsRequest(Request request)
+    {
+        return new StatisticsRequest(request);
     }
 
     @ManagedOperation(value = "resets the statistics", impact = "ACTION")
@@ -79,13 +113,10 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         _connectionStats.clear();
         _requestStats.reset();
-        _handleStats.reset();
         _processStats.reset();
         _requestTimeStats.reset();
-        _handleTimeStats.reset();
         _processTimeStats.reset();
         _processingErrors.reset();
-        _handlingErrors.reset();
         _responses1xx.reset();
         _responses2xx.reset();
         _responses3xx.reset();
@@ -141,22 +172,10 @@ public class StatisticsHandler extends Handler.Wrapper
         return _responses5xx.intValue();
     }
 
-    @ManagedAttribute("number of requests that threw an exception during handling")
-    public int getHandlingErrors()
-    {
-        return _handlingErrors.intValue();
-    }
-
     @ManagedAttribute("number of requests that threw an exception during processing")
     public int getProcessingErrors()
     {
         return _processingErrors.intValue();
-    }
-
-    @ManagedAttribute("")
-    public int getHandlings()
-    {
-        return (int)_handleStats.getTotal();
     }
 
     @ManagedAttribute("")
@@ -202,30 +221,6 @@ public class StatisticsHandler extends Handler.Wrapper
     }
 
     @ManagedAttribute("(in ns)")
-    public long getHandlingTimeTotal()
-    {
-        return _handleTimeStats.getTotal();
-    }
-
-    @ManagedAttribute("(in ns)")
-    public long getHandlingTimeMax()
-    {
-        return _handleTimeStats.getMax();
-    }
-
-    @ManagedAttribute("(in ns)")
-    public double getHandlingTimeMean()
-    {
-        return _handleTimeStats.getMean();
-    }
-
-    @ManagedAttribute("(in ns)")
-    public double getHandlingTimeStdDev()
-    {
-        return _handleTimeStats.getStdDev();
-    }
-
-    @ManagedAttribute("(in ns)")
     public long getProcessingTimeTotal()
     {
         return _processTimeStats.getTotal();
@@ -249,18 +244,41 @@ public class StatisticsHandler extends Handler.Wrapper
         return _processTimeStats.getStdDev();
     }
 
-    private class StatisticsRequest extends Request.WrapperProcessor
+    private class StatisticsRequest extends Request.Wrapper implements Connection.Listener
     {
         private final LongAdder _bytesRead = new LongAdder();
         private final LongAdder _bytesWritten = new LongAdder();
-        private long _processStartNanoTime;
+        private final long _startProcessingNanoTime;
 
         private StatisticsRequest(Request request)
         {
             super(request);
+            _startProcessingNanoTime = NanoTime.now();
+            addHttpStreamWrapper(this::asHttpStream);
+
         }
 
-        // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
+        public LongAdder getBytesRead()
+        {
+            return _bytesRead;
+        }
+
+        public LongAdder getBytesWritten()
+        {
+            return _bytesWritten;
+        }
+
+        @Override
+        public void onClosed(Connection connection)
+        {
+            _connectionStats.remove(getConnectionMetaData().getId());
+        }
+
+        public HttpStream asHttpStream(HttpStream httpStream)
+        {
+            return new StatisticsHttpStream(httpStream);
+        }
+
         @Override
         public Object getAttribute(String name)
         {
@@ -277,98 +295,67 @@ public class StatisticsHandler extends Handler.Wrapper
             };
         }
 
-        private long dataRatePerSecond(long dataCount)
+        protected long dataRatePerSecond(long dataCount)
         {
             return (long)(dataCount / (spentTimeNs() / 1_000_000_000F));
         }
 
         private long spentTimeNs()
         {
-            return NanoTime.since(_processStartNanoTime);
+            return NanoTime.since(getNanoTime());
         }
 
-        @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        protected class StatisticsHttpStream extends HttpStream.Wrapper
         {
-            _processStartNanoTime = NanoTime.now();
-            _processStats.increment();
-            _requestStats.increment();
-
-            String id = getConnectionMetaData().getId();
-            if (_connectionStats.add(id))
+            public StatisticsHttpStream(HttpStream httpStream)
             {
-                // TODO test this with localconnector endpoint that has multiple requests per connection.
-                getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
+                super(httpStream);
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                Content.Chunk chunk = super.read();
+                if (chunk != null)
+                    _bytesRead.add(chunk.remaining());
+                return chunk;
+            }
+
+            @Override
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            {
+                if (response != null)
                 {
-                    @Override
-                    public void onClosed(Connection connection)
+                    switch (response.getStatus() / 100)
                     {
-                        _connectionStats.remove(id);
+                        case 1 -> _responses1xx.increment();
+                        case 2 -> _responses2xx.increment();
+                        case 3 -> _responses3xx.increment();
+                        case 4 -> _responses4xx.increment();
+                        case 5 -> _responses5xx.increment();
                     }
-                });
+                }
+                int length = BufferUtil.length(content);
+                if (length > 0)
+                    _bytesWritten.add(length);
+
+                super.send(request, response, last, content, callback);
             }
 
-            addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+            @Override
+            public void succeeded()
             {
-                @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
-                {
-                    if (response != null)
-                    {
-                        switch (response.getStatus() / 100)
-                        {
-                            case 1 -> _responses1xx.increment();
-                            case 2 -> _responses2xx.increment();
-                            case 3 -> _responses3xx.increment();
-                            case 4 -> _responses4xx.increment();
-                            case 5 -> _responses5xx.increment();
-                        }
-                    }
-
-                    _bytesWritten.add(BufferUtil.length(content));
-
-                    super.send(request, response, last, content, callback);
-                }
-
-                @Override
-                public Content.Chunk read()
-                {
-                    Content.Chunk chunk =  super.read();
-                    if (chunk != null)
-                        _bytesRead.add(chunk.remaining());
-                    return chunk;
-                }
-
-                @Override
-                public void succeeded()
-                {
-                    _requestStats.decrement();
-                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
-                    super.succeeded();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    _requestStats.decrement();
-                    _requestTimeStats.record(NanoTime.since(getNanoTimeStamp()));
-                    super.failed(x);
-                }
-            });
-
-            try
-            {
-                super.process(this, response, callback);
+                _requestStats.decrement();
+                _requestTimeStats.record(NanoTime.since(getNanoTime()));
+                super.succeeded();
             }
-            catch (Throwable t)
+
+            @Override
+            public void failed(Throwable x)
             {
-                _processingErrors.increment();
-                throw t;
-            }
-            finally
-            {
-                _processStats.decrement();
-                _processTimeStats.record(NanoTime.since(_processStartNanoTime));
+                _requestStats.decrement();
+                _requestTimeStats.record(NanoTime.since(getNanoTime()));
+                super.failed(x);
             }
         }
     }
@@ -384,9 +371,14 @@ public class StatisticsHandler extends Handler.Wrapper
             _minimumWriteRate = minimumWriteRate;
         }
 
-        private class MinimumDataRateRequest extends Request.WrapperProcessor
+        @Override
+        protected StatisticsRequest newStatisticsRequest(Request request)
         {
-            private StatisticsRequest _statisticsRequest;
+            return new MinimumDataRateRequest(request);
+        }
+
+        protected class MinimumDataRateRequest extends StatisticsRequest
+        {
             private Content.Chunk.Error _errorContent;
 
             private MinimumDataRateRequest(Request request)
@@ -395,17 +387,11 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public Object getAttribute(String name)
-            {
-                return _statisticsRequest.getAttribute(name);
-            }
-
-            @Override
             public void demand(Runnable demandCallback)
             {
                 if (_minimumReadRate > 0)
                 {
-                    Long rr = (Long)getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                    long rr = dataRatePerSecond(getBytesRead().longValue());
                     if (rr < _minimumReadRate)
                     {
                         // TODO should this be a QuietException to reduce log verbosity from bad clients?
@@ -424,56 +410,32 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
-            public WrapperProcessor wrapProcessor(Processor processor)
+            public HttpStream asHttpStream(HttpStream httpStream)
             {
-                _statisticsRequest = (StatisticsRequest)processor;
-                return super.wrapProcessor(processor);
-            }
-
-            @Override
-            public void process(Request ignored, Response response, Callback callback) throws Exception
-            {
-                super.process(ignored, new MinimumDataRateResponse(this, response), callback);
-            }
-        }
-
-        private class MinimumDataRateResponse extends Response.Wrapper
-        {
-            private MinimumDataRateResponse(Request request, Response wrapped)
-            {
-                super(request, wrapped);
-            }
-
-            @Override
-            public void write(boolean last, ByteBuffer content, Callback callback)
-            {
-                if (_minimumWriteRate > 0)
+                return new StatisticsHttpStream(httpStream)
                 {
-                    MinimumDataRateRequest request = (MinimumDataRateRequest)getRequest();
-                    if (((Long)request.getAttribute("o.e.j.s.h.StatsHandler.bytesWritten")) > 0L)
+                    @Override
+                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
                     {
-                        Long wr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
-                        if (wr < _minimumWriteRate)
+                        if (_minimumWriteRate > 0)
                         {
-                            TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
-                            request._errorContent = Content.Chunk.from(cause);
-                            callback.failed(cause);
-                            return;
+                            long bytesWritten = getBytesWritten().longValue();
+                            if (bytesWritten > 0L)
+                            {
+                                long wr = dataRatePerSecond(bytesWritten);
+                                if (wr < _minimumWriteRate)
+                                {
+                                    TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
+                                    _errorContent = Content.Chunk.from(cause);
+                                    callback.failed(cause);
+                                    return;
+                                }
+                            }
                         }
+                        super.send(request, response, last, content, callback);
                     }
-                }
-                super.write(last, content, callback);
+                };
             }
-        }
-
-        @Override
-        public Request.Processor handle(Request request) throws Exception
-        {
-            MinimumDataRateRequest minimumDataRateRequest = new MinimumDataRateRequest(request);
-            Request.Processor processor = super.handle(minimumDataRateRequest);
-            if (processor == null)
-                return null;
-            return minimumDataRateRequest.wrapProcessor(processor);
         }
     }
 }

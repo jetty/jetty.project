@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -64,20 +65,13 @@ public class IdleTimeoutHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor processor = super.handle(request);
-        if (processor == null)
-            return null;
-
-        return (rq, rs, cb) ->
+        long idleTimeout = 0; // TODO rq.getHttpChannel().getIdleTimeout();
+        // TODO rq.getHttpChannel().setIdleTimeout(_idleTimeoutMs);
+        return super.process(request, response, Callback.from(callback, () ->
         {
-            long idleTimeout = 0; // TODO rq.getHttpChannel().getIdleTimeout();
-            // TODO rq.getHttpChannel().setIdleTimeout(_idleTimeoutMs);
-            processor.process(rq, rs, Callback.from(cb, () ->
-            {
-                // TODO rq.getHttpChannel().setIdleTimeout(idleTimeout)
-            }));
-        };
+            // TODO rq.getHttpChannel().setIdleTimeout(idleTimeout)
+        }));
     }
 }

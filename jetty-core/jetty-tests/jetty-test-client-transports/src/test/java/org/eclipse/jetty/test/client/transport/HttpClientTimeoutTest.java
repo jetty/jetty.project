@@ -427,14 +427,15 @@ public class HttpClientTimeoutTest extends AbstractTest
     public void testFirstRequestTimeoutAfterSecondRequestCompletes(Transport transport) throws Exception
     {
         long timeout = 2000;
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     Thread.sleep(3 * timeout);
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -463,14 +464,15 @@ public class HttpClientTimeoutTest extends AbstractTest
     {
 
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     serverLatch.await();
                 callback.succeeded();
+                return true;
             }
         });
         setMaxRequestsPerConnection(1);
@@ -547,7 +549,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
     }
 
-    private static class TimeoutHandler extends Handler.Processor
+    private static class TimeoutHandler extends Handler.Abstract
     {
         private final long timeout;
 
@@ -557,10 +559,11 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
 
         @Override
-        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             TimeUnit.MILLISECONDS.sleep(timeout);
             Content.copy(request, response, callback);
+            return true;
         }
     }
 }

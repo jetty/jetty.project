@@ -85,6 +85,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -1590,7 +1591,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), not(containsString("gzip")));
         assertThat(response.get("ETag"), is(CONTENT_ETAG));
-        assertThat(response.getCSV("Vary", false), contains("Other", "Accept-Encoding"));
+        assertThat(response.getCSV("Vary", false), containsInAnyOrder("Other", "Accept-Encoding"));
 
         InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
@@ -1737,14 +1738,15 @@ public class GzipHandlerTest
         return HttpTester.parseResponse(_connector.getResponse(request.generate()));
     }
 
-    public static class MimeTypeContentHandler extends Handler.Processor
+    public static class MimeTypeContentHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             String pathInfo = Request.getPathInContext(request);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, getContentTypeFromRequest(pathInfo, request));
             Content.Sink.write(response, true, "This is content for " + pathInfo + "\n", callback);
+            return true;
         }
 
         private String getContentTypeFromRequest(String filename, Request request)
@@ -1762,15 +1764,15 @@ public class GzipHandlerTest
         }
     }
 
-    public static class TestHandler extends Handler.Processor
+    public static class TestHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (HttpMethod.DELETE.is(request.getMethod()))
             {
                 doDelete(request, response, callback);
-                return;
+                return true;
             }
 
             Fields parameters = Request.extractQueryParameters(request);
@@ -1781,11 +1783,12 @@ public class GzipHandlerTest
             if (ifnm != null && ifnm.equals(CONTENT_ETAG))
             {
                 Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                return;
+                return true;
             }
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             Content.Sink.write(response, true, CONTENT, callback);
+            return true;
         }
 
         void doDelete(Request request, Response response, Callback callback) throws IOException
@@ -1798,10 +1801,10 @@ public class GzipHandlerTest
         }
     }
 
-    public static class WriteHandler extends Handler.Processor
+    public static class WriteHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             Fields parameters = Request.extractQueryParameters(request);
 
@@ -1855,13 +1858,14 @@ public class GzipHandlerTest
 
             Context context = request.getContext();
             context.run(writer);
+            return true;
         }
     }
 
     /**
      * Handler that will write a ByteBuffer in two writes, causing a Transfer-Encoding: chunked.
      */
-    public static class ChunkedWriteHandler extends Handler.Processor
+    public static class ChunkedWriteHandler extends Handler.Abstract
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1890,7 +1894,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtils.isNotBlank(etag))
             {
@@ -1902,13 +1906,14 @@ public class GzipHandlerTest
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
             response.write(false, byteBuffer.slice(), Callback.from(() -> response.write(true, null, callback)));
+            return true;
         }
     }
 
     /**
      * Handler that will write a ByteBuffer in a single write, resulting in a Content-Length response header.
      */
-    public static class SingleWriteHandler extends Handler.Processor
+    public static class SingleWriteHandler extends Handler.Abstract
     {
         private final ByteBuffer byteBuffer;
         private final String contentType;
@@ -1937,7 +1942,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             if (StringUtils.isNotBlank(etag))
             {
@@ -1951,26 +1956,28 @@ public class GzipHandlerTest
             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, slice.remaining());
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
             response.write(true, slice, callback);
+            return true;
         }
     }
 
-    public static class EchoHandler extends Handler.Processor
+    public static class EchoHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
             if (contentType != null)
                 response.getHeaders().add(contentType);
 
             Content.copy(request, response, callback);
+            return true;
         }
     }
 
-    public static class DumpHandler extends Handler.Processor
+    public static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -1981,6 +1988,7 @@ public class GzipHandlerTest
 
             String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
             Content.Sink.write(response, true, dump, callback);
+            return true;
         }
     }
 
@@ -1995,20 +2003,13 @@ public class GzipHandlerTest
     public static class CheckHandler extends Handler.Wrapper
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            Request.Processor processor = super.handle(request);
-            if (processor == null)
-                return null;
-
-            return (req, res, cb) ->
-            {
-                if (req.getHeaders().get("X-Content-Encoding") != null)
-                    assertEquals(-1, req.getLength());
-                else if (req.getLength() >= 0)
-                    MatcherAssert.assertThat(req.getHeaders().get("X-Content-Encoding"), nullValue());
-                processor.process(req, res, cb);
-            };
+            if (request.getHeaders().get("X-Content-Encoding") != null)
+                assertEquals(-1, request.getLength());
+            else if (request.getLength() >= 0)
+                MatcherAssert.assertThat(request.getHeaders().get("X-Content-Encoding"), nullValue());
+            return super.process(request, response, callback);
         }
     }
 }

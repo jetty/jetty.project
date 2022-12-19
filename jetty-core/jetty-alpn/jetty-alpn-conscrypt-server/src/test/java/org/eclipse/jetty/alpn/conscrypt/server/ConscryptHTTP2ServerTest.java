@@ -105,12 +105,13 @@ public class ConscryptHTTP2ServerTest
         http2Connector.setPort(0);
         server.addConnector(http2Connector);
 
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
 

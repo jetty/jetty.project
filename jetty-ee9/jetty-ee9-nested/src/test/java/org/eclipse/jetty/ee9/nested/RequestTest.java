@@ -81,6 +81,7 @@ import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
@@ -999,7 +1000,7 @@ public class RequestTest
         org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
                 {
@@ -1010,7 +1011,7 @@ public class RequestTest
                     }
                 };
 
-                org.eclipse.jetty.server.Request.WrapperProcessor wrapper = new org.eclipse.jetty.server.Request.WrapperProcessor(request)
+                org.eclipse.jetty.server.Request wrapper = new org.eclipse.jetty.server.Request.Wrapper(request)
                 {
                     @Override
                     public ConnectionMetaData getConnectionMetaData()
@@ -1019,7 +1020,7 @@ public class RequestTest
                     }
                 };
 
-                return wrapper.wrapProcessor(super.handle(wrapper));
+                return super.process(wrapper, response, callback);
             }
         };
 
@@ -2322,6 +2323,12 @@ public class RequestTest
         }
 
         @Override
+        public long getNanoTime()
+        {
+            return 0;
+        }
+
+        @Override
         public boolean isSecure()
         {
             return false;
@@ -2362,7 +2369,7 @@ public class RequestTest
         }
 
         @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
         }
 

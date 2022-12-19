@@ -101,12 +101,13 @@ public class PatternRuleTest extends AbstractRuleTest
     private void start(PatternRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
+                return true;
             }
         });
     }

@@ -79,13 +79,13 @@ public class HeaderRegexRule extends RegexRule
         return new Processor(input)
         {
             @Override
-            public void process(Response response, Callback callback) throws Exception
+            public boolean process(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), matcher.replaceAll(getHeaderValue()));
                 else
                     response.getHeaders().put(getHeaderName(), matcher.replaceAll(getHeaderValue()));
-                super.process(response, callback);
+                return super.process(response, callback);
             }
         };
     }

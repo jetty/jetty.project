@@ -45,10 +45,10 @@ public class HttpSpiContextHandler extends ContextHandler
     {
         this._httpContext = httpContext;
         this._httpHandler = httpHandler;
-        super.setHandler(new Handler.Processor()
+        super.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 try (HttpExchange jettyHttpExchange = request.isSecure()
                     ? new JettyHttpsExchange(_httpContext, request, response)
@@ -56,7 +56,7 @@ public class HttpSpiContextHandler extends ContextHandler
                 {
                     Authenticator auth = _httpContext.getAuthenticator();
                     if (auth != null && handleAuthentication(request, response, callback, jettyHttpExchange, auth))
-                        return;
+                        return true;
 
                     _httpHandler.handle(jettyHttpExchange);
                     callback.succeeded();
@@ -66,6 +66,7 @@ public class HttpSpiContextHandler extends ContextHandler
                     LOG.debug("Failed to handle", ex);
                     Response.writeError(request, response, callback, 500, null, ex);
                 }
+                return true;
             }
         });
     }

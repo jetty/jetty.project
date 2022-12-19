@@ -110,21 +110,16 @@ public class TryPathsHandlerTest
         resourceHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 if (!Request.getPathInContext(request).startsWith("/forward"))
-                    return null;
+                    return false;
 
-                return new Handler.Processor()
-                {
-                    public void process(Request request, Response response, Callback callback)
-                    {
-                        assertThat(Request.getPathInContext(request), equalTo("/forward"));
-                        assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
-                        response.setStatus(HttpStatus.NO_CONTENT_204);
-                        callback.succeeded();
-                    }
-                };
+                assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
+                return true;
             }
         });
 
@@ -187,36 +182,25 @@ public class TryPathsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                return new Processor()
-                {
-                    @Override
-                    public void process(Request request, Response response, Callback callback)
-                    {
-                        response.setStatus(HttpStatus.OK_200);
-                        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                        String message = "PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
-                        Content.Sink.write(response, true, message, callback);
-                    }
-                };
+                response.setStatus(HttpStatus.OK_200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
+                String message = "PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
+                Content.Sink.write(response, true, message, callback);
+                return true;
             }
         });
         pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                return new Handler.Processor()
-                {
-                    public void process(Request request, Response response, Callback callback)
-                    {
-                        assertThat(Request.getPathInContext(request), equalTo("/forward"));
-                        assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
-                        response.setStatus(HttpStatus.NO_CONTENT_204);
-                        callback.succeeded();
-                    }
-                };
+                assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
+                return true;
             }
         });
 
@@ -271,19 +255,107 @@ public class TryPathsHandlerTest
     }
 
     @Test
+    public void testTryPathsAsync404() throws Exception
+    {
+        ResourceHandler resourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                // We don't want to cache not found entries for this test.
+                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+            }
+        };
+
+        resourceHandler.setDirAllowed(false);
+        resourceHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback)
+            {
+                if (Request.getPathInContext(request).endsWith("/notFound"))
+                {
+                    request.getComponents().getThreadPool().execute(() ->
+                    {
+                        try
+                        {
+                            Thread.sleep(100);
+                            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            callback.failed(e);
+                        }
+                    });
+                    return true;
+                }
+
+                if (!Request.getPathInContext(request).startsWith("/forward"))
+                    return false;
+
+                assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        start(List.of("/notFound", "/maintenance.txt", "$path", "/forward?p=$path"), resourceHandler);
+
+        try (SocketChannel channel = SocketChannel.open())
+        {
+            channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
+
+            // Make a first request without existing file paths.
+            HttpTester.Request request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/last");
+            channel.write(request.generate());
+            HttpTester.Response response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+
+            // Create the specific static file that is requested.
+            String path = "idx.txt";
+            Files.writeString(rootPath.resolve(path), "hello", StandardOpenOption.CREATE);
+            // Make a second request with the specific file.
+            request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/" + path);
+            channel.write(request.generate());
+            response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("hello", response.getContent());
+
+            // Create the "maintenance" file, it should be served first.
+            path = "maintenance.txt";
+            Files.writeString(rootPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
+            // Make a third request with any path, we should get the maintenance file.
+            request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/whatever");
+            channel.write(request.generate());
+            response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("maintenance", response.getContent());
+        }
+    }
+
+    @Test
     public void testSecureRequestIsForwarded() throws Exception
     {
         String path = "/secure";
-        start(List.of("$path"), new Handler.Processor()
+        start(List.of("$path"), new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals("https", httpURI.getScheme());
                 assertTrue(request.isSecure());
                 assertEquals(path, Request.getPathInContext(request));
                 callback.succeeded();
+                return true;
             }
         });
 

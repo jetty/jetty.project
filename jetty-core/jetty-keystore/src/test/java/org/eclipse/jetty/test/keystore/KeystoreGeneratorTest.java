@@ -78,13 +78,14 @@ public class KeystoreGeneratorTest
         _server = new Server();
         _connector = new ServerConnector(_server, sslConnectionFactory, httpConnectionFactory);
         _server.addConnector(_connector);
-        _server.setHandler(new Handler.Processor()
+        _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, BufferUtil.toBuffer("success"), callback);
+                return true;
             }
         });
         _server.start();

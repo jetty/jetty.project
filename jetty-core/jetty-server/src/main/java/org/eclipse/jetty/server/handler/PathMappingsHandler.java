@@ -23,6 +23,8 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +88,7 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         String pathInContext = Request.getPathInContext(request);
         MatchedResource<Handler> matchedResource = mappings.getMatched(pathInContext);
@@ -94,10 +96,10 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("No match on pathInContext of {}", pathInContext);
-            return null;
+            return false;
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Matched pathInContext of {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), matchedResource.getResource());
-        return matchedResource.getResource().handle(request);
+        return matchedResource.getResource().process(request, response, callback);
     }
 }

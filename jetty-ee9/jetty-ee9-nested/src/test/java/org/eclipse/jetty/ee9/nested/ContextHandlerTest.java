@@ -757,12 +757,7 @@ public class ContextHandlerTest
         assertThat(response.getContent(), containsString("Hello"));
 
         assertThat(history, contains(
-            // Enter once for handle(request)
-            "Core enter http://0.0.0.0/",
-            "EE9 enter /",
-            "EE9 exit /",
-            "Core exit http://0.0.0.0/",
-            // Enter again for process(request, response, callback)
+            // Enter for process(request, response, callback)
             "Core enter http://0.0.0.0/",
             "EE9 enter /",
             "Handling",

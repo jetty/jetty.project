@@ -76,7 +76,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Fields;
@@ -119,13 +118,13 @@ public class ServletContextRequest extends ContextRequest
 
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final ServletApiRequest _httpServletRequest;
+    private final ServletContextResponse _response;
     final ServletHandler.MappedServlet _mappedServlet;
     private final HttpInput _httpInput;
     private final String _pathInContext;
     private final ServletChannel _servletChannel;
     private final PathSpec _pathSpec;
     final MatchedPath _matchedPath;
-    private ServletContextResponse _response;
     private Charset _queryEncoding;
     private HttpFields _trailers;
 
@@ -133,12 +132,13 @@ public class ServletContextRequest extends ContextRequest
         ServletContextHandler.ServletContextApi servletContextApi,
         ServletChannel servletChannel,
         Request request,
+        Response response,
         String pathInContext,
         ServletHandler.MappedServlet mappedServlet,
         PathSpec pathSpec,
         MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
+        super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -146,6 +146,7 @@ public class ServletContextRequest extends ContextRequest
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
+        _response =  new ServletContextResponse(servletChannel, this, response);
     }
 
     public String getPathInContext()
@@ -162,13 +163,6 @@ public class ServletContextRequest extends ContextRequest
     void setTrailers(HttpFields trailers)
     {
         _trailers = trailers;
-    }
-
-    @Override
-    protected ContextResponse newContextResponse(Request request, Response response)
-    {
-        _response = new ServletContextResponse(_servletChannel, this, response);
-        return _response;
     }
 
     public ServletRequestState getState()
