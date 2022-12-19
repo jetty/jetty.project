@@ -172,14 +172,16 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      * @return true if the input matches an include, and is not excluded.
      */
     @Override
-    public boolean test(P t) // TestNew
+    public boolean test(P t)
     {
         if (!_includes.isEmpty())
         {
-            // We have includes defined, if input has no match, return false immediately
             if (!_includePredicate.test(t))
+            {
+                // If we have defined includes, but none match then
+                // return false immediately, no need to check excluded
                 return false;
-            // We have an include match, let excludes override if needed.
+            }
         }
 
         if (_excludes.isEmpty())
