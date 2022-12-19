@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+
+  <Set name="contextPath">/setbycontextxml</Set>
+
+</Configure>
