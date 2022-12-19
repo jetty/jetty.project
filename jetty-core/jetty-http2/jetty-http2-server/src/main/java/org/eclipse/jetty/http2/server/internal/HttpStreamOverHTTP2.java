@@ -81,7 +81,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public long getNanoTimeStamp()
+    public long getNanoTime()
     {
         return _nanoTime;
     }

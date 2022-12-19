@@ -44,7 +44,9 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -103,12 +105,11 @@ public class ErrorPageTest
         Handler.Wrapper noopHandler = new Handler.Wrapper()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/noop"))
-                    return null;
-                else
-                    return super.handle(request);
+                    return false;
+                return super.process(request, response, callback);
             }
         };
         _context.insertHandler(noopHandler);

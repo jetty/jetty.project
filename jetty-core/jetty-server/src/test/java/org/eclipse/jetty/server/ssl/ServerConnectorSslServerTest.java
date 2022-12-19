@@ -208,10 +208,10 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         }
     }
 
-    public static class SecureRequestHandler extends Handler.Processor
+    public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             StringBuilder out = new StringBuilder();
@@ -228,6 +228,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             out.append("ssl_session_id='").append(data == null ? "" : data.sessionId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
             Content.Sink.write(response, true, out.toString(), callback);
+            return true;
         }
     }
 }

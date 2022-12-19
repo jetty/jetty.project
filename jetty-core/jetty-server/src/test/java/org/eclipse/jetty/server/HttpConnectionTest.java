@@ -864,13 +864,14 @@ public class HttpConnectionTest
     public void testEmptyFlush() throws Exception
     {
         _server.stop();
-        _server.setHandler(new Handler.Processor()
+        _server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(false, null, callback);
+                return true;
             }
         });
         _server.start();
@@ -1139,10 +1140,10 @@ public class HttpConnectionTest
         final String longstr = str;
         final CountDownLatch checkError = new CountDownLatch(1);
         _server.stop();
-        _server.setHandler(new Handler.Processor()
+        _server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", longstr);
@@ -1153,6 +1154,7 @@ public class HttpConnectionTest
                         callback.failed(t);
                     })
                 );
+                return true;
             }
         });
         _server.start();
@@ -1188,10 +1190,10 @@ public class HttpConnectionTest
         final String longstr = "thisisastringthatshouldreachover12kbytes-" + new String(bytes, StandardCharsets.ISO_8859_1) + "_Z_";
         final CountDownLatch checkError = new CountDownLatch(1);
         _server.stop();
-        _server.setHandler(new Handler.Processor()
+        _server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", longstr);
@@ -1203,6 +1205,7 @@ public class HttpConnectionTest
                         callback.failed(t);
                     })
                 );
+                return true;
             }
         });
         _server.start();
@@ -1300,10 +1303,10 @@ public class HttpConnectionTest
         String chunk2 = IntStream.range(0, 64).mapToObj(i -> chunk1).collect(Collectors.joining());
         long dataLength = chunk1.length() + chunk2.length();
         _server.stop();
-        _server.setHandler(new Handler.Processor.Blocking()
+        _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
@@ -1335,6 +1338,7 @@ public class HttpConnectionTest
                 assertThat(bytesIn, greaterThan(dataLength));
 
                 callback.succeeded();
+                return true;
             }
         });
         _server.start();

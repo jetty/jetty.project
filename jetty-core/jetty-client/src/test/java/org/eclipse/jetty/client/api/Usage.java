@@ -34,6 +34,7 @@ import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -314,7 +315,7 @@ public class Usage
                 @Override
                 public void onBegin(Response response)
                 {
-                    if (response.getStatus() == 404)
+                    if (response.getStatus() == HttpStatus.NOT_FOUND_404)
                         sendContent.set(false);
                 }
             });

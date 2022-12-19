@@ -54,8 +54,10 @@ import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -432,16 +434,13 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        // TODO avoid lambda creation
-        return (req, resp, cb) ->
-        {
-            // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
-            ServletContextRequest servletRequest = Request.as(request, ServletContextRequest.class);
-            servletRequest.getServletChannel().setCallback(cb);
-            servletRequest.getServletChannel().handle();
-        };
+        // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        servletContextRequest.getServletChannel().setCallback(callback);
+        servletContextRequest.getServletChannel().handle();
+        return true;
     }
 
     /**

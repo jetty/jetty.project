@@ -190,12 +190,13 @@ public class NetworkTrafficListenerTest
     public void testTrafficWithResponseContentOnPersistentConnection() throws Exception
     {
         String responseContent = "response_content" + END_OF_CONTENT;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.write(true, UTF_8.encode(responseContent), callback);
+                return true;
             }
         });
 
@@ -328,12 +329,13 @@ public class NetworkTrafficListenerTest
     public void testTrafficWithRequestContentWithResponseRedirectOnPersistentConnection() throws Exception
     {
         String location = "/redirect";
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, location);
+                return true;
             }
         });
 

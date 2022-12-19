@@ -18,9 +18,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
@@ -40,6 +43,8 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  */
 public class InetAccessHandler extends Handler.Wrapper
 {
+    // TODO replace this handler with a general conditional handler wrapper.
+
     private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
 
     /**
@@ -203,13 +208,16 @@ public class InetAccessHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (socketAddress instanceof InetSocketAddress inetSocketAddress &&
-            !isAllowed(inetSocketAddress.getAddress(), request))
-            return null;
-        return super.handle(request);
+        if (socketAddress instanceof InetSocketAddress inetSocketAddress && !isAllowed(inetSocketAddress.getAddress(), request))
+        {
+            // TODO a false return may be better here.
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            return true;
+        }
+        return super.process(request, response, callback);
     }
 
     /**

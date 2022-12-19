@@ -17,11 +17,14 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 
@@ -34,77 +37,39 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  */
 public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 {
-    private DateCache _date = new DateCache("HH:mm:ss", Locale.US);
+    private final DateCache _date = new DateCache("HH:mm:ss", Locale.US);
     private OutputStream _out;
     private PrintStream _print;
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        // TODO
-        return super.handle(request);
-    }
-
-    /*
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException
-    {
-        final Response base_response = baseRequest.getResponse();
-        final Thread thread = Thread.currentThread();
-        final String old_name = thread.getName();
-
-        boolean retry = false;
-        String name = (String)request.getAttribute("org.eclipse.jetty.thread.name");
-        if (name == null)
-            name = old_name + ":" + baseRequest.getOriginalURI();
-        else
-            retry = true;
+        Thread thread = Thread.currentThread();
+        String name = thread.getName() + ":" + request.getHttpURI();
 
         String ex = null;
         try
         {
-            if (retry)
-                print(name, "RESUME");
-            else
-                print(name, "REQUEST " + baseRequest.getRemoteAddr() + " " + request.getMethod() + " " + baseRequest.getHeader("Cookie") + "; " + baseRequest.getHeader("User-Agent"));
+            print(name, "REQUEST " + Request.getRemoteAddr(request) +
+                " " + request.getMethod() +
+                " " + request.getHeaders().get("Cookie") +
+                "; " + request.getHeaders().get("User-Agent"));
             thread.setName(name);
 
-            getHandler().handle(target, baseRequest, request, response);
+            return getHandler().process(request, response, callback);
         }
-        catch (IOException ioe)
+        catch (Throwable x)
         {
-            ex = ioe.toString();
-            throw ioe;
-        }
-        catch (ServletException servletEx)
-        {
-            ex = servletEx.toString() + ":" + servletEx.getCause();
-            throw servletEx;
-        }
-        catch (RuntimeException rte)
-        {
-            ex = rte.toString();
-            throw rte;
-        }
-        catch (Error e)
-        {
-            ex = e.toString();
-            throw e;
+            ex = x + ":" + x.getCause();
+            throw x;
         }
         finally
         {
-            thread.setName(old_name);
-            if (baseRequest.getHttpChannelState().isAsyncStarted())
-            {
-                request.setAttribute("org.eclipse.jetty.thread.name", name);
-                print(name, "ASYNC");
-            }
-            else
-                print(name, "RESPONSE " + base_response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + base_response.getContentType());
+            // TODO this should be done in a completion event
+            print(name, "RESPONSE " + response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + response.getHeaders().get(HttpHeader.CONTENT_TYPE));
         }
     }
-    */
+
     private void print(String name, String message)
     {
         long now = System.currentTimeMillis();

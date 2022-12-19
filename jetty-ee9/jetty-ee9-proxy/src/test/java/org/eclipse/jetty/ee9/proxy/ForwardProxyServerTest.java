@@ -233,14 +233,15 @@ public class ForwardProxyServerTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
-        startServer(null, http, new Handler.Processor()
+        startServer(null, http, new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
                 callback.succeeded();
+                return true;
             }
         });
         startProxy(new ProxyServlet()
@@ -271,14 +272,15 @@ public class ForwardProxyServerTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
-        startServer(null, http, new Handler.Processor()
+        startServer(null, http, new Handler.Abstract()
         {
             @Override
-            public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
                 callback.succeeded();
+                return true;
             }
         });
         startProxy(new ProxyServlet()

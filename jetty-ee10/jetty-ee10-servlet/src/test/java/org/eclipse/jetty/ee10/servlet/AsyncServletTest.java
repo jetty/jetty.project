@@ -182,7 +182,6 @@ public class AsyncServletTest
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
             "REQUEST /ctx/noasync/info",
-            "wrapped REQ",
             "initial"
         ));
 
@@ -199,7 +198,6 @@ public class AsyncServletTest
             assertThat(response, Matchers.startsWith("HTTP/1.1 500 "));
             assertThat(_history, contains(
                 "REQUEST /ctx/noasync/info?start=200",
-                "wrapped REQ",
                 "initial",
                 "ERROR /ctx/error/custom?start=200",
                 "wrapped REQ",

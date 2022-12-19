@@ -70,10 +70,10 @@ public class SlowClientsTest
             ServerConnector connector = new ServerConnector(server, 1, 1, sslContextFactory);
             connector.setPort(8888);
             server.addConnector(connector);
-            server.setHandler(new Handler.Processor()
+            server.setHandler(new Handler.Abstract.NonBlocking()
             {
                 @Override
-                public void process(Request request, Response response, Callback callback)
+                public boolean process(Request request, Response response, Callback callback)
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.
@@ -93,6 +93,7 @@ public class SlowClientsTest
                             }
                         }
                     );
+                    return true;
                 }
             });
             server.start();

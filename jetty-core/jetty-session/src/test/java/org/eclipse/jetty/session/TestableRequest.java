@@ -120,6 +120,12 @@ public class TestableRequest implements Request
     }
 
     @Override
+    public long getNanoTime()
+    {
+        return 0;
+    }
+
+    @Override
     public boolean isSecure()
     {
         return false;
@@ -160,7 +166,7 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+    public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
     {
     }
 }

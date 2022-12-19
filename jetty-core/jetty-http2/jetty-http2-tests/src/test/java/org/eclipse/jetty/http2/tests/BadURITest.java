@@ -73,13 +73,14 @@ public class BadURITest
     public void testBadURI() throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 handlerLatch.countDown();
                 callback.succeeded();
+                return true;
             }
         });
 

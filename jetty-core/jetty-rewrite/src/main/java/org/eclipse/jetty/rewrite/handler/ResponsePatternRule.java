@@ -83,7 +83,7 @@ public class ResponsePatternRule extends PatternRule
         return new Processor(input)
         {
             @Override
-            public void process(Response response, Callback callback)
+            public boolean process(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))
@@ -95,6 +95,7 @@ public class ResponsePatternRule extends PatternRule
                 {
                     Response.writeError(this, response, callback, getCode(), message);
                 }
+                return true;
             }
         };
     }
