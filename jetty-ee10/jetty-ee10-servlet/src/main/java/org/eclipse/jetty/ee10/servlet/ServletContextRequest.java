@@ -58,6 +58,7 @@ import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -477,8 +478,10 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public Cookie[] getCookies()
         {
-            // TODO: optimize this.
-            return Request.getCookies(getRequest()).stream()
+            List<HttpCookie> httpCookies = Request.getCookies(getRequest());
+            if (httpCookies.isEmpty())
+                return null;
+            return httpCookies.stream()
                 .map(this::convertCookie)
                 .toArray(Cookie[]::new);
         }
@@ -486,13 +489,12 @@ public class ServletContextRequest extends ContextRequest
         public Cookie convertCookie(HttpCookie cookie)
         {
             Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-            // TODO: inbound (client-to-server) cookies don't have all these parameters.
-//            result.setPath(cookie.getPath());
-//            result.setDomain(cookie.getDomain());
-//            result.setSecure(cookie.isSecure());
-//            result.setHttpOnly(cookie.isHttpOnly());
-//            result.setMaxAge((int)cookie.getMaxAge());
-            // TODO: sameSite?
+            //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+            if (CookieCompliance.RFC2965.equals(getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance()))
+            {
+                result.setPath(cookie.getPath());
+                result.setDomain(cookie.getDomain());
+            }
             return result;
         }
 
