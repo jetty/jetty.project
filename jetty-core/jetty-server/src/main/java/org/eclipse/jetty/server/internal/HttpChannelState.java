@@ -874,7 +874,7 @@ public class HttpChannelState implements HttpChannel, Components
             HttpStream stream = _httpChannel.getHttpStream();
             if (stream != null)
                 return stream.getNanoTime();
-            return -1;
+            throw new IllegalStateException();
         }
 
         @Override
