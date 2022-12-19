@@ -52,7 +52,7 @@ public class DelayedHandler extends Handler.Wrapper
             HttpHeader header = field.getHeader();
             if (header == null)
                 continue;
-            switch(header)
+            switch (header)
             {
                 case CONTENT_TYPE:
                     contentType = field.getValue();
@@ -185,6 +185,7 @@ public class DelayedHandler extends Handler.Wrapper
     protected static class UntilFormDelayedProcess extends DelayedProcess implements BiConsumer<Fields, Throwable>
     {
         private final Charset _charset;
+
         public UntilFormDelayedProcess(Handler handler, Request wrapped, Response response, Callback callback, String contentType)
         {
             super(handler, wrapped, response, callback);
