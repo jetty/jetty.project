@@ -2323,6 +2323,12 @@ public class RequestTest
         }
 
         @Override
+        public long getNanoTime()
+        {
+            return 0;
+        }
+
+        @Override
         public boolean isSecure()
         {
             return false;

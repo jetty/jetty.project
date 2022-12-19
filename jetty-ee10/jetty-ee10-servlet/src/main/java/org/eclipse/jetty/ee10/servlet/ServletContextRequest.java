@@ -339,6 +339,7 @@ public class ServletContextRequest extends ContextRequest
         private String _method;
         private ServletMultiPartFormData.Parts _parts;
         private ServletPathMapping _servletPathMapping;
+        private boolean _asyncSupported = true;
 
         public static Session getSession(HttpSession httpSession)
         {
@@ -1356,6 +1357,8 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public AsyncContext startAsync() throws IllegalStateException
         {
+            if (!isAsyncSupported())
+                throw new IllegalStateException("Async Not Supported");
             ServletRequestState state = getState();
             if (_async == null)
                 _async = new AsyncContextState(state);
@@ -1368,6 +1371,8 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
         {
+            if (!isAsyncSupported())
+                throw new IllegalStateException("Async Not Supported");
             ServletRequestState state = getState();
             if (_async == null)
                 _async = new AsyncContextState(state);
@@ -1392,7 +1397,12 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public boolean isAsyncSupported()
         {
-            return true;
+            return _asyncSupported;
+        }
+
+        public void setAsyncSupported(boolean asyncSupported)
+        {
+            _asyncSupported = asyncSupported;
         }
 
         @Override

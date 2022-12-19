@@ -454,11 +454,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         if (next == null)
             return false;
         
-        final ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         if (servletContextRequest == null)
             return false;
-        final ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
-        final Authenticator authenticator = _authenticator;
+        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        Authenticator authenticator = _authenticator;
         
         if (!checkSecurity(servletApiRequest))
         {

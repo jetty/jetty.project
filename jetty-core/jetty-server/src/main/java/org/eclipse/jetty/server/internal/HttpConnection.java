@@ -1345,7 +1345,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public long getNanoTimeStamp()
+        public long getNanoTime()
         {
             return _nanoTime;
         }

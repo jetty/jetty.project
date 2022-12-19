@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -670,6 +669,7 @@ public class HttpChannelState implements HttpChannel, Components
     public static class ChannelRequest implements Attributes, Request
     {
         private final long _timeStamp = System.currentTimeMillis();
+        private final long _nanoTime = NanoTime.now();
         private final ChannelCallback _callback = new ChannelCallback(this);
         private final String _id;
         private final ConnectionMetaData _connectionMetaData;
@@ -827,13 +827,12 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public long getNanoTimeStamp()
+        public long getNanoTime()
         {
             HttpStream stream = _httpChannel.getHttpStream();
             if (stream != null)
-                return stream.getNanoTimeStamp();
-
-            return NanoTime.now() - TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - getTimeStamp());
+                return stream.getNanoTime();
+            return _nanoTime;
         }
 
         @Override
