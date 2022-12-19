@@ -94,7 +94,7 @@ public class OverlayManager
             //if a war matches an overlay config
             Artifact a = warPlugin.getWarArtifact(config.getGroupId(), config.getArtifactId(), config.getClassifier());
             if (a != null)
-            {
+            {   
                 matchedWarArtifacts.add(a);
                 Resource resource = ResourceFactory.root().newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
                 SelectiveJarResource r = new SelectiveJarResource(resource);
@@ -127,7 +127,7 @@ public class OverlayManager
      */
     protected  Resource unpackOverlay(Overlay overlay)
         throws IOException
-    {        
+    {
         if (overlay.getResource() == null)
             return null; //nothing to unpack
 

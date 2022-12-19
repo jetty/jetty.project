@@ -69,6 +69,7 @@ import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -2254,6 +2255,7 @@ public class ResponseTest
     {
         private final MetaData.Request _reqMeta;
         private final long _now;
+        private final long _nanoTime = NanoTime.now();
         private final Context _context;
 
         public MockRequest(MetaData.Request reqMeta, long now)
@@ -2320,6 +2322,12 @@ public class ResponseTest
         public long getTimeStamp()
         {
             return _now;
+        }
+
+        @Override
+        public long getNanoTime()
+        {
+            return _nanoTime;
         }
 
         @Override

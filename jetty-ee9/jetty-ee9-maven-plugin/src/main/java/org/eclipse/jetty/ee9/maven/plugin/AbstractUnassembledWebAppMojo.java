@@ -194,7 +194,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
                 }
             }
         }
-
+        
         //process any overlays and the war type artifacts, and
         //sets up the base resource collection for the webapp
         mavenProjectHelper.getOverlayManager().applyOverlays(webApp);
