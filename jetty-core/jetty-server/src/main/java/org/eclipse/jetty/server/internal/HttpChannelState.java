@@ -58,7 +58,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -713,7 +712,6 @@ public class HttpChannelState implements HttpChannel, Components
         private static final Logger LOG = LoggerFactory.getLogger(ChannelResponse.class);
 
         private final long _timeStamp = System.currentTimeMillis();
-        private final long _nanoTime = NanoTime.now();
         private final ChannelCallback _callback = new ChannelCallback(this);
         private final String _id;
         private final ConnectionMetaData _connectionMetaData;
@@ -876,7 +874,7 @@ public class HttpChannelState implements HttpChannel, Components
             HttpStream stream = _httpChannel.getHttpStream();
             if (stream != null)
                 return stream.getNanoTime();
-            return _nanoTime;
+            return -1;
         }
 
         @Override
