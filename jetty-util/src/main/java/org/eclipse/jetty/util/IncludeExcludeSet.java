@@ -157,10 +157,9 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     @Override
     public boolean test(P t)
     {
-        // return true IFF the passed object is not in the excluded set AND
-        //  either the included set is empty OR the object is in the included set
-        return (_excludes.isEmpty() || !_excludePredicate.test(t)) &&
-            (_includes.isEmpty() || _includePredicate.test(t));
+        if (!_includes.isEmpty() && !_includePredicate.test(t))
+            return false;
+        return !_excludePredicate.test(t);
     }
 
     /**
