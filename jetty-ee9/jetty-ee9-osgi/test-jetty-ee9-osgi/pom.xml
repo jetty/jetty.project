@@ -454,12 +454,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.osgi</groupId>
-      <artifactId>test-jetty-ee9-osgi-context</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.osgi</groupId>
       <artifactId>test-jetty-ee9-osgi-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
