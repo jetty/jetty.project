@@ -408,7 +408,7 @@ public class HugeResourceTest
         Request request = client.newRequest(destUri).method(HttpMethod.POST).body(content);
 
         StringBuilder responseBody = new StringBuilder();
-        request.onResponseContent((r,b) ->
+        request.onResponseContent((r, b) ->
         {
             if (b.hasRemaining())
                 responseBody.append(BufferUtil.toString(b));
@@ -421,7 +421,7 @@ public class HugeResourceTest
             complete.countDown();
         });
 
-        while(demand.get() == null)
+        while (demand.get() == null)
             Thread.onSpinWait();
         Thread.sleep(100);
         stalled.set(false);
@@ -491,7 +491,7 @@ public class HugeResourceTest
         Request request = client.newRequest(destUri).method(HttpMethod.POST).body(multipart);
 
         StringBuilder responseBody = new StringBuilder();
-        request.onResponseContent((r,b) ->
+        request.onResponseContent((r, b) ->
         {
             if (b.hasRemaining())
                 responseBody.append(BufferUtil.toString(b));
@@ -504,7 +504,7 @@ public class HugeResourceTest
             complete.countDown();
         });
 
-        while(demand.get() == null)
+        while (demand.get() == null)
             Thread.onSpinWait();
         Thread.sleep(100);
         stalled.set(false);
