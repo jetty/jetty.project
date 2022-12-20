@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -271,6 +272,18 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Object getAttribute(String name)
         {
+            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
+            if (_named != null && name != null && name.startsWith(__FORWARD_PREFIX))
+                return null;
+
+            //Servlet Spec 9.4.2 must return the values from the original request
+            if (name != null && name.startsWith(__FORWARD_PREFIX))
+            {
+                Object val = super.getAttribute(name);
+                if (val != null)
+                    return val;
+            }
+
             switch (name)
             {
                 case RequestDispatcher.FORWARD_REQUEST_URI:
@@ -304,6 +317,11 @@ public class Dispatcher implements RequestDispatcher
         public Enumeration<String> getAttributeNames()
         {
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+            
+            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
+            if (_named != null)
+                return Collections.enumeration(names);
+            
             names.add(RequestDispatcher.FORWARD_REQUEST_URI);
             names.add(RequestDispatcher.FORWARD_SERVLET_PATH);
             names.add(RequestDispatcher.FORWARD_PATH_INFO);
