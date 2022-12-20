@@ -48,7 +48,7 @@ public class CookieCache
             @Override
             protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
             {
-                _cookieList.add(new HttpCookie(cookieName, cookieValue));
+                _cookieList.add(new HttpCookie(cookieName, cookieValue, cookieDomain, cookiePath, -1, false, false, cookieComment, cookieVersion));
             }
         };
     }

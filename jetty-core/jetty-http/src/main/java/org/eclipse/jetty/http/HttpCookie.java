@@ -367,12 +367,8 @@ public class HttpCookie
             else
                 DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * _maxAge);
 
-            // for v1 cookies, also send max-age
-            if (version >= 1)
-            {
-                buf.append(";Max-Age=");
-                buf.append(_maxAge);
-            }
+            buf.append(";Max-Age=");
+            buf.append(_maxAge);
         }
 
         // add the other fields
