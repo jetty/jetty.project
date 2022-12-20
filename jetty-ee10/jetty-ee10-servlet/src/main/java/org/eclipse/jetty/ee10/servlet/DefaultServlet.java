@@ -939,6 +939,8 @@ public class DefaultServlet extends HttpServlet
             boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
 
             String welcome = welcomeAction.target();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Welcome: {}", welcomeAction);
 
             switch (welcomeAction.type())
             {
@@ -953,6 +955,8 @@ public class DefaultServlet extends HttpServlet
                             welcome = URIUtil.addPaths(servletPath, welcome);
 
                         response.setContentLength(0);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("sendRedirect{})", welcome);
                         response.sendRedirect(welcome); // Call API (might be overridden)
                         callback.succeeded();
                     }
