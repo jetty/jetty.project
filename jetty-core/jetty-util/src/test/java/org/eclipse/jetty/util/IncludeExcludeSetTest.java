@@ -17,11 +17,90 @@ import java.net.InetAddress;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IncludeExcludeSetTest
 {
+    @Test
+    public void testEmpty()
+    {
+        IncludeExcludeSet<String, String> set = new IncludeExcludeSet<>();
+        assertTrue(set.test("foo"));
+
+        assertTrue(set.isEmpty());
+
+        assertFalse(set.hasIncludes());
+        assertFalse(set.hasExcludes());
+
+        // Set is empty, so it's neither included nor excluded
+        assertNull(set.isIncludedAndNotExcluded("foo"));
+    }
+
+    @Test
+    public void testOnlyIncludes()
+    {
+        IncludeExcludeSet<String, String> set = new IncludeExcludeSet<>();
+        set.getIncluded().add("foo");
+        set.include("bar");
+        set.include("a", "b", "c");
+
+        assertTrue(set.test("foo"));
+        assertTrue(set.test("bar"));
+        assertFalse(set.test("zed"));
+
+        assertTrue(set.hasIncludes());
+        assertFalse(set.hasExcludes());
+
+        // "foo" is included
+        assertEquals(set.isIncludedAndNotExcluded("foo"), Boolean.TRUE);
+    }
+
+    @Test
+    public void testOnlyExcludes()
+    {
+        IncludeExcludeSet<String, String> set = new IncludeExcludeSet<>();
+        set.getExcluded().add("foo");
+        set.exclude("bar");
+        set.exclude("a", "b", "c");
+
+        assertFalse(set.test("foo"));
+        assertFalse(set.test("bar"));
+        assertTrue(set.test("zed"));
+
+        assertFalse(set.hasIncludes());
+        assertTrue(set.hasExcludes());
+
+        // "foo" is excluded
+        assertEquals(set.isIncludedAndNotExcluded("foo"), Boolean.FALSE);
+    }
+
+    @Test
+    public void testIncludeAndExclude()
+    {
+        IncludeExcludeSet<String, String> set = new IncludeExcludeSet<>();
+        set.include("foo");
+        set.exclude("bar");
+
+        assertTrue(set.test("foo")); // specifically included
+        assertFalse(set.test("bar")); // specifically excluded
+        assertFalse(set.test("zed")); // not in includes nor excludes
+
+        assertTrue(set.hasIncludes());
+        assertTrue(set.hasExcludes());
+
+        // "foo" is included
+        assertEquals(set.isIncludedAndNotExcluded("foo"), Boolean.TRUE);
+
+        // "bar" is included
+        assertEquals(set.isIncludedAndNotExcluded("bar"), Boolean.FALSE);
+
+        // "zed" is neither included nor excluded
+        assertNull(set.isIncludedAndNotExcluded("zed"));
+    }
+
     @Test
     public void testWithInetAddressSet() throws Exception
     {
