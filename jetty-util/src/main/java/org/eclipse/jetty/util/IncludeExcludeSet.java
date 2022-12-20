@@ -65,6 +65,7 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      */
     public IncludeExcludeSet()
     {
+        // noinspection unchecked
         this(HashSet.class);
     }
 
@@ -75,8 +76,9 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      * one for include patterns and one for exclude patters.  If the class is also a {@link Predicate},
      * then it is also used as the item test for the set, otherwise a {@link SetContainsPredicate} instance
      * is created.
-     * @param <SET> The type of a set to use as the backing store
+     * @param <SET> The type of {@link Set} to use as the backing store
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public <SET extends Set<T>> IncludeExcludeSet(Class<SET> setClass)
     {
         try
@@ -119,8 +121,9 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      * @param includePredicate the Predicate for included item testing (null for simple {@link Set#contains(Object)} test)
      * @param excludeSet the Set of items that represent the excluded space
      * @param excludePredicate the Predicate for excluded item testing (null for simple {@link Set#contains(Object)} test)
-     * @param <SET> The type of a set to use as the backing store
+     * @param <SET> The type of {@link Set} to use as the backing store
      */
+    @SuppressWarnings("unused")
     public <SET extends Set<T>> IncludeExcludeSet(Set<T> includeSet, Predicate<P> includePredicate, Set<T> excludeSet, Predicate<P> excludePredicate)
     {
         Objects.requireNonNull(includeSet, "Include Set");
@@ -154,11 +157,35 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         _excludes.addAll(Arrays.asList(element));
     }
 
+    /**
+     * Test includes and excludes for match.
+     *
+     * <p>
+     *     Excludes always win over includes.
+     * </p>
+     *
+     * <p>
+     *     Empty includes means all inputs are allowed.
+     * </p>
+     *
+     * @param t the input argument
+     * @return true if the input matches an include, and is not excluded.
+     */
     @Override
     public boolean test(P t)
     {
-        if (!_includes.isEmpty() && !_includePredicate.test(t))
-            return false;
+        if (!_includes.isEmpty())
+        {
+            if (!_includePredicate.test(t))
+            {
+                // If we have defined includes, but none match then
+                // return false immediately, no need to check excluded
+                return false;
+            }
+        }
+
+        if (_excludes.isEmpty())
+            return true;
         return !_excludePredicate.test(t);
     }
 
@@ -166,13 +193,13 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      * Test Included and not Excluded
      *
      * @param item The item to test
-     * @return Boolean.TRUE if item is included, Boolean.FALSE if item is excluded or null if neither
+     * @return {@link Boolean#TRUE} if item is included, {@link Boolean#FALSE} if item is excluded, or null if neither
      */
     public Boolean isIncludedAndNotExcluded(P item)
     {
-        if (_excludePredicate.test(item))
+        if (!_excludes.isEmpty() && _excludePredicate.test(item))
             return Boolean.FALSE;
-        if (_includePredicate.test(item))
+        if (!_includes.isEmpty() && _includePredicate.test(item))
             return Boolean.TRUE;
 
         return null;
