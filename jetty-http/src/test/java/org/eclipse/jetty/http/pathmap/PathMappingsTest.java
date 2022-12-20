@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -184,6 +189,9 @@ public class PathMappingsTest
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         p.put(new ServletPathSpec("/\u20ACuro/*"), "11");
         // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
+        p.put(new ServletPathSpec("/prefix"), "12");
+        p.put(new ServletPathSpec("/prefix/"), "13");
+        p.put(new ServletPathSpec("/prefix/*"), "14");
 
         p.put(new ServletPathSpec("/*"), "0");
 
@@ -204,6 +212,10 @@ public class PathMappingsTest
         assertEquals("0", p.getMatched("/suffix/path.tar.gz").getResource(), "Match longest suffix");
         assertEquals("0", p.getMatched("/suffix/path.gz").getResource(), "Match longest suffix");
         assertEquals("5", p.getMatched("/animal/path.gz").getResource(), "prefix rather than suffix");
+
+        assertEquals("12", p.getMatched("/prefix").getResource());
+        assertEquals("13", p.getMatched("/prefix/").getResource());
+        assertEquals("14", p.getMatched("/prefix/info").getResource());
 
         assertEquals("0", p.getMatched("/Other/path").getResource(), "default");
 
@@ -319,30 +331,40 @@ public class PathMappingsTest
         assertThat(p.get(new RegexPathSpec("/a/b/c")), nullValue());
     }
 
-    @Test
-    public void testServletMultipleSuffixMappings()
+    public static Stream<Arguments> suffixMatches()
+    {
+        return Stream.of(
+            Arguments.of("/a.b.c.foo", "resourceFoo"),
+            Arguments.of("/a.b.c.bar", "resourceBar"),
+            Arguments.of("/a.b.c.foo.bar", "resourceFooBar"),
+            Arguments.of("/a.b/c.d.foo", "resourceFoo"),
+            Arguments.of("/a.b/c.d.bar", "resourceBar"),
+            Arguments.of("/a.b/c.d.foo.bar", "resourceFooBar"),
+            Arguments.of("/a.b.c.pop", null),
+            Arguments.of("/a.foo.c.pop", null),
+            Arguments.of("/a.foop", null),
+            Arguments.of("/a%2Efoo", null)
+            );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suffixMatches")
+    public void testServletMultipleSuffixMappings(String path, String matched)
     {
         PathMappings<String> p = new PathMappings<>();
         p.put(new ServletPathSpec("*.foo"), "resourceFoo");
         p.put(new ServletPathSpec("*.bar"), "resourceBar");
+        p.put(new ServletPathSpec("*.foo.bar"), "resourceFooBar");
         p.put(new ServletPathSpec("*.zed"), "resourceZed");
 
-        MatchedResource<String> matched;
-
-        matched = p.getMatched("/a.b.c.foo");
-        assertThat(matched.getResource(), is("resourceFoo"));
-
-        matched = p.getMatched("/a.b.c.bar");
-        assertThat(matched.getResource(), is("resourceBar"));
-
-        matched = p.getMatched("/a.b.c.pop");
-        assertNull(matched);
-
-        matched = p.getMatched("/a.foo.c.pop");
-        assertNull(matched);
-
-        matched = p.getMatched("/a%2Efoo");
-        assertNull(matched);
+        MatchedResource<String> match = p.getMatched(path);
+        if (matched == null)
+            assertThat(match, nullValue());
+        else
+        {
+            assertThat(match, notNullValue());
+            assertThat(p.getMatched(path).getResource(), equalTo(matched));
+        }
     }
 
     @Test
@@ -448,5 +470,46 @@ public class PathMappingsTest
         assertThat(PathSpec.from("^$"), instanceOf(RegexPathSpec.class));
         assertThat(PathSpec.from("^.*"), instanceOf(RegexPathSpec.class));
         assertThat(PathSpec.from("^/"), instanceOf(RegexPathSpec.class));
+    }
+
+    @Test
+    public void testOptimalExactIterative()
+    {
+        PathMappings<String> p = new PathMappings<>();
+        p.put(new ServletPathSpec(""), "resourceR");
+        p.put(new ServletPathSpec("/"), "resourceD");
+        p.put(new ServletPathSpec("/exact"), "resourceE");
+        p.put(new ServletPathSpec("/a/*"), "resourceP");
+        p.put(new ServletPathSpec("*.do"), "resourceS");
+
+        // Add an non-servlet Exact to avoid non iterative
+        RegexPathSpec regexPathSpec = new RegexPathSpec("^/some/exact$");
+        p.put(regexPathSpec, "someExact");
+
+        assertThat(p.getMatched("/").getResource(), equalTo("resourceR"));
+        assertThat(p.getMatched("/something").getResource(), equalTo("resourceD"));
+        assertThat(p.getMatched("/exact").getResource(), equalTo("resourceE"));
+        assertThat(p.getMatched("/a").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/info").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/foo.do").getResource(), equalTo("resourceS"));
+        assertThat(p.getMatched("/a/foo.do").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/b/foo.do").getResource(), equalTo("resourceS"));
+
+        // Make regex a prefix match to test iterative exact match code
+        p.remove(regexPathSpec);
+        regexPathSpec = new RegexPathSpec("/prefix/.*");
+        p.put(regexPathSpec, "somePrefix");
+
+        assertThat(p.getMatched("/").getResource(), equalTo("resourceR"));
+        assertThat(p.getMatched("/something").getResource(), equalTo("resourceD"));
+        assertThat(p.getMatched("/exact").getResource(), equalTo("resourceE"));
+        assertThat(p.getMatched("/a").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/info").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/foo.do").getResource(), equalTo("resourceS"));
+        assertThat(p.getMatched("/a/foo.do").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/b/foo.do").getResource(), equalTo("resourceS"));
+
     }
 }
