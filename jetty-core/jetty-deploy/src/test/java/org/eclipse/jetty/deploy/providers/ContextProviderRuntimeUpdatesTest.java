@@ -14,43 +14,61 @@
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
+
 /**
- * Similar in scope to {@link ScanningAppProviderStartupTest}, except is concerned with the modification of existing
- * deployed webapps due to incoming changes identified by the {@link ScanningAppProvider}.
+ * Similar in scope to {@link ContextProviderStartupTest}, except is concerned with the modification of existing
+ * deployed contexts due to incoming changes identified by the {@link ContextProvider}.
  */
 @ExtendWith(WorkDirExtension.class)
-@Disabled // TODO
-public class ScanningAppProviderRuntimeUpdatesTest
+public class ContextProviderRuntimeUpdatesTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProviderRuntimeUpdatesTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContextProviderRuntimeUpdatesTest.class);
 
     public WorkDir testdir;
     private static XmlConfiguredJetty jetty;
     private final AtomicInteger _scans = new AtomicInteger();
-    private int _providers;
+    private int _providerCount;
 
-    @BeforeEach
-    public void setupEnvironment() throws Exception
+    public void createJettyBase() throws Exception
     {
         testdir.ensureEmpty();
-
         jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+
+        Path resourceBase = jetty.getJettyBasePath().resolve("resourceBase");
+        FS.ensureDirExists(resourceBase);
+        jetty.setProperty("test.bar.resourceBase", resourceBase.toUri().toASCIIString());
+
+        Files.writeString(resourceBase.resolve("text.txt"), "This is the resourceBase text");
+
+        Path resourceBaseAlt = jetty.getJettyBasePath().resolve("resourceBase-alt");
+        FS.ensureDirExists(resourceBaseAlt);
+        jetty.setProperty("test.bar.resourceBase.alt", resourceBaseAlt.toUri().toASCIIString());
+
+        Files.writeString(resourceBaseAlt.resolve("alt.txt"), "This is the resourceBase-alt text");
+    }
+
+    public void startJetty() throws Exception
+    {
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-http.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
@@ -65,14 +83,16 @@ public class ScanningAppProviderRuntimeUpdatesTest
         DeploymentManager dm = jetty.getServer().getBean(DeploymentManager.class);
         for (AppProvider provider : dm.getAppProviders())
         {
-            if (provider instanceof ScanningAppProvider)
+            if (provider instanceof ScanningAppProvider scanningAppProvider)
             {
-                _providers++;
-                ((ScanningAppProvider)provider).addScannerListener(new Scanner.ScanCycleListener()
+                _providerCount++;
+                scanningAppProvider.addScannerListener(new Scanner.ScanCycleListener()
                 {
                     @Override
                     public void scanEnded(int cycle)
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Scan ended: {}", cycle);
                         _scans.incrementAndGet();
                     }
                 });
@@ -83,25 +103,13 @@ public class ScanningAppProviderRuntimeUpdatesTest
     @AfterEach
     public void teardownEnvironment() throws Exception
     {
-        // Stop jetty.
-        jetty.stop();
+        LifeCycle.stop(jetty);
     }
 
     public void waitForDirectoryScan()
     {
-        int scan = _scans.get() + (2 * _providers);
-        do
-        {
-            try
-            {
-                Thread.sleep(200);
-            }
-            catch (InterruptedException e)
-            {
-                LOG.warn("Sleep failed", e);
-            }
-        }
-        while (_scans.get() < scan);
+        int scan = _scans.get() + _providerCount;
+        await().atMost(5, TimeUnit.SECONDS).until(() -> _scans.get() > scan);
     }
 
     /**
@@ -110,15 +118,14 @@ public class ScanningAppProviderRuntimeUpdatesTest
      * @throws IOException on test failure
      */
     @Test
-    public void testAfterStartupContext() throws IOException
+    public void testAfterStartupContext() throws Exception
     {
-        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
-        jetty.copyWebapp("foo.xml", "foo.xml");
+        createJettyBase();
+        startJetty();
 
+        jetty.copyWebapp("bar-core-context.xml", "bar.xml");
         waitForDirectoryScan();
-        waitForDirectoryScan();
-
-        jetty.assertContextHandlerExists("/foo");
+        jetty.assertContextHandlerExists("/bar");
     }
 
     /**
@@ -127,22 +134,17 @@ public class ScanningAppProviderRuntimeUpdatesTest
      * @throws IOException on test failure
      */
     @Test
-    public void testAfterStartupThenRemoveContext() throws IOException
+    public void testAfterStartupThenRemoveContext() throws Exception
     {
-        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
-        jetty.copyWebapp("foo.xml", "foo.xml");
+        createJettyBase();
+        startJetty();
 
+        jetty.copyWebapp("bar-core-context.xml", "bar.xml");
         waitForDirectoryScan();
+        jetty.assertContextHandlerExists("/bar");
+
+        jetty.removeWebapp("bar.xml");
         waitForDirectoryScan();
-
-        jetty.assertContextHandlerExists("/foo");
-
-        jetty.removeWebapp("foo.war");
-        jetty.removeWebapp("foo.xml");
-
-        waitForDirectoryScan();
-        waitForDirectoryScan();
-
         jetty.assertNoContextHandlers();
     }
 
@@ -154,28 +156,29 @@ public class ScanningAppProviderRuntimeUpdatesTest
     @Test
     public void testAfterStartupThenUpdateContext() throws Exception
     {
-        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
-        jetty.copyWebapp("foo.xml", "foo.xml");
+        createJettyBase();
+
+        startJetty();
+
+        jetty.copyWebapp("bar-core-context.xml", "bar.xml");
 
         waitForDirectoryScan();
+
+        jetty.assertContextHandlerExists("/bar");
+
+        // Test that response is expected from original resourceBase
+        jetty.assertResponseContains("/bar/text.txt", "This is the resourceBase text");
+
         waitForDirectoryScan();
 
-        jetty.assertContextHandlerExists("/foo");
-
-        // Test that webapp response contains "-1"
-        jetty.assertResponseContains("/foo/info", "FooServlet-1");
+        // Replace the existing bar.xml being replaced with the new bar.xml pointing to different resourceBase
+        jetty.copyWebapp("bar-core-context-alt.xml", "bar.xml");
 
         waitForDirectoryScan();
-        //System.err.println("Updating war files");
-        jetty.copyWebapp("foo.xml", "foo.xml"); // essentially "touch" the context xml
-        jetty.copyWebapp("foo-webapp-2.war", "foo.war");
 
-        // This should result in the existing foo.war being replaced with the new foo.war
-        waitForDirectoryScan();
-        waitForDirectoryScan();
-        jetty.assertContextHandlerExists("/foo");
+        jetty.assertContextHandlerExists("/bar");
 
-        // Test that webapp response contains "-2"
-        jetty.assertResponseContains("/foo/info", "FooServlet-2");
+        // Test that deployed app now has updated resourceBase
+        jetty.assertResponseContains("/bar/alt.txt", "This is the resourceBase-alt text");
     }
 }

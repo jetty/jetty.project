@@ -22,7 +22,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.Environment;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -136,7 +135,6 @@ public class DeploymentManagerTest
     }
 
     @Test
-    @Disabled // TODO
     public void testXmlConfigured() throws Exception
     {
         XmlConfiguredJetty jetty = null;

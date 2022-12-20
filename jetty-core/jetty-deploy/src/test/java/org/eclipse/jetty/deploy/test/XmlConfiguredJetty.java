@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.deploy.test;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,13 +22,16 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Connector;
@@ -39,13 +40,16 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.PathAssert;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -59,135 +63,51 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class XmlConfiguredJetty
 {
-    private List<Resource> _xmlConfigurations;
-    private Map<String, String> _properties = new HashMap<>();
+    private static final Logger LOG = LoggerFactory.getLogger(XmlConfiguredJetty.class);
+    private final List<Resource> _xmlConfigurations = new ArrayList<>();
+    private final Map<String, String> _properties = new HashMap<>();
     private Server _server;
+    private ContextHandlerCollection _contexts;
     private int _serverPort;
     private String _scheme = HttpScheme.HTTP.asString();
-    private File _jettyHome;
+    private Path _jettyBase;
 
-    public static Server loadConfigurations(List<Resource> configurations, Map<String, String> properties)
-        throws Exception
+    public XmlConfiguredJetty(Path testDir) throws IOException
     {
-        XmlConfiguration last = null;
-        Object[] obj = new Object[configurations.size()];
+        FS.ensureEmpty(testDir);
+        _jettyBase = testDir.resolve("base");
+        FS.ensureDirExists(_jettyBase);
 
-        // Configure everything
-        for (int i = 0; i < configurations.size(); i++)
-        {
-            Resource config = configurations.get(i);
-            XmlConfiguration configuration = new XmlConfiguration(config);
-            if (last != null)
-                configuration.getIdMap().putAll(last.getIdMap());
-            configuration.getProperties().putAll(properties);
-            obj[i] = configuration.configure();
-            last = configuration;
-        }
+        setProperty("jetty.base", _jettyBase.toString());
 
-        // Test for Server Instance.
-        Server foundServer = null;
-        int serverCount = 0;
-        for (int i = 0; i < configurations.size(); i++)
-        {
-            if (obj[i] instanceof Server)
-            {
-                if (obj[i].equals(foundServer))
-                {
-                    // Identical server instance found
-                    break;
-                }
-                foundServer = (Server)obj[i];
-                serverCount++;
-            }
-        }
+        Path logsDir = _jettyBase.resolve("logs");
+        FS.ensureDirExists(logsDir);
 
-        if (serverCount <= 0)
-        {
-            throw new Exception("Load failed to configure a " + Server.class.getName());
-        }
+        Path webappsDir = _jettyBase.resolve("webapps");
+        FS.ensureEmpty(webappsDir);
+        setProperty("jetty.deploy.monitoredDir", webappsDir.toString());
+        setProperty("jetty.deploy.scanInterval", "1");
 
-        assertEquals(1, serverCount, "Server load count");
+        Path etcDir = _jettyBase.resolve("etc");
+        FS.ensureDirExists(etcDir);
 
-        return foundServer;
+        Files.copy(MavenPaths.findTestResourceFile("etc/realm.properties"), etcDir.resolve("realm.properties"));
+        Files.copy(MavenPaths.findTestResourceFile("etc/webdefault.xml"), etcDir.resolve("webdefault.xml"));
+
+        Path tmpDir = _jettyBase.resolve("tmp");
+        FS.ensureEmpty(tmpDir);
+        System.setProperty("java.io.tmpdir", tmpDir.toString());
+        setProperty("jetty.deploy.tempDir", tmpDir.toString());
     }
 
-    public XmlConfiguredJetty(Path testdir) throws IOException
+    public void addConfiguration(Path xmlConfigFile)
     {
-        _xmlConfigurations = new ArrayList<>();
-        Properties properties = new Properties();
-
-        String jettyHomeBase = testdir.toString();
-        // Ensure we have a new (pristene) directory to work with.
-        int idx = 0;
-        _jettyHome = new File(jettyHomeBase + "--" + idx);
-        while (_jettyHome.exists())
-        {
-            idx++;
-            _jettyHome = new File(jettyHomeBase + "--" + idx);
-        }
-        deleteContents(_jettyHome);
-        // Prepare Jetty.Home (Test) dir
-        _jettyHome.mkdirs();
-
-        File logsDir = new File(_jettyHome, "logs");
-        logsDir.mkdirs();
-
-        File etcDir = new File(_jettyHome, "etc");
-        etcDir.mkdirs();
-        IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/realm.properties"), new File(etcDir, "realm.properties"));
-        IO.copyFile(MavenTestingUtils.getTestResourceFile("etc/webdefault.xml"), new File(etcDir, "webdefault.xml"));
-
-        File webappsDir = new File(_jettyHome, "webapps");
-        if (webappsDir.exists())
-        {
-            deleteContents(webappsDir);
-        }
-        webappsDir.mkdirs();
-
-        File tmpDir = new File(_jettyHome, "tmp");
-        if (tmpDir.exists())
-        {
-            deleteContents(tmpDir);
-        }
-        tmpDir.mkdirs();
-
-        File workishDir = new File(_jettyHome, "workish");
-        if (workishDir.exists())
-        {
-            deleteContents(workishDir);
-        }
-        workishDir.mkdirs();
-
-        // Setup properties
-        System.setProperty("java.io.tmpdir", tmpDir.getAbsolutePath());
-        properties.setProperty("jetty.home", _jettyHome.getAbsolutePath());
-        System.setProperty("jetty.home", _jettyHome.getAbsolutePath());
-        properties.setProperty("test.basedir", MavenTestingUtils.getBaseDir().getAbsolutePath());
-        properties.setProperty("test.resourcesdir", MavenTestingUtils.getTestResourcesDir().getAbsolutePath());
-        properties.setProperty("test.webapps", webappsDir.getAbsolutePath());
-        properties.setProperty("test.targetdir", MavenTestingUtils.getTargetDir().getAbsolutePath());
-        properties.setProperty("test.workdir", workishDir.getAbsolutePath());
-
-        // Write out configuration for use by ConfigurationManager.
-        File testConfig = new File(_jettyHome, "xml-configured-jetty.properties");
-        try (OutputStream out = new FileOutputStream(testConfig))
-        {
-            properties.store(out, "Generated by " + XmlConfiguredJetty.class.getName());
-        }
-        for (Object key : properties.keySet())
-        {
-            setProperty(String.valueOf(key), String.valueOf(properties.get(key)));
-        }
-    }
-
-    public void addConfiguration(File xmlConfigFile)
-    {
-        addConfiguration(ResourceFactory.root().newResource(xmlConfigFile.toPath()));
+        addConfiguration(ResourceFactory.root().newResource(xmlConfigFile));
     }
 
     public void addConfiguration(String testConfigName) throws MalformedURLException
     {
-        addConfiguration(MavenTestingUtils.getTestResourceFile(testConfigName));
+        addConfiguration(MavenPaths.findTestResourceFile(testConfigName));
     }
 
     public void addConfiguration(Resource xmlConfig)
@@ -202,15 +122,8 @@ public class XmlConfiguredJetty
 
     public void assertNoContextHandlers()
     {
-        List<ContextHandler> contexts = getContextHandlers();
-        if (contexts.size() > 0)
-        {
-            for (ContextHandler context : contexts)
-            {
-                System.err.println("WebAppContext should not exist:\n" + context);
-            }
-            assertEquals(0, contexts.size(), "Contexts.size");
-        }
+        int count = _contexts.getHandlers().size();
+        assertEquals(0, count, "Should have no Contexts, but saw [%s]".formatted(_contexts.getHandlers().stream().map(Handler::toString).collect(Collectors.joining(", "))));
     }
 
     public String getResponse(String path) throws IOException
@@ -220,15 +133,9 @@ public class XmlConfiguredJetty
 
         URLConnection conn = url.openConnection();
         conn.addRequestProperty("Connection", "close");
-        InputStream in = null;
-        try
+        try (InputStream in = conn.getInputStream())
         {
-            in = conn.getInputStream();
             return IO.toString(in);
-        }
-        finally
-        {
-            IO.close(in);
         }
     }
 
@@ -240,94 +147,53 @@ public class XmlConfiguredJetty
 
     public void assertContextHandlerExists(String... expectedContextPaths)
     {
-        List<ContextHandler> contexts = getContextHandlers();
-        if (expectedContextPaths.length != contexts.size())
+        if (expectedContextPaths.length != _contexts.getHandlers().size())
         {
-            System.err.println("## Expected Contexts");
+            StringBuilder failure = new StringBuilder();
+            failure.append("## Expected Contexts [%d]\n".formatted(expectedContextPaths.length));
             for (String expected : expectedContextPaths)
             {
-                System.err.println(expected);
+                failure.append(" - ").append(expected).append('\n');
             }
-            System.err.println("## Actual Contexts");
-            for (ContextHandler context : contexts)
-            {
-                System.err.printf("%s ## %s%n", context.getContextPath(), context);
-            }
-            assertEquals(expectedContextPaths.length, contexts.size(), "Contexts.size");
+            failure.append("## Actual Contexts [%d]\n".formatted(_contexts.getHandlers().size()));
+            _contexts.getHandlers().forEach((handler) -> failure.append(" - ").append(handler).append('\n'));
+            assertEquals(expectedContextPaths.length, _contexts.getHandlers().size(), failure.toString());
         }
 
         for (String expectedPath : expectedContextPaths)
         {
             boolean found = false;
-            for (ContextHandler context : contexts)
+            for (Handler handler : _contexts.getHandlers())
             {
-                if (context.getContextPath().equals(expectedPath))
+                if (handler instanceof ContextHandler contextHandler)
                 {
-                    found = true;
-                    assertThat("Context[" + context.getContextPath() + "].state", context.getState(), is("STARTED"));
-                    break;
+                    if (contextHandler.getContextPath().equals(expectedPath))
+                    {
+                        found = true;
+                        assertThat("Context[" + contextHandler.getContextPath() + "].state", contextHandler.getState(), is("STARTED"));
+                        break;
+                    }
                 }
             }
             assertTrue(found, "Did not find Expected Context Path " + expectedPath);
         }
     }
 
-    private void copyFile(String type, File srcFile, File destFile) throws IOException
+    private void copyFile(String type, Path srcFile, Path destFile) throws IOException
     {
-        PathAssert.assertFileExists(type + " File", srcFile);
-        IO.copyFile(srcFile, destFile);
-        PathAssert.assertFileExists(type + " File", destFile);
+        assertThat(srcFile, PathMatchers.isRegularFile());
+        Files.copy(srcFile, destFile, StandardCopyOption.REPLACE_EXISTING);
+        assertThat(destFile, PathMatchers.isRegularFile());
         System.err.printf("Copy %s: %s%n  To %s: %s%n", type, srcFile, type, destFile);
-        System.err.printf("Destination Exists: %s - %s%n", destFile.exists(), destFile);
     }
 
     public void copyWebapp(String srcName, String destName) throws IOException
     {
         System.err.printf("Copying Webapp: %s -> %s%n", srcName, destName);
-        File srcDir = MavenTestingUtils.getTestResourceDir("webapps");
-        File destDir = new File(_jettyHome, "webapps");
-
-        File srcFile = new File(srcDir, srcName);
-        File destFile = new File(destDir, destName);
+        Path srcFile = MavenPaths.findTestResourceFile("webapps/" + srcName);
+        Path destFile = _jettyBase.resolve("webapps/" + destName);
 
         copyFile("Webapp", srcFile, destFile);
-    }
-
-    private void deleteContents(File dir)
-    {
-        // System.err.printf("Delete  (dir) %s/%n",dir);
-        if (!dir.exists())
-        {
-            return;
-        }
-
-        File[] files = dir.listFiles();
-        if (files != null)
-        {
-            for (File file : files)
-            {
-                // Safety measure. only recursively delete within target directory.
-                if (file.isDirectory() && file.getAbsolutePath().contains("target" + File.separator))
-                {
-                    deleteContents(file);
-                    assertTrue(file.delete(), "Delete failed: " + file.getAbsolutePath());
-                }
-                else
-                {
-                    assertTrue(file.delete(), "Delete failed: " + file.getAbsolutePath());
-                }
-            }
-        }
-    }
-
-    public File getJettyDir(String name)
-    {
-        return new File(_jettyHome, name);
-    }
-
-    public File getJettyHome()
-    {
-        return _jettyHome;
     }
 
     public String getScheme()
@@ -352,37 +218,60 @@ public class XmlConfiguredJetty
         return URI.create(uri.toString());
     }
 
-    public List<ContextHandler> getContextHandlers()
+    public Path getJettyBasePath()
     {
-        List<ContextHandler> contexts = new ArrayList<>();
-        ContextHandlerCollection handlers = (ContextHandlerCollection)_server.getHandler();
-        List<Handler> children = handlers.getHandlers();
-
-        for (Handler handler : children)
-        {
-            if (handler instanceof ContextHandler)
-            {
-                ContextHandler context = (ContextHandler)handler;
-                contexts.add(context);
-            }
-        }
-
-        return contexts;
+        return _jettyBase;
     }
 
     public void load() throws Exception
     {
-        this._server = loadConfigurations(_xmlConfigurations, _properties);
+        Path testConfig = _jettyBase.resolve("xml-configured-jetty.properties");
+        setProperty("jetty.deploy.common.properties", testConfig.toString());
+
+        // Write out configuration for use by ConfigurationManager.
+        Properties properties = new Properties();
+        properties.putAll(_properties);
+        try (OutputStream out = Files.newOutputStream(testConfig))
+        {
+            properties.store(out, "Generated by " + XmlConfiguredJetty.class.getName());
+        }
+
+        XmlConfiguration last = null;
+        Object[] obj = new Object[_xmlConfigurations.size()];
+
+        // Configure everything
+        for (int i = 0; i < _xmlConfigurations.size(); i++)
+        {
+            Resource config = _xmlConfigurations.get(i);
+            XmlConfiguration configuration = new XmlConfiguration(config);
+            if (last != null)
+                configuration.getIdMap().putAll(last.getIdMap());
+            configuration.getProperties().putAll(_properties);
+            obj[i] = configuration.configure();
+            last = configuration;
+        }
+
+        Map<String, Object> ids = last.getIdMap();
+
+        // Test for Server Instance.
+        Server server = (Server)ids.get("Server");
+        if (server == null)
+        {
+            throw new Exception("Load failed to configure a " + Server.class.getName());
+        }
+
+        this._server = server;
         this._server.setStopTimeout(10);
+        this._contexts = (ContextHandlerCollection)ids.get("Contexts");
     }
 
-    public void removeWebapp(String name)
+    public void removeWebapp(String name) throws IOException
     {
-        File destDir = new File(_jettyHome, "webapps");
-        File contextFile = new File(destDir, name);
-        if (contextFile.exists())
+        Path webappFile = _jettyBase.resolve("webapps/" + name);
+        if (Files.exists(webappFile))
         {
-            assertTrue(contextFile.delete(), "Delete of Webapp file: " + contextFile.getAbsolutePath());
+            LOG.info("Removing webapp: {}", webappFile);
+            Files.delete(webappFile);
         }
     }
 
