@@ -191,7 +191,7 @@ public class DelayedHandler extends Handler.Wrapper
         public void onContent()
         {
             // We must execute here, because demand callbacks are serialized and process may block on a demand callback
-            getRequest().getComponents().getThreadPool().execute(this::process);
+            getRequest().getContext().execute(this::process);
         }
 
         static class RewindRequest extends Request.Wrapper
@@ -251,7 +251,7 @@ public class DelayedHandler extends Handler.Wrapper
             if (x == null)
                 // We must execute here as even though we have consumed all the input, we are probably
                 // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getComponents().getThreadPool().execute(super::process);
+                getRequest().getContext().execute(super::process);
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
         }
@@ -286,7 +286,7 @@ public class DelayedHandler extends Handler.Wrapper
                 getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
                 // We must execute here as even though we have consumed all the input, we are probably
                 // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getComponents().getThreadPool().execute(super::process);
+                getRequest().getContext().execute(super::process);
             }
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);

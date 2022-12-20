@@ -208,7 +208,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         Remote remote = _remotes.get(ip);
         if (remote == null)
         {
-            Remote r = new Remote(baseRequest.getComponents().getThreadPool(), ip, limit);
+            Remote r = new Remote(baseRequest.getContext(), ip, limit);
             remote = _remotes.putIfAbsent(ip, r);
             if (remote == null)
                 remote = r;
