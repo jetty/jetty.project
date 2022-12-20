@@ -276,7 +276,7 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isEmpty()
     {
-        return keySet().isEmpty();
+        return (_root == null) || (_root._key == null);
     }
 
     @Override
