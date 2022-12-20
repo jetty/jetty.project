@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -244,5 +245,41 @@ public class MultiPartServletTest
 
         assertThat(parts.size(), is(1));
         assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
+    }
+
+    @Test
+    public void testDoubleReadFromPart() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setContentType("text/plain");
+                for (Part part : req.getParts())
+                {
+                    resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
+                    resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
+                }
+            }
+        });
+
+        String contentString = "the quick brown fox jumps over the lazy dog, " +
+            "the quick brown fox jumps over the lazy dog";
+        StringRequestContent content = new StringRequestContent(contentString);
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("myPart", null, HttpFields.EMPTY, content));
+        multiPart.close();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        System.err.println(response.getContentAsString());
+        // TODO: create proper asserts
+        Assertions.fail();
     }
 }
