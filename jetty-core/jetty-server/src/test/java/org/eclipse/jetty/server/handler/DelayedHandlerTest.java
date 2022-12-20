@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -162,7 +165,7 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testOnContent() throws Exception
+    public void testDelayedUntilContent() throws Exception
     {
         DelayedHandler delayedHandler = new DelayedHandler();
 
@@ -173,6 +176,13 @@ public class DelayedHandlerTest
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
             {
+                // Check that we are not called via any demand callback
+                ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+                new Throwable().printStackTrace(new PrintStream(out));
+                String stack = out.toString(StandardCharsets.ISO_8859_1);
+                assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
+                assertThat(stack, not(containsString("UntilContentDelayedProcess.onContent")));
+
                 processing.countDown();
                 return super.process(request, response, callback);
             }
@@ -197,6 +207,55 @@ public class DelayedHandlerTest
             output.flush();
 
             assertTrue(processing.await(10, TimeUnit.SECONDS));
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("Hello"));
+        }
+    }
+
+    @Test
+    public void testNoDelayWithContent() throws Exception
+    {
+        DelayedHandler delayedHandler = new DelayedHandler();
+
+        _server.setHandler(delayedHandler);
+        delayedHandler.setHandler(new HelloHandler()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                // Check that we are called directly from HttpConnection.onFillable
+                ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+                new Throwable().printStackTrace(new PrintStream(out));
+                String stack = out.toString(StandardCharsets.ISO_8859_1);
+                assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
+                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.process"));
+
+                // Check the content is available
+                String content = Content.Source.asString(request);
+                assertThat(content, equalTo("1234567890"));
+
+                return super.process(request, response, callback);
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Length: 10\r
+                \r
+                1234567890\r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
 
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
@@ -324,6 +383,56 @@ public class DelayedHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
             content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("name=[value]"));
+            assertThat(content, containsString("x=[1, 2, 3]"));
+        }
+    }
+
+    @Test
+    public void testNoDelayFormFields() throws Exception
+    {
+        DelayedHandler delayedHandler = new DelayedHandler();
+
+        _server.setHandler(delayedHandler);
+        delayedHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                // Check that we are called directly from HttpConnection.onFillable via DelayedHandler.process
+                ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+                new Throwable().printStackTrace(new PrintStream(out));
+                String stack = out.toString(StandardCharsets.ISO_8859_1);
+                assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
+                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.process"));
+
+                Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);
+                Content.Sink.write(response, true, String.valueOf(fields), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            output.write("""
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Type: %s
+                Content-Length: 22
+                
+                name=value&x=1&x=2&x=3
+                """.formatted(MimeTypes.Type.FORM_ENCODED).getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
             assertThat(content, containsString("name=[value]"));
             assertThat(content, containsString("x=[1, 2, 3]"));
         }

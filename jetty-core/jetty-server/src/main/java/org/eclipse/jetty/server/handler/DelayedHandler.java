@@ -162,7 +162,7 @@ public class DelayedHandler extends Handler.Wrapper
         protected abstract void delay() throws Exception;
     }
 
-    protected static class UntilContentDelayedProcess extends DelayedProcess implements Runnable
+    protected static class UntilContentDelayedProcess extends DelayedProcess
     {
         public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
         {
@@ -174,7 +174,7 @@ public class DelayedHandler extends Handler.Wrapper
         {
             Content.Chunk chunk = super.getRequest().read();
             if (chunk == null)
-                getRequest().demand(this);
+                getRequest().demand(this::onContent);
             else
             {
                 try
@@ -188,8 +188,7 @@ public class DelayedHandler extends Handler.Wrapper
             }
         }
 
-        @Override
-        public void run()
+        public void onContent()
         {
             // We must execute here, because demand callbacks are serialized and process may block on a demand callback
             getRequest().getComponents().getThreadPool().execute(this::process);
