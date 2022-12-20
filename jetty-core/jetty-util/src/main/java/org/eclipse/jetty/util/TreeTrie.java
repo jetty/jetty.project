@@ -276,10 +276,10 @@ class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isEmpty()
     {
-        return !hasKey(_root);
+        return !hasAnyKey(_root);
     }
 
-    private boolean hasKey(Node<V> t)
+    private boolean hasAnyKey(Node<V> t)
     {
         if (t != null)
         {
@@ -290,13 +290,13 @@ class TreeTrie<V> extends AbstractTrie<V>
             {
                 if (t._nextIndex[i] != null)
                 {
-                    if (hasKey(t._nextIndex[i]))
+                    if (hasAnyKey(t._nextIndex[i]))
                         return true;
                 }
             }
             for (int i = t._nextOther.size(); i-- > 0; )
             {
-                if (hasKey(t._nextOther.get(i)))
+                if (hasAnyKey(t._nextOther.get(i)))
                     return true;
             }
         }
