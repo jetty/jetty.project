@@ -21,11 +21,34 @@ public class MappedResource<E> implements Comparable<MappedResource<E>>
 {
     private final PathSpec pathSpec;
     private final E resource;
+    private final MatchedResource<E> preMatched;
 
     public MappedResource(PathSpec pathSpec, E resource)
     {
         this.pathSpec = pathSpec;
         this.resource = resource;
+
+        MatchedResource<E> matched;
+        switch (pathSpec.getGroup())
+        {
+            case ROOT:
+                matched = new MatchedResource<>(resource, pathSpec, pathSpec.matched("/"));
+                break;
+            case EXACT:
+                matched = new MatchedResource<>(resource, pathSpec, pathSpec.matched(pathSpec.getDeclaration()));
+                break;
+            default:
+                matched = null;
+        }
+        this.preMatched = matched;
+    }
+
+    /**
+     * @return A pre match {@link MatchedResource} for ROOT and EXACT matches, else null;
+     */
+    public MatchedResource<E> getPreMatched()
+    {
+        return preMatched;
     }
 
     /**

@@ -36,12 +36,13 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     public WebSocketUpgradeHandler(WebSocketComponents components)
     {
         this.mappings = new WebSocketMappings(components);
-        setHandler(new Handler.Processor()
+        setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                return true;
             }
         });
     }
@@ -62,12 +63,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        Request.Processor processor = super.handle(request);
-        if (processor == null)
-            return null;
-
         String target = Request.getPathInContext(request);
         WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
         {
@@ -77,35 +74,21 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         });
 
         if (negotiator == null)
-            return processor;
-        return new WebSocketProcessor(processor, negotiator);
-    }
-
-    private class WebSocketProcessor implements Request.Processor
-    {
-        private final Request.Processor _processor;
-        private final WebSocketNegotiator _negotiator;
-
-        public WebSocketProcessor(Request.Processor processor, WebSocketNegotiator negotiator)
         {
-            _processor = processor;
-            _negotiator = negotiator;
+            return super.process(request, response, callback);
         }
 
-        @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        try
         {
-            try
-            {
-                if (mappings.upgrade(_negotiator, request, response, callback, customizer))
-                    return;
+            if (mappings.upgrade(negotiator, request, response, callback, customizer))
+                return true;
 
-                _processor.process(request, response, callback);
-            }
-            catch (Throwable t)
-            {
-                callback.failed(t);
-            }
+            return super.process(request, response, callback);
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
+            return true;
         }
     }
 }

@@ -62,9 +62,9 @@ public abstract class Rule
     /**
      * <p>A {@link Request.Wrapper} that is also a {@link org.eclipse.jetty.server.Request.Processor},
      * used to chain a sequence of {@link Rule}s together.
-     * The tuple is initialized with only the request, then the processor is
-     * then passed to a chain of rules before the ultimate processor is
-     * passed in {@link #wrapProcessor(Processor)}. Finally, the response
+     * The rule processor is initialized with the initial request, then it is
+     * passed to a chain of rules before the child {@code Handler} is
+     * passed in {@link #setProcessor(Processor)}. Finally, the response
      * and callback are provided in a call to {@link #process(Request, Response, Callback)},
      * which calls the {@link #process(Response, Callback)}.</p>
      */
@@ -78,38 +78,35 @@ public abstract class Rule
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            process(response, callback);
+            return process(response, callback);
         }
 
         /**
          * <p>Processes this wrapped request together with the passed response and
-         * callback, using the processor set in {@link #wrapProcessor(Processor)}.
+         * callback, using the processor set in {@link #setProcessor(Processor)}.
          * This method should be extended if additional processing of the wrapped
          * request is required.</p>
          * @param response The response
          * @param callback The callback
          * @throws Exception If there is a problem processing
-         * @see #wrapProcessor(Processor)
+         * @see #setProcessor(Processor)
          */
-        protected void process(Response response, Callback callback) throws Exception
+        protected boolean process(Response response, Callback callback) throws Exception
         {
             Processor processor = _processor;
-            if (processor != null)
-                processor.process(this, response, callback);
+            return processor != null && processor.process(this, response, callback);
         }
 
         /**
          * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
          *
          * @param processor the {@code Processor} to wrap
-         * @return this instance
          */
-        public Processor wrapProcessor(Processor processor)
+        public void setProcessor(Processor processor)
         {
             _processor = processor;
-            return processor == null ? null : this;
         }
     }
 

@@ -16,7 +16,9 @@ package org.eclipse.jetty.server.handler;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelTest;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -267,9 +269,9 @@ public class HandlerTest
         c.setHandler(new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public boolean process(Request request, Response response, Callback callback)
             {
-                return null;
+                return false;
             }
         });
 
@@ -285,9 +287,9 @@ public class HandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                return null;
+                return false;
             }
         };
 
@@ -308,9 +310,9 @@ public class HandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public Request.Processor handle(Request request) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                return null;
+                return false;
             }
         };
 

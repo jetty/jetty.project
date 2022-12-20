@@ -13,11 +13,17 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -126,23 +132,75 @@ public class TryPathsHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        for (String path : paths)
+        Handler next = getHandler();
+        if (next == null)
+            return false;
+        if (paths.size() == 0)
+            return false;
+        if (paths.size() == 1)
         {
-            String interpolated = interpolate(request, path);
-            Request.WrapperProcessor result = new Request.WrapperProcessor(new TryPathsRequest(request, interpolated));
-            Request.Processor childProcessor = super.handle(result);
-            if (childProcessor != null)
-                return result.wrapProcessor(childProcessor);
+            if (!super.process(new TryPathsRequest(request, interpolate(request, paths.get(0))), response, callback))
+                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
         }
-        return null;
+        else
+        {
+            // Iterate of all the paths trying them out
+            new PathsIterator(request, response, callback).iterate();
+        }
+        return true;
     }
 
     private String interpolate(Request request, String value)
     {
         String path = Request.getPathInContext(request);
         return value.replace("$path", path);
+    }
+
+    private class PathsIterator extends IteratingNestedCallback
+    {
+        private final Request request;
+        private final Response response;
+        private final Iterator<String> paths = TryPathsHandler.this.paths.iterator();
+        private boolean trying;
+
+        private PathsIterator(Request request, Response response, Callback callback)
+        {
+            super(callback);
+            this.request = request;
+            this.response = response;
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            if (trying)
+            {
+                if (response.getStatus() != HttpStatus.NOT_FOUND_404)
+                    return Action.SUCCEEDED;
+                trying = false;
+                response.reset();
+            }
+
+            while (paths.hasNext())
+            {
+                String path = paths.next();
+                String interpolated = interpolate(request, path);
+                TryPathsRequest tryRequest = new TryPathsRequest(request, interpolated);
+                TryPathsResponse tryResponse = new TryPathsResponse(tryRequest, response);
+                trying = true;
+                if (TryPathsHandler.super.process(tryRequest, tryResponse, this))
+                    return Action.SCHEDULED;
+                trying = false;
+            }
+
+            if (response.isCommitted())
+                return Action.SUCCEEDED;
+
+            Response.writeError(request, response, this, HttpStatus.NOT_FOUND_404);
+            return Action.SCHEDULED;
+        }
     }
 
     private class TryPathsRequest extends Request.Wrapper
@@ -182,6 +240,23 @@ public class TryPathsHandler extends Handler.Wrapper
         public HttpURI getHttpURI()
         {
             return _uri;
+        }
+    }
+
+    private class TryPathsResponse extends Response.Wrapper implements Callback
+    {
+        private TryPathsResponse(TryPathsRequest request, Response response)
+        {
+            super(request, response);
+        }
+
+        @Override
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+            if (getStatus() == HttpStatus.NOT_FOUND_404)
+                getRequest().getComponents().getThreadPool().execute(callback::succeeded);
+            else
+                super.write(last, byteBuffer, callback);
         }
     }
 }

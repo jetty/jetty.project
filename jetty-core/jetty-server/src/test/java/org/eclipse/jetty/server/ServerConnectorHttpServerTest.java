@@ -44,12 +44,13 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
     @Test
     public void testNonBlockingInvocationType() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
+                return true;
             }
 
             @Override
@@ -88,12 +89,13 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
     @Test
     public void testBlockingInvocationType() throws Exception
     {
-        startServer(new Handler.Processor()
+        startServer(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 callback.succeeded();
+                return true;
             }
 
             @Override

@@ -422,11 +422,13 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         return bytes;
     }
 
-    private abstract static class AbstractMultiPartHandler extends Handler.Processor
+    private abstract static class AbstractMultiPartHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
+            // TODO use the DelayedHandler.UntilMultiPartFormData
+
             Path tmpDir = MavenTestingUtils.getTargetTestingPath();
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
             assertEquals("multipart/form-data", HttpField.valueParameters(contentType, null));
@@ -436,13 +438,14 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             formData.parse(request);
             try
             {
-                process(formData.join());
+                process(formData.join()); // May block waiting for multipart form data.
                 response.write(true, BufferUtil.EMPTY_BUFFER, callback);
             }
             catch (Exception x)
             {
                 Response.writeError(request, response, callback, x);
             }
+            return true;
         }
 
         protected abstract void process(MultiPartFormData.Parts parts) throws Exception;

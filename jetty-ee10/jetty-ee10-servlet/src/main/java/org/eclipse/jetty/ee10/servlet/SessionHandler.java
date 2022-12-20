@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +76,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         Handler handler = getHandler();
         if (handler != null)
             handler.setServer(server);
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        // Session operations may be blocking
+        return InvocationType.BLOCKING;
     }
 
     @Override
@@ -714,43 +722,37 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
+        Handler next = getHandler();
+        if (next == null)
+            return false;
+
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         ServletContextRequest.ServletApiRequest servletApiRequest =
             (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
         if (servletApiRequest == null)
             throw new IllegalStateException("Request is not a valid ServletContextRequest");
 
-        Request.Processor processor = getHandler().handle(request);
-        if (processor == null)
-            return null;
-
         addSessionStreamWrapper(request);
 
-        // TODO rather than wrapping the processor yet again here, we could just inject the
-        //      SessionManager to the servletContextRequest, which already has the ability to
-        //      extend the processor as the ContextRequest is-a Request.WrapperProcessor
-        return (req, res, callback) ->
+        // find and set the session if one exists
+        RequestedSession requestedSession = resolveRequestedSessionId(request);
+
+        servletApiRequest.setCoreSession(requestedSession.session());
+        servletApiRequest.setSessionManager(this);
+        servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
+        servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
+
+        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
+
+        // Handle changed ID or max-age refresh, but only if this is not a redispatched request
+        if (cookie != null)
         {
-            // find and set the session if one exists
-            RequestedSession requestedSession = resolveRequestedSessionId(req);
+            ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+            Response.replaceCookie(servletContextResponse, cookie);
+        }
 
-            servletApiRequest.setCoreSession(requestedSession.session());
-            servletApiRequest.setSessionManager(this);
-            servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
-            servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
-
-            HttpCookie cookie = access(requestedSession.session(), req.getConnectionMetaData().isSecure());
-
-            // Handle changed ID or max-age refresh, but only if this is not a redispatched request
-            if (cookie != null)
-            {
-                ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
-                Response.replaceCookie(servletContextResponse, cookie);
-            }
-
-            processor.process(req, res, callback);
-        };
+        return next.process(request, response, callback);
     }
 }

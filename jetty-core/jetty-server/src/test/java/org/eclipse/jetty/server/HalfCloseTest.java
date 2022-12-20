@@ -18,7 +18,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Disabled;
@@ -132,25 +135,22 @@ public class HalfCloseTest
         assertEquals(true, closed.await(1, TimeUnit.SECONDS));
     }
 
-    public static class TestHandler extends Handler.Processor
+    public static class TestHandler extends Handler.Abstract
     {
-        transient int handled;
+        private int handled;
 
         public TestHandler()
         {
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            /* TODO
-            baseRequest.setHandled(true);
             handled++;
-            response.setContentType("text/html;charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println("<h1>Test</h1>");
-
-             */
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+            response.setStatus(HttpStatus.OK_200);
+            Content.Sink.write(response, true, "<h1>Test</h1>\n", callback);
+            return true;
         }
 
         public int getHandled()
@@ -159,44 +159,34 @@ public class HalfCloseTest
         }
     }
 
-    public static class AsyncHandler extends Handler.Processor
+    public static class AsyncHandler extends Handler.Abstract
     {
-        transient int handled;
+        private int handled;
 
         public AsyncHandler()
         {
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            /* TODO
-            baseRequest.setHandled(true);
             handled++;
 
-            final AsyncContext async = request.startAsync();
-            new Thread()
+            new Thread(() ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        response.setContentType("text/html;charset=utf-8");
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        response.getWriter().println("<h1>Test</h1>");
-                    }
-                    catch (Exception ex)
-                    {
-                        System.err.println(ex);
-                    }
-                    finally
-                    {
-                        async.complete();
-                    }
+                    response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+                    response.setStatus(HttpStatus.OK_200);
+                    Content.Sink.write(response, true, "<h1>Test</h1>\n", callback);
                 }
-            }.start();
-            */
+                catch (Exception ex)
+                {
+                    System.err.println(ex);
+                    callback.failed(ex);
+                }
+            }).start();
+            return true;
         }
 
         public int getHandled()

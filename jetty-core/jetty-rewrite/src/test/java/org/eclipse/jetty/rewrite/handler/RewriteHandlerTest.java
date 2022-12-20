@@ -37,15 +37,16 @@ public class RewriteHandlerTest extends AbstractRuleTest
         RewriteRegexRule rule4 = new RewriteRegexRule("/xxx/(.*)", "/$1/zzz");
         _rewriteHandler.setRules(List.of(rule1, rule2, rule3, rule4));
         _rewriteHandler.setOriginalPathAttribute("originalPath");
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().put("X-Path", request.getHttpURI().getPath());
                 response.getHeaders().put("X-Original-Path", (String)request.getAttribute(_rewriteHandler.getOriginalPathAttribute()));
                 callback.succeeded();
+                return true;
             }
         });
     }

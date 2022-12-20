@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * @see Forward
  * @see Reverse
  */
-public abstract class ProxyHandler extends Handler.Processor
+public abstract class ProxyHandler extends Handler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProxyHandler.class);
     private static final String CLIENT_TO_PROXY_REQUEST_ATTRIBUTE = ProxyHandler.class.getName() + ".clientToProxyRequest";
@@ -212,7 +212,7 @@ public abstract class ProxyHandler extends Handler.Processor
     }
 
     @Override
-    public void process(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    public boolean process(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("""
@@ -260,6 +260,7 @@ public abstract class ProxyHandler extends Handler.Processor
         }
 
         sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
+        return true;
     }
 
     /**

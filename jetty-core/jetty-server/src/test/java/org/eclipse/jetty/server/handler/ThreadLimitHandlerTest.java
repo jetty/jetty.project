@@ -74,13 +74,14 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
+                return true;
             }
         });
         _server.setHandler(handler);
@@ -112,13 +113,14 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
+                return true;
             }
         });
         _server.setHandler(handler);
@@ -154,13 +156,14 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 callback.succeeded();
+                return true;
             }
         });
         _server.setHandler(handler);
@@ -193,10 +196,10 @@ public class ThreadLimitHandlerTest
         AtomicInteger count = new AtomicInteger(0);
         AtomicInteger total = new AtomicInteger(0);
         CountDownLatch latch = new CountDownLatch(1);
-        handler.setHandler(new Handler.Processor()
+        handler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(HttpStatus.OK_200);
                 if (!"/other".equals(Request.getPathInContext(request)))
@@ -213,6 +216,7 @@ public class ThreadLimitHandlerTest
                     }
                 }
                 callback.succeeded();
+                return true;
             }
         });
         _server.setHandler(handler);

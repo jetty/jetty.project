@@ -46,16 +46,17 @@ public class VirtualThreadsTest extends AbstractTest
         Assumptions.assumeTrue(transport != Transport.FCGI);
 
         String virtualThreadsName = "green-";
-        prepareServer(transport, new Handler.Processor()
+        prepareServer(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 if (!VirtualThreads.isVirtualThread())
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);
                 if (!Thread.currentThread().getName().startsWith(virtualThreadsName))
                     response.setStatus(HttpStatus.NOT_IMPLEMENTED_501);
                 callback.succeeded();
+                return true;
             }
         });
         ThreadPool threadPool = server.getThreadPool();

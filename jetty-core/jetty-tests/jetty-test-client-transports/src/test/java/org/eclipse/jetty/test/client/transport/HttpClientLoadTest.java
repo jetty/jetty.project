@@ -321,10 +321,10 @@ public class HttpClientLoadTest extends AbstractTest
         }
     }
 
-    private static class LoadHandler extends Handler.Processor
+    private static class LoadHandler extends Handler.Abstract
     {
         @Override
-        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             String timeout = request.getHeaders().get("X-Timeout");
             if (timeout != null)
@@ -354,6 +354,7 @@ public class HttpClientLoadTest extends AbstractTest
                 }
                 default -> throw new UnsupportedOperationException();
             }
+            return true;
         }
     }
 }

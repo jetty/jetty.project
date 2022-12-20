@@ -64,10 +64,10 @@ public class HttpClientDemandTest extends AbstractTest
         // delivered, and the second chunk is explicitly demanded and
         // completes the response content.
         CountDownLatch contentLatch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -80,6 +80,7 @@ public class HttpClientDemandTest extends AbstractTest
                 {
                     throw new InterruptedIOException();
                 }
+                return true;
             }
         });
 
@@ -123,13 +124,14 @@ public class HttpClientDemandTest extends AbstractTest
         int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
-        startServer(transport, new Handler.Processor()
+        startServer(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
         startClient(transport);
@@ -212,10 +214,10 @@ public class HttpClientDemandTest extends AbstractTest
     public void testContentWhileStalling(Transport transport) throws Exception
     {
         CountDownLatch serverContentLatch = new CountDownLatch(1);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -228,6 +230,7 @@ public class HttpClientDemandTest extends AbstractTest
                 {
                     throw new InterruptedIOException();
                 }
+                return true;
             }
         });
 
@@ -287,13 +290,14 @@ public class HttpClientDemandTest extends AbstractTest
         int bufferSize = 1536;
         byte[] bytes = new byte[10 * bufferSize];
         new Random().nextBytes(bytes);
-        startServer(transport, new Handler.Processor()
+        startServer(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, bytes.length);
                 response.write(true, ByteBuffer.wrap(bytes), callback);
+                return true;
             }
         });
         startClient(transport);
@@ -366,10 +370,10 @@ public class HttpClientDemandTest extends AbstractTest
         byte[] content = new byte[chunks * 1024];
         new Random().nextBytes(content);
 
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response)))
@@ -381,6 +385,7 @@ public class HttpClientDemandTest extends AbstractTest
                     }
                 }
                 callback.succeeded();
+                return true;
             }
         });
 
@@ -410,13 +415,14 @@ public class HttpClientDemandTest extends AbstractTest
     {
         byte[] content = new byte[1024];
         new Random().nextBytes(content);
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, content.length);
                 response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
             }
         });
 
