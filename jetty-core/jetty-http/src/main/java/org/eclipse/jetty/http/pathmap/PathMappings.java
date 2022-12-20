@@ -299,6 +299,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                                 if (matchedPath != null)
                                     return new MatchedResource<>(candidate.getResource(), candidate.getPathSpec(), matchedPath);
                             }
+
                             // If we reached here, there's NO optimized PREFIX Match possible, skip simple match below
                             skipRestOfGroup = true;
                         }

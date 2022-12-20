@@ -471,4 +471,45 @@ public class PathMappingsTest
         assertThat(PathSpec.from("^.*"), instanceOf(RegexPathSpec.class));
         assertThat(PathSpec.from("^/"), instanceOf(RegexPathSpec.class));
     }
+
+    @Test
+    public void testOptimalExactIterative()
+    {
+        PathMappings<String> p = new PathMappings<>();
+        p.put(new ServletPathSpec(""), "resourceR");
+        p.put(new ServletPathSpec("/"), "resourceD");
+        p.put(new ServletPathSpec("/exact"), "resourceE");
+        p.put(new ServletPathSpec("/a/*"), "resourceP");
+        p.put(new ServletPathSpec("*.do"), "resourceS");
+
+        // Add an non-servlet Exact to avoid non iterative
+        RegexPathSpec regexPathSpec = new RegexPathSpec("^/some/exact$");
+        p.put(regexPathSpec, "someExact");
+
+        assertThat(p.getMatched("/").getResource(), equalTo("resourceR"));
+        assertThat(p.getMatched("/something").getResource(), equalTo("resourceD"));
+        assertThat(p.getMatched("/exact").getResource(), equalTo("resourceE"));
+        assertThat(p.getMatched("/a").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/info").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/foo.do").getResource(), equalTo("resourceS"));
+        assertThat(p.getMatched("/a/foo.do").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/b/foo.do").getResource(), equalTo("resourceS"));
+
+        // Make regex a prefix match to test iterative exact match code
+        p.remove(regexPathSpec);
+        regexPathSpec = new RegexPathSpec("/prefix/.*");
+        p.put(regexPathSpec, "somePrefix");
+
+        assertThat(p.getMatched("/").getResource(), equalTo("resourceR"));
+        assertThat(p.getMatched("/something").getResource(), equalTo("resourceD"));
+        assertThat(p.getMatched("/exact").getResource(), equalTo("resourceE"));
+        assertThat(p.getMatched("/a").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/a/info").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/foo.do").getResource(), equalTo("resourceS"));
+        assertThat(p.getMatched("/a/foo.do").getResource(), equalTo("resourceP"));
+        assertThat(p.getMatched("/b/foo.do").getResource(), equalTo("resourceS"));
+
+    }
 }
