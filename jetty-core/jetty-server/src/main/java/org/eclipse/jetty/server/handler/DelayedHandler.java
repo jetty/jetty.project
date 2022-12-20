@@ -18,7 +18,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -171,7 +172,20 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            getRequest().demand(this);
+            Content.Chunk chunk = super.getRequest().read();
+            if (chunk == null)
+                getRequest().demand(this);
+            else
+            {
+                try
+                {
+                    getHandler().process(new RewindRequest(getRequest(), chunk), getResponse(), getCallback());
+                }
+                catch (Exception e)
+                {
+                    Response.writeError(getRequest(), getResponse(), getCallback(), e);
+                }
+            }
         }
 
         @Override
@@ -180,9 +194,29 @@ public class DelayedHandler extends Handler.Wrapper
             // We must execute here, because demand callbacks are serialized and process may block on a demand callback
             getRequest().getComponents().getThreadPool().execute(this::process);
         }
+
+        static class RewindRequest extends Request.Wrapper
+        {
+            private final AtomicReference<Content.Chunk> _chunk;
+
+            public RewindRequest(Request wrapped, Content.Chunk chunk)
+            {
+                super(wrapped);
+                _chunk = new AtomicReference<>(chunk);
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                Content.Chunk chunk = _chunk.getAndSet(null);
+                if (chunk != null)
+                    return chunk;
+                return super.read();
+            }
+        }
     }
 
-    protected static class UntilFormDelayedProcess extends DelayedProcess implements BiConsumer<Fields, Throwable>
+    protected static class UntilFormDelayedProcess extends DelayedProcess
     {
         private final Charset _charset;
 
@@ -197,22 +231,34 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            FormFields.from(getRequest(), _charset).whenComplete(this);
+            CompletableFuture<Fields> futureFormFields = FormFields.from(getRequest(), _charset);
+
+            // if we are done already, then we are still in the scope of the original process call and can
+            // accept directly, otherwise we must execute a call to process as we are within a serialized
+            // demand callback.
+            futureFormFields.whenComplete(futureFormFields.isDone() ? this::accept : this::acceptAndExecute);
         }
 
-        @Override
         public void accept(Fields fields, Throwable x)
         {
             if (x == null)
-                // TODO not needed
-                // We must execute here as process should not be serialized with other demand calls.
+                super.process();
+            else
+                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+        }
+
+        public void acceptAndExecute(Fields fields, Throwable x)
+        {
+            if (x == null)
+                // We must execute here as even though we have consumed all the input, we are probably
+                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
                 getRequest().getComponents().getThreadPool().execute(super::process);
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
         }
     }
 
-    protected static class UntilMultiPartDelayedProcess extends DelayedProcess implements BiConsumer<MultiPartFormData.Parts, Throwable>
+    protected static class UntilMultiPartDelayedProcess extends DelayedProcess
     {
         private final MultiPartFormData _formData;
 
@@ -223,14 +269,24 @@ public class DelayedHandler extends Handler.Wrapper
             _formData = boundary == null ? null : new MultiPartFormData(boundary);
         }
 
-        @Override
         public void accept(MultiPartFormData.Parts parts, Throwable x)
         {
             if (x == null)
             {
                 getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
-                // We must execute here as process should not be serialized with other demand calls.
-                // TODO not needed
+                super.process();
+            }
+            else
+                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+        }
+
+        public void acceptAndExecute(MultiPartFormData.Parts parts, Throwable x)
+        {
+            if (x == null)
+            {
+                getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
+                // We must execute here as even though we have consumed all the input, we are probably
+                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
                 getRequest().getComponents().getThreadPool().execute(super::process);
             }
             else
@@ -248,10 +304,10 @@ public class DelayedHandler extends Handler.Wrapper
             {
                 _formData.setFilesDirectory(new File(System.getProperty("java.io.tmpdir")).toPath()); // TODO this needs to be context specific or at least the server tmp directory
                 readAndParse();
-                if (_formData.isDone())
-                    super.process();
-                else
-                    _formData.whenComplete(this);
+                // if we are done already, then we are still in the scope of the original process call and can
+                // accept directly, otherwise we must execute a call to process as we are within a serialized
+                // demand callback.
+                _formData.whenComplete(_formData.isDone() ? this::accept : this::acceptAndExecute);
             }
         }
 
