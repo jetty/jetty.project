@@ -22,12 +22,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -83,7 +83,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
 
-    private final Map<Integer, HTTP2Stream> streams = Collections.synchronizedMap(new HashMap<>());
+    private final Map<Integer, HTTP2Stream> streams = new ConcurrentHashMap<>();
     private final AtomicLong streamsOpened = new AtomicLong();
     private final AtomicLong streamsClosed = new AtomicLong();
     private final StreamsState streamsState = new StreamsState();
