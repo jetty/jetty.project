@@ -68,7 +68,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 
     private final AtomicInteger maxSessionRecvWindow = new AtomicInteger(DEFAULT_WINDOW_SIZE);
     private final AtomicInteger sessionLevel = new AtomicInteger();
-    private final Map<Stream, AtomicInteger> streamLevels = Collections.synchronizedMap(new HashMap<>());
+    private final Map<Integer, AtomicInteger> streamLevels = Collections.synchronizedMap(new HashMap<>());
     private float bufferRatio;
 
     public BufferingFlowControlStrategy(float bufferRatio)
@@ -97,13 +97,13 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     public void onStreamCreated(Stream stream)
     {
         super.onStreamCreated(stream);
-        streamLevels.put(stream, new AtomicInteger());
+        streamLevels.put(stream.getId(), new AtomicInteger());
     }
 
     @Override
     public void onStreamDestroyed(Stream stream)
     {
-        streamLevels.remove(stream);
+        streamLevels.remove(stream.getId());
         super.onStreamDestroyed(stream);
     }
 
@@ -147,7 +147,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             }
             else
             {
-                AtomicInteger streamLevel = streamLevels.get(stream);
+                AtomicInteger streamLevel = streamLevels.get(stream.getId());
                 if (streamLevel != null)
                 {
                     level = streamLevel.addAndGet(length);
