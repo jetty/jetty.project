@@ -16,6 +16,8 @@ package org.eclipse.jetty.http.content;
 import java.io.IOException;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An {@link HttpContent.Factory} implementation which takes a Resource and fakes this resource as
@@ -24,6 +26,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class VirtualHttpContentFactory implements HttpContent.Factory
 {
+    private static final Logger LOG = LoggerFactory.getLogger(VirtualHttpContentFactory.class);
+
     private final HttpContent.Factory _factory;
     private final Resource _resource;
     private final String _contentType;
@@ -35,6 +39,10 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
         _resource = resource;
         _matchSuffix = "/" + _resource.getFileName();
         _contentType = contentType;
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("resource=({}) {}, resource.getFileName()={}", _resource.getClass().getName(), _resource, _resource.getFileName());
+        }
     }
 
     /**
