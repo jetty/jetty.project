@@ -290,14 +290,14 @@ class TreeTrie<V> extends AbstractTrie<V>
             {
                 if (t._nextIndex[i] != null)
                 {
-                    if (isEmpty(t._nextIndex[i]))
-                        return true;
+                    if (!isEmpty(t._nextIndex[i]))
+                        return false;
                 }
             }
             for (int i = t._nextOther.size(); i-- > 0; )
             {
-                if (isEmpty(t._nextOther.get(i)))
-                    return true;
+                if (!isEmpty(t._nextOther.get(i)))
+                    return false;
             }
         }
         return true;

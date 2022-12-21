@@ -407,6 +407,13 @@ public class TrieTest
 
     @ParameterizedTest
     @MethodSource("implementations")
+    public void testIsNotEmpty(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertFalse(trie.isEmpty());
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
     public void testEmptyKey(AbstractTrie<Integer> trie) throws Exception
     {
         assertTrue(trie.put("", -1));
