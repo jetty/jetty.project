@@ -681,7 +681,7 @@ public class HttpChannelState implements HttpChannel, Components
         ChannelRequest(HttpChannelState httpChannel, MetaData.Request metaData)
         {
             _httpChannel = Objects.requireNonNull(httpChannel);
-            _id = httpChannel.getHttpStream().getId();
+            _id = httpChannel.getHttpStream().getId(); // Copy ID now, as stream will ultimately be nulled
             _connectionMetaData = httpChannel.getConnectionMetaData();
             _metaData = Objects.requireNonNull(metaData);
             _response = new ChannelResponse(this);

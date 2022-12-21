@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -967,7 +968,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         startServer(new DataHandler());
 
-        try (StacklessLogging ignored = new StacklessLogging(Server.class))
+        try (StacklessLogging ignored = new StacklessLogging(AbstractConnection.class))
         {
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {

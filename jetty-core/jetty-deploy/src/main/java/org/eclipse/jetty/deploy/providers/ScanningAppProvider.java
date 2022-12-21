@@ -76,7 +76,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         @Override
         public void pathRemoved(Path path) throws Exception
         {
-            ScanningAppProvider.this.pathChanged(path);
+            ScanningAppProvider.this.pathRemoved(path);
         }
     };
 

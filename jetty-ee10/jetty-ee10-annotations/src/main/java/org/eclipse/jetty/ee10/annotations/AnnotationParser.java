@@ -546,7 +546,7 @@ public class AnnotationParser
     {
         if (r == null)
             return;
-
+        
         if (!r.exists())
             return;
 
@@ -578,7 +578,7 @@ public class AnnotationParser
      * @param dirResource the resource representing the baseResource being scanned (jar, dir, etc)
      * @throws Exception if unable to parse
      */
-    private void parseDir(Set<? extends Handler> handlers, Resource dirResource) throws Exception
+    protected void parseDir(Set<? extends Handler> handlers, Resource dirResource) throws Exception
     {
         Path dir = dirResource.getPath();
 
@@ -617,13 +617,13 @@ public class AnnotationParser
      * @param jarResource the jar resource to parse
      * @throws Exception if unable to parse
      */
-    private void parseJar(Set<? extends Handler> handlers, Resource jarResource) throws Exception
+    protected void parseJar(Set<? extends Handler> handlers, Resource jarResource) throws Exception
     {
         if (jarResource == null)
             return;
 
-        if (!FileID.isJavaArchive(jarResource.getPath()))
-            return;
+        /*        if (!FileID.isJavaArchive(jarResource.getPath()))
+            return;*/
 
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning jar {}", jarResource);
@@ -643,7 +643,7 @@ public class AnnotationParser
      * @param classFile the class file to parse
      * @throws IOException if unable to parse
      */
-    private void parseClass(Set<? extends Handler> handlers, Resource containingResource, Path classFile) throws IOException
+    protected void parseClass(Set<? extends Handler> handlers, Resource containingResource, Path classFile) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Parse class from {}", classFile.toUri());

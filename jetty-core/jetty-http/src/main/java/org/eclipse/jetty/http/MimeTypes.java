@@ -192,6 +192,7 @@ public class MimeTypes
         .withAll(() ->
         {
             Map<String, Type> result = new HashMap<>();
+            
             for (Type type : Type.values())
             {
                 String key1 = type.toString();
