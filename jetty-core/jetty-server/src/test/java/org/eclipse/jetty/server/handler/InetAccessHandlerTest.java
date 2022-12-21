@@ -24,19 +24,21 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled // TODO
 public class InetAccessHandlerTest
 {
     private static Server _server;
@@ -56,18 +58,17 @@ public class InetAccessHandlerTest
             {_connector1, _connector2});
 
         _handler = new InetAccessHandler();
-        /* TODO
-        _handler.setHandler(new AbstractHandler()
+        _handler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                response.setStatus(HttpStatus.OK_200);
+                response.setStatus(200);
+                callback.succeeded();
+                return true;
             }
         });
 
-         */
         _server.setHandler(_handler);
         _server.start();
     }

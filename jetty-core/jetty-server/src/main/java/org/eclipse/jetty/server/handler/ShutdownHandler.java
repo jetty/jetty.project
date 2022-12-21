@@ -22,6 +22,8 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,8 +149,9 @@ public class ShutdownHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
+        return false;
         /* TODO
         if (!target.equals("/shutdown"))
         {
@@ -178,7 +181,6 @@ public class ShutdownHandler extends Handler.Wrapper
         doShutdown(baseRequest, response);
 
          */
-        return null;
     }
 
     /* TODO

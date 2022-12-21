@@ -2357,7 +2357,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                                      org.eclipse.jetty.server.Request wrapped,
                                      HttpChannel httpChannel)
         {
-            super(contextHandler, context, wrapped);
+            super(context, wrapped);
             _httpChannel = httpChannel;
         }
 
@@ -2438,7 +2438,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected ContextRequest wrap(org.eclipse.jetty.server.Request request)
+        protected ContextRequest wrapRequest(org.eclipse.jetty.server.Request request, Response response)
         {
             HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
             if (httpChannel == null)
@@ -2473,15 +2473,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        public void process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
-        {
-            HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-            httpChannel.onProcess(response, callback);
-
-            httpChannel.handle();
-        }
-
-        @Override
         protected void notifyExitScope(org.eclipse.jetty.server.Request coreRequest)
         {
             try
@@ -2509,9 +2500,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            public boolean process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
             {
-                return CoreContextHandler.this;
+                HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
+                httpChannel.onProcess(response, callback);
+                httpChannel.handle();
+                return true;
             }
         }
     }

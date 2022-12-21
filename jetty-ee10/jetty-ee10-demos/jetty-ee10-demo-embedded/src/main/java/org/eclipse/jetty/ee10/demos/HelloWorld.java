@@ -22,10 +22,10 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 
-public class HelloWorld extends Handler.Processor
+public class HelloWorld extends Handler.Abstract
 {
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
 
         // Declare response encoding and types
@@ -36,6 +36,7 @@ public class HelloWorld extends Handler.Processor
 
         // Write back response
         Content.Sink.write(response, true, "<h1>Hello World</h1>\n", callback);
+        return true;
     }
 
     public static void main(String[] args) throws Exception

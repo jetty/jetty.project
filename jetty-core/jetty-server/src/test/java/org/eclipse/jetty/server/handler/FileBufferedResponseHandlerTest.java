@@ -96,7 +96,7 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testPathNotIncluded() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -124,7 +124,7 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testIncludedByPath() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -159,7 +159,7 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testExcludedByPath() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -188,7 +188,7 @@ public class FileBufferedResponseHandlerTest
     public void testExcludedByMime() throws Exception
     {
         String excludedMimeType = "text/excluded";
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -217,7 +217,7 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testFlushed() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -255,7 +255,7 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testClosed() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -293,7 +293,7 @@ public class FileBufferedResponseHandlerTest
     {
         int bufferSize = 4096;
         String largeContent = generateContent(bufferSize - 64);
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -322,7 +322,7 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testFlushEmpty() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -356,7 +356,7 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testReset() throws Exception
     {
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -405,7 +405,7 @@ public class FileBufferedResponseHandlerTest
         long fileSize = Integer.MAX_VALUE + 1234L;
         byte[] bytes = randomBytes(1024 * 1024);
 
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -507,7 +507,7 @@ public class FileBufferedResponseHandlerTest
 
         _server.setHandler(new HandlerCollection(failingInterceptorHandler, _server.getHandler()));
         CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -566,7 +566,7 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setTempDir(tempDir.toPath());
 
         CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
-        _bufferedHandler.setHandler(new Handler.Processor()
+        _bufferedHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

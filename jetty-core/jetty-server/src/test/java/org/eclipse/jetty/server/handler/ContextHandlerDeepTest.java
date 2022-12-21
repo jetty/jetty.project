@@ -64,10 +64,10 @@ public class ContextHandlerDeepTest
 
         contextHandlerA.setHandler(contextHandlerB);
         contextHandlerB.setHandler(contextHandlerC);
-        contextHandlerC.setHandler(new Handler.Processor()
+        contextHandlerC.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
                 String msg = """
@@ -82,6 +82,7 @@ public class ContextHandlerDeepTest
                     );
 
                 response.write(true, BufferUtil.toBuffer(msg), callback);
+                return true;
             }
         });
 

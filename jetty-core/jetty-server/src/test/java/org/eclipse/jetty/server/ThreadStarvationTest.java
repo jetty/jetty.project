@@ -239,34 +239,25 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class ReadHandler extends Handler.Processor
+    protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
+            response.setStatus(200);
             /* TODO
-            baseRequest.setHandled(true);
 
-            if (request.getDispatcherType() == DispatcherType.REQUEST)
+            int l = request.getContentLength();
+            int r = 0;
+            while (r < l)
             {
-                response.setStatus(200);
-
-                int l = request.getContentLength();
-                int r = 0;
-                while (r < l)
-                {
-                    if (request.getInputStream().read() >= 0)
-                        r++;
-                }
-
-                response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
-            }
-            else
-            {
-                response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                if (request.getInputStream().read() >= 0)
+                    r++;
             }
 
-             */
+            response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
+            */
+            return true;
         }
     }
 
@@ -346,7 +337,7 @@ public class ThreadStarvationTest
         }
     }
 
-    protected static class WriteHandler extends Handler.Processor
+    protected static class WriteHandler extends Handler.Abstract
     {
         byte[] content = new byte[BUFFER_SIZE];
 
@@ -356,7 +347,7 @@ public class ThreadStarvationTest
         }
 
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             /* TODO
             baseRequest.setHandled(true);
@@ -371,6 +362,7 @@ public class ThreadStarvationTest
             }
 
              */
+            return true;
         }
     }
 

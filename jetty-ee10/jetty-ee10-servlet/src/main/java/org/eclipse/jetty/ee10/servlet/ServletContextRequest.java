@@ -58,6 +58,7 @@ import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -76,7 +77,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Fields;
@@ -119,13 +119,13 @@ public class ServletContextRequest extends ContextRequest
 
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final ServletApiRequest _httpServletRequest;
+    private final ServletContextResponse _response;
     final ServletHandler.MappedServlet _mappedServlet;
     private final HttpInput _httpInput;
     private final String _pathInContext;
     private final ServletChannel _servletChannel;
     private final PathSpec _pathSpec;
     final MatchedPath _matchedPath;
-    private ServletContextResponse _response;
     private Charset _queryEncoding;
     private HttpFields _trailers;
 
@@ -133,12 +133,13 @@ public class ServletContextRequest extends ContextRequest
         ServletContextHandler.ServletContextApi servletContextApi,
         ServletChannel servletChannel,
         Request request,
+        Response response,
         String pathInContext,
         ServletHandler.MappedServlet mappedServlet,
         PathSpec pathSpec,
         MatchedPath matchedPath)
     {
-        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request);
+        super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -146,6 +147,7 @@ public class ServletContextRequest extends ContextRequest
         _pathInContext = pathInContext;
         _pathSpec = pathSpec;
         _matchedPath = matchedPath;
+        _response =  new ServletContextResponse(servletChannel, this, response);
     }
 
     public String getPathInContext()
@@ -162,13 +164,6 @@ public class ServletContextRequest extends ContextRequest
     void setTrailers(HttpFields trailers)
     {
         _trailers = trailers;
-    }
-
-    @Override
-    protected ContextResponse newContextResponse(Request request, Response response)
-    {
-        _response = new ServletContextResponse(_servletChannel, this, response);
-        return _response;
     }
 
     public ServletRequestState getState()
@@ -345,6 +340,7 @@ public class ServletContextRequest extends ContextRequest
         private String _method;
         private ServletMultiPartFormData.Parts _parts;
         private ServletPathMapping _servletPathMapping;
+        private boolean _asyncSupported = true;
 
         public static Session getSession(HttpSession httpSession)
         {
@@ -482,8 +478,10 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public Cookie[] getCookies()
         {
-            // TODO: optimize this.
-            return Request.getCookies(getRequest()).stream()
+            List<HttpCookie> httpCookies = Request.getCookies(getRequest());
+            if (httpCookies.isEmpty())
+                return null;
+            return httpCookies.stream()
                 .map(this::convertCookie)
                 .toArray(Cookie[]::new);
         }
@@ -491,13 +489,12 @@ public class ServletContextRequest extends ContextRequest
         public Cookie convertCookie(HttpCookie cookie)
         {
             Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-            // TODO: inbound (client-to-server) cookies don't have all these parameters.
-//            result.setPath(cookie.getPath());
-//            result.setDomain(cookie.getDomain());
-//            result.setSecure(cookie.isSecure());
-//            result.setHttpOnly(cookie.isHttpOnly());
-//            result.setMaxAge((int)cookie.getMaxAge());
-            // TODO: sameSite?
+            //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+            if (CookieCompliance.RFC2965.equals(getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance()))
+            {
+                result.setPath(cookie.getPath());
+                result.setDomain(cookie.getDomain());
+            }
             return result;
         }
 
@@ -1362,6 +1359,8 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public AsyncContext startAsync() throws IllegalStateException
         {
+            if (!isAsyncSupported())
+                throw new IllegalStateException("Async Not Supported");
             ServletRequestState state = getState();
             if (_async == null)
                 _async = new AsyncContextState(state);
@@ -1373,6 +1372,8 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
         {
+            if (!isAsyncSupported())
+                throw new IllegalStateException("Async Not Supported");
             ServletRequestState state = getState();
             if (_async == null)
                 _async = new AsyncContextState(state);
@@ -1396,7 +1397,12 @@ public class ServletContextRequest extends ContextRequest
         @Override
         public boolean isAsyncSupported()
         {
-            return true;
+            return _asyncSupported;
+        }
+
+        public void setAsyncSupported(boolean asyncSupported)
+        {
+            _asyncSupported = asyncSupported;
         }
 
         @Override

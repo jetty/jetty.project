@@ -72,14 +72,16 @@ public class HostnameVerificationTest
         SslConnectionFactory ssl = new SslConnectionFactory(serverSslContextFactory, http.getProtocol());
         connector = new ServerConnector(server, 1, 1, ssl, http);
         server.addConnector(connector);
-        server.setHandler(new Handler.Processor()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
                     Content.Sink.write(response, true, "foobar", blocker);
+                    blocker.block();
+                    return true;
                 }
             }
         });

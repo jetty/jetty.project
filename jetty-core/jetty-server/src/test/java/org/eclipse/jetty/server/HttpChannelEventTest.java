@@ -342,10 +342,10 @@ public class HttpChannelEventTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    private static class TestHandler extends Handler.Processor
+    private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             try
             {
@@ -359,6 +359,7 @@ public class HttpChannelEventTest
             {
                 callback.succeeded();
             }
+            return true;
         }
 
         protected void handle(Request request, Response response) throws IOException

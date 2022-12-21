@@ -4,7 +4,7 @@
 <!-- ============================================================= -->
 <!-- Base SSL configuration                                        -->
 <!-- This configuration needs to be used together with 1 or more   -->
-<!-- of jetty-https.xml and/or jetty-http2.xml                     -->
+<!-- of jetty-https.xml or jetty-http2.xml                         -->
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -15,29 +15,33 @@
     <Arg>
       <New id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server"><Ref refid="Server" /></Arg>
-          <Arg name="factories">
-            <Array type="org.eclipse.jetty.server.ConnectionFactory">
-            </Array>
-          </Arg>
-          <Set name="host" property="jetty.ssl.host"/>
-          <Set name="port"><Property name="jetty.ssl.port" default="443"/></Set>
-          <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" default="30000"/></Set>
-        </New>
+        <Arg name="acceptors" type="int"><Property name="jetty.ssl.acceptors" default="1"/></Arg>
+        <Arg name="selectors" type="int"><Property name="jetty.ssl.selectors" default="-1"/></Arg>
+        <Arg name="factories">
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <!-- uncomment to support proxy protocol
+            <Item>
+              <New class="org.eclipse.jetty.server.ProxyConnectionFactory"/>
+            </Item>-->
+          </Array>
+        </Arg>
+
+        <Set name="host" property="jetty.ssl.host"/>
+        <Set name="port"><Property name="jetty.ssl.port" default="8443" /></Set>
+        <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" default="30000"/></Set>
+        <Set name="acceptorPriorityDelta" property="jetty.ssl.acceptorPriorityDelta"/>
+        <Set name="acceptQueueSize" property="jetty.ssl.acceptQueueSize"/>
+        <Set name="reuseAddress"><Property name="jetty.ssl.reuseAddress" default="true"/></Set>
+        <Set name="reusePort"><Property name="jetty.ssl.reusePort" default="false"/></Set>
+        <Set name="acceptedTcpNoDelay"><Property name="jetty.ssl.acceptedTcpNoDelay" default="true"/></Set>
+        <Set name="acceptedReceiveBufferSize" property="jetty.ssl.acceptedReceiveBufferSize" />
+        <Set name="acceptedSendBufferSize" property="jetty.ssl.acceptedSendBufferSize" />
+        <Get name="SelectorManager">
+          <Set name="connectTimeout" property="jetty.ssl.connectTimeout"/>
+        </Get>
+      </New>
     </Arg>
   </Call>
-
-  <!-- ============================================================= -->
-  <!-- Create a TLS (SSL) Context Factory  for later reuse           -->
-  <!-- ============================================================= -->
-  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-    <Set name="Provider"><SystemProperty name="jetty.sslContext.provider"/></Set>
-    <Set name="KeyStorePath"><Property name="jetty.base"/>/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12"/></Set>
-    <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-    <Set name="TrustStorePath"><Property name="jetty.base"/>/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore.p12"/></Set>
-    <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-    <Set name="NeedClientAuth" property="jetty.sslContext.needClientAuth"/>
-    <Set name="WantClientAuth" property="jetty.sslContext.wantClientAuth"/>
-  </New>
 
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
@@ -48,7 +52,14 @@
   <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Arg><Ref refid="httpConfig"/></Arg>
     <Call name="addCustomizer">
-      <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
+      <Arg>
+        <New class="org.eclipse.jetty.server.SecureRequestCustomizer">
+          <Arg name="sniRequired" type="boolean"><Property name="jetty.ssl.sniRequired" default="false"/></Arg>
+          <Arg name="sniHostCheck" type="boolean"><Property name="jetty.ssl.sniHostCheck" default="true"/></Arg>
+          <Arg name="stsMaxAgeSeconds" type="int"><Property name="jetty.ssl.stsMaxAgeSeconds" default="-1"/></Arg>
+          <Arg name="stsIncludeSubdomains" type="boolean"><Property name="jetty.ssl.stsIncludeSubdomains" default="false"/></Arg>
+        </New>
+      </Arg>
     </Call>
   </New>
 

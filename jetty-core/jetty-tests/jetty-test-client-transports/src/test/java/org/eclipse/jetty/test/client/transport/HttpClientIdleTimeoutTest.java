@@ -36,14 +36,15 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
+                return true;
             }
         });
         client.setIdleTimeout(idleTimeout);
@@ -70,14 +71,15 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
-        start(transport, new Handler.Processor()
+        start(transport, new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
+                return true;
             }
         });
 

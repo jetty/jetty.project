@@ -66,6 +66,8 @@ public abstract class AbstractHandshaker implements Handshaker
         if (!validateNegotiation(negotiation))
             return false;
 
+        // From this point on, we can only return true or throw.
+
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation.getRequest(), negotiation.getResponse(), negotiation.getCallback());
         if (handler == null)

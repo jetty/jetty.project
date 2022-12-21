@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 public class ErrorHandler implements Request.Processor
 {
-
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
@@ -81,12 +80,12 @@ public class ErrorHandler implements Request.Processor
     }
 
     @Override
-    public void process(Request request, Response response, Callback callback) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         if (!errorPageForMethod(request.getMethod()))
         {
             callback.succeeded();
-            return;
+            return true;
         }
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
@@ -109,7 +108,7 @@ public class ErrorHandler implements Request.Processor
             {
                 errorDispatcher.error(servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse());
                 callback.succeeded();
-                return;
+                return true;
             }
             catch (ServletException e)
             {
@@ -117,7 +116,7 @@ public class ErrorHandler implements Request.Processor
                 if (response.isCommitted())
                 {
                     callback.failed(e);
-                    return;
+                    return true;
                 }
             }
         }
@@ -127,6 +126,7 @@ public class ErrorHandler implements Request.Processor
             message = HttpStatus.getMessage(response.getStatus());
         generateAcceptableResponse(servletContextRequest, servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse(), response.getStatus(), message);
         callback.succeeded();
+        return true;
     }
 
     /**

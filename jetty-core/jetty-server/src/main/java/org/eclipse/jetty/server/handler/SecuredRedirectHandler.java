@@ -19,6 +19,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -57,32 +58,30 @@ public class SecuredRedirectHandler extends Handler.Wrapper
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
         if (request.isSecure())
         {
             // Nothing to do here.
-            return super.handle(request);
+            return super.process(request, response, callback);
         }
 
-        return (rq, rs, cb) ->
-        {
-            HttpConfiguration httpConfig = rq.getConnectionMetaData().getHttpConfiguration();
+        HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
 
-            int securePort = httpConfig.getSecurePort();
-            if (securePort > 0)
-            {
-                String secureScheme = httpConfig.getSecureScheme();
-                String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
-                // TODO need a utility for this
-                rs.getHeaders().put(HttpHeader.LOCATION, url);
-                rs.setStatus(_redirectCode);
-                rs.write(true, null, cb);
-            }
-            else
-            {
-                Response.writeError(rq, rs, cb, HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
-            }
-        };
+        int securePort = httpConfig.getSecurePort();
+        if (securePort > 0)
+        {
+            String secureScheme = httpConfig.getSecureScheme();
+            String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            // TODO need a utility for this
+            response.getHeaders().put(HttpHeader.LOCATION, url);
+            response.setStatus(_redirectCode);
+            response.write(true, null, callback);
+        }
+        else
+        {
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
+        }
+        return true;
     }
 }

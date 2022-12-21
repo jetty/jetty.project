@@ -448,144 +448,135 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
     }
     
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        final Request.Processor processor = super.handle(request);
-        if (processor == null)
-            return null; //not handling this
+        Handler next = getHandler();
+        if (next == null)
+            return false;
         
-        final ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        final ServletContextRequest.ServletApiRequest servletApiRequest =
-            (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
-        final Authenticator authenticator = _authenticator;
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        if (servletContextRequest == null)
+            return false;
+        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        Authenticator authenticator = _authenticator;
         
         if (!checkSecurity(servletApiRequest))
-            return processor; //don't need to do any security work, let other handlers do the processing
-        
-        //we need to process security
-        return new Request.Processor()
         {
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            //don't need to do any security work, let other handlers do the processing
+            return next.process(request, response, callback);
+        }
+
+        //See Servlet Spec 3.1 sec 13.6.3
+        if (authenticator != null)
+            authenticator.prepareRequest(request);
+
+        RoleInfo roleInfo = prepareConstraintInfo(servletContextRequest.getPathInContext(), servletApiRequest);
+
+        // Check data constraints
+        if (!checkUserDataPermissions(servletContextRequest.getPathInContext(), servletContextRequest, response, callback, roleInfo))
+            return true;
+
+        // is Auth mandatory?
+        boolean isAuthMandatory =
+            isAuthMandatory(request, response, roleInfo);
+
+        if (isAuthMandatory && authenticator == null)
+        {
+            LOG.warn("No authenticator for: {}", roleInfo);
+            Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
+            return true;
+        }
+
+        // check authentication
+        Object previousIdentity = null;
+        try
+        {
+            Authentication authentication = servletApiRequest.getAuthentication();
+            if (authentication == null || authentication == Authentication.NOT_CHECKED)
+                authentication = authenticator == null ? Authentication.UNAUTHENTICATED : authenticator.validateRequest(request, response, callback, isAuthMandatory);
+
+            if (authentication instanceof Authentication.ResponseSent)
+                return true;
+
+            if (authentication instanceof Authentication.User userAuth)
             {
-                //See Servlet Spec 3.1 sec 13.6.3
-                if (authenticator != null)
-                    authenticator.prepareRequest(request);
+                servletApiRequest.setAuthentication(authentication);
+                if (_identityService != null)
+                    previousIdentity = _identityService.associate(userAuth.getUserIdentity());
 
-                RoleInfo roleInfo = prepareConstraintInfo(servletContextRequest.getPathInContext(), servletApiRequest);
-
-                // Check data constraints
-                if (!checkUserDataPermissions(servletContextRequest.getPathInContext(), servletContextRequest, response, callback, roleInfo))
+                if (isAuthMandatory)
                 {
-                    return;
+                    boolean authorized = checkWebResourcePermissions(Request.getPathInContext(request), request, response, roleInfo, userAuth.getUserIdentity());
+                    if (!authorized)
+                    {
+                        Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN, "!role");
+                        return true;
+                    }
                 }
 
-                // is Auth mandatory?
-                boolean isAuthMandatory =
-                    isAuthMandatory(request, response, roleInfo);
+                //process the request by other handlers
+                boolean processed = next.process(request, response, callback);
+                // TODO this looks wrong
+                if (processed && authenticator != null)
+                    authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
+                return processed;
+            }
 
-                if (isAuthMandatory && authenticator == null)
-                {
-                    LOG.warn("No authenticator for: {}", roleInfo);
-                    //TODO - check this
-                    Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
-                    return;
-                }
+            if (authentication instanceof Authentication.Deferred)
+            {
+                DeferredAuthentication deferred = (DeferredAuthentication)authentication;
+                servletApiRequest.setAuthentication(authentication);
 
-                // check authentication
-                Object previousIdentity = null;
+                boolean processed = false;
                 try
                 {
-                    Authentication authentication = servletApiRequest.getAuthentication();
-                    if (authentication == null || authentication == Authentication.NOT_CHECKED)
-                        authentication = authenticator == null ? Authentication.UNAUTHENTICATED : authenticator.validateRequest(request, response, callback, isAuthMandatory);
-
-                    if (authentication instanceof Authentication.ResponseSent)
-                    {
-                        //TODO - check this
-                        return;
-                    }
-                    else if (authentication instanceof Authentication.User)
-                    {
-                        Authentication.User userAuth = (Authentication.User)authentication;
-                        servletApiRequest.setAuthentication(authentication);
-                        if (_identityService != null)
-                            previousIdentity = _identityService.associate(userAuth.getUserIdentity());
-
-                        if (isAuthMandatory)
-                        {
-                            boolean authorized = checkWebResourcePermissions(Request.getPathInContext(request), request, response, roleInfo, userAuth.getUserIdentity());
-                            if (!authorized)
-                            {
-                                Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN, "!role");
-                                return;
-                            }
-                        }
-
-                        //process the request by other handlers
-                        processor.process(request, response, callback);
-
-                        if (authenticator != null)
-                            authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
-                    }
-                    else if (authentication instanceof Authentication.Deferred)
-                    {
-                        DeferredAuthentication deferred = (DeferredAuthentication)authentication;
-                        servletApiRequest.setAuthentication(authentication);
-
-                        try
-                        {
-                            //process the request by other handlers
-                            processor.process(request, response, callback);
-                        }
-                        finally
-                        {
-                            previousIdentity = deferred.getPreviousAssociation();
-                        }
-
-                        if (authenticator != null)
-                        {
-                            Authentication auth = servletApiRequest.getAuthentication();
-                            if (auth instanceof Authentication.User)
-                            {
-                                Authentication.User userAuth = (Authentication.User)auth;
-                                authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
-                            }
-                            else
-                                authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
-                        }
-                    }
-                    else if (isAuthMandatory)
-                    {
-                        Response.writeError(request, response, callback, HttpServletResponse.SC_UNAUTHORIZED, "unauthenticated");
-                    }
-                    else
-                    {
-                        servletApiRequest.setAuthentication(authentication);
-                        if (_identityService != null)
-                            previousIdentity = _identityService.associate(null);
-
-                        //process the request by other handlers
-                        processor.process(request, response, callback);
-
-                        if (authenticator != null)
-                            authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
-                    }
-                }
-                catch (ServerAuthException e)
-                {
-                    // jaspi 3.8.3 send HTTP 500 internal server error, with message
-                    // from AuthException
-                    //TODO - check
-                    Response.writeError(request, response, callback, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+                    //process the request by other handlers
+                    processed = next.process(request, response, callback);
                 }
                 finally
                 {
-                    if (_identityService != null)
-                        _identityService.disassociate(previousIdentity);
+                    previousIdentity = deferred.getPreviousAssociation();
                 }
+
+                if (processed && authenticator != null)
+                {
+                    Authentication auth = servletApiRequest.getAuthentication();
+                    if (auth instanceof Authentication.User userAuth)
+                        authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
+                    else
+                        authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
+                }
+                return processed;
             }
-        };
+
+            if (isAuthMandatory)
+            {
+                Response.writeError(request, response, callback, HttpServletResponse.SC_UNAUTHORIZED, "unauthenticated");
+                return true;
+            }
+
+            servletApiRequest.setAuthentication(authentication);
+            if (_identityService != null)
+                previousIdentity = _identityService.associate(null);
+
+            //process the request by other handlers
+            boolean processed = next.process(request, response, callback);
+
+            if (processed && authenticator != null)
+                authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
+            return processed;
+        }
+        catch (ServerAuthException e)
+        {
+            // jaspi 3.8.3 send HTTP 500 internal server error, with message from AuthException
+            Response.writeError(request, response, callback, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            return true;
+        }
+        finally
+        {
+            if (_identityService != null)
+                _identityService.disassociate(previousIdentity);
+        }
     }
 
     public static SecurityHandler getCurrentSecurityHandler()

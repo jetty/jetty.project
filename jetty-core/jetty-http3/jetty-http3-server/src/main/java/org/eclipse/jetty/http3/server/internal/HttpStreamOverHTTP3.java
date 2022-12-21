@@ -72,7 +72,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public long getNanoTimeStamp()
+    public long getNanoTime()
     {
         return nanoTime;
     }

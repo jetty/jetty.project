@@ -24,6 +24,7 @@ import javax.security.auth.Subject;
  * that uses the role references in the
  * {@link UserIdentity#isUserInRole(String)}
  * implementation. All other operations are effectively noops.
+ * TODO associate on demand and write callbacks?
  */
 public class DefaultIdentityService implements IdentityService
 {

@@ -70,10 +70,10 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testSimpleMultiPart() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -84,6 +84,7 @@ public class MultiPartFormDataHandlerTest
                         else
                             Response.writeError(request, response, callback, failure);
                     });
+                return true;
             }
         });
 
@@ -119,16 +120,17 @@ public class MultiPartFormDataHandlerTest
     {
         DelayedHandler.UntilMultiPartFormData delayedHandler = new DelayedHandler.UntilMultiPartFormData();
         CountDownLatch processLatch = new CountDownLatch(1);
-        delayedHandler.setHandler(new Handler.Processor()
+        delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 processLatch.countDown();
                 MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
                 assertNotNull(formData);
                 MultiPart.Part part = formData.get().get(0);
                 Content.copy(part.getContent(), response, callback);
+                return true;
             }
         });
         start(delayedHandler);
@@ -182,10 +184,10 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testEchoMultiPart() throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 new MultiPartFormData(boundary).parse(request)
@@ -205,6 +207,7 @@ public class MultiPartFormDataHandlerTest
                             Response.writeError(request, response, callback, failure);
                         }
                     });
+                return true;
             }
         });
 
@@ -245,10 +248,10 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testAsyncMultiPartResponse(@TempDir Path tempDir) throws Exception
     {
-        start(new Handler.Processor()
+        start(new Handler.Abstract.NonBlocking()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 String boundary = "A1B2C3";
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));
@@ -280,6 +283,7 @@ public class MultiPartFormDataHandlerTest
                         source.close();
                     }
                 }).start();
+                return true;
             }
         });
 

@@ -75,10 +75,10 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new Handler.Processor.Blocking()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 // First: read the whole content exactly
                 int length = bytes.length;
@@ -118,6 +118,7 @@ public class SSLReadEOFAfterResponseTest
                 if (!chunk.isLast())
                     throw new IllegalStateException();
                 callback.succeeded();
+                return true;
             }
         });
         server.start();

@@ -248,13 +248,14 @@ public class ForwardProxyWithDynamicTransportTest
     public void testProxy(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
     {
         int status = HttpStatus.NO_CONTENT_204;
-        start(new Handler.Processor()
+        start(new Handler.Abstract()
         {
             @Override
-            public void process(Request request, Response response, Callback callback)
+            public boolean process(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
                 callback.succeeded();
+                return true;
             }
         });
 

@@ -16,6 +16,7 @@ package org.eclipse.jetty.deploy.providers;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -142,6 +144,31 @@ public class ContextProvider extends ScanningAppProvider
     public Map<String, String> getProperties()
     {
         return _properties;
+    }
+
+    public void loadProperties(Resource resource) throws IOException
+    {
+        Properties props = new Properties();
+        try (InputStream inputStream = resource.newInputStream())
+        {
+            props.load(inputStream);
+            props.forEach((key, value) -> _properties.put((String)key, (String)value));
+        }
+    }
+
+    public void loadPropertiesFromPath(Path path) throws IOException
+    {
+        Properties props = new Properties();
+        try (InputStream inputStream = Files.newInputStream(path))
+        {
+            props.load(inputStream);
+            props.forEach((key, value) -> _properties.put((String)key, (String)value));
+        }
+    }
+
+    public void loadPropertiesFromString(String path) throws IOException
+    {
+        loadPropertiesFromPath(Path.of(path));
     }
 
     /**
@@ -527,23 +554,9 @@ public class ContextProvider extends ScanningAppProvider
     }
 
     @Override
-    protected void pathChanged(Path path) throws Exception
-    {
-        if (Files.exists(path) && isDeployable(path))
-            super.pathChanged(path);
-    }
-
-    @Override
     protected void pathAdded(Path path) throws Exception
     {
-        if (Files.exists(path) && isDeployable(path))
-            super.pathAdded(path);
-    }
-
-    @Override
-    protected void pathRemoved(Path path) throws Exception
-    {
         if (isDeployable(path))
-            super.pathRemoved(path);
+            super.pathAdded(path);
     }
 }
