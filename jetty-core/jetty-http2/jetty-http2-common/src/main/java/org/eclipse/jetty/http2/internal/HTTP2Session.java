@@ -57,6 +57,7 @@ import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.jctools.NonBlockingHashMapLong;
 import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -84,7 +85,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
 
-    private final ConcurrentMap<Integer, HTTP2Stream> streams = new ConcurrentHashMap<>();
+    private final NonBlockingHashMapLong<HTTP2Stream> streams = new NonBlockingHashMapLong<>();
     private final AtomicLong streamsOpened = new AtomicLong();
     private final AtomicLong streamsClosed = new AtomicLong();
     private final StreamsState streamsState = new StreamsState();

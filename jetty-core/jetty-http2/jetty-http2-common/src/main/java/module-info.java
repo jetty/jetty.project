@@ -16,6 +16,7 @@ module org.eclipse.jetty.http2.common
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.http2.hpack;
+    requires jdk.unsupported;
 
     exports org.eclipse.jetty.http2;
     exports org.eclipse.jetty.http2.api;
@@ -25,4 +26,5 @@ module org.eclipse.jetty.http2.common
     exports org.eclipse.jetty.http2.internal to org.eclipse.jetty.http2.client, org.eclipse.jetty.http2.http.client.transport, org.eclipse.jetty.http2.server;
     exports org.eclipse.jetty.http2.internal.generator to org.eclipse.jetty.http2.client, org.eclipse.jetty.http2.http.client.transport, org.eclipse.jetty.http2.server;
     exports org.eclipse.jetty.http2.internal.parser to org.eclipse.jetty.http2.client, org.eclipse.jetty.http2.http.client.transport, org.eclipse.jetty.http2.server;
+    exports org.eclipse.jetty.http2.internal.jctools to org.eclipse.jetty.http2.client, org.eclipse.jetty.http2.http.client.transport, org.eclipse.jetty.http2.server;
 }
