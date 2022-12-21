@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,6 +71,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,7 +220,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public String getId()
     {
-        return "%s@%x#%d".formatted(getEndPoint().getRemoteSocketAddress(), hashCode(), _id);
+        StringBuilder builder = new StringBuilder();
+        builder.append(getEndPoint().getRemoteSocketAddress()).append('@');
+        try
+        {
+            TypeUtil.toHex(hashCode(), builder);
+        }
+        catch (IOException ignored)
+        {
+        }
+        builder.append('#').append(_id);
+        return builder.toString();
     }
 
     @Override
@@ -1120,7 +1132,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
         private final long _nanoTime = NanoTime.now();
-        private final long _id;
+        private final String _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
         private final HttpVersion _version;
@@ -1138,7 +1150,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
         protected HttpStreamOverHTTP1(String method, String uri, HttpVersion version)
         {
-            _id = _streamIdGenerator.getAndIncrement();
+            _id = Objects.requireNonNull(version).toString() + '#' + _streamIdGenerator.getAndIncrement();
             _method = method;
             _uri = uri == null ? null : HttpURI.build(method, uri);
             _version = version;
@@ -1341,7 +1353,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public String getId()
         {
-            return "%s#%d".formatted(_version, _id);
+            return _id;
         }
 
         @Override
