@@ -13,6 +13,7 @@
 
   <properties>
     <osgi-version>3.18.100</osgi-version>
+    <osgi-annotation-version>8.1.0</osgi-annotation-version>
     <osgi-services-version>3.11.0</osgi-services-version>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.0</osgi-service-component-version>
@@ -31,14 +32,9 @@
   <modules>
     <module>jetty-ee9-osgi-boot</module>
     <module>jetty-ee9-osgi-boot-jsp</module>
-    <module>jetty-ee9-osgi-boot-warurl</module>
-    <module>jetty-ee9-osgi-httpservice</module>
-    <module>test-jetty-ee9-osgi-webapp</module>
     <module>test-jetty-ee9-osgi-webapp-resources</module>
-    <module>test-jetty-ee9-osgi-context</module>
     <module>test-jetty-ee9-osgi-fragment</module>
     <module>test-jetty-ee9-osgi-server</module>
-    <module>jetty-ee9-osgi-alpn</module>
     <module>test-jetty-ee9-osgi</module>
   </modules>
 
@@ -133,6 +129,11 @@
         <groupId>org.eclipse.equinox.http</groupId>
         <artifactId>servlet</artifactId>
         <version>${equinox-http-servlet-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>osgi.annotation</artifactId>
+        <version>${osgi-annotation-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

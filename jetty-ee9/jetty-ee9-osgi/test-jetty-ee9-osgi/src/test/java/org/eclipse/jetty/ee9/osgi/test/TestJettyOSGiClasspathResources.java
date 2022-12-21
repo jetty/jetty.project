@@ -70,7 +70,7 @@ public class TestJettyOSGiClasspathResources
         //Note: we have to back down the version of bnd used here because tinybundles expects only this version
         options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-ee9-osgi-webapp-resources").type("war").versionAsInProject());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("test-jetty-ee9-osgi-webapp-resources").type("war").versionAsInProject());
         options.add(CoreOptions.cleanCaches(true));   
         return options.toArray(new Option[options.size()]);
     }

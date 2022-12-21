@@ -30,6 +30,7 @@
             <Export-Package>!org.example.*</Export-Package>
             <Web-ContextPath>/ee9-demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+            <Jetty-Environment>ee9</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>

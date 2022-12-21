@@ -28,8 +28,9 @@
           <instructions>
             <Import-Package>jakarta.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             <Export-Package>!org.example.*</Export-Package>
-            <Web-ContextPath>/demo-jsp</Web-ContextPath>
+            <Web-ContextPath>/ee10-demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+            <Jetty-Environment>ee10</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>
