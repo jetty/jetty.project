@@ -55,7 +55,21 @@ public class FileID
     {
         if (uri == null)
             return "";
-        String path = uri.getPath();
+        if (uri.isOpaque())
+        {
+            return getFileName(uri.getSchemeSpecificPart());
+        }
+        return getFileName(uri.getPath());
+    }
+
+    /**
+     * Get the last segment of a String path returning it as the filename
+     *
+     * @param path the string path to look for the filename
+     * @return The last segment of the path
+     */
+    public static String getFileName(String path)
+    {
         if (path == null || "/".equals(path))
             return "";
         int idx = path.lastIndexOf('/');
