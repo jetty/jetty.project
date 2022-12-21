@@ -227,10 +227,15 @@ public class DefaultServlet extends HttpServlet
         }
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
 
-        // TODO: remove? _servletHandler = _contextHandler.getChildHandlerByClass(ServletHandler.class);
-
         if (LOG.isDebugEnabled())
-            LOG.debug("base resource = {}", _baseResource);
+        {
+            LOG.debug("  .baseResource = {}", _baseResource);
+            LOG.debug("  .resourceFactory = {}", _resourceFactory);
+            LOG.debug("  .resourceService = {}", _resourceService);
+            LOG.debug("  .isPathInfoOnly = {}", _isPathInfoOnly);
+            LOG.debug("  .welcomeExactServlets = {}", _welcomeExactServlets);
+            LOG.debug("  .welcomeServlets = {}", _welcomeServlets);
+        }
     }
 
     private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
@@ -355,9 +360,16 @@ public class DefaultServlet extends HttpServlet
     {
         String pathInContext = isPathInfoOnly() ? req.getPathInfo() : URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
         boolean included = req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("doGet(req={}, resp={}) pathInContext={}, included={}", req, resp, pathInContext, included);
+
         try
         {
             HttpContent content = _resourceService.getContent(pathInContext, ServletContextRequest.getServletContextRequest(req));
+            if (LOG.isDebugEnabled())
+                LOG.debug("content = {}", content);
+
             if (content == null || Resources.missing(content.getResource()))
             {
                 if (included)
@@ -426,6 +438,8 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("doHead(req={}, resp={}) (calling doGet())", req, resp);
         doGet(req, resp);
     }
 
@@ -843,6 +857,8 @@ public class DefaultServlet extends HttpServlet
         @Override
         public void setStatus(int code)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}.setStatus({})", this.getClass().getSimpleName(), code);
             _response.setStatus(code);
         }
 
@@ -992,12 +1008,17 @@ public class DefaultServlet extends HttpServlet
         @Override
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={})", coreRequest, coreResponse, callback, statusCode);
             writeHttpError(coreRequest, coreResponse, callback, statusCode, null, null);
         }
 
         @Override
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, Throwable cause)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause.getClass().getName(), cause);
+
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
             if (cause instanceof BadMessageException badMessageException)
@@ -1011,6 +1032,8 @@ public class DefaultServlet extends HttpServlet
         @Override
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String reason, Throwable cause)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause.getClass().getName(), cause);
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
             try

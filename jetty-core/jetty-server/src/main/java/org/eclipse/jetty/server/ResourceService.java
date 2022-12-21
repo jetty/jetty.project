@@ -153,6 +153,12 @@ public class ResourceService
 
         boolean endsWithSlash = pathInContext.endsWith("/");
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug(".doGet(req={}, resp={}, callback={}, content={}) pathInContext={}, reqRanges={}, endsWithSlash={}",
+                request, response, callback, content, pathInContext, reqRanges, endsWithSlash);
+        }
+
         try
         {
             // Directory?
@@ -217,6 +223,12 @@ public class ResourceService
 
     protected void sendRedirect(Request request, Response response, Callback callback, String target)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendRedirect(req={}, resp={}, callback={}, target={})",
+                request, response, callback, target);
+        }
+
         Response.sendRedirect(request, response, callback, target);
     }
 
@@ -428,6 +440,12 @@ public class ResourceService
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendWelcome(content={}, pathInContext={}, endsWithSlash={}, req={}, resp={}, callback={})",
+                content, pathInContext, endsWithSlash, request, response, callback);
+        }
+
         // Redirect to directory
         if (!endsWithSlash)
         {
@@ -477,6 +495,11 @@ public class ResourceService
     private boolean welcome(Request request, Response response, Callback callback) throws IOException
     {
         WelcomeAction welcomeAction = processWelcome(request, response);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("welcome(req={}, resp={}, callback={}) welcomeAction={}",
+                request, response, callback, welcomeAction);
+        }
         if (welcomeAction == null)
             return false;
 
@@ -529,6 +552,11 @@ public class ResourceService
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendDirectory(req={}, resp={}, content={}, callback={}, pathInContext={})",
+                request, response, httpContent, callback, pathInContext);
+        }
         if (!_dirAllowed)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -551,6 +579,12 @@ public class ResourceService
 
     private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendData(req={}, resp={}, callback={}) content={}, reqRanges={})",
+                request, response, callback, content, reqRanges);
+        }
+
         long contentLength = content.getContentLengthValue();
         callback = Callback.from(callback, content::release);
 
