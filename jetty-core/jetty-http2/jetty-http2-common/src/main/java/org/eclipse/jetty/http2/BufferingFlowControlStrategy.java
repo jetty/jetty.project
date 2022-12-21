@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.http2;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http2.api.Session;
@@ -67,7 +68,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 
     private final AtomicInteger maxSessionRecvWindow = new AtomicInteger(DEFAULT_WINDOW_SIZE);
     private final AtomicInteger sessionLevel = new AtomicInteger();
-    private final Map<Stream, AtomicInteger> streamLevels = new ConcurrentHashMap<>();
+    private final Map<Stream, AtomicInteger> streamLevels = Collections.synchronizedMap(new HashMap<>());
     private float bufferRatio;
 
     public BufferingFlowControlStrategy(float bufferRatio)
