@@ -60,4 +60,10 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
     {
         return (_resource != null) && (path != null) && path.endsWith(_matchSuffix);
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(factory=%s, resource=%s, matchSuffix=%s, contentType=%s)", this.getClass().getName(), this.hashCode(), _factory, _resource, _matchSuffix, _contentType);
+    }
 }

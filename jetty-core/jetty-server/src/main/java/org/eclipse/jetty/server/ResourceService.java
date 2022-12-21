@@ -827,6 +827,12 @@ public class ResourceService
         _redirectWelcome = redirectWelcome;
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, redirectWelcome=%b)", this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._redirectWelcome);
+    }
+
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)
     {
         _welcomeFactory = welcomeFactory;
