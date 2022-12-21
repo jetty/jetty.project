@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee9.osgi.boot.jsp;
 
-import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.ee9.osgi.boot.jasper.ContainerTldBundleDiscoverer;
+import org.eclipse.jetty.ee9.osgi.boot.EE9Activator;
+import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -24,10 +24,9 @@ import org.osgi.framework.BundleContext;
  * Sets up support for jsp and jstl. All relevant jsp jars must also be installed
  * into the osgi environment.
  * <p>
- * Note that as this is part of a bundle fragment, this activator is NOT
- * called by the OSGi environment. Instead, the org.eclipse.jetty.ee9.osgi.boot.utils.internal.PackageAdminTracker
- * simulates fragment activation and causes this class's start() method to
- * be called.
+ * NOTE that as this is part of a bundle fragment, this activator is NOT
+ * called by the OSGi environment. Instead, the org.eclipse.jetty.osgi.util.internal.PackageAdminTracker
+ * simulates fragment activation and causes this class's start() method to be called.
  * </p>
  * <p>
  * The package of this class MUST match the Bundle-SymbolicName of this fragment
@@ -36,24 +35,21 @@ import org.osgi.framework.BundleContext;
  */
 public class FragmentActivator implements BundleActivator
 {
-    /**
-     *
-     */
+    ServerClasspathContributor _tldClasspathContributor;
+    
     @Override
     public void start(BundleContext context) throws Exception
     {
-        //set up some classes that will look for bundles with tlds that must be converted
-        //to urls and treated as if they are on the Jetty container's classpath so that 
-        //jasper can deal with them
-        ServerInstanceWrapper.addContainerTldBundleDiscoverer(new ContainerTldBundleDiscoverer());
+        //Register a class that will provide the identity of bundles that 
+        //contain TLDs and therefore need to be scanned.
+        _tldClasspathContributor = new TLDServerClasspathContributor();
+        EE9Activator.registerServerClasspathContributor(_tldClasspathContributor);
     }
 
-    /**
-     *
-     */
     @Override
     public void stop(BundleContext context) throws Exception
     {
-
+        EE9Activator.unregisterServerClasspathContributor(_tldClasspathContributor);
+        _tldClasspathContributor = null;
     }
 }

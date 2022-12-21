@@ -21,11 +21,13 @@ import java.util.Set;
 import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration;
-import org.eclipse.jetty.ee9.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.osgi.OSGiWebappConstants;
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -80,13 +82,13 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
      * This parser scans the bundles using the OSGi APIs instead of assuming a jar.
      */
     @Override
-    protected org.eclipse.jetty.ee9.annotations.AnnotationParser createAnnotationParser(int javaTargetVersion)
+    protected org.eclipse.jetty.ee9.annotations.AnnotationParser createAnnotationParser()
     {
-        return new AnnotationParser(javaTargetVersion);
+        return new AnnotationParser();
     }
 
     @Override
-    public Resource getJarFor(ServletContainerInitializer service) throws MalformedURLException, IOException
+    public Resource getJarFor(ServletContainerInitializer service)
     {
         Resource resource = super.getJarFor(service);
         // TODO This is not correct, but implemented like this to be bug for bug compatible
@@ -127,7 +129,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
                 if (bundle.getState() == Bundle.UNINSTALLED)
                     continue;
 
-                Resource bundleRes = oparser.indexBundle(bundle);
+                Resource bundleRes = oparser.indexBundle(ResourceFactory.of(context), bundle);
                 if (!context.getMetaData().getWebInfResources(false).contains(bundleRes))
                 {
                     context.getMetaData().addWebInfResource(bundleRes);
@@ -142,7 +144,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
             }
         }
         //scan ourselves
-        oparser.indexBundle(webbundle);
+        oparser.indexBundle(ResourceFactory.of(context), webbundle);
         parseWebBundle(context, oparser, webbundle);
         _webInfLibStats.increment();
 

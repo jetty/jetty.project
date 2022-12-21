@@ -47,7 +47,8 @@
           </supportedProjectTypes>
           <instructions>
             <Export-Package>!com.acme*</Export-Package>
-            <Web-ContextPath>/</Web-ContextPath>
+            <Web-ContextPath>/test-webapp-resources</Web-ContextPath>
+            <Jetty-Environment>ee10</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>

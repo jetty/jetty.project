@@ -28,6 +28,7 @@
     <module>jetty-jmx</module>
     <module>jetty-jndi</module>
     <module>jetty-keystore</module>
+    <module>jetty-osgi</module>
     <module>jetty-proxy</module>
     <module>jetty-quic</module>
     <module>jetty-rewrite</module>
@@ -50,11 +51,6 @@
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>
         <version>5.0.2</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-webapp</artifactId>
-        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -25,7 +25,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-deploy</artifactId>
+      <artifactId>jetty-osgi</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -56,6 +56,11 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -85,8 +90,8 @@
         <configuration>
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.ee9.osgi.boot;singleton:=true</Bundle-SymbolicName>
-            <Bundle-Activator>org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <Bundle-Activator>org.eclipse.jetty.ee9.osgi.boot.EE9Activator</Bundle-Activator>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee9.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
             <Import-Package>
               ${osgi.slf4j.import.packages},
               jakarta.mail;version="2.0";resolution:=optional,
@@ -109,7 +114,7 @@
               org.osgi.util.tracker;version="${osgi-util-tracker-version}",
               org.xml.sax,
               org.xml.sax.helpers,
-              org.eclipse.jetty.annotations;resolution:=optional,
+              org.eclipse.jetty.ee9.annotations;resolution:=optional,
               *
             </Import-Package>
             <Require-Capability>
