@@ -57,7 +57,9 @@ public class Dispatcher implements RequestDispatcher
      */
     public static final String __FORWARD_PREFIX = "jakarta.servlet.forward.";
     
-    
+    /**
+     * Name of original request attribute
+     */ 
     public static final String __ORIGINAL_REQUEST = "org.eclipse.jetty.originalRequest";
 
     private final ServletContextHandler _contextHandler;
