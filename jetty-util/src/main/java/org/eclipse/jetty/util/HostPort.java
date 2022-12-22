@@ -16,6 +16,8 @@ package org.eclipse.jetty.util;
 import java.net.InetAddress;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Parse an authority string (in the form {@code host:port}) into
@@ -24,6 +26,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
  */
 public class HostPort
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HostPort.class);
     private final String _host;
     private final int _port;
 
@@ -136,16 +139,25 @@ public class HostPort
                 // ipv6reference
                 int close = authority.lastIndexOf(']');
                 if (close < 0)
+                {
+                    LOG.warn("Bad IPv6 host: [{}]", authority);
                     throw new IllegalArgumentException("Bad IPv6 host");
+                }
                 _host = authority.substring(0, close + 1);
                 if (!isValidIpAddress(_host))
+                {
+                    LOG.warn("Bad IPv6 host: [{}]", _host);
                     throw new IllegalArgumentException("Bad IPv6 host");
+                }
 
                 if (authority.length() > close + 1)
                 {
                     // ipv6 with port
                     if (authority.charAt(close + 1) != ':')
+                    {
+                        LOG.warn("Bad IPv6 port: [{}]", authority);
                         throw new IllegalArgumentException("Bad IPv6 port");
+                    }
                     _port = parsePort(authority.substring(close + 2));
                 }
                 else
@@ -164,7 +176,10 @@ public class HostPort
                         // ipv6address no port
                         _host = "[" + authority + "]";
                         if (!isValidIpAddress(_host))
+                        {
+                            LOG.warn("Bad IPv6Address: [{}]", _host);
                             throw new IllegalArgumentException("Bad IPv6 host");
+                        }
                         _port = 0;
                     }
                     else
@@ -172,7 +187,10 @@ public class HostPort
                         // host/ipv4 with port
                         _host = authority.substring(0, c);
                         if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                        {
+                            LOG.warn("Bad Authority: [{}]", _host);
                             throw new IllegalArgumentException("Bad Authority");
+                        }
                         _port = parsePort(authority.substring(c + 1));
                     }
                 }
@@ -181,7 +199,10 @@ public class HostPort
                     // host/ipv4 without port
                     _host = authority;
                     if (StringUtil.isBlank(_host) || !isValidHostName(_host))
+                    {
+                        LOG.warn("Bad Authority: [{}]", _host);
                         throw new IllegalArgumentException("Bad Authority");
+                    }
                     _port = 0;
                 }
             }

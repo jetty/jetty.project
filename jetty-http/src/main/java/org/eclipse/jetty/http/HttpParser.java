@@ -229,7 +229,7 @@ public class HttpParser
     private String _valueString;
     private int _responseStatus;
     private int _headerBytes;
-    private boolean _host;
+    private String _parsedHost;
     private boolean _headerComplete;
     private volatile State _state = State.START;
     private volatile FieldState _fieldState = FieldState.FIELD;
@@ -1031,9 +1031,14 @@ public class HttpParser
                         break;
 
                     case HOST:
-                        if (_host)
+                        if (_parsedHost != null)
+                        {
+                            if (LOG.isWarnEnabled())
+                                LOG.warn("Encountered multiple `Host` headers.  Previous `Host` header already seen as `{}`, new `Host` header has appeared as `{}`", _parsedHost, _valueString);
                             checkViolation(DUPLICATE_HOST_HEADERS);
-                        _host = true;
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Host: multiple headers");
+                        }
+                        _parsedHost = _valueString;
                         if (!(_field instanceof HostPortHttpField) && _valueString != null && !_valueString.isEmpty())
                         {
                             HostPort hostPort;
@@ -1085,6 +1090,8 @@ public class HttpParser
                     _fieldCache.add(_field);
                 }
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsedHeader({}) header={}, headerString=[{}], valueString=[{}]", _field, _header, _headerString, _valueString);
             _handler.parsedHeader(_field != null ? _field : new HttpField(_header, _headerString, _valueString));
         }
 
@@ -1196,7 +1203,7 @@ public class HttpParser
                             }
 
                             // Was there a required host header?
-                            if (!_host && _version == HttpVersion.HTTP_1_1 && _requestHandler != null)
+                            if (_parsedHost == null && _version == HttpVersion.HTTP_1_1 && _requestHandler != null)
                             {
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "No Host");
                             }
@@ -1901,7 +1908,7 @@ public class HttpParser
         _responseStatus = 0;
         _contentChunk = null;
         _headerBytes = 0;
-        _host = false;
+        _parsedHost = null;
         _headerComplete = false;
     }
 
