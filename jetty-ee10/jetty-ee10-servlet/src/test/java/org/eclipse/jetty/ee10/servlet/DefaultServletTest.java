@@ -505,11 +505,6 @@ public class DefaultServletTest
          *         `-- six
          */
 
-        try (Stream<Path> entries = Files.walk(docRoot))
-        {
-            entries.forEach(System.err::println);
-        }
-
         // First send request in improper, unencoded way.
         String rawResponse = connector.getResponse("""
             GET /context/dir;/ HTTP/1.1\r
