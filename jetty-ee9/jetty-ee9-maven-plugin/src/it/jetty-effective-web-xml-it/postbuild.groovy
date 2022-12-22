@@ -17,6 +17,8 @@
  * under the License.
  */
 
+import groovy.xml.XmlParser
+
 def rootNode = new XmlParser().parse(new File( basedir, 'webapp-war/target/effective-web.xml'))
 // find context-param node with param-name == org.eclipse.jetty.resources
 def ctxParam = rootNode.'**'.find{it.text() == "org.eclipse.jetty.resources"}.parent()

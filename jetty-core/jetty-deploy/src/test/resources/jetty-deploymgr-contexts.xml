@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
@@ -9,29 +9,30 @@
           <Ref refid="Contexts" />
         </Set>
         
-        <Call name="setContextAttribute">
-          <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-          <Arg>.*/jetty-jakarta-servlet-api-[^/]*\.jar$</Arg>
-        </Call>
-        
-        <Call id="webappprovider" name="addAppProvider">
+        <Call name="addAppProvider">
           <Arg>
-            <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
-              <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
-              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
-              <Set name="scanInterval">1</Set>
-              <Set name="extractWars">true</Set>
-              <Set name="configurationManager">
-                <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
-                  <Set name="file">
-                    <SystemProperty name="jetty.home"/>/xml-configured-jetty.properties
-                  </Set>
-                </New>
+            <New id="contextProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
+              <Set name="EnvironmentName">core</Set>
+              <Set name="monitoredDirName">
+                <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                  <Arg>
+                    <Property name="jetty.base" />
+                  </Arg>
+                  <Arg>
+                    <Property name="jetty.deploy.monitoredDir" default="webapps" />
+                  </Arg>
+                </Call>
               </Set>
+              <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
+              <Set name="tempDir" property="jetty.deploy.tempDir" />
+              <Call name="loadPropertiesFromString">
+                <Arg>
+                  <Property name="jetty.deploy.common.properties"/>
+                </Arg>
+              </Call>
             </New>
           </Arg>
         </Call>
-
       </New>
     </Arg>
   </Call>

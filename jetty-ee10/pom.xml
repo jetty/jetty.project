@@ -57,8 +57,7 @@
     <module>jetty-ee10-jspc-maven-plugin</module>
     <module>jetty-ee10-maven-plugin</module>
     <module>jetty-ee10-openid</module>
-    <!-- TODO -->
-    <!-- module>jetty-ee10-osgi</module -->
+    <module>jetty-ee10-osgi</module>
     <module>jetty-ee10-plus</module>
     <module>jetty-ee10-proxy</module>
     <module>jetty-ee10-quickstart</module>
