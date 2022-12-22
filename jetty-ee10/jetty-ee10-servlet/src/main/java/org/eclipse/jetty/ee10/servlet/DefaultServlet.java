@@ -1017,7 +1017,7 @@ public class DefaultServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause.getClass().getName(), cause);
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause, cause);
 
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
@@ -1033,7 +1033,7 @@ public class DefaultServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String reason, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause.getClass().getName(), cause);
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause, cause);
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
             try
