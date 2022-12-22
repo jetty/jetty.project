@@ -56,6 +56,9 @@ public class Dispatcher implements RequestDispatcher
      * Dispatch include attribute names
      */
     public static final String __FORWARD_PREFIX = "jakarta.servlet.forward.";
+    
+    
+    public static final String __ORIGINAL_REQUEST = "org.eclipse.jetty.originalRequest";
 
     private final ServletContextHandler _contextHandler;
     private final HttpURI _uri;
@@ -272,33 +275,44 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Object getAttribute(String name)
         {
+            if (name == null)
+                return null;
+            
             //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
-            if (_named != null && name != null && name.startsWith(__FORWARD_PREFIX))
+            if (_named != null && name.startsWith(__FORWARD_PREFIX))
                 return null;
 
             //Servlet Spec 9.4.2 must return the values from the original request
-            if (name != null && name.startsWith(__FORWARD_PREFIX))
+            if (name.startsWith(__FORWARD_PREFIX))
             {
-                Object val = super.getAttribute(name);
-                if (val != null)
-                    return val;
+                HttpServletRequest originalRequest = (HttpServletRequest)super.getAttribute(__ORIGINAL_REQUEST);
+                if (originalRequest == null)
+                    originalRequest = _httpServletRequest;
+                
+                switch (name)
+                {
+                    case RequestDispatcher.FORWARD_REQUEST_URI:
+                        return originalRequest.getRequestURI();
+                    case RequestDispatcher.FORWARD_SERVLET_PATH:
+                        return originalRequest.getServletPath();
+                    case RequestDispatcher.FORWARD_PATH_INFO:
+                        return originalRequest.getPathInfo();
+                    case RequestDispatcher.FORWARD_CONTEXT_PATH:
+                        return originalRequest.getContextPath();
+                    case RequestDispatcher.FORWARD_MAPPING:
+                        return originalRequest.getHttpServletMapping();
+                    case RequestDispatcher.FORWARD_QUERY_STRING:
+                        return originalRequest.getQueryString();
+                    default:
+                        return super.getAttribute(name);      
+                }
             }
 
             switch (name)
             {
-                case RequestDispatcher.FORWARD_REQUEST_URI:
-                    return _httpServletRequest.getRequestURI();
-                case RequestDispatcher.FORWARD_SERVLET_PATH:
-                    return _httpServletRequest.getServletPath();
-                case RequestDispatcher.FORWARD_PATH_INFO:
-                    return _httpServletRequest.getPathInfo();
-                case RequestDispatcher.FORWARD_CONTEXT_PATH:
-                    return _httpServletRequest.getContextPath();
-                case RequestDispatcher.FORWARD_MAPPING:
-                    return _httpServletRequest.getHttpServletMapping();
-                case RequestDispatcher.FORWARD_QUERY_STRING:
-                    return _httpServletRequest.getQueryString();
-
+                case __ORIGINAL_REQUEST:
+                    HttpServletRequest originalRequest = (HttpServletRequest)super.getAttribute(name);
+                    return originalRequest == null ? _httpServletRequest : originalRequest;
                 // Forward should hide include.
                 case RequestDispatcher.INCLUDE_MAPPING:
                 case RequestDispatcher.INCLUDE_SERVLET_PATH:
@@ -351,8 +365,11 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Object getAttribute(String name)
         {
+            if (name == null)
+                return null;
+            
             //Servlet Spec 9.3.1 no include attributes if a named dispatcher
-            if (_named != null && name != null && name.startsWith(__INCLUDE_PREFIX))
+            if (_named != null && name.startsWith(__INCLUDE_PREFIX))
                 return null;
             
             switch (name)
