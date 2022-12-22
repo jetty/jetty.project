@@ -182,7 +182,9 @@ public class DelayedHandlerTest
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
-                assertThat(stack, not(containsString("UntilContentDelayedProcess.onContent")));
+                assertThat(stack, not(containsString("%s.%s".formatted(
+                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
+                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
 
                 processing.countDown();
                 return super.process(request, response, callback);
@@ -237,7 +239,9 @@ public class DelayedHandlerTest
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
-                assertThat(stack, not(containsString("UntilContentDelayedProcess.onContent")));
+                assertThat(stack, not(containsString("%s.%s".formatted(
+                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
+                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
 
                 // Check the thread is in the context
                 assertThat(ContextHandler.getCurrentContext(), sameInstance(context.getContext()));
