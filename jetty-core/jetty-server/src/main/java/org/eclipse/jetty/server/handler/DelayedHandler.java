@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -33,8 +32,10 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 public class DelayedHandler extends Handler.Wrapper
@@ -301,7 +302,8 @@ public class DelayedHandler extends Handler.Wrapper
             }
             else
             {
-                _formData.setFilesDirectory(new File(System.getProperty("java.io.tmpdir")).toPath()); // TODO this needs to be context specific or at least the server tmp directory
+                Object baseTempDirectory = getRequest().getContext().getAttribute(Server.BASE_TEMP_DIR_ATTR);
+                _formData.setFilesDirectory(IO.asFile(baseTempDirectory == null ? System.getProperty("java.io.tmpdir") : baseTempDirectory).toPath());
                 readAndParse();
                 // if we are done already, then we are still in the scope of the original process call and can
                 // accept directly, otherwise we must execute a call to process as we are within a serialized
