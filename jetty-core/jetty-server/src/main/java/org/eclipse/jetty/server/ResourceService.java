@@ -641,7 +641,7 @@ public class ResourceService
     {
         try
         {
-            ByteBuffer buffer = content.getByteBuffer();
+            ByteBuffer buffer = content.getByteBuffer(); // this buffer is going to be consumed by response.write()
             if (buffer != null)
                 response.write(true, buffer, callback);
             else

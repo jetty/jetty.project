@@ -86,13 +86,13 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             ByteBuffer buffer = _buffer;
             if (buffer != null)
-                return (buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : buffer;
+                return (buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : buffer.asReadOnlyBuffer();
 
             try (AutoLock lock = _lock.lock())
             {
                 if (_buffer == null)
                     _buffer = getMappedByteBuffer();
-                return (_buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : _buffer;
+                return (_buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : _buffer.asReadOnlyBuffer();
             }
         }
 
