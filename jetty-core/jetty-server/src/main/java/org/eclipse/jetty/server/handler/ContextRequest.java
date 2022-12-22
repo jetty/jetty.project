@@ -34,7 +34,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     @Override
     public void demand(Runnable demandCallback)
     {
-        super.demand(new ContextDemand(demandCallback));
+        super.demand(new OnContextDemand(demandCallback));
     }
 
     @Override
@@ -67,11 +67,11 @@ public class ContextRequest extends Request.Wrapper implements Invocable
         };
     }
 
-    private class ContextDemand implements Runnable
+    private class OnContextDemand implements Runnable
     {
         private final Runnable _demandCallback;
 
-        public ContextDemand(Runnable demandCallback)
+        public OnContextDemand(Runnable demandCallback)
         {
             _demandCallback = demandCallback;
         }

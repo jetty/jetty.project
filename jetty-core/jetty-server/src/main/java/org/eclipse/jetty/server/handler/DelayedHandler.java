@@ -175,7 +175,9 @@ public class DelayedHandler extends Handler.Wrapper
         {
             Content.Chunk chunk = super.getRequest().read();
             if (chunk == null)
+            {
                 getRequest().demand(this::onContent);
+            }
             else
             {
                 try
@@ -277,7 +279,9 @@ public class DelayedHandler extends Handler.Wrapper
                 super.process();
             }
             else
+            {
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
+            }
         }
 
         public void acceptAndExecute(MultiPartFormData.Parts parts, Throwable x)
@@ -290,7 +294,9 @@ public class DelayedHandler extends Handler.Wrapper
                 getRequest().getContext().execute(super::process);
             }
             else
+            {
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
+            }
         }
 
         @Override
