@@ -182,7 +182,7 @@ public class DelayedHandler extends Handler.Wrapper
             {
                 try
                 {
-                    getHandler().process(new RewindRequest(getRequest(), chunk), getResponse(), getCallback());
+                    getHandler().process(new RewindChunkRequest(getRequest(), chunk), getResponse(), getCallback());
                 }
                 catch (Exception e)
                 {
@@ -197,11 +197,11 @@ public class DelayedHandler extends Handler.Wrapper
             getRequest().getContext().execute(this::process);
         }
 
-        static class RewindRequest extends Request.Wrapper
+        private static class RewindChunkRequest extends Request.Wrapper
         {
             private final AtomicReference<Content.Chunk> _chunk;
 
-            public RewindRequest(Request wrapped, Content.Chunk chunk)
+            public RewindChunkRequest(Request wrapped, Content.Chunk chunk)
             {
                 super(wrapped);
                 _chunk = new AtomicReference<>(chunk);
@@ -236,7 +236,7 @@ public class DelayedHandler extends Handler.Wrapper
             CompletableFuture<Fields> futureFormFields = FormFields.from(getRequest(), _charset);
 
             // if we are done already, then we are still in the scope of the original process call and can
-            // accept directly, otherwise we must execute a call to process as we are within a serialized
+            // process directly, otherwise we must execute a call to process as we are within a serialized
             // demand callback.
             futureFormFields.whenComplete(futureFormFields.isDone() ? this::process : this::executeProcess);
         }
@@ -311,7 +311,7 @@ public class DelayedHandler extends Handler.Wrapper
                 _formData.setFilesDirectory(IO.asFile(baseTempDirectory == null ? System.getProperty("java.io.tmpdir") : baseTempDirectory).toPath());
                 readAndParse();
                 // if we are done already, then we are still in the scope of the original process call and can
-                // accept directly, otherwise we must execute a call to process as we are within a serialized
+                // process directly, otherwise we must execute a call to process as we are within a serialized
                 // demand callback.
                 _formData.whenComplete(_formData.isDone() ? this::process : this::executeProcess);
             }
