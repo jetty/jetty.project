@@ -238,10 +238,10 @@ public class DelayedHandler extends Handler.Wrapper
             // if we are done already, then we are still in the scope of the original process call and can
             // accept directly, otherwise we must execute a call to process as we are within a serialized
             // demand callback.
-            futureFormFields.whenComplete(futureFormFields.isDone() ? this::accept : this::acceptAndExecute);
+            futureFormFields.whenComplete(futureFormFields.isDone() ? this::process : this::executeProcess);
         }
 
-        public void accept(Fields fields, Throwable x)
+        private void process(Fields fields, Throwable x)
         {
             if (x == null)
                 super.process();
@@ -249,7 +249,7 @@ public class DelayedHandler extends Handler.Wrapper
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
         }
 
-        public void acceptAndExecute(Fields fields, Throwable x)
+        private void executeProcess(Fields fields, Throwable x)
         {
             if (x == null)
                 // We must execute here as even though we have consumed all the input, we are probably
@@ -269,13 +269,13 @@ public class DelayedHandler extends Handler.Wrapper
             super(handler, wrapped, response, callback);
             String boundary = MultiPart.extractBoundary(contentType);
             _formData = boundary == null ? null : new MultiPartFormData(boundary);
+            getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
         }
 
-        public void accept(MultiPartFormData.Parts parts, Throwable x)
+        private void process(MultiPartFormData.Parts parts, Throwable x)
         {
             if (x == null)
             {
-                getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
                 super.process();
             }
             else
@@ -284,11 +284,10 @@ public class DelayedHandler extends Handler.Wrapper
             }
         }
 
-        public void acceptAndExecute(MultiPartFormData.Parts parts, Throwable x)
+        private void executeProcess(MultiPartFormData.Parts parts, Throwable x)
         {
             if (x == null)
             {
-                getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
                 // We must execute here as even though we have consumed all the input, we are probably
                 // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
                 getRequest().getContext().execute(super::process);
@@ -314,13 +313,13 @@ public class DelayedHandler extends Handler.Wrapper
                 // if we are done already, then we are still in the scope of the original process call and can
                 // accept directly, otherwise we must execute a call to process as we are within a serialized
                 // demand callback.
-                _formData.whenComplete(_formData.isDone() ? this::accept : this::acceptAndExecute);
+                _formData.whenComplete(_formData.isDone() ? this::process : this::executeProcess);
             }
         }
 
         private void readAndParse()
         {
-            while (!_formData.isDone())
+            while (true)
             {
                 Content.Chunk chunk = getRequest().read();
                 if (chunk == null)
@@ -338,7 +337,7 @@ public class DelayedHandler extends Handler.Wrapper
                 if (chunk.isLast())
                 {
                     if (!_formData.isDone())
-                        accept(null, new IOException("Incomplete multipart"));
+                        process(null, new IOException("Incomplete multipart"));
                     return;
                 }
             }

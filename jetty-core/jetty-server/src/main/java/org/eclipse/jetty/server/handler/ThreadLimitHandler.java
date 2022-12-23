@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.Closeable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -38,7 +37,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
@@ -82,7 +80,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
     public ThreadLimitHandler()
     {
-        this(null, false);
+        this(null, true);
     }
 
     public ThreadLimitHandler(@Name("forwardedHeader") String forwardedHeader)
@@ -186,14 +184,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
         return true;
     }
 
-    private static void getAndClose(CompletableFuture<Closeable> cf)
-    {
-        LOG.debug("getting {}", cf);
-        Closeable closeable = cf.getNow(null);
-        LOG.debug("closing {}", closeable);
-        IO.close(closeable);
-    }
-
     private Remote getRemote(Request baseRequest)
     {
         String ip = getRemoteIP(baseRequest);
@@ -282,7 +272,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         private final Handler _handler;
         private final LimitedResponse _response;
         private final Callback _callback;
-        private Runnable _onContent;
+        private final AtomicReference<Runnable> _onContent = new AtomicReference<>();
 
         public LimitedRequest(Remote remote, Handler handler, Request request, Response response, Callback callback)
         {
@@ -310,43 +300,45 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
         protected void process() throws Exception
         {
-            Permit futurePermit = _remote.acquire();
+            Permit permit = _remote.acquire();
 
             // Did we get a permit?
-            if (futurePermit.isAllocated())
+            if (permit.isAllocated())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Threadpermitted {}", _remote);
-                process(futurePermit);
+                    LOG.debug("Thread permitted {} {} {}", _remote, getWrapped(), _handler);
+                process(permit);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Threadlimited {}", _remote);
-                futurePermit.whenAllocated(this::process);
+                    LOG.debug("Thread limited {} {} {}", _remote, getWrapped(), _handler);
+                permit.whenAllocated(this::process);
             }
         }
 
         protected void process(Permit permit)
         {
-            Callback callback = Callback.from(_callback, permit::release);
             try
             {
-                if (!_handler.process(this, _response, callback))
-                    Response.writeError(this, _response, callback, HttpStatus.NOT_FOUND_404);
+                if (!_handler.process(this, _response, _callback))
+                    Response.writeError(this, _response, _callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable x)
             {
-                callback.failed(x);
+                _callback.failed(x);
+            }
+            finally
+            {
+                permit.release();
             }
         }
 
         @Override
         public void demand(Runnable onContent)
         {
-            if (_onContent != null)
-                throw new IllegalStateException();
-            _onContent = Objects.requireNonNull(onContent);
+            if (!_onContent.compareAndSet(null, Objects.requireNonNull(onContent)))
+                throw new IllegalStateException("Pending demand");
             super.demand(this::onContent);
         }
 
@@ -363,7 +355,8 @@ public class ThreadLimitHandler extends Handler.Wrapper
         {
             try
             {
-                _onContent.run();
+                Runnable onContent = _onContent.getAndSet(null);
+                onContent.run();
             }
             finally
             {
@@ -491,6 +484,12 @@ public class ThreadLimitHandler extends Handler.Wrapper
         {
             _remote.release();
         }
+
+        @Override
+        public String toString()
+        {
+            return "AllocatedPermit:" + _remote;
+        }
     }
 
     private static class FuturePermit implements Permit
@@ -564,9 +563,9 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
                 // No pass available, so queue a new future
 
-                FuturePermit permit = new FuturePermit(this);
-                _queue.addLast(permit);
-                return permit;
+                FuturePermit futurePermit = new FuturePermit(this);
+                _queue.addLast(futurePermit);
+                return futurePermit;
             }
         }
 

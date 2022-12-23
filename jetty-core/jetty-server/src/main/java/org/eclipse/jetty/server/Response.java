@@ -66,6 +66,10 @@ public interface Response extends Content.Sink
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
     /**
+     * {@inheritDoc}
+     * <p>Invocations of the passed {@code Callback} are serialized and a callback for a completed {@code write} call is
+     * not invoked until any previous {@code write} callback has returned.
+     * Thus the {@code Callback} should not block waiting for a callback of a future write call.</p>
      * @param last whether the ByteBuffer is the last to write
      * @param byteBuffer the ByteBuffer to write
      * @param callback the callback to notify when the write operation is complete

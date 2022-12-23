@@ -416,10 +416,7 @@ public class Content
          * when the write is complete.</p>
          * <p>Implementations guarantee that calls to this method are safely reentrant so that
          * stack overflows are avoided in the case of mutual recursion between the execution of
-         * the {@code Callback} and a call to this method.  Invocations of the passed
-         * {@code Callback} are serialized and a callback for a completed {@code write} call is
-         * not invoked until any previous {@code write} callback has returned.
-         * Thus the {@code Callback} should not block waiting for a callback of a future write call.</p>
+         * the {@code Callback} and a call to this method.</p>
          *
          * @param last whether the ByteBuffer is the last to write
          * @param byteBuffer the ByteBuffer to write

@@ -343,7 +343,7 @@ public class DelayedHandlerTest
                 return new DelayedProcess(handler, request, response, callback)
                 {
                     @Override
-                    protected void delay() throws Exception
+                    protected void delay()
                     {
                         getRequest().getContext().execute(this::process);
                     }

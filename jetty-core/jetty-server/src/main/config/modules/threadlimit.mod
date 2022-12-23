@@ -1,12 +1,9 @@
 
 [description]
-Applies ThreadLimitHandler to entire server
+Applies ThreadLimitHandler to entire server, to limit the threads per IP address for DOS protection.
 
 [tags]
 server
-
-[description]
-Limit the threads per IP address for DOS protection.
 
 [depend]
 server
