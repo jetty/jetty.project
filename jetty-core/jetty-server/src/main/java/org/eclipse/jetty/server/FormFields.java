@@ -49,7 +49,6 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         if (request.getLength() == 0 || StringUtil.isBlank(contentType))
             return null;
 
-        // TODO mimeTypes from context
         MimeTypes.Type type = MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
         if (MimeTypes.Type.FORM_ENCODED != type)
             return null;
@@ -60,21 +59,20 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
     public static CompletableFuture<Fields> from(Request request)
     {
-        Object attr = request.getAttribute(FormFields.class.getName());
-        if (attr instanceof FormFields futureFormFields)
-            return futureFormFields;
-
-        Charset charset = getFormEncodedCharset(request);
-        if (charset == null)
-            return EMPTY;
-
+        // TODO make this attributes provided by the ContextRequest wrapper
         int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
         int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
 
-        FormFields futureFormFields = new FormFields(request, charset, maxFields, maxLength);
-        futureFormFields.run();
-        request.setAttribute(FormFields.class.getName(), futureFormFields);
-        return futureFormFields;
+        return from(request, maxFields, maxLength);
+    }
+
+    public static CompletableFuture<Fields> from(Request request, Charset charset)
+    {
+        // TODO make this attributes provided by the ContextRequest wrapper
+        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
+        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+
+        return from(request, charset, maxFields, maxLength);
     }
 
     public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
@@ -87,9 +85,14 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         if (charset == null)
             return EMPTY;
 
+        return from(request, charset, maxFields, maxLength);
+    }
+
+    public static CompletableFuture<Fields> from(Request request, Charset charset, int maxFields, int maxLength)
+    {
         FormFields futureFormFields = new FormFields(request, charset, maxFields, maxLength);
-        futureFormFields.run();
         request.setAttribute(FormFields.class.getName(), futureFormFields);
+        futureFormFields.run();
         return futureFormFields;
     }
 

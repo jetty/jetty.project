@@ -53,14 +53,18 @@ public class ServletMultiPartFormData
      * @param request the HTTP request with multipart content
      * @return a {@link Parts} object to access the individual {@link Part}s
      * @throws IOException if reading the request content fails
+     * @see org.eclipse.jetty.server.handler.DelayedHandler
      */
     public static Parts from(ServletContextRequest.ServletApiRequest request) throws IOException
     {
         try
         {
+            // Look for a previously read and parsed MultiPartFormData from the DelayedHandler
             MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
             if (formData != null)
                 return new Parts(formData);
+
+            // TODO set the files directory
             return new ServletMultiPartFormData().parse(request);
         }
         catch (Throwable x)
@@ -188,6 +192,7 @@ public class ServletMultiPartFormData
         @Override
         public void write(String fileName) throws IOException
         {
+            // TODO This should simply move a part that is already on the file system.
             Path filePath = Path.of(fileName);
             if (!filePath.isAbsolute())
                 filePath = _formData.getFilesDirectory().resolve(filePath).normalize();

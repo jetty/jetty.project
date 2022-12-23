@@ -197,21 +197,12 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Given an Object, return File reference for object.
      * Typically used to convert anonymous Object from getAttribute() calls to a File object.
      *
-     * @param fileattr the file attribute to analyze and return from (supports type File, Path, and String).
+     * @param fileObject the file object to analyze and return from (supports type File, Path, and String).
      * @return the File object if it can be converted otherwise null.
      */
-    private File asFile(Object fileattr)
+    private File asFile(Object fileObject)
     {
-        if (fileattr == null)
-            return null;
-        if (fileattr instanceof File)
-            return (File)fileattr;
-        if (fileattr instanceof String)
-            return new File((String)fileattr);
-        if (fileattr instanceof Path)
-            return ((Path)fileattr).toFile();
-
-        return null;
+        return IO.asFile(fileObject);
     }
 
     public void makeTempDirectory(File parent, WebAppContext context)

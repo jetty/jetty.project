@@ -559,6 +559,25 @@ public class IO
 
         return total;
     }
+
+    /**
+     * <p>Convert an object to a {@link File} if possible.</p>
+     * @param fileObject A File, String, Path or null to be converted into a File
+     * @return A File representation of the passed argument or null.
+     */
+    public static File asFile(Object fileObject)
+    {
+        if (fileObject == null)
+            return null;
+        if (fileObject instanceof File)
+            return (File)fileObject;
+        if (fileObject instanceof String)
+            return new File((String)fileObject);
+        if (fileObject instanceof Path)
+            return ((Path)fileObject).toFile();
+
+        return null;
+    }
 }
 
 

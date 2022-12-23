@@ -208,6 +208,25 @@ public class MimeTypes
         })
         .build();
 
+    public static Type getBaseType(String contentType)
+    {
+        if (StringUtil.isEmpty(contentType))
+            return null;
+        Type type = CACHE.getBest(contentType);
+        if (type == null)
+            return null;
+        if (type.asString().length() == contentType.length())
+            return type.getBaseType();
+        if (contentType.charAt(type.asString().length()) == ';')
+            return type.getBaseType();
+        contentType = contentType.replace(" ", "");
+        if (type.asString().length() == contentType.length())
+            return type.getBaseType();
+        if (contentType.charAt(type.asString().length()) == ';')
+            return type.getBaseType();
+        return null;
+    }
+
     protected final Map<String, String> _mimeMap = new HashMap<>();
     protected final Map<String, String> _inferredEncodings = new HashMap<>();
     protected final Map<String, String> _assumedEncodings = new HashMap<>();

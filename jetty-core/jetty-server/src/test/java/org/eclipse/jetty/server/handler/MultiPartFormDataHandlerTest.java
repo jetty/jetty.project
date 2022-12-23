@@ -118,7 +118,7 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testDelayedUntilFormData() throws Exception
     {
-        DelayedHandler.UntilMultiPartFormData delayedHandler = new DelayedHandler.UntilMultiPartFormData();
+        DelayedHandler delayedHandler = new DelayedHandler();
         CountDownLatch processLatch = new CountDownLatch(1);
         delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
         {

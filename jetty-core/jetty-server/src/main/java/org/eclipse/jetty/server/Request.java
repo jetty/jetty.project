@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
@@ -182,6 +183,18 @@ public interface Request extends Attributes, Content.Source
      * @return the HTTP headers of this request
      */
     HttpFields getHeaders();
+
+    /**
+     * {@inheritDoc}
+     * @param demandCallback the demand callback to invoke when there is a content chunk available.
+     *                       In addition to the invocation guarantees of {@link Content.Source#demand(Runnable)},
+     *                       this implementation serializes the invocation of the {@code Runnable} with
+     *                       invocations of any {@link Response#write(boolean, ByteBuffer, Callback)}
+     *                       {@code Callback} invocations.
+     * @see Content.Source#demand(Runnable)
+     */
+    @Override
+    void demand(Runnable demandCallback);
 
     /**
      * @return the HTTP trailers of this request, or {@code null} if they are not present

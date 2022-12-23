@@ -13,16 +13,19 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.Closeable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -34,7 +37,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
@@ -78,7 +80,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
     public ThreadLimitHandler()
     {
-        this(null, false);
+        this(null, true);
     }
 
     public ThreadLimitHandler(@Name("forwardedHeader") String forwardedHeader)
@@ -182,14 +184,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
         return true;
     }
 
-    private static void getAndClose(CompletableFuture<Closeable> cf)
-    {
-        LOG.debug("getting {}", cf);
-        Closeable closeable = cf.getNow(null);
-        LOG.debug("closing {}", closeable);
-        IO.close(closeable);
-    }
-
     private Remote getRemote(Request baseRequest)
     {
         String ip = getRemoteIP(baseRequest);
@@ -204,7 +198,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         Remote remote = _remotes.get(ip);
         if (remote == null)
         {
-            Remote r = new Remote(ip, limit);
+            Remote r = new Remote(baseRequest.getContext(), ip, limit);
             remote = _remotes.putIfAbsent(ip, r);
             if (remote == null)
                 remote = r;
@@ -271,13 +265,14 @@ public class ThreadLimitHandler extends Handler.Wrapper
         int comma = forwardedFor.lastIndexOf(',');
         return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
     }
-
+    
     private static class LimitedRequest extends Request.Wrapper
     {
         private final Remote _remote;
         private final Handler _handler;
         private final LimitedResponse _response;
         private final Callback _callback;
+        private final AtomicReference<Runnable> _onContent = new AtomicReference<>();
 
         public LimitedRequest(Remote remote, Handler handler, Request request, Response response, Callback callback)
         {
@@ -305,79 +300,75 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
         protected void process() throws Exception
         {
-            CompletableFuture<Closeable> futurePermit = _remote.acquire();
+            Permit permit = _remote.acquire();
 
             // Did we get a permit?
-            if (futurePermit.isDone())
+            if (permit.isAllocated())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Threadpermitted {}", _remote);
-                process(futurePermit);
+                    LOG.debug("Thread permitted {} {} {}", _remote, getWrapped(), _handler);
+                process(permit);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Threadlimited {}", _remote);
-                futurePermit.thenAccept(c -> process(futurePermit));
+                    LOG.debug("Thread limited {} {} {}", _remote, getWrapped(), _handler);
+                permit.whenAllocated(this::process);
             }
         }
 
-        protected void process(CompletableFuture<Closeable> futurePermit)
+        protected void process(Permit permit)
         {
-            Callback callback = Callback.from(_callback, () -> getAndClose(futurePermit));
             try
             {
-                if (!_handler.process(this, _response, callback))
-                    Response.writeError(this, _response, callback, HttpStatus.NOT_FOUND_404);
+                if (!_handler.process(this, _response, _callback))
+                    Response.writeError(this, _response, _callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable x)
             {
-                callback.failed(x);
+                _callback.failed(x);
+            }
+            finally
+            {
+                permit.release();
             }
         }
 
         @Override
         public void demand(Runnable onContent)
         {
-            Runnable permittedDemand = () ->
+            if (!_onContent.compareAndSet(null, Objects.requireNonNull(onContent)))
+                throw new IllegalStateException("Pending demand");
+            super.demand(this::onContent);
+        }
+
+        private void onContent()
+        {
+            Permit permit = _remote.acquire();
+            if (permit.isAllocated())
+                onPermittedContent(permit);
+            else
+                permit.whenAllocated(this::onPermittedContent);
+        }
+
+        private void onPermittedContent(Permit permit)
+        {
+            try
             {
-                // TODO need to consider if we already have a permit!
-                CompletableFuture<Closeable> futurePermit = _remote.acquire();
-
-                if (futurePermit.isDone())
-                {
-                    try
-                    {
-                        onContent.run();
-                    }
-                    finally
-                    {
-                        getAndClose(futurePermit);
-                    }
-                }
-                else
-                {
-                    futurePermit.thenAccept(c ->
-                    {
-                        try
-                        {
-                            onContent.run();
-                        }
-                        finally
-                        {
-                            IO.close(c);
-                        }
-                    });
-                }
-            };
-
-            super.demand(permittedDemand);
+                Runnable onContent = _onContent.getAndSet(null);
+                onContent.run();
+            }
+            finally
+            {
+                permit.release();
+            }
         }
     }
 
-    private static class LimitedResponse extends Response.Wrapper
+    private static class LimitedResponse extends Response.Wrapper implements Callback
     {
         private final Remote _remote;
+        private final AtomicReference<Callback> _writeCallback = new AtomicReference<>();
 
         public LimitedResponse(LimitedRequest limitedRequest, Response response)
         {
@@ -388,143 +379,218 @@ public class ThreadLimitHandler extends Handler.Wrapper
         @Override
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
-            Callback permittedCallback = new Callback()
+            if (!_writeCallback.compareAndSet(null, Objects.requireNonNull(callback)))
+                throw new WritePendingException();
+            super.write(last, byteBuffer, this);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            Permit permit = _remote.acquire();
+            if (permit.isAllocated())
+                permittedSuccess(permit);
+            else
+                permit.whenAllocated(this::permittedSuccess);
+        }
+
+        private void permittedSuccess(Permit permit)
+        {
+            try
             {
-                @Override
-                public void succeeded()
-                {
-                    // TODO need to consider if we already have a permit!
-                    CompletableFuture<Closeable> futurePermit = _remote.acquire();
-                    if (futurePermit.isDone())
-                    {
-                        try
-                        {
-                            callback.succeeded();
-                        }
-                        finally
-                        {
-                            getAndClose(futurePermit);
-                        }
-                    }
-                    else
-                    {
-                        futurePermit.thenAccept(c ->
-                        {
-                            try
-                            {
-                                callback.succeeded();
-                            }
-                            finally
-                            {
-                                IO.close(c);
-                            }
-                        });
-                    }
-                }
+                _writeCallback.getAndSet(null).succeeded();
+            }
+            finally
+            {
+                permit.release();
+            }
+        }
 
-                @Override
-                public void failed(Throwable x)
-                {
-                    CompletableFuture<Closeable> futurePermit = _remote.acquire();
-                    if (futurePermit.isDone())
-                    {
-                        try
-                        {
-                            callback.failed(x);
-                        }
-                        finally
-                        {
-                            getAndClose(futurePermit);
-                        }
-                    }
-                    else
-                    {
-                        futurePermit.thenAccept(c ->
-                        {
-                            try
-                            {
-                                callback.failed(x);
-                            }
-                            finally
-                            {
-                                IO.close(c);
-                            }
-                        });
-                    }
-                }
+        @Override
+        public void failed(Throwable x)
+        {
+            Permit permit = _remote.acquire();
+            if (permit.isAllocated())
+                permittedFailure(permit, x);
+            else
+                permit.whenAllocated(p -> permittedFailure(p, x));
+        }
 
-                @Override
-                public InvocationType getInvocationType()
-                {
-                    return callback.getInvocationType();
-                }
-            };
-
-            super.write(last, byteBuffer, permittedCallback);
+        private void permittedFailure(Permit permit, Throwable x)
+        {
+            try
+            {
+                _writeCallback.getAndSet(null).failed(x);
+            }
+            finally
+            {
+                permit.release();
+            }
         }
     }
 
-    private static final class Remote implements Closeable
+    private interface Permit
     {
+        boolean isAllocated();
+
+        void whenAllocated(Consumer<Permit> permitConsumer);
+
+        void release();
+    }
+
+    private static class NoopPermit implements Permit
+    {
+        @Override
+        public boolean isAllocated()
+        {
+            return true;
+        }
+
+        @Override
+        public void whenAllocated(Consumer<Permit> permitConsumer)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void release()
+        {
+        }
+    }
+
+    private static class AllocatedPermit implements Permit
+    {
+        private final Remote _remote;
+
+        private AllocatedPermit(Remote remote)
+        {
+            _remote = remote;
+        }
+
+        @Override
+        public boolean isAllocated()
+        {
+            return true;
+        }
+
+        @Override
+        public void whenAllocated(Consumer<Permit> permitConsumer)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void release()
+        {
+            _remote.release();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "AllocatedPermit:" + _remote;
+        }
+    }
+
+    private static class FuturePermit implements Permit
+    {
+        private final CompletableFuture<Permit> _future = new CompletableFuture<>();
+        private final Remote _remote;
+
+        private FuturePermit(Remote remote)
+        {
+            _remote = remote;
+        }
+
+        public boolean isAllocated()
+        {
+            return _future.isDone();
+        }
+
+        public void whenAllocated(Consumer<Permit> permitConsumer)
+        {
+            _future.thenAccept(permitConsumer);
+        }
+
+        void complete()
+        {
+            if (!_future.complete(this))
+                throw new IllegalStateException();
+        }
+
+        public void release()
+        {
+            _remote.release();
+        }
+    }
+
+    private static final class Remote
+    {
+        private final Executor _executor;
         private final String _ip;
         private final int _limit;
         private final AutoLock _lock = new AutoLock();
         private int _permits;
-        private final Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
-        private final CompletableFuture<Closeable> _permitted = CompletableFuture.completedFuture(this);
+        private final Deque<FuturePermit> _queue = new ArrayDeque<>();
+        private final Permit _permitted = new AllocatedPermit(this);
+        private final ThreadLocal<Boolean> _threadPermit = new ThreadLocal<>();
+        private static final Permit NOOP = new NoopPermit();
 
-        public Remote(String ip, int limit)
+        public Remote(Executor executor, String ip, int limit)
         {
+            _executor = executor;
             _ip = ip;
             _limit = limit;
         }
 
-        public CompletableFuture<Closeable> acquire()
+        Permit acquire()
         {
             try (AutoLock lock = _lock.lock())
             {
+                // Does this thread already have an available pass
+                if (_threadPermit.get() == Boolean.TRUE)
+                    return NOOP;
+
                 // Do we have available passes?
                 if (_permits < _limit)
                 {
                     // Yes - increment the allocated passes
                     _permits++;
+                    _threadPermit.set(Boolean.TRUE);
                     // return the already completed future
-                    return _permitted; // TODO is it OK to share/reuse this?
+                    return _permitted;
                 }
 
-                // No pass available, so queue a new future 
-                CompletableFuture<Closeable> pass = new CompletableFuture<>();
-                _queue.addLast(pass);
-                return pass;
+                // No pass available, so queue a new future
+
+                FuturePermit futurePermit = new FuturePermit(this);
+                _queue.addLast(futurePermit);
+                return futurePermit;
             }
         }
 
-        @Override
-        public void close()
+        public void release()
         {
+            FuturePermit pending;
+
             try (AutoLock lock = _lock.lock())
             {
                 // reduce the allocated passes
                 _permits--;
-                while (true)
-                {
-                    // Are there any future passes waiting?
-                    CompletableFuture<Closeable> permit = _queue.pollFirst();
+                _threadPermit.set(Boolean.FALSE);
+                // Are there any future passes pending?
+                pending = _queue.pollFirst();
 
-                    // No - we are done
-                    if (permit == null)
-                        break;
+                // yes, allocate them a permit
+                if (pending != null)
+                    _permits++;
+            }
 
-                    // Yes - if we can complete them, we are done
-                    if (permit.complete(this))
-                    {
-                        _permits++;
-                        break;
-                    }
-
-                    // Somebody else must have completed/failed that future pass,
-                    // so let's try for another.
-                }
+            if (pending != null)
+            {
+                // We cannot complete the pending in this thread, as we may be in a process, demand or write callback
+                // that is serialized and other actions are waiting for the return.  Thus, we must execute.
+                _executor.execute(pending::complete);
             }
         }
 
