@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,7 +19,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.http.HttpContent.Factory;
+import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.content.HttpContent.Factory;
 
 /**
  * This {@link HttpContent.Factory} populates the {@link HttpContent#getPreCompressedContentFormats()} field for any

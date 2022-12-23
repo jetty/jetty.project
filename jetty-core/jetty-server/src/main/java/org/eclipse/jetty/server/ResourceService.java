@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,18 +29,17 @@ import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.EtagUtils;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
-import org.eclipse.jetty.http.PreCompressedHttpContent;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.PreCompressedHttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -50,7 +48,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,26 +75,9 @@ public class ResourceService
     private boolean _dirAllowed = true;
     private boolean _acceptRanges = true;
     private HttpField _cacheControl;
-    private Resource _styleSheet;
 
     public ResourceService()
     {
-    }
-
-    /**
-     * @param stylesheet The location of the stylesheet to be used as a String.
-     */
-    public void setStyleSheet(Resource stylesheet)
-    {
-        _styleSheet = stylesheet;
-    }
-
-    /**
-     * @return Returns the stylesheet as a Resource.
-     */
-    public Resource getStyleSheet()
-    {
-        return _styleSheet;
     }
 
     public HttpContent getContent(String path, Request request) throws IOException
@@ -133,12 +113,6 @@ public class ResourceService
                     }
                 }
             }
-        }
-        else
-        {
-            // TODO: can this go in a "StaticContentFactory" that goes after ResourceContentFactory?
-            if ((_styleSheet != null) && (path != null) && path.endsWith("/jetty-dir.css"))
-                content = new ResourceHttpContent(_styleSheet, "text/css");
         }
 
         return content;
@@ -179,6 +153,12 @@ public class ResourceService
 
         boolean endsWithSlash = pathInContext.endsWith("/");
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug(".doGet(req={}, resp={}, callback={}, content={}) pathInContext={}, reqRanges={}, endsWithSlash={}",
+                request, response, callback, content, pathInContext, reqRanges, endsWithSlash);
+        }
+
         try
         {
             // Directory?
@@ -216,18 +196,13 @@ public class ResourceService
             // Send the data
             sendData(request, response, callback, content, reqRanges);
         }
-        // Can be thrown from contentFactory.getContent() call when using invalid characters
-        catch (InvalidPathException e) // TODO: this cannot trigger here, as contentFactory.getContent() isn't called in this try block
+        catch (Throwable t)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
-            writeHttpError(request, response, callback, HttpStatus.NOT_FOUND_404);
-        }
-        catch (IllegalArgumentException e)
-        {
-            LOG.warn("Failed to serve resource: {}", pathInContext, e);
+            LOG.warn("Failed to serve resource: {}", pathInContext, t);
             if (!response.isCommitted())
-                writeHttpError(request, response, callback, e);
+                writeHttpError(request, response, callback, t);
+            else
+                callback.failed(t);
         }
     }
 
@@ -248,6 +223,12 @@ public class ResourceService
 
     protected void sendRedirect(Request request, Response response, Callback callback, String target)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendRedirect(req={}, resp={}, callback={}, target={})",
+                request, response, callback, target);
+        }
+
         Response.sendRedirect(request, response, callback, target);
     }
 
@@ -459,6 +440,12 @@ public class ResourceService
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendWelcome(content={}, pathInContext={}, endsWithSlash={}, req={}, resp={}, callback={})",
+                content, pathInContext, endsWithSlash, request, response, callback);
+        }
+
         // Redirect to directory
         if (!endsWithSlash)
         {
@@ -508,6 +495,11 @@ public class ResourceService
     private boolean welcome(Request request, Response response, Callback callback) throws IOException
     {
         WelcomeAction welcomeAction = processWelcome(request, response);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("welcome(req={}, resp={}, callback={}) welcomeAction={}",
+                request, response, callback, welcomeAction);
+        }
         if (welcomeAction == null)
             return false;
 
@@ -560,6 +552,11 @@ public class ResourceService
 
     private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendDirectory(req={}, resp={}, content={}, callback={}, pathInContext={})",
+                request, response, httpContent, callback, pathInContext);
+        }
         if (!_dirAllowed)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -582,6 +579,12 @@ public class ResourceService
 
     private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendData(req={}, resp={}, callback={}) content={}, reqRanges={})",
+                request, response, callback, content, reqRanges);
+        }
+
         long contentLength = content.getContentLengthValue();
         callback = Callback.from(callback, content::release);
 
@@ -640,18 +643,9 @@ public class ResourceService
         {
             ByteBuffer buffer = content.getByteBuffer();
             if (buffer != null)
-            {
                 response.write(true, buffer, callback);
-            }
             else
-            {
-                // TODO: is it possible to do zero-copy transfer?
-                // WritableByteChannel c = Response.asWritableByteChannel(target);
-                // FileChannel fileChannel = (FileChannel) source;
-                // fileChannel.transferTo(0, contentLength, c);
-
                 new ContentWriterIteratingCallback(content, response, callback).iterate();
-            }
         }
         catch (Throwable x)
         {
@@ -831,6 +825,12 @@ public class ResourceService
     public void setRedirectWelcome(boolean redirectWelcome)
     {
         _redirectWelcome = redirectWelcome;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, redirectWelcome=%b)", this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._redirectWelcome);
     }
 
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)

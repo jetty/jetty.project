@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.http.content;
 
 import java.util.Map;
 import java.util.Objects;

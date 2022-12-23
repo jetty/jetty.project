@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -73,6 +74,10 @@ public class MountedPathResourceTest
             List<String> entries = r.list().stream().map(Resource::getFileName).toList();
             assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir"));
 
+            Resource file = r.resolve("subsubdir/numbers");
+            assertTrue(Resources.isReadableFile(file));
+            assertThat(file.getFileName(), is("numbers"));
+
             Path extract = workDir.getPathFile("extract");
             FS.ensureEmpty(extract);
 
@@ -98,6 +103,36 @@ public class MountedPathResourceTest
 
             entries = r.list().stream().map(Resource::getFileName).toList();
             assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
+        }
+    }
+
+    @Test
+    public void testZipFileName()
+    {
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers";
+        URI uri = URI.create(s);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newResource(uri);
+
+            assertTrue(Resources.isReadableFile(r));
+            assertThat(r.getFileName(), is("numbers"));
+        }
+    }
+
+    @Test
+    public void testJarFileName()
+    {
+        Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/rez/deep/zzz";
+        URI uri = URI.create(s);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newResource(uri);
+
+            assertTrue(Resources.isReadableFile(r));
+            assertThat(r.getFileName(), is("zzz"));
         }
     }
 
