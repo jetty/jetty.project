@@ -1,6 +1,6 @@
 
 [description]
-Applies ThreadLimiteHandler to entire server
+Applies ThreadLimitHandler to entire server
 
 [tags]
 server
