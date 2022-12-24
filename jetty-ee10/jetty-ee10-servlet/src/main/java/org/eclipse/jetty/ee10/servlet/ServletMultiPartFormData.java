@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.handler.DelayedContentHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -53,7 +54,7 @@ public class ServletMultiPartFormData
      * @param request the HTTP request with multipart content
      * @return a {@link Parts} object to access the individual {@link Part}s
      * @throws IOException if reading the request content fails
-     * @see org.eclipse.jetty.server.handler.DelayedHandler
+     * @see DelayedContentHandler
      */
     public static Parts from(ServletContextRequest.ServletApiRequest request) throws IOException
     {

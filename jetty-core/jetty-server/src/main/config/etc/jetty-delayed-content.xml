@@ -8,7 +8,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">
     <Arg>
-      <New id="DelayedHandler" class="org.eclipse.jetty.server.handler.DelayedHandler">
+      <New id="DelayedContentHandler" class="org.eclipse.jetty.server.handler.DelayedContentHandler">
       </New>
     </Arg>
   </Call>

@@ -118,9 +118,9 @@ public class MultiPartFormDataHandlerTest
     @Test
     public void testDelayedUntilFormData() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler();
+        DelayedContentHandler delayedContentHandler = new DelayedContentHandler();
         CountDownLatch processLatch = new CountDownLatch(1);
-        delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
+        delayedContentHandler.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -133,7 +133,7 @@ public class MultiPartFormDataHandlerTest
                 return true;
             }
         });
-        start(delayedHandler);
+        start(delayedContentHandler);
 
         try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {

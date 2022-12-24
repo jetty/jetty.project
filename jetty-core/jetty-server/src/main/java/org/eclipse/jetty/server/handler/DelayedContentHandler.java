@@ -38,7 +38,18 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
-public class DelayedHandler extends Handler.Wrapper
+/**
+ * <p>A Handler that delay's processing a request until some (or all) of it's content is available.</p>
+ * <p>For requests without a body, this handler does nothing. For requests with a body, the content-type
+ * is used to select the type delay.  For known contents that will either always be read into memory
+ * ( e.g. FORM_ENCODED) or have a memory efficient representation (e.g. MULTIPART_FORM_DATA), the entire
+ * content is asynchronously read before the request is processed. Otherwise, the processing is delayed
+ * until the first chunk of content is available.</p>
+ * <p>This handler should be used when an application frequently receives requests with content, on which
+ * it blocks reading them. Using this handler can reduce or avoid blocking on the content, and thus reduce
+ * thread usage.</p>
+ */
+public class DelayedContentHandler extends Handler.Wrapper
 {
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -46,6 +57,10 @@ public class DelayedHandler extends Handler.Wrapper
         Handler next = getHandler();
         if (next == null)
             return false;
+
+        // if we are not configured to delay dispatch, then no delay
+        if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
+            return next.process(request, response, callback);
 
         boolean contentExpected = false;
         String contentType = null;
@@ -80,8 +95,10 @@ public class DelayedHandler extends Handler.Wrapper
             }
         }
 
-        MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
-        DelayedProcess delayed = newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
+        if (!contentExpected)
+            return next.process(request, response, callback);
+
+        DelayedProcess delayed = newDelayedProcess(contentType, next, request, response, callback);
         if (delayed == null)
             return next.process(request, response, callback);
 
@@ -89,15 +106,17 @@ public class DelayedHandler extends Handler.Wrapper
         return true;
     }
 
-    protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+    /** Create a {@link DelayedProcess} instance to delay a request.
+     * @param contentType The content type for which to delay.
+     * @param handler The handler that will ultimately process the request.
+     * @param request The request.
+     * @param response The response.
+     * @param callback The Callback.
+     * @return A DelayedProcess instance to delay the request, or null for no delay.
+     */
+    protected DelayedProcess newDelayedProcess(String contentType, Handler handler, Request request, Response response, Callback callback)
     {
-        // if no content is expected, then no delay
-        if (!contentExpected)
-            return null;
-
-        // if we are not configured to delay dispatch, then no delay
-        if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-            return null;
+        MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
 
         // If there is no known content type, then delay only until content is available
         if (mimeType == null)

@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DelayedHandler;
+import org.eclipse.jetty.server.handler.DelayedContentHandler;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -83,10 +83,10 @@ public class HandlerBenchmark
     {
         _server.addConnector(_connector);
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
-        DelayedHandler delayedHandler = new DelayedHandler();
-        _server.setHandler(delayedHandler);
+        DelayedContentHandler delayedContentHandler = new DelayedContentHandler();
+        _server.setHandler(delayedContentHandler);
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        delayedHandler.setHandler(contexts);
+        delayedContentHandler.setHandler(contexts);
         ContextHandler context = new ContextHandler("/ctx");
         contexts.addHandler(context);
         EchoHandler echo = new EchoHandler();

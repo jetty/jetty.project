@@ -16,5 +16,5 @@ server
 threadlimit
 
 [xml]
-etc/jetty-delayed.xml
+etc/jetty-delayed-content.xml
 
