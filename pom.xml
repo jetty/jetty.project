@@ -93,7 +93,9 @@
     <plexus-utils.version>3.5.0</plexus-utils.version>
     <slf4j.version>2.0.5</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
-    <testcontainers.version>1.17.5</testcontainers.version>
+    <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
+    <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
+    <testcontainers.version>1.17.6</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
