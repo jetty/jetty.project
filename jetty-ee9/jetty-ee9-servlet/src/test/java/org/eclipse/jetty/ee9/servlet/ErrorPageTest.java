@@ -29,6 +29,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -103,6 +104,7 @@ public class ErrorPageTest
         _context.addServlet(DeleteServlet.class, "/delete/*");
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
+        _context.addServlet(ExceptionServlet.class, "/exception-servlet");
 
         HandlerWrapper noopHandler = new HandlerWrapper()
         {
@@ -127,6 +129,8 @@ public class ErrorPageTest
         _errorPageErrorHandler.addErrorPage(IllegalStateException.class.getCanonicalName(), "/error/TestException");
         _errorPageErrorHandler.addErrorPage(BadMessageException.class, "/error/BadMessageException");
         _errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
+        _errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
+        _errorPageErrorHandler.addErrorPage(TestServletException.class, "/error");
 
         _server.start();
         _stackless = new StacklessLogging(ServletHandler.class);
@@ -518,6 +522,18 @@ public class ErrorPageTest
         }
     }
 
+    @Test
+    public void testNonUnwrappedMatchExceptionWithErrorPage() throws Exception
+    {
+        try (StacklessLogging stackless = new StacklessLogging(_context.getLogger()))
+        {
+            String response = _connector.getResponse("GET /exception-servlet HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));
+        }
+    }
+
     public static class AppServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -828,6 +844,31 @@ public class ErrorPageTest
         @Override
         public void destroy()
         {
+        }
+    }
+
+    public static class ExceptionServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            throw new TestServletException(new TestException("error page invoked"));
+        }
+    }
+
+    private static class TestException extends Exception
+    {
+        public TestException(String message)
+        {
+            super(message);
+        }
+    }
+
+    public static class TestServletException extends ServletException
+    {
+        public TestServletException(Throwable rootCause)
+        {
+            super(rootCause);
         }
     }
 }
