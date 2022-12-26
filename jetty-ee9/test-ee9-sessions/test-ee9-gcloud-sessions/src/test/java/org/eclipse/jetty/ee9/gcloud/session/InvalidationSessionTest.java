@@ -11,21 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
+package org.eclipse.jetty.ee9.gcloud.session;
 
-import org.eclipse.jetty.ee10.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.ee9.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * ClusteredOrphanedSessionTest
+ * InvalidationSessionTest
  */
 @Testcontainers(disabledWithoutDocker = true)
-public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
+public class InvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
-
     public static GCloudSessionTestSupport __testSupport;
 
     @BeforeAll

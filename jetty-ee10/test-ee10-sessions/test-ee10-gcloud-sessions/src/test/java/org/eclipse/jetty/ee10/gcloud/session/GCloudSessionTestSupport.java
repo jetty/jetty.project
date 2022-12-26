@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
+package org.eclipse.jetty.ee10.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -38,7 +38,9 @@ import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.Query.ResultType;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
+import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
+import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;
@@ -65,7 +67,7 @@ public class GCloudSessionTestSupport
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
     public DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
-        DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
+            DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
     ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
             .withFlags("--consistency=1.0");
 

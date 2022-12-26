@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
+package org.eclipse.jetty.ee9.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -38,7 +38,9 @@ import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.Query.ResultType;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
+import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
+import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;
@@ -47,7 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.DatastoreEmulatorContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,28 +66,10 @@ public class GCloudSessionTestSupport
     private static final Logger LOGGER = LoggerFactory.getLogger(GCloudSessionTestSupport.class);
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
-    public DatastoreEmulatorContainer emulator = new CustomDatastoreEmulatorContainer(
-        DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
-    ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG));
-
-    private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk");
-
-    private static final String CMD = "gcloud beta emulators datastore start --project test-project --host-port 0.0.0.0:8081 --consistency=1.0";
-    private static final int HTTP_PORT = 8081;
-
-    public static class CustomDatastoreEmulatorContainer extends DatastoreEmulatorContainer
-    {
-        public CustomDatastoreEmulatorContainer(DockerImageName dockerImageName)
-        {
-            super(dockerImageName);
-
-            dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-
-            withExposedPorts(HTTP_PORT);
-            setWaitStrategy(Wait.forHttp("/").forStatusCode(200));
-            withCommand("/bin/sh", "-c", CMD);
-        }
-    }
+    public DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
+            DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
+    ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
+            .withFlags("--consistency=1.0");
 
     public static class TestGCloudSessionDataStoreFactory extends GCloudSessionDataStoreFactory
     {
@@ -118,7 +101,7 @@ public class GCloudSessionTestSupport
     }
 
     public void setUp()
-        throws Exception
+            throws Exception
     {
         emulator.start();
         String host;
@@ -127,20 +110,20 @@ public class GCloudSessionTestSupport
         String endPoint = emulator.getEmulatorEndpoint();
         InetAddress hostAddr = InetAddress.getByName(new URL("http://" + endPoint).getHost());
         LOGGER.info("endPoint: {} ,hostAddr.isAnyLocalAddress(): {},hostAddr.isLoopbackAddress(): {}",
-                    endPoint,
-                    hostAddr.isAnyLocalAddress(),
-                    hostAddr.isLoopbackAddress());
+                endPoint,
+                hostAddr.isAnyLocalAddress(),
+                hostAddr.isLoopbackAddress());
         if (hostAddr.isAnyLocalAddress() || hostAddr.isLoopbackAddress())
             host = endPoint;
         else
             host = "http://" + endPoint;
-        
+
         DatastoreOptions options = DatastoreOptions.newBuilder()
-            .setHost(host)
-            .setCredentials(NoCredentials.getInstance())
-            .setRetrySettings(ServiceOptions.getNoRetrySettings())
-            .setProjectId("test-project")
-            .build();
+                .setHost(host)
+                .setCredentials(NoCredentials.getInstance())
+                .setRetrySettings(ServiceOptions.getNoRetrySettings())
+                .setProjectId("test-project")
+                .build();
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
     }
@@ -151,7 +134,7 @@ public class GCloudSessionTestSupport
     }
 
     public void tearDown()
-        throws Exception
+            throws Exception
     {
         emulator.stop();
     }
@@ -167,7 +150,7 @@ public class GCloudSessionTestSupport
                               long lastAccessed, long maxIdle, long expiry,
                               long cookieset, long lastSaved,
                               Map<String, Object> attributes)
-        throws Exception
+            throws Exception
     {
         //serialize the attribute map
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
@@ -181,17 +164,17 @@ public class GCloudSessionTestSupport
 
             //turn a session into an entity         
             Entity.Builder builder = Entity.newBuilder(_keyFactory.newKey(contextPath + "_" + vhost + "_" + id))
-                .set(EntityDataModel.ID, id)
-                .set(EntityDataModel.CONTEXTPATH, contextPath)
-                .set(EntityDataModel.VHOST, vhost)
-                .set(EntityDataModel.ACCESSED, accessed)
-                .set(EntityDataModel.LASTACCESSED, lastAccessed)
-                .set(EntityDataModel.CREATETIME, created)
-                .set(EntityDataModel.COOKIESETTIME, cookieset)
-                .set(EntityDataModel.LASTNODE, lastNode)
-                .set(EntityDataModel.EXPIRY, expiry)
-                .set(EntityDataModel.MAXINACTIVE, maxIdle)
-                .set(EntityDataModel.LASTSAVED, lastSaved);
+                    .set(EntityDataModel.ID, id)
+                    .set(EntityDataModel.CONTEXTPATH, contextPath)
+                    .set(EntityDataModel.VHOST, vhost)
+                    .set(EntityDataModel.ACCESSED, accessed)
+                    .set(EntityDataModel.LASTACCESSED, lastAccessed)
+                    .set(EntityDataModel.CREATETIME, created)
+                    .set(EntityDataModel.COOKIESETTIME, cookieset)
+                    .set(EntityDataModel.LASTNODE, lastNode)
+                    .set(EntityDataModel.EXPIRY, expiry)
+                    .set(EntityDataModel.MAXINACTIVE, maxIdle)
+                    .set(EntityDataModel.LASTSAVED, lastSaved);
             if (attributes != null)
                 builder.set(EntityDataModel.ATTRIBUTES, BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build());
             Entity entity = builder.build();
@@ -201,7 +184,7 @@ public class GCloudSessionTestSupport
     }
 
     public boolean checkSessionPersisted(SessionData data)
-        throws Exception
+            throws Exception
     {
         Entity entity = _ds.get(_keyFactory.newKey(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()));
         if (entity == null)
@@ -222,11 +205,11 @@ public class GCloudSessionTestSupport
         Blob blob = (Blob)entity.getBlob(EntityDataModel.ATTRIBUTES);
 
         SessionData tmp = new SessionData(data.getId(), entity.getString(EntityDataModel.CONTEXTPATH),
-            entity.getString(EntityDataModel.VHOST),
-            entity.getLong(EntityDataModel.CREATETIME),
-            entity.getLong(EntityDataModel.ACCESSED),
-            entity.getLong(EntityDataModel.LASTACCESSED),
-            entity.getLong(EntityDataModel.MAXINACTIVE));
+                entity.getString(EntityDataModel.VHOST),
+                entity.getLong(EntityDataModel.CREATETIME),
+                entity.getLong(EntityDataModel.ACCESSED),
+                entity.getLong(EntityDataModel.LASTACCESSED),
+                entity.getLong(EntityDataModel.MAXINACTIVE));
 
         try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
         {
@@ -247,12 +230,12 @@ public class GCloudSessionTestSupport
     }
 
     public boolean checkSessionExists(String id)
-        throws Exception
+            throws Exception
     {
         Query<Entity> query = Query.newEntityQueryBuilder()
-            .setKind(EntityDataModel.KIND)
-            .setFilter(PropertyFilter.eq(EntityDataModel.ID, id))
-            .build();
+                .setKind(EntityDataModel.KIND)
+                .setFilter(PropertyFilter.eq(EntityDataModel.ID, id))
+                .build();
 
         QueryResults<Entity> results = _ds.run(query);
 
