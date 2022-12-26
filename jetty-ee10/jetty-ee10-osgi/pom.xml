@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee10.osgi</groupId>
-  <artifactId>jetty-ee10-osgi-project</artifactId>
+  <artifactId>jetty-ee10-osgi</artifactId>
   <name>EE10 :: Jetty :: OSGi</name>
   <packaging>pom</packaging>
 
@@ -67,9 +67,11 @@
       </resource>
     </resources>
     <plugins>
+      <!-- is it really used?? this plugiin has been abandonned and no version since 2012... -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.9</version>
         <configuration>
           <manifest>prevent/overwriting/by/pointing/to/nonexisting/MANIFEST.MF</manifest>
           <pde>true</pde>
