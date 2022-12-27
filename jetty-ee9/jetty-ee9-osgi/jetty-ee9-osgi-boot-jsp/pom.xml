@@ -20,7 +20,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9.osgi</groupId>
       <artifactId>jetty-ee9-osgi-boot</artifactId>
-      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
