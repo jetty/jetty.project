@@ -246,7 +246,7 @@
     <dependency>
       <groupId>org.apache.aries.spifly</groupId>
       <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
-      <version>1.3.5</version>
+      <version>1.3.6</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
