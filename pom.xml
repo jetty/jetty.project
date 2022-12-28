@@ -51,7 +51,7 @@
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.15.2</hawtio.version>
     <hazelcast.version>4.2.5</hazelcast.version>
-    <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.6.0.Final</infinispan.protostream.version>
     <infinispan.version>11.0.16.Final</infinispan.version>
     <jackson.version>2.13.4</jackson.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
