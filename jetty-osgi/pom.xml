@@ -13,7 +13,7 @@
 
   <properties>
     <osgi-version>3.18.200</osgi-version>
-    <osgi-services-version>3.11.0</osgi-services-version>
+    <osgi-services-version>3.11.100</osgi-services-version>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.0</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
