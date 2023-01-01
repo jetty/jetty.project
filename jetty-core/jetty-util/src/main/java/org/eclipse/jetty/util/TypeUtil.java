@@ -139,13 +139,8 @@ public class TypeUtil
         class2Name.put(java.lang.String.class, "java.lang.String");
     }
 
-    private static final HashMap<Class<?>, ValueOfString<?>> class2Value = new HashMap<>();
+    private static final HashMap<Class<?>, Function<String, Object>> class2Value = new HashMap<>();
 
-    @FunctionalInterface
-    private interface ValueOfString<T> {
-      T valueOf(String s);
-    }
-    
     static
     {
         class2Value.put(java.lang.Boolean.TYPE, Boolean::valueOf);
@@ -315,9 +310,9 @@ public class TypeUtil
             if (type.equals(java.lang.String.class))
                 return value;
 
-            ValueOfString<?> vos = class2Value.get(type);
+            Function<String, Object> vos = class2Value.get(type);
             if (vos != null)
-                return vos.valueOf(value);
+                return vos.apply(value);
 
             if (type.equals(java.lang.Character.TYPE) ||
                 type.equals(java.lang.Character.class))
