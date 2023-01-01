@@ -22,7 +22,6 @@ import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -140,48 +139,30 @@ public class TypeUtil
         class2Name.put(java.lang.String.class, "java.lang.String");
     }
 
-    private static final HashMap<Class<?>, Method> class2Value = new HashMap<>();
+    private static final HashMap<Class<?>, ValueOfString<?>> class2Value = new HashMap<>();
 
+    @FunctionalInterface
+    private interface ValueOfString<T> {
+      T valueOf(String s);
+    }
+    
     static
     {
-        try
-        {
-            Class<?>[] s = {java.lang.String.class};
-
-            class2Value.put(java.lang.Boolean.TYPE,
-                java.lang.Boolean.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Byte.TYPE,
-                java.lang.Byte.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Double.TYPE,
-                java.lang.Double.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Float.TYPE,
-                java.lang.Float.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Integer.TYPE,
-                java.lang.Integer.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Long.TYPE,
-                java.lang.Long.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Short.TYPE,
-                java.lang.Short.class.getMethod("valueOf", s));
-
-            class2Value.put(java.lang.Boolean.class,
-                java.lang.Boolean.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Byte.class,
-                java.lang.Byte.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Double.class,
-                java.lang.Double.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Float.class,
-                java.lang.Float.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Integer.class,
-                java.lang.Integer.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Long.class,
-                java.lang.Long.class.getMethod("valueOf", s));
-            class2Value.put(java.lang.Short.class,
-                java.lang.Short.class.getMethod("valueOf", s));
-        }
-        catch (Exception e)
-        {
-            throw new Error(e);
-        }
+        class2Value.put(java.lang.Boolean.TYPE, Boolean::valueOf);
+        class2Value.put(java.lang.Byte.TYPE, Byte::valueOf);
+        class2Value.put(java.lang.Double.TYPE, Double::valueOf);
+        class2Value.put(java.lang.Float.TYPE, Float::valueOf);
+        class2Value.put(java.lang.Integer.TYPE, Integer::valueOf);
+        class2Value.put(java.lang.Long.TYPE, Long::valueOf);
+        class2Value.put(java.lang.Short.TYPE, Short::valueOf);
+  
+        class2Value.put(java.lang.Boolean.class, Boolean::valueOf);
+        class2Value.put(java.lang.Byte.class, Byte::valueOf);
+        class2Value.put(java.lang.Double.class, Double::valueOf);
+        class2Value.put(java.lang.Float.class, Float::valueOf);
+        class2Value.put(java.lang.Integer.class, Integer::valueOf);
+        class2Value.put(java.lang.Long.class, Long::valueOf);
+        class2Value.put(java.lang.Short.class, Short::valueOf);
     }
 
     private static final MethodHandle[] LOCATION_METHODS;
@@ -334,9 +315,9 @@ public class TypeUtil
             if (type.equals(java.lang.String.class))
                 return value;
 
-            Method m = class2Value.get(type);
-            if (m != null)
-                return m.invoke(null, value);
+            ValueOfString<?> vos = class2Value.get(type);
+            if (vos != null)
+                return vos.valueOf(value);
 
             if (type.equals(java.lang.Character.TYPE) ||
                 type.equals(java.lang.Character.class))
