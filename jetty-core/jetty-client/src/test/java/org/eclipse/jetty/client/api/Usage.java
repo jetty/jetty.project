@@ -68,7 +68,7 @@ public class Usage
                 // Be a good HTTP citizen and read the entire request body content
                 try (InputStream input = Content.Source.asInputStream(request))
                 {
-                    // Read, but discard results.git c
+                    // Read, but discard results
                     IO.readBytes(input);
                 }
                 response.setStatus(HttpStatus.OK_200);
