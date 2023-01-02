@@ -20,7 +20,7 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,19 +36,55 @@ import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.junit.jupiter.api.Disabled;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
-// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Usage
 {
+    private Server server;
+
+    @BeforeEach
+    public void startServer() throws Exception
+    {
+        server = new Server(8080);
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                // Be a good HTTP citizen and read the entire request body content
+                try (InputStream input = Content.Source.asInputStream(request))
+                {
+                    // Read, but discard results.git c
+                    IO.readBytes(input);
+                }
+                response.setStatus(HttpStatus.OK_200);
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+    }
+
+    @AfterEach
+    public void stopServer()
+    {
+        LifeCycle.stop(server);
+    }
+
     @Test
     public void testGETBlockingShortAPI() throws Exception
     {
@@ -73,7 +109,7 @@ public class Usage
 
         // Address must be provided, it's the only thing non defaultable
         Request request = client.newRequest("localhost", 8080)
-            .scheme("https")
+            .scheme("http")
             .method(HttpMethod.GET)
             .path("/uri")
             .version(HttpVersion.HTTP_1_1)
@@ -120,7 +156,7 @@ public class Usage
         client.start();
 
         // One liner to POST
-        client.POST("http://localhost:8080").param("a", "\u20AC").send();
+        client.POST("http://localhost:8080").param("a", "€").send();
     }
 
     @Test
@@ -171,8 +207,11 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        // One liner to upload files
-        Response response = client.newRequest("localhost", 8080).file(Paths.get("file_to_upload.txt")).send();
+        // Upload a file via POST
+        Response response = client.newRequest("http://localhost:8080/uploads/")
+            .method(HttpMethod.POST)
+            .file(Path.of("src/test/resources/file_to_upload.txt"))
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -184,10 +223,10 @@ public class Usage
         client.start();
 
         // Set a cookie to be sent in requests that match the cookie's domain
-        client.getCookieStore().add(URI.create("http://host:8080/path"), new HttpCookie("name", "value"));
+        client.getCookieStore().add(URI.create("http://localhost:8080/path"), new HttpCookie("name", "value"));
 
         // Send a request for the cookie's domain
-        Response response = client.newRequest("host", 8080).send();
+        Response response = client.newRequest("localhost", 8080).send();
 
         assertEquals(200, response.getStatus());
     }
