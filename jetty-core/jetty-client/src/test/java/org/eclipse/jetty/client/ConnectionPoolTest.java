@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -42,17 +43,17 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -62,6 +63,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectionPoolTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionPoolTest.class);
+
     private static final ConnectionPoolFactory DUPLEX = new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination));
     private static final ConnectionPoolFactory MULTIPLEX = new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
     private static final ConnectionPoolFactory RANDOM = new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
@@ -135,8 +138,7 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
-    @Disabled("fix this test")
-    public void test(ConnectionPoolFactory factory) throws Exception
+    public void testConnectionPoolFactory(ConnectionPoolFactory factory) throws Exception
     {
         start(factory.factory, new EmptyServerHandler()
         {
@@ -153,7 +155,7 @@ public class ConnectionPoolTest
                             response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
                             try (Blocker.Callback callback = _blocking.callback())
                             {
-                                response.write(true, BufferUtil.allocate((int)contentLength), callback);
+                                response.write(true, ByteBuffer.allocate((int)contentLength), callback);
                                 callback.block();
                             }
                         }
@@ -182,7 +184,7 @@ public class ConnectionPoolTest
                             {
                                 try (Blocker.Callback callback = _blocking.callback())
                                 {
-                                    response.write(true, chunk.getByteBuffer(), callback);
+                                    response.write(chunk.isLast(), chunk.getByteBuffer(), callback);
                                     callback.block();
                                 }
                             }
@@ -219,7 +221,8 @@ public class ConnectionPoolTest
             test(failures);
         }
         long elapsed = NanoTime.millisSince(begin);
-        System.err.printf("%d requests in %d ms, %.3f req/s%n", iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D);
+        if (LOG.isInfoEnabled())
+            LOG.info("%d requests in %d ms, %.3f req/s".formatted(iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D));
         latch.countDown();
     }
 
