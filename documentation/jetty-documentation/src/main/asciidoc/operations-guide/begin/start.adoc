@@ -16,7 +16,7 @@
 
 Eclipse Jetty as a standalone server has no graphical user interface; configuring and running the server is done from the command line.
 
-First we need to create a `$JETTY_BASE` directory.
+First, create a `$JETTY_BASE` directory.
 
 ----
 $ JETTY_BASE=/path/to/jetty.base
@@ -24,7 +24,8 @@ $ mkdir $JETTY_BASE
 $ cd $JETTY_BASE
 ----
 
-We'll start Jetty by executing `$JETTY_HOME/start.jar` from this directory. However, if we try to start Jetty from an empty `$JETTY_BASE`, it will complain that we haven't enabled any modules:
+You will typically start Jetty by executing `$JETTY_HOME/start.jar` from this directory.
+However, if you try to start Jetty from an empty `$JETTY_BASE`, it will complain that you haven't enabled any modules:
 
 ----
 $ java -jar $JETTY_HOME/start.jar
@@ -35,7 +36,8 @@ $ java -jar $JETTY_HOME/start.jar
 include::jetty[]
 ----
 
-Jetty uses a xref:og-modules[module] system to configure and assemble its web server; these modules are enabled and configured in xref:og-arch-jetty-base[`$JETTY_BASE`]. Since the `$JETTY_BASE` directory we just created is empty, Jetty has no configuration it can use to assemble the server.
+Jetty uses a xref:og-modules[module] system to configure and assemble the server; these modules are enabled and configured in xref:og-arch-jetty-base[`$JETTY_BASE`].
+Since the `$JETTY_BASE` directory we just created is empty, Jetty has no configuration it can use to assemble the server.
 
 NOTE: See the xref:og-arch[architecture section] of this document for more information on the design of Jetty's module system.
 
@@ -45,7 +47,7 @@ You can explore what modules are available with the `--list-modules` flag:
 $ java -jar $JETTY_HOME/start.jar --list-modules=*
 ----
 
-Let's try to enable the xref:og-protocols-http[`http`] module.
+Now try to enable the xref:og-protocols-http[`http`] module.
 
 NOTE: If you want to enable support for protocols like secure HTTP/1.1 or HTTP/2 or HTTP/3, or want to configure Jetty behind a load balancer, read xref:og-protocols[this section].
 
@@ -60,7 +62,7 @@ include::jetty[args="--add-module=http",highlight="([a-z\-]+ *transitively enabl
 
 Note that Jetty has enabled a number of transitive dependencies (`server`, `logging-jetty`, and so on) in order to activate the `http` module.
 
-Now we can start Jetty:
+You can now start Jetty:
 
 ----
 $ java -jar $JETTY_HOME/start.jar
@@ -71,27 +73,27 @@ $ java -jar $JETTY_HOME/start.jar
 include::jetty[args="--module=http",highlight="(\{.*:8080})"]
 ----
 
-Jetty is listening on port `8080` for clear-text HTTP/1.1 connections. However, since it has no web applications deployed, it will just reply with `404 Not Found` to every request.
+Jetty is listening on port `8080` for clear-text HTTP/1.1 connections.
+But since it has no web applications deployed, it will just reply with `404 Not Found` to every request.
 
-Before we xref:og-begin-deploy[deploy our first web application], let's see what's happened to the `$JETTY_BASE` directory now that we've enabled the `http` module:
+Before you xref:og-begin-deploy[deploy your first web application], take a moment to see what happened to the `$JETTY_BASE` directory once you enabled the `http` module:
 
 [source,subs=verbatim]
 ----
-$ tree $JETTY_BASE
-/path/to/jetty.base
+$JETTY_BASE
 ├── resources
 │   └── jetty-logging.properties <1>
 └── start.d <2>
     └── http.ini <3>
 ----
 
-<1> The `resources/jetty-logging.properties` file configures the server's logging level. This file was auto-generated when the `jetty-logging` module was activated as a transitive dependency of the `http` module.
+<1> The `resources/jetty-logging.properties` file configures the server's logging level; this file was auto-generated when the `jetty-logging` module was activated as a transitive dependency of the `http` module.
 <2> The `start.d/` directory contains configuration files for any modules you have explicitly activated.
 <3> The `start.d/http.ini` file is the `http` module configuration file, where you can specify values for the xref:og-module-http[`http` module properties].
 
 NOTE: By default, Jetty does not generate configuration files in `start.d/` for modules activated as transitive dependencies. To manually configure such a module, you should activate it directly via Jetty's `--add_module` flag.
 
-In the `http.ini` file we can find the following (among other contents):
+In the `http.ini` file you can find the following (among other contents):
 
 .http.ini
 [source,subs=verbatim]
@@ -104,7 +106,8 @@ In the `http.ini` file we can find the following (among other contents):
 <1> This line enables the `http` module and should not be modified.
 <2> This commented line specifies the default value for the `jetty.http.port` property, which is the network port that Jetty uses to listen for clear-text HTTP connections.
 
-Let's change that default port. Open `http.ini`, uncomment the line containing `jetty.http.port=`, and change its value to `9999`:
+Try changing the default port.
+Open `http.ini`, uncomment the line containing `jetty.http.port=`, and change its value to `9999`:
 
 .http.ini
 ----
@@ -124,7 +127,8 @@ $ java -jar $JETTY_HOME/start.jar
 include::jetty[args="--module=http jetty.http.port=9999",highlight="(\{.*:9999})"]
 ----
 
-You can also specify the value of a module property when you start up Jetty. A property value specified on the command-line in this way will *override* the value configured in a module's `.ini` file.
+You can also specify the value of a module property when you start up Jetty.
+A property value specified on the command-line in this way will *override* the value configured in a module's `+*.ini+` file.
 
 ----
 $ java -jar $JETTY_HOME/start.jar jetty.http.port=8080

@@ -14,12 +14,14 @@
 [[og-begin-install]]
 ==== Installing Jetty
 
-After the download, unpacking Eclipse Jetty will extract the files into a directory called `jetty-home-VERSION`, where `VERSION` is the version of Jetty that you downloaded. For example, installing Jetty {version} will create a directory called `jetty-home-{version}`.
+After the download, unpacking Eclipse Jetty will extract the files into a directory called `jetty-home-VERSION`, where `VERSION` is the version of Jetty that you downloaded.
+For example, installing Jetty {version} will create a directory called `jetty-home-{version}`.
 
 IMPORTANT: It is important that *only* stable release versions are used in production environments.
 Versions that have been deprecated or are released as Milestones (M), Alpha, Beta or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
 
-Unpack Eclipse Jetty file into a convenient location, such as `/opt`. The rest of the instructions in this documentation will refer to this location as `$JETTY_HOME`, or `${jetty.home}`.
+Unpack Eclipse Jetty file into a convenient location, such as `/opt`.
+The rest of the instructions in this documentation will refer to this location as `$JETTY_HOME`, or `${jetty.home}`.
 
 CAUTION: For Windows users, you should unpack Jetty to a path that does not contain spaces.
 

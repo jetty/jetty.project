@@ -27,7 +27,7 @@ Only modules conforming to the "Servlet Container Profile" with the ServerAuthMo
 Enable the `jaspi` module:
 
 ----
-include::{JETTY_HOME}/modules/ee9-jaspi.mod[]
+include::{JETTY_HOME}/modules/ee10-jaspi.mod[]
 ----
 
 [[og-jaspi-xml]]
@@ -36,7 +36,7 @@ include::{JETTY_HOME}/modules/ee9-jaspi.mod[]
 Activate the `ee{9,10}-jaspi` module that matches your EE platform version.
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-modules=ee9-jaspi
+$ java -jar $JETTY_HOME/start.jar --add-modules=ee10-jaspi
 ----
 
 You can then register a `AuthConfigProvider` onto the static `AuthConfigFactory` obtained with `AuthConfigFactory.getFactory()`. This registration can be done in the XML configuration file which will be copied to `$JETTY_BASE/etc/jaspi/jaspi-authmoduleconfig.xml` when the module is enabled.
@@ -44,11 +44,11 @@ You can then register a `AuthConfigProvider` onto the static `AuthConfigFactory`
 ====== JASPI Demo
 The `ee9-jaspi-demo` and `ee10-jaspi-demo` modules illustrate setting up HTTP Basic Authentication using the EE9 and EE10 Jakarta Authentication modules that come packaged with Jetty.
 
-The following example uses Jetty's EE9 implementation of `AuthConfigProvider` to register a `ServerAuthModule` directly.
+The following example uses Jetty's EE10 implementation of `AuthConfigProvider` to register a `ServerAuthModule` directly.
 
 [source, xml]
 ----
-include::{JETTY_HOME}/etc/jaspi/jetty-ee9-jaspi-demo.xml[]
+include::{JETTY_HOME}/etc/jaspi/jetty-ee10-jaspi-demo.xml[]
 ----
 
 Other custom or 3rd party modules that are compatible with the `ServerAuthModule` interface in JASPI can be registered in the same way.
