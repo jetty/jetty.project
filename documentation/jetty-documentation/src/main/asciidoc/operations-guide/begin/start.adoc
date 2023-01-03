@@ -35,7 +35,8 @@ $ java -jar $JETTY_HOME/start.jar
 include::jetty[]
 ----
 
-Jetty uses a xref:og-modules[module] system to configure and assemble its web server; these modules are enabled and configured in xref:og-arch-jetty-base[`$JETTY_BASE`]. Since the `$JETTY_BASE` directory we just created is empty, Jetty has no configuration it can use to assemble the server.
+Jetty uses a xref:og-modules[module system] to configure and assemble the server; these modules are enabled and configured in xref:og-arch-jetty-base[`$JETTY_BASE`].
+Since the `$JETTY_BASE` directory you just created is empty, Jetty has no configuration it can use to assemble the server.
 
 NOTE: See the xref:og-arch[architecture section] of this document for more information on the design of Jetty's module system.
 
