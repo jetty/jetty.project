@@ -59,7 +59,7 @@ $ java -jar $JETTY_HOME/start.jar --add-module=http
 include::jetty[args="--add-module=http",highlight="([a-z\-]+ *transitively enabled)"]
 ----
 
-Note that Jetty has enabled a number of transitive dependencies (`server`, `logging-jetty`, and so on) in order to activate the `http` module.
+When Jetty enables the `http` module, it also automatically enables a number of transitive dependencies of the `http` module, such as the `server` module, the `logging-jetty` module, and so on.
 
 Now we can start Jetty:
 
