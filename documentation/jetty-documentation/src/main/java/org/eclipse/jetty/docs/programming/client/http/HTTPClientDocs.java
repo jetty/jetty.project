@@ -265,10 +265,10 @@ public class HTTPClientDocs
             .onResponseBegin(response -> { /* ... */ })
             .onResponseHeader((response, field) -> true)
             .onResponseHeaders(response -> { /* ... */ })
-            .onResponseContentAsync((response, chunk, demand) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
                 chunk.release();
-                demand.run();
+                demander.run();
             })
             .onResponseFailure((response, failure) -> { /* ... */ })
             .onResponseSuccess(response -> { /* ... */ })
@@ -516,10 +516,10 @@ public class HTTPClientDocs
                     return;
                 }
 
-                // When response content is received from server1, forward it to server2.
+                // When a response chunk is received from server1, forward it to server2.
                 content2.write(chunk.getByteBuffer(), Callback.from(() ->
                 {
-                    // When the request content to server2 is sent,
+                    // When the request chunk is successfully sent to server2,
                     // release the chunk to recycle the buffer.
                     chunk.release();
                     // Then demand more response content from server1.

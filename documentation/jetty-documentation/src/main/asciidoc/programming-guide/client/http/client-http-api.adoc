@@ -221,10 +221,10 @@ The listener that follows this model is `Response.ContentSourceListener`.
 After the response headers have been processed by the `HttpClient` implementation, `Response.ContentSourceListener.onContentSource(response, contentSource)` is invoked once and only once.
 This allows the application to control precisely the read/demand loop: when to read a chunk, how to process it and when to demand the next one.
 
-You must provide a `org.eclipse.jetty.io.Content.Source` read/demand implementation that reads a `Content.Chunk` from the provided `Content.Source`; if the read chunk is `null`, `Content.Source.demand(Runnable)` should be called so that the demand callback is called back when more chunks are available; if the chunk is an instance of `Content.Chunk.Error` then the error should be processed; otherwise the chunk should be processed by consuming and then releasing the chunk's `ByteBuffer`; and finally either trying to read another chunk, or demanding for another chunk (unless the current chunk is the last).
+You must provide a `ContentSourceListener` whose implementation reads a `Content.Chunk` from the provided `Content.Source`; if the read chunk is `null`, `Content.Source.demand(Runnable)` should be called so that the demand callback is called back when more chunks are available; if the chunk is an instance of `Content.Chunk.Error` then the error should be processed; otherwise the chunk should be processed by consuming and then releasing the chunk; and finally either trying to read another chunk, or demanding for another chunk (unless the current chunk is the last).
 
 IMPORTANT: Calling `Content.Chunk.release()` must be done only after the bytes in the `ByteBuffer` returned by `Content.Chunk.getByteBuffer()` have been consumed.
-When the `Content.Chunk` is released, the `HttpClient` implementation may reuse the `buffer` and overwrite the bytes with different bytes; if the application looks at the `buffer` _after_ having released the `Content.Chunk` is may see other, unrelated, bytes.
+When the `Content.Chunk` is released, the `HttpClient` implementation may reuse the `ByteBuffer` and overwrite the bytes with different bytes; if the application looks at the `ByteBuffer` _after_ having released the `Content.Chunk` is may see other, unrelated, bytes.
 
 // TODO: add example code snippet
 
@@ -233,13 +233,14 @@ This means that these asynchronous events are not processed until the invocation
 
 Demanding for content and consuming the content are orthogonal activities.
 
-An application can read, store aside the `Content.Chunk` objects without releasing them (to consume them later), and demand for more chunks.
+An application can read, store aside the `Content.Chunk` objects without releasing them (to consume them later), and demand for more chunks, but it must call `Chunk.retain()` on the stored chunks, and arrange to release them after they have been consumed later.
+
 If not done carefully, this may lead to excessive memory consumption, since the ``buffer``s are not consumed.
 Releasing the `Content.Chunk`s will result in the ``buffer``s to be disposed/recycled and may be performed at any time.
 
-An application can also read one chunk of content, consume it (by releasing it) and then _not_ demand for more content until a later time.
+An application can also read one chunk of content, consume it, release it, and then _not_ demand for more content until a later time.
 
-Subclass `Response.AsyncContentListener` overrides the behavior of `Response.ContentSourceListener`; when an application implements `onContent(response, chunk, demander)`, it can control the disposing/recycling the `buffer` by releasing the `chunk` _and_ it can control when to demand one more chunk of content by calling `demander.run()`.
+Subclass `Response.AsyncContentListener` overrides the behavior of `Response.ContentSourceListener`; when an application implements `AsyncContentListener.onContent(response, chunk, demander)`, it can control the disposing/recycling of the `ByteBuffer` by releasing the chunk _and_ it can control when to demand one more chunk by calling `demander.run()`.
 
 Subclass `Response.ContentListener` overrides the behavior of `Response.AsyncContentListener`; when an application implementing its `onContent(response, buffer)` returns from the method itself, it will _both_ the effect of disposing/recycling the `buffer` _and_ the effect of demanding one more chunk of content.
 

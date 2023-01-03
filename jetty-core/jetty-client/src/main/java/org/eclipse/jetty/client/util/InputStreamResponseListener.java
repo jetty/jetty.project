@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
 public class InputStreamResponseListener extends Listener.Adapter
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
-    private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, (x) -> {});
+    private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, x -> {});
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
@@ -104,7 +104,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         if (!chunk.hasRemaining())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Skipped empty content {}", chunk);
+                LOG.debug("Skipped empty chunk {}", chunk);
             chunk.release();
             demander.run();
             return;
@@ -117,7 +117,7 @@ public class InputStreamResponseListener extends Listener.Adapter
             if (!closed)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Queueing content {}", chunk);
+                    LOG.debug("Queueing chunk {}", chunk);
                 chunkCallbacks.add(new ChunkCallback(chunk, demander, response::abort));
                 l.signalAll();
             }
@@ -126,7 +126,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         if (closed)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("InputStream closed, ignored content {}", chunk);
+                LOG.debug("InputStream closed, ignored chunk {}", chunk);
             chunk.release();
             response.abort(new AsynchronousCloseException());
         }
