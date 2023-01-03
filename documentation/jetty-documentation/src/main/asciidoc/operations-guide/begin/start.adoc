@@ -87,7 +87,7 @@ $ tree $JETTY_BASE
 ----
 
 <1> The `resources/jetty-logging.properties` file configures the server's logging level. This file was auto-generated when the `jetty-logging` module was activated as a transitive dependency of the `http` module.
-<2> The `start.d/` directory contains configuration files for any modules you have explicitly activated.
+<2> The `start.d/` directory contains the `+*.ini+` configuration files for any modules you have explicitly activated.
 <3> The `start.d/http.ini` file is the `http` module configuration file, where you can specify values for the xref:og-module-http[`http` module properties].
 
 NOTE: By default, Jetty does not generate configuration files in `start.d/` for modules activated as transitive dependencies. To manually configure such a module, you should activate it directly via Jetty's `--add_module` flag.
