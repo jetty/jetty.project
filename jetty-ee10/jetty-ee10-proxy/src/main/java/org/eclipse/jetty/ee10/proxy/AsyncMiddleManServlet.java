@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -436,10 +437,12 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void onContent(final Response serverResponse, ByteBuffer content, final Callback callback)
+        public void onContent(Response serverResponse, Content.Chunk chunk, Runnable demander)
         {
+            Callback callback = Callback.from(chunk::release, Callback.from(demander, serverResponse::abort));
             try
             {
+                ByteBuffer content = chunk.getByteBuffer();
                 int contentBytes = content.remaining();
                 if (_log.isDebugEnabled())
                     _log.debug("{} received server content: {} bytes", getRequestId(clientRequest), contentBytes);

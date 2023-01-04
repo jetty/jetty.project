@@ -22,20 +22,19 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -73,13 +72,13 @@ import org.slf4j.LoggerFactory;
 public class InputStreamResponseListener extends Listener.Adapter
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
-    private static final Chunk EOF = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+    private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, x -> {});
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
     private final AtomicReference<InputStream> stream = new AtomicReference<>();
-    private final Queue<Chunk> chunks = new ArrayDeque<>();
+    private final Queue<ChunkCallback> chunkCallbacks = new ArrayDeque<>();
     private Response response;
     private Result result;
     private Throwable failure;
@@ -100,13 +99,14 @@ public class InputStreamResponseListener extends Listener.Adapter
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer content, Callback callback)
+    public void onContent(Response response, Content.Chunk chunk, Runnable demander)
     {
-        if (content.remaining() == 0)
+        if (!chunk.hasRemaining())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Skipped empty content {}", content);
-            callback.succeeded();
+                LOG.debug("Skipped empty chunk {}", chunk);
+            chunk.release();
+            demander.run();
             return;
         }
 
@@ -117,8 +117,8 @@ public class InputStreamResponseListener extends Listener.Adapter
             if (!closed)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Queueing content {}", content);
-                chunks.add(new Chunk(content, callback));
+                    LOG.debug("Queueing chunk {}", chunk);
+                chunkCallbacks.add(new ChunkCallback(chunk, demander, response::abort));
                 l.signalAll();
             }
         }
@@ -126,8 +126,9 @@ public class InputStreamResponseListener extends Listener.Adapter
         if (closed)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("InputStream closed, ignored content {}", content);
-            callback.failed(new AsynchronousCloseException());
+                LOG.debug("InputStream closed, ignored chunk {}", chunk);
+            chunk.release();
+            response.abort(new AsynchronousCloseException());
         }
     }
 
@@ -137,7 +138,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         try (AutoLock.WithCondition l = lock.lock())
         {
             if (!closed)
-                chunks.add(EOF);
+                chunkCallbacks.add(EOF);
             l.signalAll();
         }
 
@@ -148,34 +149,34 @@ public class InputStreamResponseListener extends Listener.Adapter
     @Override
     public void onFailure(Response response, Throwable failure)
     {
-        List<Callback> callbacks;
+        List<ChunkCallback> chunkCallbacks;
         try (AutoLock.WithCondition l = lock.lock())
         {
             if (this.failure != null)
                 return;
             this.failure = failure;
-            callbacks = drain();
+            chunkCallbacks = drain();
             l.signalAll();
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("Content failure", failure);
 
-        callbacks.forEach(callback -> callback.failed(failure));
+        chunkCallbacks.forEach(chunkCallback -> chunkCallback.releaseAndFail(failure));
     }
 
     @Override
     public void onComplete(Result result)
     {
         Throwable failure = result.getFailure();
-        List<Callback> callbacks = Collections.emptyList();
+        List<ChunkCallback> chunkCallbacks = Collections.emptyList();
         try (AutoLock.WithCondition l = lock.lock())
         {
             this.result = result;
             if (result.isFailed() && this.failure == null)
             {
                 this.failure = failure;
-                callbacks = drain();
+                chunkCallbacks = drain();
             }
             // Notify the response latch in case of request failures.
             responseLatch.countDown();
@@ -191,7 +192,7 @@ public class InputStreamResponseListener extends Listener.Adapter
                 LOG.debug("Result failure", failure);
         }
 
-        callbacks.forEach(callback -> callback.failed(failure));
+        chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
     }
 
     /**
@@ -261,21 +262,21 @@ public class InputStreamResponseListener extends Listener.Adapter
         return result;
     }
 
-    private List<Callback> drain()
+    private List<ChunkCallback> drain()
     {
-        List<Callback> callbacks = new ArrayList<>();
+        List<ChunkCallback> failures = new ArrayList<>();
         try (AutoLock ignored = lock.lock())
         {
             while (true)
             {
-                Chunk chunk = chunks.peek();
-                if (chunk == null || chunk == EOF)
+                ChunkCallback chunkCallback = chunkCallbacks.peek();
+                if (chunkCallback == null || chunkCallback == EOF)
                     break;
-                callbacks.add(chunk.callback);
-                chunks.poll();
+                failures.add(chunkCallback);
+                chunkCallbacks.poll();
             }
         }
-        return callbacks;
+        return failures;
     }
 
     private class Input extends InputStream
@@ -296,17 +297,16 @@ public class InputStreamResponseListener extends Listener.Adapter
             try
             {
                 int result;
-                Callback callback = null;
+                ChunkCallback chunkCallback;
                 try (AutoLock.WithCondition l = lock.lock())
                 {
-                    Chunk chunk;
                     while (true)
                     {
-                        chunk = chunks.peek();
-                        if (chunk == EOF)
+                        chunkCallback = chunkCallbacks.peek();
+                        if (chunkCallback == EOF)
                             return -1;
 
-                        if (chunk != null)
+                        if (chunkCallback != null)
                             break;
 
                         if (failure != null)
@@ -318,17 +318,16 @@ public class InputStreamResponseListener extends Listener.Adapter
                         l.await();
                     }
 
-                    ByteBuffer buffer = chunk.buffer;
+                    ByteBuffer buffer = chunkCallback.chunk().getByteBuffer();
                     result = Math.min(buffer.remaining(), length);
                     buffer.get(b, offset, result);
                     if (!buffer.hasRemaining())
-                    {
-                        callback = chunk.callback;
-                        chunks.poll();
-                    }
+                        chunkCallbacks.poll();
+                    else
+                        chunkCallback = null;
                 }
-                if (callback != null)
-                    callback.succeeded();
+                if (chunkCallback != null)
+                    chunkCallback.releaseAndSucceed();
                 return result;
             }
             catch (InterruptedException x)
@@ -348,13 +347,13 @@ public class InputStreamResponseListener extends Listener.Adapter
         @Override
         public void close() throws IOException
         {
-            List<Callback> callbacks;
+            List<ChunkCallback> chunkCallbacks;
             try (AutoLock.WithCondition l = lock.lock())
             {
                 if (closed)
                     return;
                 closed = true;
-                callbacks = drain();
+                chunkCallbacks = drain();
                 l.signalAll();
             }
 
@@ -362,21 +361,24 @@ public class InputStreamResponseListener extends Listener.Adapter
                 LOG.debug("InputStream close");
 
             Throwable failure = new AsynchronousCloseException();
-            callbacks.forEach(callback -> callback.failed(failure));
+            chunkCallbacks.forEach(t -> t.releaseAndFail(failure));
 
             super.close();
         }
     }
 
-    private static class Chunk
+    private record ChunkCallback(Content.Chunk chunk, Runnable success, Consumer<Throwable> throwableConsumer)
     {
-        private final ByteBuffer buffer;
-        private final Callback callback;
-
-        private Chunk(ByteBuffer buffer, Callback callback)
+        private void releaseAndSucceed()
         {
-            this.buffer = Objects.requireNonNull(buffer);
-            this.callback = Objects.requireNonNull(callback);
+            chunk.release();
+            success.run();
+        }
+
+        private void releaseAndFail(Throwable x)
+        {
+            chunk.release();
+            throwableConsumer.accept(x);
         }
     }
 }

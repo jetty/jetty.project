@@ -18,7 +18,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
@@ -96,27 +95,35 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             }
         });
 
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Runnable> demanderRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         AtomicInteger contentCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
         httpClient.newRequest("https://localhost:" + connector.getLocalPort())
-            .onResponseContentDemanded(new Response.DemandedContentListener()
+            .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
-                public void onBeforeContent(Response response, LongConsumer demand)
+                public void onContentSource(Response response, Content.Source contentSource)
                 {
-                    // Do not demand.
-                    demandRef.set(demand);
-                    beforeContentLatch.countDown();
-                }
+                    Runnable demander = () -> contentSource.demand(() -> onContentSource(response, contentSource));
+                    if (demanderRef.getAndSet(demander) == null)
+                    {
+                        // 1st time, do not demand.
+                        beforeContentLatch.countDown();
+                        return;
+                    }
 
-                @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-                {
-                    contentCount.incrementAndGet();
-                    callback.succeeded();
-                    demand.accept(1);
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        demander.run();
+                        return;
+                    }
+                    if (!chunk.isTerminal())
+                        contentCount.incrementAndGet();
+                    chunk.release();
+                    if (!chunk.isLast())
+                        demander.run();
                 }
             })
             .timeout(5, TimeUnit.SECONDS)
@@ -134,7 +141,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         assertEquals(0, contentCount.get());
 
         // Demand content.
-        demandRef.get().accept(1);
+        demanderRef.get().run();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -152,26 +159,17 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             }
         });
 
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         AtomicInteger contentCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
         httpClient.newRequest("localhost", connector.getLocalPort())
-            .onResponseContentDemanded(new Response.DemandedContentListener()
+            .onResponseContentSource((response, contentSource) ->
             {
-                @Override
-                public void onBeforeContent(Response response, LongConsumer demand)
-                {
-                    // Do not demand.
-                    demandRef.set(demand);
-                    beforeContentLatch.countDown();
-                }
-
-                @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-                {
+                // Do not demand.
+                if (contentSourceRef.getAndSet(contentSource) != null)
                     contentCount.incrementAndGet();
-                }
+                beforeContentLatch.countDown();
             })
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
@@ -187,7 +185,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         assertFalse(latch.await(1, TimeUnit.SECONDS));
 
         // Demand to succeed the response.
-        demandRef.get().accept(1);
+        contentSourceRef.get().demand(() -> Content.Source.consumeAll(contentSourceRef.get(), Callback.NOOP));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(0, contentCount.get());
@@ -206,15 +204,14 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             }
         });
 
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch latch = new CountDownLatch(1);
         httpClient.newRequest("localhost", connector.getLocalPort())
-            .onResponseContentDemanded((response, demand, content, callback) ->
+            .onResponseContentSource((response, contentSource) ->
             {
-                callback.succeeded();
                 // Do not demand.
-                demandRef.set(demand);
+                contentSourceRef.getAndSet(contentSource);
                 contentLatch.countDown();
             })
             .timeout(5, TimeUnit.SECONDS)
@@ -231,7 +228,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         assertFalse(latch.await(1, TimeUnit.SECONDS));
 
         // Demand to succeed the response.
-        demandRef.get().accept(1);
+        contentSourceRef.get().demand(() -> Content.Source.consumeAll(contentSourceRef.get(), Callback.NOOP));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
