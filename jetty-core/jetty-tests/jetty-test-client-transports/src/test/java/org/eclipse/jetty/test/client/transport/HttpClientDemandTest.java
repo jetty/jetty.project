@@ -622,7 +622,7 @@ public class HttpClientDemandTest extends AbstractTest
         }
     }
 
-    private static class TestProcessor extends Handler.Processor
+    private static class TestProcessor extends Handler.Abstract
     {
         private final int totalBytes;
 
@@ -632,7 +632,7 @@ public class HttpClientDemandTest extends AbstractTest
         }
 
         @Override
-        public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
@@ -650,6 +650,8 @@ public class HttpClientDemandTest extends AbstractTest
                 }
             };
             iteratingCallback.iterate();
+
+            return true;
         }
     }
 }
