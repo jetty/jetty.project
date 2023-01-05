@@ -25,14 +25,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.ConnectionPool;
-import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpUpgrader;
-import org.eclipse.jetty.client.SendFailure;
+import org.eclipse.jetty.client.internal.HttpChannel;
+import org.eclipse.jetty.client.internal.HttpConnection;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.internal.HttpRequest;
+import org.eclipse.jetty.client.internal.HttpResponse;
+import org.eclipse.jetty.client.internal.SendFailure;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -57,9 +58,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private final Session session;
     private boolean recycleHttpChannels = true;
 
-    public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
+    public HttpConnectionOverHTTP2(Destination destination, Session session)
     {
-        super(destination);
+        super((HttpDestination)destination);
         this.session = session;
     }
 
@@ -143,9 +144,10 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     protected void normalizeRequest(HttpRequest request)
     {
         super.normalizeRequest(request);
-        if (request instanceof HttpUpgrader.Factory)
+        HttpUpgrader.Factory upgraderFactory = (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
+        if (upgraderFactory != null)
         {
-            HttpUpgrader upgrader = ((HttpUpgrader.Factory)request).newHttpUpgrader(HttpVersion.HTTP_2);
+            HttpUpgrader upgrader = upgraderFactory.newHttpUpgrader(HttpVersion.HTTP_2);
             request.getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
             upgrader.prepare(request);
         }
@@ -161,7 +163,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     protected HttpChannelOverHTTP2 newHttpChannel()
     {
-        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
+        return new HttpChannelOverHTTP2(this, getSession());
     }
 
     protected boolean release(HttpChannelOverHTTP2 channel)

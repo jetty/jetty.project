@@ -15,8 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 

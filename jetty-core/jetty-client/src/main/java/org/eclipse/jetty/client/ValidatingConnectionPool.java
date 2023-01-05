@@ -19,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -60,9 +58,9 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     private final long timeout;
     private final Map<Connection, Holder> quarantine;
 
-    public ValidatingConnectionPool(HttpDestination destination, int maxConnections, Callback requester, Scheduler scheduler, long timeout)
+    public ValidatingConnectionPool(Destination destination, int maxConnections, Scheduler scheduler, long timeout)
     {
-        super(destination, maxConnections, requester);
+        super(destination, maxConnections);
         this.scheduler = scheduler;
         this.timeout = timeout;
         this.quarantine = new ConcurrentHashMap<>(maxConnections);

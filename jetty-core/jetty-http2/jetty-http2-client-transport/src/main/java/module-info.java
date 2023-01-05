@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.http2.http.client.transport
+module org.eclipse.jetty.http2.client.transport
 {
     requires org.eclipse.jetty.alpn.client;
     requires org.slf4j;

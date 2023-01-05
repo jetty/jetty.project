@@ -18,10 +18,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -72,7 +72,7 @@ public class RequestTrailersTest extends AbstractTest
             }
         });
 
-        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
+        Request request = httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
         request.trailersSupplier(() -> trailers);
         if (content != null)
@@ -118,7 +118,7 @@ public class RequestTrailersTest extends AbstractTest
             }
         });
 
-        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
+        Request request = httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
         request.trailersSupplier(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
@@ -169,7 +169,7 @@ public class RequestTrailersTest extends AbstractTest
             }
         });
 
-        HttpRequest request = (HttpRequest)httpClient.newRequest("localhost", connector.getLocalPort());
+        Request request = httpClient.newRequest("localhost", connector.getLocalPort());
         HttpFields.Mutable trailers = HttpFields.build();
         request.trailersSupplier(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();

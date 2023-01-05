@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Response;
-
 public class HttpResponseException extends RuntimeException
 {
     private final Response response;

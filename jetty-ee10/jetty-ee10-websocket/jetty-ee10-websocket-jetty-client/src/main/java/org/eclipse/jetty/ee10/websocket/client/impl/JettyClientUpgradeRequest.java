@@ -17,7 +17,7 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandlerFactory;
@@ -57,7 +57,7 @@ public class JettyClientUpgradeRequest extends CoreClientUpgradeRequest
     }
 
     @Override
-    public void upgrade(HttpResponse response, EndPoint endPoint)
+    public void upgrade(Response response, EndPoint endPoint)
     {
         frameHandler.setUpgradeRequest(new DelegatedJettyClientUpgradeRequest(this));
         frameHandler.setUpgradeResponse(new DelegatedJettyClientUpgradeResponse(response));

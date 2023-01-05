@@ -30,15 +30,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
-import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.FutureResponseListener;
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -131,7 +130,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport));
+        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport));
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.timeout(10, TimeUnit.SECONDS).send(listener);
         ContentResponse response = listener.get();
@@ -175,7 +174,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport));
+        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport));
         FutureResponseListener listener = new FutureResponseListener(request, 2 * length);
         request.timeout(10, TimeUnit.SECONDS).send(listener);
         ContentResponse response = listener.get();
@@ -306,7 +305,7 @@ public class HttpClientTest extends AbstractTest
         });
 
         // Make a request with a large enough response buffer.
-        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport));
+        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport));
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.send(listener);
         ContentResponse response = listener.get(15, TimeUnit.SECONDS);
@@ -643,7 +642,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI(transport))
+        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport))
             .method(HttpMethod.HEAD);
         FutureResponseListener listener = new FutureResponseListener(request, length / 2);
         request.send(listener);
@@ -757,7 +756,7 @@ public class HttpClientTest extends AbstractTest
             httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
         Origin origin = new Origin(requestScheme, "localhost", ((NetworkConnector)connector).getLocalPort());
-        HttpDestination destination = client.resolveDestination(origin);
+        Destination destination = client.resolveDestination(origin);
 
         var request = client.newRequest(requestHost, requestPort)
             .scheme(requestScheme)

@@ -17,8 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -76,7 +75,7 @@ public class ConnectionPoolMaxUsageTest
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        HttpDestination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
+        Destination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         int maxUsage = 3;
         connectionPool.setMaxUsage(maxUsage);
@@ -119,7 +118,7 @@ public class ConnectionPoolMaxUsageTest
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        HttpDestination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
+        Destination destination = httpClient.resolveDestination(new Origin("http", host, port, null, HttpClientTransportOverHTTP.HTTP11));
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         int maxUsage = 3;
         connectionPool.setMaxUsage(maxUsage);

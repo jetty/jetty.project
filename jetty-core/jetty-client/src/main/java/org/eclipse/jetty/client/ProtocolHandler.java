@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-
 /**
  * <p>A protocol handler performs HTTP protocol operations on
  * behalf of the application, typically like a browser would.</p>

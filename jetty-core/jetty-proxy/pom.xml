@@ -16,6 +16,21 @@
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
   </properties>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            ${jetty.surefire.argLine}
+            --add-exports org.eclipse.jetty.client/org.eclipse.jetty.client.internal=ALL-UNNAMED
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>

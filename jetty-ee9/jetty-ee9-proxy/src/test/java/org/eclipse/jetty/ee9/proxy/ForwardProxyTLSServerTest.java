@@ -31,16 +31,16 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
 
 import jakarta.servlet.ServletException;
+import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -313,7 +313,7 @@ public class ForwardProxyTLSServerTest
             assertTrue(connectionLatch.await(5, TimeUnit.SECONDS));
 
             String body2 = "body=" + content1;
-            org.eclipse.jetty.client.api.Request request2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            org.eclipse.jetty.client.Request request2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.POST)
                 .path("/echo")
@@ -799,10 +799,10 @@ public class ForwardProxyTLSServerTest
 
         try
         {
-            httpClient.getRequestListeners().add(new org.eclipse.jetty.client.api.Request.Listener()
+            httpClient.getRequestListeners().add(new org.eclipse.jetty.client.Request.Listener()
             {
                 @Override
-                public void onSuccess(org.eclipse.jetty.client.api.Request request)
+                public void onSuccess(org.eclipse.jetty.client.Request request)
                 {
                     if (HttpMethod.CONNECT.is(request.getMethod()))
                         sleep(250);

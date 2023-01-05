@@ -28,7 +28,7 @@ module org.eclipse.jetty.http3.common
     exports org.eclipse.jetty.http3.internal to
         org.eclipse.jetty.http3.client,
         org.eclipse.jetty.http3.server,
-        org.eclipse.jetty.http3.http.client.transport;
+        org.eclipse.jetty.http3.client.transport;
     exports org.eclipse.jetty.http3.internal.generator to
         org.eclipse.jetty.http3.client,
         org.eclipse.jetty.http3.server;

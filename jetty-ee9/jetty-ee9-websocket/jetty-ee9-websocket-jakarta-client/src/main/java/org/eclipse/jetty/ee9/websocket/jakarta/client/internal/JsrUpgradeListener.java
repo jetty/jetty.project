@@ -21,8 +21,8 @@ import java.util.Map;
 
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import jakarta.websocket.HandshakeResponse;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 
@@ -36,7 +36,7 @@ public class JsrUpgradeListener implements UpgradeListener
     }
 
     @Override
-    public void onHandshakeRequest(HttpRequest request)
+    public void onHandshakeRequest(Request request)
     {
         if (configurator == null)
             return;
@@ -62,7 +62,7 @@ public class JsrUpgradeListener implements UpgradeListener
     }
 
     @Override
-    public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+    public void onHandshakeResponse(Request request, Response response)
     {
         if (configurator == null)
             return;

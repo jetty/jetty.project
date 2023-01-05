@@ -20,10 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.awaitility.Awaitility;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.NanoTime;
@@ -48,7 +45,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try (HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false))
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false);
+        try
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -60,6 +58,10 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
             }
             assertNotNull(connection);
         }
+        finally
+        {
+            destination.stop();
+        }
     }
 
     @ParameterizedTest
@@ -68,7 +70,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try (HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false))
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false);
+        try
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -84,6 +87,10 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
             }
             assertNotNull(connection);
         }
+        finally
+        {
+            destination.stop();
+        }
     }
 
     @ParameterizedTest
@@ -92,7 +99,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try (HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false))
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false);
+        try
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -111,6 +119,10 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
                 assertSame(connection1, connection2);
             }
         }
+        finally
+        {
+            destination.stop();
+        }
     }
 
     @ParameterizedTest
@@ -121,12 +133,12 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
 
         CountDownLatch idleLatch = new CountDownLatch(1);
         CountDownLatch latch = new CountDownLatch(1);
-        try (HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false)
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false)
         {
             @Override
             protected ConnectionPool newConnectionPool(HttpClient client)
             {
-                return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
+                return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination())
                 {
                     @Override
                     protected void onCreated(Connection connection)
@@ -144,7 +156,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
                     }
                 };
             }
-        })
+        };
+        try
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -175,6 +188,10 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
             connection = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
             assertNotNull(connection);
         }
+        finally
+        {
+            destination.stop();
+        }
     }
 
     @ParameterizedTest
@@ -183,7 +200,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try (HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false))
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false);
+        try
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -209,6 +227,10 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
             Connection connection2 = connectionPool.acquire(true);
             assertSame(connection1, connection2, "After release");
         }
+        finally
+        {
+            destination.stop();
+        }
     }
 
     @ParameterizedTest
@@ -220,7 +242,8 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
         long idleTimeout = 1000;
         startClient(scenario, httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
-        try (HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false))
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()), false);
+        try
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
@@ -240,6 +263,10 @@ public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
                 connection1 = connectionPool.getIdleConnections().peek();
                 assertNull(connection1);
             }
+        }
+        finally
+        {
+            destination.stop();
         }
     }
 

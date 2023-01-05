@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.util.Map;
 
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;

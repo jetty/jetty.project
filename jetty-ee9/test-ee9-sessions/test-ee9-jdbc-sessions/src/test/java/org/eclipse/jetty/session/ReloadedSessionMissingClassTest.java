@@ -19,9 +19,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee9.session.SessionTestSupport;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.logging.StacklessLogging;

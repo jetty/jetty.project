@@ -17,10 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.HttpUpgrader;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -47,7 +47,7 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     }
 
     @Override
-    public void prepare(HttpRequest request)
+    public void prepare(Request request)
     {
         request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1)
             .headers(headers -> headers
@@ -74,9 +74,9 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     }
 
     @Override
-    public void upgrade(HttpResponse response, EndPoint endPoint, Callback callback)
+    public void upgrade(Response response, EndPoint endPoint, Callback callback)
     {
-        HttpRequest request = (HttpRequest)response.getRequest();
+        Request request = response.getRequest();
         HttpFields requestHeaders = request.getHeaders();
         if (requestHeaders.contains(HttpHeader.UPGRADE, "websocket"))
         {

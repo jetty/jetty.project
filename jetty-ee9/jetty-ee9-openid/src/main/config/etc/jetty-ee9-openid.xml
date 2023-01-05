@@ -4,7 +4,7 @@
   <Get id="ThreadPool" name="threadPool"/>
   <New id="HttpClient" class="org.eclipse.jetty.client.HttpClient">
     <Arg>
-      <New class="org.eclipse.jetty.client.http.HttpClientTransportOverHTTP">
+      <New class="org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP">
         <Arg>
           <New class="org.eclipse.jetty.io.ClientConnector">
             <Set name="sslContextFactory">

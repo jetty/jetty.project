@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee9.demos;
 import java.net.URI;
 import java.util.Base64;
 
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;

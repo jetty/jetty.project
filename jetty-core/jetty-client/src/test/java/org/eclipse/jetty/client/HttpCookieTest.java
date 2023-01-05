@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.HttpCookieStore;
@@ -640,7 +638,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
     }
 
-    private ContentResponse send(org.eclipse.jetty.client.api.Request request)
+    private ContentResponse send(org.eclipse.jetty.client.Request request)
     {
         try
         {

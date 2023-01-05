@@ -34,15 +34,15 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.FutureResponseListener;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -306,7 +306,7 @@ public class HttpClientContinueTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(Transport transport) throws Exception
     {
-        AtomicReference<org.eclipse.jetty.client.api.Request> clientRequestRef = new AtomicReference<>();
+        AtomicReference<Request> clientRequestRef = new AtomicReference<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
         CountDownLatch serverLatch = new CountDownLatch(1);
 
@@ -330,7 +330,7 @@ public class HttpClientContinueTest extends AbstractTest
         });
 
         byte[] content = new byte[1024];
-        org.eclipse.jetty.client.api.Request clientRequest = client.newRequest(newURI(transport));
+        Request clientRequest = client.newRequest(newURI(transport));
         clientRequestRef.set(clientRequest);
         clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
@@ -355,7 +355,7 @@ public class HttpClientContinueTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(Transport transport) throws Exception
     {
-        AtomicReference<org.eclipse.jetty.client.api.Request> clientRequestRef = new AtomicReference<>();
+        AtomicReference<Request> clientRequestRef = new AtomicReference<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
         CountDownLatch serverLatch = new CountDownLatch(1);
         start(transport, new HttpServlet()
@@ -380,7 +380,7 @@ public class HttpClientContinueTest extends AbstractTest
         });
 
         byte[] content = new byte[1024];
-        org.eclipse.jetty.client.api.Request clientRequest = client.newRequest(newURI(transport));
+        Request clientRequest = client.newRequest(newURI(transport));
         clientRequestRef.set(clientRequest);
         clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))

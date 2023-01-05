@@ -18,9 +18,10 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
@@ -47,7 +48,7 @@ public class SessionClientListener implements Session.Client.Listener
     public void onSettings(Session session, SettingsFrame frame)
     {
         HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-        HttpConnectionOverHTTP3 connection = newHttpConnection(destination, (HTTP3SessionClient)session);
+        HttpConnectionOverHTTP3 connection = (HttpConnectionOverHTTP3)newConnection(destination, (HTTP3SessionClient)session);
         if (this.connection.compareAndSet(null, connection, false, true))
             httpConnectionPromise().succeeded(connection);
     }
@@ -81,7 +82,7 @@ public class SessionClientListener implements Session.Client.Listener
             connection.close(failure);
     }
 
-    protected HttpConnectionOverHTTP3 newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+    protected Connection newConnection(Destination destination, HTTP3SessionClient session)
     {
         return new HttpConnectionOverHTTP3(destination, session);
     }

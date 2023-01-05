@@ -41,16 +41,16 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.InputStreamRequestContent;
-import org.eclipse.jetty.client.util.OutputStreamRequestContent;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.OutputStreamRequestContent;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.ee10.servlet.HttpOutput;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -1142,9 +1142,9 @@ public class AsyncIOServletTest extends AbstractTest
             });
 
         Destination destination = client.resolveDestination(request);
-        FuturePromise<org.eclipse.jetty.client.api.Connection> promise = new FuturePromise<>();
+        FuturePromise<org.eclipse.jetty.client.Connection> promise = new FuturePromise<>();
         destination.newConnection(promise);
-        org.eclipse.jetty.client.api.Connection connection = promise.get(5, TimeUnit.SECONDS);
+        org.eclipse.jetty.client.Connection connection = promise.get(5, TimeUnit.SECONDS);
         CountDownLatch clientLatch = new CountDownLatch(1);
         connection.send(request, result ->
         {

@@ -31,14 +31,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -248,7 +249,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS), failures.toString());
         assertEquals(2, connections.get());
-        HttpDestination destination = (HttpDestination)httpClient.resolveDestination(request);
+        Destination destination = httpClient.resolveDestination(request);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(2, connectionPool.getConnectionCount());
     }
@@ -383,7 +384,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         {
             try
             {
-                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
+                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), 1);
                 pool.preCreateConnections(parallelism * 2).get();
                 return pool;
             }

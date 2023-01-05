@@ -21,11 +21,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.internal.HttpConversation;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.internal.HttpRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -142,7 +140,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             // Replace the destination with the proxy destination.
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             HttpClient client = destination.getHttpClient();
-            HttpDestination proxyDestination = client.resolveDestination(getOrigin());
+            Destination proxyDestination = client.resolveDestination(getOrigin());
             context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, proxyDestination);
             try
             {
@@ -194,7 +192,8 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         private void tunnel(HttpDestination destination, Connection connection)
         {
             String target = destination.getOrigin().getAddress().asString();
-            Origin.Address proxyAddress = destination.getConnectAddress();
+            ProxyConfiguration.Proxy proxy = destination.getProxy();
+            Origin.Address proxyAddress = proxy.getAddress();
             HttpClient httpClient = destination.getHttpClient();
             long connectTimeout = httpClient.getConnectTimeout();
             Request connect = new TunnelRequest(httpClient, proxyAddress)
@@ -204,7 +203,6 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 // Use the connect timeout as a total timeout,
                 // since this request is to "connect" to the server.
                 .timeout(connectTimeout, TimeUnit.MILLISECONDS);
-            ProxyConfiguration.Proxy proxy = destination.getProxy();
             if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());
 
@@ -223,7 +221,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     // Don't want to do DNS resolution here.
                     InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
                     context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
-                    connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
+                    connectionFactory = destination.getHttpClient().newSslClientConnectionFactory(null, connectionFactory);
                 }
                 var oldConnection = endPoint.getConnection();
                 var newConnection = connectionFactory.newConnection(endPoint, context);

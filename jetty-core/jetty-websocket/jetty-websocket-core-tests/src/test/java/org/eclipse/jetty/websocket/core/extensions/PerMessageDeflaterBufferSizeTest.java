@@ -19,8 +19,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.BufferUtil;
@@ -109,7 +109,7 @@ public class PerMessageDeflaterBufferSizeTest
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeRequest(HttpRequest request)
+            public void onHandshakeRequest(Request request)
             {
                 futureRequestHeaders.complete(request.getHeaders());
             }
@@ -163,7 +163,7 @@ public class PerMessageDeflaterBufferSizeTest
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeRequest(HttpRequest request)
+            public void onHandshakeRequest(Request request)
             {
                 futureRequestHeaders.complete(request.getHeaders());
             }
@@ -218,7 +218,7 @@ public class PerMessageDeflaterBufferSizeTest
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 futureResponseHeaders.complete(request.getHeaders());
             }
@@ -273,7 +273,7 @@ public class PerMessageDeflaterBufferSizeTest
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 futureResponseHeaders.complete(request.getHeaders());
             }

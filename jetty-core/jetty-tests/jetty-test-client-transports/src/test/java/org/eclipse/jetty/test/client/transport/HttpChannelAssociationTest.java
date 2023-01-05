@@ -18,19 +18,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.fcgi.client.http.HttpChannelOverFCGI;
-import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
-import org.eclipse.jetty.fcgi.client.http.HttpConnectionOverFCGI;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.fcgi.client.transport.internal.HttpChannelOverFCGI;
+import org.eclipse.jetty.fcgi.client.transport.internal.HttpConnectionOverFCGI;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
@@ -149,14 +148,14 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverHTTP2(http2Client)
                 {
                     @Override
-                    protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+                    protected Connection newConnection(Destination destination, Session session)
                     {
                         return new HttpConnectionOverHTTP2(destination, session)
                         {
                             @Override
                             protected HttpChannelOverHTTP2 newHttpChannel()
                             {
-                                return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
+                                return new HttpChannelOverHTTP2(this, getSession())
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)
@@ -178,14 +177,14 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverHTTP3(http3Client)
                 {
                     @Override
-                    protected HttpConnection newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+                    protected org.eclipse.jetty.client.Connection newConnection(Destination destination, HTTP3SessionClient session)
                     {
                         return new HttpConnectionOverHTTP3(destination, session)
                         {
                             @Override
                             protected HttpChannelOverHTTP3 newHttpChannel()
                             {
-                                return new HttpChannelOverHTTP3(getHttpDestination(), this, getSession())
+                                return new HttpChannelOverHTTP3(this, getSession())
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)
@@ -206,7 +205,7 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverFCGI(clientConnector, "")
                 {
                     @Override
-                    protected org.eclipse.jetty.io.Connection newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+                    protected org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Destination destination, Promise<Connection> promise)
                     {
                         return new HttpConnectionOverFCGI(endPoint, destination, promise)
                         {

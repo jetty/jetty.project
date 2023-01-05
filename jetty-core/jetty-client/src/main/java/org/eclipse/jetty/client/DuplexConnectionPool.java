@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject
 public class DuplexConnectionPool extends AbstractConnectionPool
 {
-    public DuplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+    public DuplexConnectionPool(Destination destination, int maxConnections)
     {
-        super(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, false), requester, 1);
+        super(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, false), 1);
     }
 }

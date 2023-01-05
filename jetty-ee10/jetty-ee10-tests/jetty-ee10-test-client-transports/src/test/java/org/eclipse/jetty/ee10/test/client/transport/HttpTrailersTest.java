@@ -30,11 +30,11 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -177,8 +177,7 @@ public class HttpTrailersTest extends AbstractTest
             {
                 try
                 {
-                    HttpResponse httpResponse = (HttpResponse)r;
-                    HttpFields trailers = httpResponse.getTrailers();
+                    HttpFields trailers = r.getTrailers();
                     assertNotNull(trailers);
                     assertEquals(trailerValue, trailers.get(trailerName));
                     failure.set(null);
@@ -199,8 +198,7 @@ public class HttpTrailersTest extends AbstractTest
             {
                 try
                 {
-                    HttpResponse httpResponse = (HttpResponse)r;
-                    assertNull(httpResponse.getTrailers());
+                    assertNull(r.getTrailers());
                     failure.set(null);
                 }
                 catch (Throwable x)
@@ -233,8 +231,7 @@ public class HttpTrailersTest extends AbstractTest
             {
                 try
                 {
-                    HttpResponse httpResponse = (HttpResponse)r;
-                    HttpFields trailers = httpResponse.getTrailers();
+                    HttpFields trailers = r.getTrailers();
                     assertNull(trailers);
                     failure.set(null);
                 }
@@ -275,7 +272,7 @@ public class HttpTrailersTest extends AbstractTest
         client.newRequest(newURI(transport))
             .timeout(15, TimeUnit.SECONDS)
             .send(listener);
-        org.eclipse.jetty.client.api.Response response = listener.get(5, TimeUnit.SECONDS);
+        Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         InputStream input = listener.getInputStream();
@@ -295,8 +292,7 @@ public class HttpTrailersTest extends AbstractTest
         // Wait for the request/response cycle to complete.
         listener.await(5, TimeUnit.SECONDS);
 
-        HttpResponse httpResponse = (HttpResponse)response;
-        HttpFields trailers = httpResponse.getTrailers();
+        HttpFields trailers = response.getTrailers();
         assertNotNull(trailers);
         assertEquals(trailerValue, trailers.get(trailerName));
     }
@@ -330,7 +326,7 @@ public class HttpTrailersTest extends AbstractTest
             .timeout(5, TimeUnit.SECONDS)
             .send(result ->
             {
-                HttpResponse response = (HttpResponse)result.getResponse();
+                Response response = result.getResponse();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertNull(response.getTrailers());
                 assertNull(response.getHeaders().get("name"));

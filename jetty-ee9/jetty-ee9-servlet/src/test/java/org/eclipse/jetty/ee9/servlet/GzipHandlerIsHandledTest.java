@@ -15,8 +15,8 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;

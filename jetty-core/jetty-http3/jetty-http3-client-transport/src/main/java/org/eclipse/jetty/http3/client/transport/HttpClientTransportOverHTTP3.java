@@ -21,12 +21,13 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.HTTP3ClientConnectionFactory;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
@@ -51,7 +51,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
-            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
+            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), 1);
         });
     }
 
@@ -83,13 +83,13 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     }
 
     @Override
-    public Origin newOrigin(HttpRequest request)
+    public Origin newOrigin(Request request)
     {
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of("h3"), false));
     }
 
     @Override
-    public HttpDestination newHttpDestination(Origin origin)
+    public Destination newDestination(Origin origin)
     {
         SocketAddress address = origin.getAddress().getSocketAddress();
         return new HttpDestination(getHttpClient(), origin, getHTTP3Client().getClientConnector().isIntrinsicallySecure(address));
@@ -125,12 +125,12 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     }
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         return factory.newConnection(endPoint, context);
     }
 
-    protected HttpConnection newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+    protected Connection newConnection(Destination destination, HTTP3SessionClient session)
     {
         return new HttpConnectionOverHTTP3(destination, session);
     }
@@ -143,9 +143,9 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         }
 
         @Override
-        protected HttpConnectionOverHTTP3 newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+        protected Connection newConnection(Destination destination, HTTP3SessionClient session)
         {
-            return (HttpConnectionOverHTTP3)HttpClientTransportOverHTTP3.this.newHttpConnection(destination, session);
+            return HttpClientTransportOverHTTP3.this.newConnection(destination, session);
         }
     }
 }

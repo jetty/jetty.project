@@ -25,14 +25,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
-import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -282,10 +281,10 @@ public class ForwardProxyWithDynamicTransportTest
         assertEquals(status, response2.getStatus());
 
         List<Destination> destinations = client.getDestinations().stream()
-            .filter(d -> d.getPort() == serverPort)
+            .filter(d -> d.getOrigin().getAddress().getPort() == serverPort)
             .toList();
         assertEquals(1, destinations.size());
-        HttpDestination destination = (HttpDestination)destinations.get(0);
+        Destination destination = destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(1, connectionPool.getConnectionCount());
     }
@@ -317,10 +316,10 @@ public class ForwardProxyWithDynamicTransportTest
         Thread.sleep(2 * idleTimeout);
 
         List<Destination> destinations = client.getDestinations().stream()
-            .filter(d -> d.getPort() == serverPort)
+            .filter(d -> d.getOrigin().getAddress().getPort() == serverPort)
             .toList();
         assertEquals(1, destinations.size());
-        HttpDestination destination = (HttpDestination)destinations.get(0);
+        Destination destination = destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
 
@@ -393,10 +392,10 @@ public class ForwardProxyWithDynamicTransportTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<Destination> destinations = client.getDestinations().stream()
-            .filter(d -> d.getPort() == proxyPort)
+            .filter(d -> d.getOrigin().getAddress().getPort() == proxyPort)
             .toList();
         assertEquals(1, destinations.size());
-        HttpDestination destination = (HttpDestination)destinations.get(0);
+        Destination destination = destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
     }

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
@@ -79,7 +80,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
 
         /**
          * <p>PROXY protocol version 1 metadata holder to be used in conjunction
-         * with {@link org.eclipse.jetty.client.api.Request#tag(Object)}.</p>
+         * with {@link Request#tag(Object)}.</p>
          * <p>Instances of this class are associated to a destination so that
          * all connections of that destination will initiate the communication
          * with the PROXY protocol version 1 bytes specified by this metadata.</p>
@@ -228,7 +229,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
 
         /**
          * <p>PROXY protocol version 2 metadata holder to be used in conjunction
-         * with {@link org.eclipse.jetty.client.api.Request#tag(Object)}.</p>
+         * with {@link Request#tag(Object)}.</p>
          * <p>Instances of this class are associated to a destination so that
          * all connections of that destination will initiate the communication
          * with the PROXY protocol version 2 bytes specified by this metadata.</p>
