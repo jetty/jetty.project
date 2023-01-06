@@ -66,5 +66,5 @@ This custom module must reference an XML file which sets a new instance of the `
 For an example of this see the `ee{9,10}-jaspi-default-auth-config-factory` module, which provides the default implementation used by Jetty.
 
 ----
-include::{JETTY_HOME}/modules/ee9-jaspi-default-auth-config-factory.mod[]
+include::{JETTY_HOME}/modules/ee10-jaspi-default-auth-config-factory.mod[]
 ----
