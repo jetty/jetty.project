@@ -48,6 +48,7 @@ public class PathResource extends Resource
         .caseSensitive(false)
         .with("file")
         .with("jrt")
+        .with("resource")
         .build();
 
     // The path object represented by this instance
@@ -141,15 +142,16 @@ public class PathResource extends Resource
      * Must be an absolute URI using the <code>file</code> scheme.
      *
      * @param uri the URI to build this PathResource from.
+     * @throws IOException if the path could not be resolved.
      */
-    PathResource(URI uri)
+    PathResource(URI uri) throws IOException
     {
         this(uri, false);
     }
 
-    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
+    PathResource(URI uri, boolean bypassAllowedSchemeCheck) throws IOException
     {
-        this(Paths.get(uri), uri, bypassAllowedSchemeCheck);
+        this(URIUtil.getPath(URIUtil.correctResourceURI(uri)), uri, bypassAllowedSchemeCheck);
     }
 
     PathResource(Path path)
@@ -166,6 +168,7 @@ public class PathResource extends Resource
      */
     PathResource(Path path, URI uri, boolean bypassAllowedSchemeCheck)
     {
+        uri = URIUtil.correctResourceURI(uri);
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
         if (!bypassAllowedSchemeCheck && !SUPPORTED_SCHEMES.contains(uri.getScheme()))

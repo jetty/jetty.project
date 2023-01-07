@@ -52,6 +52,7 @@ class ResourceFactoryInternals
         PathResourceFactory pathResourceFactory = new PathResourceFactory();
         RESOURCE_FACTORIES.put("file", pathResourceFactory);
         RESOURCE_FACTORIES.put("jrt", pathResourceFactory);
+        RESOURCE_FACTORIES.put("resource", pathResourceFactory); // GraalVM native-image resource
     }
 
     static ResourceFactory ROOT = new CompositeResourceFactory()

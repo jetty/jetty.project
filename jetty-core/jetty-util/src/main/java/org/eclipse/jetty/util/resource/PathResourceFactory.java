@@ -13,19 +13,46 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+
+import org.eclipse.jetty.util.URIUtil;
 
 public class PathResourceFactory implements ResourceFactory
 {
     @Override
     public Resource newResource(URI uri)
     {
-        Path path = Paths.get(uri.normalize());
+        Path path = Path.of(uri.normalize());
         if (!Files.exists(path))
             return null;
+        return new PathResource(path, uri, false);
+    }
+
+    @Override
+    public Resource newResource(Path path)
+    {
+        if (path == null)
+            return null;
+
+        URI uri = path.toUri();
+
+        try
+        {
+            // Validate URI conversion, and trigger FileSystem initialization, if necessary
+            if (URIUtil.getPath(uri) == null)
+                return null;
+        }
+        catch (IOException e)
+        {
+            return null;
+        }
+
+        if (!Files.exists(path))
+            return null;
+
         return new PathResource(path, uri, false);
     }
 }
