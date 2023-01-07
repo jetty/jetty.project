@@ -801,10 +801,10 @@ public class DefaultServlet extends HttpServlet
             return servletContextResponse.isWritingOrStreaming();
         }
 
-        public boolean isStreaming()
+        public boolean isWriting()
         {
             ServletContextResponse servletContextResponse = Response.as(_coreResponse, ServletContextResponse.class);
-            return servletContextResponse.isStreaming();
+            return servletContextResponse.isWriting();
         }
 
         @Override
@@ -814,7 +814,7 @@ public class DefaultServlet extends HttpServlet
             {
                 if (BufferUtil.hasContent(byteBuffer))
                 {
-                    if (isStreaming())
+                    if (!isWriting())
                     {
                         BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
                         if (last)
