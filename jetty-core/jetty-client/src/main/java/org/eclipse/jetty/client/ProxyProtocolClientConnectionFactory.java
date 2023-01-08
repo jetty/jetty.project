@@ -462,7 +462,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
 
     protected abstract static class ProxyProtocolConnection extends AbstractConnection implements Callback
     {
-        protected static final Logger LOG = LoggerFactory.getLogger(ProxyProtocolConnection.class);
+        static final Logger LOG = LoggerFactory.getLogger(ProxyProtocolConnection.class);
 
         private final ClientConnectionFactory factory;
         private final Map<String, Object> context;

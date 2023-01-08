@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.client.internal.HttpExchange;
 import org.eclipse.jetty.client.internal.HttpRequest;
 import org.eclipse.jetty.client.internal.IConnection;
 import org.eclipse.jetty.client.internal.SendFailure;
+import org.eclipse.jetty.client.internal.TunnelRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -204,7 +204,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     void onResponseHeaders(HttpExchange exchange)
     {
         HttpRequest request = exchange.getRequest();
-        if (request instanceof HttpProxy.TunnelRequest)
+        if (request instanceof TunnelRequest)
         {
             // Restore idle timeout
             getEndPoint().setIdleTimeout(idleTimeout);
@@ -309,7 +309,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         {
             super.normalizeRequest(request);
 
-            if (request instanceof HttpProxy.TunnelRequest)
+            if (request instanceof TunnelRequest)
             {
                 // Override the idle timeout in case it is shorter than the connect timeout.
                 request.idleTimeout(2 * getHttpClient().getConnectTimeout(), TimeUnit.MILLISECONDS);

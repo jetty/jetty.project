@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.internal.HttpConversation;
 import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.client.internal.HttpRequest;
+import org.eclipse.jetty.client.internal.TunnelRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -356,14 +357,6 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         {
             HttpConversation conversation = ((HttpRequest)request).getConversation();
             conversation.setAttribute(EndPoint.class.getName(), endPoint);
-        }
-    }
-
-    public static class TunnelRequest extends HttpRequest
-    {
-        private TunnelRequest(HttpClient client, Origin.Address address)
-        {
-            super(client, new HttpConversation(), URI.create("http://" + address.asString()));
         }
     }
 }
