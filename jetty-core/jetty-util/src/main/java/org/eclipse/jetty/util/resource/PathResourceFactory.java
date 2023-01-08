@@ -15,13 +15,43 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import org.eclipse.jetty.util.URIUtil;
+import java.util.Collections;
 
 public class PathResourceFactory implements ResourceFactory
 {
+    static final boolean ENABLE_GRAALVM_RESOURCE_SCHEME = (System.getProperty(
+        "org.graalvm.nativeimage.kind") != null);
+
+    static
+    {
+        if (ENABLE_GRAALVM_RESOURCE_SCHEME)
+        {
+            // initialize NativeImageResourceFileSystem, if necessary
+            URI uri;
+            try
+            {
+                uri = new URI("resource:/");
+                try
+                {
+                    Path.of(uri);
+                }
+                catch (FileSystemNotFoundException e)
+                {
+                    FileSystems.newFileSystem(uri, Collections.emptyMap());
+                }
+            }
+            catch (IOException | URISyntaxException ignore)
+            {
+              // ignore
+            }
+        }
+    }
+
     @Override
     public Resource newResource(URI uri)
     {
@@ -37,22 +67,9 @@ public class PathResourceFactory implements ResourceFactory
         if (path == null)
             return null;
 
-        URI uri = path.toUri();
-
-        try
-        {
-            // Validate URI conversion, and trigger FileSystem initialization, if necessary
-            if (URIUtil.getPath(uri) == null)
-                return null;
-        }
-        catch (IOException e)
-        {
-            return null;
-        }
-
         if (!Files.exists(path))
             return null;
 
-        return new PathResource(path, uri, false);
+        return new PathResource(path, path.toUri(), false);
     }
 }

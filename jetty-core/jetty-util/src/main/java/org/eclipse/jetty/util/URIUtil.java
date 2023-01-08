@@ -1759,31 +1759,6 @@ public final class URIUtil
     }
 
     /**
-     * A wrapper for {@link Paths#get(URI)} and {@link Path#of(URI)}.
-     * 
-     * It automatically handles custom file systems, such as ZipFileSystem and NativeImageResourceFileSystem.
-     * 
-     * @param uri
-     *            The URI.
-     * @return The path.
-     * @throws IOException
-     *             on error.
-     */
-    @SuppressWarnings("lgtm[java/path-injection]")
-    public static Path getPath(URI uri) throws IOException
-    {
-        try
-        {
-            return Path.of(uri);
-        }
-        catch (FileSystemNotFoundException e)
-        {
-            FileSystems.newFileSystem(uri, Collections.emptyMap());
-            return Path.of(uri);
-        }
-    }
-
-    /**
      * <p>
      * Corrects any bad {@code file} based URIs (even within a {@code jar:file:} based URIs) from the bad out-of-spec
      * format that various older Java APIs creates (most notably: {@link java.io.File} creates with it's {@link File#toURL()}

@@ -44,12 +44,20 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file")
-        .with("jrt")
-        .with("resource")
-        .build();
+    public static Index<String> SUPPORTED_SCHEMES;
+
+    static
+    {
+        Index.Builder<String> builder = new Index.Builder<String>()
+            .caseSensitive(false)
+            .with("file")
+            .with("jrt");
+
+        if (PathResourceFactory.ENABLE_GRAALVM_RESOURCE_SCHEME)
+            builder = builder.with("resource");
+
+        SUPPORTED_SCHEMES = builder.build();
+    }
 
     // The path object represented by this instance
     private final Path path;
@@ -144,14 +152,14 @@ public class PathResource extends Resource
      * @param uri the URI to build this PathResource from.
      * @throws IOException if the path could not be resolved.
      */
-    PathResource(URI uri) throws IOException
+    PathResource(URI uri)
     {
         this(uri, false);
     }
 
-    PathResource(URI uri, boolean bypassAllowedSchemeCheck) throws IOException
+    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
-        this(URIUtil.getPath(URIUtil.correctResourceURI(uri)), uri, bypassAllowedSchemeCheck);
+        this(Path.of(URIUtil.correctResourceURI(uri)), uri, bypassAllowedSchemeCheck);
     }
 
     PathResource(Path path)
