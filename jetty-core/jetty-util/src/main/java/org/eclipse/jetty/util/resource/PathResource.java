@@ -157,14 +157,19 @@ public class PathResource extends Resource
         this(uri, false);
     }
 
-    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
+    private PathResource(boolean bypassAllowedSchemeCheck, URI uri)
     {
-        this(Path.of(URIUtil.correctResourceURI(uri)), uri, bypassAllowedSchemeCheck);
+        this(Paths.get(uri), uri, bypassAllowedSchemeCheck);
     }
 
     PathResource(Path path)
     {
         this(path, path.toUri(), true);
+    }
+
+    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
+    {
+        this(bypassAllowedSchemeCheck, URIUtil.correctResourceURI(uri));
     }
 
     /**
