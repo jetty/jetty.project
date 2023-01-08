@@ -1776,6 +1776,7 @@ public final class URIUtil
      * @throws IOException
      *             on error.
      */
+    @SuppressWarnings("lgtm[java/path-injection]")
     public static Path getPath(URI uri) throws IOException
     {
         try
