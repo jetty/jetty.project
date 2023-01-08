@@ -55,14 +55,12 @@ public class PathWatcherTest
 
     static
     {
-        if (org.junit.jupiter.api.condition.OS.LINUX.isCurrentOs())
-            QUIET_TIME = 300;
-        else if (org.junit.jupiter.api.condition.OS.MAC.isCurrentOs())
-            QUIET_TIME = 5000;
-        else
-            QUIET_TIME = 1000;
-        WAIT_TIME = 2 * QUIET_TIME;
-        LONG_TIME = 5 * QUIET_TIME;
+      boolean isLinux = org.junit.jupiter.api.condition.OS.LINUX.isCurrentOs();
+      boolean isMac = org.junit.jupiter.api.condition.OS.MAC.isCurrentOs();
+
+      QUIET_TIME = isLinux || isMac ? 300 : 1000;
+      WAIT_TIME = 2 * QUIET_TIME;
+      LONG_TIME = isMac ? 25_000 : 5 * QUIET_TIME;
     }
 
     public static class PathWatchEventCapture implements PathWatcher.Listener
