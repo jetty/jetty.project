@@ -45,7 +45,7 @@ public class PathResourceFactory implements ResourceFactory
                     FileSystems.newFileSystem(uri, Collections.emptyMap());
                 }
             }
-            catch (IOException | URISyntaxException ignore)
+            catch (IOException | URISyntaxException | RuntimeException ignore)
             {
               // ignore
             }
