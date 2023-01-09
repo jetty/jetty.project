@@ -59,7 +59,7 @@ public class ConnectorServer extends AbstractLifeCycle
 {
     public static final String RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE = "com.sun.jndi.rmi.factory.socket";
     private static final Logger LOG = LoggerFactory.getLogger(ConnectorServer.class);
-    public static final int DEFAULT_PORT = 1099;
+    private static final int DEFAULT_REGISTRY_PORT = 1099;
 
     private JMXServiceURL _jmxURL;
     private final Map<String, Object> _environment;
@@ -188,13 +188,9 @@ public class ConnectorServer extends AbstractLifeCycle
             HostPort hostPort;
 
             if (StringUtil.isBlank(rawHost)) // no host
-            {
-                hostPort = new HostPort(InetAddress.getLocalHost().getHostName(), DEFAULT_PORT);
-            }
+                hostPort = new HostPort(InetAddress.getLocalHost().getHostAddress(), DEFAULT_REGISTRY_PORT);
             else if (rawHost.startsWith(":")) // port without host
-            {
-                hostPort = new HostPort(InetAddress.getLocalHost().getHostName() + rawHost);
-            }
+                hostPort = new HostPort(InetAddress.getLocalHost().getHostAddress() + rawHost);
             else
                 hostPort = new HostPort(rawHost);
 
@@ -236,7 +232,7 @@ public class ConnectorServer extends AbstractLifeCycle
     private String startRegistry(HostPort hostPort) throws Exception
     {
         String host = hostPort.getHost();
-        int port = hostPort.getPort(DEFAULT_PORT);
+        int port = hostPort.getPort(DEFAULT_REGISTRY_PORT);
 
         try
         {
