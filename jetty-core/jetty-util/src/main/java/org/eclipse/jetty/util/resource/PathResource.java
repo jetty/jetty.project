@@ -44,20 +44,11 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Index<String> SUPPORTED_SCHEMES;
-
-    static
-    {
-        Index.Builder<String> builder = new Index.Builder<String>()
-            .caseSensitive(false)
-            .with("file")
-            .with("jrt");
-
-        if (PathResourceFactory.ENABLE_GRAALVM_RESOURCE_SCHEME)
-            builder = builder.with("resource");
-
-        SUPPORTED_SCHEMES = builder.build();
-    }
+    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("file")
+        .with("jrt")
+        .build();
 
     // The path object represented by this instance
     private final Path path;
@@ -150,14 +141,13 @@ public class PathResource extends Resource
      * Must be an absolute URI using the <code>file</code> scheme.
      *
      * @param uri the URI to build this PathResource from.
-     * @throws IOException if the path could not be resolved.
      */
     PathResource(URI uri)
     {
         this(uri, false);
     }
 
-    private PathResource(boolean bypassAllowedSchemeCheck, URI uri)
+    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
     {
         this(Paths.get(uri), uri, bypassAllowedSchemeCheck);
     }
@@ -165,11 +155,6 @@ public class PathResource extends Resource
     PathResource(Path path)
     {
         this(path, path.toUri(), true);
-    }
-
-    PathResource(URI uri, boolean bypassAllowedSchemeCheck)
-    {
-        this(bypassAllowedSchemeCheck, URIUtil.correctResourceURI(uri));
     }
 
     /**
@@ -181,7 +166,6 @@ public class PathResource extends Resource
      */
     PathResource(Path path, URI uri, boolean bypassAllowedSchemeCheck)
     {
-        uri = URIUtil.correctResourceURI(uri);
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
         if (!bypassAllowedSchemeCheck && !SUPPORTED_SCHEMES.contains(uri.getScheme()))
@@ -230,7 +214,7 @@ public class PathResource extends Resource
     public URI getRealURI()
     {
         Path realPath = getRealPath();
-        return (realPath == null) ? null : URIUtil.correctResourceURI(realPath.toUri());
+        return (realPath == null) ? null : realPath.toUri();
     }
 
     public List<Resource> list()
@@ -526,9 +510,9 @@ public class PathResource extends Resource
      * @param path the path to convert to URI
      * @return the appropriate URI for the path
      */
-    private static URI toUri(Path path)
+    protected URI toUri(Path path)
     {
-        URI pathUri = URIUtil.correctResourceURI(path.toUri());
+        URI pathUri = path.toUri();
         String rawUri = pathUri.toASCIIString();
 
         if (Files.isDirectory(path) && !rawUri.endsWith("/"))

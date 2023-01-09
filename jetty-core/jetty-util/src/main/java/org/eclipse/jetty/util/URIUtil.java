@@ -19,14 +19,11 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -207,8 +204,6 @@ public final class URIUtil
     };
 
     private static final boolean[] ENCODE_PATH_NEEDS_ENCODING;
-
-    private static final String URI_BAD_RESOURCE_PREFIX = "file:///resources!";
 
     private URIUtil()
     {
@@ -1732,30 +1727,6 @@ public final class URIUtil
         if (StringUtil.isEmpty(query2))
             return query1;
         return query1 + '&' + query2;
-    }
-
-    /**
-     * Corrects any bad {@code resource} based URIs, such as those starting with {@code resource:file:///resources!}.
-     * 
-     * @param uri
-     *            The URI to correct.
-     * @return the corrected URI, or the original URI.
-     * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>
-     */
-    public static URI correctResourceURI(URI uri)
-    {
-        if (uri == null || !"resource".equals(uri.getScheme()))
-            return uri;
-
-        String ssp = uri.getSchemeSpecificPart();
-        if (ssp.startsWith(URI_BAD_RESOURCE_PREFIX))
-        {
-            return URI.create("resource:" + ssp.substring(URI_BAD_RESOURCE_PREFIX.length()));
-        }
-        else
-        {
-            return uri;
-        }
     }
 
     /**

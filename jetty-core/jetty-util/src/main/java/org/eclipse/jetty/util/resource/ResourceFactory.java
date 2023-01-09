@@ -202,7 +202,7 @@ public interface ResourceFactory
         if (path == null)
             throw new IllegalArgumentException("Path is null");
 
-        return newResource(URIUtil.correctResourceURI(path.toUri()));
+        return newResource(path.toUri());
     }
 
     /**
