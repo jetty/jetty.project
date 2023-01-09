@@ -14,7 +14,7 @@
 [[og-jmx-local]]
 ==== Enabling Local JMX Support
 
-As with many other Jetty features, local JMX support is enabled with the `jmx` Jetty module:
+As with many other Jetty features, local JMX support is enabled with the xref:og-module-jmx[`jmx` Jetty module]:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=jmx
