@@ -14,11 +14,11 @@
 [[og-begin-deploy]]
 ==== Deploying Web Applications
 
-For the purpose of deploying web applications to Jetty, there are two types of resources that can be deployed:
+You can deploy two types of web application resources with Jetty:
 
-* Standard Web Application Archives, in the form of `+*.war+` files or web application directories, defined by the Servlet specification.
+* *Standard Web Application Archives*, in the form of `+*.war+` files or web application directories, defined by the link:https://www.oracle.com/java/technologies/java-servlet-tec.html[Servlet specification].
 Their deployment is described in xref:og-begin-deploy-war[this section].
-* Jetty context XML files, that allow you to customize the deployment of standard web applications, and also allow you use Jetty components, and possibly custom components written by you, to assemble your web applications.
+* *Jetty context XML files*, that allow you to customize the deployment of standard web applications, and also allow you use Jetty components -- and possibly custom components written by you -- to assemble your web applications.
 Their deployment is described in xref:og-deploy[this section].
 
 [[og-begin-deploy-war]]
@@ -41,12 +41,12 @@ mywebapp.war
 ----
 <1> Publicly accessible resources such as `+*.html+`, `+*.jsp+`, `+*.css+`, `+*.js+` files, etc. are placed in `+*.war+` or in sub-directories of the `+*.war+`.
 <2> `WEB-INF` is a special directory used to store anything related to the web application that must not be publicly accessible, but may be accessed by other resources.
-<3> `WEB-INF/classes` stores the web application compiled `+*.class+` files
-<4> `WEB-INF/classes` stores the web application `+*.jar+` files
-<5> `WEB-INF/web.xml` is the web application deployment descriptor defines the components and the configuration of your web application.
+<3> `WEB-INF/classes` stores the web application's compiled `+*.class+` files
+<4> `WEB-INF/classes` stores the web application's `+*.jar+` files
+<5> `WEB-INF/web.xml` is the web application deployment descriptor, which defines the components and the configuration of your web application.
 ====
 
-To deploy a standard web application, you need to enable the `deploy` module (see the `deploy` module complete definition xref:og-module-deploy[here]).
+To deploy a standard web application, you need to enable the xref:og-module-deploy[`deploy` module]:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module=deploy
@@ -57,20 +57,21 @@ $ java -jar $JETTY_HOME/start.jar --add-module=deploy
 include::jetty[setupArgs="--add-module=http",args="--add-module=deploy"]
 ----
 
-The `deploy` module creates the `$JETTY_BASE/webapps` directory, the directory where `+*.war+` files or web application directories should be copied so that Jetty can deploy them.
+The `deploy` module creates `$JETTY_BASE/webapps`, which is the directory where Jetty looks for any `+*.war+` files or web application directories to deploy.
 
 [NOTE]
 ====
-The `deploy` module only provides the feature of deploying web applications.
+Activating Jetty's `deploy` module enables web application deployment.
+Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on if the correspondent Jetty modules have been enabled.
 
-Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on whether the correspondent Jetty modules have been enabled.
 Refer to the xref:og-protocols[section about protocols] for further information.
 ====
 
-Now you need to copy a web application to the `$JETTY_BASE/webapps` directory, and you can use one of the demos shipped with Jetty:
+Now you're ready to copy a web application to the `$JETTY_BASE/webapps` directory.
+You can use one of the demos shipped with Jetty:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=demo-simple
+$ java -jar $JETTY_HOME/start.jar --add-module=ee10-demo-simple
 ----
 
 The `$JETTY_BASE` directory is now:
@@ -81,9 +82,10 @@ $JETTY_BASE
 │   └── jetty-logging.properties
 ├── start.d
 │   ├── deploy.ini
+│   ├── ee10-demo-simple.ini
 │   └── http.ini
 └── webapps
-    └── demo-simple.war
+    └── ee10-demo-simple.war
 ----
 
 Now start Jetty:
@@ -94,14 +96,14 @@ $ java -jar $JETTY_HOME/start.jar
 
 [source,subs=quotes,options=nowrap]
 ----
-include::jetty[setupArgs="--add-modules=http,deploy,demo-simple",highlight="WebAppContext"]
+include::jetty[setupArgs="--add-modules=http,deploy,ee10-demo-simple",highlight="WebAppContext"]
 ----
 
-Note the highlighted line that logs the deployment of `demo-simple.war`.
+Note the highlighted line that logs the deployment of `ee10-demo-simple.war`.
 
-Now you can access the web application by pointing your browser to `+http://localhost:8080/demo-simple+`.
+Now you can access the web application by pointing your browser to `+http://localhost:8080/ee10-demo-simple+`.
 
 [[og-begin-deploy-war-advanced]]
 ===== Advanced Deployment
 
-If you want to customize the deployment of your web application, for example by specifying a `contextPath` different from the file/directory name, or by specifying JNDI entries, or by specifying virtual hosts, etc. read xref:og-deploy[this section].
+If you want to customize the deployment of your web application -- for example, by specifying a `contextPath` different from the file/directory name, or by specifying JNDI entries, or by specifying virtual hosts -- read xref:og-deploy[this section].

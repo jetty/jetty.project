@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
@@ -70,6 +69,7 @@ import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -235,27 +235,35 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
         });
 
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Runnable> demanderRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         AtomicInteger contentCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
         httpClient.newRequest("localhost", connector.getLocalPort())
-            .onResponseContentDemanded(new org.eclipse.jetty.client.api.Response.DemandedContentListener()
+            .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
-                public void onBeforeContent(org.eclipse.jetty.client.api.Response response, LongConsumer demand)
+                public void onContentSource(Response response, Content.Source contentSource)
                 {
-                    // Do not demand.
-                    demandRef.set(demand);
-                    beforeContentLatch.countDown();
-                }
+                    Runnable demander = () -> contentSource.demand(() -> onContentSource(response, contentSource));
+                    if (demanderRef.getAndSet(demander) == null)
+                    {
+                        // 1st time, do not demand.
+                        beforeContentLatch.countDown();
+                        return;
+                    }
 
-                @Override
-                public void onContent(org.eclipse.jetty.client.api.Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-                {
-                    contentCount.incrementAndGet();
-                    callback.succeeded();
-                    demand.accept(1);
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        demander.run();
+                        return;
+                    }
+                    if (chunk.hasRemaining())
+                        contentCount.incrementAndGet();
+                    chunk.release();
+                    if (!chunk.isLast())
+                        demander.run();
                 }
             })
             .timeout(5, TimeUnit.SECONDS)
@@ -273,7 +281,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertEquals(0, contentCount.get());
 
         // Demand to receive the content.
-        demandRef.get().accept(1);
+        demanderRef.get().run();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(2, contentCount.get());

@@ -512,19 +512,20 @@ public class HttpClientTest extends AbstractTest
 
         CountDownLatch completeLatch = new CountDownLatch(1);
         AtomicInteger counter = new AtomicInteger();
-        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        AtomicReference<Runnable> demanderRef = new AtomicReference<>();
         AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
         client.newRequest(newURI(transport))
-            .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
+                chunk.release();
                 if (counter.incrementAndGet() == 1)
                 {
-                    callbackRef.set(callback);
+                    demanderRef.set(demander);
                     latchRef.get().countDown();
                 }
                 else
                 {
-                    callback.succeeded();
+                    demander.run();
                 }
             })
             .send(result -> completeLatch.countDown());
@@ -533,7 +534,7 @@ public class HttpClientTest extends AbstractTest
         // Wait some time to verify that back pressure is applied correctly.
         Thread.sleep(1000);
         assertEquals(1, counter.get());
-        callbackRef.get().succeeded();
+        demanderRef.get().run();
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }

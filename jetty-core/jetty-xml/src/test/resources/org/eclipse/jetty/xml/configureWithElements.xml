@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure>
-  <Class>org.eclipse.jetty.xml.TestConfiguration</Class>
+  <Class>org.eclipse.jetty.xml.ExampleConfiguration</Class>
   <Arg name="name">name</Arg>
 
   <Set name="Test">SetValue</Set>
@@ -89,7 +89,7 @@
 
   <New>
     <Id>testId</Id>
-    <Class>org.eclipse.jetty.xml.TestConfiguration</Class>
+    <Class>org.eclipse.jetty.xml.ExampleConfiguration</Class>
     <Set name="testString">nested</Set>
   </New>
 
@@ -97,7 +97,7 @@
     <Ref>
       <Id>testId</Id>
       <Set name="nested">
-        <New class="org.eclipse.jetty.xml.TestConfiguration">
+        <New class="org.eclipse.jetty.xml.ExampleConfiguration">
         </New>
       </Set>
     </Ref>
@@ -134,7 +134,7 @@
 
   <Call>
     <Name>callStatic</Name>
-    <Class>org.eclipse.jetty.xml.TestConfiguration</Class>
+    <Class>org.eclipse.jetty.xml.ExampleConfiguration</Class>
   </Call>
 
   <Call>
@@ -159,7 +159,7 @@
     </Array></Arg>
   </Call>
 
-  <Set name="testField1"><Get class="org.eclipse.jetty.xml.TestConfiguration" name="VALUE"/></Set>
+  <Set name="testField1"><Get class="org.eclipse.jetty.xml.ExampleConfiguration" name="VALUE"/></Set>
   <Set name="testField2"><Get name="testInt"/></Set>
   <Set name="VALUE" type="int">42</Set>
   

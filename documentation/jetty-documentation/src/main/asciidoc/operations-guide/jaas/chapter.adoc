@@ -36,10 +36,10 @@ own custom link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/sp
 [[og-jaas-module]]
 ===== The `jaas` module
 
-Enable the `jaas` module:
+Enable the `ee{8,9,10}-jaas` module appropriate for your EE platform:
 
 ----
-include::{JETTY_HOME}/modules/jaas.mod[]
+include::{JETTY_HOME}/modules/ee10-jaas.mod[]
 ----
 
 The configurable items in the resulting `$jetty.base/start.d/jaas.ini` file are:

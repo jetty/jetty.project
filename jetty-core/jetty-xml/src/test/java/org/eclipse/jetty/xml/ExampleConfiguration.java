@@ -22,17 +22,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.util.annotation.Name;
-import org.junit.jupiter.api.Disabled;
 
-@Disabled("Not a test case")
-public class TestConfiguration extends HashMap<String, Object>
+public class ExampleConfiguration extends HashMap<String, Object>
 {
     public static int VALUE = 77;
 
     public final Object id = new Object();
 
     public final String name;
-    public TestConfiguration nested;
+    public ExampleConfiguration nested;
     public String testString = "default";
     public Object testObject;
     public int testInt;
@@ -51,12 +49,12 @@ public class TestConfiguration extends HashMap<String, Object>
     public Map map;
     public Double number;
 
-    public TestConfiguration()
+    public ExampleConfiguration()
     {
         this("");
     }
 
-    public TestConfiguration(@Name("name") String n)
+    public ExampleConfiguration(@Name("name") String n)
     {
         name = n;
     }
@@ -86,12 +84,12 @@ public class TestConfiguration extends HashMap<String, Object>
         propValue = value;
     }
 
-    public TestConfiguration getNested()
+    public ExampleConfiguration getNested()
     {
         return nested;
     }
 
-    public void setNested(TestConfiguration nested)
+    public void setNested(ExampleConfiguration nested)
     {
         this.nested = nested;
     }
@@ -111,7 +109,7 @@ public class TestConfiguration extends HashMap<String, Object>
         put("Called", "Yes");
     }
 
-    public TestConfiguration call(Boolean b)
+    public ExampleConfiguration call(Boolean b)
     {
         nested.put("Arg", b);
         return nested;

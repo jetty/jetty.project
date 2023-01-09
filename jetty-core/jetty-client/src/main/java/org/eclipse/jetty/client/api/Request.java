@@ -404,12 +404,6 @@ public interface Request
     Request onResponseContentAsync(Response.AsyncContentListener listener);
 
     /**
-     * @param listener an asynchronous listener for response content events
-     * @return this request object
-     */
-    Request onResponseContentDemanded(Response.DemandedContentListener listener);
-
-    /**
      * @param listener a listener for response success event
      * @return this request object
      */

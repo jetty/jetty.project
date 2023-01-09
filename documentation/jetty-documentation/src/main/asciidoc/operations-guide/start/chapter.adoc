@@ -69,5 +69,5 @@ This is useful for capturing startup issues where the Jetty-specific logger has 
 ==== Usage Reference
 
 ----
-include::../../../../../../../jetty-start/src/main/resources/org/eclipse/jetty/start/usage.txt[]
+include::../../../../../../../jetty-core/jetty-start/src/main/resources/org/eclipse/jetty/start/usage.txt[]
 ----
