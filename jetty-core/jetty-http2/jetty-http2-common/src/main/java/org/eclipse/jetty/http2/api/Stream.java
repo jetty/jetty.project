@@ -434,6 +434,12 @@ public interface Stream
             }
 
             @Override
+            public boolean canRetain()
+            {
+                return false;
+            }
+
+            @Override
             public void retain()
             {
                 throw new UnsupportedOperationException();

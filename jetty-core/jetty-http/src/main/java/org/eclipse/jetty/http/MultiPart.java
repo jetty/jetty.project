@@ -634,10 +634,7 @@ public class MultiPart
                     if (!chunk.isLast())
                         yield chunk;
                     state = State.MIDDLE;
-                    if (chunk.hasRemaining())
-                        yield Content.Chunk.from(chunk.getByteBuffer(), false, chunk);
-                    chunk.release();
-                    yield Content.Chunk.EMPTY;
+                    yield Content.Chunk.from(chunk.getByteBuffer(), false, chunk);
                 }
                 case COMPLETE -> Content.Chunk.EOF;
             };
@@ -1369,10 +1366,10 @@ public class MultiPart
 
             /**
              * <p>Callback method invoked when a part content {@code Chunk} has been parsed.</p>
-             * <p>The {@code Chunk} must be {@link Content.Chunk#release() released} when it
-             * has been consumed.</p>
+             * <p>The {@code Chunk} must be {@link Content.Chunk#retain()} retained} if it
+             * not consumed by this method (for example, stored away for later use).</p>
              *
-             * @param chunk the part content chunk, must be released after use
+             * @param chunk the part content chunk
              */
             default void onPartContent(Content.Chunk chunk)
             {

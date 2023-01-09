@@ -427,6 +427,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
 
         @Override
+        public boolean canRetain()
+        {
+            return retainable.canRetain();
+        }
+
+        @Override
         public void retain()
         {
             retainable.retain();
@@ -461,6 +467,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         public boolean hasRemaining()
         {
             return delegate.hasRemaining();
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return delegate.canRetain();
         }
 
         @Override

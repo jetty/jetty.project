@@ -2309,6 +2309,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
 
         @Override
+        public boolean canRetain()
+        {
+            return data.canRetain();
+        }
+
+        @Override
         public void retain()
         {
             counter.retain();

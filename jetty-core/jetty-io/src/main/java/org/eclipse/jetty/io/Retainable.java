@@ -34,10 +34,7 @@ public interface Retainable
      *
      * @return whether it is safe to call {@link #retain()}
      */
-    default boolean canRetain()
-    {
-        return true;
-    }
+    boolean canRetain();
 
     /**
      * <p>Retains this resource, incrementing the reference count.</p>
@@ -128,6 +125,12 @@ public interface Retainable
         {
             if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
                 throw new IllegalStateException("acquired while in use " + this);
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return true;
         }
 
         @Override
