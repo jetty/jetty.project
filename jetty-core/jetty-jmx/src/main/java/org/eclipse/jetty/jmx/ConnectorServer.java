@@ -38,6 +38,7 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
@@ -58,6 +59,7 @@ public class ConnectorServer extends AbstractLifeCycle
 {
     public static final String RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE = "com.sun.jndi.rmi.factory.socket";
     private static final Logger LOG = LoggerFactory.getLogger(ConnectorServer.class);
+    public static final int DEFAULT_PORT = 1099;
 
     private JMXServiceURL _jmxURL;
     private final Map<String, Object> _environment;
@@ -182,7 +184,20 @@ public class ConnectorServer extends AbstractLifeCycle
         {
             int startIndex = jndiRMI.length();
             int endIndex = urlPath.indexOf('/', startIndex);
-            HostPort hostPort = new HostPort(urlPath.substring(startIndex, endIndex));
+            String rawHost = urlPath.substring(startIndex, endIndex);
+            HostPort hostPort;
+
+            if (StringUtil.isBlank(rawHost)) // no host
+            {
+                hostPort = new HostPort(InetAddress.getLocalHost().getHostName(), DEFAULT_PORT);
+            }
+            else if (rawHost.startsWith(":")) // port without host
+            {
+                hostPort = new HostPort(InetAddress.getLocalHost().getHostName() + rawHost);
+            }
+            else
+                hostPort = new HostPort(rawHost);
+
             String registryHost = startRegistry(hostPort);
             // If the RMI registry was already started, use the existing port.
             if (_registryPort == 0)
@@ -211,7 +226,8 @@ public class ConnectorServer extends AbstractLifeCycle
     public void doStop() throws Exception
     {
         ShutdownThread.deregister(this);
-        _connectorServer.stop();
+        if (_connectorServer != null)
+            _connectorServer.stop();
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         mbeanServer.unregisterMBean(new ObjectName(getObjectName()));
         stopRegistry();
@@ -220,7 +236,7 @@ public class ConnectorServer extends AbstractLifeCycle
     private String startRegistry(HostPort hostPort) throws Exception
     {
         String host = hostPort.getHost();
-        int port = hostPort.getPort(1099);
+        int port = hostPort.getPort(DEFAULT_PORT);
 
         try
         {
