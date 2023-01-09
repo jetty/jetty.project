@@ -230,7 +230,7 @@ public class PathResource extends Resource
     public URI getRealURI()
     {
         Path realPath = getRealPath();
-        return (realPath == null) ? null : realPath.toUri();
+        return (realPath == null) ? null : URIUtil.correctResourceURI(realPath.toUri());
     }
 
     public List<Resource> list()
@@ -528,8 +528,8 @@ public class PathResource extends Resource
      */
     private static URI toUri(Path path)
     {
-        URI pathUri = path.toUri();
-        String rawUri = path.toUri().toASCIIString();
+        URI pathUri = URIUtil.correctResourceURI(path.toUri());
+        String rawUri = pathUri.toASCIIString();
 
         if (Files.isDirectory(path) && !rawUri.endsWith("/"))
         {
