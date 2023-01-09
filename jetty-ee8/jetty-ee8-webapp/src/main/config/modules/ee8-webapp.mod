@@ -17,7 +17,6 @@ etc/jetty-ee8-webapp.xml
 [lib]
 lib/jetty-ee8-webapp-${jetty.version}.jar
 
-
 [ini-template]
 ## Add to the server wide default jars and packages protected or hidden from webapps.
 ## System classes are protected and cannot be overridden by a webapp.

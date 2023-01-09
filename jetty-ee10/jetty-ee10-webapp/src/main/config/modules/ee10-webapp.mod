@@ -1,8 +1,10 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds support for servlet specification web applications to the server classpath.
+# tag::documentation-description[]
+This module adds support for servlet specification web applications to the server classpath.
 Without this, only Jetty-specific handlers may be deployed.
+# end::documentation-description[]
 
 [environment]
 ee10
@@ -18,6 +20,7 @@ etc/jetty-ee10-webapp.xml
 lib/jetty-ee10-webapp-${jetty.version}.jar
 
 [ini-template]
+# tag::documentation-ini-template[]
 ## Add to the server wide default jars and packages protected or hidden from webapps.
 ## System classes are protected and cannot be overridden by a webapp.
 ## Server classes are hidden and cannot be seen by a webapp
@@ -32,6 +35,7 @@ lib/jetty-ee10-webapp-${jetty.version}.jar
 ##
 #jetty.webapp.addSystemClasses+=,org.example.
 #jetty.webapp.addServerClasses+=,org.example.
+# end::documentation-ini-template[]
 
 [ini]
 contextHandlerClass?=org.eclipse.jetty.ee10.webapp.WebAppContext

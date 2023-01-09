@@ -1,0 +1,25 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-eex-webapp]]
+===== Module `ee{8,9,10}-webapp`
+
+include::{JETTY_HOME}/modules/ee10-webapp.mod[tags=documentation-description]
+
+Multiple versions of this module exist to support the different (incompatible) servlet specifications that exist across Jakarta EE platform versions.
+However, Jetty's configuration properties are identical across the `ee{8,9,10}-` versions of this module, and are as follows:
+
+----
+include::{JETTY_HOME}/modules/ee10-webapp.mod[tags=documentation-ini-template]
+----
+
