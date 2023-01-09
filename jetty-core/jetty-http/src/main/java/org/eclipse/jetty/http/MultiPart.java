@@ -634,7 +634,10 @@ public class MultiPart
                     if (!chunk.isLast())
                         yield chunk;
                     state = State.MIDDLE;
-                    yield Content.Chunk.from(chunk.getByteBuffer(), false, chunk);
+                    if (chunk.hasRemaining())
+                        yield Content.Chunk.from(chunk.getByteBuffer(), false, chunk);
+                    chunk.release();
+                    yield Content.Chunk.EMPTY;
                 }
                 case COMPLETE -> Content.Chunk.EOF;
             };
