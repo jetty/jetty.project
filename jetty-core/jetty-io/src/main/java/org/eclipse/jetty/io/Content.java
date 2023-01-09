@@ -597,7 +597,7 @@ public class Content
 
         /**
          * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
-         * {@code ByteBuffer} of the this {@code Chunk}.</p>
+         * {@code ByteBuffer} of this {@code Chunk}.</p>
          * <p>The returned {@code Chunk} is:</p>
          * <ul>
          * <li>{@code this}, if this {@code Chunk} is {@link #isTerminal() terminal}</li>
