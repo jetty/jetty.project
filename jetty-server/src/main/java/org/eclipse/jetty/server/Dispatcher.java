@@ -178,7 +178,7 @@ public class Dispatcher implements RequestDispatcher
                 if (old_attr.getAttribute(FORWARD_REQUEST_URI) == null)
                     baseRequest.setAttributes(new ForwardAttributes(old_attr,
                         old_uri.getPath(),
-                        old_context == null ? null : old_context.getContextHandler().getRequestContextPath(),
+                        baseRequest.getContextPath(),
                         baseRequest.getPathInContext(),
                         source_mapping,
                         old_uri.getQuery()));
