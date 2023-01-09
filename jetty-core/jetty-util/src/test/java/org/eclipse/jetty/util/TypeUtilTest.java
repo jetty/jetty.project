@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.test10.TestClass;
+import org.eclipse.jetty.util.test10.ExampleClass;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -243,7 +243,7 @@ public class TypeUtilTest
     {
         return Stream.of(
             Arguments.of(TypeUtilTest.class, "oeju.TypeUtilTest"),
-            Arguments.of(TestClass.class, "oejut10.TestClass")
+            Arguments.of(ExampleClass.class, "oejut10.TestClass")
         );
     }
 
