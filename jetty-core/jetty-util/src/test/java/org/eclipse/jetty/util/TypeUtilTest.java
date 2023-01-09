@@ -243,7 +243,7 @@ public class TypeUtilTest
     {
         return Stream.of(
             Arguments.of(TypeUtilTest.class, "oeju.TypeUtilTest"),
-            Arguments.of(ExampleClass.class, "oejut10.TestClass")
+            Arguments.of(ExampleClass.class, "oejut10.ExampleClass")
         );
     }
 
