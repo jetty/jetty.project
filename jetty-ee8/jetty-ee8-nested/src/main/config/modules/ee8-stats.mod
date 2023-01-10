@@ -3,14 +3,21 @@
 [description]
 Enables detailed statistics collection for the server.
 
-[tags]
-server
+[environment]
+ee8
 
 [depend]
 server
+ee8-servlet
+
+[lib]
+lib/jetty-util-ajax-${jetty.version}.jar
 
 [xml]
-etc/jetty-stats.xml
+etc/ee8-jetty-stats.xml
+
+[ini]
+jetty.webapp.addServerClasses+=,-org.eclipse.jetty.ee8.servlet.StatisticsServlet
 
 [ini-template]
 
