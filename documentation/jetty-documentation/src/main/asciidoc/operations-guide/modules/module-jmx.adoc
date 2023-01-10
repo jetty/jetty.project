@@ -14,7 +14,7 @@
 [[og-module-jmx]]
 ===== Module `jmx`
 
-include::{JETTY_HOME}/modules/ee10-webapp.mod[tags=description]
+include::{JETTY_HOME}/modules/{ee-current}-webapp.mod[tags=description]
 
 This configuration is useful for xref:og-jmx-local[local development and testing].
 If you need to xref:og-jmx-remote[enable remote access], use the xref:og-jmx-remote[`jmx-remote` module].

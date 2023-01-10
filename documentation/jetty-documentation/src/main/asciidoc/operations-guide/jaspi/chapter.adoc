@@ -27,28 +27,29 @@ Only modules conforming to the "Servlet Container Profile" with the ServerAuthMo
 Enable the `jaspi` module:
 
 ----
-include::{JETTY_HOME}/modules/ee10-jaspi.mod[]
+include::{JETTY_HOME}/modules/{ee-current}-jaspi.mod[]
 ----
 
 [[og-jaspi-xml]]
 ===== Configure JASPI
 
-Activate the `ee{9,10}-jaspi` module that matches your EE platform version.
+Activate either the `ee9-jaspi` or `{ee-current}-jaspi` module, whichever matches your EE platform version.
 
+[subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-modules=ee10-jaspi
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-jaspi
 ----
 
 You can then register a `AuthConfigProvider` onto the static `AuthConfigFactory` obtained with `AuthConfigFactory.getFactory()`. This registration can be done in the XML configuration file which will be copied to `$JETTY_BASE/etc/jaspi/jaspi-authmoduleconfig.xml` when the module is enabled.
 
 ====== JASPI Demo
-The `ee9-jaspi-demo` and `ee10-jaspi-demo` modules illustrate setting up HTTP Basic Authentication using the EE9 and EE10 Jakarta Authentication modules that come packaged with Jetty.
+The `ee9-jaspi-demo` and `{ee-current}-jaspi-demo` modules illustrate setting up HTTP Basic Authentication using the EE9 and {ee-current-caps} Jakarta Authentication modules that come packaged with Jetty.
 
-The following example uses Jetty's EE10 implementation of `AuthConfigProvider` to register a `ServerAuthModule` directly.
+The following example uses Jetty's {ee-current-caps} implementation of `AuthConfigProvider` to register a `ServerAuthModule` directly.
 
 [source, xml]
 ----
-include::{JETTY_HOME}/etc/jaspi/jetty-ee10-jaspi-demo.xml[]
+include::{JETTY_HOME}/etc/jaspi/jetty-{ee-current}-jaspi-demo.xml[]
 ----
 
 Other custom or 3rd party modules that are compatible with the `ServerAuthModule` interface in JASPI can be registered in the same way.
@@ -63,8 +64,8 @@ The `CallerPrincipalCallback` and `GroupPrincipalCallback` do not require use of
 
 Jetty provides an implementation of the `AuthConfigFactory` interface which is used to register `AuthConfigProviders`. This can be replaced by a custom implementation by adding a custom module which provides `auth-config-factory`.
 This custom module must reference an XML file which sets a new instance of the `AuthConfigFactory` with the static method `AuthConfigFactory.setFactory()`.
-For an example of this see the `ee{9,10}-jaspi-default-auth-config-factory` module, which provides the default implementation used by Jetty.
+For an example of this see the `{ee-current}-jaspi-default-auth-config-factory` module, which provides the default implementation used by Jetty.
 
 ----
-include::{JETTY_HOME}/modules/ee10-jaspi-default-auth-config-factory.mod[]
+include::{JETTY_HOME}/modules/{ee-current}-jaspi-default-auth-config-factory.mod[]
 ----

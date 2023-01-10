@@ -70,22 +70,24 @@ Refer to the xref:og-protocols[section about protocols] for further information.
 Now you're ready to copy a web application to the `$JETTY_BASE/webapps` directory.
 You can use one of the demos shipped with Jetty:
 
+[subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=ee10-demo-simple
+$ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-demo-simple
 ----
 
 The `$JETTY_BASE` directory is now:
 
+[subs=attributes]
 ----
 $JETTY_BASE
 ├── resources
 │   └── jetty-logging.properties
 ├── start.d
 │   ├── deploy.ini
-│   ├── ee10-demo-simple.ini
+│   ├── {ee-current}-demo-simple.ini
 │   └── http.ini
 └── webapps
-    └── ee10-demo-simple.war
+    └── {ee-current}-demo-simple.war
 ----
 
 Now start Jetty:
@@ -96,12 +98,12 @@ $ java -jar $JETTY_HOME/start.jar
 
 [source,subs=quotes,options=nowrap]
 ----
-include::jetty[setupArgs="--add-modules=http,deploy,ee10-demo-simple",highlight="WebAppContext"]
+include::jetty[setupArgs="--add-modules=http,deploy,{ee-current}-demo-simple",highlight="WebAppContext"]
 ----
 
-Note the highlighted line that logs the deployment of `ee10-demo-simple.war`.
+Note the highlighted line that logs the deployment of `{ee-current}-demo-simple.war`.
 
-Now you can access the web application by pointing your browser to `+http://localhost:8080/ee10-demo-simple+`.
+Now you can access the web application by pointing your browser to `pass:a[http://localhost:8080/{ee-current}-demo-simple]`.
 
 [[og-begin-deploy-war-advanced]]
 ===== Advanced Deployment
