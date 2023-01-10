@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-[[og-module-eex-webapp]]
+[[og-module-eeN-webapp]]
 ===== Module `{ee-all}-webapp`
 
 include::{JETTY_HOME}/modules/{ee-current}-webapp.mod[tags=description]
