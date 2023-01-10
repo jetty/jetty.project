@@ -596,45 +596,34 @@ public class Content
         }
 
         /**
-         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice, with the given
-         * position and limit, of the {@code ByteBuffer} of the source {@code Chunk} unless the
-         * source {@link #hasRemaining() has no remaining bytes} in which case:</p>
+         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
+         * {@code ByteBuffer} of this {@code Chunk}.</p>
+         * <p>The returned {@code Chunk} is:</p>
          * <ul>
-         * <li>{@code this} is returned if {@link #isLast()} is {@code true}</li>
-         * <li>{@link #EMPTY} is returned if {@link #isLast()} is {@code false}</li>
+         * <li>{@code this}, if this {@code Chunk} is last and empty</li>
+         * <li>{@link #EMPTY}, if {@code length == 0 && !last}</li>
+         * <li>{@link #EOF}, if {@code length == 0 && last}</li>
+         * <li>a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
+         * {@code ByteBuffer} of this {@code Chunk}, from the given {@code position}
+         * and for the given {@code length} bytes.</li>
          * </ul>
-         * <p>If {@code position == limit} then either {@link #EOF} or {@link #EMPTY} is
-         * returned depending on the value of {@code last}.</p>
-         * <p>If the source {@code Chunk} has remaining bytes, the returned {@code Chunk}
-         * is linked to the source {@code Chunk} via
-         * {@link #from(ByteBuffer, boolean, Retainable)}.</p>
+         * <p>The returned {@code Chunk} retains the source {@code Chunk} and it is linked
+         * to it via {@link #from(ByteBuffer, boolean, Retainable)}.</p>
          *
          * @param position the position at which the slice begins
-         * @param limit the limit at which the slice ends
+         * @param length the length of the slice
          * @param last whether the new Chunk is last
-         * @return a new {@code Chunk} with a slice of the source {@code Chunk}'s
-         * {@code ByteBuffer}
+         * @return a new {@code Chunk} retained from the source {@code Chunk} with a slice
+         * of the source {@code Chunk}'s {@code ByteBuffer}
          */
-        default Chunk slice(int position, int limit, boolean last)
+        default Chunk slice(int position, int length, boolean last)
         {
-            if (hasRemaining())
-            {
-                if (position == limit)
-                    return last ? EOF : EMPTY;
-                ByteBuffer sourceBuffer = getByteBuffer();
-                int sourceLimit = sourceBuffer.limit();
-                sourceBuffer.limit(limit);
-                int sourcePosition = sourceBuffer.position();
-                sourceBuffer.position(position);
-                ByteBuffer slice = sourceBuffer.slice();
-                sourceBuffer.limit(sourceLimit);
-                sourceBuffer.position(sourcePosition);
-                return from(slice, last, this);
-            }
-            else
-            {
-                return isLast() ? this : EMPTY;
-            }
+            if (isLast() && !hasRemaining())
+                return this;
+            if (length == 0)
+                return last ? EOF : EMPTY;
+            retain();
+            return from(getByteBuffer().slice(position, length), last, this);
         }
 
         /**

@@ -1200,11 +1200,14 @@ public class MultiPart
             int boundaryOffset = boundaryFinder.match(buffer);
             if (boundaryOffset >= 0)
             {
-                int sliceLimit = buffer.position() + boundaryOffset;
-                if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
-                    --sliceLimit;
-                Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, true);
-                buffer.position(buffer.position() + boundaryOffset + boundaryFinder.getLength());
+                int position = buffer.position();
+                int length = boundaryOffset;
+                // BoundaryFinder is configured to search for '\n--Boundary';
+                // if we found '\r\n--Boundary' then the '\r' is not content.
+                if (length > 0 && buffer.get(position + length - 1) == '\r')
+                    --length;
+                Content.Chunk content = chunk.slice(position, length, true);
+                buffer.position(position + boundaryOffset + boundaryFinder.getLength());
                 notifyPartContent(content);
                 notifyPartEnd();
                 return true;
@@ -1214,15 +1217,19 @@ public class MultiPart
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
             if (partialBoundaryMatch > 0)
             {
-                int sliceLimit = buffer.limit() - partialBoundaryMatch;
+                int limit = buffer.limit();
+                int sliceLimit = limit - partialBoundaryMatch;
+                // BoundaryFinder is configured to search for '\n--Boundary';
+                // if we found '\r\n--Bo' then the '\r' may not be content,
+                // but remember it in case there is a boundary mismatch.
                 if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
                 {
-                    // Remember that there was a CR in case there will be a boundary mismatch.
                     crContent = true;
                     --sliceLimit;
                 }
-                Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, false);
-                buffer.position(buffer.limit());
+                int position = buffer.position();
+                Content.Chunk content = chunk.slice(position, sliceLimit - position, false);
+                buffer.position(limit);
                 if (content.hasRemaining())
                     notifyPartContent(content);
                 return false;
@@ -1234,13 +1241,17 @@ public class MultiPart
                 crContent = false;
                 notifyPartContent(Content.Chunk.from(CR.slice(), false));
             }
+            // If '\r' is found at the end of the buffer, it may
+            // not be content but the beginning of a '\r\n--Boundary';
+            // remember it in case it is truly normal content.
             int sliceLimit = buffer.limit();
             if (buffer.get(sliceLimit - 1) == '\r')
             {
                 crContent = true;
                 --sliceLimit;
             }
-            Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, false);
+            int position = buffer.position();
+            Content.Chunk content = chunk.slice(position, sliceLimit - position, false);
             buffer.position(buffer.limit());
             if (content.hasRemaining())
                 notifyPartContent(content);

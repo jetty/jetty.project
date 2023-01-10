@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.test10;
 
-public class TestClass
+public class ExampleClass
 {
+    // Class used by TypeUtilTest
 }

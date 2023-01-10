@@ -100,6 +100,18 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     }
 
     @Override
+    public boolean equals(Object o)
+    {
+        return this == o;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return streamId;
+    }
+
+    @Override
     public Object getAttachment()
     {
         return attachment.get();
