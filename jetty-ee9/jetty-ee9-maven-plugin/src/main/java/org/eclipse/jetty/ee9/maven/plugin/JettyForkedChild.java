@@ -26,8 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
@@ -45,7 +44,7 @@ public class JettyForkedChild extends ContainerLifeCycle
     
     protected JettyEmbedder jetty;
     protected File tokenFile; // TODO: convert to Path
-    protected PathWatcher scanner;
+    protected Scanner scanner;
     protected File webAppPropsFile; // TODO: convert to Path
 
     /**

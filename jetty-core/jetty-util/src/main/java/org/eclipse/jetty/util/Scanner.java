@@ -334,7 +334,8 @@ public class Scanner extends ContainerLifeCycle
             filesChanged(paths.stream().map(Path::toString).collect(Collectors.toSet()));
         }
 
-        void filesChanged(Set<String> filenames) throws Exception;
+        default void filesChanged(Set<String> filenames) throws Exception
+        {}
     }
 
     /**
