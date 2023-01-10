@@ -63,6 +63,12 @@ public interface HttpContent
 
     Resource getResource();
 
+    /**
+     * <p>Get this HTTP content as a {@link ByteBuffer} if possible.</p>
+     * <p>Each invocation returns a new {@link ByteBuffer} instance that is
+     * read-only and contains valid data between the pos and the limit.</p>
+     * @return a {@link ByteBuffer} instance or null.
+     */
     ByteBuffer getByteBuffer();
 
     default long getBytesOccupied()

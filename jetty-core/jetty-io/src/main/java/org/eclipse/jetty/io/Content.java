@@ -596,36 +596,34 @@ public class Content
         }
 
         /**
-         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice, with the given
-         * position and limit, of the {@code ByteBuffer} of the source {@code Chunk} unless the
-         * source is {@link #isTerminal() terminal} in which case {@code this} is returned, or
-         * if {@code position == limit} in which case {@link #EOF} or {@link #EMPTY} is
-         * returned depending on the value of {@code last}.</p>
+         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
+         * {@code ByteBuffer} of this {@code Chunk}.</p>
+         * <p>The returned {@code Chunk} is:</p>
+         * <ul>
+         * <li>{@code this}, if this {@code Chunk} is {@link #isTerminal() terminal}</li>
+         * <li>{@link #EMPTY}, if {@code length == 0 && !last}</li>
+         * <li>{@link #EOF}, if {@code length == 0 && last}</li>
+         * <li>a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
+         * {@code ByteBuffer} of this {@code Chunk}, from the given {@code position}
+         * and for the given {@code length} bytes.</li>
+         * </ul>
          * <p>The returned {@code Chunk} retains the source {@code Chunk} and it is linked
          * to it via {@link #from(ByteBuffer, boolean, Retainable)}.</p>
          *
          * @param position the position at which the slice begins
-         * @param limit the limit at which the slice ends
+         * @param length the length of the slice
          * @param last whether the new Chunk is last
          * @return a new {@code Chunk} retained from the source {@code Chunk} with a slice
          * of the source {@code Chunk}'s {@code ByteBuffer}
          */
-        default Chunk slice(int position, int limit, boolean last)
+        default Chunk slice(int position, int length, boolean last)
         {
             if (isTerminal())
                 return this;
-            if (position == limit)
+            if (length == 0)
                 return last ? EOF : EMPTY;
-            ByteBuffer sourceBuffer = getByteBuffer();
-            int sourceLimit = sourceBuffer.limit();
-            sourceBuffer.limit(limit);
-            int sourcePosition = sourceBuffer.position();
-            sourceBuffer.position(position);
-            ByteBuffer slice = sourceBuffer.slice();
-            sourceBuffer.limit(sourceLimit);
-            sourceBuffer.position(sourcePosition);
             retain();
-            return from(slice, last, this);
+            return from(getByteBuffer().slice(position, length), last, this);
         }
 
         /**
