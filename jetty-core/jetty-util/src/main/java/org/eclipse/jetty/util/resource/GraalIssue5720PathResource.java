@@ -19,12 +19,14 @@ import java.nio.file.Path;
 
 /**
  * GraalVM Native-Image {@link Path} Resource.
+ * 
+ * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>
  */
-public class NativeImagePathResource extends PathResource
+final class GraalIssue5720PathResource extends PathResource
 {
     private static final String URI_BAD_RESOURCE_PREFIX = "file:///resources!";
 
-    NativeImagePathResource(Path path, URI uri, boolean bypassAllowedSchemeCheck)
+    GraalIssue5720PathResource(Path path, URI uri, boolean bypassAllowedSchemeCheck)
     {
         super(path, correctResourceURI(uri), (bypassAllowedSchemeCheck || isResourceScheme(uri)));
     }

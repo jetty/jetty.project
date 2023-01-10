@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -24,14 +25,22 @@ import java.util.Collections;
 
 /**
  * GraalVM Native-Image {@link PathResourceFactory}.
+ * 
+ * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>
  */
-public class NativeImagePathResourceFactory extends PathResourceFactory
+final class GraalIssue5720PathResourceFactory extends PathResourceFactory
 {
-    static final boolean ENABLE_GRAALVM_RESOURCE_SCHEME = (System.getProperty("org.graalvm.nativeimage.kind") != null);
+    static final boolean ENABLE_NATIVE_IMAGE_RESOURCE_SCHEME;
 
-    public NativeImagePathResourceFactory()
+    static
     {
-        if (ENABLE_GRAALVM_RESOURCE_SCHEME)
+        URL url = GraalIssue5720PathResourceFactory.class.getResource("/org/eclipse/jetty/version/build.properties");
+        ENABLE_NATIVE_IMAGE_RESOURCE_SCHEME = (url != null && "resource".equals(url.getProtocol()));
+    }
+
+    public GraalIssue5720PathResourceFactory()
+    {
+        if (ENABLE_NATIVE_IMAGE_RESOURCE_SCHEME)
         {
             initNativeImageResourceFileSystem();
         }
@@ -60,12 +69,12 @@ public class NativeImagePathResourceFactory extends PathResourceFactory
     @Override
     public Resource newResource(URI uri)
     {
-        uri = NativeImagePathResource.correctResourceURI(uri.normalize());
+        uri = GraalIssue5720PathResource.correctResourceURI(uri.normalize());
         Path path = Path.of(uri);
 
         if (!Files.exists(path))
             return null;
 
-        return new NativeImagePathResource(path, uri, false);
+        return new GraalIssue5720PathResource(path, uri, false);
     }
 }
