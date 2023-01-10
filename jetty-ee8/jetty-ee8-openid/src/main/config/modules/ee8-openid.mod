@@ -4,7 +4,7 @@
 Adds OpenId Connect authentication to the server.
 
 [depend]
-security
+ee8-security
 client
 
 [lib]
