@@ -1,10 +1,9 @@
 
 [description]
-Applies DelayedHandler to entire server.
-Delays request handling until any body content has arrived, to minimize blocking.
-For form data and multipart, the handling is delayed until the entire request body has
-been asynchronously read. For all other content types, the delay is until the first byte
-has arrived.
+Applies the DelayedContentHandler to entire server.
+In order to minimize blocking in the application, the DelayedContentHandler will asynchronously
+wait until either: the first byte of unknown request content has arrived; or the entire request
+content has been asynchronously read and parsed for known form content and multipart types.
 
 [tags]
 server
