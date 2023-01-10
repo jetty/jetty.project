@@ -164,6 +164,8 @@
     <spotbugs.maven.plugin.version>4.7.2.0</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.12.0</versions.maven.plugin.version>
 
+    <compiler.xlint.arg>-Xlint:exports</compiler.xlint.arg>
+
     <!-- testing -->
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
@@ -569,7 +571,7 @@
             <release>${compiler.release}</release>
             <showWarnings>true</showWarnings>
             <compilerArgs>
-              <compilerArg>-Xlint:exports</compilerArg>
+              <compilerArg>${compiler.xlint.arg}</compilerArg>
             </compilerArgs>
             <testCompilerArgument>-nowarn</testCompilerArgument>
           </configuration>
@@ -2089,6 +2091,8 @@
         <enforcer.skip>true</enforcer.skip>
         <license.skip>true</license.skip>
         <spotbugs.skip>true</spotbugs.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <compiler.xlint.arg>-Xlint:none</compiler.xlint.arg>
       </properties>
     </profile>
   </profiles>

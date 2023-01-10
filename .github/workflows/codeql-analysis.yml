@@ -80,8 +80,8 @@ jobs:
           mvn -e -B -V org.apache.maven.plugins:maven-wrapper-plugin:3.1.0:wrapper "-Dmaven=3.8.6"
 
       - name: Clean install dependencies and build
-        run: mvn clean install -DskipTests -B -V -Pfast -Dmaven.javadoc.skip=true -T4
-
+        run:
+          mvn clean install -DskipTests -B -V -Pfast
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
