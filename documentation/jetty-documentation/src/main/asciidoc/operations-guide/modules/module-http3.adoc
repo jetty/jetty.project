@@ -19,5 +19,5 @@ The `http3` module enables support for the HTTP/3 protocol.
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/http3.mod[tags=documentation]
+include::{jetty-home}/modules/http3.mod[tags=documentation]
 ----

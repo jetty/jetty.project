@@ -19,7 +19,7 @@ The `http` module provides the clear-text connector and support for the clear-te
 The module properties to configure the clear-text connector are:
 
 ----
-include::{JETTY_HOME}/modules/http.mod[tags=documentation]
+include::{jetty-home}/modules/http.mod[tags=documentation]
 ----
 
 Among the configurable properties, the most relevant are:

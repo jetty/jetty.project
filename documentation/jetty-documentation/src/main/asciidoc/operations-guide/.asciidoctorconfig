@@ -2,4 +2,4 @@
 // See https://github.com/asciidoctor/asciidoctor-intellij-plugin/wiki/Support-project-specific-configurations
 :experimental:
 :imagesdir: images
-:JETTY_HOME: ../../../../../../../jetty-home/target/jetty-home
+:jetty-home: ../../../../../../../jetty-home/target/jetty-home

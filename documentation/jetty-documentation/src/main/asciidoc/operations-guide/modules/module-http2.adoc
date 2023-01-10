@@ -19,7 +19,7 @@ The `http2` module enables support for the secure HTTP/2 protocol.
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/http2.mod[tags=documentation]
+include::{jetty-home}/modules/http2.mod[tags=documentation]
 ----
 
 // tag::rate-control[]

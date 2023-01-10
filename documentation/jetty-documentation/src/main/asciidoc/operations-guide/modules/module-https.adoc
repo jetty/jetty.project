@@ -19,5 +19,5 @@ The `https` module provides the HTTP/1.1 protocol to the xref:og-module-ssl[`ssl
 The module file is `$JETTY_HOME/modules/https.mod`:
 
 ----
-include::{JETTY_HOME}/modules/https.mod[]
+include::{jetty-home}/modules/https.mod[]
 ----

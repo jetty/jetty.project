@@ -22,5 +22,5 @@ Old, rolled files are kept for the number of days specified by the `jetty.consol
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/console-capture.mod[tags=documentation]
+include::{jetty-home}/modules/console-capture.mod[tags=documentation]
 ----
