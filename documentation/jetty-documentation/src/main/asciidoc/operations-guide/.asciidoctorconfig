@@ -1,5 +1,7 @@
 // Asciidoctor IDE configuration file.
 // See https://github.com/asciidoctor/asciidoctor-intellij-plugin/wiki/Support-project-specific-configurations
+:ee-all: ee{8,9,10}
+:ee-current: ee10
 :experimental:
 :imagesdir: images
 :JETTY_HOME: ../../../../../../../jetty-home/target/jetty-home

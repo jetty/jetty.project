@@ -12,14 +12,14 @@
 //
 
 [[og-module-eex-webapp]]
-===== Module `ee{8,9,10}-webapp`
+===== Module `{ee-all}-webapp`
 
-include::{JETTY_HOME}/modules/ee10-webapp.mod[tags=description]
+include::{JETTY_HOME}/modules/{ee-current}-webapp.mod[tags=description]
 
 Multiple versions of this module exist to support the different (incompatible) servlet specifications that exist across Jakarta EE platform versions.
-Jetty's configuration properties are identical across the `ee{8,9,10}-` versions of this module, and are as follows:
+Jetty's configuration properties are identical across the `{ee-all}-` versions of this module, and are as follows:
 
 ----
-include::{JETTY_HOME}/modules/ee10-webapp.mod[tags=documentation-ini-template]
+include::{JETTY_HOME}/modules/{ee-current}-webapp.mod[tags=ini-template]
 ----
 
