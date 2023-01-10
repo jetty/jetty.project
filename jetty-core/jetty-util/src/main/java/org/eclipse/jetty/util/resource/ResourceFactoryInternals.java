@@ -55,6 +55,12 @@ class ResourceFactoryInternals
         RESOURCE_FACTORIES.put("file", pathResourceFactory);
         RESOURCE_FACTORIES.put("jrt", pathResourceFactory);
 
+        /* Best effort attempt to detect that an alternate FileSystem type that is in use.
+         * We don't attempt to look up a Class, as not all runtimes and environments have the classes anymore
+         * (eg: they were compiled into native code)
+         * The build.properties is present in the jetty-util jar, so it's reasonably safe to look for that
+         * as a resource
+         */
         URL url = ResourceFactoryInternals.class.getResource("/org/eclipse/jetty/version/build.properties");
         if ((url != null) && !RESOURCE_FACTORIES.contains(url.getProtocol()))
         {

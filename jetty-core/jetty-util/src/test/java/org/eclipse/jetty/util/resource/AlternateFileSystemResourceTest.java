@@ -54,8 +54,19 @@ public class AlternateFileSystemResourceTest
     public void initInMemoryFileSystem(TestInfo testInfo)
     {
         Optional<Method> testMethod = testInfo.getTestMethod();
-        String testMethodName = testMethod.map(Method::getName).orElseGet(AlternateFileSystemResourceTest.class::getSimpleName);
-        jimfs = Jimfs.newFileSystem(testMethodName, Configuration.unix());
+        if (testMethod.isPresent())
+        {
+            String testMethodName = testMethod.get().getName();
+            // Create a jimfs that has the testMethodName as its authority
+            // eg:  jimfs://<test-method-name>/
+            jimfs = Jimfs.newFileSystem(testMethodName, Configuration.unix());
+        }
+        else
+        {
+            // Let jimfs establish a unique name on its own
+            // eg:  jimfs://a3cc0bda-1238-4847-864f-22fae7614146/
+            jimfs = Jimfs.newFileSystem(Configuration.unix());
+        }
         fsBaseURI = jimfs.getPath("/").toUri();
 
         ResourceFactory.registerResourceFactory(fsBaseURI.getScheme(), new MountedPathResourceFactory());
