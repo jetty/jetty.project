@@ -14,7 +14,7 @@
 [[og-module-jmx]]
 ===== Module `jmx`
 
-Enabling this module allows you to locally access and configure Jetty components using a Java Management Extension (JMX) tool.
+include::{JETTY_HOME}/modules/ee10-webapp.mod[tags=description]
 
 This configuration is useful for xref:og-jmx-local[local development and testing].
 If you need to xref:og-jmx-remote[enable remote access], use the xref:og-jmx-remote[`jmx-remote` module].
