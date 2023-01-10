@@ -16,14 +16,15 @@ package org.eclipse.jetty.test.client.transport;
 import java.io.InterruptedIOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.api.Response;
@@ -36,7 +37,10 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -91,15 +96,15 @@ public class HttpClientDemandTest extends AbstractTest
                 private final AtomicInteger chunks = new AtomicInteger();
 
                 @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+                public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
-                    callback.succeeded();
+                    chunk.release();
                     if (chunks.incrementAndGet() == 1)
                         contentLatch.countDown();
                     // Need to demand also after the second
                     // chunk to allow the parser to proceed
                     // and complete the response.
-                    demand.accept(1);
+                    demander.run();
                 }
 
                 @Override
@@ -140,20 +145,18 @@ public class HttpClientDemandTest extends AbstractTest
         client.setResponseBufferSize(bufferSize);
         client.start();
 
-        Queue<LongConsumer> demandQueue = new ConcurrentLinkedQueue<>();
-        Queue<ByteBuffer> contentQueue = new ConcurrentLinkedQueue<>();
-        Queue<Callback> callbackQueue = new ConcurrentLinkedQueue<>();
+        Queue<Runnable> demanderQueue = new ConcurrentLinkedQueue<>();
+        Queue<Content.Chunk> contentQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
             .send(new BufferingResponseListener()
             {
                 @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+                public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
-                    // Don't demand and don't succeed callbacks.
-                    demandQueue.offer(demand);
-                    contentQueue.offer(content);
-                    callbackQueue.offer(callback);
+                    // Don't demand and don't release chunks.
+                    contentQueue.offer(chunk);
+                    demanderQueue.offer(demander);
                 }
 
                 @Override
@@ -169,32 +172,30 @@ public class HttpClientDemandTest extends AbstractTest
         // Wait for the client to receive data from the server.
         // Wait a bit more to be sure it only receives 1 buffer.
         Thread.sleep(1000);
-        assertEquals(1, demandQueue.size());
+        assertEquals(1, demanderQueue.size());
         assertEquals(1, contentQueue.size());
-        assertEquals(1, callbackQueue.size());
 
         // Demand one more buffer.
-        LongConsumer demand = demandQueue.poll();
-        assertNotNull(demand);
-        demand.accept(1);
+        Runnable demander = demanderQueue.poll();
+        assertNotNull(demander);
+        demander.run();
         // The client should have received just `count` more buffers.
         Thread.sleep(1000);
-        assertEquals(1, demandQueue.size());
+        assertEquals(1, demanderQueue.size());
         assertEquals(2, contentQueue.size());
-        assertEquals(2, callbackQueue.size());
 
         // Demand all the rest.
-        demand = demandQueue.poll();
-        assertNotNull(demand);
+        demander = demanderQueue.poll();
+        assertNotNull(demander);
         long begin = NanoTime.now();
         // Spin on demand until content.length bytes have been read.
-        while (content.length > contentQueue.stream().mapToInt(Buffer::remaining).sum())
+        while (content.length > contentQueue.stream().map(Content.Chunk::getByteBuffer).mapToInt(Buffer::remaining).sum())
         {
             if (NanoTime.millisSince(begin) > 5000L)
                 fail("Failed to demand all content");
-            demand.accept(1);
+            demander.run();
         }
-        demand.accept(1); // Demand one last time to get EOF.
+        demander.run(); // Demand one last time to get EOF.
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
 
         byte[] received = new byte[content.length];
@@ -206,7 +207,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         assertArrayEquals(content, received);
 
-        callbackQueue.forEach(Callback::succeeded);
+        contentQueue.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -235,15 +236,17 @@ public class HttpClientDemandTest extends AbstractTest
         });
 
         long delay = 1000;
-        AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+        AtomicReference<Runnable> demanderRef = new AtomicReference<>();
+        AtomicReference<Content.Chunk> chunkRef = new AtomicReference<>();
         CountDownLatch clientContentLatch = new CountDownLatch(2);
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentDemanded((response, demand, content, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
+                chunkRef.set(chunk);
                 try
                 {
-                    if (demandRef.getAndSet(demand) == null)
+                    if (demanderRef.getAndSet(demander) == null)
                     {
                         // Produce more content just before stalling.
                         serverContentLatch.countDown();
@@ -251,12 +254,10 @@ public class HttpClientDemandTest extends AbstractTest
                         Thread.sleep(delay);
                     }
                     clientContentLatch.countDown();
-                    // Succeed the callback but don't demand.
-                    callback.succeeded();
                 }
-                catch (InterruptedException x)
+                catch (InterruptedException e)
                 {
-                    callback.failed(x);
+                    throw new RuntimeException(e);
                 }
             })
             .timeout(5, TimeUnit.SECONDS)
@@ -271,16 +272,34 @@ public class HttpClientDemandTest extends AbstractTest
         // We did not demand, so we only expect one chunk of content.
         assertFalse(clientContentLatch.await(2 * delay, TimeUnit.MILLISECONDS));
         assertEquals(1, clientContentLatch.getCount());
+        Content.Chunk c1 = chunkRef.getAndSet(null);
+        assertThat(asStringAndRelease(c1), is("A"));
 
         // Now demand, we should be notified of the second chunk.
-        demandRef.get().accept(1);
-
+        demanderRef.get().run();
         assertTrue(clientContentLatch.await(5, TimeUnit.SECONDS));
+        Content.Chunk c2 = chunkRef.getAndSet(null);
+        assertThat(asStringAndRelease(c2), is("B"));
 
         // Demand once more to trigger response success.
-        demandRef.get().accept(1);
-
+        demanderRef.get().run();
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure the chunks were not leaked.
+        assertThrows(IllegalStateException.class, c1::release);
+        assertThrows(IllegalStateException.class, c2::release);
+    }
+
+    private static String asStringAndRelease(Content.Chunk chunk)
+    {
+        try
+        {
+            return BufferUtil.toString(chunk.getByteBuffer());
+        }
+        finally
+        {
+            chunk.release();
+        }
     }
 
     @ParameterizedTest
@@ -308,29 +327,29 @@ public class HttpClientDemandTest extends AbstractTest
 
         AtomicInteger listener1Chunks = new AtomicInteger();
         AtomicInteger listener1ContentSize = new AtomicInteger();
-        AtomicReference<LongConsumer> listener1DemandRef = new AtomicReference<>();
-        Response.DemandedContentListener listener1 = (response, demand, content, callback) ->
+        AtomicReference<Runnable> listener1DemanderRef = new AtomicReference<>();
+        Response.AsyncContentListener listener1 = (response, chunk, demander) ->
         {
             listener1Chunks.incrementAndGet();
-            listener1ContentSize.addAndGet(content.remaining());
-            callback.succeeded();
-            listener1DemandRef.set(demand);
+            listener1ContentSize.addAndGet(chunk.remaining());
+            chunk.release();
+            listener1DemanderRef.set(demander);
         };
         AtomicInteger listener2Chunks = new AtomicInteger();
         AtomicInteger listener2ContentSize = new AtomicInteger();
-        AtomicReference<LongConsumer> listener2DemandRef = new AtomicReference<>();
-        Response.DemandedContentListener listener2 = (response, demand, content, callback) ->
+        AtomicReference<Runnable> listener2DemanderRef = new AtomicReference<>();
+        Response.AsyncContentListener listener2 = (response, chunk, demander) ->
         {
             listener2Chunks.incrementAndGet();
-            listener2ContentSize.addAndGet(content.remaining());
-            callback.succeeded();
-            listener2DemandRef.set(demand);
+            listener2ContentSize.addAndGet(chunk.remaining());
+            chunk.release();
+            listener2DemanderRef.set(demander);
         };
 
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentDemanded(listener1)
-            .onResponseContentDemanded(listener2)
+            .onResponseContentAsync(listener1)
+            .onResponseContentAsync(listener2)
             .send(result ->
             {
                 Assertions.assertFalse(result.isFailed(), String.valueOf(result.getFailure()));
@@ -345,16 +364,16 @@ public class HttpClientDemandTest extends AbstractTest
         {
             i++;
 
-            await().atMost(5, TimeUnit.SECONDS).until(listener1DemandRef::get, not(nullValue()));
-            await().atMost(5, TimeUnit.SECONDS).until(listener2DemandRef::get, not(nullValue()));
+            await().atMost(5, TimeUnit.SECONDS).until(listener1DemanderRef::get, not(nullValue()));
+            await().atMost(5, TimeUnit.SECONDS).until(listener2DemanderRef::get, not(nullValue()));
 
             // Assert that no listener can progress for as long as both listeners did not demand.
             assertThat(listener1Chunks.get(), is(i));
             assertThat(listener2Chunks.get(), is(i));
-            listener2DemandRef.getAndSet(null).accept(1);
+            listener2DemanderRef.getAndSet(null).run();
             assertThat(listener1Chunks.get(), is(i));
             assertThat(listener2Chunks.get(), is(i));
-            listener1DemandRef.getAndSet(null).accept(1);
+            listener1DemanderRef.getAndSet(null).run();
         }
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
@@ -393,11 +412,12 @@ public class HttpClientDemandTest extends AbstractTest
         ByteBuffer received = ByteBuffer.wrap(bytes);
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentDemanded((response, demand, buffer, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
-                received.put(buffer);
-                callback.succeeded();
-                new Thread(() -> demand.accept(1)).start();
+                received.put(chunk.getByteBuffer());
+                chunk.release();
+                if (!chunk.isTerminal())
+                    new Thread(demander).start();
             })
             .send(result ->
             {
@@ -428,28 +448,40 @@ public class HttpClientDemandTest extends AbstractTest
 
         byte[] bytes = new byte[content.length];
         ByteBuffer received = ByteBuffer.wrap(bytes);
-        AtomicReference<LongConsumer> beforeContentDemandRef = new AtomicReference<>();
+        AtomicReference<Runnable> beforeContentDemanderRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentDemanded(new Response.DemandedContentListener()
+            .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
-                public void onBeforeContent(Response response, LongConsumer demand)
+                public void onContentSource(Response response, Content.Source contentSource)
                 {
-                    // Do not demand now.
-                    beforeContentDemandRef.set(demand);
-                    beforeContentLatch.countDown();
-                }
+                    Runnable demander = () -> contentSource.demand(() -> onContentSource(response, contentSource));
+                    if (beforeContentDemanderRef.getAndSet(demander) == null)
+                    {
+                        // 1st time, do not demand now.
+                        beforeContentLatch.countDown();
+                        return;
+                    }
 
-                @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
-                {
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        demander.run();
+                        return;
+                    }
+                    if (chunk.isTerminal())
+                    {
+                        chunk.release();
+                        return;
+                    }
+
                     contentLatch.countDown();
-                    received.put(buffer);
-                    callback.succeeded();
-                    demand.accept(1);
+                    received.put(chunk.getByteBuffer());
+                    chunk.release();
+                    demander.run();
                 }
             })
             .send(result ->
@@ -460,12 +492,12 @@ public class HttpClientDemandTest extends AbstractTest
             });
 
         assertTrue(beforeContentLatch.await(5, TimeUnit.SECONDS));
-        LongConsumer demand = beforeContentDemandRef.get();
+        Runnable demander = beforeContentDemanderRef.get();
 
         // Content must not be notified until we demand.
         assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
 
-        demand.accept(1);
+        demander.run();
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
         assertArrayEquals(content, bytes);
@@ -477,27 +509,39 @@ public class HttpClientDemandTest extends AbstractTest
     {
         start(transport, new EmptyServerHandler());
 
-        AtomicReference<LongConsumer> beforeContentDemandRef = new AtomicReference<>();
+        AtomicReference<Runnable> beforeContentDemanderRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
-            .onResponseContentDemanded(new Response.DemandedContentListener()
+            .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
-                public void onBeforeContent(Response response, LongConsumer demand)
+                public void onContentSource(Response response, Content.Source contentSource)
                 {
-                    // Do not demand now.
-                    beforeContentDemandRef.set(demand);
-                    beforeContentLatch.countDown();
-                }
+                    Runnable demander = () -> contentSource.demand(() -> onContentSource(response, contentSource));
+                    if (beforeContentDemanderRef.getAndSet(demander) == null)
+                    {
+                        // 1st time, do not demand now.
+                        beforeContentLatch.countDown();
+                        return;
+                    }
 
-                @Override
-                public void onContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
-                {
+                    Content.Chunk chunk = contentSource.read();
+                    if (chunk == null)
+                    {
+                        demander.run();
+                        return;
+                    }
+                    if (chunk.isTerminal())
+                    {
+                        chunk.release();
+                        return;
+                    }
+
                     contentLatch.countDown();
-                    callback.succeeded();
-                    demand.accept(1);
+                    chunk.release();
+                    demander.run();
                 }
             })
             .send(result ->
@@ -508,16 +552,106 @@ public class HttpClientDemandTest extends AbstractTest
             });
 
         assertTrue(beforeContentLatch.await(5, TimeUnit.SECONDS));
-        LongConsumer demand = beforeContentDemandRef.get();
+        Runnable demander = beforeContentDemanderRef.get();
 
         // Content must not be notified until we demand.
         assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
 
-        demand.accept(1);
+        demander.run();
 
         // Content must not be notified as there is no content.
         assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReadDemandInSpawnedThread(Transport transport) throws Exception
+    {
+        int totalBytes = 1024;
+        start(transport, new TestProcessor(totalBytes));
+
+        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        client.newRequest(newURI(transport))
+            .onResponseContentSource((response, contentSource) -> contentSource.demand(() -> new Thread(new Accumulator(contentSource, chunks)).start()))
+            .send(result ->
+            {
+                Assertions.assertTrue(result.isSucceeded());
+                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                resultLatch.countDown();
+            });
+
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+
+        Content.Chunk lastChunk = chunks.get(chunks.size() - 1);
+        assertThat(lastChunk.isLast(), is(true));
+        int accumulatedSize = chunks.stream().mapToInt(chunk ->
+        {
+            int remaining = chunk.remaining();
+            chunk.release();
+            return remaining;
+        }).sum();
+        assertThat(accumulatedSize, is(totalBytes));
+    }
+
+    private static class Accumulator implements Runnable
+    {
+        private final Content.Source contentSource;
+        private final List<Content.Chunk> chunks;
+
+        private Accumulator(Content.Source contentSource, List<Content.Chunk> chunks)
+        {
+            this.contentSource = contentSource;
+            this.chunks = chunks;
+        }
+
+        @Override
+        public void run()
+        {
+            Content.Chunk chunk = contentSource.read();
+            if (chunk == null)
+            {
+                contentSource.demand(this);
+                return;
+            }
+            chunks.add(chunk);
+            if (!chunk.isLast())
+                contentSource.demand(this);
+        }
+    }
+
+    private static class TestProcessor extends Handler.Abstract
+    {
+        private final int totalBytes;
+
+        private TestProcessor(int totalBytes)
+        {
+            this.totalBytes = totalBytes;
+        }
+
+        @Override
+        public boolean process(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        {
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+
+            IteratingCallback iteratingCallback = new IteratingNestedCallback(callback)
+            {
+                int count = 0;
+                @Override
+                protected Action process()
+                {
+                    boolean last = ++count == totalBytes;
+                    if (count > totalBytes)
+                        return Action.SUCCEEDED;
+                    response.write(last, ByteBuffer.wrap(new byte[1]), this);
+                    return Action.SCHEDULED;
+                }
+            };
+            iteratingCallback.iterate();
+
+            return true;
+        }
     }
 }

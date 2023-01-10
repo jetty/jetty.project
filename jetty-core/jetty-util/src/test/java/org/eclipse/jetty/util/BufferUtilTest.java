@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -250,36 +249,6 @@ public class BufferUtilTest
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferUtilTest.class);
-
-    @Test
-    @Disabled("Very simple microbenchmark to compare different writeTo implementations. Only for development thus " +
-        "ignored.")
-    public void testWriteToMicrobenchmark() throws IOException
-    {
-        int capacity = 1024 * 128;
-        int iterations = 100;
-        int testRuns = 10;
-        byte[] bytes = new byte[capacity];
-        ThreadLocalRandom.current().nextBytes(bytes);
-        ByteBuffer buffer = BufferUtil.allocate(capacity);
-        BufferUtil.append(buffer, bytes, 0, capacity);
-        long startTest = NanoTime.now();
-        for (int i = 0; i < testRuns; i++)
-        {
-            long start = NanoTime.now();
-            for (int j = 0; j < iterations; j++)
-            {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                long startRun = NanoTime.now();
-                BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);
-//                LOG.info("run elapsed={}ms", NanoTime.elapsedFrom(startRun) / 1000);
-                assertThat("Bytes in out equal bytes in buffer", Arrays.equals(bytes, out.toByteArray()), is(true));
-            }
-            long elapsed = NanoTime.since(start);
-            LOG.warn("elapsed={}ms average={}ms", elapsed / 1000, elapsed / iterations / 1000);
-        }
-        LOG.warn("overall average: {}ms", NanoTime.since(startTest) / testRuns / iterations / 1000);
-    }
 
     @Test
     public void testWriteToWithBufferThatDoesNotExposeArrayAndSmallContent() throws IOException

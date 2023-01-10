@@ -108,12 +108,13 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setWelcomeFactory(_resourceService);
 
         _baseResource = servletContextHandler.getBaseResource();
+        _resourceFactory = ResourceFactory.closeable();
+
         String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
             {
-                _resourceFactory = ResourceFactory.closeable();
                 _baseResource = _resourceFactory.newResource(rb);
             }
             catch (Exception e)

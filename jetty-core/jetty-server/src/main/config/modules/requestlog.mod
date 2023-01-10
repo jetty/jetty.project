@@ -20,6 +20,7 @@ logs/
 jetty.requestlog.dir?=logs
 
 [ini-template]
+# tag::documentation[]
 ## Format string
 # jetty.requestlog.formatString=%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t "%r" %s %O "%{Referer}i" "%{User-Agent}i"
 
@@ -40,3 +41,4 @@ jetty.requestlog.dir?=logs
 
 ## Timezone of the log file rollover
 # jetty.requestlog.timezone=GMT
+# end::documentation[]

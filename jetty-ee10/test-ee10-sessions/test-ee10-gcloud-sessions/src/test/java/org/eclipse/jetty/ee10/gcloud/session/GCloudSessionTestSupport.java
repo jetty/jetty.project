@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
+package org.eclipse.jetty.ee10.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -38,7 +38,9 @@ import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.Query.ResultType;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
+import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
+import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;
@@ -47,7 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.DatastoreEmulatorContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,28 +66,10 @@ public class GCloudSessionTestSupport
     private static final Logger LOGGER = LoggerFactory.getLogger(GCloudSessionTestSupport.class);
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
-    public DatastoreEmulatorContainer emulator = new CustomDatastoreEmulatorContainer(
-        DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
-    ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG));
-
-    private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk");
-
-    private static final String CMD = "gcloud beta emulators datastore start --project test-project --host-port 0.0.0.0:8081 --consistency=1.0";
-    private static final int HTTP_PORT = 8081;
-
-    public static class CustomDatastoreEmulatorContainer extends DatastoreEmulatorContainer
-    {
-        public CustomDatastoreEmulatorContainer(DockerImageName dockerImageName)
-        {
-            super(dockerImageName);
-
-            dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-
-            withExposedPorts(HTTP_PORT);
-            setWaitStrategy(Wait.forHttp("/").forStatusCode(200));
-            withCommand("/bin/sh", "-c", CMD);
-        }
-    }
+    public DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
+            DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
+    ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
+            .withFlags("--consistency=1.0");
 
     public static class TestGCloudSessionDataStoreFactory extends GCloudSessionDataStoreFactory
     {

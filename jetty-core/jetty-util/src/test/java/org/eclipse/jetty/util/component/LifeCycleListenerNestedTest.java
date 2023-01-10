@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,7 +27,6 @@ import static org.hamcrest.Matchers.is;
  * Testing for LifeCycleListener events on nested components
  * during runtime.
  */
-@Disabled
 public class LifeCycleListenerNestedTest
 {
     // Set this true to use test-specific workaround.
@@ -78,12 +76,10 @@ public class LifeCycleListenerNestedTest
             Bar other = (Bar)obj;
             if (id == null)
             {
-                if (other.id != null)
-                    return false;
+                return other.id == null;
             }
-            else if (!id.equals(other.id))
-                return false;
-            return true;
+            else
+                return id.equals(other.id);
         }
 
         @Override
@@ -93,7 +89,7 @@ public class LifeCycleListenerNestedTest
         }
     }
 
-    public static enum LifeCycleEvent
+    public enum LifeCycleEvent
     {
         STARTING,
         STARTED,

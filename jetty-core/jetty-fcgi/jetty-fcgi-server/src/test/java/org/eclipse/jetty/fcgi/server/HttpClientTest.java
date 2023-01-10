@@ -644,21 +644,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         AtomicInteger contentCount = new AtomicInteger();
-        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        AtomicReference<Runnable> demanderRef = new AtomicReference<>();
         AtomicReference<CountDownLatch> contentLatch = new AtomicReference<>(new CountDownLatch(1));
         CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
-            .onResponseContentAsync((response, content, callback) ->
+            .onResponseContentAsync((response, chunk, demander) ->
             {
+                chunk.release();
                 contentCount.incrementAndGet();
-                callbackRef.set(callback);
+                demanderRef.set(demander);
                 contentLatch.get().countDown();
             })
             .send(result -> completeLatch.countDown());
 
         assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
-        Callback callback = callbackRef.get();
+        Runnable demander = demanderRef.get();
 
         // Wait a while to be sure that the parsing does not proceed.
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -666,12 +667,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertEquals(1, contentCount.get());
 
         // Succeed the content callback to proceed with parsing.
-        callbackRef.set(null);
+        demanderRef.set(null);
         contentLatch.set(new CountDownLatch(1));
-        callback.succeeded();
+        demander.run();
 
         assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
-        callback = callbackRef.get();
+        demander = demanderRef.get();
 
         // Wait a while to be sure that the parsing does not proceed.
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -680,9 +681,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertEquals(1, completeLatch.getCount());
 
         // Succeed the content callback to proceed with parsing.
-        callbackRef.set(null);
+        demanderRef.set(null);
         contentLatch.set(new CountDownLatch(1));
-        callback.succeeded();
+        demander.run();
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertEquals(2, contentCount.get());

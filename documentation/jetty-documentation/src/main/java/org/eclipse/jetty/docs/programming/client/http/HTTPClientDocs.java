@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -67,6 +66,7 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -265,7 +265,11 @@ public class HTTPClientDocs
             .onResponseBegin(response -> { /* ... */ })
             .onResponseHeader((response, field) -> true)
             .onResponseHeaders(response -> { /* ... */ })
-            .onResponseContentAsync((response, buffer, callback) -> callback.succeeded())
+            .onResponseContentAsync((response, chunk, demander) ->
+            {
+                chunk.release();
+                demander.run();
+            })
             .onResponseFailure((response, failure) -> { /* ... */ })
             .onResponseSuccess(response -> { /* ... */ })
             // Result hook.
@@ -449,7 +453,7 @@ public class HTTPClientDocs
         // end::inputStreamResponseListener[]
     }
 
-    public void demandedContentListener() throws Exception
+    public void contentSourceListener() throws Exception
     {
         HttpClient httpClient = new HttpClient();
         httpClient.start();
@@ -458,7 +462,7 @@ public class HTTPClientDocs
         String host2 = "localhost";
         int port1 = 8080;
         int port2 = 8080;
-        // tag::demandedContentListener[]
+        // tag::contentSourceListener[]
         // Prepare a request to server1, the source.
         Request request1 = httpClient.newRequest(host1, port1)
             .path("/source");
@@ -469,34 +473,62 @@ public class HTTPClientDocs
             .path("/sink")
             .body(content2);
 
-        request1.onResponseContentDemanded(new Response.DemandedContentListener()
+        request1.onResponseContentSource(new Response.ContentSourceListener()
         {
             @Override
-            public void onBeforeContent(Response response, LongConsumer demand)
+            public void onContentSource(Response response, Content.Source contentSource)
             {
+                // Only execute this method the very first time
+                // to initialize the request to server2.
+
                 request2.onRequestCommit(request ->
                 {
                     // Only when the request to server2 has been sent,
                     // then demand response content from server1.
-                    demand.accept(1);
+                    contentSource.demand(() -> forwardContent(response, contentSource));
                 });
 
                 // Send the request to server2.
                 request2.send(result -> System.getLogger("forwarder").log(INFO, "Forwarding to server2 complete"));
             }
 
-            @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            private void forwardContent(Response response, Content.Source contentSource)
             {
-                // When response content is received from server1, forward it to server2.
-                content2.write(content, Callback.from(() ->
+                // Read one chunk of content.
+                Content.Chunk chunk = contentSource.read();
+                if (chunk == null)
                 {
-                    // When the request content to server2 is sent,
-                    // succeed the callback to recycle the buffer.
-                    callback.succeeded();
+                    // The read chunk is null, demand to be called back
+                    // when the next one is ready to be read.
+                    contentSource.demand(() -> forwardContent(response, contentSource));
+                    // Once a demand is in progress, the content source must not be read
+                    // nor demanded again until the demand callback is invoked.
+                    return;
+                }
+                // Check if the chunk is the terminal one, in which case the
+                // read/demand loop is done. Demanding again when the terminal
+                // chunk has been read will invoke the demand callback with
+                // the same terminal chunk, so this check must be present to
+                // avoid infinitely demanding and reading the terminal chunk.
+                if (chunk.isTerminal())
+                {
+                    chunk.release();
+                    return;
+                }
+
+                // When a response chunk is received from server1, forward it to server2.
+                content2.write(chunk.getByteBuffer(), Callback.from(() ->
+                {
+                    // When the request chunk is successfully sent to server2,
+                    // release the chunk to recycle the buffer.
+                    chunk.release();
                     // Then demand more response content from server1.
-                    demand.accept(1);
-                }, callback::failed));
+                    contentSource.demand(() -> forwardContent(response, contentSource));
+                }, x ->
+                {
+                    chunk.release();
+                    response.abort(x);
+                }));
             }
         });
 
@@ -506,7 +538,7 @@ public class HTTPClientDocs
 
         // Send the request to server1.
         request1.send(result -> System.getLogger("forwarder").log(INFO, "Sourcing from server1 complete"));
-        // end::demandedContentListener[]
+        // end::contentSourceListener[]
     }
 
     public void getCookies() throws Exception

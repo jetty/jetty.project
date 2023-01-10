@@ -25,7 +25,8 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.12</ant.version>
-    <apache.httpclient.version>4.5.13</apache.httpclient.version>
+    <apache.avro.version>1.11.1</apache.avro.version>
+    <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.3</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.6</asciidoctorj.version>
@@ -50,9 +51,32 @@
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.15.2</hawtio.version>
     <hazelcast.version>4.2.5</hazelcast.version>
-    <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.6.0.Final</infinispan.protostream.version>
     <infinispan.version>11.0.16.Final</infinispan.version>
-    <jackson.version>2.13.4</jackson.version>
+    <jackson.version>2.14.1</jackson.version>
+    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
+    <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
+    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
+    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
+    <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
+    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
+    <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
+    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
+    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
+    <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
+    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
+    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
+    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+    <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
+    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
+    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
+    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
+    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
+    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version> <!-- TODO: remove? -->
+    <javax.cdi.api.version>2.0</javax.cdi.api.version> <!-- TODO: remove? -->
+    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
+    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version> <!-- TODO: remove? -->
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
@@ -93,7 +117,9 @@
     <plexus-utils.version>3.5.0</plexus-utils.version>
     <slf4j.version>2.0.5</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
-    <testcontainers.version>1.17.5</testcontainers.version>
+    <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
+    <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
+    <testcontainers.version>1.17.6</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.0.0.Final</wildfly.elytron.version>
@@ -1605,23 +1631,10 @@
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
-        <artifactId>asm</artifactId>
+        <artifactId>asm-bom</artifactId>
         <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-analysis</artifactId>
-        <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-commons</artifactId>
-        <version>${asm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-tree</artifactId>
-        <version>${asm.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
