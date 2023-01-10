@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.util.List;
@@ -48,10 +49,17 @@ class ResourceFactoryInternals
         CURRENT_WORKING_DIR = Path.of(System.getProperty("user.dir"));
 
         // The default resource factories
-        RESOURCE_FACTORIES.put("jar", new MountedPathResourceFactory());
+        MountedPathResourceFactory mountedPathResourceFactory = new MountedPathResourceFactory();
+        RESOURCE_FACTORIES.put("jar", mountedPathResourceFactory);
         PathResourceFactory pathResourceFactory = new PathResourceFactory();
         RESOURCE_FACTORIES.put("file", pathResourceFactory);
         RESOURCE_FACTORIES.put("jrt", pathResourceFactory);
+
+        URL url = ResourceFactoryInternals.class.getResource("/org/eclipse/jetty/version/build.properties");
+        if ((url != null) && !RESOURCE_FACTORIES.contains(url.getProtocol()))
+        {
+            RESOURCE_FACTORIES.put(url.getProtocol(), mountedPathResourceFactory);
+        }
     }
 
     static ResourceFactory ROOT = new CompositeResourceFactory()
