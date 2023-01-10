@@ -27,6 +27,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
@@ -34,7 +35,9 @@ import java.util.jar.JarOutputStream;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -44,7 +47,6 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -55,7 +57,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.condition.OS.MAC;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class PropertyUserStoreTest
@@ -253,7 +255,6 @@ public class PropertyUserStoreTest
     }
 
     @Test
-    @DisabledOnOs(MAC)
     public void testPropertyUserStoreLoadUpdateUser() throws Exception
     {
         testdir.ensureEmpty();
@@ -270,7 +271,7 @@ public class PropertyUserStoreTest
                 super.loadUsers();
             }
         };
-        store.setHotReload(true);
+        store.setReloadScanSeconds(1);
         store.setConfig(ResourceFactory.root().newResource(usersFile));
         store.registerUserListener(userCount);
 
@@ -292,7 +293,11 @@ public class PropertyUserStoreTest
         else
             Files.createFile(testdir.getPath().toRealPath().resolve("unrelated.txt"));
 
-        Thread.sleep(1100);
+        Scanner scanner = store.getBean(Scanner.class);
+        CountDownLatch latch = new CountDownLatch(2);
+        scanner.scan(Callback.from(latch::countDown));
+        scanner.scan(Callback.from(latch::countDown));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(loadCount.get(), is(2));
 
         userCount.assertThatCount(is(4));
