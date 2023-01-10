@@ -96,7 +96,7 @@ public class InputStreamContentSource implements Content.Source
             else
             {
                 buffer.limit(read);
-                return Content.Chunk.from(buffer, false, streamBuffer);
+                return Content.Chunk.asChunk(buffer, false, streamBuffer);
             }
         }
         catch (Throwable x)

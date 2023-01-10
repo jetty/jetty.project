@@ -409,7 +409,7 @@ public class ResponseNotifier
                     LOG.debug("Registering content in multiplexed content source #{} that contains {}", index, currentChunk);
                 if (currentChunk == null || currentChunk == ALREADY_READ_CHUNK)
                 {
-                    Content.Chunk slice = chunk.slice();
+                    Content.Chunk slice = Content.Chunk.asChunk(chunk.getByteBuffer().slice(), chunk.isLast(), chunk);
                     // Retain the slice because it is stored for later reads.
                     if (slice.canRetain())
                         slice.retain();

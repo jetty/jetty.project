@@ -250,7 +250,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         DataFrame frame = data.frame();
         if (frame.isEndStream() && frame.remaining() == 0)
             return Content.Chunk.EOF;
-        return Content.Chunk.from(frame.getData(), frame.isEndStream(), data);
+        return Content.Chunk.asChunk(frame.getData(), frame.isEndStream(), data);
     }
 
     @Override

@@ -451,7 +451,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         // Retain the chunk because it is stored for later use.
         networkBuffer.retain();
-        chunk = Content.Chunk.from(buffer, false, networkBuffer);
+        chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Setting action to responseContentAvailable on {}", this);

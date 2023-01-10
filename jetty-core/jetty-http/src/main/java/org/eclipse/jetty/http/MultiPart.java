@@ -635,7 +635,7 @@ public class MultiPart
                         yield chunk;
                     state = State.MIDDLE;
                     if (chunk.hasRemaining())
-                        yield Content.Chunk.from(chunk.getByteBuffer(), false, chunk);
+                        yield Content.Chunk.asChunk(chunk.getByteBuffer(), false, chunk);
                     chunk.release();
                     yield Content.Chunk.EMPTY;
                 }
@@ -1206,7 +1206,7 @@ public class MultiPart
                 // if we found '\r\n--Boundary' then the '\r' is not content.
                 if (length > 0 && buffer.get(position + length - 1) == '\r')
                     --length;
-                Content.Chunk content = chunk.slice(position, length, true);
+                Content.Chunk content = asSlice(chunk, position, length, true);
                 buffer.position(position + boundaryOffset + boundaryFinder.getLength());
                 notifyPartContent(content);
                 notifyPartEnd();
@@ -1228,7 +1228,7 @@ public class MultiPart
                     --sliceLimit;
                 }
                 int position = buffer.position();
-                Content.Chunk content = chunk.slice(position, sliceLimit - position, false);
+                Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
                 buffer.position(limit);
                 if (content.hasRemaining())
                     notifyPartContent(content);
@@ -1251,11 +1251,20 @@ public class MultiPart
                 --sliceLimit;
             }
             int position = buffer.position();
-            Content.Chunk content = chunk.slice(position, sliceLimit - position, false);
+            Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
             buffer.position(buffer.limit());
             if (content.hasRemaining())
                 notifyPartContent(content);
             return false;
+        }
+
+        private Content.Chunk asSlice(Content.Chunk chunk, int position, int length, boolean last)
+        {
+            if (chunk.isLast() && !chunk.hasRemaining())
+                return chunk;
+            if (length == 0)
+                return last ? Content.Chunk.EOF : Content.Chunk.EMPTY;
+            return Content.Chunk.asChunk(chunk.getByteBuffer().slice(position, length), last, chunk);
         }
 
         private void notifyPartBegin()

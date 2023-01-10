@@ -991,7 +991,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
             _retainableByteBuffer.retain();
-            stream._chunk = Content.Chunk.from(buffer, false, _retainableByteBuffer);
+            stream._chunk = Content.Chunk.asChunk(buffer, false, _retainableByteBuffer);
             return true;
         }
 

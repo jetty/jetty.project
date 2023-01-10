@@ -239,7 +239,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (data == Stream.Data.EOF)
             return Content.Chunk.EOF;
-        return Content.Chunk.from(data.getByteBuffer(), data.isLast(), data);
+        return Content.Chunk.asChunk(data.getByteBuffer(), data.isLast(), data);
     }
 
     @Override

@@ -492,8 +492,10 @@ public class Content
         }
 
         /**
-         * <p>Creates a last/non-last Chunk with the given ByteBuffer, linked to the given {@link Retainable}.</p>
-         * <p>The {@link #retain()} and {@link #release()} methods of this Chunk will delegate to the given Retainable.</p>
+         * <p>Returns the given {@code ByteBuffer} and {@code last} arguments
+         * as a {@code Chunk}, linked to the given {@link Retainable}.</p>
+         * <p>The {@link #retain()} and {@link #release()} methods of this
+         * {@code Chunk} will delegate to the given {@code Retainable}.</p>
          *
          * @param byteBuffer the ByteBuffer with the bytes of this Chunk
          * @param last whether the Chunk is the last one
@@ -502,7 +504,7 @@ public class Content
          * @throws IllegalArgumentException if the {@code Retainable}
          * {@link Retainable#canRetain() cannot be retained}
          */
-        static Chunk from(ByteBuffer byteBuffer, boolean last, Retainable retainable)
+        static Chunk asChunk(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
             if (!retainable.canRetain())
                 throw new IllegalArgumentException("Cannot create chunk from non-retainable " + retainable);
@@ -571,60 +573,6 @@ public class Content
          * @return whether this is the last Chunk
          */
         boolean isLast();
-
-        /**
-         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
-         * whole {@code ByteBuffer} of the source {@code Chunk} unless the source
-         * {@link #hasRemaining() has no remaining bytes} in which case:</p>
-         * <ul>
-         * <li>{@code this} is returned if {@link #isLast()} is {@code true}</li>
-         * <li>{@link #EMPTY} is returned if {@link #isLast()} is {@code false}</li>
-         * </ul>
-         * <p>If the source {@code Chunk} has remaining bytes, the returned
-         * {@code Chunk} it is linked to the source {@code Chunk} via
-         * {@link #from(ByteBuffer, boolean, Retainable)}.</p>
-         *
-         * @return a new {@code Chunk} with a slice of the source {@code Chunk}'s
-         * {@code ByteBuffer}
-         */
-        default Chunk slice()
-        {
-            if (hasRemaining())
-                return from(getByteBuffer().slice(), isLast(), this);
-            else
-                return isLast() ? this : EMPTY;
-        }
-
-        /**
-         * <p>Returns a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
-         * {@code ByteBuffer} of this {@code Chunk}.</p>
-         * <p>The returned {@code Chunk} is:</p>
-         * <ul>
-         * <li>{@code this}, if this {@code Chunk} is last and empty</li>
-         * <li>{@link #EMPTY}, if {@code length == 0 && !last}</li>
-         * <li>{@link #EOF}, if {@code length == 0 && last}</li>
-         * <li>a new {@code Chunk} whose {@code ByteBuffer} is a slice of the
-         * {@code ByteBuffer} of this {@code Chunk}, from the given {@code position}
-         * and for the given {@code length} bytes.</li>
-         * </ul>
-         * <p>The returned {@code Chunk} retains the source {@code Chunk} and it is linked
-         * to it via {@link #from(ByteBuffer, boolean, Retainable)}.</p>
-         *
-         * @param position the position at which the slice begins
-         * @param length the length of the slice
-         * @param last whether the new Chunk is last
-         * @return a new {@code Chunk} retained from the source {@code Chunk} with a slice
-         * of the source {@code Chunk}'s {@code ByteBuffer}
-         */
-        default Chunk slice(int position, int length, boolean last)
-        {
-            if (isLast() && !hasRemaining())
-                return this;
-            if (length == 0)
-                return last ? EOF : EMPTY;
-            retain();
-            return from(getByteBuffer().slice(position, length), last, this);
-        }
 
         /**
          * @return the number of bytes remaining in this Chunk
