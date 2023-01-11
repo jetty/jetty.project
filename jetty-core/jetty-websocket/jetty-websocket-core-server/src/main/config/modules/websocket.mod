@@ -5,5 +5,9 @@ Enable both jetty and jakarta websocket jetty modules for deployed web applicati
 websocket
 
 [depend]
-websocket-jetty
-websocket-jakarta
+ee8-websocket-jetty
+ee8-websocket-javax
+ee9-websocket-jetty
+ee9-websocket-jakarta
+ee10-websocket-jetty
+ee10-websocket-jakarta
