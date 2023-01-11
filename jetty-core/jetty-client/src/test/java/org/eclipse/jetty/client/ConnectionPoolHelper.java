@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Connection;
-
 public class ConnectionPoolHelper
 {
     public static Connection acquire(AbstractConnectionPool connectionPool, boolean create)

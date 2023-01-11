@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -44,14 +43,14 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class RoundRobinConnectionPool extends MultiplexConnectionPool
 {
-    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+    public RoundRobinConnectionPool(Destination destination, int maxConnections)
     {
-        this(destination, maxConnections, requester, 1);
+        this(destination, maxConnections, 1);
     }
 
-    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
+    public RoundRobinConnectionPool(Destination destination, int maxConnections, int maxMultiplex)
     {
-        super(destination, Pool.StrategyType.ROUND_ROBIN, maxConnections, false, requester, maxMultiplex);
+        super(destination, Pool.StrategyType.ROUND_ROBIN, maxConnections, false, maxMultiplex);
         // If there are queued requests and connections get
         // closed due to idle timeout or overuse, we want to
         // aggressively try to open new connections to replace

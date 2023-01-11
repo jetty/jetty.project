@@ -28,9 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.websocket.api.Session;
 import org.eclipse.jetty.ee10.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.ee10.websocket.api.WebSocketContainer;
@@ -138,13 +137,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
             upgradeRequest.addListener(new UpgradeListener()
             {
                 @Override
-                public void onHandshakeRequest(HttpRequest request)
+                public void onHandshakeRequest(Request request)
                 {
                     upgradeListener.onHandshakeRequest(request);
                 }
 
                 @Override
-                public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+                public void onHandshakeResponse(Request request, Response response)
                 {
                     upgradeListener.onHandshakeResponse(request, response);
                 }

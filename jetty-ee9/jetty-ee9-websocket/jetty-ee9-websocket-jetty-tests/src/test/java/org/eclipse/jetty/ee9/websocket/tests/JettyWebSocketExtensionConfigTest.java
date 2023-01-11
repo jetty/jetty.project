@@ -19,8 +19,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -105,7 +105,7 @@ public class JettyWebSocketExtensionConfigTest
         JettyUpgradeListener listener = new JettyUpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
 
                 String extensions = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);

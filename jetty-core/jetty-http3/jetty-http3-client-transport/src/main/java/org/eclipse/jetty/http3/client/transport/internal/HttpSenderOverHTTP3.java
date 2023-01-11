@@ -17,9 +17,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.HttpUpgrader;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.internal.HttpRequest;
+import org.eclipse.jetty.client.internal.HttpSender;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -55,7 +56,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
         MetaData.Request metaData;
         if (isTunnel)
         {
-            String upgradeProtocol = request.getUpgradeProtocol();
+            String upgradeProtocol = (String)request.getAttributes().get(HttpUpgrader.PROTOCOL_ATTRIBUTE);
             if (upgradeProtocol == null)
             {
                 metaData = new MetaData.ConnectRequest((String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null);

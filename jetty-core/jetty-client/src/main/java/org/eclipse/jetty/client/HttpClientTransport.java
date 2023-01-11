@@ -17,6 +17,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 
 /**
@@ -52,7 +53,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param request the request that triggers the creation of the Origin
      * @return an Origin that identifies a destination
      */
-    public Origin newOrigin(HttpRequest request);
+    public Origin newOrigin(Request request);
 
     /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
@@ -63,7 +64,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object
      */
-    public HttpDestination newHttpDestination(Origin origin);
+    public Destination newDestination(Origin origin);
 
     /**
      * Establishes a physical connection to the given {@code address}.

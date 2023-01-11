@@ -17,8 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.EmptyServerHandler;
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.FormRequestContent;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
