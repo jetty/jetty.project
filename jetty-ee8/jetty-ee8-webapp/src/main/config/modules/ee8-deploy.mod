@@ -38,9 +38,6 @@ etc/jetty-ee8-deploy.xml
 ## Comma separated list of configuration classes to set.
 # jetty.deploy.configurationClasses=
 
-## Base temporary directory for deployed web applications.
-# jetty.deploy.tempDir=
-
 ## Pattern to select jars from the container classloader to be scanned (or null to scan no jars)
 # jetty.deploy.containerScanJarPattern=.*/jetty-servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$
 

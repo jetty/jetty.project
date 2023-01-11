@@ -709,14 +709,6 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     {
         // Ensure the servlet is initialized prior to any filters being invoked
         getServlet();
-
-        // Check for multipart config
-        if (_registration != null)
-        {
-            MultipartConfigElement mpce = ((Registration)_registration).getMultipartConfig();
-            if (mpce != null)
-                request.setAttribute(ServletContextRequest.__MULTIPART_CONFIG_ELEMENT, mpce);
-        }
     }
 
     /**
@@ -1019,107 +1011,6 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         if (_registration == null)
             _registration = new Registration();
         return _registration;
-    }
-
-    private class SingleThreadedWrapper implements Servlet
-    {
-        Stack<Servlet> _stack = new Stack<>();
-
-        @Override
-        public void destroy()
-        {
-            try (AutoLock l = lock())
-            {
-                while (_stack.size() > 0)
-                {
-                    Servlet servlet = _stack.pop();
-                    try
-                    {
-                        servlet.destroy();
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Unable to destroy servlet {}", servlet, e);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public ServletConfig getServletConfig()
-        {
-            return _config;
-        }
-
-        @Override
-        public String getServletInfo()
-        {
-            return null;
-        }
-
-        @Override
-        public void init(ServletConfig config) throws ServletException
-        {
-            try (AutoLock l = lock())
-            {
-                if (_stack.size() == 0)
-                {
-                    try
-                    {
-                        Servlet s = newInstance();
-                        s.init(config);
-                        _stack.push(s);
-                    }
-                    catch (ServletException e)
-                    {
-                        throw e;
-                    }
-                    catch (Exception e)
-                    {
-                        throw new ServletException(e);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-        {
-            Servlet s;
-            try (AutoLock l = lock())
-            {
-                if (_stack.size() > 0)
-                    s = (Servlet)_stack.pop();
-                else
-                {
-                    try
-                    {
-                        s = newInstance();
-                        s.init(_config);
-                    }
-                    catch (ServletException e)
-                    {
-                        throw e;
-                    }
-                    catch (Exception e)
-                    {
-                        throw new ServletException(e);
-                    }
-                }
-            }
-
-            try
-            {
-                s.service(req, res);
-            }
-            finally
-            {
-                try (AutoLock l = lock())
-                {
-                    _stack.push(s);
-                }
-            }
-        }
     }
 
     /**

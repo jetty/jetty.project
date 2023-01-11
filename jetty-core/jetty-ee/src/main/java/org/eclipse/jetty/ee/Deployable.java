@@ -40,7 +40,7 @@ public interface Deployable
     };
 
     String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
-    String BASE_TEMP_DIR = "jetty.deploy.tempDir";
+    String TEMP_DIR = "jetty.deploy.tempDir";
     String CONFIGURATION_CLASSES = "jetty.deploy.configurationClasses";
     String CONTAINER_SCAN_JARS = "jetty.deploy.containerScanJarPattern";
     String CONTEXT_PATH = "jetty.deploy.contextPath";

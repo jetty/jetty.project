@@ -20,7 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
@@ -80,14 +82,6 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        File tempDirectory = context.getTempDirectory();
-
-        // if we're not persisting the temp dir contents delete it
-        if (!context.isPersistTempDirectory())
-        {
-            IO.delete(tempDirectory);
-        }
-
         //if it wasn't explicitly configured by the user, then unset it
         Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         if (tmpdirConfigured != null && !tmpdirConfigured)
@@ -128,10 +122,9 @@ public class WebInfConfiguration extends AbstractConfiguration
      * <p>
      * B. Create a directory based on global settings. The new directory
      * will be called <code>"Jetty-"+host+"-"+port+"__"+context+"-"+virtualhost+"-"+randomdigits+".dir"</code>
-     * <p>
-     * If the user has specified the context attribute {@link Server#BASE_TEMP_DIR_ATTR}, the
-     * directory specified by this attribute will be the parent of the temp dir created. Otherwise,
-     * the parent dir is <code>${java.io.tmpdir}</code>. Set delete on exit depends on value of persistTempDirectory.
+     * If the temporary directory is persistent, then the random digits are not added to the name.
+     * The {@link Server#getTempDirectory()} is used for the parent of a created temporary directory.
+     * </p>
      *
      * @param context the context to resolve the temp directory from
      * @throws Exception if unable to resolve the temp directory
@@ -140,69 +133,25 @@ public class WebInfConfiguration extends AbstractConfiguration
         throws Exception
     {
         //If a tmp directory is already set we should use it
-        File tmpDir = context.getTempDirectory();
-        if (tmpDir != null)
+        File tempDirectory = context.getTempDirectory();
+        if (tempDirectory != null)
         {
-            configureTempDirectory(tmpDir, context);
             context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE); //the tmp dir was set explicitly
             return;
         }
 
         // No temp directory configured, try to establish one via the jakarta.servlet.context.tempdir.
-        File servletTmpDir = asFile(context.getAttribute(WebAppContext.TEMPDIR));
+        File servletTmpDir = IO.asFile(context.getAttribute(ServletContext.TEMPDIR));
         if (servletTmpDir != null)
         {
             // Use as tmpDir
-            tmpDir = servletTmpDir;
-            configureTempDirectory(tmpDir, context);
-            // Ensure Attribute has File object
-            context.setAttribute(WebAppContext.TEMPDIR, tmpDir);
+            tempDirectory = servletTmpDir;
             // Set as TempDir in context.
-            context.setTempDirectory(tmpDir);
+            context.setTempDirectory(tempDirectory);
             return;
         }
 
-        //We need to make a temp dir. Check if the user has set a directory to use instead
-        //of java.io.tmpdir as the parent of the dir
-        File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
-        if (baseTemp != null)
-        {
-            if (!baseTemp.isDirectory() || !baseTemp.canWrite())
-                throw new IllegalStateException(WebAppContext.BASETEMPDIR + " is not a writable directory");
-
-            //Make a temp directory as a child of the given base dir
-            makeTempDirectory(baseTemp, context);
-            return;
-        }
-
-        //Look for a directory named "work" in ${jetty.base} and
-        //treat it as parent of a new temp dir (which we will persist)
-        File jettyBase = asFile(System.getProperty("jetty.base"));
-        if (jettyBase != null)
-        {
-            File work = new File(jettyBase, "work");
-            if (work.exists() && work.isDirectory() && work.canWrite())
-            {
-                context.setPersistTempDirectory(true);
-                makeTempDirectory(work, context);
-                return;
-            }
-        }
-
-        //Make a temp directory in java.io.tmpdir
-        makeTempDirectory(new File(System.getProperty("java.io.tmpdir")), context);
-    }
-
-    /**
-     * Given an Object, return File reference for object.
-     * Typically used to convert anonymous Object from getAttribute() calls to a File object.
-     *
-     * @param fileObject the file object to analyze and return from (supports type File, Path, and String).
-     * @return the File object if it can be converted otherwise null.
-     */
-    private File asFile(Object fileObject)
-    {
-        return IO.asFile(fileObject);
+        makeTempDirectory(context.getServer().getTempDirectory(), context);
     }
 
     public void makeTempDirectory(File parent, WebAppContext context)
@@ -211,60 +160,28 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
             throw new IllegalStateException("Parent for temp dir not configured correctly: " + (parent == null ? "null" : "writeable=" + parent.canWrite()));
 
+        boolean persistent = context.isTempDirectoryPersistent() || "work".equals(parent.toPath().getFileName().toString());
+
         //Create a name for the webapp
         String temp = getCanonicalNameForWebAppTmpDir(context);
-        File tmpDir = null;
-        if (context.isPersistTempDirectory())
+        File tmpDir;
+        if (persistent)
         {
             //if it is to be persisted, make sure it will be the same name
             //by not using File.createTempFile, which appends random digits
             tmpDir = new File(parent, temp);
-            configureTempDirectory(tmpDir, context);
         }
         else
         {
             // ensure dir will always be unique by having classlib generate random path name
             tmpDir = Files.createTempDirectory(parent.toPath(), temp).toFile();
             tmpDir.deleteOnExit();
-            ensureTempDirUsable(tmpDir);
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("Set temp dir {}", tmpDir);
         context.setTempDirectory(tmpDir);
-    }
-
-    public void configureTempDirectory(File dir, WebAppContext context)
-    {
-        if (dir == null)
-            throw new IllegalArgumentException("Null temp dir");
-
-        // if dir exists and we don't want it persisted, delete it
-        if (!context.isPersistTempDirectory() && dir.exists() && !IO.delete(dir))
-        {
-            throw new IllegalStateException("Failed to delete temp dir " + dir);
-        }
-
-        // if it doesn't exist make it
-        if (!dir.exists())
-        {
-            if (!dir.mkdirs())
-            {
-                throw new IllegalStateException("Unable to create temp dir " + dir);
-            }
-        }
-
-        if (!context.isPersistTempDirectory())
-            dir.deleteOnExit();
-
-        ensureTempDirUsable(dir);
-    }
-
-    private void ensureTempDirUsable(File dir)
-    {
-        // is it useable
-        if (!dir.canWrite() || !dir.isDirectory())
-            throw new IllegalStateException("Temp dir " + dir + " not useable: writeable=" + dir.canWrite() + ", dir=" + dir.isDirectory());
+        context.setTempDirectoryPersistent(persistent);
     }
 
     public void unpack(WebAppContext context) throws IOException
@@ -474,23 +391,22 @@ public class WebInfConfiguration extends AbstractConfiguration
      */
     public static String getCanonicalNameForWebAppTmpDir(WebAppContext context)
     {
-        StringBuffer canonicalName = new StringBuffer();
+        StringBuilder canonicalName = new StringBuilder();
         canonicalName.append("jetty-");
 
         //get the host and the port from the first connector
         Server server = context.getServer();
         if (server != null)
         {
-            Connector[] connectors = context.getServer().getConnectors();
+            Connector[] connectors = server.getConnectors();
 
             if (connectors.length > 0)
             {
                 //Get the host
                 String host = null;
                 int port = 0;
-                if (connectors != null && (connectors[0] instanceof NetworkConnector))
+                if (connectors[0] instanceof NetworkConnector connector)
                 {
-                    NetworkConnector connector = (NetworkConnector)connectors[0];
                     host = connector.getHost();
                     port = connector.getLocalPort();
                     if (port < 0)
@@ -499,12 +415,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (host == null)
                     host = "0.0.0.0";
                 canonicalName.append(host);
-
-                //Get the port
                 canonicalName.append("-");
-
-                //if not available (eg no connectors or connector not started),
-                //try getting one that was configured.
                 canonicalName.append(port);
                 canonicalName.append("-");
             }

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
@@ -23,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -45,11 +47,18 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -58,6 +67,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -646,6 +656,196 @@ public class ContextHandlerTest
         Handler.Collection handlerCollection = new Handler.Collection();
         contextHandlerA.setHandler(handlerCollection);
         assertThrows(IllegalStateException.class, () -> handlerCollection.addHandler(contextHandlerA));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSetTempDirectoryNotExists(boolean persistTempDir) throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectoryPersistent(persistTempDir);
+
+        // The temp directory is defined but has not been created.
+        File tempDir = MavenTestingUtils.getTargetTestingPath("tempDir").toFile();
+        IO.delete(tempDir);
+        context.setTempDirectory(tempDir);
+        assertThat(context.getTempDirectory(), is(tempDir));
+        assertFalse(context.getTempDirectory().exists());
+
+        // Once server is started the WebApp temp directory exists and is valid directory.
+        server.start();
+        File tempDirectory = context.getTempDirectory();
+        assertNotNull(tempDirectory);
+        assertTrue(tempDirectory.exists());
+        assertTrue(tempDirectory.isDirectory());
+
+        // Once server is stopped the WebApp temp should be deleted if persistTempDir is false.
+        server.stop();
+        tempDirectory = context.getTempDirectory();
+        assertThat(tempDirectory != null && tempDirectory.exists(), is(persistTempDir));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSetTempDirectoryExists(boolean persistTempDir) throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectoryPersistent(persistTempDir);
+
+        // The temp directory is defined and has already been created.
+        File tempDir = MavenTestingUtils.getTargetTestingPath("tempDir").toFile();
+        IO.delete(tempDir);
+        assertFalse(tempDir.exists());
+        assertTrue(tempDir.mkdir());
+        context.setTempDirectory(tempDir);
+        assertThat(context.getTempDirectory(), is(tempDir));
+        assertTrue(tempDir.exists());
+
+        // create some content
+        File someFile = new File(tempDir, "somefile.txt");
+        assertTrue(someFile.createNewFile());
+        assertTrue(someFile.exists());
+
+        // Once server is started the WebApp temp directory exists and is valid directory.
+        server.start();
+        File tempDirectory = context.getTempDirectory();
+        assertNotNull(tempDirectory);
+        assertTrue(tempDirectory.exists());
+        assertTrue(tempDirectory.isDirectory());
+
+        // Contents exists if persistent else it was deleted
+        if (persistTempDir)
+            assertTrue(someFile.exists());
+        else
+            assertFalse(someFile.exists());
+
+        // Once server is stopped the WebApp temp should be deleted if persistTempDir is false.
+        server.stop();
+        tempDirectory = context.getTempDirectory();
+        assertThat(tempDirectory != null && tempDirectory.exists(), is(persistTempDir));
+    }
+
+    private static void ensureWritable(File file)
+    {
+        if (file.exists())
+        {
+            assertTrue(file.setWritable(true));
+            if (file.isDirectory())
+            {
+                File[] files = file.listFiles();
+                if (files != null)
+                   for (File child : files)
+                        ensureWritable(child);
+            }
+        }
+    }
+
+    public static Stream<Arguments> okTempDirs() throws Exception
+    {
+        File test = MavenTestingUtils.getTargetTestingPath("testOK").toFile();
+        ensureWritable(test);
+        FS.ensureDeleted(test.toPath());
+        assertFalse(test.exists());
+        assertTrue(test.mkdir());
+        test.deleteOnExit();
+
+        File notDirectory = new File(test, "notDirectory.txt");
+        assertTrue(notDirectory.createNewFile());
+
+        File notWritable = new File(test, "notWritable");
+        assertTrue(notWritable.mkdir());
+        assertTrue(notWritable.setWritable(false));
+
+        File notWriteableParent = new File(test, "notWritableParent");
+        assertTrue(notWriteableParent.mkdir());
+        File cantDelete = new File(notWriteableParent, "cantDelete");
+        assertTrue(cantDelete.mkdirs());
+        assertTrue(notWriteableParent.setWritable(false));
+
+        return Stream.of(
+            Arguments.of(false, notDirectory),
+            Arguments.of(false, notWritable),
+            Arguments.of(true, cantDelete)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("okTempDirs")
+    public void testSetTempDirectoryOK(boolean persistent, File okTempDir) throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectory(okTempDir);
+        context.setTempDirectoryPersistent(persistent);
+
+        server.start();
+
+        assertTrue(context.getTempDirectory().exists());
+        assertTrue(context.getTempDirectory().isDirectory());
+        assertThat(context.getTempDirectory().getAbsolutePath(), equalTo(okTempDir.getAbsolutePath()));
+
+        server.stop();
+
+        if (persistent)
+        {
+            assertTrue(context.getTempDirectory().exists());
+            assertTrue(context.getTempDirectory().isDirectory());
+            assertThat(context.getTempDirectory().getAbsolutePath(), equalTo(okTempDir.getAbsolutePath()));
+        }
+        else
+        {
+            assertFalse(context.getTempDirectory().exists());
+        }
+    }
+
+    public static Stream<Arguments> badTempDirs() throws Exception
+    {
+        File test = MavenTestingUtils.getTargetTestingPath("testBad").toFile();
+        ensureWritable(test);
+        FS.ensureDeleted(test.toPath());
+        assertFalse(test.exists());
+        assertTrue(test.mkdir());
+        test.deleteOnExit();
+
+        File notDirectory = new File(test, "notDirectory.txt");
+        assertTrue(notDirectory.createNewFile());
+
+        File notWritable = new File(test, "notWritable");
+        assertTrue(notWritable.mkdir());
+        assertTrue(notWritable.setWritable(false));
+
+        File notWriteableParent = new File(test, "notWritableParent");
+        assertTrue(notWriteableParent.mkdir());
+        File cantCreate = new File(notWriteableParent, "temp");
+        File cantDelete = new File(notWriteableParent, "cantDelete");
+        assertTrue(cantDelete.mkdirs());
+        assertTrue(notWriteableParent.setWritable(false));
+
+        return Stream.of(
+            Arguments.of(true, notDirectory),
+            Arguments.of(true, notWritable),
+            Arguments.of(true, cantCreate),
+            Arguments.of(false, cantCreate),
+            Arguments.of(false, cantDelete)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("badTempDirs")
+    public void testSetTempDirectoryBad(boolean persistent, File badTempDir) throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        context.setTempDirectory(badTempDir);
+        context.setTempDirectoryPersistent(persistent);
+
+        assertThrows(IllegalArgumentException.class, server::start);
     }
 
     private static class ScopeListener implements ContextHandler.ContextScopeListener

@@ -93,6 +93,9 @@ etc/jetty.xml
 ## Dump the state of the Jetty server, components, and webapps after startup
 # jetty.server.dumpAfterStart=false
 
+## The temporary directory used by the Jetty server and as a root for its contexts
+# jetty.server.tempDirectory=
+
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
 # end::documentation-server-config[]

@@ -326,8 +326,7 @@ public class DelayedContentHandler extends Handler.Wrapper
             }
             else
             {
-                Object baseTempDirectory = getRequest().getContext().getAttribute(Server.BASE_TEMP_DIR_ATTR);
-                _formData.setFilesDirectory(IO.asFile(baseTempDirectory == null ? System.getProperty("java.io.tmpdir") : baseTempDirectory).toPath());
+                _formData.setFilesDirectory(getRequest().getContext().getTempDirectory().toPath());
                 readAndParse();
                 // if we are done already, then we are still in the scope of the original process call and can
                 // process directly, otherwise we must execute a call to process as we are within a serialized

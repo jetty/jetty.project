@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -102,6 +103,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static jakarta.servlet.ServletContext.TEMPDIR;
 
 /**
  * Servlet Context.
@@ -284,7 +287,14 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         // Link the handlers
         relinkHandlers();
     }
-    
+
+    @Override
+    public void setTempDirectory(File tempDirectory)
+    {
+        super.setTempDirectory(tempDirectory);
+        setAttribute(TEMPDIR, getTempDirectory());
+    }
+
     public ServletContextApi newServletContextApi()
     {
         return new ServletContextApi();

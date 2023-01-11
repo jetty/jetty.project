@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Uptime;
@@ -61,7 +64,6 @@ import org.slf4j.LoggerFactory;
 
 public class Server extends Handler.Wrapper implements Attributes
 {
-    public static final String BASE_TEMP_DIR_ATTR = "org.eclipse.jetty.server.BaseTempDir";
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private static final String __serverInfo = "jetty/" + Server.getVersion();
 
@@ -81,6 +83,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private volatile DateField _dateField;
     private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
+    private File _tempDirectory;
 
     public Server()
     {
@@ -130,6 +133,36 @@ public class Server extends Handler.Wrapper implements Attributes
     public String getServerInfo()
     {
         return _serverInfo;
+    }
+
+    /**
+     * <p>Set the temporary directory returned by {@link Context#getTempDirectory()} for the root
+     * {@link Context} returned {@link #getContext()}. If not set explicitly here, then the root
+     * {@link Context#getTempDirectory()} will return either the directory found at
+     * {@code new File(IO.asFile(System.getProperty("jetty.base")), "work")} if it exists, else
+     * else the JVMs temporary directory as {@code IO.asFile(System.getProperty("java.io.tmpdir"))}.
+     * @param temp A directory that must exist and be writable or null to get the default.
+     */
+    public void setTempDirectory(String temp)
+    {
+        setTempDirectory(new File(temp));
+    }
+
+    public void setTempDirectory(File temp)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        if (temp != null && !temp.exists())
+            throw new IllegalArgumentException("Does not exist: " + temp);
+        if (temp != null && !temp.canWrite())
+            throw new IllegalArgumentException("Cannot write: " + temp);
+        _tempDirectory = temp;
+    }
+
+    @ManagedAttribute("temporary directory")
+    public File getTempDirectory()
+    {
+        return _tempDirectory;
     }
 
     public void setServerInfo(String serverInfo)
@@ -721,6 +754,10 @@ public class Server extends Handler.Wrapper implements Attributes
 
     class ServerContext extends Attributes.Wrapper implements Context
     {
+        private final File jettyBase = IO.asFile(System.getProperty("jetty.base"));
+        private final File workDir = jettyBase != null && jettyBase.isDirectory() && jettyBase.canWrite()? new File(jettyBase, "work") : null;
+        private final File tempDir = workDir != null && workDir.isDirectory() && workDir.canWrite() ? workDir : IO.asFile(System.getProperty("java.io.tmpdir"));
+
         private ServerContext()
         {
             super(Server.this);
@@ -803,6 +840,12 @@ public class Server extends Handler.Wrapper implements Attributes
         public String getPathInContext(String fullPath)
         {
             return fullPath;
+        }
+
+        @Override
+        public File getTempDirectory()
+        {
+            return Objects.requireNonNullElse(Server.this.getTempDirectory(), tempDir);
         }
     }
 

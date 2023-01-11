@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -53,6 +52,7 @@ import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -82,10 +82,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
-    public static final String TEMPDIR = ServletContext.TEMPDIR;
-    public static final String BASETEMPDIR = Server.BASE_TEMP_DIR_ATTR;
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault-ee10.xml";
-    public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
 
@@ -127,9 +124,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _defaultContextPath = true;
 
     private String[] _contextWhiteList = null;
-
-    private File _tmpDir;
-    private boolean _persistTmpDir = false;
 
     private String _war;
     private List<Resource> _extraClasspath;
@@ -244,7 +238,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             switch (property)
             {
                 case Deployable.WAR -> setWar(value);
-                case Deployable.BASE_TEMP_DIR -> setAttribute(BASETEMPDIR, value);
+                case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
                 case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
@@ -583,13 +577,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private void dumpUrl()
     {
         Connector[] connectors = getServer().getConnectors();
-        for (int i = 0; i < connectors.length; i++)
+        for (Connector connector : connectors)
         {
             String displayName = getDisplayName();
             if (displayName == null)
                 displayName = "WebApp@" + Arrays.hashCode(connectors);
 
-            LOG.info("{} at http://{}{}", displayName, connectors[i].toString(), getContextPath());
+            LOG.info("{} at http://{}{}", displayName, connector.toString(), getContextPath());
         }
     }
 
@@ -1150,59 +1144,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setContextWhiteList(String... contextWhiteList)
     {
         _contextWhiteList = contextWhiteList;
-    }
-
-    /**
-     * Set temporary directory for context.
-     * The jakarta.servlet.context.tempdir attribute is also set.
-     *
-     * @param dir Writable temporary directory.
-     */
-    public void setTempDirectory(File dir)
-    {
-        if (isStarted())
-            throw new IllegalStateException("Started");
-
-        if (dir != null)
-        {
-            try
-            {
-                dir = new File(dir.getCanonicalPath());
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to find canonical path for {}", dir, e);
-            }
-        }
-
-        _tmpDir = dir;
-        setAttribute(TEMPDIR, _tmpDir);
-    }
-
-    @ManagedAttribute(value = "temporary directory location", readonly = true)
-    public File getTempDirectory()
-    {
-        return _tmpDir;
-    }
-
-    /**
-     * If true the temp directory for this
-     * webapp will be kept when the webapp stops. Otherwise,
-     * it will be deleted.
-     *
-     * @param persist true to persist the temp directory on shutdown / exit of the webapp
-     */
-    public void setPersistTempDirectory(boolean persist)
-    {
-        _persistTmpDir = persist;
-    }
-
-    /**
-     * @return true if tmp directory will persist between startups of the webapp
-     */
-    public boolean isPersistTempDirectory()
-    {
-        return _persistTmpDir;
     }
 
     /**

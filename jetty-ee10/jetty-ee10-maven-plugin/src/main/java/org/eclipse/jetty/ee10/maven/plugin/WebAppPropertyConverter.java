@@ -102,7 +102,7 @@ public class WebAppPropertyConverter
         //tmp dir
         props.put(TMP_DIR, webApp.getTempDirectory().getAbsolutePath());
         //props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
-        props.put(TMP_DIR_PERSIST, Boolean.toString(webApp.isPersistTempDirectory()));
+        props.put(TMP_DIR_PERSIST, Boolean.toString(webApp.isTempDirectoryPersistent()));
 
         //send over the calculated resource bases that includes unpacked overlays
         Resource baseResource = webApp.getBaseResource();
@@ -219,7 +219,7 @@ public class WebAppPropertyConverter
 
         str = webAppProperties.getProperty(TMP_DIR_PERSIST);
         if (!StringUtil.isBlank(str))
-            webApp.setPersistTempDirectory(Boolean.valueOf(str));
+            webApp.setTempDirectoryPersistent(Boolean.valueOf(str));
 
         //Get the calculated base dirs which includes the overlays
         str = webAppProperties.getProperty(BASE_DIRS);

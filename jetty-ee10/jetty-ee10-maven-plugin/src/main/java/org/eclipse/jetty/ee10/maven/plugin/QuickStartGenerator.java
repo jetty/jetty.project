@@ -153,7 +153,7 @@ public class QuickStartGenerator
             ServerSupport.addWebApplication(server, webApp);
 
             //leave everything unpacked for the forked process to use
-            webApp.setPersistTempDirectory(true);
+            webApp.setTempDirectoryPersistent(true);
         }
 
         try

@@ -200,45 +200,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     }
 
     /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(String directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory);
-    }
-
-    /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(File directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory.getAbsolutePath());
-    }
-
-    /**
-     * Get the temporary directory for deployment.
-     * <p>
-     * This is equivalent to getting the {@link Deployable#BASE_TEMP_DIR} property.
-     *
-     * @return the user supplied work directory (null if user has not set Temp Directory yet)
-     */
-    public File getTempDir()
-    {
-        String tmpDir = _properties.get(Deployable.BASE_TEMP_DIR);
-        return tmpDir == null ? null : new File(tmpDir);
-    }
-    
-    /**
      * @param tldBundles Comma separated list of bundles that contain tld jars
      * that should be setup on the context instances created here.
      */
