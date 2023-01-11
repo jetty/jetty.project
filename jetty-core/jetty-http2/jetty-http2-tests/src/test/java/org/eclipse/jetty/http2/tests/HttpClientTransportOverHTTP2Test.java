@@ -34,14 +34,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -328,14 +328,14 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
         {
             @Override
-            protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+            protected Connection newConnection(Destination destination, Session session)
             {
                 return new HttpConnectionOverHTTP2(destination, session)
                 {
                     @Override
                     protected HttpChannelOverHTTP2 newHttpChannel()
                     {
-                        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
+                        return new HttpChannelOverHTTP2(this, getSession())
                         {
                             @Override
                             public void setStream(Stream stream)
@@ -353,7 +353,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
 
             @Override
-            protected void onClose(HttpConnection connection, GoAwayFrame frame)
+            protected void onClose(Connection connection, GoAwayFrame frame)
             {
                 super.onClose(connection, frame);
                 lastStream.set(frame.getLastStreamId());
@@ -372,7 +372,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        org.eclipse.jetty.client.api.Request request = httpClient.newRequest("localhost", connector.getLocalPort())
+        org.eclipse.jetty.client.Request request = httpClient.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.HEAD)
             .path("/one");
         request.send(result ->
@@ -522,10 +522,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)
             {
                 @Override
-                protected HttpConnection newHttpConnection(HttpDestination destination, Session session)
+                protected Connection newConnection(Destination destination, Session session)
                 {
                     sessions.add(session);
-                    return super.newHttpConnection(destination, session);
+                    return super.newConnection(destination, session);
                 }
             });
             QueuedThreadPool clientExecutor = new QueuedThreadPool();

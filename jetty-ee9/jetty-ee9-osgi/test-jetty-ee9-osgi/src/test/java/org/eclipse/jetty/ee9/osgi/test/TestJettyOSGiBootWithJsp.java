@@ -16,8 +16,8 @@ package org.eclipse.jetty.ee9.osgi.test;
 import java.util.ArrayList;
 import javax.inject.Inject;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;

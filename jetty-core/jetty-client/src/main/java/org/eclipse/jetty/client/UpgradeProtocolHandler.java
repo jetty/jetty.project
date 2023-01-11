@@ -15,9 +15,10 @@ package org.eclipse.jetty.client;
 
 import java.util.List;
 
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.internal.HttpConversation;
+import org.eclipse.jetty.client.internal.HttpRequest;
+import org.eclipse.jetty.client.internal.HttpResponse;
+import org.eclipse.jetty.client.internal.ResponseNotifier;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;

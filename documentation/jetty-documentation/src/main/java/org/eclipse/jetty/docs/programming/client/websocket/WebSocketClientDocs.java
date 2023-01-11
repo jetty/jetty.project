@@ -19,9 +19,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.ee10.websocket.api.Session;
 import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.client.JettyUpgradeListener;
@@ -175,7 +175,7 @@ public class WebSocketClientDocs
         JettyUpgradeListener listener = new JettyUpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 // Inspect the HTTP response here.
             }

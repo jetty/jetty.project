@@ -25,5 +25,5 @@ module org.eclipse.jetty.http3.client
     exports org.eclipse.jetty.http3.client;
 
     exports org.eclipse.jetty.http3.client.internal to
-        org.eclipse.jetty.http3.http.client.transport;
+        org.eclipse.jetty.http3.client.transport;
 }

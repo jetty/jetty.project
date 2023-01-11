@@ -31,6 +31,8 @@ public interface Retainable
      * can be called safely.</p>
      * <p>Implementations may decide that special resources are not retainable (for example,
      * {@code static} constants) so calling {@link #retain()} is not safe because it may throw.</p>
+     * <p>Calling {@link #release()} on those special resources is typically allowed, and
+     * it is a no-operation.</p>
      *
      * @return whether it is safe to call {@link #retain()}
      */

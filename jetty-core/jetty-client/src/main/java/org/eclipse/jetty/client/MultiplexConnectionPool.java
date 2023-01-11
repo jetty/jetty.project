@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -21,12 +20,12 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class MultiplexConnectionPool extends AbstractConnectionPool
 {
-    public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int initialMaxMultiplex)
+    public MultiplexConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        this(destination, Pool.StrategyType.FIRST, maxConnections, false, requester, initialMaxMultiplex);
+        this(destination, Pool.StrategyType.FIRST, maxConnections, false, initialMaxMultiplex);
     }
 
-    protected MultiplexConnectionPool(HttpDestination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, Callback requester, int initialMaxMultiplex)
+    protected MultiplexConnectionPool(Destination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, int initialMaxMultiplex)
     {
         super(destination, new Pool<>(strategy, maxConnections, cache, connection ->
         {
@@ -34,7 +33,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
             if (connection instanceof MaxMultiplexable maxMultiplexable)
                 maxMultiplex = maxMultiplexable.getMaxMultiplex();
             return maxMultiplex;
-        }), requester, initialMaxMultiplex);
+        }), initialMaxMultiplex);
     }
 
     @Override

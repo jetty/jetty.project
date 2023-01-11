@@ -24,9 +24,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -143,11 +143,29 @@ public class MainTest
     }
 
     @Test
-    @Disabled("Just a bit noisy for general testing")
     public void testHelp() throws Exception
     {
-        Main main = new Main();
-        main.usage(false);
+        String capturedOutput = null;
+
+        PrintStream originalOut = System.out;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             PrintStream ps = new PrintStream(baos))
+        {
+            System.err.println("Capturing output of --help");
+            System.setOut(ps);
+            Main main = new Main();
+            main.usage(false);
+            System.out.flush();
+            capturedOutput = baos.toString(StandardCharsets.UTF_8);
+        }
+        finally
+        {
+            System.setOut(originalOut);
+        }
+
+        Path usageFile = MavenPaths.findMainResourceFile("org/eclipse/jetty/start/usage.txt");
+        String usageText = Files.readString(usageFile, StandardCharsets.UTF_8);
+        assertThat("Captured Output", capturedOutput, containsString(usageText));
     }
 
     @Test

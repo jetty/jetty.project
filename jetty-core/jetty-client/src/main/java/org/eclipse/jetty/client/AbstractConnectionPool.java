@@ -25,9 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.util.Attachable;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Pool;
@@ -49,17 +48,15 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     private final AtomicInteger pending = new AtomicInteger();
     private final HttpDestination destination;
-    private final Callback requester;
     private final Pool<Connection> pool;
     private boolean maximizeConnections;
     private volatile long maxDurationNanos;
     private volatile int maxUsage;
     private volatile int initialMaxMultiplex;
 
-    protected AbstractConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester, int initialMaxMultiplex)
+    protected AbstractConnectionPool(Destination destination, Pool<Connection> pool, int initialMaxMultiplex)
     {
-        this.destination = destination;
-        this.requester = requester;
+        this.destination = (HttpDestination)destination;
         this.pool = pool;
         this.initialMaxMultiplex = initialMaxMultiplex;
         addBean(pool);
@@ -307,7 +304,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     protected void proceed()
     {
-        requester.succeeded();
+        destination.succeeded();
     }
 
     protected Connection activate()
@@ -587,7 +584,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             pending.decrementAndGet();
             reserved.remove();
             completeExceptionally(x);
-            requester.failed(x);
+            destination.failed(x);
         }
     }
 
