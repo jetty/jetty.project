@@ -414,9 +414,10 @@ public class HttpClientDemandTest extends AbstractTest
         client.newRequest(newURI(transport))
             .onResponseContentAsync((response, chunk, demander) ->
             {
+                boolean demand = chunk.hasRemaining();
                 received.put(chunk.getByteBuffer());
                 chunk.release();
-                if (chunk.hasRemaining())
+                if (demand)
                     new Thread(demander).start();
             })
             .send(result ->
