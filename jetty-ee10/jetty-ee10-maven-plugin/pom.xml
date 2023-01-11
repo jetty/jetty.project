@@ -62,6 +62,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
+        <configuration>
+          <goalPrefix>jetty</goalPrefix>
+        </configuration>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
