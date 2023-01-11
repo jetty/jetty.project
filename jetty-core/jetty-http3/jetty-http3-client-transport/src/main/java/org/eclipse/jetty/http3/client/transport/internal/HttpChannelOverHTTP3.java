@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.http3.client.transport.internal;
 
-import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpReceiver;
-import org.eclipse.jetty.client.HttpSender;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.internal.HttpChannel;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.internal.HttpReceiver;
+import org.eclipse.jetty.client.internal.HttpSender;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
@@ -31,9 +30,9 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     private final HttpReceiverOverHTTP3 receiver;
     private Stream stream;
 
-    public HttpChannelOverHTTP3(HttpDestination destination, HttpConnectionOverHTTP3 connection, HTTP3SessionClient session)
+    public HttpChannelOverHTTP3(HttpConnectionOverHTTP3 connection, HTTP3SessionClient session)
     {
-        super(destination);
+        super(connection.getHttpDestination());
         this.connection = connection;
         this.session = session;
         sender = new HttpSenderOverHTTP3(this);

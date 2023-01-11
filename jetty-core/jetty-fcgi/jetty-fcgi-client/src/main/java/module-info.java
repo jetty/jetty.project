@@ -18,7 +18,7 @@ module org.eclipse.jetty.fcgi.client
     requires transitive org.eclipse.jetty.client;
 
     exports org.eclipse.jetty.fcgi;
-    exports org.eclipse.jetty.fcgi.client.http;
+    exports org.eclipse.jetty.fcgi.client.transport;
 
     exports org.eclipse.jetty.fcgi.generator to org.eclipse.jetty.fcgi.server;
     exports org.eclipse.jetty.fcgi.parser to org.eclipse.jetty.fcgi.server;

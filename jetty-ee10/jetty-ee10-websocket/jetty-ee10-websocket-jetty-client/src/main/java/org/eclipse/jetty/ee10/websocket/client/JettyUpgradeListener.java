@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.client;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 
 public interface JettyUpgradeListener
 {
@@ -23,7 +23,7 @@ public interface JettyUpgradeListener
      *
      * @param request the request
      */
-    default void onHandshakeRequest(HttpRequest request)
+    default void onHandshakeRequest(Request request)
     {
     }
 
@@ -33,7 +33,7 @@ public interface JettyUpgradeListener
      * @param request the request that was used
      * @param response the response that was received
      */
-    default void onHandshakeResponse(HttpRequest request, HttpResponse response)
+    default void onHandshakeResponse(Request request, Response response)
     {
     }
 }

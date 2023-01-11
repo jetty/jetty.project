@@ -198,7 +198,7 @@ public class CoreAutobahnClient
     {
         // We manually set the port as we run the server in docker container.
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, uri, handler);
-        upgradeRequest.addHeader(new HttpField(HttpHeader.HOST, "localhost:9001"));
+        upgradeRequest.headers(headers -> headers.put(new HttpField(HttpHeader.HOST, "localhost:9001")));
         return client.connect(upgradeRequest);
     }
 

@@ -39,8 +39,7 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
@@ -532,7 +531,7 @@ public class HttpClientTLSTest
             client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
             {
                 @Override
-                protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+                public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
                 {
                     SslClientConnectionFactory ssl = (SslClientConnectionFactory)super.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
                     ssl.setRequireCloseMessage(true);
@@ -663,7 +662,7 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
@@ -692,7 +691,7 @@ public class HttpClientTLSTest
 
         // Create a connection but don't use it.
         Origin origin = new Origin(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort());
-        HttpDestination destination = client.resolveDestination(origin);
+        Destination destination = client.resolveDestination(origin);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
         ConnectionPoolHelper.tryCreate(connectionPool);
@@ -1095,7 +1094,7 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
@@ -1125,7 +1124,7 @@ public class HttpClientTLSTest
 
         // Create a connection but don't use it.
         Origin origin = new Origin(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort());
-        HttpDestination destination = client.resolveDestination(origin);
+        Destination destination = client.resolveDestination(origin);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
         ConnectionPoolHelper.tryCreate(connectionPool);
@@ -1157,7 +1156,7 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
@@ -1237,7 +1236,7 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();

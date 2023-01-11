@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee9.websocket.tests;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.client.JettyUpgradeListener;
@@ -74,7 +74,7 @@ public class ConnectionHeaderTest
         JettyUpgradeListener upgradeListener = new JettyUpgradeListener()
         {
             @Override
-            public void onHandshakeRequest(HttpRequest request)
+            public void onHandshakeRequest(Request request)
             {
                 HttpFields fields = request.getHeaders();
                 if (!(fields instanceof HttpFields.Mutable))
