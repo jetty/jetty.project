@@ -60,6 +60,7 @@ public class ContentSourceTransformerTest
 
         chunk = transformer.read();
         assertNotNull(chunk);
+        chunk.release();
         assertTrue(chunk.isLast());
     }
 
@@ -76,15 +77,18 @@ public class ContentSourceTransformerTest
         Content.Chunk chunk = transformer.read();
         assertNotNull(chunk);
         assertEquals("one", UTF_8.decode(chunk.getByteBuffer()).toString());
+        chunk.release();
 
         chunk = transformer.read();
         assertNotNull(chunk);
         assertEquals("two", UTF_8.decode(chunk.getByteBuffer()).toString());
+        chunk.release();
         if (last)
             assertTrue(chunk.isLast());
 
         chunk = transformer.read();
         assertNotNull(chunk);
+        chunk.release();
         assertTrue(chunk.isLast());
     }
 
@@ -103,6 +107,7 @@ public class ContentSourceTransformerTest
             {
                 Content.Chunk chunk = transformer.read();
                 assertNotNull(chunk);
+                chunk.release();
                 if (chunk.isLast())
                     break;
             }
@@ -131,6 +136,7 @@ public class ContentSourceTransformerTest
                 Content.Chunk chunk = transformer.read();
                 assertNotNull(chunk);
                 assertEquals(expected.poll(), UTF_8.decode(chunk.getByteBuffer()).toString());
+                chunk.release();
 
                 if (!chunk.isLast())
                     transformer.demand(this);
@@ -162,7 +168,10 @@ public class ContentSourceTransformerTest
 
                 Content.Chunk chunk = transformer.read();
                 if (chunk != null)
+                {
                     assertEquals(expected.poll(), UTF_8.decode(chunk.getByteBuffer()).toString());
+                    chunk.release();
+                }
 
                 if (chunk == null || !chunk.isLast())
                     transformer.demand(this);
@@ -184,6 +193,7 @@ public class ContentSourceTransformerTest
             Content.Chunk chunk = transformer.read();
             assertTrue(chunk.isLast());
             assertFalse(chunk.hasRemaining());
+            chunk.release();
             expected.poll();
         });
 
@@ -213,6 +223,7 @@ public class ContentSourceTransformerTest
                 Content.Chunk chunk = transformer.read();
                 assertNotNull(chunk);
                 assertEquals("one", UTF_8.decode(chunk.getByteBuffer()).toString());
+                chunk.release();
 
                 // This demand will be fulfilled later after the last chunk has been read.
                 transformer.demand(this);
@@ -221,6 +232,7 @@ public class ContentSourceTransformerTest
                 assertNotNull(chunk);
                 assertEquals("two", UTF_8.decode(chunk.getByteBuffer()).toString());
                 assertTrue(chunk.isLast());
+                chunk.release();
 
                 if (!reEnter.compareAndSet(true, false))
                     throw new IllegalStateException();
@@ -244,6 +256,7 @@ public class ContentSourceTransformerTest
         Content.Chunk chunk = transformer.read();
         assertNotNull(chunk);
         assertEquals("one", UTF_8.decode(chunk.getByteBuffer()).toString());
+        chunk.release();
 
         chunk = transformer.read();
         assertInstanceOf(Content.Chunk.Error.class, chunk);
@@ -268,6 +281,7 @@ public class ContentSourceTransformerTest
         Content.Chunk chunk = transformer.read();
         assertNotNull(chunk);
         assertEquals("one", UTF_8.decode(chunk.getByteBuffer()).toString());
+        chunk.release();
 
         chunk = transformer.read();
         assertInstanceOf(Content.Chunk.Error.class, chunk);
@@ -287,6 +301,7 @@ public class ContentSourceTransformerTest
         Content.Chunk chunk = transformer.read();
         assertNotNull(chunk);
         assertEquals("one", UTF_8.decode(chunk.getByteBuffer()).toString());
+        chunk.release();
 
         source.fail(new IOException());
 

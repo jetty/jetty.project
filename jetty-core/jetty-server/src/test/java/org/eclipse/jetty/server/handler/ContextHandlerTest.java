@@ -316,7 +316,8 @@ public class ContextHandlerTest
                         },
                         t ->
                         {
-                            throw new IllegalStateException();
+                            chunk.release();
+                            throw new IllegalStateException(t);
                         }));
                 });
                 return true;

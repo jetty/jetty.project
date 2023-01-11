@@ -77,6 +77,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         boolean last = frame.remaining() == 0 && frame.isEndStream();
         if (!last)
             return Content.Chunk.asChunk(frame.getData(), last, data);
+        data.release();
         responseSuccess(getHttpExchange(), null);
         return Content.Chunk.EOF;
     }

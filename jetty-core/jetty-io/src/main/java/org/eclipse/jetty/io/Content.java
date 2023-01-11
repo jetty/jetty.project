@@ -526,7 +526,7 @@ public class Content
         }
 
         /**
-         * <p>Returns the chunk that follows a chunk that has been consumed.</p>
+         * <p>Returns the chunk that follows the given chunk.</p>
          * <table>
          * <caption>Next Chunk</caption>
          * <thead>

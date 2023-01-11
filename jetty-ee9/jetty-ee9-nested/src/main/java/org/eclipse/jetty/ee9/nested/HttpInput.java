@@ -570,10 +570,8 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public static class Content implements Callback
     {
-        public static Content from(org.eclipse.jetty.io.Content.Chunk chunk)
+        public static Content asChunk(org.eclipse.jetty.io.Content.Chunk chunk)
         {
-            if (chunk.canRetain())
-                chunk.retain();
             if (chunk instanceof org.eclipse.jetty.io.Content.Chunk.Error error)
                 return new ErrorContent(error.getCause());
             if (chunk.isLast() && !chunk.hasRemaining())

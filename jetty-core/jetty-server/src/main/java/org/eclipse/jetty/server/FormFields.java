@@ -138,11 +138,12 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
     @Override
     public void run()
     {
+        Content.Chunk chunk = null;
         try
         {
             while (true)
             {
-                Content.Chunk chunk = _source.read();
+                chunk = _source.read();
                 if (chunk == null)
                 {
                     _source.demand(this);
@@ -163,6 +164,8 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                     if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
                     {
                         chunk.release();
+                        // Do not double release if completeExceptionally() throws.
+                        chunk = null;
                         completeExceptionally(new IllegalStateException("form with too many fields"));
                         return;
                     }
@@ -172,6 +175,8 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
                 chunk.release();
                 if (chunk.isLast())
                 {
+                    // Do not double release if complete() throws.
+                    chunk = null;
                     complete(_fields);
                     return;
                 }
@@ -179,6 +184,8 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
         }
         catch (Throwable x)
         {
+            if (chunk != null)
+                chunk.release();
             completeExceptionally(x);
         }
     }

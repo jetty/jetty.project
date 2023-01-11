@@ -1411,7 +1411,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
-                    chunk.release();
                     // Do not notify the callback yet.
                     demanderRef.set(demander);
                     contentLatch.countDown();

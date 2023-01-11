@@ -238,7 +238,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private Content.Chunk createChunk(Stream.Data data)
     {
         if (data == Stream.Data.EOF)
+        {
+            data.release();
             return Content.Chunk.EOF;
+        }
         return Content.Chunk.asChunk(data.getByteBuffer(), data.isLast(), data);
     }
 

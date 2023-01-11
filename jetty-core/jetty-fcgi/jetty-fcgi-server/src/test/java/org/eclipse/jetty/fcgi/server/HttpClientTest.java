@@ -651,7 +651,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .scheme(scheme)
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                chunk.release();
                 contentCount.incrementAndGet();
                 demanderRef.set(demander);
                 contentLatch.get().countDown();

@@ -186,6 +186,7 @@ public class ContentSourceTest
 
                 Content.Chunk chunk = source.read();
                 assertNotNull(chunk);
+                chunk.release();
 
                 // Demand again, it must not recurse.
                 if (!chunk.isLast())
@@ -209,6 +210,7 @@ public class ContentSourceTest
             {
                 Content.Chunk chunk = source.read();
                 assertNotNull(chunk);
+                chunk.release();
 
                 if (!chunk.isLast())
                 {
@@ -229,6 +231,7 @@ public class ContentSourceTest
     {
         Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
+        chunk.release();
 
         source.fail(new CancellationException());
 
@@ -274,6 +277,7 @@ public class ContentSourceTest
 
         Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
+        chunk.release();
 
         source.demand(() ->
         {

@@ -687,6 +687,9 @@ public abstract class ProxyHandler extends Handler.Abstract
             ByteBuffer serverToProxyContent = serverToProxyChunk.getByteBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
+
+            if (serverToProxyChunk.canRetain())
+                serverToProxyChunk.retain();
             Callback callback = new Callback()
             {
                 @Override
@@ -714,6 +717,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                     return InvocationType.NON_BLOCKING;
                 }
             };
+
             proxyToClientResponse.write(false, serverToProxyContent, callback);
         }
 

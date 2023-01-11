@@ -183,9 +183,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (chunk.isLast())
             onContentComplete();
 
-        HttpInput.Content content = HttpInput.Content.from(chunk);
-        chunk.release();
-        return content;
+        return HttpInput.Content.asChunk(chunk);
     }
 
     /**
@@ -967,7 +965,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
-        _combinedListener.onRequestContent(_request, content.getByteBuffer());
+        _combinedListener.onRequestContent(_request, content.getByteBuffer().slice());
     }
 
     void onContentComplete()

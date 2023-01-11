@@ -166,8 +166,9 @@ public class HttpServerTestFixture
                     int r = c.remaining();
                     c.get(content, offset, r);
                     offset += r;
-                    c.release();
                 }
+
+                c.release();
 
                 if (c.isLast())
                     break;

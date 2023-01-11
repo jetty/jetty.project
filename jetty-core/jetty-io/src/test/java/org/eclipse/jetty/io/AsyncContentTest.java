@@ -57,6 +57,7 @@ public class AsyncContentTest
 
             Content.Chunk chunk = async.read();
             assertNotNull(chunk);
+            chunk.release();
         }
     }
 
@@ -75,6 +76,7 @@ public class AsyncContentTest
 
         Content.Chunk chunk = async.read();
         assertNotNull(chunk);
+        chunk.release();
         assertTrue(chunk.isLast());
     }
 
@@ -87,6 +89,7 @@ public class AsyncContentTest
 
             Content.Chunk chunk = async.read();
             assertNotNull(chunk);
+            chunk.release();
 
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
@@ -178,11 +181,13 @@ public class AsyncContentTest
             Content.Chunk chunk1 = async.read();
             assertThat(chunk1.isLast(), is(true));
             assertThat(chunk1.hasRemaining(), is(false));
+            chunk1.release();
 
             Content.Chunk chunk2 = async.read();
             assertThat(chunk2.isLast(), is(true));
             assertThat(chunk2.hasRemaining(), is(false));
             assertSame(chunk1, chunk2);
+            chunk2.release();
         }
     }
 

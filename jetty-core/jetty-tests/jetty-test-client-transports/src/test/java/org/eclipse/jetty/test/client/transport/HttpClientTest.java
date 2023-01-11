@@ -516,7 +516,6 @@ public class HttpClientTest extends AbstractTest
         client.newRequest(newURI(transport))
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                chunk.release();
                 if (counter.incrementAndGet() == 1)
                 {
                     demanderRef.set(demander);
@@ -948,6 +947,10 @@ public class HttpClientTest extends AbstractTest
         assertThat(chunks3.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(0));
         assertThat(chunks3.size(), is(1));
         assertThat(chunks3.get(0), instanceOf(Content.Chunk.Error.class));
+
+        chunks1.forEach(Content.Chunk::release);
+        chunks2.forEach(Content.Chunk::release);
+        chunks3.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -986,6 +989,10 @@ public class HttpClientTest extends AbstractTest
         assertThat(chunks3.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(0));
         assertThat(chunks3.size(), is(1));
         assertThat(chunks3.get(0), instanceOf(Content.Chunk.Error.class));
+
+        chunks1.forEach(Content.Chunk::release);
+        chunks2.forEach(Content.Chunk::release);
+        chunks3.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
