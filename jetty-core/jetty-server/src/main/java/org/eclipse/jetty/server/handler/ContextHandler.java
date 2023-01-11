@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -122,6 +123,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private boolean _allowNullPathInContext;
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
+    private File _tempDirectory;
+    private boolean _tempDirectoryPersisted = false;
 
     public enum Availability
     {
@@ -177,6 +180,60 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected ScopedContext newContext()
     {
         return new ScopedContext();
+    }
+
+    @ManagedAttribute(value = "temporary directory location", readonly = true)
+    public File getTempDirectory()
+    {
+        return _tempDirectory;
+    }
+
+    /**
+     * <p>Set the temporary directory returned by {@link ScopedContext#getTempDirectory()}.  If not set here,
+     * then the {@link Server#getTempDirectory()} is returned by {@link ScopedContext#getTempDirectory()}.</p>
+     * <p>If {@link #isTempDirectoryPersistent()} is true, the directory set here is used directly but may
+     * be created if it does not exist. If {@link #isTempDirectoryPersistent()} is false, then any ile set
+     * here will be deleted and recreated as a directory during {@link #start()} and will be deleted during
+     * {@link #stop()}.</p>
+     * @see #setTempDirectoryPersistent(boolean)
+     * @param tempDirectory A directory. If it does not exist, it must be able to be created during start.
+     */
+    public void setTempDirectory(File tempDirectory)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Started");
+
+        if (tempDirectory != null)
+        {
+            try
+            {
+                tempDirectory = new File(tempDirectory.getCanonicalPath());
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to find canonical path for {}", tempDirectory, e);
+            }
+        }
+        _tempDirectory = tempDirectory;
+    }
+
+    /**
+     * <p>Set if the temp directory for this context will be kept over a stop and start cycle.</p>
+     *
+     * @see #setTempDirectory(File)
+     * @param persist true to persist the temp directory on shutdown / exit of the context
+     */
+    public void setTempDirectoryPersistent(boolean persist)
+    {
+        _tempDirectoryPersisted = persist;
+    }
+
+    /**
+     * @return true if tmp directory will persist between startups of the context
+     */
+    public boolean isTempDirectoryPersistent()
+    {
+        return _tempDirectoryPersisted;
     }
 
     /**
@@ -585,6 +642,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _availability.set(Availability.STARTING);
         try
         {
+            configureTempDirectory();
             _context.call(super::doStart, null);
             _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
             LOG.info("Started {}", this);
@@ -595,10 +653,45 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
+    protected void configureTempDirectory()
+    {
+        File tempDirectory = getTempDirectory();
+        if (tempDirectory != null)
+        {
+            if (isTempDirectoryPersistent())
+            {
+                // Create the directory if it doesn't exist
+                if (!tempDirectory.exists() && !tempDirectory.mkdirs())
+                    throw new IllegalArgumentException("Unable to create temp dir: " + tempDirectory);
+            }
+            else
+            {
+                // Delete and recreate it to ensure it is empty
+                if (tempDirectory.exists() && !IO.delete(tempDirectory))
+                    throw new IllegalArgumentException("Failed to delete temp dir: " + tempDirectory);
+                if (!tempDirectory.mkdirs())
+                    throw new IllegalArgumentException("Unable to create temp dir: " + tempDirectory);
+
+                // ensure it is removed on exist
+                tempDirectory.deleteOnExit();
+            }
+
+            // is it useable
+            if (!tempDirectory.canWrite() || !tempDirectory.isDirectory())
+                throw new IllegalArgumentException("Temp dir " + tempDirectory + " not useable: writeable=" + tempDirectory.canWrite() + ", dir=" + tempDirectory.isDirectory());
+        }
+    }
+
     @Override
     protected void doStop() throws Exception
     {
         _context.call(super::doStop, null);
+
+        File tempDirectory = getTempDirectory();
+
+        // if we're not persisting the temp dir contents delete it
+        if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
+            IO.delete(tempDirectory);
     }
 
     public boolean checkVirtualHost(Request request)
@@ -787,7 +880,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (path == null)
         {
             // allow user to unset variable
-            setBaseResource((Resource)null);
+            setBaseResource(null);
             return;
         }
 
@@ -806,7 +899,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      */
     public void setBaseResourceAsString(String base)
     {
-        setBaseResource((Resource)(base == null ? null : ResourceFactory.of(this).newResource(base)));
+        setBaseResource((base == null ? null : ResourceFactory.of(this).newResource(base)));
     }
 
     /**
@@ -1074,6 +1167,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         public Resource getBaseResource()
         {
             return _baseResource;
+        }
+
+        @Override
+        public File getTempDirectory()
+        {
+            File tempDirectory = ContextHandler.this.getTempDirectory();
+            if (tempDirectory == null)
+                tempDirectory = getServer().getTempDirectory();
+            return tempDirectory;
         }
 
         @Override

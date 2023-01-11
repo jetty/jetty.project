@@ -224,14 +224,14 @@ public class ServletContextRequest extends ContextRequest
     @Override
     public Object getAttribute(String name)
     {
-        // return hidden attributes for request logging
-        // TODO does this actually work?   Does the request logger have the wrapped request?
         return switch (name)
         {
             case "o.e.j.s.s.ServletScopedRequest.request" -> _httpServletRequest;
             case "o.e.j.s.s.ServletScopedRequest.response" -> _response.getHttpServletResponse();
             case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(getPathInContext()).getServletName();
             case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getPathInContext()).getPattern();
+            case __MULTIPART_CONFIG_ELEMENT -> (_mappedServlet.getServletHolder().getRegistration() instanceof ServletHolder.Registration registration)
+                 ? registration.getMultipartConfig() : null;
             default -> super.getAttribute(name);
         };
     }
