@@ -18,9 +18,12 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.internal.IConnection;
+import org.eclipse.jetty.client.internal.SendFailure;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
@@ -93,7 +96,7 @@ public class HttpClientIdleTimeoutTest
         client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
-            public HttpDestination newHttpDestination(Origin origin)
+            public Destination newDestination(Origin origin)
             {
                 return new HttpDestination(getHttpClient(), origin, false)
                 {

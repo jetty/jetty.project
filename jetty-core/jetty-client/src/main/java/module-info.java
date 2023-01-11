@@ -25,11 +25,13 @@ module org.eclipse.jetty.client
     requires static org.eclipse.jetty.jmx;
 
     exports org.eclipse.jetty.client;
-    exports org.eclipse.jetty.client.api;
-    exports org.eclipse.jetty.client.dynamic;
-    exports org.eclipse.jetty.client.http;
-    exports org.eclipse.jetty.client.util;
+    exports org.eclipse.jetty.client.transport;
 
     exports org.eclipse.jetty.client.jmx to
         org.eclipse.jetty.jmx;
+
+    exports org.eclipse.jetty.client.internal to
+        org.eclipse.jetty.fcgi.client,
+        org.eclipse.jetty.http2.client.transport,
+        org.eclipse.jetty.http3.client.transport;
 }

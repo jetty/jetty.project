@@ -41,21 +41,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.internal.HttpRequest;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -130,7 +120,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         assertNotNull(connection);
 
-        String uri = destination.getScheme() + "://" + destination.getHost() + ":" + destination.getPort();
+        Origin origin = destination.getOrigin();
+        String uri = origin.getScheme() + "://" + origin.getAddress();
         client.getCookieStore().add(URI.create(uri), new HttpCookie("foo", "bar"));
 
         client.stop();
@@ -156,9 +147,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertEquals(1, destinations.size());
         Destination destination = destinations.get(0);
         assertNotNull(destination);
-        assertEquals(scenario.getScheme(), destination.getScheme());
-        assertEquals(host, destination.getHost());
-        assertEquals(port, destination.getPort());
+        Origin origin = destination.getOrigin();
+        assertEquals(scenario.getScheme(), origin.getScheme());
+        assertEquals(host, origin.getAddress().getHost());
+        assertEquals(port, origin.getAddress().getPort());
     }
 
     @ParameterizedTest
@@ -1805,7 +1797,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(clientConnector);
                 transport.setConnectionPoolFactory(destination ->
                 {
-                    ConnectionPool connectionPool = new DuplexConnectionPool(destination, 1, destination);
+                    ConnectionPool connectionPool = new DuplexConnectionPool(destination, 1);
                     connectionPool.preCreateConnections(1);
                     return connectionPool;
                 });
@@ -1816,7 +1808,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             int port = server.getLocalPort();
 
             // Resolve the destination which will pre-create a connection.
-            HttpDestination destination = client.resolveDestination(new Origin("http", host, port));
+            Destination destination = client.resolveDestination(new Origin("http", host, port));
 
             // Accept the connection and send an unsolicited 408.
             try (Socket socket = server.accept())

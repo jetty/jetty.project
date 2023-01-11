@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -279,7 +279,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     }
 
     @Override
-    protected void sendProxyToServerRequest(Request clientToProxyRequest, org.eclipse.jetty.client.api.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    protected void sendProxyToServerRequest(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
     {
         proxyToServerRequest.attribute(REMOTE_ADDR_ATTRIBUTE, Request.getRemoteAddr(clientToProxyRequest));
         proxyToServerRequest.attribute(REMOTE_PORT_ATTRIBUTE, String.valueOf(Request.getRemotePort(clientToProxyRequest)));
@@ -335,7 +335,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         super.sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
     }
 
-    protected void customizeFastCGIHeaders(org.eclipse.jetty.client.api.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
+    protected void customizeFastCGIHeaders(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
     {
         for (String envName : getFastCGIEnvNames())
         {
@@ -397,7 +397,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         }
 
         @Override
-        public void customize(org.eclipse.jetty.client.api.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
+        public void customize(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(proxyToServerRequest, fastCGIHeaders);
             customizeFastCGIHeaders(proxyToServerRequest, fastCGIHeaders);

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core.client;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,18 +22,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpConversation;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpUpgrader;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -61,7 +61,7 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class CoreClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpUpgrader.Factory
+public abstract class CoreClientUpgradeRequest implements Response.CompleteListener, HttpUpgrader.Factory
 {
     public static CoreClientUpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
     {
@@ -76,7 +76,9 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreClientUpgradeRequest.class);
-    protected final CompletableFuture<CoreSession> futureCoreSession;
+
+    private final Request request;
+    private final CompletableFuture<CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
     private FrameHandler frameHandler;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
@@ -85,7 +87,8 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
     public CoreClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
-        super(webSocketClient.getHttpClient(), new HttpConversation(), requestURI);
+        request = webSocketClient.getHttpClient().newRequest(requestURI);
+        request.attribute(HttpUpgrader.Factory.class.getName(), this);
 
         // Validate websocket URI
         if (!requestURI.isAbsolute())
@@ -106,8 +109,48 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         this.futureCoreSession.whenComplete((session, throwable) ->
         {
             if (throwable != null)
-                abort(throwable);
+                request.abort(throwable);
         });
+    }
+
+    public String getMethod()
+    {
+        return request.getMethod();
+    }
+
+    public URI getURI()
+    {
+        return request.getURI();
+    }
+
+    public HttpVersion getVersion()
+    {
+        return request.getVersion();
+    }
+
+    public void listener(Request.Listener listener)
+    {
+        request.listener(listener);
+    }
+
+    public void headers(Consumer<HttpFields.Mutable> consumer)
+    {
+        request.headers(consumer);
+    }
+
+    public HttpFields getHeaders()
+    {
+        return request.getHeaders();
+    }
+
+    public List<HttpCookie> getCookies()
+    {
+        return request.getCookies();
+    }
+
+    public void timeout(long value, TimeUnit unit)
+    {
+        request.timeout(value, unit);
     }
 
     public void setConfiguration(Configuration.ConfigurationCustomizer config)
@@ -145,12 +188,12 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
     public List<String> getSubProtocols()
     {
-        return getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, true);
+        return request.getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, true);
     }
 
     public void setSubProtocols(String... protocols)
     {
-        headers(headers ->
+        request.headers(headers ->
         {
             headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
             for (String protocol : protocols)
@@ -162,7 +205,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
     public void setSubProtocols(List<String> protocols)
     {
-        headers(headers ->
+        request.headers(headers ->
         {
             headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
             for (String protocol : protocols)
@@ -172,8 +215,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         });
     }
 
-    @Override
-    public void send(final Response.CompleteListener listener)
+    public void send(Response.CompleteListener listener)
     {
         try
         {
@@ -186,7 +228,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             throw new IllegalArgumentException("FrameHandler could not be created", t);
         }
 
-        super.send(listener);
+        request.send(listener);
     }
 
     public CompletableFuture<CoreSession> sendAsync()
@@ -282,23 +324,23 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             .collect(Collectors.joining(","));
 
         if (!StringUtil.isEmpty(extensionString))
-            headers(headers -> headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString));
+            request.headers(headers -> headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString));
 
         // Notify the listener which may change the headers directly.
-        Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+        Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(request));
         if (listenerError != null)
         {
-            abort(listenerError);
+            request.abort(listenerError);
             return;
         }
 
         // Check if extensions were set in the headers from the upgrade listener.
-        String extsAfterListener = String.join(",", getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
+        String extsAfterListener = String.join(",", request.getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
         if (!extensionString.equals(extsAfterListener))
         {
             // If extensions were set in both the ClientUpgradeRequest and UpgradeListener throw ISE.
             if (!requestedExtensions.isEmpty())
-                abort(new IllegalStateException("Extensions set in both the ClientUpgradeRequest and UpgradeListener"));
+                request.abort(new IllegalStateException("Extensions set in both the ClientUpgradeRequest and UpgradeListener"));
 
             // Otherwise reparse the new set of requested extensions.
             requestedExtensions = ExtensionConfig.parseList(extsAfterListener);
@@ -324,7 +366,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         return multiException;
     }
 
-    public void upgrade(HttpResponse response, EndPoint endPoint)
+    public void upgrade(Response response, EndPoint endPoint)
     {
         // Parse the Negotiated Extensions
         List<ExtensionConfig> negotiatedExtensions = new ArrayList<>();
@@ -424,7 +466,6 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         // We can upgrade
         customize(endPoint);
 
-        Request request = response.getRequest();
         Negotiated negotiated = new Negotiated(
             request.getURI(),
             negotiatedSubProtocol,
@@ -442,7 +483,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, retainableByteBufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
-        Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
+        Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);
 
@@ -451,7 +492,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         {
             endPoint.upgrade(wsConnection);
 
-            // Try to complete the future but if we could't we should abort the CoreSession
+            // Try to complete the future but if we could not, abort the CoreSession.
             if (!futureCoreSession.complete(coreSession))
             {
                 futureCoreSession.exceptionally(t ->
