@@ -71,6 +71,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1796,6 +1797,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 transport.setConnectionPoolFactory(destination ->
                 {
                     ConnectionPool connectionPool = new DuplexConnectionPool(destination, 1);
+                    LifeCycle.start(connectionPool);
                     connectionPool.preCreateConnections(1);
                     return connectionPool;
                 });

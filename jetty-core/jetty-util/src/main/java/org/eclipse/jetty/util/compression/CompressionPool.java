@@ -15,6 +15,8 @@ package org.eclipse.jetty.util.compression;
 
 import java.io.Closeable;
 
+import org.eclipse.jetty.util.ConcurrentPool;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -72,7 +74,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
         Entry entry = null;
         if (_pool != null)
         {
-            Pool<Entry>.Entry acquiredEntry = _pool.acquire(e -> new Entry(newPooled(), e));
+            Pool.Entry<Entry> acquiredEntry = _pool.acquire(e -> new Entry(newPooled(), e));
             if (acquiredEntry != null)
                 entry = acquiredEntry.getPooled();
         }
@@ -93,7 +95,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     {
         if (_capacity > 0)
         {
-            _pool = new Pool<>(Pool.StrategyType.RANDOM, _capacity, true);
+            _pool = new ConcurrentPool<>(Pool.StrategyType.RANDOM, _capacity, true);
             addBean(_pool);
         }
         super.doStart();
@@ -102,26 +104,27 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     @Override
     public void doStop() throws Exception
     {
+        super.doStop();
         if (_pool != null)
         {
-            _pool.close();
             removeBean(_pool);
-            _pool = null;
+            _pool.terminate().stream()
+                .map(Pool.Entry::getPooled)
+                .forEach(IO::close);
         }
-        super.doStop();
     }
 
     public class Entry implements Closeable
     {
         private final T _value;
-        private final Pool<Entry>.Entry _entry;
+        private final Pool.Entry<Entry> _entry;
 
         Entry(T value)
         {
             this(value, null);
         }
 
-        Entry(T value, Pool<Entry>.Entry entry)
+        Entry(T value, Pool.Entry<Entry> entry)
         {
             _value = value;
             _entry = entry;

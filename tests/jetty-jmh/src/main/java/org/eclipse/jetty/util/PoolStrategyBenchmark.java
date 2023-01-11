@@ -65,16 +65,16 @@ public class PoolStrategyBenchmark
         switch (POOL_TYPE)
         {
             case "Pool.Linear" :
-                pool = new Pool<>(Pool.StrategyType.FIRST, SIZE, CACHE);
+                pool = new ConcurrentPool<>(Pool.StrategyType.FIRST, SIZE, CACHE);
                 break;
             case "Pool.Random" :
-                pool = new Pool<>(Pool.StrategyType.RANDOM, SIZE, CACHE);
+                pool = new ConcurrentPool<>(Pool.StrategyType.RANDOM, SIZE, CACHE);
                 break;
             case "Pool.ThreadId" :
-                pool = new Pool<>(Pool.StrategyType.THREAD_ID, SIZE, CACHE);
+                pool = new ConcurrentPool<>(Pool.StrategyType.THREAD_ID, SIZE, CACHE);
                 break;
             case "Pool.RoundRobin" :
-                pool = new Pool<>(Pool.StrategyType.ROUND_ROBIN, SIZE, CACHE);
+                pool = new ConcurrentPool<>(Pool.StrategyType.ROUND_ROBIN, SIZE, CACHE);
                 break;
 
             default:
@@ -92,7 +92,7 @@ public class PoolStrategyBenchmark
     {
         System.err.printf("%nMISSES = %d (%d%%)%n", misses.longValue(), 100 * misses.longValue() / (hits.longValue() + misses.longValue()));
         System.err.printf("AVERAGE = %d%n", total.longValue() / hits.longValue());
-        pool.close();
+        pool.terminate();
         pool = null;
     }
 
@@ -100,7 +100,7 @@ public class PoolStrategyBenchmark
     public void testAcquireReleasePoolWithStrategy()
     {
         // Now really benchmark the strategy we are interested in
-        Pool<String>.Entry entry = pool.acquire();
+        Pool.Entry<String> entry = pool.acquire();
         if (entry == null || entry.isIdle())
         {
             misses.increment();

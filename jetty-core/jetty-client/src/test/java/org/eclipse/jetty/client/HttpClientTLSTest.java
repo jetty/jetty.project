@@ -805,7 +805,7 @@ public class HttpClientTLSTest
 
         Pool<RetainableByteBuffer> bucket = ((TestRetained)retainableByteBufferPool).poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
         assertEquals(1, bucket.size());
-        assertEquals(1, bucket.getIdleCount());
+        assertEquals(1, bucket.stream().filter(Pool.Entry::isIdle).count());
 
         long count = ssl.isDirectBuffersForDecryption() ? byteBufferPool.getDirectByteBufferCount() : byteBufferPool.getHeapByteBufferCount();
         assertEquals(1, count);

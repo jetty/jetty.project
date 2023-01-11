@@ -129,7 +129,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
         {
             if (done.compareAndSet(false, true))
             {
-                boolean closed = isClosed();
+                boolean closed = isStopped();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Validated {}", connection);
                 quarantine.remove(connection);

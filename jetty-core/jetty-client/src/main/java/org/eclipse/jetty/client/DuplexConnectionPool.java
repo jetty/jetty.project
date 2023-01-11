@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -21,6 +22,6 @@ public class DuplexConnectionPool extends AbstractConnectionPool
 {
     public DuplexConnectionPool(Destination destination, int maxConnections)
     {
-        super(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, false), 1);
+        super(destination, () -> new ConcurrentPool<>(Pool.StrategyType.FIRST, maxConnections, false), 1);
     }
 }

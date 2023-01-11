@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -27,7 +28,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
 
     protected MultiplexConnectionPool(Destination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, int initialMaxMultiplex)
     {
-        super(destination, new Pool<>(strategy, maxConnections, cache, connection ->
+        super(destination, () -> new ConcurrentPool<>(strategy, maxConnections, cache, connection ->
         {
             int maxMultiplex = initialMaxMultiplex;
             if (connection instanceof MaxMultiplexable maxMultiplexable)
