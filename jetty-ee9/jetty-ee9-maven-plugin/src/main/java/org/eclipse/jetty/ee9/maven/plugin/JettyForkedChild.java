@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
@@ -45,6 +46,7 @@ public class JettyForkedChild extends ContainerLifeCycle
     protected JettyEmbedder jetty;
     protected File tokenFile; // TODO: convert to Path
     protected Scanner scanner;
+    protected int scanInterval;
     protected File webAppPropsFile; // TODO: convert to Path
 
     /**
@@ -114,13 +116,13 @@ public class JettyForkedChild extends ContainerLifeCycle
 
             if ("--scan".equals(args[i]))
             {
-                scanner = new PathWatcher();
-                scanner.setNotifyExistingOnStart(false);
-                scanner.addListener(new PathWatcher.EventListListener()
-                {
-                    @Override
-                    public void onPathWatchEvents(List<PathWatchEvent> events)
-                    {
+                scanner = new Scanner();
+                scanner.setReportExistingFilesOnStartup(false);
+                scanner.setScanInterval(scanInterval);
+                scanner.addListener(new Scanner.BulkListener()
+                {   
+                    public void filesChanged(Set<String> changes)
+                    {                       
                         if (!Objects.isNull(scanner))
                         {
                             try
@@ -142,16 +144,25 @@ public class JettyForkedChild extends ContainerLifeCycle
                             }
                             catch (Exception e)
                             {
-                                LOG.warn("Error restarting webapp", e);
+                                LOG.error("Error reconfiguring/restarting webapp after change in watched files", e);
                             }
                         }
                     }
                 });
 
                 if (!Objects.isNull(webAppPropsFile))
-                    scanner.watch(webAppPropsFile.toPath());
+                    scanner.addFile(webAppPropsFile.toPath());
+                continue;
             }
-
+            
+            //TODO should be instead arg to the --scan option, but for backwards compat it can't be yet
+            if ("--scanInterval".equals(args[i]))
+            {
+                scanInterval = Integer.parseInt(args[++i].trim());
+                if (!Objects.isNull(scanner))
+                    scanner.setScanInterval(scanInterval);
+                continue;
+            }
             //assume everything else is a jetty property to be passed in
             String[] tmp = args[i].trim().split("=");
             if (tmp.length == 2)

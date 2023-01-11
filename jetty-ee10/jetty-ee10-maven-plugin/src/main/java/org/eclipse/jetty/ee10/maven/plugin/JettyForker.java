@@ -34,6 +34,7 @@ public class JettyForker extends AbstractForker
     protected File webAppPropsFile;
     protected String contextXml; 
     protected boolean scan;
+    protected int scanInterval;
     QuickStartGenerator generator;
 
     /**
@@ -44,6 +45,16 @@ public class JettyForker extends AbstractForker
         return scan;
     }
 
+    public void setScanInterval(int sec)
+    {
+        scanInterval = sec;
+    }
+    
+    public int getScanInterval()
+    {
+        return scanInterval;
+    }
+    
     /**
      * @param scan if true, the forked child will scan for changes
      */
@@ -189,6 +200,8 @@ public class JettyForker extends AbstractForker
         if (scan)
         {
             cmd.add("--scan");
+            cmd.add("--scanInterval");
+            cmd.add(Integer.toString(scanInterval));
         }
         
         if (jettyProperties != null)
