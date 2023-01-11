@@ -1709,8 +1709,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (chunk.hasRemaining())
                         contents.add(chunk);
-
-                    chunk.release();
+                    else
+                        chunk.release();
 
                     if (chunk.isLast())
                         break;
