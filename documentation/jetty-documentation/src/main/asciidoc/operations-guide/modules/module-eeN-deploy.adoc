@@ -19,14 +19,14 @@ include::{JETTY_HOME}/modules/{ee-current}-deploy.mod[tags=description]
 Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
 (See xref:og-deploy[how to deploy web applications] for more information.)
 
-Files or directories added in this monitored directory cause the `DeploymentManager` to deploy them as web applications; updating files already existing in this monitored directory cause the `DeploymentManager` to re-deploy the correspondent web application; removing files in this monitored directory cause the `DeploymentManager` to undeploy the corresponding web application.
+Adding files or directories to this monitored directory will cause the `DeploymentManager` to deploy them as web applications; updating files already existing in this monitored directory will cause the `DeploymentManager` to re-deploy the corresponding web application; removing files in this monitored directory will cause the `DeploymentManager` to "undeploy" the corresponding web application.
 (You can find a more detailed discussion of these rules in the xref:og-deploy-rules[deployment rules] section.)
 
 Multiple versions of this module exist (`{ee-all}-deploy`) to support each EE platform's version of the Java Servlet specification.
-Jetty's configuration properties are nearly identical across the `{ee-all}-` versions of this module; the module file for `{ee-current}-deploy` is as follows:
+Jetty's configuration properties are nearly identical across these versions; the module file for `{ee-current}-deploy` is as follows:
 
 ----
-include::{JETTY_HOME}/modules/{ee-current}-deploy.mod[]
+include::{JETTY_HOME}/modules/{ee-current}-deploy.mod[tags=ini-template]
 ----
 
 Among the configurable properties, the most relevant are:

@@ -2,7 +2,7 @@
 
 [description]
 # tag::description[]
-This module enables deployment of Java Servlet webapps.
+This module enables deployment of Java Servlet web applications.
 # end::description[]
 
 [environment]
