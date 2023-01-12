@@ -150,7 +150,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             return;
         }
 
-        makeTempDirectory(context.getServer().getTempDirectory(), context);
+        makeTempDirectory(context.getServer().getContext().getTempDirectory(), context);
     }
 
     public void makeTempDirectory(File parent, WebAppContext context)

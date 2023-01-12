@@ -73,7 +73,7 @@ public interface Context extends Attributes, Decorator, Executor
     String getPathInContext(String fullPath);
 
     /**
-     * @return A temporary directory, configured either for the context, the server or the JVM
+     * @return A temporary directory, configured either for the context, the server or the JVM. Never null.
      */
     File getTempDirectory();
 }

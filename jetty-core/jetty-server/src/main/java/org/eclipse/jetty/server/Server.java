@@ -136,6 +136,17 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
+     * <p>Convenience method to call {@link #setTempDirectory(File)} from a String representation
+     * of the temporary directory.</p>
+     * @param temp A string representation of the temporary directory.
+     * @see #setTempDirectory(File)
+     */
+    public void setTempDirectory(String temp)
+    {
+        setTempDirectory(new File(temp));
+    }
+
+    /**
      * <p>Set the temporary directory returned by {@link Context#getTempDirectory()} for the root
      * {@link Context} returned {@link #getContext()}. If not set explicitly here, then the root
      * {@link Context#getTempDirectory()} will return either the directory found at
@@ -143,11 +154,6 @@ public class Server extends Handler.Wrapper implements Attributes
      * else the JVMs temporary directory as {@code IO.asFile(System.getProperty("java.io.tmpdir"))}.
      * @param temp A directory that must exist and be writable or null to get the default.
      */
-    public void setTempDirectory(String temp)
-    {
-        setTempDirectory(new File(temp));
-    }
-
     public void setTempDirectory(File temp)
     {
         if (isStarted())
@@ -159,6 +165,12 @@ public class Server extends Handler.Wrapper implements Attributes
         _tempDirectory = temp;
     }
 
+    /**
+     * @return The server temporary directory if set, else null. To always obtain a non-null
+     * temporary directory use {@link Context#getTempDirectory()} on {@link #getContext()}.
+     * @see #getContext()
+     * @see Context#getTempDirectory()
+     */
     @ManagedAttribute("temporary directory")
     public File getTempDirectory()
     {
