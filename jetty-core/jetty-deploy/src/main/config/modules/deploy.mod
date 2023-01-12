@@ -1,5 +1,5 @@
 [description]
-This module enables webapp deployment from the `$JETTY_BASE/webapps/` directory.
+This module enables webapp deployment from the `$JETTY_BASE/webapps` directory.
 
 [depend]
 server
