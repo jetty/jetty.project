@@ -1263,93 +1263,37 @@ public class MultiPart
 
         private void notifyPartBegin()
         {
-            try
-            {
-                listener.onPartBegin();
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
-            }
+            listener.onPartBegin();
         }
 
         private void notifyPartHeader(String name, String value)
         {
-            try
-            {
-                listener.onPartHeader(name, value);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
-            }
+            listener.onPartHeader(name, value);
         }
 
         private void notifyPartHeaders()
         {
-            try
-            {
-                listener.onPartHeaders();
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
-            }
+            listener.onPartHeaders();
         }
 
         private void notifyPartContent(Content.Chunk chunk)
         {
-            try
-            {
-                listener.onPartContent(chunk);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
-            }
+            listener.onPartContent(chunk);
         }
 
         private void notifyPartEnd()
         {
-            try
-            {
-                listener.onPartEnd();
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
-            }
+            listener.onPartEnd();
         }
 
         private void notifyComplete()
         {
-            try
-            {
-                listener.onComplete();
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
-            }
+            listener.onComplete();
         }
 
         private void notifyFailure(Throwable failure)
         {
-            try
-            {
-                listener.onFailure(failure);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
-            }
+            listener.onFailure(failure);
         }
 
         /**

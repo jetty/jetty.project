@@ -57,6 +57,21 @@ public class ServletMultiPartFormData
      */
     public static Parts from(ServletContextRequest.ServletApiRequest request) throws IOException
     {
+        return from(request, ServletContextHandler.DEFAULT_MAX_FORM_KEYS);
+    }
+
+    /**
+     * <p>Parses the request content assuming it is a multipart content,
+     * and returns a {@link Parts} objects that can be used to access
+     * individual {@link Part}s.</p>
+     *
+     * @param request the HTTP request with multipart content
+     * @return a {@link Parts} object to access the individual {@link Part}s
+     * @throws IOException if reading the request content fails
+     * @see org.eclipse.jetty.server.handler.DelayedHandler
+     */
+    public static Parts from(ServletContextRequest.ServletApiRequest request, int maxParts) throws IOException
+    {
         try
         {
             // Look for a previously read and parsed MultiPartFormData from the DelayedHandler
@@ -65,7 +80,7 @@ public class ServletMultiPartFormData
                 return new Parts(formData);
 
             // TODO set the files directory
-            return new ServletMultiPartFormData().parse(request);
+            return new ServletMultiPartFormData().parse(request, maxParts);
         }
         catch (Throwable x)
         {
@@ -73,7 +88,7 @@ public class ServletMultiPartFormData
         }
     }
 
-    private Parts parse(ServletContextRequest.ServletApiRequest request) throws IOException
+    private Parts parse(ServletContextRequest.ServletApiRequest request, int maxParts) throws IOException
     {
         MultipartConfigElement config = (MultipartConfigElement)request.getAttribute(ServletContextRequest.__MULTIPART_CONFIG_ELEMENT);
         if (config == null)
@@ -84,6 +99,7 @@ public class ServletMultiPartFormData
             throw new IllegalStateException("No multipart boundary parameter in Content-Type");
 
         MultiPartFormData formData = new MultiPartFormData(boundary);
+        formData.setMaxParts(maxParts);
 
         File tmpDirFile = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
         if (tmpDirFile == null)
@@ -148,21 +164,18 @@ public class ServletMultiPartFormData
         private final MultiPartFormData _formData;
         private final MultiPart.Part _part;
         private final long _length;
-        private final InputStream _input;
 
         private ServletPart(MultiPartFormData formData, MultiPart.Part part)
         {
             _formData = formData;
             _part = part;
-            Content.Source content = part.getContent();
-            _length = content.getLength();
-            _input = Content.Source.asInputStream(content);
+            _length = _part.getContent().getLength();
         }
 
         @Override
         public InputStream getInputStream() throws IOException
         {
-            return _input;
+            return Content.Source.asInputStream(_part.getContent());
         }
 
         @Override

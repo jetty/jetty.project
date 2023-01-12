@@ -79,6 +79,8 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
     private long maxMemoryFileSize;
     private long maxLength = -1;
     private long length;
+    private int numParts = 0;
+    private long maxParts = 1000;
 
     public MultiPartFormData(String boundary)
     {
@@ -271,6 +273,22 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
     public void setMaxLength(long maxLength)
     {
         this.maxLength = maxLength;
+    }
+
+    /**
+     * @return the maximum number of parts that can be parsed from the multipart content.
+     */
+    public long getMaxParts()
+    {
+        return maxLength;
+    }
+
+    /**
+     * @param maxParts the maximum number of parts that can be parsed from the multipart content.
+     */
+    public void setMaxParts(long maxParts)
+    {
+        this.maxParts = maxParts;
     }
 
     @Override
@@ -481,6 +499,14 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             {
                 onFailure(x);
             }
+        }
+
+        @Override
+        public void onPartBegin()
+        {
+            numParts++;
+            if (numParts >= maxParts)
+                throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
         }
 
         @Override
