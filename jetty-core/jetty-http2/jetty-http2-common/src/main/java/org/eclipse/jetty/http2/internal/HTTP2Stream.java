@@ -414,7 +414,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already closed {}", data, this);
-            data.release();
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             return;
         }
@@ -424,7 +423,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             // Just drop the frame.
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already reset {}", data, this);
-            data.release();
             return;
         }
 
@@ -436,7 +434,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Invalid data length {} for {}", data, this);
-                data.release();
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
                 return;
             }
@@ -448,6 +445,9 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private boolean offer(Data data)
     {
+        // Retain the data because it is stored for later reads.
+        if (data.canRetain())
+            data.retain();
         boolean process;
         try (AutoLock ignored = lock.lock())
         {
