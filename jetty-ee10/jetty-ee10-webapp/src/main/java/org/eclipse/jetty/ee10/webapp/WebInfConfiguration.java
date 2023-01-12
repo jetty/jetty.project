@@ -54,6 +54,9 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
 
+        // Force early configuration (clearing) of the temporary directory so we can unpack into it.
+        context.configureTempDirectory();
+
         // Extract webapp if necessary
         unpack(context);
     }

@@ -125,6 +125,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
     private File _tempDirectory;
     private boolean _tempDirectoryPersisted = false;
+    private boolean _tempDirectoryConfigured = false;
 
     public enum Availability
     {
@@ -656,8 +657,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected void configureTempDirectory()
     {
         File tempDirectory = getTempDirectory();
-        if (tempDirectory != null)
+        if (tempDirectory != null && !_tempDirectoryConfigured)
         {
+            _tempDirectoryConfigured = true;
             if (isTempDirectoryPersistent())
             {
                 // Create the directory if it doesn't exist
@@ -676,7 +678,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 tempDirectory.deleteOnExit();
             }
 
-            // is it useable
+            // is it usable
             if (!tempDirectory.canWrite() || !tempDirectory.isDirectory())
                 throw new IllegalArgumentException("Temp dir " + tempDirectory + " not useable: writeable=" + tempDirectory.canWrite() + ", dir=" + tempDirectory.isDirectory());
         }
@@ -692,6 +694,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
             IO.delete(tempDirectory);
+
+        _tempDirectoryConfigured = false;
     }
 
     public boolean checkVirtualHost(Request request)

@@ -484,6 +484,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _configurations.preConfigure(this);
     }
 
+    @Override
+    protected void configureTempDirectory()
+    {
+        super.configureTempDirectory();
+    }
+
     public boolean configure() throws Exception
     {
         return _configurations.configure(this);
