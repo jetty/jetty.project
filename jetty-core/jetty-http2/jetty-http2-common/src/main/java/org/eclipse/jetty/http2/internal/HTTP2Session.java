@@ -2281,6 +2281,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             this.data = data;
             this.stream = stream;
             this.flowControlLength = flowControlLength;
+            // Since this class starts its own reference counter
+            // at 1, we need to retain the delegate Data object,
+            // so that the releases will be paired.
+            data.retain();
         }
 
         @Override
