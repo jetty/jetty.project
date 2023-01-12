@@ -37,6 +37,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
+import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -55,11 +56,13 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,17 +76,25 @@ public class MultiPartServletTest
     private ServerConnector connector;
     private HttpClient client;
     private Path tmpDir;
+    private String tmpDirString;
+
+    @BeforeEach
+    public void before() throws Exception
+    {
+        tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
+        tmpDirString = tmpDir.toAbsolutePath().toString();
+    }
 
     private void start(HttpServlet servlet) throws Exception
     {
-        tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
+        start(servlet, new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0));
+    }
 
+    private void start(HttpServlet servlet, MultipartConfigElement config) throws Exception
+    {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
-
-        MultipartConfigElement config = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
-            MAX_FILE_SIZE, -1, 0);
 
         ServletContextHandler contextHandler = new ServletContextHandler(server, "/");
         ServletHolder servletHolder = new ServletHolder(servlet);
@@ -108,6 +119,139 @@ public class MultiPartServletTest
         LifeCycle.stop(client);
         LifeCycle.stop(server);
         IO.delete(tmpDir.toFile());
+    }
+
+    @Test
+    public void testLargePart() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getParameterMap();
+                req.getParts();
+                resp.setStatus(200);
+                resp.getWriter().print("success");
+                resp.getWriter().close();
+            }
+        }, new MultipartConfigElement(tmpDirString));
+
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send(listener);
+
+        // Write large amount of content to the part.
+        byte[] byteArray = new byte[1024 * 1024];
+        Arrays.fill(byteArray, (byte)1);
+        for (int i = 0; i < 1024 * 2; i++)
+        {
+            content.getOutputStream().write(byteArray);
+        }
+        content.close();
+
+        Response response = listener.get(2, TimeUnit.MINUTES);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("Form is larger than max length"));
+    }
+
+    @Test
+    public void testManyParts() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getParameterMap();
+                req.getParts();
+                resp.setStatus(200);
+                resp.getWriter().print("success");
+                resp.getWriter().close();
+            }
+        }, new MultipartConfigElement(tmpDirString));
+
+        byte[] byteArray = new byte[1024];
+        Arrays.fill(byteArray, (byte)1);
+
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        for (int i = 0; i < 1024 * 1024; i++)
+        {
+            BytesRequestContent content = new BytesRequestContent(byteArray);
+            multiPart.addPart(new MultiPart.ContentSourcePart("part" + i, null, null, content));
+        }
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send(listener);
+
+        Response response = listener.get(30, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("Form with too many keys"));
+    }
+
+    @Test
+    public void testMaxRequestSize() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getParameterMap();
+                req.getParts();
+                resp.setStatus(200);
+                resp.getWriter().print("success");
+                resp.getWriter().close();
+
+            }
+        }, new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8));
+
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
+        multiPart.close();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/requestSizeLimit")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(multiPart)
+            .send(listener);
+
+        // Write large amount of content to the part.
+        byte[] byteArray = new byte[1024 * 1024];
+        Arrays.fill(byteArray, (byte)1);
+        for (int i = 0; i < 1024 * 2; i++)
+        {
+            content.getOutputStream().write(byteArray);
+        }
+        content.close();
+
+        Response response = listener.get(30, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+        String responseContent = IO.toString(listener.getInputStream());
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("max length exceeded"));
     }
 
     @Test
