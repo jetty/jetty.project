@@ -16,10 +16,11 @@
 
 include::{JETTY_HOME}/modules/{ee-current}-webapp.mod[tags=description]
 
-Multiple versions of this module exist to support the different (incompatible) servlet specifications that exist across Jakarta EE platform versions.
+If this module is not enabled, only Jetty-specific handlers may be deployed.
+
+Multiple versions of this module exist (`{ee-all}-webapp`) to support each EE platform's version of the Java Servlet specification.
 Jetty's configuration properties are identical across the `{ee-all}-` versions of this module, and are as follows:
 
 ----
 include::{JETTY_HOME}/modules/{ee-current}-webapp.mod[tags=ini-template]
 ----
-

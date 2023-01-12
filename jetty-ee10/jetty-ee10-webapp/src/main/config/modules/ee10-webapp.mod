@@ -2,8 +2,7 @@
 
 [description]
 # tag::description[]
-This module adds support for servlet specification web applications to the server classpath.
-Without this, only Jetty-specific handlers may be deployed.
+This module enables deployment of Java Servlet webapps.
 # end::description[]
 
 [environment]
