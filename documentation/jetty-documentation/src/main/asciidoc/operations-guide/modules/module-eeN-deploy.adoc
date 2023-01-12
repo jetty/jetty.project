@@ -11,8 +11,8 @@
 // ========================================================================
 //
 
-[[og-module-deploy]]
-===== Module `deploy`
+[[og-module-eeN-deploy]]
+===== Module `{ee-all}-deploy`
 
 The `deploy` module provides the deployment feature through a `DeploymentManager` component that watches a directory for changes (see xref:og-deploy[how to deploy web applications] for more information).
 
