@@ -17,11 +17,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Utility class to maintain a set of inclusions and exclusions.
+ * <p>Utility class to maintain a set of inclusions and exclusions.</p>
  * <p>This extension of the {@link IncludeExcludeSet} class is used
  * when the type of the set elements is the same as the type of
- * the predicate test.
- * <p>
+ * the predicate test.</p>
  *
  * @param <ITEM> The type of element
  */

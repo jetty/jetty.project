@@ -358,6 +358,7 @@ public class PathResource extends Resource
      * </p>
      *
      * <table>
+     * <caption>Alias Check Logic</caption>
      * <thead>
      * <tr>
      * <th>path</th>

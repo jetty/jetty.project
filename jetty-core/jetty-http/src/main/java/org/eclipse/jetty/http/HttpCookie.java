@@ -574,12 +574,6 @@ public class HttpCookie
     /**
      * Check if all old parameters match the new parameters.
      *
-     * @param oldName
-     * @param oldDomain
-     * @param oldPath
-     * @param newName
-     * @param newDomain
-     * @param newPath
      * @return true if old and new names match exactly and the old and new domains match case-insensitively and the paths match exactly
      */
     private static boolean match(String oldName, String oldDomain, String oldPath, String newName, String newDomain, String newPath)
