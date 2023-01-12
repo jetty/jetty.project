@@ -18,7 +18,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -122,6 +121,7 @@ public class MultiPart
         private final String name;
         private final String fileName;
         private final HttpFields fields;
+        private boolean written;
 
         public Part(String name, String fileName, HttpFields fields)
         {
@@ -158,7 +158,8 @@ public class MultiPart
         }
 
         /**
-         * <p>Returns the content of this part.</p>
+         * <p>Returns the content of this part as a {@link Content.Source}.</p>
+         * <p>Calling this method multiple times will return the same instance.</p>
          * <p>The content type and content encoding are specified in this part's
          * {@link #getHeaders() headers}.</p>
          * <p>The content encoding may be specified by the part named {@code _charset_},
@@ -167,7 +168,27 @@ public class MultiPart
          *
          * @return the content of this part
          */
-        public abstract Content.Source getContent();
+        public abstract Content.Source getContentSource();
+
+        /**
+         * <p>Returns the content of this part as a new {@link Content.Source}, if the content
+         * is reproducible, otherwise an {@link UnsupportedOperationException} is thrown.</p>
+         * <p>If the content is reproducible, invoking this method multiple times will return
+         * a different independent instance for every invocation.</p>
+         * <p>If the content is not reproducible, an {@link UnsupportedOperationException} is
+         * thrown.</p>
+         * <p>The content type and content encoding are specified in this part's
+         * {@link #getHeaders() headers}.</p>
+         * <p>The content encoding may be specified by the part named {@code _charset_},
+         * as specified in
+         * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
+         *
+         * @return the content of this part as a new {@link Content.Source}
+         * @see #getContentSource()
+         * @throws UnsupportedOperationException if the content of this part
+         * cannot be reproduced multiple times
+         */
+        public abstract Content.Source newContentSource();
 
         /**
          * <p>Returns the content of this part as a string.</p>
@@ -191,7 +212,7 @@ public class MultiPart
                 Charset charset = defaultCharset != null ? defaultCharset : UTF_8;
                 if (charsetName != null)
                     charset = Charset.forName(charsetName);
-                return Content.Source.asString(getContent(), charset);
+                return Content.Source.asString(getContentSource(), charset);
             }
             catch (IOException x)
             {
@@ -215,9 +236,12 @@ public class MultiPart
          */
         public void writeTo(Path path) throws IOException
         {
+            if (written)
+                throw new IOException("this part was already written");
+            written = true;
             try (OutputStream out = Files.newOutputStream(path))
             {
-                IO.copy(Content.Source.asInputStream(getContent()), out);
+                IO.copy(Content.Source.asInputStream(getContentSource()), out);
             }
         }
     }
@@ -228,8 +252,7 @@ public class MultiPart
      */
     public static class ByteBufferPart extends Part
     {
-        private final Content.Source content;
-        private final long length;
+        private final ByteBufferContentSource contentSource;
 
         public ByteBufferPart(String name, String fileName, HttpFields fields, ByteBuffer... buffers)
         {
@@ -239,14 +262,19 @@ public class MultiPart
         public ByteBufferPart(String name, String fileName, HttpFields fields, List<ByteBuffer> content)
         {
             super(name, fileName, fields);
-            this.content = new ByteBufferContentSource(content);
-            this.length = content.stream().mapToLong(Buffer::remaining).sum();
+            this.contentSource = new ByteBufferContentSource(content);
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getContentSource()
         {
-            return content;
+            return contentSource;
+        }
+
+        @Override
+        public Content.Source newContentSource()
+        {
+            return new ByteBufferContentSource(contentSource.getByteBuffers());
         }
 
         @Override
@@ -257,7 +285,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                length
+                getContentSource().getLength()
             );
         }
     }
@@ -267,20 +295,24 @@ public class MultiPart
      */
     public static class ChunksPart extends Part
     {
-        private final Content.Source content;
-        private final long length;
+        private final ChunksContentSource contentSource;
 
         public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
             super(name, fileName, fields);
-            this.content = new ChunksContentSource(content);
-            this.length = content.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
+            this.contentSource = new ChunksContentSource(content);
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getContentSource()
         {
-            return content;
+            return contentSource;
+        }
+
+        @Override
+        public Content.Source newContentSource()
+        {
+            return new ChunksContentSource(contentSource.getChunks());
         }
 
         @Override
@@ -291,7 +323,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                length
+                getContentSource().getLength()
             );
         }
     }
@@ -301,29 +333,47 @@ public class MultiPart
      */
     public static class PathPart extends Part
     {
-        private final PathContentSource content;
+        private final PathContentSource contentSource;
+        private Path writtenPath;
 
         public PathPart(String name, String fileName, HttpFields fields, Path path)
         {
             super(name, fileName, fields);
-            this.content = new PathContentSource(path);
+            this.contentSource = new PathContentSource(path);
         }
 
         public Path getPath()
         {
-            return content.getPath();
+            return contentSource.getPath();
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getContentSource()
         {
-            return content;
+            return contentSource;
         }
 
+        @Override
+        public Content.Source newContentSource()
+        {
+            return new PathContentSource(getPath());
+        }
+
+        /**
+         * {@inheritDoc}
+         * <p>Writes the content of this part to the given path, with {@code move} semantic.</p>
+         * <p>The first invocation moves the temporary file representing the content of this
+         * part to the specified file path.</p>
+         * <p>Subsequent invocations move the previous file to the new specified file path.</p>
+         *
+         * @param path the {@link Path} to write this part's content to
+         * @throws IOException
+         */
         @Override
         public void writeTo(Path path) throws IOException
         {
-            Files.move(getPath(), path, StandardCopyOption.REPLACE_EXISTING);
+            Path fromPath = writtenPath == null ? getPath() : writtenPath;
+            writtenPath = Files.move(fromPath, path, StandardCopyOption.REPLACE_EXISTING);
         }
 
         public void delete()
@@ -356,18 +406,24 @@ public class MultiPart
      */
     public static class ContentSourcePart extends Part
     {
-        private final Content.Source content;
+        private final Content.Source contentSource;
 
         public ContentSourcePart(String name, String fileName, HttpFields fields, Content.Source content)
         {
             super(name, fileName, fields);
-            this.content = content;
+            this.contentSource = content;
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getContentSource()
         {
-            return content;
+            return contentSource;
+        }
+
+        @Override
+        public Content.Source newContentSource()
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -378,7 +434,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                content.getLength()
+                contentSource.getLength()
             );
         }
     }
@@ -628,7 +684,7 @@ public class MultiPart
                 }
                 case CONTENT ->
                 {
-                    Content.Chunk chunk = part.getContent().read();
+                    Content.Chunk chunk = part.getContentSource().read();
                     if (chunk == null || chunk instanceof Content.Chunk.Error)
                         yield chunk;
                     if (chunk.isLast())
@@ -674,7 +730,7 @@ public class MultiPart
 
                 if (state == State.CONTENT)
                 {
-                    part.getContent().demand(() ->
+                    part.getContentSource().demand(() ->
                     {
                         try (AutoLock ignoredAgain = lock.lock())
                         {
@@ -706,7 +762,7 @@ public class MultiPart
                 drained = List.copyOf(parts);
                 parts.clear();
             }
-            drained.forEach(part -> part.getContent().fail(failure));
+            drained.forEach(part -> part.getContentSource().fail(failure));
             invoker.run(this::invokeDemandCallback);
         }
 

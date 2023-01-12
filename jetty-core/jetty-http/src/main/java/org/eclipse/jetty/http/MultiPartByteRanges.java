@@ -211,6 +211,11 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
             this.byteRange = byteRange;
         }
 
+        public ByteRange getByteRange()
+        {
+            return byteRange;
+        }
+
         @Override
         protected SeekableByteChannel open() throws IOException
         {
@@ -244,7 +249,7 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
      */
     public static class Part extends MultiPart.Part
     {
-        private final PathContentSource content;
+        private final PathContentSource contentSource;
 
         public Part(String contentType, Path path, ByteRange byteRange, long contentLength)
         {
@@ -255,13 +260,19 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         public Part(HttpFields headers, Path path, ByteRange byteRange)
         {
             super(null, null, headers);
-            content = new PathContentSource(path, byteRange);
+            contentSource = new PathContentSource(path, byteRange);
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getContentSource()
         {
-            return content;
+            return contentSource;
+        }
+
+        @Override
+        public Content.Source newContentSource()
+        {
+            return new PathContentSource(contentSource.getPath(), contentSource.getByteRange());
         }
     }
 
@@ -318,7 +329,7 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
                 toFail = new ArrayList<>(parts);
                 parts.clear();
             }
-            toFail.forEach(part -> part.getContent().fail(cause));
+            toFail.forEach(part -> part.getContentSource().fail(cause));
         }
     }
 }

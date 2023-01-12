@@ -147,22 +147,17 @@ public class ServletMultiPartFormData
     {
         private final MultiPartFormData _formData;
         private final MultiPart.Part _part;
-        private final long _length;
-        private final InputStream _input;
 
         private ServletPart(MultiPartFormData formData, MultiPart.Part part)
         {
             _formData = formData;
             _part = part;
-            Content.Source content = part.getContent();
-            _length = content.getLength();
-            _input = Content.Source.asInputStream(content);
         }
 
         @Override
         public InputStream getInputStream() throws IOException
         {
-            return _input;
+            return Content.Source.asInputStream(_part.newContentSource());
         }
 
         @Override
@@ -186,7 +181,7 @@ public class ServletMultiPartFormData
         @Override
         public long getSize()
         {
-            return _length;
+            return _part.getContentSource().getLength();
         }
 
         @Override

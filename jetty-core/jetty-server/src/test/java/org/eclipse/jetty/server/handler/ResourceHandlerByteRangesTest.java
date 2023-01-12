@@ -181,10 +181,10 @@ public class ResourceHandlerByteRangesTest
             assertEquals(2, parts.size());
             MultiPart.Part part1 = parts.get(0);
             assertEquals("text/plain", part1.getHeaders().get(HttpHeader.CONTENT_TYPE));
-            assertEquals("234", Content.Source.asString(part1.getContent()));
+            assertEquals("234", Content.Source.asString(part1.getContentSource()));
             MultiPart.Part part2 = parts.get(1);
             assertEquals("text/plain", part2.getHeaders().get(HttpHeader.CONTENT_TYPE));
-            assertEquals("xyz", Content.Source.asString(part2.getContent()));
+            assertEquals("xyz", Content.Source.asString(part2.getContentSource()));
         }
     }
 }

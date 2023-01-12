@@ -542,7 +542,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                 if (part instanceof MultiPart.PathPart pathPart)
                     pathPart.delete();
                 else
-                    part.getContent().fail(cause);
+                    part.getContentSource().fail(cause);
             }
             close();
             delete();
