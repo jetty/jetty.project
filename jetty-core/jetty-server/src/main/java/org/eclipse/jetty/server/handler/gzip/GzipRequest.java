@@ -165,7 +165,7 @@ public class GzipRequest extends Request.Wrapper
                 return Content.Chunk.EOF;
 
             // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
-            if (retain)
+            if (retain && _chunk.canRetain())
                 _chunk.retain();
             ByteBuffer decodedBuffer = _decoder.decode(_chunk);
 
@@ -177,6 +177,7 @@ public class GzipRequest extends Request.Wrapper
             }
             else
             {
+                _decoder.release(decodedBuffer);
                 // Could not decode more from this chunk, release it.
                 Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
                 _chunk.release();
@@ -195,12 +196,12 @@ public class GzipRequest extends Request.Wrapper
             super(inflaterPool, bufferPool, bufferSize);
         }
 
-        public ByteBuffer decode(Content.Chunk content)
+        public ByteBuffer decode(Content.Chunk chunk)
         {
-            decodeChunks(content.getByteBuffer());
-            ByteBuffer chunk = _decoded;
+            decodeChunks(chunk.getByteBuffer());
+            ByteBuffer decoded = _decoded;
             _decoded = null;
-            return chunk;
+            return decoded;
         }
 
         @Override

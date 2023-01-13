@@ -146,6 +146,7 @@ public class PathContentSource implements Content.Source
         }
         catch (Throwable x)
         {
+            retainableByteBuffer.release();
             return failure(x);
         }
 
@@ -156,7 +157,7 @@ public class PathContentSource implements Content.Source
         if (last)
             IO.close(channel);
 
-        return Content.Chunk.from(byteBuffer, last, retainableByteBuffer);
+        return Content.Chunk.asChunk(byteBuffer, last, retainableByteBuffer);
     }
 
     protected SeekableByteChannel open() throws IOException

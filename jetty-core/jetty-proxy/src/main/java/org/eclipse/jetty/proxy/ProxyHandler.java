@@ -248,7 +248,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                         LOG.debug("{} P2S continuing request", requestId(clientToProxyRequest));
                     var proxyToServerRequestContent = newProxyToServerRequestContent(clientToProxyRequest, proxyToClientResponse, proxyToServerRequest);
                     Content.copy(proxyToServerRequestContent, delayedProxyToServerRequestContent,
-                        Callback.from(delayedProxyToServerRequestContent::close, x -> delayedProxyToServerRequestContent.write(Content.Chunk.from(x), Callback.NOOP)));
+                        Callback.from(delayedProxyToServerRequestContent::close, delayedProxyToServerRequestContent::fail));
                 };
                 proxyToServerRequest.attribute(PROXY_TO_SERVER_CONTINUE_ATTRIBUTE, action);
             }
@@ -687,6 +687,9 @@ public abstract class ProxyHandler extends Handler.Abstract
             ByteBuffer serverToProxyContent = serverToProxyChunk.getByteBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
+
+            if (serverToProxyChunk.canRetain())
+                serverToProxyChunk.retain();
             Callback callback = new Callback()
             {
                 @Override
@@ -714,6 +717,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                     return InvocationType.NON_BLOCKING;
                 }
             };
+
             proxyToClientResponse.write(false, serverToProxyContent, callback);
         }
 

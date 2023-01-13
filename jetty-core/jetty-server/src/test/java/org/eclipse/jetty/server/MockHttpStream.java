@@ -48,6 +48,12 @@ public class MockHttpStream implements HttpStream
         }
 
         @Override
+        public boolean canRetain()
+        {
+            return false;
+        }
+
+        @Override
         public void retain()
         {
             throw new UnsupportedOperationException();
@@ -98,8 +104,10 @@ public class MockHttpStream implements HttpStream
         return addContent(BufferUtil.toBuffer(content), last);
     }
 
-    public Runnable addContent(Content.Chunk chunk)
+    private Runnable addContent(Content.Chunk chunk)
     {
+        if (chunk.canRetain())
+            chunk.retain();
         chunk = _content.getAndSet(chunk);
         if (chunk == DEMAND)
             return _channel.onContentAvailable();

@@ -417,7 +417,6 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                 if (maxFileSize >= 0 && fileSize > maxFileSize)
                 {
                     onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxFileSize)));
-                    chunk.release();
                     return;
                 }
 
@@ -438,13 +437,15 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                             }
                         }
                         write(buffer);
-                        chunk.release();
                         if (chunk.isLast())
                             close();
                         return;
                     }
                 }
             }
+            // Retain the chunk because it is stored for later use.
+            if (chunk.canRetain())
+                chunk.retain();
             partChunks.add(chunk);
         }
 

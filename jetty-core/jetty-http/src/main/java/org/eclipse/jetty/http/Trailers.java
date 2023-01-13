@@ -45,6 +45,12 @@ public class Trailers implements Content.Chunk
     }
 
     @Override
+    public boolean canRetain()
+    {
+        return false;
+    }
+
+    @Override
     public void retain()
     {
         throw new UnsupportedOperationException();

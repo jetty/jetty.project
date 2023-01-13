@@ -439,6 +439,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onContent(Response serverResponse, Content.Chunk chunk, Runnable demander)
         {
+            if (chunk.canRetain())
+                chunk.retain();
             Callback callback = Callback.from(chunk::release, Callback.from(demander, serverResponse::abort));
             try
             {

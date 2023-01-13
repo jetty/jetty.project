@@ -98,7 +98,6 @@ public class HttpClientDemandTest extends AbstractTest
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
-                    chunk.release();
                     if (chunks.incrementAndGet() == 1)
                         contentLatch.countDown();
                     // Need to demand also after the second
@@ -154,7 +153,9 @@ public class HttpClientDemandTest extends AbstractTest
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
-                    // Don't demand and don't release chunks.
+                    // Store the chunk and don't demand.
+                    if (chunk.canRetain())
+                        chunk.retain();
                     contentQueue.offer(chunk);
                     demanderQueue.offer(demander);
                 }
@@ -243,6 +244,8 @@ public class HttpClientDemandTest extends AbstractTest
         client.newRequest(newURI(transport))
             .onResponseContentAsync((response, chunk, demander) ->
             {
+                if (chunk.canRetain())
+                    chunk.retain();
                 chunkRef.set(chunk);
                 try
                 {
@@ -332,7 +335,6 @@ public class HttpClientDemandTest extends AbstractTest
         {
             listener1Chunks.incrementAndGet();
             listener1ContentSize.addAndGet(chunk.remaining());
-            chunk.release();
             listener1DemanderRef.set(demander);
         };
         AtomicInteger listener2Chunks = new AtomicInteger();
@@ -342,7 +344,6 @@ public class HttpClientDemandTest extends AbstractTest
         {
             listener2Chunks.incrementAndGet();
             listener2ContentSize.addAndGet(chunk.remaining());
-            chunk.release();
             listener2DemanderRef.set(demander);
         };
 
@@ -414,9 +415,9 @@ public class HttpClientDemandTest extends AbstractTest
         client.newRequest(newURI(transport))
             .onResponseContentAsync((response, chunk, demander) ->
             {
+                boolean demand = chunk.hasRemaining();
                 received.put(chunk.getByteBuffer());
-                chunk.release();
-                if (!chunk.isTerminal())
+                if (demand)
                     new Thread(demander).start();
             })
             .send(result ->
@@ -472,7 +473,7 @@ public class HttpClientDemandTest extends AbstractTest
                         demander.run();
                         return;
                     }
-                    if (chunk.isTerminal())
+                    if (chunk.isLast() && !chunk.hasRemaining())
                     {
                         chunk.release();
                         return;
@@ -533,7 +534,7 @@ public class HttpClientDemandTest extends AbstractTest
                         demander.run();
                         return;
                     }
-                    if (chunk.isTerminal())
+                    if (chunk.isLast() && !chunk.hasRemaining())
                     {
                         chunk.release();
                         return;

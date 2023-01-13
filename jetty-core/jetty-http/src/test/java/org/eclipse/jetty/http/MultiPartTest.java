@@ -658,7 +658,6 @@ public class MultiPartTest
         public void onPartContent(Content.Chunk chunk)
         {
             events.offer("content last: %b length: %d".formatted(chunk.isLast(), chunk.getByteBuffer().remaining()));
-            chunk.release();
         }
 
         @Override
@@ -690,6 +689,9 @@ public class MultiPartTest
         @Override
         public void onPartContent(Content.Chunk chunk)
         {
+            // Retain the chunk because it is stored for later use.
+            if (chunk.canRetain())
+                chunk.retain();
             partContent.add(chunk);
         }
 
