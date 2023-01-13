@@ -444,8 +444,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                 }
             }
             // Retain the chunk because it is stored for later use.
-            if (chunk.canRetain())
-                chunk.retain();
+            chunk.retain();
             partChunks.add(chunk);
         }
 

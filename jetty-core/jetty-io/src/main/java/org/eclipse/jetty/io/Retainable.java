@@ -27,30 +27,36 @@ import java.util.concurrent.atomic.AtomicInteger;
 public interface Retainable
 {
     /**
-     * <p>Returns whether this resource can be retained, that is whether {@link #retain()}
-     * can be called safely.</p>
-     * <p>Implementations may decide that special resources are not retainable (for example,
-     * {@code static} constants) so calling {@link #retain()} is not safe because it may throw.</p>
-     * <p>Calling {@link #release()} on those special resources is typically allowed, and
-     * it is a no-operation.</p>
+     * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
+     * and {@link #release()}.</p>
+     * <p>Implementations may decide that special resources are not not referenced counted (for example,
+     * {@code static} constants) so calling {@link #retain()} is a no-operation, and
+     * calling {@link #release()} on those special resources is a no-operation that always returns true.</p>
      *
-     * @return whether it is safe to call {@link #retain()}
+     * @return true if calls to {@link #retain()} are reference counted.
      */
-    boolean canRetain();
+    default boolean canRetain()
+    {
+        return false;
+    }
 
     /**
-     * <p>Retains this resource, incrementing the reference count.</p>
+     * <p>Retains this resource, potentially incrementing a reference count if there are resources that will be released.</p>
      */
-    void retain();
+    default void retain()
+    {
+    }
 
     /**
-     * <p>Releases this resource, decrementing the reference count.</p>
-     * <p>This method returns {@code true} when the reference count goes to zero,
-     * {@code false} otherwise.</p>
+     * <p>Releases this resource, potentially decrementing a reference count (if any).</p>
      *
-     * @return whether the invocation of this method decremented the reference count to zero
+     * @return {@code true} when the reference count goes to zero or if there was no reference count,
+     *         {@code false} otherwise.
      */
-    boolean release();
+    default boolean release()
+    {
+        return true;
+    }
 
     /**
      * A wrapper of {@link Retainable} instances.

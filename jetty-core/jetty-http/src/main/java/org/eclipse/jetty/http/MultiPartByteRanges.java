@@ -284,8 +284,7 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         public void onPartContent(Content.Chunk chunk)
         {
             // Retain the chunk because it is stored for later use.
-            if (chunk.canRetain())
-                chunk.retain();
+            chunk.retain();
             partChunks.add(chunk);
         }
 

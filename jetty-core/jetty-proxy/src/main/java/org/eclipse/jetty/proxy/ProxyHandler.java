@@ -688,8 +688,7 @@ public abstract class ProxyHandler extends Handler.Abstract
             if (LOG.isDebugEnabled())
                 LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
 
-            if (serverToProxyChunk.canRetain())
-                serverToProxyChunk.retain();
+            serverToProxyChunk.retain();
             Callback callback = new Callback()
             {
                 @Override

@@ -525,8 +525,7 @@ public class ContentSourceTest
         private void add(Content.Chunk chunk)
         {
             // Retain the chunk because it is stored for later use.
-            if (chunk.canRetain())
-                chunk.retain();
+            chunk.retain();
             _chunks.add(chunk);
         }
 

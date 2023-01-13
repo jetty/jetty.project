@@ -99,8 +99,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         if (this.chunk != null)
             throw new IllegalStateException();
         // Retain the chunk because it is stored for later reads.
-        if (chunk.canRetain())
-            chunk.retain();
+        chunk.retain();
         this.chunk = chunk;
         responseContentAvailable();
     }

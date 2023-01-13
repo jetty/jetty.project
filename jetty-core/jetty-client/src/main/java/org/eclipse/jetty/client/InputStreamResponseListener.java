@@ -112,8 +112,7 @@ public class InputStreamResponseListener extends Listener.Adapter
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing chunk {}", chunk);
-                if (chunk.canRetain())
-                    chunk.retain();
+                chunk.retain();
                 chunkCallbacks.add(new ChunkCallback(chunk, demander, response::abort));
                 l.signalAll();
                 return;
