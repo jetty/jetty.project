@@ -24,23 +24,6 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public abstract class ByteBufferChunk implements Content.Chunk
 {
-    public static final ByteBufferChunk EMPTY = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, false)
-    {
-        @Override
-        public String toString()
-        {
-            return "%s[EMPTY]".formatted(ByteBufferChunk.class.getSimpleName());
-        }
-    };
-    public static final ByteBufferChunk EOF = new ByteBufferChunk(BufferUtil.EMPTY_BUFFER, true)
-    {
-        @Override
-        public String toString()
-        {
-            return "%s[EOF]".formatted(ByteBufferChunk.class.getSimpleName());
-        }
-    };
-
     private final ByteBuffer byteBuffer;
     private final boolean last;
 
@@ -60,24 +43,6 @@ public abstract class ByteBufferChunk implements Content.Chunk
     public boolean isLast()
     {
         return last;
-    }
-
-    @Override
-    public boolean canRetain()
-    {
-        return false;
-    }
-
-    @Override
-    public void retain()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean release()
-    {
-        return true;
     }
 
     @Override

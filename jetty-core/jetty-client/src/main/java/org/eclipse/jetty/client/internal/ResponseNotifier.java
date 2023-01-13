@@ -412,8 +412,7 @@ public class ResponseNotifier
                     if (chunk.hasRemaining())
                         chunk = Content.Chunk.asChunk(chunk.getByteBuffer().slice(), chunk.isLast(), chunk);
                     // Retain the slice because it is stored for later reads.
-                    if (chunk.canRetain())
-                        chunk.retain();
+                    chunk.retain();
                     this.chunk = chunk;
                 }
                 else if (!currentChunk.isLast())

@@ -411,24 +411,6 @@ public interface Stream
             {
                 super(new DataFrame(BufferUtil.EMPTY_BUFFER, true));
             }
-
-            @Override
-            public boolean canRetain()
-            {
-                return false;
-            }
-
-            @Override
-            public void retain()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean release()
-            {
-                return true;
-            }
         }
     }
 }

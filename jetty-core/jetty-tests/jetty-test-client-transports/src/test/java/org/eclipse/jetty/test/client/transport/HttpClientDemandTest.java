@@ -154,8 +154,7 @@ public class HttpClientDemandTest extends AbstractTest
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)
                 {
                     // Store the chunk and don't demand.
-                    if (chunk.canRetain())
-                        chunk.retain();
+                    chunk.retain();
                     contentQueue.offer(chunk);
                     demanderQueue.offer(demander);
                 }
@@ -244,8 +243,7 @@ public class HttpClientDemandTest extends AbstractTest
         client.newRequest(newURI(transport))
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                if (chunk.canRetain())
-                    chunk.retain();
+                chunk.retain();
                 chunkRef.set(chunk);
                 try
                 {

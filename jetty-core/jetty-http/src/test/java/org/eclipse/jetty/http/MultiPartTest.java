@@ -690,8 +690,7 @@ public class MultiPartTest
         public void onPartContent(Content.Chunk chunk)
         {
             // Retain the chunk because it is stored for later use.
-            if (chunk.canRetain())
-                chunk.retain();
+            chunk.retain();
             partContent.add(chunk);
         }
 

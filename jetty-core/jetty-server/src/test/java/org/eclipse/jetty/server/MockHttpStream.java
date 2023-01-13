@@ -46,24 +46,6 @@ public class MockHttpStream implements HttpStream
         {
             return false;
         }
-
-        @Override
-        public boolean canRetain()
-        {
-            return false;
-        }
-
-        @Override
-        public void retain()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return true;
-        }
     };
     private final long _nanoTime = NanoTime.now();
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
@@ -106,8 +88,7 @@ public class MockHttpStream implements HttpStream
 
     private Runnable addContent(Content.Chunk chunk)
     {
-        if (chunk.canRetain())
-            chunk.retain();
+        chunk.retain();
         chunk = _content.getAndSet(chunk);
         if (chunk == DEMAND)
             return _channel.onContentAvailable();

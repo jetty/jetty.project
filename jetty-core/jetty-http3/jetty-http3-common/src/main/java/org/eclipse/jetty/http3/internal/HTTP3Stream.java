@@ -335,8 +335,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     public void onData(Data data)
     {
         // Retain the data because it is stored for later reads.
-        if (data.canRetain())
-            data.retain();
+        data.retain();
         if (!dataRef.compareAndSet(null, data))
             throw new IllegalStateException();
 

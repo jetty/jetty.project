@@ -165,7 +165,7 @@ public class GzipRequest extends Request.Wrapper
                 return Content.Chunk.EOF;
 
             // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
-            if (retain && _chunk.canRetain())
+            if (retain)
                 _chunk.retain();
             ByteBuffer decodedBuffer = _decoder.decode(_chunk);
 

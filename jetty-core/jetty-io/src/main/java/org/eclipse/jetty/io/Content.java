@@ -436,11 +436,50 @@ public class Content
         /**
          * <p>An empty, non-last, chunk.</p>
          */
-        Chunk EMPTY = ByteBufferChunk.EMPTY;
+        Chunk EMPTY = new Chunk()
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return BufferUtil.EMPTY_BUFFER;
+            }
+
+            @Override
+            public boolean isLast()
+            {
+                return false;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "EMPTY";
+            }
+        };
+
         /**
          * <p>An empty, last, chunk.</p>
          */
-        Content.Chunk EOF = ByteBufferChunk.EOF;
+        Content.Chunk EOF = new Chunk()
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return BufferUtil.EMPTY_BUFFER;
+            }
+
+            @Override
+            public boolean isLast()
+            {
+                return true;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "EOF";
+            }
+        };
 
         /**
          * <p>Creates a Chunk with the given ByteBuffer.</p>
@@ -653,24 +692,6 @@ public class Content
 
             @Override
             public boolean isLast()
-            {
-                return true;
-            }
-
-            @Override
-            public boolean canRetain()
-            {
-                return false;
-            }
-
-            @Override
-            public void retain()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean release()
             {
                 return true;
             }
