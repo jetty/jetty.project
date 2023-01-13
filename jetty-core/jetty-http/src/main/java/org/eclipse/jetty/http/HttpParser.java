@@ -822,32 +822,31 @@ public class HttpParser
                                 setState(State.REQUEST_VERSION);
 
                                 // try quick look ahead for HTTP Version
-                                HttpVersion version;
-                                if (buffer.position() > 0 && buffer.hasArray())
-                                    version = HttpVersion.lookAheadGet(buffer.array(), buffer.arrayOffset() + buffer.position() - 1, buffer.arrayOffset() + buffer.limit());
-                                else
-                                    version = HttpVersion.CACHE.getBest(buffer, 0, buffer.remaining());
-
-                                if (version != null)
+                                if (buffer.position() > 0)
                                 {
-                                    int pos = buffer.position() + version.asString().length() - 1;
-                                    if (pos < buffer.limit())
+                                    HttpVersion version = HttpVersion.CACHE.getBest(buffer, -1, buffer.remaining());
+
+                                    if (version != null)
                                     {
-                                        byte n = buffer.get(pos);
-                                        if (n == HttpTokens.CARRIAGE_RETURN)
+                                        int pos = buffer.position() + version.asString().length() - 1;
+                                        if (pos < buffer.limit())
                                         {
-                                            _cr = true;
-                                            _version = version;
-                                            checkVersion();
-                                            _string.setLength(0);
-                                            buffer.position(pos + 1);
-                                        }
-                                        else if (n == HttpTokens.LINE_FEED)
-                                        {
-                                            _version = version;
-                                            checkVersion();
-                                            _string.setLength(0);
-                                            buffer.position(pos);
+                                            byte n = buffer.get(pos);
+                                            if (n == HttpTokens.CARRIAGE_RETURN)
+                                            {
+                                                _cr = true;
+                                                _version = version;
+                                                checkVersion();
+                                                _string.setLength(0);
+                                                buffer.position(pos + 1);
+                                            }
+                                            else if (n == HttpTokens.LINE_FEED)
+                                            {
+                                                _version = version;
+                                                checkVersion();
+                                                _string.setLength(0);
+                                                buffer.position(pos);
+                                            }
                                         }
                                     }
                                 }
