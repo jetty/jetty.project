@@ -36,7 +36,6 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest.ServletApiRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.Syntax;
@@ -729,7 +728,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
             return false;
 
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest servletApiRequest =
+        ServletApiRequest servletApiRequest =
             (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
         if (servletApiRequest == null)
             throw new IllegalStateException("Request is not a valid ServletContextRequest");
