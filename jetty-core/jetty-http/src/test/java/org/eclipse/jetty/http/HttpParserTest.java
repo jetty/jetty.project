@@ -290,7 +290,6 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testSimple(String eoln)
     {
-        System.err.println(eoln.length());
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0" + eoln +
                 "Host: localhost" + eoln +
@@ -310,6 +309,62 @@ public class HttpParserTest
         assertEquals("localhost", _val[0]);
         assertEquals("Connection", _hdr[1]);
         assertEquals("close", _val[1]);
+        assertEquals(1, _headers);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\r\n", "\n"})
+    public void testHeaderCacheNearMiss(String eoln)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.0" + eoln +
+                "Host: localhost" + eoln +
+                "Connection: closed" + eoln +
+                eoln);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("closed", _val[1]);
+        assertEquals(1, _headers);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\r\n", "\n"})
+    public void testHeaderCacheSplitNearMiss(String eoln)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.0" + eoln +
+                "Host: localhost" + eoln +
+                "Connection: close");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        assertFalse(parser.parseNext(buffer));
+
+        buffer = BufferUtil.toBuffer(
+            "d" + eoln +
+                eoln);
+        assertTrue(parser.parseNext(buffer));
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("closed", _val[1]);
         assertEquals(1, _headers);
     }
 

@@ -126,6 +126,7 @@ public class HttpParser
         .with(new HttpField(HttpHeader.CONTENT_LENGTH, "0"))
         .with(new HttpField(HttpHeader.CONTENT_ENCODING, "gzip"))
         .with(new HttpField(HttpHeader.CONTENT_ENCODING, "deflate"))
+        .with(new HostPortHttpField("localhost"))
         .with(new HttpField(HttpHeader.TRANSFER_ENCODING, "chunked"))
         .with(new HttpField(HttpHeader.EXPIRES, "Fri, 01 Jan 1990 00:00:00 GMT"))
         .withAll(() ->
@@ -164,6 +165,7 @@ public class HttpParser
             return map;
         })
         .build();
+
     private static final Index.Mutable<HttpField> NO_CACHE = new Index.Builder<HttpField>()
         .caseSensitive(false)
         .mutable()
@@ -1241,9 +1243,9 @@ public class HttpParser
                             if (buffer.hasRemaining())
                             {
                                 // Try a look ahead for the known header name and value.
-                                HttpField cachedField = _fieldCache.getBest(buffer, -1, buffer.remaining());
+                                HttpField cachedField = _fieldCache.getBest(buffer, -1, buffer.remaining() + 1);
                                 if (cachedField == null)
-                                    cachedField = CACHE.getBest(buffer, -1, buffer.remaining());
+                                    cachedField = CACHE.getBest(buffer, -1, buffer.remaining() + 1);
 
                                 if (cachedField != null)
                                 {
@@ -1275,25 +1277,24 @@ public class HttpParser
                                     _header = cachedField.getHeader();
                                     _headerString = n;
 
-                                    if (v == null)
+                                    int pos = buffer.position() + n.length() + (v == null ? 0 : v.length()) + 1;
+                                    if (v == null || pos >= buffer.limit())
                                     {
                                         // Header only
                                         setState(FieldState.VALUE);
                                         _string.setLength(0);
                                         _length = 0;
-                                        buffer.position(buffer.position() + n.length() + 1);
+                                        buffer.position(v == null ? pos : pos - v.length());
                                         break;
                                     }
 
                                     // Header and value
-                                    int pos = buffer.position() + n.length() + v.length() + 1;
                                     byte peek = buffer.get(pos);
                                     if (peek == HttpTokens.CARRIAGE_RETURN || peek == HttpTokens.LINE_FEED)
                                     {
                                         _field = cachedField;
                                         _valueString = v;
                                         setState(FieldState.IN_VALUE);
-
                                         if (peek == HttpTokens.CARRIAGE_RETURN)
                                         {
                                             _cr = true;
