@@ -50,6 +50,7 @@ To deploy a standard web application, you need to enable the xref:og-module-eeN-
 
 NOTE: The following examples assume you're deploying a Jakarta {ee-current-caps} app; for other versions of EE, make sure to activate the corresponding `{ee-all}-deploy` module.
 
+[subs=attributes]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-deploy
 ----
