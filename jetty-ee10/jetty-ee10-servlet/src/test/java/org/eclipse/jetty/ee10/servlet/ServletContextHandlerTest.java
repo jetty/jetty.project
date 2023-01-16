@@ -2417,7 +2417,8 @@ public class ServletContextHandlerTest
             {
                 return new ServletContextRequest(getContext().getServletContext(), servletChannel,
                     request, response, pathInContext,
-                    mappedServlet, pathSpec, matchedPath) {
+                    mappedServlet, pathSpec, matchedPath)
+                {
 
                     @Override
                     protected ServletApiRequest newServletApiRequest()
