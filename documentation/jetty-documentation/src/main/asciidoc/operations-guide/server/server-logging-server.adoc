@@ -14,51 +14,27 @@
 [[og-server-logging-server]]
 ===== Server Logging
 
-The Jetty code uses the link:http://slf4j.org/[SLF4J] API for its logging.
+Jetty uses the link:http://slf4j.org/[SLF4J] API for its logging, and you can direct Jetty's server logs to the SLF4J implementation (or _binding_) xref:og-server-logging-server-custom[of your choice].
 
-Thanks to the SLF4J library, the logging of the Jetty server can therefore be directed to the implementation (called SLF4J _binding_) of your choice.
+Jetty provides an SLF4J binding (via the `jetty-slf4j-impl` Maven artifact) as its default binding.
+Jetty's server logging is enabled by default with the `logging` Jetty module.
+(This module is typically enabled, as it is a transitive dependency of the `server` module.)
 
-The Jetty project provides an SLF4J binding (via the `jetty-slf4j-impl` Maven artifact) that is used as the default SLF4J binding.
-
-The logging of the Jetty server itself is enabled by default with the `logging` Jetty module, which is a transitive dependency of the `server` module and therefore it is typically always enabled.
-
-The `logging` Jetty module is a _virtual_ module (see xref:og-modules-names[this section]) and its default implementation is provided by the `logging-jetty` Jetty module, which uses the Jetty SLF4J binding.
+The `logging` module is a xref:og-modules-names[_virtual_ module], and its default implementation is provided by the `logging-jetty` Jetty module that uses Jetty's SLF4J binding.
 
 [[og-server-logging-server-default]]
 ====== Default Configuration
 
-The Jetty SLF4J binding is configured with an appender (`org.eclipse.jetty.logging.StdErrAppender`) that directs the logging to `System.err`, and reads its configuration from a file named `jetty-logging.properties` that must be found in the class-path.
-
-The `StdErrAppender` format is:
+Jetty's default SLF4J binding uses an _appender_ (`org.eclipse.jetty.logging.StdErrAppender`) to add metadata (like timestamps) to logging messages and forward them to `System.err`. The default `StdErrAppender` format is:
 
 ----
 <datetime>:<level>:<logger name>:<thread name>:<message>
 ----
 
-where `<datetime>=yyyy-MM-dd HH:mm:ss.SSS`.
+where `<datetime>` has the timestamp format `yyyy-MM-dd HH:mm:ss.SSS`.
 
-You can configure `StdErrAppender` by specifying the following properties in `jetty-logging.properties`:
-
-org.eclipse.jetty.logging.appender.NAME_CONDENSE=<boolean>::
-Specifies whether to condense logger names, so that for example `org.eclipse.jetty.util.QueuedThreadPool` becomes `oeju.QueuedThreadPool`.
-Default value is `true`.
-
-org.eclipse.jetty.logging.appender.MESSAGE_ALIGN=<integer>::
-Specifies the column at which the logging `<message>` should be printed.
-The value `0` specifies no alignment.
-Default value is `0`.
-
-org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE=<boolean>::
-Specifies whether to escape ISO control characters such as `\r` or `\n` present in the message.
-Character `\r` is replaced with `<` and character `\n` is replaced with `|`; all other ISO control characters are replaced with `?`.
-Default value is `false`.
-
-org.eclipse.jetty.logging.appender.ZONE_ID=<timezone id>::
-Specifies the timezone ID (such as `PST`, or `America/Los_Angeles` or `GMT-8:00`) for the `<datetime>` part of the logging line.
-The empty string specifies the `UTC` timezone.
-Default value is the local timezone.
-
-The `logging-jetty` Jetty module, enabled transitively, provides the configuration file `$JETTY_BASE/resources/jetty-logging.properties` to configure the logging levels, for example:
+You can configure the appender via a file named `jetty-logging.properties`, which must be found in the xref:og-start-start-class-path[class-path].
+When you activate the `logging-jetty` module (either directly or via a transitive dependency) Jetty automatically generates `jetty-logging.properties` for you in `$JETTY_BASE/resources/`. For example:
 
 ----
 $ cd $JETTY_BASE
@@ -73,23 +49,39 @@ $JETTY_BASE
     └── http.ini
 ----
 
-.jetty-logging.properties
-[source,properties]
-----
-# Do not condense logger names.
-org.eclipse.jetty.logging.appender.NAME_CONDENSE=false
+Here are the configuration options you can specify in `jetty-logging.properties`:
 
-# By default, log at INFO level all Jetty loggers.
-org.eclipse.jetty.LEVEL=INFO
+`org.eclipse.jetty.LEVEL=`<logging level>::
+You can specify any of the usual SLF4J logging levels, `TRACE`, `DEBUG`, `INFO` (default), `WARN` and `ERROR`, plus two additional levels: `ALL` (an alias for `TRACE`) and `OFF` (disable logging entirely).
+You can also configure a default logging level for specific loggers, or arbitrary logger trees:
+* `com.example.MyComponent.LEVEL=DEBUG` (sets logging level of logger `com.example.MyComponent` to `DEBUG`)
+* `com.example.LEVEL=DEBUG` (sets logging level of tree `com.example.\*` to `DEBUG`)
 
-# However, the Jetty client loggers log at DEBUG level.
-org.eclipse.jetty.client.LEVEL=DEBUG
-----
+`org.eclipse.jetty.logging.appender.NAME_CONDENSE=`<boolean>::
+Specifies whether to condense logger names, so that for example `org.eclipse.jetty.util.QueuedThreadPool` becomes `oeju.QueuedThreadPool`.
+Default value is `true`.
 
-The logging levels that you can specify in the `jetty-logging.properties` file are the usual SLF4J logging levels, `TRACE`, `DEBUG`, `INFO`, `WARN` and `ERROR`, plus two additional levels:
+`org.eclipse.jetty.logging.appender.MESSAGE_ALIGN=`<integer>::
+Specifies the column at which the logging `<message>` should be printed.
+The value `0` specifies no alignment.
+Default value is `0`.
 
-* `ALL`, which is an alias for `TRACE`
-* `OFF`, which disables entirely the logging (not even `ERROR` level messages are logged)
+`org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE=`<boolean>::
+Specifies whether to escape ISO control characters such as `\r` or `\n` present in the message.
+Character `\r` is replaced with `<` and character `\n` is replaced with `|`; all other ISO control characters are replaced with `?`.
+Default value is `false`.
+
+`org.eclipse.jetty.logging.appender.ZONE_ID=`<timezone id>::
+Specifies the timezone ID (such as `PST`, or `America/Los_Angeles` or `GMT-8:00`) for the `<datetime>` part of the logging line.
+The empty string specifies the `UTC` timezone.
+Default value is the local timezone.
+
+`com.example.STACKS=`<boolean>::
+Specifies whether to hide stack traces for some arbitrary logger tree `com.example.\*`.
+Default value is `false`
+
+`org.eclipse.jetty.logging.jmx.context=`<class name>::
+Configures the JMX context name, for use when xref:og-jmx[debugging via a JMX console].
 
 When using the Jetty SLF4J binding, the logging levels can be dynamically changed via JMX, see xref:og-troubleshooting-logging[the troubleshooting section] for more information.
 
