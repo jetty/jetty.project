@@ -126,6 +126,7 @@ public class MultiPart
         private final HttpFields fields;
         protected Path path;
         private boolean temporary = true;
+        private Content.Source content;
 
         public Part(String name, String fileName, HttpFields fields)
         {
@@ -162,7 +163,8 @@ public class MultiPart
         }
 
         /**
-         * <p>Returns the content of this part.</p>
+         * <p>Returns the content of this part as a {@link Content.Source}.</p>
+         * <p>Calling this method multiple times will return the same instance.</p>
          * <p>The content type and content encoding are specified in this part's
          * {@link #getHeaders() headers}.</p>
          * <p>The content encoding may be specified by the part named {@code _charset_},
@@ -171,11 +173,30 @@ public class MultiPart
          *
          * @return the content of this part
          */
-        public abstract Content.Source getContent();
+        public Content.Source getContentSource()
+        {
+            if (content == null)
+                content = getNewContent();
+            return content;
+        }
+
+        /**
+         * <p>Returns the content of this part as a new {@link Content.Source}</p>
+         * <p>If the content is reproducible, invoking this method multiple times will return
+         * a different independent instance for every invocation.</p>
+         * <p>If the content is not reproducible, subsequent calls to this method will return null.</p>
+         * <p>The content type and content encoding are specified in this part's {@link #getHeaders() headers}.</p>
+         * <p>The content encoding may be specified by the part named {@code _charset_},
+         * as specified in
+         * <a href="https://datatracker.ietf.org/doc/html/rfc7578#section-4.6">RFC 7578, section 4.6</a>.</p>
+         *
+         * @return the content of this part as a new {@link Content.Source}
+         */
+        public abstract Content.Source getNewContent();
 
         public long getLength()
         {
-            return getContent().getLength();
+            return getNewContent().getLength();
         }
 
         /**
@@ -200,7 +221,7 @@ public class MultiPart
                 Charset charset = defaultCharset != null ? defaultCharset : UTF_8;
                 if (charsetName != null)
                     charset = Charset.forName(charsetName);
-                return Content.Source.asString(getContent(), charset);
+                return Content.Source.asString(getNewContent(), charset);
             }
             catch (IOException x)
             {
@@ -229,12 +250,11 @@ public class MultiPart
          */
         public void writeTo(Path path) throws IOException
         {
-
             if (this.path == null)
             {
                 try (OutputStream out = Files.newOutputStream(path))
                 {
-                    IO.copy(Content.Source.asInputStream(getContent()), out);
+                    IO.copy(Content.Source.asInputStream(getNewContent()), out);
                 }
                 this.path = path;
             }
@@ -251,16 +271,10 @@ public class MultiPart
                 Files.delete(this.path);
         }
 
-        public void close(Throwable failure) throws IOException
+        public void close() throws IOException
         {
-            // TODO: why do we need this, no one ever uses the failure??
             if (temporary)
                 delete();
-        }
-
-        public final void close() throws IOException
-        {
-            close(null);
         }
     }
 
@@ -292,7 +306,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getNewContent()
         {
             return new ByteBufferContentSource(content);
         }
@@ -332,15 +346,15 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getNewContent()
         {
             return new ChunksContentSource(content.stream().map(Content.Chunk::slice).toList());
         }
 
         @Override
-        public void close(Throwable failure) throws IOException
+        public void close() throws IOException
         {
-            super.close(failure);
+            super.close();
             content.forEach(Retainable::release);
         }
 
@@ -382,7 +396,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getNewContent()
         {
             return new PathContentSource(path);
         }
@@ -414,7 +428,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source getContent()
+        public Content.Source getNewContent()
         {
             Content.Source c = content;
             content = null;
@@ -616,7 +630,7 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
-                            partContent = part.getContent();
+                            partContent = part.getNewContent();
                             state = State.HEADERS;
                             yield Content.Chunk.from(firstBoundary.slice(), false);
                         }
@@ -643,7 +657,7 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
-                            partContent = part.getContent();
+                            partContent = part.getNewContent();
                             state = State.HEADERS;
                             yield Content.Chunk.from(middleBoundary.slice(), false);
                         }
@@ -765,7 +779,7 @@ public class MultiPart
             {
                 try
                 {
-                    part.close(failure);
+                    part.close();
                 }
                 catch (IOException e)
                 {

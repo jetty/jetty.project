@@ -68,7 +68,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  *
  * @see Parts
  */
-public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts>
+public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts> implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormData.class);
 
@@ -569,7 +569,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             {
                 try
                 {
-                    part.close(cause);
+                    part.close();
                 }
                 catch (IOException e)
                 {
@@ -626,6 +626,27 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             catch (Throwable x)
             {
                 onFailure(x);
+            }
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        // TODO: Can we do this async?
+        MultiPartFormData.Parts parts = getNow(null);
+        if (parts != null)
+        {
+            for (MultiPart.Part p : parts)
+            {
+                try
+                {
+                    p.close();
+                }
+                catch (Throwable e)
+                {
+                    LOG.warn("Errors deleting multipart tmp files", e);
+                }
             }
         }
     }

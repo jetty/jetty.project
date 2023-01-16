@@ -80,7 +80,7 @@ public class MultiPartFormDataHandlerTest
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
-                            Content.copy(parts.get(0).getContent(), response, callback);
+                            Content.copy(parts.get(0).getNewContent(), response, callback);
                         else
                             Response.writeError(request, response, callback, failure);
                     });
@@ -129,7 +129,7 @@ public class MultiPartFormDataHandlerTest
                 MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
                 assertNotNull(formData);
                 MultiPart.Part part = formData.get().get(0);
-                Content.copy(part.getContent(), response, callback);
+                Content.copy(part.getNewContent(), response, callback);
                 return true;
             }
         });
@@ -321,7 +321,7 @@ public class MultiPartFormDataHandlerTest
             HttpFields headers2 = part2.getHeaders();
             assertEquals(2, headers2.size());
             assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
-            assertEquals(32, part2.getContent().getLength());
+            assertEquals(32, part2.getNewContent().getLength());
         }
     }
 }

@@ -34,7 +34,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.Trailers;
@@ -652,23 +651,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Clean up any multipart tmp files and release any associated resources.
                 MultiPartFormData multiParts = (MultiPartFormData)_request.getAttribute(MultiPartFormData.class.getName());
                 if (multiParts != null)
-                {
-                    MultiPartFormData.Parts parts = multiParts.getNow(null);
-                    if (parts != null)
-                    {
-                        for (MultiPart.Part p : parts)
-                        {
-                            try
-                            {
-                                p.close();
-                            }
-                            catch (Throwable e)
-                            {
-                                LOG.warn("Errors deleting multipart tmp files", e);
-                            }
-                        }
-                    }
-                }
+                    multiParts.close();
             }
             finally
             {

@@ -76,7 +76,7 @@ public class ServletMultiPartFormData
     {
         try
         {
-            // Look for a previously read and parsed MultiPartFormData from the DelayedHandler
+            // Look for a previously read and parsed MultiPartFormData from the DelayedHandler.
             MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
             if (formData != null)
                 return new Parts(formData);
@@ -127,7 +127,7 @@ public class ServletMultiPartFormData
         {
             ByteBuffer buffer = byteBufferPool.newByteBuffer(bufferSize, false);
             boolean readEof = false;
-            while (BufferUtil.space(buffer) > 0)
+            while (BufferUtil.space(buffer) > bufferSize / 2)
             {
                 int read = BufferUtil.readFrom(input, buffer);
                 if (read < 0)
@@ -190,7 +190,7 @@ public class ServletMultiPartFormData
         @Override
         public InputStream getInputStream() throws IOException
         {
-            return Content.Source.asInputStream(_part.getContent());
+            return Content.Source.asInputStream(_part.getNewContent());
         }
 
         @Override
