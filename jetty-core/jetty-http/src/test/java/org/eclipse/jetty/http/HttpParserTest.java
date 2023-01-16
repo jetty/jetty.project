@@ -290,6 +290,7 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testSimple(String eoln)
     {
+        System.err.println(eoln.length());
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0" + eoln +
                 "Host: localhost" + eoln +
@@ -954,7 +955,6 @@ public class HttpParserTest
                 assertEquals(0, buffer.remaining());
 
                 // parse the rest
-                System.err.println(buffer.capacity());
                 buffer.limit(buffer.capacity() - 2);
                 parser.parseNext(buffer);
             }
