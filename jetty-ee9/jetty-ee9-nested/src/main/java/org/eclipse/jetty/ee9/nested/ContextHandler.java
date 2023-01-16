@@ -2394,9 +2394,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
          * Expose configureTempDirectory so it can be triggered early by WebInfConfiguration#preConfigure
          */
         @Override
-        public void configureTempDirectory()
+        public void createTempDirectory()
         {
-            super.configureTempDirectory();
+            super.createTempDirectory();
         }
 
         @Override

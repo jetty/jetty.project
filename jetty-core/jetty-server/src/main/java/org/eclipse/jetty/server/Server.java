@@ -150,7 +150,7 @@ public class Server extends Handler.Wrapper implements Attributes
      * <p>Set the temporary directory returned by {@link Context#getTempDirectory()} for the root
      * {@link Context} returned {@link #getContext()}. If not set explicitly here, then the root
      * {@link Context#getTempDirectory()} will return either the directory found at
-     * {@code new File(IO.asFile(System.getProperty("jetty.base")), "work")} if it exists, else
+     * {@code new File(IO.asFile(System.getProperty("jetty.base")), "work")} if it exists,
      * else the JVMs temporary directory as {@code IO.asFile(System.getProperty("java.io.tmpdir"))}.
      * @param temp A directory that must exist and be writable or null to get the default.
      */

@@ -485,9 +485,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    protected void configureTempDirectory()
+    protected void createTempDirectory()
     {
-        super.configureTempDirectory();
+        super.createTempDirectory();
     }
 
     public boolean configure() throws Exception
