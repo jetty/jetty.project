@@ -13,59 +13,18 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 
 /**
  * GraalVM Native-Image {@link PathResourceFactory}.
  * 
  * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>
+ * @see GraalIssue5720PathResource
  */
 final class GraalIssue5720PathResourceFactory extends PathResourceFactory
 {
-    static final boolean ENABLE_NATIVE_IMAGE_RESOURCE_SCHEME;
-
-    static
-    {
-        URL url = GraalIssue5720PathResourceFactory.class.getResource("/org/eclipse/jetty/version/build.properties");
-        ENABLE_NATIVE_IMAGE_RESOURCE_SCHEME = (url != null && "resource".equals(url.getProtocol()));
-    }
-
-    public GraalIssue5720PathResourceFactory()
-    {
-        if (ENABLE_NATIVE_IMAGE_RESOURCE_SCHEME)
-        {
-            initNativeImageResourceFileSystem();
-        }
-    }
-
-    private void initNativeImageResourceFileSystem()
-    {
-        try
-        {
-            URI uri = new URI("resource:/");
-            try
-            {
-                Path.of(uri);
-            }
-            catch (FileSystemNotFoundException e)
-            {
-                FileSystems.newFileSystem(uri, Collections.emptyMap());
-            }
-        }
-        catch (IOException | URISyntaxException | RuntimeException ignore)
-        {
-            // ignore
-        }
-    }
-
     @Override
     public Resource newResource(URI uri)
     {
