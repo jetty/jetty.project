@@ -49,12 +49,6 @@ import org.slf4j.LoggerFactory;
 public final class URIUtil
 {
     private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
-    private static final Index<String> KNOWN_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file:")
-        .with("jrt:")
-        .with("jar:")
-        .build();
 
     // From https://www.rfc-editor.org/rfc/rfc3986
     private static final String UNRESERVED = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~";

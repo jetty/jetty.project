@@ -180,13 +180,16 @@ public class DelayedHandler extends Handler.Wrapper
             }
             else
             {
+                RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
                 try
                 {
-                    getHandler().process(new RewindChunkRequest(getRequest(), chunk), getResponse(), getCallback());
+                    getHandler().process(request, getResponse(), getCallback());
                 }
-                catch (Exception e)
+                catch (Throwable x)
                 {
-                    Response.writeError(getRequest(), getResponse(), getCallback(), e);
+                    // Use the wrapped request so that the error handling can
+                    // consume the request content and release the already read chunk.
+                    Response.writeError(request, getResponse(), getCallback(), x);
                 }
             }
         }

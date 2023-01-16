@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
@@ -57,6 +61,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -164,6 +169,40 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
+    public void testGetBinaryWithUtfResponseEncoding() throws Exception
+    {
+        Path path = docRoot.resolve("keystore.p12");
+        byte[] originalBytes;
+
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12");
+             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             OutputStream fos = Files.newOutputStream(path))
+        {
+            IO.copy(is, baos);
+            originalBytes = baos.toByteArray();
+            fos.write(originalBytes);
+        }
+
+        context.setDefaultResponseCharacterEncoding("utf-8");
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            GET /context/keystore.p12 HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        byte[] readContentBytes = response.getContentBytes();
+
+        assertThat(Arrays.equals(readContentBytes, originalBytes), is(true));
     }
 
     @Test

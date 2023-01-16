@@ -15,11 +15,11 @@ package org.eclipse.jetty.fcgi.server;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
@@ -69,7 +69,7 @@ public abstract class AbstractHttpClientServerTest
             clientBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         clientConnector.setByteBufferPool(clientBufferPool);
         HttpClientTransport transport = new HttpClientTransportOverFCGI(clientConnector, "");
-        transport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
+        transport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination())
         {
             @Override
             protected void leaked(LeakDetector<Connection>.LeakInfo leakInfo)

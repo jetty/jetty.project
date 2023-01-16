@@ -20,12 +20,9 @@ import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.ByteBufferRequestContent;
+import org.eclipse.jetty.client.internal.HttpConnection;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.internal.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;

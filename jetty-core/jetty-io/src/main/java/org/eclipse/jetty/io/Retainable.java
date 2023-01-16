@@ -27,19 +27,40 @@ import java.util.concurrent.atomic.AtomicInteger;
 public interface Retainable
 {
     /**
-     * <p>Retains this resource, incrementing the reference count.</p>
+     * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
+     * and {@link #release()}.</p>
+     * <p>Implementations may decide that special resources are not not referenced counted (for example,
+     * {@code static} constants) so calling {@link #retain()} is a no-operation, and
+     * calling {@link #release()} on those special resources is a no-operation that always returns true.</p>
+     *
+     * @return true if calls to {@link #retain()} are reference counted.
      */
-    void retain();
+    default boolean canRetain()
+    {
+        return false;
+    }
 
     /**
-     * <p>Releases this resource, decrementing the reference count.</p>
-     * <p>This method returns {@code true} when the reference count goes to zero,
-     * {@code false} otherwise.</p>
-     *
-     * @return whether the invocation of this method decremented the reference count to zero
+     * <p>Retains this resource, potentially incrementing a reference count if there are resources that will be released.</p>
      */
-    boolean release();
+    default void retain()
+    {
+    }
 
+    /**
+     * <p>Releases this resource, potentially decrementing a reference count (if any).</p>
+     *
+     * @return {@code true} when the reference count goes to zero or if there was no reference count,
+     *         {@code false} otherwise.
+     */
+    default boolean release()
+    {
+        return true;
+    }
+
+    /**
+     * A wrapper of {@link Retainable} instances.
+     */
     class Wrapper implements Retainable
     {
         private final Retainable wrapped;
@@ -52,6 +73,12 @@ public interface Retainable
         public Retainable getWrapped()
         {
             return wrapped;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return getWrapped().canRetain();
         }
 
         @Override
@@ -106,6 +133,12 @@ public interface Retainable
         {
             if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
                 throw new IllegalStateException("acquired while in use " + this);
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return true;
         }
 
         @Override

@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.client.internal;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpUpgrader;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -35,9 +35,9 @@ public class HttpUpgraderOverHTTP2 implements HttpUpgrader
     }
 
     @Override
-    public void prepare(HttpRequest request)
+    public void prepare(Request request)
     {
-        request.upgradeProtocol("websocket")
+        request.attribute(HttpUpgrader.PROTOCOL_ATTRIBUTE, "websocket")
             .method(HttpMethod.CONNECT)
             .headers(headers -> headers.put(WS_VERSION_FIELD));
 
@@ -46,7 +46,7 @@ public class HttpUpgraderOverHTTP2 implements HttpUpgrader
     }
 
     @Override
-    public void upgrade(HttpResponse response, EndPoint endPoint, Callback callback)
+    public void upgrade(Response response, EndPoint endPoint, Callback callback)
     {
         try
         {

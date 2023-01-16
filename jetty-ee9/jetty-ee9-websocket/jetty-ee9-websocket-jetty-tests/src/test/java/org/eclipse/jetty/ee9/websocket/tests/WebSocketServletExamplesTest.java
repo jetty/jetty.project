@@ -17,8 +17,8 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.HashLoginService;

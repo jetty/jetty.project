@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
@@ -119,7 +119,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                         demander.run();
                         return;
                     }
-                    if (!chunk.isTerminal())
+                    if (chunk.hasRemaining())
                         contentCount.incrementAndGet();
                     chunk.release();
                     if (!chunk.isLast())

@@ -133,6 +133,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 }
 
                 subscriber.onNext(chunk);
+                chunk.release();
 
                 if (chunk.isLast())
                 {
