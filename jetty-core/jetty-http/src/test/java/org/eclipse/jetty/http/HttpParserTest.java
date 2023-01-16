@@ -172,7 +172,7 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testLineParse2RFC2616(String eoln)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /222  " + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /222 " + eoln);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
@@ -190,7 +190,7 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testLineParse2(String eoln)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /222  " + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /222 " + eoln);
 
         _versionOrReason = null;
         HttpParser.RequestHandler handler = new Handler();
@@ -1037,18 +1037,17 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testChunkParse(String eoln)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("""
-            GET /chunk HTTP/1.0\r
-            Header1: value1\r
-            Transfer-Encoding: chunked\r
-            \r
-            a;\r
-            0123456789\r
-            1a\r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            0\r
-            \r
-            """);
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET /chunk HTTP/1.0" + eoln +
+            "Header1: value1" + eoln +
+            "Transfer-Encoding: chunked" + eoln +
+            eoln +
+            "a;" + eoln +
+            "0123456789" + eoln +
+            "1a" + eoln +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
+            "0" + eoln +
+            eoln);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -1069,18 +1068,18 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testBadChunkLength(String eoln)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("""
-            GET /chunk HTTP/1.0\r
-            Header1: value1\r
-            Transfer-Encoding: chunked\r
-            \r
-            a;\r
-            0123456789\r
-            xx\r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            0\r
-            \r
-            """);
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET /chunk HTTP/1.0" + eoln +
+                "Header1: value1" + eoln +
+                "Transfer-Encoding: chunked" + eoln +
+                eoln +
+                "a;" + eoln +
+                "0123456789" + eoln +
+                "xx" + eoln +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
+                "0" + eoln +
+                eoln
+        );
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -1100,18 +1099,17 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testBadTransferEncoding(String eoln)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("""
-            GET /chunk HTTP/1.0\r
-            Header1: value1\r
-            Transfer-Encoding: chunked, identity\r
-            \r
-            a;\r
-            0123456789\r
-            1a\r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            0\r
-            \r
-            """);
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET /chunk HTTP/1.0" + eoln +
+            "Header1: value1" + eoln +
+            "Transfer-Encoding: chunked, identity" + eoln +
+            eoln +
+            "a;" + eoln +
+            "0123456789" + eoln +
+            "1a" + eoln +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
+            "0" + eoln +
+            eoln);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -1262,9 +1260,8 @@ public class HttpParserTest
         assertTrue(_messageCompleted);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testStartEOF(String eoln)
+    @Test
+    public void testStartEOF()
     {
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2187,7 +2184,7 @@ public class HttpParserTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testBadIPv6Host(String eoln)
     {
-        try (StacklessLogging s = new StacklessLogging(HttpParser.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpParser.class))
         {
             ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.1" + eoln +
@@ -3125,8 +3122,8 @@ public class HttpParserTest
     private String _methodOrVersion;
     private String _uriOrStatus;
     private String _versionOrReason;
-    private List<HttpField> _fields = new ArrayList<>();
-    private List<HttpField> _trailers = new ArrayList<>();
+    private final List<HttpField> _fields = new ArrayList<>();
+    private final List<HttpField> _trailers = new ArrayList<>();
     private String[] _hdr;
     private String[] _val;
     private int _headers;
@@ -3172,9 +3169,8 @@ public class HttpParserTest
             _hdr[++_headers] = field.getName();
             _val[_headers] = field.getValue();
 
-            if (field instanceof HostPortHttpField)
+            if (field instanceof HostPortHttpField hpfield)
             {
-                HostPortHttpField hpfield = (HostPortHttpField)field;
                 _host = hpfield.getHost();
                 _port = hpfield.getPort();
             }
@@ -3243,9 +3239,8 @@ public class HttpParserTest
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHttpHeaderValueParseCsv(String eoln)
+    @Test
+    public void testHttpHeaderValueParseCsv()
     {
         final List<HttpHeaderValue> list = new ArrayList<>();
         final List<String> unknowns = new ArrayList<>();
