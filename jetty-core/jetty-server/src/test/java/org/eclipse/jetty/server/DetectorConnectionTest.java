@@ -468,7 +468,7 @@ public class DetectorConnectionTest
 
         start(detector);
 
-        String request ="""
+        String request = """
             GET /path HTTP/1.1\r
             Host: server:80\r
             Connection: close\r

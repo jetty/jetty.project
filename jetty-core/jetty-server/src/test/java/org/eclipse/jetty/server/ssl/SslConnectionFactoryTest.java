@@ -205,7 +205,7 @@ public class SslConnectionFactoryTest
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
 
-        try(SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port))
+        try (SSLSocket sslSocket = (SSLSocket)factory.createSocket("127.0.0.1", _port))
         {
             if (cn != null)
             {
@@ -235,7 +235,7 @@ public class SslConnectionFactoryTest
                     \r
                     """.formatted(reqHost, _port);
 
-                os.write(rawRequest.getBytes (StandardCharsets.UTF_8));
+                os.write(rawRequest.getBytes(StandardCharsets.UTF_8));
                 String rawResponse = IO.toString(in);
                 return HttpTester.parseResponse(rawResponse);
             }
