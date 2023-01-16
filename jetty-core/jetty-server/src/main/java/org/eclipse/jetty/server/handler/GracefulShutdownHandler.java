@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 public class GracefulShutdownHandler extends Handler.Wrapper implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(GracefulShutdownHandler.class);
+
     private CounterStatistic dispatchedStats = new CounterStatistic();
     private Shutdown shutdown;
 
