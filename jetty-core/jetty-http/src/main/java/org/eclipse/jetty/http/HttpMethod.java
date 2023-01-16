@@ -157,21 +157,6 @@ public enum HttpMethod
     /**
      * Optimized lookup to find a method name and trailing space in a byte array.
      *
-     * @param bytes Array containing ISO-8859-1 characters
-     * @param position The first valid index
-     * @param limit The first non valid index
-     * @return An HttpMethod if a match or null if no easy match.
-     * @deprecated Not used
-     */
-    @Deprecated
-    public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
-    {
-        return LOOK_AHEAD.getBest(bytes, position, limit - position);
-    }
-
-    /**
-     * Optimized lookup to find a method name and trailing space in a byte array.
-     *
      * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
      * @return An HttpMethod if a match or null if no easy match.
      */

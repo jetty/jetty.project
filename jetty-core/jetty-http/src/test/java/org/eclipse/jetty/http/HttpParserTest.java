@@ -78,9 +78,8 @@ public class HttpParserTest
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHttpMethod(String eoln)
+    @Test
+    public void testHttpMethod()
     {
         for (HttpMethod m : HttpMethod.values())
         {
@@ -89,12 +88,6 @@ public class HttpParserTest
             assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + "FOO")));
             assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " ")));
             assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " /foo/bar")));
-
-            assertNull(HttpMethod.lookAheadGet(m.asString().substring(0, 2).getBytes(), 0, 2));
-            assertNull(HttpMethod.lookAheadGet(m.asString().getBytes(), 0, m.asString().length()));
-            assertNull(HttpMethod.lookAheadGet((m.asString() + "FOO").getBytes(), 0, m.asString().length() + 3));
-            assertEquals(m, HttpMethod.lookAheadGet(("\n" + m.asString() + " ").getBytes(), 1, m.asString().length() + 2));
-            assertEquals(m, HttpMethod.lookAheadGet(("\n" + m.asString() + " /foo").getBytes(), 1, m.asString().length() + 6));
         }
 
         ByteBuffer b = BufferUtil.allocateDirect(128);
@@ -623,21 +616,21 @@ public class HttpParserTest
 
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderParseLF(String eoln)
+    public void testHeaderParse(String eoln)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\n" +
-                "Host: localhost\n" +
-                "Header1: value1\n" +
-                "Header2:   value 2a value 2b  \n" +
-                "Header3: 3\n" +
-                "Header4:value4\n" +
-                "Server5: notServer\n" +
-                "HostHeader: notHost\n" +
-                "Connection: close\n" +
-                "Accept-Encoding: gzip, deflated\n" +
-                "Accept: unknown\n" +
-                "\n");
+            "GET / HTTP/1.0" + eoln +
+                "Host: localhost" + eoln +
+                "Header1: value1" + eoln +
+                "Header2:   value 2a value 2b  " + eoln +
+                "Header3: 3" + eoln +
+                "Header4:value4" + eoln +
+                "Server5: notServer" + eoln +
+                "HostHeader: notHost" + eoln +
+                "Connection: close" + eoln +
+                "Accept-Encoding: gzip, deflated" + eoln +
+                "Accept: unknown" + eoln +
+                eoln);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -673,11 +666,11 @@ public class HttpParserTest
     public void testQuoted(String eoln)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\n" +
-                "Name0: \"value0\"\t\n" +
-                "Name1: \"value\t1\"\n" +
-                "Name2: \"value\t2A\",\"value,2B\"\t\n" +
-                "\n");
+            "GET / HTTP/1.0" + eoln +
+                "Name0: \"value0\"\t" + eoln +
+                "Name1: \"value\t1\"" + eoln +
+                "Name2: \"value\t2A\",\"value,2B\"\t" + eoln +
+                eoln);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
