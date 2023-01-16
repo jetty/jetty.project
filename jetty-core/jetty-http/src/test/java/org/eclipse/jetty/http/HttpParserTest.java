@@ -312,6 +312,33 @@ public class HttpParserTest
         assertEquals(1, _headers);
     }
 
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\r\n", "\n"})
+    public void testLowerCaseVersion(String eoln)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / http/1.1" + eoln +
+                "Host: localhost" + eoln +
+                "Connection: close" + eoln +
+                eoln);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("close", _val[1]);
+        assertEquals(1, _headers);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testHeaderCacheNearMiss(String eoln)
