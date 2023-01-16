@@ -25,14 +25,15 @@ import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Running the tests of this class in the same JVM results often in
@@ -46,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Running each test method in a forked JVM makes these tests all pass,
  * therefore the issue is likely caused by use of stale stubs cached by the JDK.
  */
-@Disabled
 public class ConnectorServerTest
 {
     private String objectName = "org.eclipse.jetty:name=rmiconnectorserver";
@@ -55,8 +55,7 @@ public class ConnectorServerTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        if (connectorServer != null)
-            connectorServer.stop();
+        LifeCycle.stop(connectorServer);
     }
 
     @Test
@@ -66,7 +65,7 @@ public class ConnectorServerTest
         connectorServer.start();
 
         JMXServiceURL address = connectorServer.getAddress();
-        assertTrue(address.toString().matches("service:jmx:rmi://[^:]+:\\d+/jndi/rmi://[^:]+:\\d+/jmxrmi"));
+        assertThat(address.toString(), matchesRegex("service:jmx:rmi://[^:]+(:\\d+)?/jndi/rmi://[^:]+:\\d+/jmxrmi"));
     }
 
     @Test

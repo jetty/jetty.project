@@ -118,10 +118,11 @@ public class DumpHandler extends Handler.Abstract
 
                 if (!chunk.hasRemaining())
                 {
+                    boolean last = chunk.isLast();
                     chunk.release();
-                    if (chunk.isLast())
-                        break;
                     chunk = null;
+                    if (last)
+                        break;
                 }
             }
             if (chunk != null)

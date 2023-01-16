@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee9.demos;
 import java.net.URI;
 import java.util.Map;
 
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;

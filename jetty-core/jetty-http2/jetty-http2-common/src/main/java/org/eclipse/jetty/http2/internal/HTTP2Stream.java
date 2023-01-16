@@ -100,6 +100,18 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     }
 
     @Override
+    public boolean equals(Object o)
+    {
+        return this == o;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return streamId;
+    }
+
+    @Override
     public Object getAttachment()
     {
         return attachment.get();
@@ -402,7 +414,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already closed {}", data, this);
-            data.release();
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             return;
         }
@@ -412,7 +423,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             // Just drop the frame.
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already reset {}", data, this);
-            data.release();
             return;
         }
 
@@ -424,7 +434,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Invalid data length {} for {}", data, this);
-                data.release();
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
                 return;
             }
@@ -436,6 +445,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private boolean offer(Data data)
     {
+        // No need to retain the Data object because it
+        // has already been retained when it was created.
         boolean process;
         try (AutoLock ignored = lock.lock())
         {

@@ -631,20 +631,13 @@ public class MultiPart
                     Content.Chunk chunk = part.getContent().read();
                     if (chunk == null || chunk instanceof Content.Chunk.Error)
                         yield chunk;
-                    if (chunk.isLast())
-                    {
-                        if (!chunk.hasRemaining())
-                        {
-                            chunk.release();
-                            chunk = Content.Chunk.EMPTY;
-                        }
-                        else
-                        {
-                            chunk = Content.Chunk.from(chunk.getByteBuffer(), false, chunk);
-                        }
-                        state = State.MIDDLE;
-                    }
-                    yield chunk;
+                    if (!chunk.isLast())
+                        yield chunk;
+                    state = State.MIDDLE;
+                    if (chunk.hasRemaining())
+                        yield Content.Chunk.asChunk(chunk.getByteBuffer(), false, chunk);
+                    chunk.release();
+                    yield Content.Chunk.EMPTY;
                 }
                 case COMPLETE -> Content.Chunk.EOF;
             };
@@ -1190,11 +1183,15 @@ public class MultiPart
                     if (crContent)
                     {
                         crContent = false;
-                        notifyPartContent(Content.Chunk.from(CR.slice(), false));
+                        Content.Chunk partContentChunk = Content.Chunk.from(CR.slice(), false);
+                        notifyPartContent(partContentChunk);
+                        partContentChunk.release();
                     }
                     ByteBuffer content = ByteBuffer.wrap(boundaryFinder.getPattern(), 0, partialBoundaryMatch);
                     partialBoundaryMatch = 0;
-                    notifyPartContent(Content.Chunk.from(content, false));
+                    Content.Chunk partContentChunk = Content.Chunk.from(content, false);
+                    notifyPartContent(partContentChunk);
+                    partContentChunk.release();
                     return false;
                 }
             }
@@ -1203,11 +1200,14 @@ public class MultiPart
             int boundaryOffset = boundaryFinder.match(buffer);
             if (boundaryOffset >= 0)
             {
-                int sliceLimit = buffer.position() + boundaryOffset;
-                if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
-                    --sliceLimit;
-                Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, true);
-                buffer.position(buffer.position() + boundaryOffset + boundaryFinder.getLength());
+                int position = buffer.position();
+                int length = boundaryOffset;
+                // BoundaryFinder is configured to search for '\n--Boundary';
+                // if we found '\r\n--Boundary' then the '\r' is not content.
+                if (length > 0 && buffer.get(position + length - 1) == '\r')
+                    --length;
+                Content.Chunk content = asSlice(chunk, position, length, true);
+                buffer.position(position + boundaryOffset + boundaryFinder.getLength());
                 notifyPartContent(content);
                 notifyPartEnd();
                 return true;
@@ -1217,15 +1217,19 @@ public class MultiPart
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
             if (partialBoundaryMatch > 0)
             {
-                int sliceLimit = buffer.limit() - partialBoundaryMatch;
+                int limit = buffer.limit();
+                int sliceLimit = limit - partialBoundaryMatch;
+                // BoundaryFinder is configured to search for '\n--Boundary';
+                // if we found '\r\n--Bo' then the '\r' may not be content,
+                // but remember it in case there is a boundary mismatch.
                 if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
                 {
-                    // Remember that there was a CR in case there will be a boundary mismatch.
                     crContent = true;
                     --sliceLimit;
                 }
-                Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, false);
-                buffer.position(buffer.limit());
+                int position = buffer.position();
+                Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
+                buffer.position(limit);
                 if (content.hasRemaining())
                     notifyPartContent(content);
                 return false;
@@ -1237,17 +1241,30 @@ public class MultiPart
                 crContent = false;
                 notifyPartContent(Content.Chunk.from(CR.slice(), false));
             }
+            // If '\r' is found at the end of the buffer, it may
+            // not be content but the beginning of a '\r\n--Boundary';
+            // remember it in case it is truly normal content.
             int sliceLimit = buffer.limit();
             if (buffer.get(sliceLimit - 1) == '\r')
             {
                 crContent = true;
                 --sliceLimit;
             }
-            Content.Chunk content = chunk.slice(buffer.position(), sliceLimit, false);
+            int position = buffer.position();
+            Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
             buffer.position(buffer.limit());
             if (content.hasRemaining())
                 notifyPartContent(content);
             return false;
+        }
+
+        private Content.Chunk asSlice(Content.Chunk chunk, int position, int length, boolean last)
+        {
+            if (chunk.isLast() && !chunk.hasRemaining())
+                return chunk;
+            if (length == 0)
+                return last ? Content.Chunk.EOF : Content.Chunk.EMPTY;
+            return Content.Chunk.asChunk(chunk.getByteBuffer().slice(position, length), last, chunk);
         }
 
         private void notifyPartBegin()
@@ -1372,10 +1389,10 @@ public class MultiPart
 
             /**
              * <p>Callback method invoked when a part content {@code Chunk} has been parsed.</p>
-             * <p>The {@code Chunk} must be {@link Content.Chunk#release() released} when it
-             * has been consumed.</p>
+             * <p>The {@code Chunk} must be {@link Content.Chunk#retain()} retained} if it
+             * not consumed by this method (for example, stored away for later use).</p>
              *
-             * @param chunk the part content chunk, must be released after use
+             * @param chunk the part content chunk
              */
             default void onPartContent(Content.Chunk chunk)
             {

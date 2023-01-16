@@ -108,12 +108,13 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setWelcomeFactory(_resourceService);
 
         _baseResource = servletContextHandler.getBaseResource();
+        _resourceFactory = ResourceFactory.closeable();
+
         String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
             {
-                _resourceFactory = ResourceFactory.closeable();
                 _baseResource = _resourceFactory.newResource(rb);
             }
             catch (Exception e)
@@ -801,10 +802,10 @@ public class DefaultServlet extends HttpServlet
             return servletContextResponse.isWritingOrStreaming();
         }
 
-        public boolean isStreaming()
+        public boolean isWriting()
         {
             ServletContextResponse servletContextResponse = Response.as(_coreResponse, ServletContextResponse.class);
-            return servletContextResponse.isStreaming();
+            return servletContextResponse.isWriting();
         }
 
         @Override
@@ -814,13 +815,7 @@ public class DefaultServlet extends HttpServlet
             {
                 if (BufferUtil.hasContent(byteBuffer))
                 {
-                    if (isStreaming())
-                    {
-                        BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
-                        if (last)
-                            _response.getOutputStream().close();
-                    }
-                    else
+                    if (isWriting())
                     {
                         String characterEncoding = _response.getCharacterEncoding();
                         try (ByteBufferInputStream bbis = new ByteBufferInputStream(byteBuffer);
@@ -831,6 +826,12 @@ public class DefaultServlet extends HttpServlet
 
                         if (last)
                             _response.getWriter().close();
+                    }
+                    else
+                    {
+                        BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
+                        if (last)
+                            _response.getOutputStream().close();
                     }
                 }
 

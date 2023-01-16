@@ -23,18 +23,16 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
-import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -271,7 +269,7 @@ public class HttpClientTransportDynamicTest
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(clientConnector, h1, http2)
         {
             @Override
-            public Origin newOrigin(HttpRequest request)
+            public Origin newOrigin(org.eclipse.jetty.client.Request request)
             {
                 // Use prior-knowledge, i.e. negotiate==false.
                 boolean secure = HttpClient.isSchemeSecure(request.getScheme());
@@ -302,8 +300,7 @@ public class HttpClientTransportDynamicTest
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
-            .map(HttpDestination.class::cast)
-            .map(HttpDestination::getOrigin)
+            .map(Destination::getOrigin)
             .map(Origin::asString)
             .distinct()
             .count());
@@ -337,8 +334,7 @@ public class HttpClientTransportDynamicTest
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
-            .map(HttpDestination.class::cast)
-            .map(HttpDestination::getOrigin)
+            .map(Destination::getOrigin)
             .map(Origin::asString)
             .distinct()
             .count());
@@ -409,7 +405,7 @@ public class HttpClientTransportDynamicTest
         startClient(HttpClientConnectionFactory.HTTP11);
 
         // Simulate a proxy request to the server.
-        HttpRequest proxyRequest1 = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        var proxyRequest1 = client.newRequest("localhost", connector.getLocalPort());
         // Map the proxy request to client IP:port.
         int clientPort1 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest1.tag(new V1.Tag("localhost", clientPort1));
@@ -419,7 +415,7 @@ public class HttpClientTransportDynamicTest
         assertEquals(String.valueOf(clientPort1), proxyResponse1.getContentAsString());
 
         // Simulate another request to the server, from a different client port.
-        HttpRequest proxyRequest2 = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
+        var proxyRequest2 = client.newRequest("localhost", connector.getLocalPort());
         int clientPort2 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest2.tag(new V1.Tag("localhost", clientPort2));
         ContentResponse proxyResponse2 = proxyRequest2
@@ -431,8 +427,7 @@ public class HttpClientTransportDynamicTest
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
-            .map(HttpDestination.class::cast)
-            .map(HttpDestination::getOrigin)
+            .map(Destination::getOrigin)
             .map(Origin::asString)
             .distinct()
             .count());
@@ -483,8 +478,7 @@ public class HttpClientTransportDynamicTest
         List<Destination> destinations = client.getDestinations();
         assertEquals(4, destinations.size());
         assertEquals(2, destinations.stream()
-            .map(HttpDestination.class::cast)
-            .map(HttpDestination::getOrigin)
+            .map(Destination::getOrigin)
             .map(Origin::asString)
             .distinct()
             .count());
@@ -523,11 +517,11 @@ public class HttpClientTransportDynamicTest
         // We must have 2 different destinations with the same origin.
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
-        HttpDestination h1Destination = (HttpDestination)destinations.get(0);
-        HttpDestination h2Destination = (HttpDestination)destinations.get(1);
+        Destination h1Destination = destinations.get(0);
+        Destination h2Destination = destinations.get(1);
         if (h2Destination.getOrigin().getProtocol().getProtocols().contains("http/1.1"))
         {
-            HttpDestination swap = h1Destination;
+            Destination swap = h1Destination;
             h1Destination = h2Destination;
             h2Destination = swap;
         }

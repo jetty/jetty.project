@@ -13,17 +13,19 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Arrays;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -31,32 +33,35 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class SslUploadTest
 {
-    private static Server server;
-    private static ServerConnector connector;
+    private Server server;
+    private ServerConnector connector;
+    private Path keystoreFile;
+    private final String keystorePassword = "storepwd";
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
+        keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
+        sslContextFactory.setKeyStorePassword(keystorePassword);
 
         server = new Server();
         connector = new ServerConnector(server, sslContextFactory);
@@ -67,49 +72,57 @@ public class SslUploadTest
         server.start();
     }
 
-    @AfterAll
-    public static void stopServer() throws Exception
+    @AfterEach
+    public void stopServer()
     {
-        server.stop();
-        server.join();
+        LifeCycle.stop(server);
     }
 
     @Test
-    @Disabled
-    public void test() throws Exception
+    public void testUpload() throws Exception
     {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
         SslContextFactory ctx = connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
-        try (InputStream stream = new FileInputStream(ctx.getKeyStorePath()))
+        try (InputStream stream = Files.newInputStream(keystoreFile))
         {
-            keystore.load(stream, "storepwd".toCharArray());
+            keystore.load(stream, keystorePassword.toCharArray());
         }
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         SSLContext sslContext = SSLContext.getInstance("SSL");
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
-        SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort());
+        try (SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
+        {
+            byte[] requestBody = new byte[16777216];
+            Arrays.fill(requestBody, (byte)'x');
 
-        OutputStream out = socket.getOutputStream();
-        out.write("POST / HTTP/1.1\r\n".getBytes());
-        out.write("Host: localhost\r\n".getBytes());
-        out.write("Content-Length: 16777216\r\n".getBytes());
-        out.write("Content-Type: bytes\r\n".getBytes());
-        out.write("Connection: close\r\n".getBytes());
-        out.write("\r\n".getBytes());
-        out.flush();
+            String rawRequest = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Length: %d\r
+                Content-Type: bytes\r
+                Connection: close\r
+                \r
+                """.formatted(requestBody.length);
 
-        byte[] requestContent = new byte[16777216];
-        Arrays.fill(requestContent, (byte)120);
-        out.write(requestContent);
-        out.flush();
+            try (OutputStream out = socket.getOutputStream();
+                 InputStream in = socket.getInputStream())
+            {
+                out.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+                out.flush();
+                out.write(requestBody);
+                out.flush();
 
-        InputStream in = socket.getInputStream();
-        String response = IO.toString(in);
-        assertTrue(response.indexOf("200") > 0);
+                String rawResponse = IO.toString(in, StandardCharsets.UTF_8);
 
-        assertEquals(requestContent.length, 0);
+                HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+                assertThat(response.getStatus(), is(200));
+
+                String responseBody = response.getContent();
+                assertThat(responseBody, containsString("Read %d".formatted(requestBody.length)));
+            }
+        }
     }
 
     private static class EmptyHandler extends Handler.Abstract

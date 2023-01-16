@@ -177,6 +177,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("closing {}, cause: {}", this, cause);
+            Stream.Data data = this.data.getAndSet(null);
+            if (data != null)
+                data.release();
             shutdownOutput();
             stream.close();
             onClose(cause);

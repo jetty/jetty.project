@@ -21,13 +21,14 @@ import java.util.Map;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
+import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.internal.HttpDestination;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -55,7 +56,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
-            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 1);
+            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), 1);
         });
     }
 
@@ -110,14 +111,14 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     }
 
     @Override
-    public Origin newOrigin(HttpRequest request)
+    public Origin newOrigin(Request request)
     {
         String protocol = HttpScheme.HTTPS.is(request.getScheme()) ? "h2" : "h2c";
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of(protocol), false));
     }
 
     @Override
-    public HttpDestination newHttpDestination(Origin origin)
+    public Destination newDestination(Origin origin)
     {
         SocketAddress address = origin.getAddress().getSocketAddress();
         return new HttpDestination(getHttpClient(), origin, getHTTP2Client().getClientConnector().isIntrinsicallySecure(address));
@@ -159,7 +160,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         endPoint.setIdleTimeout(getHttpClient().getIdleTimeout());
 
         ClientConnectionFactory factory = connectionFactory;
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        Destination destination = (Destination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         ProxyConfiguration.Proxy proxy = destination.getProxy();
         boolean ssl = proxy == null ? destination.isSecure() : proxy.isSecure();
         if (ssl && isUseALPN())
@@ -167,12 +168,12 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         return factory.newConnection(endPoint, context);
     }
 
-    protected HttpConnection newHttpConnection(HttpDestination destination, Session session)
+    protected Connection newConnection(Destination destination, Session session)
     {
         return new HttpConnectionOverHTTP2(destination, session);
     }
 
-    protected void onClose(HttpConnection connection, GoAwayFrame frame)
+    protected void onClose(Connection connection, GoAwayFrame frame)
     {
         connection.close();
     }
@@ -185,9 +186,9 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         }
 
         @Override
-        protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+        protected Connection newConnection(Destination destination, Session session)
         {
-            return (HttpConnectionOverHTTP2)HttpClientTransportOverHTTP2.this.newHttpConnection(destination, session);
+            return HttpClientTransportOverHTTP2.this.newConnection(destination, session);
         }
 
         @Override

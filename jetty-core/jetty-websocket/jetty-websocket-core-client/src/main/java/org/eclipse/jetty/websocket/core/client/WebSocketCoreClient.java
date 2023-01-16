@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.CoreSession;

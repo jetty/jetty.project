@@ -19,7 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
