@@ -1692,6 +1692,22 @@ public class HttpParserTest
 
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
+    public void testUnknownRequestVersion(String eoln)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP" + eoln +
+                "Host: localhost" + eoln +
+                eoln);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+
+        parser.parseNext(buffer);
+        assertEquals("Unknown Version", _bad);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\r\n", "\n"})
     public void testUnknownReponseVersion(String eoln)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
