@@ -62,7 +62,7 @@ public class GracefulShutdownHandler extends Handler.Wrapper implements Graceful
             // Count incoming request
             return super.process(request, response, callback);
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             if (isShutdown())
             {

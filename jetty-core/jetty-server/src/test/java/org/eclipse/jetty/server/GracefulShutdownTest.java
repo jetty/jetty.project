@@ -124,7 +124,7 @@ public class GracefulShutdownTest
             assertThat(NanoTime.millisSince(start), lessThan(2000L));
         }
 
-        for (Socket socket: clients)
+        for (Socket socket : clients)
         {
             InputStream in = socket.getInputStream();
             long beginClose = NanoTime.now();
@@ -224,7 +224,7 @@ public class GracefulShutdownTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertNull(response.get(HttpHeader.CONNECTION));
 
-        for (Socket socket: List.of(client0, client1, client2))
+        for (Socket socket : List.of(client0, client1, client2))
         {
             InputStream in = socket.getInputStream();
             long beginClose = NanoTime.now();
@@ -320,7 +320,7 @@ public class GracefulShutdownTest
         assertEquals("read [10/10]", response.getContent(), client2 + " response body");
 
         // All 3 clients should have their connections closed quickly
-        for (Socket socket: List.of(client0, client1, client2))
+        for (Socket socket : List.of(client0, client1, client2))
         {
             InputStream in = socket.getInputStream();
             long beginClose = NanoTime.now();
@@ -453,7 +453,7 @@ public class GracefulShutdownTest
         assertEquals("close", response.get(HttpHeader.CONNECTION), client2 + " connection header");
 
         // All 3 clients should have their connections closed quickly
-        for (Socket socket: List.of(client0, client1, client2))
+        for (Socket socket : List.of(client0, client1, client2))
         {
             InputStream in = socket.getInputStream();
             long beginClose = NanoTime.now();
@@ -587,7 +587,7 @@ public class GracefulShutdownTest
         assertEquals("close", response.get(HttpHeader.CONNECTION), client2 + " connection header");
 
         // All 3 clients should have their connections closed quickly
-        for (Socket socket: List.of(client0, client1, client2))
+        for (Socket socket : List.of(client0, client1, client2))
         {
             InputStream in = socket.getInputStream();
             long beginClose = NanoTime.now();
@@ -608,7 +608,8 @@ public class GracefulShutdownTest
         latchHandler.latch = new CountDownLatch(1);
         writeRequest(socket, rawRequest);
         // wait till we confirm hitting the handler
-        assertTrue(latchHandler.latch.await(5, TimeUnit.SECONDS), () -> {
+        assertTrue(latchHandler.latch.await(5, TimeUnit.SECONDS), () ->
+        {
             return "Didn't reach handler latch for " + socket;
         });
     }
@@ -653,7 +654,8 @@ public class GracefulShutdownTest
         final AtomicBoolean handling = new AtomicBoolean(false);
         volatile CountDownLatch latch;
 
-        static {
+        static
+        {
             LOG.info("This is my name: {}", LOG.getName());
         }
 
@@ -712,7 +714,7 @@ public class GracefulShutdownTest
                 LOG.debug("Content.Sink.Write \"{}\": {}", responseBody, request.getHttpURI());
                 Content.Sink.write(response, true, responseBody, callback);
             }
-            catch(Throwable t)
+            catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Handling catch: {}", request.getHttpURI(), t);
