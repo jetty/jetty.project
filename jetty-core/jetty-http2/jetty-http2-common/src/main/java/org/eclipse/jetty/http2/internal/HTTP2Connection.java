@@ -404,7 +404,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         public void onData(DataFrame frame)
         {
             NetworkBuffer networkBuffer = producer.networkBuffer;
-            networkBuffer.retain();
             session.onData(new StreamData(frame, networkBuffer));
         }
 
@@ -424,6 +423,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         {
             super(frame);
             this.retainable = retainable;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return retainable.canRetain();
         }
 
         @Override
@@ -461,6 +466,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         public boolean hasRemaining()
         {
             return delegate.hasRemaining();
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return delegate.canRetain();
         }
 
         @Override

@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,8 +67,22 @@ public class ResourceFactoryTest
     }
 
     @Test
-    public void testRegisterHttpsUrlFactory()
+    public void testRegisterHttpsUrlFactory() throws MalformedURLException
     {
+        URI uri = URI.create("https://webtide.com/");
+
+        // Verify that environment can access the URI.
+        URL url = uri.toURL();
+        try
+        {
+            HttpURLConnection http = (HttpURLConnection)url.openConnection();
+            Assumptions.assumeTrue(http.getResponseCode() == HttpURLConnection.HTTP_OK);
+        }
+        catch (IOException e)
+        {
+            Assumptions.abort("Unable to connect to " + uri);
+        }
+
         ResourceFactory.registerResourceFactory("https", new URLResourceFactory());
         // Try as a normal String input
         Resource resource = ResourceFactory.root().newResource("https://webtide.com/");
@@ -71,7 +90,6 @@ public class ResourceFactoryTest
         assertThat(resource.getName(), is("https://webtide.com/"));
 
         // Try as a formal URI object as input
-        URI uri = URI.create("https://webtide.com/");
         resource = ResourceFactory.root().newResource(uri);
         assertThat(resource.getURI(), is(URI.create("https://webtide.com/")));
         assertThat(resource.getName(), is("https://webtide.com/"));

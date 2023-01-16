@@ -20,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
@@ -71,8 +71,7 @@ public class HttpClientUploadDuringServerShutdownTest
                         }
                         else
                         {
-                            if (chunk.hasRemaining())
-                                chunk.release();
+                            chunk.release();
                             if (chunk.isLast())
                                 break;
                             NanoTime.spinWait(TimeUnit.MICROSECONDS.toNanos(1));

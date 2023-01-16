@@ -20,12 +20,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.ConnectionPool;
-import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.SendFailure;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.internal.HttpChannel;
+import org.eclipse.jetty.client.internal.HttpConnection;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.internal.HttpRequest;
+import org.eclipse.jetty.client.internal.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.slf4j.Logger;
@@ -39,9 +40,9 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HTTP3SessionClient session;
 
-    public HttpConnectionOverHTTP3(HttpDestination destination, HTTP3SessionClient session)
+    public HttpConnectionOverHTTP3(Destination destination, HTTP3SessionClient session)
     {
-        super(destination);
+        super((HttpDestination)destination);
         this.session = session;
     }
 
@@ -86,7 +87,7 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 
     protected HttpChannelOverHTTP3 newHttpChannel()
     {
-        return new HttpChannelOverHTTP3(getHttpDestination(), this, getSession());
+        return new HttpChannelOverHTTP3(this, getSession());
     }
 
     public void release(HttpChannelOverHTTP3 channel)

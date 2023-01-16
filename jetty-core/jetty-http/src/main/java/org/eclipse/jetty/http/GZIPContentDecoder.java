@@ -222,9 +222,9 @@ public class GZIPContentDecoder implements Destroyable
 
                             if (buffer.hasRemaining())
                             {
-                                ByteBuffer chunk = buffer;
+                                ByteBuffer decoded = buffer;
                                 buffer = null;
-                                if (decodedChunk(chunk))
+                                if (decodedChunk(decoded))
                                     return;
                             }
                             else if (_inflater.needsInput())

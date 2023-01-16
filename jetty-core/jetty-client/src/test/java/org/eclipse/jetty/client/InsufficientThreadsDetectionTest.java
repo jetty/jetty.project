@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 

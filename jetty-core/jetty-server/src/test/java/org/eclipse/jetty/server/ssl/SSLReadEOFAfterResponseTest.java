@@ -95,10 +95,9 @@ public class SSLReadEOFAfterResponseTest
                         continue;
                     }
                     if (c.hasRemaining())
-                    {
                         length -= c.remaining();
-                        c.release();
-                    }
+                    c.release();
+                    // TODO: should not compare to EOF.
                     if (c == Content.Chunk.EOF)
                         callback.failed(new IllegalStateException());
                 }
@@ -115,6 +114,7 @@ public class SSLReadEOFAfterResponseTest
 
                 // Third, read the EOF.
                 Content.Chunk chunk = request.read();
+                chunk.release();
                 if (!chunk.isLast())
                     throw new IllegalStateException();
                 callback.succeeded();

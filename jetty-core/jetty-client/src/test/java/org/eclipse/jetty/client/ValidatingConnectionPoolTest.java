@@ -16,9 +16,6 @@ package org.eclipse.jetty.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -37,7 +34,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
     {
         long timeout = 1000;
         transport.setConnectionPoolFactory(destination ->
-            new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
+            new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination.getHttpClient().getScheduler(), timeout));
 
         return super.newHttpClient(transport);
     }

@@ -22,12 +22,12 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee10.servlet.security.JDBCLoginService;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.http.HttpMethod;

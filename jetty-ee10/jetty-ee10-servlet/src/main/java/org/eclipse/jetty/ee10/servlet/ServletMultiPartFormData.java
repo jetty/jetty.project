@@ -111,7 +111,9 @@ public class ServletMultiPartFormData
                 formData.parse(Content.Chunk.EOF);
                 break;
             }
-            formData.parse(Content.Chunk.from(ByteBuffer.wrap(buffer, 0, read), false));
+            Content.Chunk chunk = Content.Chunk.from(ByteBuffer.wrap(buffer, 0, read), false);
+            formData.parse(chunk);
+            chunk.release();
         }
 
         return new Parts(formData);

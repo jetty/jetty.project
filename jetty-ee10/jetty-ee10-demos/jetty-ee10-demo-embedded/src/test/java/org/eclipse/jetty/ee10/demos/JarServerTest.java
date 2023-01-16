@@ -19,7 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;

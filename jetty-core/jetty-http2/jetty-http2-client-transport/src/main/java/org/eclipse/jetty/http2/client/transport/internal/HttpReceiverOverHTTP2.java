@@ -17,15 +17,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpConversation;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpReceiver;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpUpgrader;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.internal.HttpChannel;
+import org.eclipse.jetty.client.internal.HttpConversation;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.internal.HttpReceiver;
+import org.eclipse.jetty.client.internal.HttpRequest;
+import org.eclipse.jetty.client.internal.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
@@ -75,9 +75,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         }
         DataFrame frame = data.frame();
         boolean last = frame.remaining() == 0 && frame.isEndStream();
-        if (last)
-            responseSuccess(getHttpExchange(), null);
-        return Content.Chunk.from(frame.getData(), last, data);
+        if (!last)
+            return Content.Chunk.asChunk(frame.getData(), last, data);
+        data.release();
+        responseSuccess(getHttpExchange(), null);
+        return Content.Chunk.EOF;
     }
 
     @Override
