@@ -170,6 +170,17 @@ public class HttpParser
         .maxCapacity(0)
         .build();
 
+    private static final Index<HttpVersion> VERSION_SPACE = new Index.Builder<HttpVersion>()
+        .caseSensitive(false)
+        .withAll(HttpVersion.values(), v -> v.toString() + ' ')
+        .build();
+
+    private static final Index<HttpVersion> VERSION_EOLN = new Index.Builder<HttpVersion>()
+        .caseSensitive(false)
+        .withAll(HttpVersion.values(), v -> v.toString() + "\r\n")
+        .withAll(HttpVersion.values(), v -> v.toString() + "\n")
+        .build();
+
     // States
     public enum FieldState
     {
@@ -503,7 +514,7 @@ public class HttpParser
         }
         else if (_responseHandler != null)
         {
-            _version = HttpVersion.lookAheadGet(buffer);
+            _version = VERSION_SPACE.getBest(buffer);
             if (_version != null)
             {
                 buffer.position(buffer.position() + _version.asString().length() + 1);
@@ -677,6 +688,9 @@ public class HttpParser
                         case COLON:
                             _string.append(t.getChar());
                             break;
+                        case CR:
+                        case LF:
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "No Status");
                         default:
                             throw new IllegalCharacterException(_state, t, buffer);
                     }
@@ -765,6 +779,24 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case SPACE:
+                            if (_requestHandler != null)
+                            {
+                                // try look ahead for request HTTP Version
+                                HttpVersion version = VERSION_EOLN.getBest(buffer, 0, buffer.remaining());
+
+                                if (version != null)
+                                {
+                                    int pos = buffer.position() + version.asString().length();
+                                    buffer.position(pos + (buffer.get(pos) == HttpTokens.CARRIAGE_RETURN ? 2 : 1));
+                                    _version = version;
+                                    _string.setLength(0);
+                                    checkVersion();
+                                    _fieldCache.prepare();
+                                    setState(State.HEADER);
+                                    _requestHandler.startRequest(_methodString, _uri.toString(), _version);
+                                    continue;
+                                }
+                            }
                             setState(State.SPACE2);
                             break;
 
@@ -812,45 +844,8 @@ public class HttpParser
                         case COLON:
                             _string.setLength(0);
                             _string.append(t.getChar());
-                            if (_responseHandler != null)
-                            {
-                                _length = 1;
-                                setState(State.REASON);
-                            }
-                            else
-                            {
-                                setState(State.REQUEST_VERSION);
-
-                                // try quick look ahead for HTTP Version
-                                if (buffer.position() > 0)
-                                {
-                                    HttpVersion version = HttpVersion.CACHE.getBest(buffer, -1, buffer.remaining());
-
-                                    if (version != null)
-                                    {
-                                        int pos = buffer.position() + version.asString().length() - 1;
-                                        if (pos < buffer.limit())
-                                        {
-                                            byte n = buffer.get(pos);
-                                            if (n == HttpTokens.CARRIAGE_RETURN)
-                                            {
-                                                _cr = true;
-                                                _version = version;
-                                                checkVersion();
-                                                _string.setLength(0);
-                                                buffer.position(pos + 1);
-                                            }
-                                            else if (n == HttpTokens.LINE_FEED)
-                                            {
-                                                _version = version;
-                                                checkVersion();
-                                                _string.setLength(0);
-                                                buffer.position(pos);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            _length = 1;
+                            setState(_responseHandler != null ? State.REASON : State.REQUEST_VERSION);
                             break;
 
                         case LF:
@@ -1366,7 +1361,6 @@ public class HttpParser
                     break;
 
                 case WS_AFTER_NAME:
-
                     switch (t.getType())
                     {
                         case SPACE:
