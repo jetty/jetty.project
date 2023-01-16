@@ -24,6 +24,8 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link CompletableFuture} that is completed when a multipart/byteranges
@@ -54,6 +56,8 @@ import org.eclipse.jetty.util.thread.AutoLock;
  */
 public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.Parts>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MultiPartByteRanges.class);
+
     private final PartsListener listener = new PartsListener();
     private final MultiPart.Parser parser;
 
@@ -244,7 +248,8 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
      */
     public static class Part extends MultiPart.Part
     {
-        private final PathContentSource content;
+        private final Path path;
+        private final ByteRange byteRange;
 
         public Part(String contentType, Path path, ByteRange byteRange, long contentLength)
         {
@@ -255,13 +260,14 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         public Part(HttpFields headers, Path path, ByteRange byteRange)
         {
             super(null, null, headers);
-            content = new PathContentSource(path, byteRange);
+            this.path = path;
+            this.byteRange = byteRange;
         }
 
         @Override
         public Content.Source getContent()
         {
-            return content;
+            return new PathContentSource(path, byteRange);
         }
     }
 
@@ -318,7 +324,18 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
                 toFail = new ArrayList<>(parts);
                 parts.clear();
             }
-            toFail.forEach(part -> part.getContent().fail(cause));
+            toFail.forEach(part ->
+            {
+                try
+                {
+                    part.close(cause);
+                }
+                catch (IOException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Error clsoing part", e);
+                }
+            });
         }
     }
 }

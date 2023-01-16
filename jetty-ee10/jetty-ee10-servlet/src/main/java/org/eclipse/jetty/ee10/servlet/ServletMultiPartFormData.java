@@ -29,9 +29,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -98,7 +100,9 @@ public class ServletMultiPartFormData
         if (boundary == null)
             throw new IllegalStateException("No multipart boundary parameter in Content-Type");
 
+        // Store MultiPartFormData as attribute on request so it is released by the HttpChannel.
         MultiPartFormData formData = new MultiPartFormData(boundary);
+        request.setAttribute(MultiPartFormData.class.getName(), formData);
         formData.setMaxParts(maxParts);
 
         File tmpDirFile = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
@@ -115,19 +119,30 @@ public class ServletMultiPartFormData
         ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
         formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
+        ByteBufferPool byteBufferPool = request.getRequest().getComponents().getByteBufferPool();
         Connection connection = connectionMetaData.getConnection();
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-        byte[] buffer = new byte[bufferSize];
         InputStream input = request.getInputStream();
         while (true)
         {
-            int read = input.read(buffer);
-            if (read < 0)
+            ByteBuffer buffer = byteBufferPool.newByteBuffer(bufferSize, false);
+            boolean readEof = false;
+            while (BufferUtil.space(buffer) > 0)
+            {
+                int read = BufferUtil.readFrom(input, buffer);
+                if (read < 0)
+                {
+                    readEof = true;
+                    break;
+                }
+            }
+
+            formData.parse(Content.Chunk.from(buffer, false, byteBuffer -> byteBufferPool.release(buffer)));
+            if (readEof)
             {
                 formData.parse(Content.Chunk.EOF);
                 break;
             }
-            formData.parse(Content.Chunk.from(ByteBuffer.wrap(buffer, 0, read), false));
         }
 
         return new Parts(formData);
@@ -169,7 +184,7 @@ public class ServletMultiPartFormData
         {
             _formData = formData;
             _part = part;
-            _length = _part.getContent().getLength();
+            _length = _part.getLength();
         }
 
         @Override
@@ -215,8 +230,7 @@ public class ServletMultiPartFormData
         @Override
         public void delete() throws IOException
         {
-            if (_part instanceof MultiPart.PathPart pathPart)
-                pathPart.delete();
+            _part.delete();
         }
 
         @Override

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
@@ -504,6 +505,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         @Override
         public void onPartBegin()
         {
+            // TODO: Move to parser.
             numParts++;
             if (numParts >= maxParts)
                 throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
@@ -565,10 +567,15 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             }
             for (MultiPart.Part part : toFail)
             {
-                if (part instanceof MultiPart.PathPart pathPart)
-                    pathPart.delete();
-                else
-                    part.getContent().fail(cause);
+                try
+                {
+                    part.close(cause);
+                }
+                catch (IOException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Error closing part", e);
+                }
             }
             close();
             delete();

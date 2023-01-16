@@ -33,6 +33,7 @@ import java.util.Queue;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
@@ -65,6 +66,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class MultiPart
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MultiPart.class);
     private static final int MAX_BOUNDARY_LENGTH = 70;
 
     private MultiPart()
@@ -122,6 +124,8 @@ public class MultiPart
         private final String name;
         private final String fileName;
         private final HttpFields fields;
+        protected Path path;
+        private boolean temporary = true;
 
         public Part(String name, String fileName, HttpFields fields)
         {
@@ -169,6 +173,11 @@ public class MultiPart
          */
         public abstract Content.Source getContent();
 
+        public long getLength()
+        {
+            return getContent().getLength();
+        }
+
         /**
          * <p>Returns the content of this part as a string.</p>
          * <p>The charset used to decode the bytes is:
@@ -207,6 +216,11 @@ public class MultiPart
             return fields;
         }
 
+        public Path getPath()
+        {
+            return path;
+        }
+
         /**
          * <p>Writes the content of this part to the given path.</p>
          *
@@ -215,10 +229,38 @@ public class MultiPart
          */
         public void writeTo(Path path) throws IOException
         {
-            try (OutputStream out = Files.newOutputStream(path))
+
+            if (this.path == null)
             {
-                IO.copy(Content.Source.asInputStream(getContent()), out);
+                try (OutputStream out = Files.newOutputStream(path))
+                {
+                    IO.copy(Content.Source.asInputStream(getContent()), out);
+                }
+                this.path = path;
             }
+            else
+            {
+                this.path = Files.move(this.path, path, StandardCopyOption.REPLACE_EXISTING);
+                this.temporary = false;
+            }
+        }
+
+        public void delete() throws IOException
+        {
+            if (this.path != null)
+                Files.delete(this.path);
+        }
+
+        public void close(Throwable failure) throws IOException
+        {
+            // TODO: why do we need this, no one ever uses the failure??
+            if (temporary)
+                delete();
+        }
+
+        public final void close() throws IOException
+        {
+            close(null);
         }
     }
 
@@ -228,7 +270,7 @@ public class MultiPart
      */
     public static class ByteBufferPart extends Part
     {
-        private final Content.Source content;
+        private final List<ByteBuffer> content;
         private final long length;
 
         public ByteBufferPart(String name, String fileName, HttpFields fields, ByteBuffer... buffers)
@@ -239,14 +281,20 @@ public class MultiPart
         public ByteBufferPart(String name, String fileName, HttpFields fields, List<ByteBuffer> content)
         {
             super(name, fileName, fields);
-            this.content = new ByteBufferContentSource(content);
             this.length = content.stream().mapToLong(Buffer::remaining).sum();
+            this.content = content;
+        }
+
+        @Override
+        public long getLength()
+        {
+            return length;
         }
 
         @Override
         public Content.Source getContent()
         {
-            return content;
+            return new ByteBufferContentSource(content);
         }
 
         @Override
@@ -267,20 +315,33 @@ public class MultiPart
      */
     public static class ChunksPart extends Part
     {
-        private final Content.Source content;
+        private final List<Content.Chunk> content;
         private final long length;
 
         public ChunksPart(String name, String fileName, HttpFields fields, List<Content.Chunk> content)
         {
             super(name, fileName, fields);
-            this.content = new ChunksContentSource(content);
+            this.content = content;
             this.length = content.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
+        }
+
+        @Override
+        public long getLength()
+        {
+            return length;
         }
 
         @Override
         public Content.Source getContent()
         {
-            return content;
+            return new ChunksContentSource(content.stream().map(Content.Chunk::slice).toList());
+        }
+
+        @Override
+        public void close(Throwable failure) throws IOException
+        {
+            super.close(failure);
+            content.forEach(Retainable::release);
         }
 
         @Override
@@ -301,41 +362,29 @@ public class MultiPart
      */
     public static class PathPart extends Part
     {
-        private final PathContentSource content;
-
         public PathPart(String name, String fileName, HttpFields fields, Path path)
         {
             super(name, fileName, fields);
-            this.content = new PathContentSource(path);
-        }
-
-        public Path getPath()
-        {
-            return content.getPath();
+            this.path = path;
         }
 
         @Override
-        public Content.Source getContent()
-        {
-            return content;
-        }
-
-        @Override
-        public void writeTo(Path path) throws IOException
-        {
-            Files.move(getPath(), path, StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        public void delete()
+        public long getLength()
         {
             try
             {
-                Files.delete(getPath());
+                return Files.size(path);
             }
             catch (IOException x)
             {
                 throw new UncheckedIOException(x);
             }
+        }
+
+        @Override
+        public Content.Source getContent()
+        {
+            return new PathContentSource(path);
         }
 
         @Override
@@ -356,7 +405,7 @@ public class MultiPart
      */
     public static class ContentSourcePart extends Part
     {
-        private final Content.Source content;
+        private Content.Source content;
 
         public ContentSourcePart(String name, String fileName, HttpFields fields, Content.Source content)
         {
@@ -367,7 +416,9 @@ public class MultiPart
         @Override
         public Content.Source getContent()
         {
-            return content;
+            Content.Source c = content;
+            content = null;
+            return c;
         }
 
         @Override
@@ -435,6 +486,7 @@ public class MultiPart
         private Runnable demand;
         private Content.Chunk.Error errorChunk;
         private Part part;
+        private Content.Source partContent;
 
         public AbstractContentSource(String boundary)
         {
@@ -564,6 +616,7 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
+                            partContent = part.getContent();
                             state = State.HEADERS;
                             yield Content.Chunk.from(firstBoundary.slice(), false);
                         }
@@ -572,6 +625,7 @@ public class MultiPart
                 case MIDDLE ->
                 {
                     part = null;
+                    partContent = null;
                     try (AutoLock ignored = lock.lock())
                     {
                         if (parts.isEmpty())
@@ -589,6 +643,7 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
+                            partContent = part.getContent();
                             state = State.HEADERS;
                             yield Content.Chunk.from(middleBoundary.slice(), false);
                         }
@@ -628,7 +683,7 @@ public class MultiPart
                 }
                 case CONTENT ->
                 {
-                    Content.Chunk chunk = part.getContent().read();
+                    Content.Chunk chunk = partContent.read();
                     if (chunk == null || chunk instanceof Content.Chunk.Error)
                         yield chunk;
                     if (chunk.isLast())
@@ -674,7 +729,7 @@ public class MultiPart
 
                 if (state == State.CONTENT)
                 {
-                    part.getContent().demand(() ->
+                    partContent.demand(() ->
                     {
                         try (AutoLock ignoredAgain = lock.lock())
                         {
@@ -706,7 +761,18 @@ public class MultiPart
                 drained = List.copyOf(parts);
                 parts.clear();
             }
-            drained.forEach(part -> part.getContent().fail(failure));
+            drained.forEach(part ->
+            {
+                try
+                {
+                    part.close(failure);
+                }
+                catch (IOException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Error closing part", e);
+                }
+            });
             invoker.run(this::invokeDemandCallback);
         }
 
