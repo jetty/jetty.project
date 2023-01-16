@@ -945,8 +945,8 @@ public class HttpParserTest
             HttpParser.RequestHandler handler = new Handler();
             HttpParser parser = new HttpParser(handler);
 
-            buffer.position(2);
             buffer.limit(2 + i);
+            buffer.position(2);
 
             if (!parser.parseNext(buffer))
             {
@@ -954,6 +954,7 @@ public class HttpParserTest
                 assertEquals(0, buffer.remaining());
 
                 // parse the rest
+                System.err.println(buffer.capacity());
                 buffer.limit(buffer.capacity() - 2);
                 parser.parseNext(buffer);
             }

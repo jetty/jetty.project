@@ -170,15 +170,17 @@ public class HttpParser
         .maxCapacity(0)
         .build();
 
+    public static final int HTTP_AS_INT = ('H' & 0xff) << 24 | ('T' & 0xFF) << 16 | ('T' & 0xFF) << 8 | ('P' & 0xFF);
+
     private static final Index<HttpVersion> VERSION_SPACE = new Index.Builder<HttpVersion>()
         .caseSensitive(false)
-        .withAll(HttpVersion.values(), v -> v.toString() + ' ')
+        .withAll(HttpVersion.values(), v -> v.toString().substring(4) + ' ')
         .build();
 
     private static final Index<HttpVersion> VERSION_EOLN = new Index.Builder<HttpVersion>()
         .caseSensitive(false)
-        .withAll(HttpVersion.values(), v -> v.toString() + "\r\n")
-        .withAll(HttpVersion.values(), v -> v.toString() + "\n")
+        .withAll(HttpVersion.values(), v -> v.toString().substring(4) + "\r\n")
+        .withAll(HttpVersion.values(), v -> v.toString().substring(4) + "\n")
         .build();
 
     // States
@@ -512,9 +514,9 @@ public class HttpParser
                 return false;
             }
         }
-        else if (_responseHandler != null)
+        else if (_responseHandler != null && buffer.remaining() > 6 && buffer.getInt(buffer.position()) == HTTP_AS_INT)
         {
-            _version = VERSION_SPACE.getBest(buffer);
+            _version = VERSION_SPACE.getBest(buffer, 4, buffer.remaining() - 4);
             if (_version != null)
             {
                 buffer.position(buffer.position() + _version.asString().length() + 1);
@@ -779,10 +781,10 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case SPACE:
-                            if (_requestHandler != null)
+                            if (_requestHandler != null && buffer.remaining() > 6 && buffer.getInt(buffer.position()) == HTTP_AS_INT)
                             {
                                 // try look ahead for request HTTP Version
-                                HttpVersion version = VERSION_EOLN.getBest(buffer, 0, buffer.remaining());
+                                HttpVersion version = VERSION_EOLN.getBest(buffer, 4, buffer.remaining() - 4);
 
                                 if (version != null)
                                 {
