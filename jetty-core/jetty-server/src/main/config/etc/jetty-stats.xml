@@ -6,13 +6,13 @@
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <!-- Collects request stats -->
   <Call name="insertHandler">
     <Arg>
-      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler">
-        <Set name="gracefulShutdownWaitsForRequests"><Property name="jetty.statistics.gracefulShutdownWaitsForRequests" default="true"/></Set>
-      </New>
+      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler"/>
     </Arg>
   </Call>
+  <!-- Collects connection stats -->
   <Call name="addBeanToAllConnectors">
     <Arg>
       <New class="org.eclipse.jetty.io.ConnectionStatistics"/>
