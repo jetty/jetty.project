@@ -312,7 +312,6 @@ public class HttpParserTest
         assertEquals(1, _headers);
     }
 
-
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testLowerCaseVersion(String eoln)
