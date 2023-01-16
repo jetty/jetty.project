@@ -1708,7 +1708,7 @@ public class HttpParserTest
 
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
-    public void testUnknownReponseVersion(String eoln)
+    public void testUnknownResponseVersion(String eoln)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HPPT/7.7 200 OK" + eoln +
