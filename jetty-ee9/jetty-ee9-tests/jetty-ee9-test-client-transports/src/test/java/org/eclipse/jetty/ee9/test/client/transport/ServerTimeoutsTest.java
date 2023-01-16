@@ -600,7 +600,6 @@ public class ServerTimeoutsTest extends AbstractTest
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 objects.offer(chunk.remaining());
-                chunk.release();
                 objects.offer(demander);
             })
             .send(result ->

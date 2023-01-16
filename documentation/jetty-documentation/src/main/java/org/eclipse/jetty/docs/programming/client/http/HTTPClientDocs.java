@@ -265,11 +265,7 @@ public class HTTPClientDocs
             .onResponseBegin(response -> { /* ... */ })
             .onResponseHeader((response, field) -> true)
             .onResponseHeaders(response -> { /* ... */ })
-            .onResponseContentAsync((response, chunk, demander) ->
-            {
-                chunk.release();
-                demander.run();
-            })
+            .onResponseContentAsync((response, chunk, demander) -> demander.run())
             .onResponseFailure((response, failure) -> { /* ... */ })
             .onResponseSuccess(response -> { /* ... */ })
             // Result hook.
@@ -505,12 +501,12 @@ public class HTTPClientDocs
                     // nor demanded again until the demand callback is invoked.
                     return;
                 }
-                // Check if the chunk is the terminal one, in which case the
+                // Check if the chunk is last and empty, in which case the
                 // read/demand loop is done. Demanding again when the terminal
                 // chunk has been read will invoke the demand callback with
                 // the same terminal chunk, so this check must be present to
                 // avoid infinitely demanding and reading the terminal chunk.
-                if (chunk.isTerminal())
+                if (chunk.isLast() && !chunk.hasRemaining())
                 {
                     chunk.release();
                     return;

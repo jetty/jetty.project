@@ -324,12 +324,11 @@ public class RequestTest
         _handler._checker = (request, response) ->
         {
             request.getParameterMap();
-            // should have thrown a BadMessageException
+            //
             return false;
         };
 
-        //Send a request with query string with illegal hex code to cause
-        //an exception parsing the params
+        //Send a request with a form body that is smaller than Content-Length.
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Content-Type: " + MimeTypes.Type.FORM_ENCODED.asString() + "\n" +
@@ -1820,7 +1819,7 @@ public class RequestTest
     @Test
     public void testNotSupportedCharacterEncoding()
     {
-        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(new MockConnector())), null);
+        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(_connector)), null);
         assertThrows(UnsupportedEncodingException.class, () -> request.setCharacterEncoding("doesNotExist"));
     }
 
@@ -1828,7 +1827,7 @@ public class RequestTest
     public void testGetterSafeFromNullPointerException()
     {
         // This is only needed for tests that mock with null values.
-        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(new MockConnector())), null);
+        Request request = new Request(new HttpChannel(_context, new MockConnectionMetaData(_connector)), null);
 
         assertNull(request.getAuthType());
         assertNull(request.getAuthentication());
@@ -1869,7 +1868,7 @@ public class RequestTest
     public void testPushBuilder()
     {
         String uri = "http://host/foo/something";
-        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(new MockConnector()));
+        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good", "thumbsup", 100), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza", "bewdy", 1), CookieCompliance.RFC6265));
@@ -1909,7 +1908,7 @@ public class RequestTest
     public void testPushBuilderWithIdNoAuth()
     {
         String uri = "http://host/foo/something";
-        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(new MockConnector()));
+        HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel))
         {
             @Override
