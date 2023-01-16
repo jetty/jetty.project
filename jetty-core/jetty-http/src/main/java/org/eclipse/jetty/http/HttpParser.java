@@ -1282,6 +1282,7 @@ public class HttpParser
                                     _headerString = n;
 
                                     int posAfterName = buffer.position() + n.length() + 1;
+
                                     if (v == null || (posAfterName + v.length()) >= buffer.limit())
                                     {
                                         // Header only
@@ -1299,14 +1300,14 @@ public class HttpParser
                                     {
                                         _field = cachedField;
                                         _valueString = v;
-                                        setState(FieldState.IN_VALUE);
-                                        if (peek == CARRIAGE_RETURN)
+                                        buffer.position(posAfterValue + 1);
+                                        if (peek == LINE_FEED)
                                         {
-                                            _cr = true;
-                                            buffer.position(posAfterValue + 1);
+                                            setState(FieldState.FIELD);
+                                            break;
                                         }
-                                        else
-                                            buffer.position(posAfterValue);
+                                        setState(FieldState.IN_VALUE);
+                                        _cr = true;
                                         break;
                                     }
                                     setState(FieldState.IN_VALUE);
