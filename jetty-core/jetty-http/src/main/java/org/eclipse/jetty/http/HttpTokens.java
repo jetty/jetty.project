@@ -183,8 +183,5 @@ public class HttpTokens
             }
         }
     }
-
-    public static final Token CR = TOKENS['\r'];
-    public static final Token LF = TOKENS['\n'];
 }
 

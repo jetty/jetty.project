@@ -38,6 +38,8 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTIPLE_CONTENT_L
 import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
 
 /**
  * A Parser for 1.0 and 1.1 as defined by RFC7230
@@ -172,9 +174,11 @@ public class HttpParser
         .maxCapacity(0)
         .build();
 
-    public static final int HTTP_AS_INT = ('H' & 0xff) << 24 | ('T' & 0xFF) << 16 | ('T' & 0xFF) << 8 | ('P' & 0xFF);
-    public static final int HTTP_1_0_AS_INT = ('/' & 0xff) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('0' & 0xFF);
-    public static final int HTTP_1_1_AS_INT = ('/' & 0xff) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('1' & 0xFF);
+    private static final int HTTP_AS_INT = ('H' & 0xFF) << 24 | ('T' & 0xFF) << 16 | ('T' & 0xFF) << 8 | ('P' & 0xFF);
+    private static final int HTTP_1_0_AS_INT = ('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('0' & 0xFF);
+    private static final int HTTP_1_1_AS_INT = ('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('1' & 0xFF);
+    private static final int HTTP_VERSION_LEN = 8;
+    private static final int INT_LEN = 4;
 
     // States
     public enum FieldState
@@ -514,13 +518,13 @@ public class HttpParser
                 return false;
             }
         }
-        else if (_responseHandler != null && buffer.remaining() >= 9 && buffer.getInt(position) == HTTP_AS_INT)
+        else if (_responseHandler != null && buffer.remaining() >= (HTTP_VERSION_LEN + 1) && buffer.getInt(position) == HTTP_AS_INT)
         {
-            int v = buffer.getInt(position + 4);
+            int v = buffer.getInt(position + INT_LEN);
             _version = v == HTTP_1_1_AS_INT ? HttpVersion.HTTP_1_1 : v == HTTP_1_0_AS_INT ? HttpVersion.HTTP_1_0 : null;
-            if (_version != null && buffer.get(position + 8) == ' ')
+            if (_version != null && buffer.get(position + HTTP_VERSION_LEN) == ' ')
             {
-                buffer.position(position + 9);
+                buffer.position(position + HTTP_VERSION_LEN + 1);
                 setState(State.SPACE1);
                 return false;
             }
@@ -786,20 +790,20 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case SPACE:
-                            if (_requestHandler != null && remaining >= 9 && buffer.getInt(position) == HTTP_AS_INT)
+                            if (remaining >= (HTTP_VERSION_LEN + 1) && buffer.getInt(position) == HTTP_AS_INT)
                             {
                                 // try look ahead for request HTTP Version
-                                int v = buffer.getInt(position + 4);
+                                int v = buffer.getInt(position + INT_LEN);
                                 HttpVersion version = v == HTTP_1_1_AS_INT ? HttpVersion.HTTP_1_1 : v == HTTP_1_0_AS_INT ? HttpVersion.HTTP_1_0 : null;
 
                                 if (version != null)
                                 {
-                                    int p = position + 8;
+                                    int p = position + HTTP_VERSION_LEN;
                                     byte next = buffer.get(p++);
-                                    if (next == '\r' && remaining >= 10)
+                                    if (next == CARRIAGE_RETURN && remaining >= (HTTP_VERSION_LEN + 2))
                                         next = buffer.get(p++);
 
-                                    if (next == '\n')
+                                    if (next == LINE_FEED)
                                     {
                                         buffer.position(p);
                                         _version = version;
@@ -1277,36 +1281,37 @@ public class HttpParser
                                     _header = cachedField.getHeader();
                                     _headerString = n;
 
-                                    int pos = buffer.position() + n.length() + (v == null ? 0 : v.length()) + 1;
-                                    if (v == null || pos >= buffer.limit())
+                                    int posAfterName = buffer.position() + n.length() + 1;
+                                    if (v == null || (posAfterName + v.length()) >= buffer.limit())
                                     {
                                         // Header only
                                         setState(FieldState.VALUE);
                                         _string.setLength(0);
                                         _length = 0;
-                                        buffer.position(v == null ? pos : pos - v.length());
+                                        buffer.position(posAfterName);
                                         break;
                                     }
 
                                     // Header and value
-                                    byte peek = buffer.get(pos);
-                                    if (peek == HttpTokens.CARRIAGE_RETURN || peek == HttpTokens.LINE_FEED)
+                                    int posAfterValue = posAfterName + v.length();
+                                    byte peek = buffer.get(posAfterValue);
+                                    if (peek == CARRIAGE_RETURN || peek == LINE_FEED)
                                     {
                                         _field = cachedField;
                                         _valueString = v;
                                         setState(FieldState.IN_VALUE);
-                                        if (peek == HttpTokens.CARRIAGE_RETURN)
+                                        if (peek == CARRIAGE_RETURN)
                                         {
                                             _cr = true;
-                                            buffer.position(pos + 1);
+                                            buffer.position(posAfterValue + 1);
                                         }
                                         else
-                                            buffer.position(pos);
+                                            buffer.position(posAfterValue);
                                         break;
                                     }
                                     setState(FieldState.IN_VALUE);
                                     setString(v);
-                                    buffer.position(pos);
+                                    buffer.position(posAfterValue);
                                     break;
                                 }
                             }
@@ -1548,7 +1553,7 @@ public class HttpParser
                 while (buffer.remaining() > 0)
                 {
                     byte b = buffer.get(buffer.position());
-                    if (b != HttpTokens.CARRIAGE_RETURN && b != HttpTokens.LINE_FEED)
+                    if (b != CARRIAGE_RETURN && b != LINE_FEED)
                         break;
                     buffer.get();
                     ++whiteSpace;
