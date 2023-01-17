@@ -17,6 +17,6 @@
 include::{jetty-home}/modules/resources.mod[tags=description]
 
 A common use-case for this module is to provide resources for third-party libraries via the xref:og-start-start-class-path[server classpath].
-For instance, many logging libraries (including https://logging.apache.org/log4j/2.x/[log4j] and https://logback.qos.ch/[Logback]) look for their configuration files on the classpath.
+For instance, many logging libraries (including https://logging.apache.org/log4j/2.x/[Log4j2] and https://logback.qos.ch/[Logback]) look for their configuration files on the classpath.
 
 In fact, Jetty's own logging library -- enabled via the `logging-jetty` module -- stores its configuration in `$JETTY_BASE/resources/jetty-logging.properties`.
