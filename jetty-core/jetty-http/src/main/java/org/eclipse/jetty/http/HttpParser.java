@@ -512,6 +512,8 @@ public class HttpParser
             if (_method != null)
             {
                 _methodString = _method.asString();
+                // The lookAheadGet method above checks for the trailing space,
+                // so it is safe to move the position 1 more than the method length.
                 buffer.position(position + _methodString.length() + 1);
 
                 setState(State.SPACE1);
