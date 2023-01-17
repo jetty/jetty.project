@@ -175,20 +175,24 @@ Please refer to the link:https://logging.apache.org/log4j/2.x/manual/configurati
 When you use libraries that provide the features you need (for example, JDBC drivers), it may be possible that those libraries use a different logging framework than SLF4J.
 
 SLF4J provides link:http://www.slf4j.org/legacy.html[bridges for legacy logging APIs] that allows you to bridge logging from one of these legacy logging frameworks to SLF4J.
-Once the logging is bridged to SLF4J, you can use the xref:og-server-logging-server-default[default configuration] or the xref:og-server-logging-server-custom[custom configuration] so that your logging is centralized in one place only.
+Once the logging is bridged to SLF4J, you can use Jetty's xref:og-server-logging-server-default[default configuration] or a xref:og-server-logging-server-custom[custom configuration] so that your logging is centralized in one place.
 
-Jetty provides out-of-the-box modules that you can enable to bridge logging from other logging frameworks to SLF4J.
+Jetty provides several modules out of the box for bridging older logging frameworks to SLF4J:
+
+* `logging-jul-capture` for bridging from `java.util.logging`
+* `logging-jcl-capture` for bridging from Jakarta Commons Logging (JCL)
+* `logging-log4j1-capture` for bridging from Apache Log4j
 
 [[og-server-logging-server-bridge-jul]]
-====== Bridging `java.util.logging`
+====== Bridging from `java.util.logging`
 
-For libraries that use `java.util.logging` as their logging framework you can enable the `logging-jul-capture` Jetty module.
+For libraries that use `java.util.logging` as their logging framework, you can enable Jetty's `logging-jul-capture` module:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=logging-jul-capture
 ----
 
-The `logging-jul-capture` Jetty module implies `--exec` and therefore spawns a second JVM (see xref:og-start-start[this section]) because it needs to provide the system property `java.util.logging.config.file` (so that `java.util.logging` can read the configuration from the specified file), and because it needs to make available on the System ClassLoader the class `org.slf4j.bridge.SLF4JBridgeHandler`.
+The `logging-jul-capture` module implies `--exec` and therefore xref:og-start-start[spawns a second JVM] because it needs to provide the system property `java.util.logging.config.file` (so that `java.util.logging` can read the configuration from the specified file), and because it needs to make available on the System ClassLoader the class `org.slf4j.bridge.SLF4JBridgeHandler`.
 
 For example, a library that uses `java.util.logging` as its logging library is the Postgresql JDBC driver.
 With the `logging-jul-capture` Jetty module, the logging follows this diagram:
