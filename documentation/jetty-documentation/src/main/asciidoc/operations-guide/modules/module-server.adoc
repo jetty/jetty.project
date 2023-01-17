@@ -31,7 +31,7 @@ See also the xref:og-protocols[protocols section] for more information about the
 The module properties to configure generic HTTP properties are listed below. Mostly they frequently apply to HTTP/1, HTTP/2 and HTTP/3, but some parameters are version specific:
 
 ----
-include::{JETTY_HOME}/modules/server.mod[tags=documentation-http-config]
+include::{jetty-home}/modules/server.mod[tags=documentation-http-config]
 ----
 
 Among the configurable properties, the most relevant are:
@@ -58,7 +58,7 @@ Server: Jetty({version})
 The module properties to configure the Jetty server are:
 
 ----
-include::{JETTY_HOME}/modules/server.mod[tags=documentation-server-config]
+include::{jetty-home}/modules/server.mod[tags=documentation-server-config]
 ----
 
 Among the configurable properties, the most relevant are:
@@ -83,7 +83,7 @@ The Jetty server strives to keep up with the latest link:https://en.wikipedia.or
 The module properties to configure the Jetty server compliance are:
 
 ----
-include::{JETTY_HOME}/modules/server.mod[tags=documentation-server-compliance]
+include::{jetty-home}/modules/server.mod[tags=documentation-server-compliance]
 ----
 
 Among the configurable properties, the most relevant are:
@@ -128,5 +128,5 @@ For more information about `CookieCompliance` see also xref:{prog-guide}#pg-serv
 The module properties to configure the Jetty server scheduler are:
 
 ----
-include::{JETTY_HOME}/modules/server.mod[tags=documentation-scheduler-config]
+include::{jetty-home}/modules/server.mod[tags=documentation-scheduler-config]
 ----

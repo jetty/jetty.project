@@ -20,5 +20,5 @@ When the scanning detects a change to the KeyStore file, the correspondent `SslC
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/ssl-reload.mod[tags=documentation]
+include::{jetty-home}/modules/ssl-reload.mod[tags=documentation]
 ----

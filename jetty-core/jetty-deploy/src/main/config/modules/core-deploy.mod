@@ -28,8 +28,5 @@ contextHandlerClass?=org.eclipse.jetty.server.handler.ResourceHandler$ResourceCo
 ## Monitored directory scan period (seconds)
 # jetty.deploy.scanInterval=1
 
-## Base temporary directory for deployed web applications.
-# jetty.deploy.tempDir=
-
 ## Default ContextHandler class for core deployments
 # contextHandlerClass=org.eclipse.jetty.server.handler.ResourceHandler$ResourceContext
