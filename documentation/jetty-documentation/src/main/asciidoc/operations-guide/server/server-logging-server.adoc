@@ -25,13 +25,14 @@ The `logging` module is a xref:og-modules-names[_virtual_ module], and its defau
 [[og-server-logging-server-default]]
 ====== Default Configuration
 
-Jetty's default SLF4J binding uses an _appender_ (`org.eclipse.jetty.logging.StdErrAppender`) to add metadata (like timestamps) to logging messages and forward them to `System.err`. The default `StdErrAppender` format is:
+Jetty's default SLF4J binding uses an _appender_ (`org.eclipse.jetty.logging.StdErrAppender`) to format a logging message with metadata (like a timestamp) before sending it to `System.err`.
+The default `StdErrAppender` format is:
 
 ----
 <datetime>:<level>:<logger name>:<thread name>:<message>
 ----
 
-where `<datetime>` has the timestamp format `yyyy-MM-dd HH:mm:ss.SSS`.
+where `<datetime>` is a timestamp with the format `yyyy-MM-dd HH:mm:ss.SSS`.
 
 You can configure the appender via a file named `jetty-logging.properties`, which must be found in the xref:og-start-start-class-path[class-path].
 When you activate the `logging-jetty` module (either directly or via a transitive dependency) Jetty automatically generates `jetty-logging.properties` for you in `$JETTY_BASE/resources/`. For example:
@@ -55,7 +56,7 @@ Here are the configuration options you can specify in `jetty-logging.properties`
 You can specify any of the usual SLF4J logging levels, `TRACE`, `DEBUG`, `INFO` (default), `WARN` and `ERROR`, plus two additional levels: `ALL` (an alias for `TRACE`) and `OFF` (disable logging entirely).
 You can also configure a default logging level for specific loggers, or arbitrary logger trees:
 * `com.example.MyComponent.LEVEL=DEBUG` (sets logging level of logger `com.example.MyComponent` to `DEBUG`)
-* `com.example.LEVEL=DEBUG` (sets logging level of tree `com.example.\*` to `DEBUG`)
+* `com.example.LEVEL=DEBUG` (sets logging level of tree `+com.example.*+` to `DEBUG`)
 
 `org.eclipse.jetty.logging.appender.NAME_CONDENSE=`<boolean>::
 Specifies whether to condense logger names, so that for example `org.eclipse.jetty.util.QueuedThreadPool` becomes `oeju.QueuedThreadPool`.
@@ -77,8 +78,8 @@ The empty string specifies the `UTC` timezone.
 Default value is the local timezone.
 
 `com.example.STACKS=`<boolean>::
-Specifies whether to hide stack traces for some arbitrary logger tree `com.example.\*`.
-Default value is `false`
+Specifies whether to hide stack traces for some arbitrary logger tree `+com.example.*+`.
+Default value is `true`
 
 `org.eclipse.jetty.logging.jmx.context=`<class name>::
 Configures the JMX context name, for use when xref:og-jmx[debugging via a JMX console].
