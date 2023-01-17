@@ -115,14 +115,14 @@ There are a number of out-of-the-box Jetty modules that you can use:
 [[og-server-logging-server-custom-logback]]
 ====== Logging with LogBack
 
-You can enable, for example, the `logging-logback` Jetty module in this way (from the `$JETTY_BASE` directory):
+To enable the `logging-logback` module, run:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=logging-logback,http
 ----
 
-Since LogBack is released under a license that is different from Jetty's, you will be prompted to accept the LogBack license.
-Once you accept the LogBack license, you will have the following directory structure:
+Since LogBack is released under a license that is different from Jetty's, you will be prompted to accept the LogBack license:
+Once you accept the LogBack license, your `$JETTY_BASE` directory will have the following structure:
 
 ----
 $JETTY_BASE
@@ -137,13 +137,13 @@ $JETTY_BASE
     └── logging-logback.ini
 ----
 
-As you can see, the Jetty module system downloaded the required LogBack `+*.jar+` files, and created a `$JETTY_BASE/resources/logback.xml` file that you can configure to customize your LogBack logging.
+Jetty downloaded the required LogBack `+*.jar+` files, and created a `$JETTY_BASE/resources/logback.xml` file for configuring your LogBack logging.
 Please refer to the link:http://logback.qos.ch/manual/configuration.html[LogBack configuration manual] for more information about how to configure LogBack.
 
 [[og-server-logging-server-custom-log4j2]]
 ====== Logging with Log4j2
 
-Similarly to xref:og-server-logging-server-custom-logback[logging with LogBack], you can enable the `logging-log4j2` Jetty module in this way (from the `$JETTY_BASE` directory):
+To enable the `logging-log4j2` module, run:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=logging-log4j2,http
@@ -165,7 +165,9 @@ $JETTY_BASE
     └── logging-log4j2.ini
 ----
 
-The Jetty module system downloaded the required Log4j2 `+*.jar+` files, and created a `$JETTY_BASE/resources/log4j2.xml` file that you can configure to customize your Log4j2 logging.
+Jetty downloaded the required Log4j2 `+*.jar+` files, and created a `$JETTY_BASE/resources/log4j2.xml` file that you can configure to customize your Log4j2 logging.
+
+Please refer to the link:https://logging.apache.org/log4j/2.x/manual/configuration.html[Log4j2 configuration manual] for more information about how to configure Log4j2.
 
 [[og-server-logging-server-bridges]]
 ====== Bridging Logging to SLF4J
