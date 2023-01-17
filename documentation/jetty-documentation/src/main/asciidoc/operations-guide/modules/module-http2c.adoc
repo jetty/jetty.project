@@ -19,7 +19,7 @@ The `http2c` module enables support for the clear-text HTTP/2 protocol.
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/http2c.mod[tags=documentation]
+include::{jetty-home}/modules/http2c.mod[tags=documentation]
 ----
 
 include::module-http2.adoc[tags=rate-control]
