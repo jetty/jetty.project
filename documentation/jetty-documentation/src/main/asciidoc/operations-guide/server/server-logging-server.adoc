@@ -14,13 +14,15 @@
 [[og-server-logging-server]]
 ===== Server Logging
 
-Jetty uses the link:http://slf4j.org/[SLF4J] API for its logging, and you can direct Jetty's server logs to the SLF4J implementation (or _binding_) xref:og-server-logging-server-custom[of your choice].
+Jetty uses the link:http://slf4j.org/[SLF4J] API for its logging.
+SLF4J is a generic abstraction layer that is supported by many different logging frameworks (or SLF4J _bindings_).
 
-Jetty provides an SLF4J binding (via the `jetty-slf4j-impl` Maven artifact) as its default binding.
+Jetty provides a default binding via the `jetty-slf4j-impl` Maven artifact, but you can plug Jetty into the logging framework (or SLF4J _binding_) xref:og-server-logging-server-custom[of your choice].
+
 Jetty's server logging is enabled by default with the `logging` Jetty module.
-(This module is typically enabled, as it is a transitive dependency of the `server` module.)
+You typically won't have to enable the `logging` module directly, since it is a transitive dependency of the `server` module, and thus pulled in by many of the most commonly used modules.
 
-The `logging` module is a xref:og-modules-names[_virtual_ module], and its default implementation is provided by the `logging-jetty` Jetty module that uses Jetty's SLF4J binding.
+The `logging` module is a xref:og-modules-names[_virtual_ module] and its default implementation is provided by the `logging-jetty` Jetty module, which uses the Jetty SLF4J binding.
 
 [[og-server-logging-server-default]]
 ====== Default Configuration
@@ -35,25 +37,22 @@ The default `StdErrAppender` format is:
 where `<datetime>` is a timestamp with the format `yyyy-MM-dd HH:mm:ss.SSS`.
 
 You can configure the appender via a file named `jetty-logging.properties`, which must be found in the xref:og-start-start-class-path[class-path].
-When you activate the `logging-jetty` module (either directly or via a transitive dependency) Jetty automatically generates `jetty-logging.properties` for you in `$JETTY_BASE/resources/`. For example:
+When you enable the `logging-jetty` module -- either directly or by transitive dependency, as in the following example -- Jetty automatically generates `jetty-logging.properties` for you in `$JETTY_BASE/resources/`:
 
 ----
-$ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
+[source,subs=quotes,options=nowrap]
 ----
-$JETTY_BASE
-├── resources
-│   └── jetty-logging.properties
-└── start.d
-    └── http.ini
+include::jetty[args="--add-module=http",highlight="(logging-jetty *transitively enabled|copy.*\.properties)"]
 ----
 
-Here are the configuration options you can specify in `jetty-logging.properties`:
+You can specify the following configuration options in `jetty-logging.properties`:
 
 `org.eclipse.jetty.LEVEL=`<logging level>::
-You can specify any of the usual SLF4J logging levels, `TRACE`, `DEBUG`, `INFO` (default), `WARN` and `ERROR`, plus two additional levels: `ALL` (an alias for `TRACE`) and `OFF` (disable logging entirely).
+Sets the logging level used by Jetty globally.
+You can specify any of the usual SLF4J logging levels -- `TRACE`, `DEBUG`, `INFO` (default), `WARN` and `ERROR` -- plus two additional levels: `ALL` (an alias for `TRACE`) and `OFF` (disable logging entirely).
 You can also configure a default logging level for specific loggers, or arbitrary logger trees:
 * `com.example.MyComponent.LEVEL=DEBUG` (sets logging level of logger `com.example.MyComponent` to `DEBUG`)
 * `com.example.LEVEL=DEBUG` (sets logging level of tree `+com.example.*+` to `DEBUG`)
@@ -89,12 +88,12 @@ When using the Jetty SLF4J binding, the logging levels can be dynamically change
 [[og-server-logging-server-default-rolling]]
 ====== Capturing Logs to a Rolling File
 
-Having the logging output on `System.err` may be fine at development time, but you typically want the logs to be captured in a file so that they can be looked at even if you don't have a terminal (for example, you started Jetty as a service).
+Logging to `System.err` may be fine at development time, but you will typically want to capture logs on disk for later inspection, or if you don't have a terminal access (for example, if you started Jetty as a service).
 
-The `console-capture` Jetty module allows you to capture what is written to `System.out` and `System.err` and write it to a log file, by default under the `$JETTY_BASE/logs/` directory.
+The `console-capture` Jetty module allows you to capture what is written to `System.out` and `System.err` and write it to a log file.
+By default, `console-capture` logs to a file in the `$JETTY_BASE/logs/` directory.
 
-The `console-capture` Jetty module defines a number of properties that you can customize to control the log directory, the number of days rolled files are retained, etc.
-See the xref:og-module-console-capture[`console-capture` module] for more information.
+See the xref:og-module-console-capture[`console-capture` module documentation] for details on configuring how logs are written to the `log` directory.
 
 [NOTE]
 ====
