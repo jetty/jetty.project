@@ -43,7 +43,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
@@ -1036,7 +1035,7 @@ public class HttpConnectionTest
             "\r\n" +
             "abcdefghij\r\n";
 
-        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             LOG.info("EXPECTING: java.lang.IllegalStateException...");
             String response = _connector.getResponse(requests);
