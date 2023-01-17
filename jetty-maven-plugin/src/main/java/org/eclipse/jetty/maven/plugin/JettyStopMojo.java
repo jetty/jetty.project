@@ -220,9 +220,16 @@ public class JettyStopMojo extends AbstractWebAppMojo
             }
             else
             {
-                //Wait only a small amount of time to ensure TCP has sent the message
-                s.setSoTimeout(1000);
-                s.getInputStream().read();
+                try
+                {
+                    //Wait only a small amount of time to ensure TCP has sent the message
+                    s.setSoTimeout(1000);
+                    s.getInputStream().read();
+                }
+                catch (Exception e)
+                {
+                    getLog().info("Error after sending command: " + command + ". Check the server state.", e);
+                }
             }
             
             return response;
