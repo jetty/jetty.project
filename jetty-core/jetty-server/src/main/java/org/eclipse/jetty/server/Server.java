@@ -136,18 +136,24 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
-     * <p>Set the temporary directory returned by {@link Context#getTempDirectory()} for the root
-     * {@link Context} returned {@link #getContext()}. If not set explicitly here, then the root
-     * {@link Context#getTempDirectory()} will return either the directory found at
-     * {@code new File(IO.asFile(System.getProperty("jetty.base")), "work")} if it exists, else
-     * else the JVMs temporary directory as {@code IO.asFile(System.getProperty("java.io.tmpdir"))}.
-     * @param temp A directory that must exist and be writable or null to get the default.
+     * <p>Convenience method to call {@link #setTempDirectory(File)} from a String representation
+     * of the temporary directory.</p>
+     * @param temp A string representation of the temporary directory.
+     * @see #setTempDirectory(File)
      */
     public void setTempDirectory(String temp)
     {
         setTempDirectory(new File(temp));
     }
 
+    /**
+     * <p>Set the temporary directory returned by {@link Context#getTempDirectory()} for the root
+     * {@link Context} returned {@link #getContext()}. If not set explicitly here, then the root
+     * {@link Context#getTempDirectory()} will return either the directory found at
+     * {@code new File(IO.asFile(System.getProperty("jetty.base")), "work")} if it exists,
+     * else the JVMs temporary directory as {@code IO.asFile(System.getProperty("java.io.tmpdir"))}.
+     * @param temp A directory that must exist and be writable or null to get the default.
+     */
     public void setTempDirectory(File temp)
     {
         if (isStarted())
@@ -159,6 +165,12 @@ public class Server extends Handler.Wrapper implements Attributes
         _tempDirectory = temp;
     }
 
+    /**
+     * @return The server temporary directory if set, else null. To always obtain a non-null
+     * temporary directory use {@link Context#getTempDirectory()} on {@link #getContext()}.
+     * @see #getContext()
+     * @see Context#getTempDirectory()
+     */
     @ManagedAttribute("temporary directory")
     public File getTempDirectory()
     {
@@ -755,7 +767,7 @@ public class Server extends Handler.Wrapper implements Attributes
     class ServerContext extends Attributes.Wrapper implements Context
     {
         private final File jettyBase = IO.asFile(System.getProperty("jetty.base"));
-        private final File workDir = jettyBase != null && jettyBase.isDirectory() && jettyBase.canWrite()? new File(jettyBase, "work") : null;
+        private final File workDir = jettyBase != null && jettyBase.isDirectory() && jettyBase.canWrite() ? new File(jettyBase, "work") : null;
         private final File tempDir = workDir != null && workDir.isDirectory() && workDir.canWrite() ? workDir : IO.asFile(System.getProperty("java.io.tmpdir"));
 
         private ServerContext()

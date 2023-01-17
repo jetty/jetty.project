@@ -125,6 +125,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
     private File _tempDirectory;
     private boolean _tempDirectoryPersisted = false;
+    private boolean _tempDirectoryCreated = false;
 
     public enum Availability
     {
@@ -182,6 +183,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return new ScopedContext();
     }
 
+    /**
+     * @return The temporary directory configured for the context, or null if none configured.
+     * @see Context#getTempDirectory()
+     */
     @ManagedAttribute(value = "temporary directory location", readonly = true)
     public File getTempDirectory()
     {
@@ -192,7 +197,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * <p>Set the temporary directory returned by {@link ScopedContext#getTempDirectory()}.  If not set here,
      * then the {@link Server#getTempDirectory()} is returned by {@link ScopedContext#getTempDirectory()}.</p>
      * <p>If {@link #isTempDirectoryPersistent()} is true, the directory set here is used directly but may
-     * be created if it does not exist. If {@link #isTempDirectoryPersistent()} is false, then any ile set
+     * be created if it does not exist. If {@link #isTempDirectoryPersistent()} is false, then any {@code File} set
      * here will be deleted and recreated as a directory during {@link #start()} and will be deleted during
      * {@link #stop()}.</p>
      * @see #setTempDirectoryPersistent(boolean)
@@ -642,7 +647,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         _availability.set(Availability.STARTING);
         try
         {
-            configureTempDirectory();
+            createTempDirectory();
             _context.call(super::doStart, null);
             _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
             LOG.info("Started {}", this);
@@ -653,11 +658,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
-    protected void configureTempDirectory()
+    /**
+     * <p>Create the temporary directory. If the directory exists, but is not persistent, then it is
+     * first deleted and then recreated.  Once created, this method is a noop if called again before
+     * stopping the context.</p>
+     */
+    protected void createTempDirectory()
     {
         File tempDirectory = getTempDirectory();
-        if (tempDirectory != null)
+        if (tempDirectory != null && !_tempDirectoryCreated)
         {
+            _tempDirectoryCreated = true;
             if (isTempDirectoryPersistent())
             {
                 // Create the directory if it doesn't exist
@@ -676,7 +687,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 tempDirectory.deleteOnExit();
             }
 
-            // is it useable
+            // is it usable
             if (!tempDirectory.canWrite() || !tempDirectory.isDirectory())
                 throw new IllegalArgumentException("Temp dir " + tempDirectory + " not useable: writeable=" + tempDirectory.canWrite() + ", dir=" + tempDirectory.isDirectory());
         }
@@ -692,6 +703,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
             IO.delete(tempDirectory);
+
+        _tempDirectoryCreated = false;
     }
 
     public boolean checkVirtualHost(Request request)

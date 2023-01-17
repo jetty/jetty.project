@@ -191,6 +191,8 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public void onContent(Content.Chunk chunk)
     {
+        // Retain the chunk because it is stored for later reads.
+        chunk.retain();
         _chunk = chunk;
     }
 

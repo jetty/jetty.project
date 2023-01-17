@@ -55,6 +55,9 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
 
+        // Force early configuration (clearing) of the temporary directory so we can unpack into it.
+        context.getCoreContextHandler().createTempDirectory();
+
         // Extract webapp if necessary
         unpack(context);
     }
@@ -150,7 +153,8 @@ public class WebInfConfiguration extends AbstractConfiguration
             return;
         }
 
-        makeTempDirectory(context.getServer().getTempDirectory(), context);
+        //Make a temp directory in java.io.tmpdir
+        makeTempDirectory(new File(System.getProperty("java.io.tmpdir")), context);
     }
 
     public void makeTempDirectory(File parent, WebAppContext context)

@@ -481,10 +481,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     {
                         read += chunk.remaining();
                         chunk.getByteBuffer().clear();
-                        chunk.release();
                         if (!fourBytesRead.get() && read >= 4)
                             fourBytesRead.set(true);
                     }
+
+                    chunk.release();
 
                     if (chunk.isLast())
                     {
@@ -1708,6 +1709,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (chunk.hasRemaining())
                         contents.add(chunk);
+                    else
+                        chunk.release();
 
                     if (chunk.isLast())
                         break;

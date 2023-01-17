@@ -19,8 +19,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
@@ -130,21 +130,21 @@ public class JettyWebSocketNegotiationTest
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
-        AtomicReference<HttpResponse> responseReference = new AtomicReference<>();
+        AtomicReference<Response> responseReference = new AtomicReference<>();
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("permessage-deflate;client_no_context_takeover");
         JettyUpgradeListener upgradeListener = new JettyUpgradeListener()
         {
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            public void onHandshakeResponse(Request request, Response response)
             {
                 responseReference.set(response);
             }
         };
 
         client.connect(socket, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS);
-        HttpResponse httpResponse = responseReference.get();
-        String extensions = httpResponse.getHeaders().get("Sec-WebSocket-Extensions");
+        Response response = responseReference.get();
+        String extensions = response.getHeaders().get("Sec-WebSocket-Extensions");
         assertThat(extensions, is("permessage-deflate"));
     }
 }

@@ -32,10 +32,8 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -199,13 +197,16 @@ public class DelayedContentHandler extends Handler.Wrapper
             }
             else
             {
+                RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
                 try
                 {
-                    getHandler().process(new RewindChunkRequest(getRequest(), chunk), getResponse(), getCallback());
+                    getHandler().process(request, getResponse(), getCallback());
                 }
-                catch (Exception e)
+                catch (Throwable x)
                 {
-                    Response.writeError(getRequest(), getResponse(), getCallback(), e);
+                    // Use the wrapped request so that the error handling can
+                    // consume the request content and release the already read chunk.
+                    Response.writeError(request, getResponse(), getCallback(), x);
                 }
             }
         }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -32,12 +31,18 @@ import org.eclipse.jetty.util.Callback;
 public interface HttpUpgrader
 {
     /**
+     * <p>The request attribute key for the upgrade protocol,
+     * used by the HTTP/2 extended CONNECT mechanism.</p>
+     */
+    public static final String PROTOCOL_ATTRIBUTE = HttpUpgrader.class.getName() + ".protocol";
+
+    /**
      * <p>Prepares the request for the upgrade, for example by setting the HTTP method
      * or by setting HTTP headers required for the upgrade.</p>
      *
      * @param request the request to prepare
      */
-    public void prepare(HttpRequest request);
+    public void prepare(Request request);
 
     /**
      * <p>Upgrades the given {@code endPoint} to a different protocol.</p>
@@ -48,7 +53,7 @@ public interface HttpUpgrader
      * @param endPoint the EndPoint to upgrade
      * @param callback a callback to notify of the success or failure of the upgrade
      */
-    public void upgrade(HttpResponse response, EndPoint endPoint, Callback callback);
+    public void upgrade(Response response, EndPoint endPoint, Callback callback);
 
     /**
      * <p>A factory for {@link HttpUpgrader}s.</p>

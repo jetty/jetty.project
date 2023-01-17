@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -24,8 +23,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class RandomConnectionPool extends MultiplexConnectionPool
 {
-    public RandomConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
+    public RandomConnectionPool(Destination destination, int maxConnections, int maxMultiplex)
     {
-        super(destination, Pool.StrategyType.RANDOM, maxConnections, false, requester, maxMultiplex);
+        super(destination, Pool.StrategyType.RANDOM, maxConnections, false, maxMultiplex);
     }
 }

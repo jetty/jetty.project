@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.osgi;
 
-import java.io.File;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -26,15 +21,10 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee.Deployable;
-import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;

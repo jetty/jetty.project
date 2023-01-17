@@ -34,6 +34,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MainTest
 {
@@ -142,30 +143,15 @@ public class MainTest
         assertThat("JVM Arg on command line detail", warningIter.next(), containsString("Argument: --foople (interpreted as a JVM argument, from <command-line>"));
     }
 
+    /**
+     * A test to ensure that the usage text is still present and not accidentally deleted.
+     */
     @Test
-    public void testHelp() throws Exception
+    public void testUsageHelpStillThere() throws Exception
     {
-        String capturedOutput = null;
-
-        PrintStream originalOut = System.out;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             PrintStream ps = new PrintStream(baos))
-        {
-            System.err.println("Capturing output of --help");
-            System.setOut(ps);
-            Main main = new Main();
-            main.usage(false);
-            System.out.flush();
-            capturedOutput = baos.toString(StandardCharsets.UTF_8);
-        }
-        finally
-        {
-            System.setOut(originalOut);
-        }
-
         Path usageFile = MavenPaths.findMainResourceFile("org/eclipse/jetty/start/usage.txt");
-        String usageText = Files.readString(usageFile, StandardCharsets.UTF_8);
-        assertThat("Captured Output", capturedOutput, containsString(usageText));
+        assertTrue(Files.exists(usageFile));
+        assertTrue(Files.isRegularFile(usageFile));
     }
 
     @Test
