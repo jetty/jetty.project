@@ -10,11 +10,6 @@ ee9
 deploy
 ee9-webapp
 
-[lib]
-
-[files]
-webapps/
-
 [xml]
 etc/jetty-ee9-deploy.xml
 

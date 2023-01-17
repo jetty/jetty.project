@@ -10,11 +10,6 @@ ee8
 deploy
 ee8-webapp
 
-[lib]
-
-[files]
-webapps/
-
 [xml]
 etc/jetty-ee8-deploy.xml
 

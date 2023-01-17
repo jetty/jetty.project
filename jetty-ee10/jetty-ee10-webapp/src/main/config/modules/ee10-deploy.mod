@@ -10,11 +10,6 @@ ee10
 deploy
 ee10-webapp
 
-[lib]
-
-[files]
-webapps/
-
 [xml]
 etc/jetty-ee10-deploy.xml
 
