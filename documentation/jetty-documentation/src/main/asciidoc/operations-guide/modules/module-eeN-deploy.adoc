@@ -23,7 +23,7 @@ Adding files or directories to this monitored directory will cause the `Deployme
 (You can find a more detailed discussion of these rules in the xref:og-deploy-rules[deployment rules] section.)
 
 Multiple versions of this module exist (`{ee-all}-deploy`) to support each EE platform's version of the Java Servlet specification.
-Jetty's configuration properties are nearly identical across these versions; the module file for `{ee-current}-deploy` is as follows:
+Jetty's configuration properties are nearly identical across these versions; the configuration properties for the `{ee-current}-deploy` Jetty module are:
 
 ----
 include::{jetty-home}/modules/{ee-current}-deploy.mod[tags=ini-template]
