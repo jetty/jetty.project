@@ -14,7 +14,7 @@
 [[og-module-eeN-deploy]]
 ===== Module `{ee-all}-deploy`
 
-include::{JETTY_HOME}/modules/{ee-current}-deploy.mod[tags=description]
+include::{jetty-home}/modules/{ee-current}-deploy.mod[tags=description]
 
 Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
 (See xref:og-deploy[how to deploy web applications] for more information.)
@@ -26,7 +26,7 @@ Multiple versions of this module exist (`{ee-all}-deploy`) to support each EE pl
 Jetty's configuration properties are nearly identical across these versions; the module file for `{ee-current}-deploy` is as follows:
 
 ----
-include::{JETTY_HOME}/modules/{ee-current}-deploy.mod[tags=ini-template]
+include::{jetty-home}/modules/{ee-current}-deploy.mod[tags=ini-template]
 ----
 
 Among the configurable properties, the most relevant are:

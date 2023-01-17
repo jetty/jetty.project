@@ -18,7 +18,7 @@ Jetty supports JSP via the `{ee-all}-jsp` modules, which are based on Apache Jas
 
 [subs=attributes]
 ----
-include::{JETTY_HOME}/modules/{ee-current}-jsp.mod[]
+include::{jetty-home}/modules/{ee-current}-jsp.mod[]
 ----
 
 Logging has been bridged to Jetty logging, so you can enable logging for the `org.apache.jasper` package, subpackages and classes as usual.
@@ -177,7 +177,7 @@ The JavaServer Pages Standard Tag Library (JSTL) is part of the Jetty distributi
 
 [subs=attributes]
 ----
-include::{JETTY_HOME}/modules/{ee-current}-jstl.mod[]
+include::{jetty-home}/modules/{ee-current}-jstl.mod[]
 ----
 
 When enabled, Jetty will make the JSTL tags available for your webapps.

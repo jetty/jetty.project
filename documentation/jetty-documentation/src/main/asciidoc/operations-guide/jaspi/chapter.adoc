@@ -26,8 +26,9 @@ Only modules conforming to the "Servlet Container Profile" with the ServerAuthMo
 
 Enable the `jaspi` module:
 
+[subs=attributes]
 ----
-include::{JETTY_HOME}/modules/{ee-current}-jaspi.mod[]
+include::{jetty-home}/modules/{ee-current}-jaspi.mod[]
 ----
 
 [[og-jaspi-xml]]
@@ -47,9 +48,9 @@ The `ee9-jaspi-demo` and `{ee-current}-jaspi-demo` modules illustrate setting up
 
 The following example uses Jetty's {ee-current-caps} implementation of `AuthConfigProvider` to register a `ServerAuthModule` directly.
 
-[source, xml]
+[source,xml,subs=attributes]
 ----
-include::{JETTY_HOME}/etc/jaspi/jetty-{ee-current}-jaspi-demo.xml[]
+include::{jetty-home}/etc/jaspi/jetty-{ee-current}-jaspi-demo.xml[]
 ----
 
 Other custom or 3rd party modules that are compatible with the `ServerAuthModule` interface in JASPI can be registered in the same way.
@@ -66,6 +67,7 @@ Jetty provides an implementation of the `AuthConfigFactory` interface which is u
 This custom module must reference an XML file which sets a new instance of the `AuthConfigFactory` with the static method `AuthConfigFactory.setFactory()`.
 For an example of this see the `{ee-current}-jaspi-default-auth-config-factory` module, which provides the default implementation used by Jetty.
 
+[subs=attributes]
 ----
-include::{JETTY_HOME}/modules/{ee-current}-jaspi-default-auth-config-factory.mod[]
+include::{jetty-home}/modules/{ee-current}-jaspi-default-auth-config-factory.mod[]
 ----

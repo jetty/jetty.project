@@ -38,8 +38,9 @@ own custom link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/sp
 
 Enable the `{ee-all}-jaas` module appropriate for your EE platform:
 
+[subs=attributes]
 ----
-include::{JETTY_HOME}/modules/{ee-current}-jaas.mod[]
+include::{jetty-home}/modules/{ee-current}-jaas.mod[]
 ----
 
 The configurable items in the resulting `$jetty.base/start.d/jaas.ini` file are:
