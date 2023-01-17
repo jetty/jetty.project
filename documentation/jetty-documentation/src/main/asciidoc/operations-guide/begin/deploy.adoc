@@ -64,7 +64,7 @@ The `{ee-current}-deploy` module creates `$JETTY_BASE/webapps`, which is the dir
 
 Activating one of Jetty's `{ee-all}-deploy` modules enables web application deployment.
 Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on if the correspondent Jetty modules have been enabled.
-(Refer to the xref:og-protocols[section about protocols] for further information.)
+Refer to the xref:og-protocols[section about protocols] for further information.
 
 Now you're ready to copy a web application to the `$JETTY_BASE/webapps` directory.
 You can use one of the demos shipped with Jetty:
