@@ -252,7 +252,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _coreContextHandler;
     }
 
-    public org.eclipse.jetty.server.handler.ContextHandler getCoreContextHandler()
+    public CoreContextHandler getCoreContextHandler()
     {
         return _coreContextHandler;
     }
@@ -2388,6 +2388,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 Thread.currentThread().setContextClassLoader(old);
             }
+        }
+
+        /*
+         * Expose configureTempDirectory so it can be triggered early by WebInfConfiguration#preConfigure
+         */
+        @Override
+        public void createTempDirectory()
+        {
+            super.createTempDirectory();
         }
 
         @Override
