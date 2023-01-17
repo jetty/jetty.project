@@ -265,7 +265,7 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         }
 
         @Override
-        public Content.Source getNewContent()
+        public Content.Source newContentSource()
         {
             return new PathContentSource(path, byteRange);
         }

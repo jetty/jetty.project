@@ -176,7 +176,7 @@ public class MultiPart
         public Content.Source getContentSource()
         {
             if (content == null)
-                content = getNewContent();
+                content = newContentSource();
             return content;
         }
 
@@ -192,11 +192,11 @@ public class MultiPart
          *
          * @return the content of this part as a new {@link Content.Source}
          */
-        public abstract Content.Source getNewContent();
+        public abstract Content.Source newContentSource();
 
         public long getLength()
         {
-            return getNewContent().getLength();
+            return newContentSource().getLength();
         }
 
         /**
@@ -221,7 +221,7 @@ public class MultiPart
                 Charset charset = defaultCharset != null ? defaultCharset : UTF_8;
                 if (charsetName != null)
                     charset = Charset.forName(charsetName);
-                return Content.Source.asString(getNewContent(), charset);
+                return Content.Source.asString(newContentSource(), charset);
             }
             catch (IOException x)
             {
@@ -237,11 +237,6 @@ public class MultiPart
             return fields;
         }
 
-        public Path getPath()
-        {
-            return path;
-        }
-
         /**
          * <p>Writes the content of this part to the given path.</p>
          *
@@ -254,7 +249,7 @@ public class MultiPart
             {
                 try (OutputStream out = Files.newOutputStream(path))
                 {
-                    IO.copy(Content.Source.asInputStream(getNewContent()), out);
+                    IO.copy(Content.Source.asInputStream(newContentSource()), out);
                 }
                 this.path = path;
             }
@@ -306,7 +301,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source getNewContent()
+        public Content.Source newContentSource()
         {
             return new ByteBufferContentSource(content);
         }
@@ -346,7 +341,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source getNewContent()
+        public Content.Source newContentSource()
         {
             return new ChunksContentSource(content.stream().map(Content.Chunk::slice).toList());
         }
@@ -395,8 +390,13 @@ public class MultiPart
             }
         }
 
+        public Path getPath()
+        {
+            return path;
+        }
+
         @Override
-        public Content.Source getNewContent()
+        public Content.Source newContentSource()
         {
             return new PathContentSource(path);
         }
@@ -409,7 +409,7 @@ public class MultiPart
                 hashCode(),
                 getName(),
                 getFileName(),
-                getPath()
+                path
             );
         }
     }
@@ -428,7 +428,7 @@ public class MultiPart
         }
 
         @Override
-        public Content.Source getNewContent()
+        public Content.Source newContentSource()
         {
             Content.Source c = content;
             content = null;
@@ -630,7 +630,7 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
-                            partContent = part.getNewContent();
+                            partContent = part.newContentSource();
                             state = State.HEADERS;
                             yield Content.Chunk.from(firstBoundary.slice(), false);
                         }
@@ -657,7 +657,7 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
-                            partContent = part.getNewContent();
+                            partContent = part.newContentSource();
                             state = State.HEADERS;
                             yield Content.Chunk.from(middleBoundary.slice(), false);
                         }
@@ -743,7 +743,7 @@ public class MultiPart
 
                 if (state == State.CONTENT)
                 {
-                    partContent.demand(() ->
+                    part.getContentSource().demand(() ->
                     {
                         try (AutoLock ignoredAgain = lock.lock())
                         {
@@ -850,6 +850,8 @@ public class MultiPart
         private int trailingWhiteSpaces;
         private String fieldName;
         private String fieldValue;
+        private long maxParts;
+        private int numParts = 0;
 
         public Parser(String boundary, Listener listener)
         {
@@ -879,6 +881,22 @@ public class MultiPart
         public void setPartHeadersMaxLength(int partHeadersMaxLength)
         {
             this.partHeadersMaxLength = partHeadersMaxLength;
+        }
+
+        /**
+         * @return the maximum number of parts that can be parsed from the multipart content.
+         */
+        public long getMaxParts()
+        {
+            return maxParts;
+        }
+
+        /**
+         * @param maxParts the maximum number of parts that can be parsed from the multipart content.
+         */
+        public void setMaxParts(long maxParts)
+        {
+            this.maxParts = maxParts;
         }
 
         /**
@@ -939,6 +957,10 @@ public class MultiPart
                             }
                             else if (type == HttpTokens.Type.LF)
                             {
+                                numParts++;
+                                if (numParts >= maxParts)
+                                    throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
+
                                 notifyPartBegin();
                                 state = State.HEADER_START;
                                 trailingWhiteSpaces = 0;
@@ -1343,37 +1365,93 @@ public class MultiPart
 
         private void notifyPartBegin()
         {
-            listener.onPartBegin();
+            try
+            {
+                listener.onPartBegin();
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
         }
 
         private void notifyPartHeader(String name, String value)
         {
-            listener.onPartHeader(name, value);
+            try
+            {
+                listener.onPartHeader(name, value);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
         }
 
         private void notifyPartHeaders()
         {
-            listener.onPartHeaders();
+            try
+            {
+                listener.onPartHeaders();
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
         }
 
         private void notifyPartContent(Content.Chunk chunk)
         {
-            listener.onPartContent(chunk);
+            try
+            {
+                listener.onPartContent(chunk);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
         }
 
         private void notifyPartEnd()
         {
-            listener.onPartEnd();
+            try
+            {
+                listener.onPartEnd();
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
         }
 
         private void notifyComplete()
         {
-            listener.onComplete();
+            try
+            {
+                listener.onComplete();
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
         }
 
         private void notifyFailure(Throwable failure)
         {
-            listener.onFailure(failure);
+            try
+            {
+                listener.onFailure(failure);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
         }
 
         /**

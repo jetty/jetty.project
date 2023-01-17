@@ -245,7 +245,7 @@ public class MultiPartCaptureTest
             List<MultiPart.Part> charSetParts = allParts.get("_charset_");
             if (charSetParts != null)
             {
-                defaultCharset = Promise.Completable.<String>with(p -> Content.Source.asString(charSetParts.get(0).getNewContent(), StandardCharsets.US_ASCII, p))
+                defaultCharset = Promise.Completable.<String>with(p -> Content.Source.asString(charSetParts.get(0).newContentSource(), StandardCharsets.US_ASCII, p))
                     .get();
             }
 
@@ -255,8 +255,8 @@ public class MultiPartCaptureTest
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 String charset = getCharsetFromContentType(part.getHeaders().get(HttpHeader.CONTENT_TYPE), defaultCharset);
-                assertTrue(part.getNewContent().rewind());
-                String partContent = Content.Source.asString(part.getNewContent(), Charset.forName(charset));
+                assertTrue(part.newContentSource().rewind());
+                String partContent = Content.Source.asString(part.newContentSource(), Charset.forName(charset));
                 assertThat("Part[" + expected.name + "].contents", partContent, containsString(expected.value));
             }
 
@@ -276,8 +276,8 @@ public class MultiPartCaptureTest
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 MessageDigest digest = MessageDigest.getInstance("SHA1");
-                assertTrue(part.getNewContent().rewind());
-                try (InputStream partInputStream = Content.Source.asInputStream(part.getNewContent());
+                assertTrue(part.newContentSource().rewind());
+                try (InputStream partInputStream = Content.Source.asInputStream(part.newContentSource());
                      DigestOutputStream digester = new DigestOutputStream(OutputStream.nullOutputStream(), digest))
                 {
                     IO.copy(partInputStream, digester);

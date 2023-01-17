@@ -129,10 +129,6 @@ public class MultiPartServletTest
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 req.getParameterMap();
-                req.getParts();
-                resp.setStatus(200);
-                resp.getWriter().print("success");
-                resp.getWriter().close();
             }
         }, new MultipartConfigElement(tmpDirString));
 
@@ -174,10 +170,6 @@ public class MultiPartServletTest
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 req.getParameterMap();
-                req.getParts();
-                resp.setStatus(200);
-                resp.getWriter().print("success");
-                resp.getWriter().close();
             }
         }, new MultipartConfigElement(tmpDirString));
 
@@ -216,10 +208,6 @@ public class MultiPartServletTest
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 req.getParameterMap();
-                req.getParts();
-                resp.setStatus(200);
-                resp.getWriter().print("success");
-                resp.getWriter().close();
 
             }
         }, new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8));

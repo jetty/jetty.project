@@ -269,13 +269,13 @@ public class DelayedHandler extends Handler.Wrapper
             super(handler, wrapped, response, callback);
             String boundary = MultiPart.extractBoundary(contentType);
             _formData = boundary == null ? null : new MultiPartFormData(boundary);
-            getRequest().setAttribute(MultiPartFormData.class.getName(), _formData);
         }
 
         private void process(MultiPartFormData.Parts parts, Throwable x)
         {
             if (x == null)
             {
+                getRequest().setAttribute(MultiPartFormData.Parts.class.getName(), parts);
                 super.process();
             }
             else

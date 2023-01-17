@@ -68,7 +68,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  *
  * @see Parts
  */
-public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts> implements Closeable
+public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts>
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormData.class);
 
@@ -80,8 +80,6 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
     private long maxMemoryFileSize;
     private long maxLength = -1;
     private long length;
-    private int numParts = 0;
-    private long maxParts = 1000;
 
     public MultiPartFormData(String boundary)
     {
@@ -281,7 +279,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
      */
     public long getMaxParts()
     {
-        return maxLength;
+        return parser.getMaxParts();
     }
 
     /**
@@ -289,7 +287,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
      */
     public void setMaxParts(long maxParts)
     {
-        this.maxParts = maxParts;
+        parser.setMaxParts(maxParts);
     }
 
     @Override
@@ -309,23 +307,18 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
      * <p>An ordered list of {@link MultiPart.Part}s that can
      * be accessed by index or by name, or iterated over.</p>
      */
-    public static class Parts implements Iterable<MultiPart.Part>
+    public class Parts implements Iterable<MultiPart.Part>
     {
-        private final String boundary;
         private final List<MultiPart.Part> parts;
 
-        private Parts(String boundary, List<MultiPart.Part> parts)
+        private Parts(List<MultiPart.Part> parts)
         {
-            this.boundary = boundary;
             this.parts = parts;
         }
 
-        /**
-         * @return the boundary string
-         */
-        public String getBoundary()
+        public MultiPartFormData getMultiPartFormData()
         {
-            return boundary;
+            return MultiPartFormData.this;
         }
 
         /**
@@ -382,6 +375,21 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         public Iterator<MultiPart.Part> iterator()
         {
             return parts.iterator();
+        }
+
+        public void close()
+        {
+            for (MultiPart.Part p : parts)
+            {
+                try
+                {
+                    p.close();
+                }
+                catch (Throwable e)
+                {
+                    LOG.warn("Errors deleting multipart tmp files", e);
+                }
+            }
         }
     }
 
@@ -503,15 +511,6 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         }
 
         @Override
-        public void onPartBegin()
-        {
-            // TODO: Move to parser.
-            numParts++;
-            if (numParts >= maxParts)
-                throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
-        }
-
-        @Override
         public void onPart(String name, String fileName, HttpFields headers)
         {
             MultiPart.Part part;
@@ -536,7 +535,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         public void onComplete()
         {
             super.onComplete();
-            complete(new Parts(getBoundary(), getParts()));
+            complete(new Parts(getParts()));
         }
 
         private List<MultiPart.Part> getParts()
@@ -626,27 +625,6 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             catch (Throwable x)
             {
                 onFailure(x);
-            }
-        }
-    }
-
-    @Override
-    public void close()
-    {
-        // TODO: Can we do this async?
-        MultiPartFormData.Parts parts = getNow(null);
-        if (parts != null)
-        {
-            for (MultiPart.Part p : parts)
-            {
-                try
-                {
-                    p.close();
-                }
-                catch (Throwable e)
-                {
-                    LOG.warn("Errors deleting multipart tmp files", e);
-                }
             }
         }
     }

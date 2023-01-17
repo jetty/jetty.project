@@ -119,11 +119,11 @@ public class MultiPartByteRangesTest
 
             assertEquals(3, parts.size());
             MultiPart.Part part1 = parts.get(0);
-            assertEquals("12", Content.Source.asString(part1.getNewContent()));
+            assertEquals("12", Content.Source.asString(part1.newContentSource()));
             MultiPart.Part part2 = parts.get(1);
-            assertEquals("456", Content.Source.asString(part2.getNewContent()));
+            assertEquals("456", Content.Source.asString(part2.newContentSource()));
             MultiPart.Part part3 = parts.get(2);
-            assertEquals("CDEF", Content.Source.asString(part3.getNewContent()));
+            assertEquals("CDEF", Content.Source.asString(part3.newContentSource()));
         }
     }
 }

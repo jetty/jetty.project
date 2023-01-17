@@ -77,9 +77,9 @@ public class ServletMultiPartFormData
         try
         {
             // Look for a previously read and parsed MultiPartFormData from the DelayedHandler.
-            MultiPartFormData formData = (MultiPartFormData)request.getAttribute(MultiPartFormData.class.getName());
-            if (formData != null)
-                return new Parts(formData);
+            MultiPartFormData.Parts parts = (MultiPartFormData.Parts)request.getAttribute(MultiPartFormData.Parts.class.getName());
+            if (parts != null)
+                return new Parts(parts);
 
             // TODO set the files directory
             return new ServletMultiPartFormData().parse(request, maxParts);
@@ -102,7 +102,6 @@ public class ServletMultiPartFormData
 
         // Store MultiPartFormData as attribute on request so it is released by the HttpChannel.
         MultiPartFormData formData = new MultiPartFormData(boundary);
-        request.setAttribute(MultiPartFormData.class.getName(), formData);
         formData.setMaxParts(maxParts);
 
         File tmpDirFile = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
@@ -123,7 +122,7 @@ public class ServletMultiPartFormData
         Connection connection = connectionMetaData.getConnection();
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
         InputStream input = request.getInputStream();
-        while (true)
+        while (!formData.isDone())
         {
             ByteBuffer buffer = byteBufferPool.newByteBuffer(bufferSize, false);
             boolean readEof = false;
@@ -145,7 +144,9 @@ public class ServletMultiPartFormData
             }
         }
 
-        return new Parts(formData);
+        Parts parts = new Parts(formData.join());
+        request.setAttribute(Parts.class.getName(), parts);
+        return parts;
     }
 
     /**
@@ -155,9 +156,9 @@ public class ServletMultiPartFormData
     {
         private final List<Part> parts = new ArrayList<>();
 
-        public Parts(MultiPartFormData formData)
+        public Parts(MultiPartFormData.Parts parts)
         {
-            formData.join().forEach(part -> parts.add(new ServletPart(formData, part)));
+            parts.forEach(part -> this.parts.add(new ServletPart(parts.getMultiPartFormData(), part)));
         }
 
         public Part getPart(String name)
@@ -190,7 +191,7 @@ public class ServletMultiPartFormData
         @Override
         public InputStream getInputStream() throws IOException
         {
-            return Content.Source.asInputStream(_part.getNewContent());
+            return Content.Source.asInputStream(_part.newContentSource());
         }
 
         @Override
