@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -562,7 +564,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public class UpstreamConnection extends ProxyConnection
     {
-        private ConnectContext connectContext;
+        private final ConnectContext connectContext;
 
         public UpstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectContext connectContext)
         {
@@ -574,8 +576,9 @@ public class ConnectHandler extends HandlerWrapper
         public void onOpen()
         {
             super.onOpen();
+            // Delay fillInterested() until the 200 OK response has been sent.
+            connectContext.asyncContext.addListener(new OnCompleteListener(this::fillInterested));
             onConnectSuccess(connectContext, UpstreamConnection.this);
-            fillInterested();
         }
 
         @Override
@@ -588,6 +591,38 @@ public class ConnectHandler extends HandlerWrapper
         protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
         {
             ConnectHandler.this.write(endPoint, buffer, callback, getContext());
+        }
+
+        private class OnCompleteListener implements AsyncListener
+        {
+            private final Runnable onComplete;
+
+            private OnCompleteListener(Runnable onComplete)
+            {
+                this.onComplete = onComplete;
+            }
+
+            @Override
+            public void onComplete(AsyncEvent event)
+            {
+                onComplete.run();
+            }
+
+            @Override
+            public void onTimeout(AsyncEvent event)
+            {
+            }
+
+            @Override
+            public void onError(AsyncEvent event)
+            {
+                close(event.getThrowable());
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent event)
+            {
+            }
         }
     }
 
