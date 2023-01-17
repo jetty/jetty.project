@@ -48,7 +48,7 @@ mywebapp.war
 
 To deploy a standard web application, you need to enable the xref:og-module-eeN-deploy[`{ee-current}-deploy` module].
 
-NOTE: The following examples assume you're deploying a Jakarta {ee-current-caps} app; for other versions of EE, make sure to activate the corresponding `{ee-all}-deploy` module.
+NOTE: The following examples assume you're deploying a Jakarta {ee-current-caps} application; for other versions of Jakarta EE, make sure to activate the corresponding `{ee-all}-deploy` module.
 
 [subs=attributes]
 ----
