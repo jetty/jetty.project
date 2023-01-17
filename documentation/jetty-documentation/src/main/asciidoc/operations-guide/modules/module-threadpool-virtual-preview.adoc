@@ -23,7 +23,7 @@ Refer to the xref:og-module-threadpool[`threadpool`] Jetty module for the genera
 The module properties to configure the thread pool are:
 
 ----
-include::{JETTY_HOME}/modules/threadpool-virtual-preview.mod[tags=documentation]
+include::{jetty-home}/modules/threadpool-virtual-preview.mod[tags=documentation]
 ----
 
 The specific properties to configure virtual threads are:

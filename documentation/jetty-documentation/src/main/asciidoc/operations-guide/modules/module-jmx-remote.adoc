@@ -19,7 +19,7 @@ The `jmx-remote` module provides remote access to JMX clients.
 The module properties to configure remote JMX connector are:
 
 ----
-include::{JETTY_HOME}/modules/jmx-remote.mod[tags=documentation]
+include::{jetty-home}/modules/jmx-remote.mod[tags=documentation]
 ----
 
 The system property `java.rmi.server.hostname` is specified with the usual notation, prepending a `-D` in front of the system property name.

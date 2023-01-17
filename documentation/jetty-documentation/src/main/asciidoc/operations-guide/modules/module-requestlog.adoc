@@ -19,7 +19,7 @@ The `requestlog` module provides HTTP request/response logging in the standard l
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/requestlog.mod[tags=documentation]
+include::{jetty-home}/modules/requestlog.mod[tags=documentation]
 ----
 
 The property `jetty.requestlog.formatString` can be customized using format codes.
