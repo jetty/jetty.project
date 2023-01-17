@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
@@ -85,6 +86,7 @@ public class AsyncRequestContentTest
 
         Content.Chunk chunk = content.read();
         assertNotNull(chunk);
+        chunk.release();
 
         // Flush should return.
         assertTrue(await(task, 5000));

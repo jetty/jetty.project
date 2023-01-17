@@ -25,10 +25,10 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.ee10.servlets.PushCacheFilter;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -196,7 +196,7 @@ public class PushCacheFilterTest extends AbstractTest
         assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure the connection is sane.
-        HttpDestination destination = (HttpDestination)client.getDestinations().get(0);
+        Destination destination = client.getDestinations().get(0);
         assertFalse(destination.getConnectionPool().isEmpty());
     }
 

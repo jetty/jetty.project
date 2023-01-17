@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.nested;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -42,22 +41,14 @@ public interface ContentProducer
      */
     void reopen();
 
-
     /**
-     * Consume all content currently available in this {@link ContentProducer} instance
-     * as well as in the underlying {@link HttpChannel}.
+     * Consumes all content currently available in this {@link ContentProducer} instance
+     * as well as in the underlying {@link Content.Source}.
      *
      * This call is always non-blocking.
      * @return true if EOF was reached.
      */
     boolean consumeAll();
-
-    /**
-     * Release any held content.
-     *
-     * @return true if EOF seen.
-     */
-    boolean releaseContent();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.
@@ -116,13 +107,13 @@ public interface ContentProducer
      * @return the next content that can be read from or null if the implementation does not block
      * and has no available content.
      */
-    Content.Chunk nextContent();
+    HttpInput.Content nextContent();
 
     /**
-     * Free up the content by calling {@link Content.Chunk#release()} on it
+     * Free up the content by calling {@link HttpInput.Content#succeeded()} on it
      * and updating this instance' internal state.
      */
-    void reclaim(Content.Chunk content);
+    void reclaim(HttpInput.Content content);
 
     /**
      * Check if this {@link ContentProducer} instance has some content that can be read without blocking.

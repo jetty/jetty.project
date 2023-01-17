@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.Handler;
@@ -67,7 +67,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         CompletableFuture<Void> setup = new CompletableFuture<>();
         client.getTransport().setConnectionPoolFactory(destination ->
         {
-            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });
@@ -146,7 +146,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         CompletableFuture<Void> setup = new CompletableFuture<>();
         client.getTransport().setConnectionPoolFactory(destination ->
         {
-            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
             pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });
@@ -225,7 +225,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
             ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
         client.getTransport().setConnectionPoolFactory(destination ->
         {
-            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex);
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, maxMultiplex);
             pool.setMaxUsage(maxUsage);
             return pool;
         });

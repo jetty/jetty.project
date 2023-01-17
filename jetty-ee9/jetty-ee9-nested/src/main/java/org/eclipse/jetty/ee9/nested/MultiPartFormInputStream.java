@@ -47,6 +47,8 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.ee9.nested.ContextHandler.DEFAULT_MAX_FORM_KEYS;
+
 /**
  * MultiPartInputStream
  * <p>
@@ -386,7 +388,7 @@ public class MultiPartFormInputStream
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
-        this(in, contentType, config, contextTmpDir, org.eclipse.jetty.ee9.nested.ContextHandler.DEFAULT_MAX_FORM_KEYS);
+        this(in, contentType, config, contextTmpDir, DEFAULT_MAX_FORM_KEYS);
     }
 
     /**

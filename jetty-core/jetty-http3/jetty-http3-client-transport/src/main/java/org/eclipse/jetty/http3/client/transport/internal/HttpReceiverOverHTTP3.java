@@ -15,9 +15,9 @@ package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpReceiver;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.internal.HttpExchange;
+import org.eclipse.jetty.client.internal.HttpReceiver;
+import org.eclipse.jetty.client.internal.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
@@ -60,9 +60,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         }
         ByteBuffer byteBuffer = data.getByteBuffer();
         boolean last = !byteBuffer.hasRemaining() && data.isLast();
-        if (last)
-            responseSuccess(getHttpExchange(), null);
-        return Content.Chunk.from(byteBuffer, last, data);
+        if (!last)
+            return Content.Chunk.asChunk(byteBuffer, last, data);
+        data.release();
+        responseSuccess(getHttpExchange(), null);
+        return Content.Chunk.EOF;
     }
 
     @Override

@@ -14,6 +14,12 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 
 /**
  * {@link ContentDecoder} decodes content bytes of a response.
@@ -88,5 +94,36 @@ public interface ContentDecoder
          * @return a new instance of a {@link ContentDecoder}
          */
         public abstract ContentDecoder newContentDecoder();
+    }
+
+    public static class Factories implements Iterable<ContentDecoder.Factory>
+    {
+        private final Map<String, Factory> factories = new LinkedHashMap<>();
+        private HttpField acceptEncodingField;
+
+        public HttpField getAcceptEncodingField()
+        {
+            return acceptEncodingField;
+        }
+
+        @Override
+        public Iterator<Factory> iterator()
+        {
+            return factories.values().iterator();
+        }
+
+        public void clear()
+        {
+            factories.clear();
+            acceptEncodingField = null;
+        }
+
+        public Factory put(Factory factory)
+        {
+            Factory result = factories.put(factory.getEncoding(), factory);
+            String value = String.join(",", factories.keySet());
+            acceptEncodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, value);
+            return result;
+        }
     }
 }

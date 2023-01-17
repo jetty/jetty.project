@@ -25,12 +25,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -66,10 +66,6 @@ public class HttpClientLoadTest extends AbstractTest
     @MethodSource("transports")
     public void testIterative(Transport transport) throws Exception
     {
-        // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
-        if ("ci".equals(System.getProperty("env")))
-            Assumptions.assumeTrue(transport != Transport.H3);
-
         server = newServer();
         server.addBean(new LeakTrackingByteBufferPool(new LogarithmicArrayByteBufferPool()));
         start(transport, new LoadHandler());
@@ -84,7 +80,7 @@ public class HttpClientLoadTest extends AbstractTest
             case HTTP, HTTPS, FCGI, UNIX_DOMAIN ->
             {
                 // Track connection leaking only for non-multiplexed transports.
-                client.getTransport().setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
+                client.getTransport().setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination())
                 {
                     @Override
                     protected void leaked(LeakDetector<Connection>.LeakInfo leakInfo)
@@ -132,8 +128,8 @@ public class HttpClientLoadTest extends AbstractTest
         int runs = 1;
         int iterations = 128;
         IntStream.range(0, 16).parallel().forEach(i ->
-            IntStream.range(0, runs).forEach(j ->
-                run(transport, iterations)));
+                IntStream.range(0, runs).forEach(j ->
+                        run(transport, iterations)));
 
         assertLeaks();
     }

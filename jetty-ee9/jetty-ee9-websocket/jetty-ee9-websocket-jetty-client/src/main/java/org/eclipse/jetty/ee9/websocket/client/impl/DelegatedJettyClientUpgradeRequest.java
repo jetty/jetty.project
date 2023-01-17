@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Representing the Jetty {@link org.eclipse.jetty.client.HttpClient}'s {@link org.eclipse.jetty.client.HttpRequest}
+ * Representing the Jetty {@link org.eclipse.jetty.client.Request}
  * in the {@link UpgradeRequest} interface.
  */
 public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
@@ -82,13 +82,13 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public String getHost()
     {
-        return delegate.getHost();
+        return delegate.getURI().getHost();
     }
 
     @Override
     public String getHttpVersion()
     {
-        return delegate.getVersion().toString();
+        return delegate.getVersion().asString();
     }
 
     public void configure(EndPoint endpoint)
@@ -127,7 +127,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public String getQueryString()
     {
-        return delegate.getQuery();
+        return delegate.getURI().getRawQuery();
     }
 
     @Override
@@ -154,7 +154,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public boolean isSecure()
     {
-        return HttpClient.isSchemeSecure(delegate.getScheme());
+        return HttpClient.isSchemeSecure(delegate.getURI().getScheme());
     }
 
     @Override

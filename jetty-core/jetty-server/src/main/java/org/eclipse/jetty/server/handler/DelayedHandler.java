@@ -32,10 +32,8 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 public class DelayedHandler extends Handler.Wrapper
@@ -180,13 +178,16 @@ public class DelayedHandler extends Handler.Wrapper
             }
             else
             {
+                RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
                 try
                 {
-                    getHandler().process(new RewindChunkRequest(getRequest(), chunk), getResponse(), getCallback());
+                    getHandler().process(request, getResponse(), getCallback());
                 }
-                catch (Exception e)
+                catch (Throwable x)
                 {
-                    Response.writeError(getRequest(), getResponse(), getCallback(), e);
+                    // Use the wrapped request so that the error handling can
+                    // consume the request content and release the already read chunk.
+                    Response.writeError(request, getResponse(), getCallback(), x);
                 }
             }
         }
@@ -307,8 +308,7 @@ public class DelayedHandler extends Handler.Wrapper
             }
             else
             {
-                Object baseTempDirectory = getRequest().getContext().getAttribute(Server.BASE_TEMP_DIR_ATTR);
-                _formData.setFilesDirectory(IO.asFile(baseTempDirectory == null ? System.getProperty("java.io.tmpdir") : baseTempDirectory).toPath());
+                _formData.setFilesDirectory(getRequest().getContext().getTempDirectory().toPath());
                 readAndParse();
                 // if we are done already, then we are still in the scope of the original process call and can
                 // process directly, otherwise we must execute a call to process as we are within a serialized

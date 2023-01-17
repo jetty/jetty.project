@@ -4,7 +4,7 @@
   <Call name="getAuthenticationStore">
     <Call name="addAuthentication">
       <Arg>
-        <New class="org.eclipse.jetty.client.util.BasicAuthentication">
+        <New class="org.eclipse.jetty.client.BasicAuthentication">
           <Arg>
             <New class="java.net.URI">
               <Arg>ws://localhost:<SystemProperty name="org.eclipse.jetty.websocket.port"/>/secured/socket</Arg>
