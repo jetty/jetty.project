@@ -1246,7 +1246,9 @@ public class HttpParser
                             // handle new header
                             if (buffer.hasRemaining())
                             {
-                                // Try a look ahead for the known header name and value.
+                                // Try a look ahead for the known header name and value in dynamic, then static cache.
+                                // Need to use an offset of -1 and to increase the remaining since we have already consumed
+                                // the first ALPHA/DIGIT/TCHAR byte to switch to this case.
                                 HttpField cachedField = _fieldCache.getBest(buffer, -1, buffer.remaining() + 1);
                                 if (cachedField == null)
                                     cachedField = CACHE.getBest(buffer, -1, buffer.remaining() + 1);
