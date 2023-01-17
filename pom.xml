@@ -429,7 +429,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2022</copyright-range>
+            <copyright-range>${project.inceptionYear}-2023</copyright-range>
           </properties>
         </configuration>
         <executions>
@@ -807,7 +807,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2022 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2023 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <Import-Package>
                 ${osgi.slf4j.import.packages},
                 *
