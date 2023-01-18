@@ -86,6 +86,7 @@ public class AsyncRequestContentTest
 
         Content.Chunk chunk = content.read();
         assertNotNull(chunk);
+        chunk.release();
 
         // Flush should return.
         assertTrue(await(task, 5000));

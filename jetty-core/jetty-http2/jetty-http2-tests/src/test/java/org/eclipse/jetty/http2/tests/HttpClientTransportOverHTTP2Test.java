@@ -259,7 +259,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         demander.run();
                         return;
                     }
-                    if (!chunk.isTerminal())
+                    if (chunk.hasRemaining())
                         contentCount.incrementAndGet();
                     chunk.release();
                     if (!chunk.isLast())

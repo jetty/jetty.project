@@ -115,7 +115,6 @@ public class HttpClientChunkedContentTest
             client.newRequest("localhost", server.getLocalPort())
                 .onResponseContentAsync((response, chunk, demander) ->
                 {
-                    chunk.release();
                     if (demanderRef.compareAndSet(null, demander))
                         firstContentLatch.countDown();
                     else

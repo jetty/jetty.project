@@ -33,7 +33,6 @@
             </Call>
           </Set>
           <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
-          <Set name="tempDir" property="jetty.deploy.tempDir" />
         </New>
       </Arg>
     </Call>

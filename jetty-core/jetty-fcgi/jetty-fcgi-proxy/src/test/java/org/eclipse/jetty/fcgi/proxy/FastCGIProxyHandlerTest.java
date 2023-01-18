@@ -172,10 +172,6 @@ public class FastCGIProxyHandlerTest
                 {
                     response.abort(x);
                 }
-                finally
-                {
-                    chunk.release();
-                }
             })
             .path(proxyContext.getContextPath() + path);
         FutureResponseListener listener = new FutureResponseListener(request, length);

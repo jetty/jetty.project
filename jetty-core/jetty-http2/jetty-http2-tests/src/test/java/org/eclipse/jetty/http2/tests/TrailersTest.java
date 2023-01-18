@@ -127,6 +127,7 @@ public class TrailersTest extends AbstractTest
 
                 // No trailers yet.
                 assertThat(chunk, not(instanceOf(Trailers.class)));
+                chunk.release();
 
                 trailerLatch.countDown();
 
@@ -143,6 +144,7 @@ public class TrailersTest extends AbstractTest
                         _request.demand(this::otherReads);
                         return;
                     }
+                    chunk.release();
                     if (chunk instanceof Trailers contentTrailers)
                     {
                         HttpFields trailers = contentTrailers.getTrailers();

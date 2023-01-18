@@ -113,9 +113,32 @@
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
+
+    <osgi-version>3.18.200</osgi-version>
+    <!-- really used -->
+    <osgi-annotation-version>8.1.0</osgi-annotation-version>
+    <osgi-services-version>3.11.100</osgi-services-version>
+    <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
+    <osgi-service-component-version>1.5.0</osgi-service-component-version>
+    <osgi-service-event-version>1.4.1</osgi-service-event-version>
+    <osgi-util-version>3.7.100</osgi-util-version>
+    <osgi-util-function-version>1.2.0</osgi-util-function-version>
+    <osgi-util-promise-version>1.2.0</osgi-util-promise-version>
+    <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
+    <osgi-util-position-version>1.0.1</osgi-util-position-version>
+    <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
+    <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
+    <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
+    <pax.exam.version>4.13.1</pax.exam.version>
+    <pax.url.version>2.6.2</pax.url.version>
+    <swissbox.version>1.8.3</swissbox.version>
+    <tinybundles.version>3.0.0</tinybundles.version>
+    <injection.bundle.version>1.2</injection.bundle.version>
+
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.5.0</plexus-utils.version>
     <slf4j.version>2.0.5</slf4j.version>
+    <spifly.version>1.3.6</spifly.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
@@ -272,12 +295,12 @@
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
-		<versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
-		<!-- do not support alphax as a version number -->
-	        <!--
-                <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
-		<versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
-		-->
+		            <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
+                <!-- do not support alphax as a version number -->
+                      <!--
+                            <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
+                <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
+                -->
                 <requireUpperBoundDeps/>
               </rules>
             </configuration>
@@ -1059,6 +1082,11 @@
         <version>${ant.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.aries.spifly</groupId>
+        <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
+        <version>${spifly.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>${commons-lang3.version}</version>
@@ -1067,6 +1095,11 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>org.apache.felix.framework</artifactId>
         <version>${felix.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.geronimo.specs</groupId>
+        <artifactId>geronimo-atinject_1.0_spec</artifactId>
+        <version>${injection.bundle.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.kerby</groupId>
@@ -1537,6 +1570,88 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.osgi.services</artifactId>
+        <version>${osgi-services-version}</version>
+        <exclusions>
+          <exclusion>
+            <!-- we use the servlet jar from orbit -->
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <!-- cannot override core java classes with Java 9+ -->
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.osgi.foundation</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.osgi</artifactId>
+        <version>${osgi-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.osgi.util</artifactId>
+        <version>${osgi-util-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.cm</artifactId>
+        <version>${osgi-service-cm-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>osgi.annotation</artifactId>
+        <version>${osgi-annotation-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.component</artifactId>
+        <version>${osgi-service-component-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.event</artifactId>
+        <version>${osgi-service-event-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.tracker</artifactId>
+        <version>${osgi-util-tracker-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.promise</artifactId>
+        <version>${osgi-util-promise-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.measurement</artifactId>
+        <version>${osgi-util-measurement-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.position</artifactId>
+        <version>${osgi-util-position-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.xml</artifactId>
+        <version>${osgi-util-xml-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.equinox.http</groupId>
+        <artifactId>servlet</artifactId>
+        <version>${equinox-http-servlet-version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest</artifactId>
         <version>${hamcrest.version}</version>
@@ -1602,6 +1717,59 @@
         <artifactId>jetty-quiche-native</artifactId>
         <version>${jetty-quiche-native.version}</version>
       </dependency>
+
+      <!-- Pax Exam Dependencies -->
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-inject</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-container-forked</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.tinybundles</groupId>
+        <artifactId>tinybundles</artifactId>
+        <version>${tinybundles.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-framework</artifactId>
+        <version>${swissbox.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-tracker</artifactId>
+        <version>${swissbox.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-junit4</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-link-mvn</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.url</groupId>
+        <artifactId>pax-url-aether</artifactId>
+        <version>${pax.url.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.url</groupId>
+        <artifactId>pax-url-wrap</artifactId>
+        <version>${pax.url.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.osgi</groupId>
         <!-- older artifact location, some of our transitive deps still use this coordinate -->

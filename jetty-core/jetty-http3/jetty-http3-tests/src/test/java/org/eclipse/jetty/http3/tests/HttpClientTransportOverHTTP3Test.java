@@ -119,7 +119,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                         demander.run();
                         return;
                     }
-                    if (!chunk.isTerminal())
+                    if (chunk.hasRemaining())
                         contentCount.incrementAndGet();
                     chunk.release();
                     if (!chunk.isLast())

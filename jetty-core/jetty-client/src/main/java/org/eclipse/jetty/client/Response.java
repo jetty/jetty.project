@@ -155,12 +155,10 @@ public interface Response
             try
             {
                 onContent(response, chunk.getByteBuffer());
-                chunk.release();
                 demander.run();
             }
             catch (Throwable x)
             {
-                chunk.release();
                 response.abort(x);
             }
         }
@@ -190,10 +188,22 @@ public interface Response
                 response.abort(error.getCause());
                 return;
             }
-            if (chunk.isTerminal())
+            if (chunk.isLast() && !chunk.hasRemaining())
+            {
+                chunk.release();
                 return;
+            }
 
-            onContent(response, chunk, () -> contentSource.demand(demandCallback));
+            try
+            {
+                onContent(response, chunk, () -> contentSource.demand(demandCallback));
+                chunk.release();
+            }
+            catch (Throwable x)
+            {
+                chunk.release();
+                response.abort(x);
+            }
         }
     }
 

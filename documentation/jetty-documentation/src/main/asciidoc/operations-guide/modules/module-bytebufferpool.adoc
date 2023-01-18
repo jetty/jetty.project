@@ -28,7 +28,7 @@ Excess buffers will not be pooled and will be eventually garbage collected.
 The module file is `$JETTY_HOME/modules/bytebufferpool.mod`:
 
 ----
-include::{JETTY_HOME}/modules/bytebufferpool.mod[]
+include::{jetty-home}/modules/bytebufferpool.mod[]
 ----
 
 Among the configurable properties, the most relevant are:

@@ -80,10 +80,16 @@ public class DataDemandTest extends AbstractClientServerTest
                         {
                             // When resumed, demand all content until the last.
                             Stream.Data data = stream.readData();
-                            if (data != null && data.isLast())
-                                serverDataLatch.countDown();
-                            else
-                                stream.demand();
+                            if (data != null)
+                            {
+                                data.release();
+                                if (data.isLast())
+                                {
+                                    serverDataLatch.countDown();
+                                    return;
+                                }
+                            }
+                            stream.demand();
                         }
                     }
                 };
@@ -129,7 +135,14 @@ public class DataDemandTest extends AbstractClientServerTest
                         if (serverStreamRef.compareAndSet(null, stream))
                         {
                             // Read only one chunk of data.
-                            await().atMost(1, TimeUnit.SECONDS).until(() -> stream.readData() != null);
+                            await().atMost(1, TimeUnit.SECONDS).until(() ->
+                            {
+                                Stream.Data data = stream.readData();
+                                if (data == null)
+                                    return false;
+                                data.release();
+                                return true;
+                            });
                             serverStreamLatch.countDown();
                             // Don't demand, just exit.
                         }
@@ -137,10 +150,16 @@ public class DataDemandTest extends AbstractClientServerTest
                         {
                             // When resumed, demand all content until the last.
                             Stream.Data data = stream.readData();
-                            if (data != null && data.isLast())
-                                serverDataLatch.countDown();
-                            else
-                                stream.demand();
+                            if (data != null)
+                            {
+                                data.release();
+                                if (data.isLast())
+                                {
+                                    serverDataLatch.countDown();
+                                    return;
+                                }
+                            }
+                            stream.demand();
                         }
                     }
                 };
@@ -198,6 +217,10 @@ public class DataDemandTest extends AbstractClientServerTest
                                     serverStreamLatch.countDown();
                                     break;
                                 }
+                                else
+                                {
+                                    data.release();
+                                }
                             }
                             // Do not demand after reading null data.
                         }
@@ -205,10 +228,16 @@ public class DataDemandTest extends AbstractClientServerTest
                         {
                             // When resumed, demand all content until the last.
                             Stream.Data data = stream.readData();
-                            if (data != null && data.isLast())
-                                serverDataLatch.countDown();
-                            else
-                                stream.demand();
+                            if (data != null)
+                            {
+                                data.release();
+                                if (data.isLast())
+                                {
+                                    serverDataLatch.countDown();
+                                    return;
+                                }
+                            }
+                            stream.demand();
                         }
                     }
                 };
@@ -293,6 +322,7 @@ public class DataDemandTest extends AbstractClientServerTest
                         }
                         if (dataRead.addAndGet(data.getByteBuffer().remaining()) == dataLength)
                             serverDataLatch.countDown();
+                        data.release();
                         if (!data.isLast())
                             stream.demand();
                     }
@@ -378,6 +408,7 @@ public class DataDemandTest extends AbstractClientServerTest
         ByteBuffer buffer = ByteBuffer.wrap(bytesReceived);
         datas.forEach(d -> buffer.put(d.getByteBuffer()));
         assertArrayEquals(bytesSent, bytesReceived);
+        datas.forEach(Stream.Data::release);
     }
 
     @Test
@@ -402,10 +433,16 @@ public class DataDemandTest extends AbstractClientServerTest
                     {
                         onDataAvailableCalls.incrementAndGet();
                         Stream.Data data = stream.readData();
-                        if (data != null && data.isLast())
-                            serverDataLatch.countDown();
-                        else
-                            stream.demand();
+                        if (data != null)
+                        {
+                            data.release();
+                            if (data.isLast())
+                            {
+                                serverDataLatch.countDown();
+                                return;
+                            }
+                        }
+                        stream.demand();
                     }
                 };
             }
@@ -531,6 +568,7 @@ public class DataDemandTest extends AbstractClientServerTest
                             if (data == null)
                                 continue;
                             firstData = true;
+                            data.release();
                             break;
                         }
 
@@ -614,9 +652,8 @@ public class DataDemandTest extends AbstractClientServerTest
                 {
                     String content = StandardCharsets.UTF_8.decode(data.getByteBuffer()).toString();
                     assertEquals("hello", content);
-                    data.release();
                     assertTrue(data.isLast());
-
+                    data.release();
                     // Demand one more time, we should get an EOF.
                     stream.demand();
                 }
@@ -625,6 +662,7 @@ public class DataDemandTest extends AbstractClientServerTest
                     assertNotNull(data);
                     assertTrue(data.isLast());
                     assertEquals(0, data.getByteBuffer().remaining());
+                    data.release();
                     latch.countDown();
                 }
             }

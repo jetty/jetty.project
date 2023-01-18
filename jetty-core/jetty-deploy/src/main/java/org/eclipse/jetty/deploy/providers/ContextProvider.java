@@ -272,46 +272,6 @@ public class ContextProvider extends ScanningAppProvider
         return cc == null ? new String[0] : cc.split(",");
     }
 
-    /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(String directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory);
-    }
-
-    /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(File directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory.getAbsolutePath());
-    }
-
-    /**
-     * Get the temporary directory for deployment.
-     * <p>
-     * This is equivalent to getting the {@link Deployable#BASE_TEMP_DIR} property.
-     *
-     * @return the user supplied work directory (null if user has not set Temp Directory yet)
-     */
-    @ManagedAttribute("temp directory for use, null if no user set temp directory")
-    public File getTempDir()
-    {
-        String tmpDir = _properties.get(Deployable.BASE_TEMP_DIR);
-        return tmpDir == null ? null : new File(tmpDir);
-    }
-
     protected ContextHandler initializeContextHandler(Object context, Path path, Map<String, String> properties)
     {
         if (LOG.isDebugEnabled())

@@ -709,6 +709,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
+        List<Stream.Data> dataList = new ArrayList<>();
         AtomicLong received = new AtomicLong();
         CountDownLatch latch = new CountDownLatch(1);
         Session client = newClientSession(new Session.Listener() {});
@@ -721,6 +722,7 @@ public class StreamResetTest extends AbstractTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
+                dataList.add(data);
                 // Do not release to stall the flow control window.
                 if (received.addAndGet(data.frame().getData().remaining()) == windowSize)
                     latch.countDown();
@@ -744,6 +746,8 @@ public class StreamResetTest extends AbstractTest
         HTTP2Session session = (HTTP2Session)sessions.iterator().next();
         HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
         assertEquals(0, flusher.getFrameQueueSize());
+
+        dataList.forEach(Stream.Data::release);
     }
 
     @Test

@@ -71,8 +71,7 @@ public class HttpClientUploadDuringServerShutdownTest
                         }
                         else
                         {
-                            if (chunk.hasRemaining())
-                                chunk.release();
+                            chunk.release();
                             if (chunk.isLast())
                                 break;
                             NanoTime.spinWait(TimeUnit.MICROSECONDS.toNanos(1));
