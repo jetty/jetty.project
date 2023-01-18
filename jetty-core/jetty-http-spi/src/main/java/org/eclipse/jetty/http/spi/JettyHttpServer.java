@@ -228,13 +228,13 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         JettyHttpContext context = new JettyHttpContext(this, path, httpHandler);
         HttpSpiContextHandler jettyContextHandler = context.getJettyContextHandler();
 
-        ContextHandlerCollection chc = _server.getDescendant(ContextHandlerCollection.class);
+        ContextHandlerCollection contexts = _server.getDescendant(ContextHandlerCollection.class);
 
-        if (chc == null)
+        if (contexts == null)
             throw new RuntimeException("could not find ContextHandlerCollection, you must configure one");
 
-        chc.addHandler(jettyContextHandler);
-        if (chc.isStarted())
+        contexts.addHandler(jettyContextHandler);
+        if (contexts.isStarted())
         {
             try
             {

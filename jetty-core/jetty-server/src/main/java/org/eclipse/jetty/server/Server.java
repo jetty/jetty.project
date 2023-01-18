@@ -37,8 +37,10 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -56,6 +58,7 @@ import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -77,6 +80,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
+    private Handler _defaultHandler;
     private Request.Processor _errorProcessor;
     private RequestLog _requestLog;
     private boolean _dryRun;
@@ -128,6 +132,32 @@ public class Server extends Handler.Wrapper implements Attributes
         addBean(_threadPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);
+        setDefaultHandler(new DefaultHandler());
+    }
+
+    public Handler getDefaultHandler()
+    {
+        return _defaultHandler;
+    }
+
+    /**
+     * @param defaultHandler The handler to use if no other handler is set or accepts the request. This handler should
+     *                       always accept the request, even if only to send a 404.
+     */
+    public void setDefaultHandler(Handler defaultHandler)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        Handler old = _defaultHandler;
+        _defaultHandler = defaultHandler;
+        updateBean(old, defaultHandler);
+    }
+
+    @Override
+    public boolean process(Request request, Response response, Callback callback) throws Exception
+    {
+        // Handle either with normal handler or default handler
+        return super.process(request, response, callback) || _defaultHandler != null && _defaultHandler.process(request, response, callback);
     }
 
     public String getServerInfo()
@@ -195,11 +225,22 @@ public class Server extends Handler.Wrapper implements Attributes
     @Override
     public InvocationType getInvocationType()
     {
-        Handler handler = getHandler();
-        if (handler == null)
-            return InvocationType.NON_BLOCKING;
+        if (isDynamic())
+            return InvocationType.BLOCKING;
+
         // Return cached type to avoid a full handler tree walk.
-        return isRunning() ? _invocationType : handler.getInvocationType();
+        if (isStarted())
+            return _invocationType;
+
+        InvocationType type = InvocationType.NON_BLOCKING;
+        Handler handler = getHandler();
+        if (handler != null)
+            type = Invocable.combine(type, handler.getInvocationType());
+        handler = getDefaultHandler();
+        if (handler != null)
+            type = Invocable.combine(type, handler.getInvocationType());
+
+        return type;
     }
 
     public boolean isDryRun()
@@ -475,8 +516,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             // Cache the invocation type to avoid runtime walk of handler tree
             // Handlers must check they don't change the InvocationType of a started server
-            Handler handler = getHandler();
-            _invocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
+            _invocationType = getInvocationType();
 
             if (_dryRun)
             {

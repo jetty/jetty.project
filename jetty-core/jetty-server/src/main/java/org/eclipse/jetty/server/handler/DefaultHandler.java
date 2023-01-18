@@ -64,6 +64,7 @@ public class DefaultHandler extends Handler.Abstract
 
     public DefaultHandler()
     {
+        super(InvocationType.NON_BLOCKING);
     }
 
     @Override

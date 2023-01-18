@@ -34,10 +34,9 @@ It can also be added as a part of handler chain or collection.
 [source, java, subs="{sub-order}"]
 ----
     Server server = new Server(8080);
-    HandlerList handlers = new HandlerList();
-    handlers.setHandlers(new Handler[]
-    { someOtherHandler, new ShutdownHandler(server,"secret password") });
-    server.setHandler(handlers);
+    ShutdownHandler shutdown = new ShutdownHandler(server,"secret password") });
+    server.setHandler(shutdown);
+    shutdown.setHandler(someOtherHandler);
     server.start();
 ----
 

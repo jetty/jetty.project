@@ -111,3 +111,7 @@ etc/jetty.xml
 ## The number of server scheduler threads.
 # jetty.scheduler.threads=1
 # end::documentation-scheduler-config[]
+
+## If the handlers of the ContextHandlerCollection can be updated once started
+## If set to false, then eeX-deploy module jetty.deploy.scanInterval should be set to 0.
+# jetty.server.contexts.dynamic=true

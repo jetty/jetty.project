@@ -41,10 +41,9 @@ import org.slf4j.LoggerFactory;
  *
  * <pre>
  * Server server = new Server(8080);
- * HandlerList handlers = new HandlerList();
- * handlers.setHandlers(new Handler[]
- * { someOtherHandler, new ShutdownHandler(&quot;secret password&quot;, false, true) });
- * server.setHandler(handlers);
+ * ShutdownHandler shutdown = new ShutdownHandler(&quot;secret password&quot;, false, true) });
+ * server.setHandler(shutdown);
+ * shutdown.setHandler(someOtherHandler);
  * server.start();
  * </pre>
  *
@@ -151,7 +150,7 @@ public class ShutdownHandler extends Handler.Wrapper
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        return false;
+        return super.process(request, response, callback);
         /* TODO
         if (!target.equals("/shutdown"))
         {

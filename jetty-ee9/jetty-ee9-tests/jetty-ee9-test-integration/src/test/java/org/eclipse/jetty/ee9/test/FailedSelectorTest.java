@@ -49,7 +49,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -112,7 +111,7 @@ public class FailedSelectorTest
         ServletHolder closeHolder = new ServletHolder(new CloseSelectorServlet(connector));
         context.addServlet(closeHolder, "/selector/close");
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(context);
 
         server.start();
     }

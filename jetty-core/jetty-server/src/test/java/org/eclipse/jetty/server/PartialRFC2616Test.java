@@ -24,7 +24,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DumpHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -62,7 +61,7 @@ public class PartialRFC2616Test
         context.setContextPath("/");
         context.setHandler(new DumpHandler());
 
-        server.setHandler(new HandlerList(vcontext, context));
+        server.setHandler(vcontext);
 
         server.start();
     }

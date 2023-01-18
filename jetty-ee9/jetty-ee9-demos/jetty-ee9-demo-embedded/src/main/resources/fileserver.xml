@@ -13,27 +13,15 @@
       </Arg>
     </Call>
 
-    <Set name="handler">
-      <New class="org.eclipse.jetty.server.handler.HandlerList">
-        <Set name="handlers">
-          <Array type="org.eclipse.jetty.server.Handler">
-            <Item>
-              <New class="org.eclipse.jetty.server.handler.ResourceHandler">
-                <Set name="baseResourceAsString"><Property name="fileserver.baseResource" default="."/></Set>
-                <Set name="dirAllowed">true</Set>
-                <Set name="welcomeFiles">
-                  <Array type="String">
-                    <Item>index.html</Item>
-                  </Array>
-                </Set>
-              </New>
-            </Item>
-            <Item>
-              <New class="org.eclipse.jetty.server.handler.DefaultHandler">
-              </New>
-            </Item>
-          </Array>
-        </Set>
-      </New>
-    </Set>
+  <Set name="handler">
+    <New class="org.eclipse.jetty.server.handler.ResourceHandler">
+      <Set name="baseResourceAsString"><Property name="fileserver.baseResource" default="."/></Set>
+      <Set name="dirAllowed">true</Set>
+      <Set name="welcomeFiles">
+        <Array type="String">
+          <Item>index.html</Item>
+        </Array>
+      </Set>
+    </New>
+  </Set>
 </Configure>

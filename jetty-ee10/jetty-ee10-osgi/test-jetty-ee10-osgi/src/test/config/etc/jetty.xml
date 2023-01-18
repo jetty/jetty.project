@@ -24,18 +24,7 @@
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
-        <Set name="handlers">
-         <Array type="org.eclipse.jetty.server.Handler">
-           <Item>
-             <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
-           </Item>
-           <Item>
-             <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-           </Item>
-         </Array>
-        </Set>
-      </New>
+      <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
     </Set>
 
      <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">

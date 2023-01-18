@@ -25,17 +25,8 @@
   </New>
 
   <Set name="handler">
-    <New class="org.eclipse.jetty.server.Handler$Collection">
-      <Set name="handlers">
-        <Array type="org.eclipse.jetty.server.Handler">
-          <Item>
-            <Ref refid="context" />
-          </Item>
-          <Item>
-            <New class="org.eclipse.jetty.server.handler.DefaultHandler" />
-          </Item>
-        </Array>
-      </Set>
+    <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+      <Set name="dynamic" property="jetty.server.contexts.dynamic"/>
     </New>
   </Set>
 </Configure>

@@ -51,7 +51,7 @@ public class LikeJettyXml
 //
 //        // Handler Structure
 //        ContextHandlerCollection contexts = new ContextHandlerCollection();
-//        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+//        server.setHandler(contexts);
 //
 //        // === jetty-jmx.xml ===
 //        MBeanContainer mbContainer = new MBeanContainer(

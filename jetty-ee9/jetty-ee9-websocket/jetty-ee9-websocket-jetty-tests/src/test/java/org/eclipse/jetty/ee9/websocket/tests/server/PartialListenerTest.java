@@ -39,8 +39,6 @@ import org.eclipse.jetty.ee9.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -81,7 +79,7 @@ public class PartialListenerTest
         context.addServlet(closeEndpoint, "/ws");
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
-        server.setHandler(new HandlerList(context.getCoreContextHandler(), new DefaultHandler()));
+        server.setHandler(context.getCoreContextHandler());
 
         server.start();
     }

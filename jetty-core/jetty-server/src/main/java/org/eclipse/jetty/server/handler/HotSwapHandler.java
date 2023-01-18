@@ -37,6 +37,7 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
      */
     public HotSwapHandler()
     {
+        super(true);
     }
 
     /**

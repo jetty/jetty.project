@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -61,7 +62,6 @@ import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -205,7 +205,7 @@ public class HTTPServerDocs
         ServletContextHandler otherContext = new ServletContextHandler();
         mainContext.setContextPath("/other");
 
-        server.setHandler(new HandlerList(requestLogHandler, otherContext));
+        server.setHandler(new Handler.Collection(requestLogHandler, otherContext));
 */
         // end::contextRequestLog[]
     }
@@ -505,14 +505,14 @@ public class HTTPServerDocs
         }
 
         // tag::handlerTree[]
-        // Create a Server instance.
         Server server = new Server();
 
-        LoggingHandler loggingHandler = new LoggingHandler();
-        // Link the root Handler with the Server.
-        server.setHandler(loggingHandler);
+        GzipHandler gzipHandler = new GzipHandler();
+        server.setHandler(gzipHandler);
 
         Handler.Collection collection = new Handler.Collection();
+        gzipHandler.setHandler(gzipHandler);
+
         collection.addHandler(new App1Handler());
         collection.addHandler(new App2Handler());
         // end::handlerTree[]
@@ -582,29 +582,35 @@ public class HTTPServerDocs
         }
 
         // tag::handlerFilter[]
-        // TODO: This needs to be rewritten using a custom Processor
-/*
-        class FilterHandler extends HandlerWrapper
+        class FilterHandler extends Handler.Wrapper
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                String path = request.getRequestURI();
+                String path = Request.getPathInContext(request);
                 if (path.startsWith("/old_path/"))
                 {
                     // Rewrite old paths to new paths.
-                    HttpURI uri = jettyRequest.getHttpURI();
+                    HttpURI uri = request.getHttpURI();
                     String newPath = "/new_path/" + path.substring("/old_path/".length());
-                    HttpURI newURI = HttpURI.build(uri).path(newPath);
-                    // Modify the request object.
-                    jettyRequest.setHttpURI(newURI);
+                    HttpURI newURI = HttpURI.build(uri).path(newPath).asImmutable();
+
+                    // Modify the request object by wrapping
+                    request = new Request.Wrapper(request)
+                    {
+                        @Override
+                        public HttpURI getHttpURI()
+                        {
+                            return newURI;
+                        }
+                    };
                 }
 
                 // This Handler is not handling the request, so
                 // it does not call jettyRequest.setHandled(true).
 
                 // Forward to the next Handler.
-                super.handle(target, jettyRequest, request, response);
+                return super.process(request, response, callback);
             }
         }
 
@@ -618,7 +624,7 @@ public class HTTPServerDocs
         server.setHandler(filter);
 
         server.start();
-*/
+
         // end::handlerFilter[]
     }
 
@@ -1002,19 +1008,11 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Create a Handler collection.
-        Handler.Collection handlerList = new Handler.Collection();
-
-        // Add as first a ContextHandlerCollection to manage contexts.
+        // Add a ContextHandlerCollection to manage contexts.
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlerList.addHandler(contexts);
 
-        // Add as last a DefaultHandler.
-        DefaultHandler defaultHandler = new DefaultHandler();
-        handlerList.addHandler(defaultHandler);
-
-        // Link the HandlerList to the Server.
-        server.setHandler(handlerList);
+        // Link the contexts to the Server.
+        server.setHandler(contexts);
 
         server.start();
         // end::defaultHandler[]

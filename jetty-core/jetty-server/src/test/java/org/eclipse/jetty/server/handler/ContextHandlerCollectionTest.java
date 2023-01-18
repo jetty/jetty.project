@@ -270,6 +270,7 @@ public class ContextHandlerCollectionTest
         c.addHandler(context);
 
         server.setHandler(c);
+        server.setDefaultHandler(null);
 
         try
         {

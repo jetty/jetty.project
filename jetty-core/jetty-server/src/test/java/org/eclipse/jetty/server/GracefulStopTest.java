@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
@@ -98,11 +97,11 @@ public class GracefulStopTest
 
     Server server = new Server();
     ServerConnector connector = new ServerConnector(server);
-    HandlerList handlers = new HandlerList();
-    ContextHandlerCollection contexts = new ContextHandlerCollection();
-    ContextHandler contextA = new ContextHandler(contexts, "/a");
+    Handler.Collection handlers = new Handler.Collection();
+    ContextHandler contextA = new ContextHandler("/a");
+    ContextHandler contextB = new ContextHandler("/b");
+    ContextHandlerCollection contexts = new ContextHandlerCollection(contextA, contextB);
     TestHandler handlerA = new TestHandler();
-    ContextHandler contextB = new ContextHandler(contexts, "/b");
     StatisticsHandler statsB = new StatisticsHandler();
     TestHandler handlerB = new TestHandler();
     TestHandler handler = new TestHandler();
