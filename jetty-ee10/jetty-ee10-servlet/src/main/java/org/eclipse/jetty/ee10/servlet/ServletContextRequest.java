@@ -96,7 +96,7 @@ public class ServletContextRequest extends ContextRequest
         _pathInContext = pathInContext;
         _pathSpec = matchedResource.getPathSpec();
         _matchedPath = matchedResource.getMatchedPath();
-        _response =  newServletContextResponse();
+        _response =  newServletContextResponse(response);
     }
 
     protected ServletApiRequest newServletApiRequest()
@@ -104,9 +104,9 @@ public class ServletContextRequest extends ContextRequest
         return new ServletApiRequest(this);
     }
 
-    protected ServletContextResponse newServletContextResponse()
+    protected ServletContextResponse newServletContextResponse(Response response)
     {
-        return new ServletContextResponse(_servletChannel, this, _response);
+        return new ServletContextResponse(_servletChannel, this, response);
     }
 
     public String getPathInContext()

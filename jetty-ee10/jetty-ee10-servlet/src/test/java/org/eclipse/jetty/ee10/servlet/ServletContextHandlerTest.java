@@ -2439,7 +2439,7 @@ public class ServletContextHandlerTest
                 return new ServletContextRequest(getContext().getServletContext(), servletChannel, request, response, pathInContext, matchedResource)
                 {
                     @Override
-                    protected ServletContextResponse newServletContextResponse()
+                    protected ServletContextResponse newServletContextResponse(Response response)
                     {
                         return new ServletContextResponse(servletChannel, this, response)
                         {
