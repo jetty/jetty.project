@@ -562,7 +562,7 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
-    public class UpstreamConnection extends ProxyConnection
+    public class UpstreamConnection extends ProxyConnection implements AsyncListener
     {
         private final ConnectContext connectContext;
 
@@ -577,7 +577,7 @@ public class ConnectHandler extends HandlerWrapper
         {
             super.onOpen();
             // Delay fillInterested() until the 200 OK response has been sent.
-            connectContext.asyncContext.addListener(new OnCompleteListener(this::fillInterested));
+            connectContext.asyncContext.addListener(this);
             onConnectSuccess(connectContext, UpstreamConnection.this);
         }
 
@@ -593,36 +593,26 @@ public class ConnectHandler extends HandlerWrapper
             ConnectHandler.this.write(endPoint, buffer, callback, getContext());
         }
 
-        private class OnCompleteListener implements AsyncListener
+        @Override
+        public void onComplete(AsyncEvent event)
         {
-            private final Runnable onComplete;
+            fillInterested();
+        }
 
-            private OnCompleteListener(Runnable onComplete)
-            {
-                this.onComplete = onComplete;
-            }
+        @Override
+        public void onTimeout(AsyncEvent event)
+        {
+        }
 
-            @Override
-            public void onComplete(AsyncEvent event)
-            {
-                onComplete.run();
-            }
+        @Override
+        public void onError(AsyncEvent event)
+        {
+            close(event.getThrowable());
+        }
 
-            @Override
-            public void onTimeout(AsyncEvent event)
-            {
-            }
-
-            @Override
-            public void onError(AsyncEvent event)
-            {
-                close(event.getThrowable());
-            }
-
-            @Override
-            public void onStartAsync(AsyncEvent event)
-            {
-            }
+        @Override
+        public void onStartAsync(AsyncEvent event)
+        {
         }
     }
 
