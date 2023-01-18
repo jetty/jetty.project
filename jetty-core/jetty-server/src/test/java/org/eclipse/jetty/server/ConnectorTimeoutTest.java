@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -28,14 +26,11 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -48,12 +43,9 @@ import org.slf4j.LoggerFactory;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -271,204 +263,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Object transport = endPoint.getTransport();
         if (transport instanceof Channel)
             assertFalse(((Channel)transport).isOpen());
-    }
-
-    @Test
-    public void testNoBlockingTimeoutRead() throws Exception
-    {
-        startServer(new EchoHandler());
-        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-        client.setSoTimeout(10000);
-        InputStream is = client.getInputStream();
-        assertFalse(client.isClosed());
-
-        long start = NanoTime.now();
-
-        OutputStream os = client.getOutputStream();
-        os.write(("GET / HTTP/1.1\r\n" +
-            "host: localhost:" + _serverURI.getPort() + "\r\n" +
-            "Transfer-Encoding: chunked\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            "5\r\n" +
-            "LMNOP\r\n")
-            .getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        try
-        {
-            Thread.sleep(250);
-            os.write("1".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(250);
-            os.write("0".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(250);
-            os.write("\r".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(250);
-            os.write("\n".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(250);
-            os.write("0123456789ABCDEF\r\n".getBytes(StandardCharsets.UTF_8));
-            os.write("0\r\n".getBytes(StandardCharsets.UTF_8));
-            os.write("\r\n".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        long duration = NanoTime.millisSince(start);
-        assertThat(duration, greaterThan(500L));
-
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            // read the response
-            String response = IO.toString(is);
-            assertThat(response, startsWith("HTTP/1.1 200 OK"));
-            assertThat(response, containsString("LMNOP0123456789ABCDEF"));
-        });
-    }
-
-    @Test
-    public void testBlockingTimeoutRead() throws Exception
-    {
-        startServer(new EchoHandler());
-        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-        client.setSoTimeout(10000);
-        InputStream is = client.getInputStream();
-        assertFalse(client.isClosed());
-
-        OutputStream os = client.getOutputStream();
-
-        long start = NanoTime.now();
-        os.write(("GET / HTTP/1.1\r\n" +
-            "host: localhost:" + _serverURI.getPort() + "\r\n" +
-            "Transfer-Encoding: chunked\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            "5\r\n" +
-            "LMNOP\r\n")
-            .getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
-        {
-            Thread.sleep(300);
-            os.write("1".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(300);
-            os.write("0".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(300);
-            os.write("\r".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(300);
-            os.write("\n".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Thread.sleep(300);
-            os.write("0123456789ABCDEF\r\n".getBytes(StandardCharsets.UTF_8));
-            os.write("0\r\n".getBytes(StandardCharsets.UTF_8));
-            os.write("\r\n".getBytes(StandardCharsets.UTF_8));
-            os.flush();
-        }
-
-        long duration = NanoTime.millisSince(start);
-        assertThat(duration, greaterThan(500L));
-
-        // read the response
-        String response = IO.toString(is);
-        assertThat(response, startsWith("HTTP/1.1 500 "));
-        assertThat(response, containsString("InterruptedIOException"));
-
-    }
-
-    @Test
-    public void testNoBlockingTimeoutWrite() throws Exception
-    {
-        startServer(new HugeResponseHandler());
-        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-        client.setSoTimeout(10000);
-
-        assertFalse(client.isClosed());
-
-        OutputStream os = client.getOutputStream();
-        BufferedReader is = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1), 2048);
-
-        os.write((
-            "GET / HTTP/1.0\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: keep-alive\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        // read the header
-        String line = is.readLine();
-        assertThat(line, startsWith("HTTP/1.1 200 OK"));
-        while (line.length() != 0)
-        {
-            line = is.readLine();
-        }
-
-        for (int i = 0; i < (128 * 1024); i++)
-        {
-            if (i % 1028 == 0)
-            {
-                Thread.sleep(20);
-            }
-            line = is.readLine();
-            assertThat(line, notNullValue());
-            assertEquals(1022, line.length());
-        }
-    }
-
-    @Test
-    public void testBlockingTimeoutWrite() throws Exception
-    {
-        startServer(new HugeResponseHandler());
-        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-        client.setSoTimeout(10000);
-
-        assertFalse(client.isClosed());
-
-        OutputStream os = client.getOutputStream();
-        BufferedReader is = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1), 2048);
-
-        os.write((
-            "GET / HTTP/1.0\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: keep-alive\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        // read the header
-        String line = is.readLine();
-        assertThat(line, startsWith("HTTP/1.1 200 OK"));
-        while (line.length() != 0)
-        {
-            line = is.readLine();
-        }
-
-        long start = NanoTime.now();
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class, AbstractConnection.class))
-        {
-            for (int i = 0; i < (128 * 1024); i++)
-            {
-                if (i % 1028 == 0)
-                {
-                    Thread.sleep(20);
-                }
-                line = is.readLine();
-                if (line == null)
-                    break;
-            }
-        }
-        assertThat(NanoTime.millisSince(start), lessThan(20L * 128L));
     }
 
     @Test
@@ -752,17 +546,26 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     protected static class HugeResponseHandler extends Handler.Abstract
     {
+        private final int iterations;
+
+        public HugeResponseHandler(int iterations)
+        {
+            this.iterations = iterations;
+        }
+
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            byte[] buffer = new byte[128 * 1024 * 1024];
+            // Create a big single buffer
+            byte[] buffer = new byte[iterations * 1024 * 1024];
             Arrays.fill(buffer, (byte)'x');
-            for (int i = 0; i < 128 * 1024; i++)
+            // Toss in an LF after every iteration
+            for (int i = 0; i < iterations * 1024; i++)
             {
-                buffer[i * 1024 + 1022] = '\r';
                 buffer[i * 1024 + 1023] = '\n';
             }
+            // Write it as a single buffer
             response.write(true, ByteBuffer.wrap(buffer), callback);
             return true;
         }
