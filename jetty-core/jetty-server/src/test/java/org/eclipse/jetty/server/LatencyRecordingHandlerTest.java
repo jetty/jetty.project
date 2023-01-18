@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
 public class LatencyRecordingHandlerTest
@@ -59,7 +60,8 @@ public class LatencyRecordingHandlerTest
                 return true;
             }
         };
-        AbstractLatencyRecordingHandler latencyRecordingHandler = new AbstractLatencyRecordingHandler() {
+        AbstractLatencyRecordingHandler latencyRecordingHandler = new AbstractLatencyRecordingHandler()
+        {
             @Override
             protected void onRequestComplete(long durationInNs)
             {
@@ -99,6 +101,10 @@ public class LatencyRecordingHandlerTest
             assertThat(response, containsString(" 200 OK"));
         }
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until(_latencies::size, is(100));
+        for (Long latency : _latencies)
+        {
+            assertThat(latency, greaterThan(0L));
+        }
     }
 
     @Test
@@ -110,5 +116,9 @@ public class LatencyRecordingHandlerTest
             assertThat(response, containsString(" 500 Server Error"));
         }
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until(_latencies::size, is(100));
+        for (Long latency : _latencies)
+        {
+            assertThat(latency, greaterThan(0L));
+        }
     }
 }

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.function.Function;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -34,31 +32,37 @@ public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractLatencyRecordingHandler.class);
 
-    private final Function<HttpStream, HttpStream> recordingWrapper;
-
     public AbstractLatencyRecordingHandler()
     {
-        this.recordingWrapper = httpStream -> new HttpStream.Wrapper(httpStream)
+    }
+
+    private HttpStream recordingWrapper(HttpStream httpStream)
+    {
+        return new HttpStream.Wrapper(httpStream)
         {
             @Override
             public void succeeded()
             {
+                // Take the httpStream nano timestamp before calling super.
+                long begin = httpStream.getNanoTime();
                 super.succeeded();
-                fireOnRequestComplete();
+                fireOnRequestComplete(begin);
             }
 
             @Override
             public void failed(Throwable x)
             {
+                // Take the httpStream nano timestamp before calling super.
+                long begin = httpStream.getNanoTime();
                 super.failed(x);
-                fireOnRequestComplete();
+                fireOnRequestComplete(begin);
             }
 
-            private void fireOnRequestComplete()
+            private void fireOnRequestComplete(long begin)
             {
                 try
                 {
-                    onRequestComplete(NanoTime.since(httpStream.getNanoTime()));
+                    onRequestComplete(NanoTime.since(begin));
                 }
                 catch (Throwable t)
                 {
@@ -72,7 +76,7 @@ public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        request.addHttpStreamWrapper(recordingWrapper);
+        request.addHttpStreamWrapper(this::recordingWrapper);
         return super.process(request, response, callback);
     }
 
