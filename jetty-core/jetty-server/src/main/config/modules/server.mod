@@ -115,3 +115,9 @@ etc/jetty.xml
 ## If the handlers of the ContextHandlerCollection can be updated once started
 ## If set to false, then eeX-deploy module jetty.deploy.scanInterval should also be set to 0.
 # jetty.server.contexts.dynamic=true
+
+## Should the DefaultServlet server the jetty favicon.ico
+# jetty.server.default.serveIcon=true
+
+## Should the DefaultServlet server show a list of known contexts
+# jetty.server.default.showContexts=true

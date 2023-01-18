@@ -67,6 +67,13 @@ public class DefaultHandler extends Handler.Abstract
         super(InvocationType.NON_BLOCKING);
     }
 
+    public DefaultHandler(boolean serveIcon, boolean showContexts)
+    {
+        this();
+        _serveIcon = serveIcon;
+        _showContexts = showContexts;
+    }
+
     @Override
     public void setServer(Server server)
     {
