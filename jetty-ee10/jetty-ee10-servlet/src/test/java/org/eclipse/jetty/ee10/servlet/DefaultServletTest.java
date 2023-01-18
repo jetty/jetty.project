@@ -110,7 +110,6 @@ public class DefaultServletTest
         FS.ensureDirExists(docRoot);
 
         server = new Server();
-        server.setDefaultHandler(null);
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
@@ -769,7 +768,7 @@ public class DefaultServletTest
                 (response) ->
                 {
                     String body = response.getContent();
-                    assertThat(body, containsString("/../../"));
+                    assertThat(body, containsString("Not Found"));
                     assertThat(body, not(containsString("Directory: ")));
                 }
             );

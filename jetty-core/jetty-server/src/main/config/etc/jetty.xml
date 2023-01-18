@@ -81,8 +81,11 @@
     </New>
 
     <!-- =========================================================== -->
-    <!-- Set the default handler structure for the Server            -->
+    <!-- Set the handler structure for the Server                    -->
     <!-- =========================================================== -->
+    <Set name="defaultHandler">
+      <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+    </Set>
     <Set name="handler">
       <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
         <Set name="dynamic" property="jetty.server.contexts.dynamic"/>
