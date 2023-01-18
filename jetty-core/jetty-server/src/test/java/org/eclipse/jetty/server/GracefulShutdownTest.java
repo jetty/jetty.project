@@ -89,7 +89,8 @@ public class GracefulShutdownTest
     {
         CompletableFuture<Long> stopFuture = new CompletableFuture<>();
 
-        CompletableFuture.runAsync(()-> {
+        CompletableFuture.runAsync(() ->
+        {
             // Graceful shutdown + stop
             try (StacklessLogging ignore = new StacklessLogging(Response.class))
             {
@@ -237,7 +238,7 @@ public class GracefulShutdownTest
         CompletableFuture<Long> stopFuture = runAsyncServerStop();
 
         // Send remaining content to complete the request body contents
-        await().atMost(5, TimeUnit.SECONDS).until(()-> !contextHandler.isAvailable());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.isAvailable());
         writeRequest(client0, "67890");
         writeRequest(client1, "67890");
 
@@ -433,7 +434,7 @@ public class GracefulShutdownTest
         CompletableFuture<Long> stopFuture = runAsyncServerStop();
 
         // Wait for context to go unavailable
-        await().atMost(5, TimeUnit.SECONDS).until(()-> !contextHandler.isAvailable());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.isAvailable());
 
         // Send a second (complete) request on client 2.
         String rawRequestComplete2 = """
@@ -546,7 +547,7 @@ public class GracefulShutdownTest
         CompletableFuture<Long> stopFuture = runAsyncServerStop();
 
         // Wait for context to go unavailable
-        await().atMost(5, TimeUnit.SECONDS).until(()-> !contextHandler.isAvailable());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.isAvailable());
 
         // Send a second (complete) request on client 2.
         String rawRequestComplete2 = """
