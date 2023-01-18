@@ -51,13 +51,26 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
+/**
+ * The Jetty low level implementation of the ee10 {@link HttpServletResponse} object.
+ *
+ * <p>
+ *     This provides the bridges from Servlet {@link HttpServletResponse} to the Jetty Core {@link Response} concepts (provided by the {@link ServletContextResponse})
+ * </p>
+ */
 public class ServletApiResponse implements HttpServletResponse
 {
     private static final int MIN_BUFFER_SIZE = 1;
-    private static final EnumSet<ServletContextResponse.EncodingFrom> LOCALE_OVERRIDE = EnumSet.of(ServletContextResponse.EncodingFrom.NOT_SET, ServletContextResponse.EncodingFrom.DEFAULT, ServletContextResponse.EncodingFrom.INFERRED, ServletContextResponse.EncodingFrom.SET_LOCALE);
+    private static final EnumSet<ServletContextResponse.EncodingFrom> LOCALE_OVERRIDE = EnumSet.of(
+        ServletContextResponse.EncodingFrom.NOT_SET,
+        ServletContextResponse.EncodingFrom.DEFAULT,
+        ServletContextResponse.EncodingFrom.INFERRED,
+        ServletContextResponse.EncodingFrom.SET_LOCALE
+    );
+
     private final ServletContextResponse _response;
 
-    ServletApiResponse(ServletContextResponse response)
+    protected ServletApiResponse(ServletContextResponse response)
     {
         _response = response;
     }
@@ -70,39 +83,15 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void addCookie(Cookie cookie)
     {
-        //Servlet Spec 9.3 Include method: cannot set a cookie if handling an include
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
-        String comment = cookie.getComment();
-        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
-        boolean httpOnlyFromComment = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
-        HttpCookie.SameSite sameSiteFromComment = HttpCookie.getSameSiteFromComment(comment);
-        comment = HttpCookie.getCommentWithoutAttributes(comment);
-        //old style cookie
-        if (sameSiteFromComment != null || httpOnlyFromComment)
-        {
-            addCookie(new HttpCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                httpOnlyFromComment,
-                cookie.getSecure(),
-                comment,
-                cookie.getVersion(),
-                sameSiteFromComment));
-        }
-        else
-        {
-            //new style cookie, everything is an attribute
-            addCookie(new HttpCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getVersion(),
-                cookie.getAttributes()));
-        }
+        // new style cookie, everything is an attribute
+        addCookie(new HttpCookie(
+            cookie.getName(),
+            cookie.getValue(),
+            cookie.getVersion(),
+            cookie.getAttributes()));
     }
 
     public void addCookie(HttpCookie cookie)

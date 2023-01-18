@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -85,18 +86,16 @@ public class ServletContextRequest extends ContextRequest
         Request request,
         Response response,
         String pathInContext,
-        ServletHandler.MappedServlet mappedServlet,
-        PathSpec pathSpec,
-        MatchedPath matchedPath)
+        MatchedResource<ServletHandler.MappedServlet> matchedResource)
     {
         super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _httpServletRequest = newServletApiRequest();
-        _mappedServlet = mappedServlet;
+        _mappedServlet = matchedResource.getResource();
         _httpInput = _servletChannel.getHttpInput();
         _pathInContext = pathInContext;
-        _pathSpec = pathSpec;
-        _matchedPath = matchedPath;
+        _pathSpec = matchedResource.getPathSpec();
+        _matchedPath = matchedResource.getMatchedPath();
         _response =  newServletContextResponse();
     }
 

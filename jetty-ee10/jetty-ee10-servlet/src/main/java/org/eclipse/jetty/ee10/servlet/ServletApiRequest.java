@@ -78,6 +78,13 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The Jetty low level implementation of the ee10 {@link HttpServletRequest} object.
+ *
+ * <p>
+ *     This provides the bridges from Servlet {@link HttpServletRequest} to the Jetty Core {@link Request} concepts (provided by the {@link ServletContextRequest})
+ * </p>
+ */
 public class ServletApiRequest implements HttpServletRequest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
@@ -103,7 +110,7 @@ public class ServletApiRequest implements HttpServletRequest
     private ServletPathMapping _servletPathMapping;
     private boolean _asyncSupported = true;
 
-    public ServletApiRequest(ServletContextRequest servletContextRequest)
+    protected ServletApiRequest(ServletContextRequest servletContextRequest)
     {
         this._request = servletContextRequest;
     }

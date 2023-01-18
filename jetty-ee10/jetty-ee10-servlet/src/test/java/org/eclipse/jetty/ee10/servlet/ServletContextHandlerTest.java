@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -68,8 +70,7 @@ import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.pathmap.MatchedPath;
-import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -2405,6 +2406,26 @@ public class ServletContextHandlerTest
                 cookie.getVersion(),
                 HttpCookie.SameSite.STRICT));
         }
+
+        @Override
+        public void addCookie(HttpCookie cookie)
+        {
+            // Let's force SameSite to STRICT
+            Map<String, String> attrs = new HashMap<>(cookie.getAttributes());
+            attrs.put("SameSite", "Strict");
+            super.addCookie(new HttpCookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                cookie.isHttpOnly(),
+                cookie.isSecure(),
+                cookie.getComment(),
+                cookie.getVersion(),
+                attrs
+            ));
+        }
     }
 
     @Test
@@ -2413,19 +2434,10 @@ public class ServletContextHandlerTest
         ServletContextHandler context = new ServletContextHandler()
         {
             @Override
-            protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel, Request request, Response response, String pathInContext, ServletHandler.MappedServlet mappedServlet, PathSpec pathSpec, MatchedPath matchedPath)
+            protected ServletContextRequest newServletContextRequest(ServletChannel servletChannel, Request request, Response response, String pathInContext, MatchedResource<ServletHandler.MappedServlet> matchedResource)
             {
-                return new ServletContextRequest(getContext().getServletContext(), servletChannel,
-                    request, response, pathInContext,
-                    mappedServlet, pathSpec, matchedPath)
+                return new ServletContextRequest(getContext().getServletContext(), servletChannel, request, response, pathInContext, matchedResource)
                 {
-
-                    @Override
-                    protected ServletApiRequest newServletApiRequest()
-                    {
-                        return super.newServletApiRequest();
-                    }
-
                     @Override
                     protected ServletContextResponse newServletContextResponse()
                     {

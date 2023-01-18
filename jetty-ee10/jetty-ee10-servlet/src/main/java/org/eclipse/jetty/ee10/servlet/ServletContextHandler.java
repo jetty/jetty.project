@@ -73,9 +73,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -1154,12 +1152,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                                                              Request request,
                                                              Response response,
                                                              String pathInContext,
-                                                             ServletHandler.MappedServlet mappedServlet,
-                                                             PathSpec pathSpec,
-                                                             MatchedPath matchedPath)
+                                                             MatchedResource<ServletHandler.MappedServlet> matchedResource)
     {
-        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext,
-            mappedServlet, pathSpec, matchedPath);
+        return new ServletContextRequest(_servletContext, servletChannel, request, response, pathInContext, matchedResource);
     }
 
     @Override
@@ -1184,8 +1179,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             cache.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
-        ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, pathInContext,
-            matchedResource.getResource(), matchedResource.getPathSpec(), matchedResource.getMatchedPath());
+        ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, pathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
         return servletContextRequest;
     }

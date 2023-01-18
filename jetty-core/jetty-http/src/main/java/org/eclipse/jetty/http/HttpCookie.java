@@ -127,6 +127,9 @@ public class HttpCookie
         _version = version;
         _expiration = maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(maxAge);
         _attributes = (attributes == null ? Collections.emptyMap() : attributes);
+
+        // remove attributes that conflict with other values here
+        List.of("Domain", "Path", "Max-Age", "HttpOnly", "Secure", "Comment").forEach(_attributes::remove);
     }
 
     public HttpCookie(String name, String value, int version, Map<String, String> attributes)
@@ -238,6 +241,14 @@ public class HttpCookie
     public boolean isExpired(long timeNanos)
     {
         return _expiration != -1 && NanoTime.isBefore(_expiration, timeNanos);
+    }
+
+    /**
+     * @return the attributes associated with this cookie
+     */
+    public Map<String, String> getAttributes()
+    {
+        return _attributes;
     }
 
     /**
@@ -574,12 +585,6 @@ public class HttpCookie
     /**
      * Check if all old parameters match the new parameters.
      *
-     * @param oldName
-     * @param oldDomain
-     * @param oldPath
-     * @param newName
-     * @param newDomain
-     * @param newPath
      * @return true if old and new names match exactly and the old and new domains match case-insensitively and the paths match exactly
      */
     private static boolean match(String oldName, String oldDomain, String oldPath, String newName, String newDomain, String newPath)
