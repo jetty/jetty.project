@@ -21,8 +21,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -79,7 +79,7 @@ public class AllowedResourceAliasCheckerTest
         _baseDir = getResourceDir().resolve("baseDir").toFile();
         _baseDir.deleteOnExit();
         assertFalse(_baseDir.exists());
-        _context.setResourceBase(_baseDir.toPath());
+        _context.setBaseResourceAsPath(_baseDir.toPath());
     }
 
     @AfterAll

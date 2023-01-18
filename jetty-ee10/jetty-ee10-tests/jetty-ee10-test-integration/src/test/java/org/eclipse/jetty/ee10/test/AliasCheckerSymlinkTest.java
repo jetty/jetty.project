@@ -20,11 +20,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -70,7 +71,7 @@ public class AliasCheckerSymlinkTest
         IO.delete(path.toFile());
     }
 
-    private static void setAliasChecker(ContextHandler.AliasCheck aliasChecker)
+    private static void setAliasChecker(AliasCheck aliasChecker)
     {
         _context.clearAliasChecks();
         if (aliasChecker != null)
@@ -124,7 +125,7 @@ public class AliasCheckerSymlinkTest
         _server.addConnector(_connector);
         _context = new ServletContextHandler();
         _context.setContextPath("/");
-        _context.setResourceBase(webRootPath);
+        _context.setBaseResourceAsPath(webRootPath);
         _context.setWelcomeFiles(new String[]{"index.html"});
         _context.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
         _context.getMimeTypes().addMimeMapping("txt", "text/plain;charset=utf-8");
@@ -157,7 +158,7 @@ public class AliasCheckerSymlinkTest
     {
         AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context);
         SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(_context);
-        AllowSymLinkAliasChecker allowSymlinks = new AllowSymLinkAliasChecker();
+        SymLinkAllowedAliasChecker allowSymlinks = new SymLinkAllowedAliasChecker();
         //TODO
        // ContextHandler.ApproveAliases approveAliases = new ContextHandler.ApproveAliases();
 
@@ -212,7 +213,7 @@ public class AliasCheckerSymlinkTest
 
     @ParameterizedTest
     @MethodSource("testCases")
-    public void test(ContextHandler.AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
+    public void test(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
     {
         setAliasChecker(aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);

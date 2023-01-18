@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.ee10.test.jsp;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -26,7 +26,6 @@ import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,15 +89,15 @@ public class JspAndDefaultWithoutAliasesTest
         // Configure LoginService
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        File realmFile = MavenTestingUtils.getTestResourceFile("realm.properties");
-        login.setConfig(realmFile.getAbsolutePath());
+        Path realmFile = MavenTestingUtils.getTestResourcePathFile("realm.properties");
+        login.setConfig(ResourceFactory.of(login).newResource(realmFile));
         server.addBean(login);
 
         // Configure WebApp
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        File webappBase = MavenTestingUtils.getTestResourceDir("docroots/jsp");
-        context.setResourceBase(webappBase.toPath());
+        Path webappBase = MavenTestingUtils.getTestResourcePathDir("docroots/jsp");
+        context.setBaseResourceAsPath(webappBase);
         context.setClassLoader(Thread.currentThread().getContextClassLoader());
 
         // add default servlet

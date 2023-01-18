@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -25,8 +24,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -51,7 +50,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -133,10 +131,10 @@ public class DeploymentErrorTest
     {
         try
         {
-            File deployErrorSrc = MavenTestingUtils.getTestResourceDir("docroots/deployerror");
-            IO.copy(new File(deployErrorSrc, sourceXml), docroots.resolve("badapp.xml").toFile());
-            File badappDir = new File(deployErrorSrc, "badapp");
-            File badappDest = docroots.resolve("badapp").toFile();
+            Path deployErrorSrc = MavenTestingUtils.getTestResourcePathDir("docroots/deployerror");
+            IO.copy(deployErrorSrc.resolve(sourceXml), docroots.resolve("badapp.xml"));
+            Path badappDir = deployErrorSrc.resolve("badapp");
+            Path badappDest = docroots.resolve("badapp");
             FS.ensureDirExists(badappDest);
             IO.copyDir(badappDir, badappDest);
         }
