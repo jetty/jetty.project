@@ -35,8 +35,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -365,17 +365,17 @@ public class DataDemandTest extends AbstractTest
         // Generate a lot of small DATA frames and write them in a single
         // write so that the server will continuously be notified and demand,
         // which will test that it won't throw StackOverflowError.
-        MappedByteBufferPool byteBufferPool = new MappedByteBufferPool();
-        Generator generator = new Generator(byteBufferPool);
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        Generator generator = new Generator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
         for (int i = 512; i >= 0; --i)
-            generator.data(lease, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
+            generator.data(accumulator, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
 
         // Since this is a naked write, we need to wait that the
         // client finishes writing the SETTINGS reply to the server
         // during connection initialization, or we risk a WritePendingException.
         Thread.sleep(1000);
-        ((HTTP2Session)clientStream.getSession()).getEndPoint().write(Callback.NOOP, lease.getByteBuffers().toArray(new ByteBuffer[0]));
+        ((HTTP2Session)clientStream.getSession()).getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
     }

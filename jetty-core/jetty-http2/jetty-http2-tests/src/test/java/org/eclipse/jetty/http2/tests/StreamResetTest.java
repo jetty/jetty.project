@@ -64,8 +64,8 @@ import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -887,30 +887,30 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        ByteBufferPool byteBufferPool = http2Client.getByteBufferPool();
+        RetainableByteBufferPool bufferPool = http2Client.getRetainableByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
             String host = "localhost";
             int port = connector.getLocalPort();
             socket.connect(new InetSocketAddress(host, port));
 
-            Generator generator = new Generator(byteBufferPool);
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.control(lease, new PrefaceFrame());
+            Generator generator = new Generator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
             clientSettings.put(SettingsFrame.INITIAL_WINDOW_SIZE, Integer.MAX_VALUE);
-            generator.control(lease, new SettingsFrame(clientSettings, false));
+            generator.control(accumulator, new SettingsFrame(clientSettings, false));
             // Max session HTTP/2 flow control window.
-            generator.control(lease, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
+            generator.control(accumulator, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
 
             HttpURI uri = HttpURI.from("http", host, port, "/");
             MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             int streamId = 3;
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
-            generator.control(lease, headersFrame);
+            generator.control(accumulator, headersFrame);
 
-            List<ByteBuffer> buffers = lease.getByteBuffers();
+            List<ByteBuffer> buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
 
             // Wait until the server is TCP congested.
@@ -918,9 +918,9 @@ public class StreamResetTest extends AbstractTest
             WriteFlusher flusher = flusherRef.get();
             waitUntilTCPCongested(flusher);
 
-            lease.recycle();
-            generator.control(lease, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            buffers = lease.getByteBuffers();
+            accumulator.release();
+            generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
+            buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
 
             assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
@@ -978,29 +978,29 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        ByteBufferPool byteBufferPool = http2Client.getByteBufferPool();
+        RetainableByteBufferPool bufferPool = http2Client.getRetainableByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
         {
             String host = "localhost";
             int port = connector.getLocalPort();
             socket.connect(new InetSocketAddress(host, port));
 
-            Generator generator = new Generator(byteBufferPool);
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.control(lease, new PrefaceFrame());
+            Generator generator = new Generator(bufferPool);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
             clientSettings.put(SettingsFrame.INITIAL_WINDOW_SIZE, Integer.MAX_VALUE);
-            generator.control(lease, new SettingsFrame(clientSettings, false));
+            generator.control(accumulator, new SettingsFrame(clientSettings, false));
             // Max session HTTP/2 flow control window.
-            generator.control(lease, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
+            generator.control(accumulator, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
 
             HttpURI uri = HttpURI.from("http", host, port, "/1");
             MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
-            generator.control(lease, headersFrame);
+            generator.control(accumulator, headersFrame);
 
-            List<ByteBuffer> buffers = lease.getByteBuffers();
+            List<ByteBuffer> buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
 
             waitUntilTCPCongested(exchanger.exchange(null));
@@ -1010,15 +1010,15 @@ public class StreamResetTest extends AbstractTest
             request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);
-            generator.control(lease, headersFrame);
-            buffers = lease.getByteBuffers();
+            generator.control(accumulator, headersFrame);
+            buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
             assertTrue(requestLatch1.await(5, TimeUnit.SECONDS));
 
             // Now reset the second request, which has not started writing yet.
-            lease.recycle();
-            generator.control(lease, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            buffers = lease.getByteBuffers();
+            accumulator.release();
+            generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
+            buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
             // Wait to be sure that the server processed the reset.
             Thread.sleep(1000);

@@ -28,8 +28,8 @@ import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.internal.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HeadersTooLargeParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testProtocolErrorURITooLong() throws HpackException
@@ -67,7 +67,7 @@ public class HeadersTooLargeParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -78,11 +78,11 @@ public class HeadersTooLargeParseTest
         parser.init(UnaryOperator.identity());
 
         int streamId = 48;
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
-        int len = generator.generateHeaders(lease, streamId, metaData, priorityFrame, true);
+        int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             while (buffer.hasRemaining() && failure.get() == 0)
             {

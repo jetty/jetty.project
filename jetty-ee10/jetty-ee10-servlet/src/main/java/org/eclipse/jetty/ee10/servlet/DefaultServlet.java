@@ -60,8 +60,7 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.NoopByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -168,9 +167,9 @@ public class DefaultServlet extends HttpServlet
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                ByteBufferPool byteBufferPool = getByteBufferPool(servletContextHandler);
+                RetainableByteBufferPool bufferPool = getRetainableByteBufferPool(servletContextHandler);
                 ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
-                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), byteBufferPool);
+                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                 contentFactory = cached;
                 if (maxCacheSize >= 0)
                     cached.setMaxCacheSize(maxCacheSize);
@@ -239,15 +238,14 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    private static RetainableByteBufferPool getRetainableByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new NoopByteBufferPool();
+            return new RetainableByteBufferPool.NonPooling();
         Server server = contextHandler.getServer();
         if (server == null)
-            return new NoopByteBufferPool();
-        ByteBufferPool byteBufferPool = server.getBean(ByteBufferPool.class);
-        return (byteBufferPool == null) ? new NoopByteBufferPool() : byteBufferPool;
+            return new RetainableByteBufferPool.NonPooling();
+        return server.getRetainableByteBufferPool();
     }
 
     private String getInitParameter(String name, String... deprecated)

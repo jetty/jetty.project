@@ -63,7 +63,6 @@ import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
@@ -334,14 +333,13 @@ public class HTTPClientDocs
         // An event happens in some other class, in some other thread.
         class ContentPublisher
         {
-            void publish(ByteBufferPool bufferPool, byte[] bytes, boolean lastContent)
+            void publish(byte[] bytes, boolean lastContent)
             {
                 // Wrap the bytes into a new ByteBuffer.
                 ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-                // Offer the content, and release the ByteBuffer
-                // to the pool when the Callback is completed.
-                content.write(buffer, Callback.from(() -> bufferPool.release(buffer)));
+                // Write the content.
+                content.write(buffer, Callback.NOOP);
 
                 // Close AsyncRequestContent when all the content is arrived.
                 if (lastContent)

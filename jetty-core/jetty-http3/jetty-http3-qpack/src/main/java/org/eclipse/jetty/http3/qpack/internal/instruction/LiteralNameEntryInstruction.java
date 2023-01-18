@@ -19,7 +19,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class LiteralNameEntryInstruction implements Instruction
@@ -53,40 +54,41 @@ public class LiteralNameEntryInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Lease lease)
+    public void encode(RetainableByteBufferPool.Accumulator accumulator)
     {
         int size = (_huffmanName ? HuffmanEncoder.octetsNeeded(_name) : _name.length()) +
             (_huffmanValue ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        ByteBuffer buffer = lease.acquire(size, false);
+        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
 
         if (_huffmanName)
         {
-            buffer.put((byte)(0x40 | 0x20));
-            NBitIntegerEncoder.encode(buffer, 5, HuffmanEncoder.octetsNeeded(_name));
-            HuffmanEncoder.encode(buffer, _name);
+            byteBuffer.put((byte)(0x40 | 0x20));
+            NBitIntegerEncoder.encode(byteBuffer, 5, HuffmanEncoder.octetsNeeded(_name));
+            HuffmanEncoder.encode(byteBuffer, _name);
         }
         else
         {
-            buffer.put((byte)(0x40));
-            NBitIntegerEncoder.encode(buffer, 5, _name.length());
-            buffer.put(_name.getBytes());
+            byteBuffer.put((byte)(0x40));
+            NBitIntegerEncoder.encode(byteBuffer, 5, _name.length());
+            byteBuffer.put(_name.getBytes());
         }
 
         if (_huffmanValue)
         {
-            buffer.put((byte)(0x80));
-            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
-            HuffmanEncoder.encode(buffer, _value);
+            byteBuffer.put((byte)(0x80));
+            NBitIntegerEncoder.encode(byteBuffer, 7, HuffmanEncoder.octetsNeeded(_value));
+            HuffmanEncoder.encode(byteBuffer, _value);
         }
         else
         {
-            buffer.put((byte)(0x00));
-            NBitIntegerEncoder.encode(buffer, 5, _value.length());
-            buffer.put(_value.getBytes());
+            byteBuffer.put((byte)(0x00));
+            NBitIntegerEncoder.encode(byteBuffer, 5, _value.length());
+            byteBuffer.put(_value.getBytes());
         }
 
-        BufferUtil.flipToFlush(buffer, 0);
-        lease.append(buffer, true);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(buffer);
     }
 
     @Override

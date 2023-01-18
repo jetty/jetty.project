@@ -22,8 +22,8 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.internal.generator.PingGenerator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PingGenerateParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testGenerateParse() throws Exception
@@ -41,7 +41,7 @@ public class PingGenerateParseTest
         PingGenerator generator = new PingGenerator(new HeaderGenerator());
 
         final List<PingFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onPing(PingFrame frame)
@@ -57,11 +57,11 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generatePing(lease, payload, true);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -82,7 +82,7 @@ public class PingGenerateParseTest
         PingGenerator generator = new PingGenerator(new HeaderGenerator());
 
         final List<PingFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onPing(PingFrame frame)
@@ -98,11 +98,11 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generatePing(lease, payload, true);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -123,7 +123,7 @@ public class PingGenerateParseTest
         PingGenerator generator = new PingGenerator(new HeaderGenerator());
 
         final List<PingFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onPing(PingFrame frame)
@@ -133,11 +133,11 @@ public class PingGenerateParseTest
         }, 4096, 8192);
         parser.init(UnaryOperator.identity());
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
         PingFrame ping = new PingFrame(NanoTime.now(), true);
-        generator.generate(lease, ping);
+        generator.generate(accumulator, ping);
 
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

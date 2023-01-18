@@ -125,11 +125,19 @@ public interface Retainable
         }
 
         /**
+         * @return the current reference count
+         */
+        public int get()
+        {
+            return references.get();
+        }
+
+        /**
          * <p>Updates the reference count from {@code 0} to {@code 1}.</p>
          * <p>This method should only be used when this resource is acquired
          * from a pool.</p>
          */
-        protected void acquire()
+        public void acquire()
         {
             if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
                 throw new IllegalStateException("acquired while in use " + this);
@@ -178,7 +186,7 @@ public interface Retainable
         @Override
         public String toString()
         {
-            return String.format("%s@%x[r=%d]", getClass().getSimpleName(), hashCode(), references.get());
+            return String.format("%s@%x[r=%d]", getClass().getSimpleName(), hashCode(), get());
         }
     }
 }

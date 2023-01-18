@@ -33,7 +33,7 @@ The `ClientConnector` primarily wraps the link:{javadoc-url}/org/eclipse/jetty/i
 
 * a thread pool (in form of an `java.util.concurrent.Executor`)
 * a scheduler (in form of `org.eclipse.jetty.util.thread.Scheduler`)
-* a byte buffer pool (in form of `org.eclipse.jetty.io.ByteBufferPool`)
+* a byte buffer pool (in form of `org.eclipse.jetty.io.RetainableByteBufferPool`)
 * a TLS factory (in form of `org.eclipse.jetty.util.ssl.SslContextFactory.Client`)
 
 The `ClientConnector` is where you want to set those components after you have configured them.

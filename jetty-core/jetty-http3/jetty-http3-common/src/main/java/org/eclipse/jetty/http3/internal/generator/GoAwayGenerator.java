@@ -20,7 +20,8 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class GoAwayGenerator extends FrameGenerator
 {
@@ -32,23 +33,24 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
-        return generateGoAwayFrame(lease, goAwayFrame);
+        return generateGoAwayFrame(accumulator, goAwayFrame);
     }
 
-    private int generateGoAwayFrame(ByteBufferPool.Lease lease, GoAwayFrame frame)
+    private int generateGoAwayFrame(RetainableByteBufferPool.Accumulator accumulator, GoAwayFrame frame)
     {
         long lastId = frame.getLastId();
         int lastIdLength = VarLenInt.length(lastId);
         int length = VarLenInt.length(FrameType.GOAWAY.type()) + VarLenInt.length(lastIdLength) + lastIdLength;
-        ByteBuffer buffer = lease.acquire(length, useDirectByteBuffers);
-        VarLenInt.encode(buffer, FrameType.GOAWAY.type());
-        VarLenInt.encode(buffer, lastIdLength);
-        VarLenInt.encode(buffer, lastId);
-        buffer.flip();
-        lease.append(buffer, true);
+        RetainableByteBuffer buffer = accumulator.acquire(length, useDirectByteBuffers);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        VarLenInt.encode(byteBuffer, FrameType.GOAWAY.type());
+        VarLenInt.encode(byteBuffer, lastIdLength);
+        VarLenInt.encode(byteBuffer, lastId);
+        byteBuffer.flip();
+        accumulator.append(buffer);
         return length;
     }
 }

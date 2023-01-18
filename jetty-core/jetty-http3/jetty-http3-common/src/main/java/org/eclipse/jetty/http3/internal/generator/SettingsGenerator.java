@@ -20,7 +20,8 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class SettingsGenerator extends FrameGenerator
@@ -33,13 +34,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
-        return generateSettings(lease, settingsFrame);
+        return generateSettings(accumulator, settingsFrame);
     }
 
-    private int generateSettings(ByteBufferPool.Lease lease, SettingsFrame frame)
+    private int generateSettings(RetainableByteBufferPool.Accumulator accumulator, SettingsFrame frame)
     {
         int length = 0;
         Map<Long, Long> settings = frame.getSettings();
@@ -48,16 +49,17 @@ public class SettingsGenerator extends FrameGenerator
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
-        ByteBuffer buffer = lease.acquire(capacity, useDirectByteBuffers);
-        VarLenInt.encode(buffer, frame.getFrameType().type());
-        VarLenInt.encode(buffer, length);
+        RetainableByteBuffer buffer = accumulator.acquire(capacity, useDirectByteBuffers);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        VarLenInt.encode(byteBuffer, frame.getFrameType().type());
+        VarLenInt.encode(byteBuffer, length);
         for (Map.Entry<Long, Long> e : settings.entrySet())
         {
-            VarLenInt.encode(buffer, e.getKey());
-            VarLenInt.encode(buffer, e.getValue());
+            VarLenInt.encode(byteBuffer, e.getKey());
+            VarLenInt.encode(byteBuffer, e.getValue());
         }
-        BufferUtil.flipToFlush(buffer, 0);
-        lease.append(buffer, true);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(buffer);
         return capacity;
     }
 }

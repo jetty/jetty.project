@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
 /**
  * This class implements an output stream in which the data is written into a list of ByteBuffer,
  * the buffer list automatically grows as data is written to it, the buffers are taken from the
- * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
+ * supplied {@link RetainableByteBufferPool} or freshly allocated if one is not supplied.
  *
  * Designed to mimic {@link java.io.ByteArrayOutputStream} but with better memory usage, and less copying.
  */
@@ -34,35 +34,30 @@ public class ByteBufferOutputStream2 extends OutputStream
         this(null, false);
     }
 
-    public ByteBufferOutputStream2(ByteBufferPool bufferPool, boolean direct)
+    public ByteBufferOutputStream2(RetainableByteBufferPool bufferPool, boolean direct)
     {
-        _accumulator = new ByteBufferAccumulator((bufferPool == null) ? ByteBufferPool.NOOP : bufferPool, direct);
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return _accumulator.getByteBufferPool();
+        _accumulator = new ByteBufferAccumulator(bufferPool == null ? new RetainableByteBufferPool.NonPooling() : bufferPool, direct);
     }
 
     /**
      * Take the combined buffer containing all content written to the OutputStream.
-     * The caller is responsible for releasing this {@link ByteBuffer} back into the {@link ByteBufferPool}.
+     * The caller is responsible for releasing this {@link ByteBuffer}.
      * @return a buffer containing all content written to the OutputStream.
      */
-    public ByteBuffer takeByteBuffer()
+    public RetainableByteBuffer takeByteBuffer()
     {
-        return _accumulator.takeByteBuffer();
+        return _accumulator.takeRetainableByteBuffer();
     }
 
     /**
      * Take the combined buffer containing all content written to the OutputStream.
-     * The returned buffer is still contained within the OutputStream and will be released back to the {@link ByteBufferPool}
+     * The returned buffer is still contained within the OutputStream and will be released
      * when the OutputStream is closed.
      * @return a buffer containing all content written to the OutputStream.
      */
-    public ByteBuffer toByteBuffer()
+    public RetainableByteBuffer toByteBuffer()
     {
-        return _accumulator.toByteBuffer();
+        return _accumulator.toRetainableByteBuffer();
     }
 
     /**

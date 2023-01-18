@@ -19,12 +19,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,32 +33,33 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ClientParserTest
 {
     @Test
-    public void testParseResponseHeaders() throws Exception
+    public void testParseResponseHeaders()
     {
-        final int id = 13;
+        int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
 
-        final int statusCode = 200;
-        final String statusMessage = "OK";
-        final String contentTypeName = "Content-Type";
-        final String contentTypeValue = "text/html;charset=utf-8";
+        int statusCode = 200;
+        String statusMessage = "OK";
+        String contentTypeName = "Content-Type";
+        String contentTypeValue = "text/html;charset=utf-8";
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-        ServerGenerator generator = new ServerGenerator(byteBufferPool);
-        Generator.Result result = generator.generateResponseHeaders(id, statusCode, statusMessage, fields, null);
+        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ServerGenerator generator = new ServerGenerator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        generator.generateResponseHeaders(accumulator, id, statusCode, statusMessage, fields);
 
         // Use the fundamental theorem of arithmetic to test the results.
         // This way we know onHeader() has been called the right number of
         // times with the right arguments, and so onHeaders().
-        final int[] primes = new int[]{2, 3, 5};
+        int[] primes = new int[]{2, 3, 5};
         int value = 1;
         for (int prime : primes)
         {
             value *= prime;
         }
 
-        final AtomicInteger params = new AtomicInteger(1);
+        AtomicInteger params = new AtomicInteger(1);
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
@@ -74,14 +74,10 @@ public class ClientParserTest
             public void onHeader(int request, HttpField field)
             {
                 assertEquals(id, request);
-                switch (field.getName())
+                if (field.getName().equals(contentTypeName))
                 {
-                    case contentTypeName:
-                        assertEquals(contentTypeValue, field.getValue().toLowerCase(Locale.ENGLISH));
-                        params.set(params.get() * primes[1]);
-                        break;
-                    default:
-                        break;
+                    assertEquals(contentTypeValue, field.getValue().toLowerCase(Locale.ENGLISH));
+                    params.set(params.get() * primes[1]);
                 }
             }
 
@@ -94,28 +90,31 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(value, params.get());
+
+        accumulator.release();
     }
 
     @Test
     public void testParseNoResponseContent() throws Exception
     {
-        final int id = 13;
+        int id = 13;
         HttpFields fields = HttpFields.build()
             .put("Content-Length", "0");
 
-        ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-        ServerGenerator generator = new ServerGenerator(byteBufferPool);
-        Generator.Result result1 = generator.generateResponseHeaders(id, 200, "OK", fields, null);
-        Generator.Result result2 = generator.generateResponseContent(id, null, true, false, null);
+        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ServerGenerator generator = new ServerGenerator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        generator.generateResponseHeaders(accumulator, id, 200, "OK", fields);
+        generator.generateResponseContent(accumulator, id, null, true, false);
 
-        final AtomicInteger verifier = new AtomicInteger();
+        AtomicInteger verifier = new AtomicInteger();
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
@@ -134,40 +133,38 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : result1.getByteBuffers())
-        {
-            parser.parse(buffer);
-            assertFalse(buffer.hasRemaining());
-        }
-        for (ByteBuffer buffer : result2.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(3, verifier.get());
+
+        accumulator.release();
     }
 
     @Test
     public void testParseSmallResponseContent() throws Exception
     {
-        final int id = 13;
+        int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[1024]);
-        final int contentLength = content.remaining();
+        int contentLength = content.remaining();
 
-        final int code = 200;
-        final String contentTypeName = "Content-Length";
-        final String contentTypeValue = String.valueOf(contentLength);
+        int code = 200;
+        String contentTypeName = "Content-Length";
+        String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-        ServerGenerator generator = new ServerGenerator(byteBufferPool);
-        Generator.Result result1 = generator.generateResponseHeaders(id, code, "OK", fields, null);
-        Generator.Result result2 = generator.generateResponseContent(id, content, true, false, null);
+        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ServerGenerator generator = new ServerGenerator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
+        generator.generateResponseContent(accumulator, id, content, true, false);
 
-        final AtomicInteger verifier = new AtomicInteger();
+        AtomicInteger verifier = new AtomicInteger();
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
@@ -187,41 +184,39 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : result1.getByteBuffers())
-        {
-            parser.parse(buffer);
-            assertFalse(buffer.hasRemaining());
-        }
-        for (ByteBuffer buffer : result2.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(5, verifier.get());
+
+        accumulator.release();
     }
 
     @Test
     public void testParseLargeResponseContent() throws Exception
     {
-        final int id = 13;
+        int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[128 * 1024]);
-        final int contentLength = content.remaining();
+        int contentLength = content.remaining();
 
-        final int code = 200;
-        final String contentTypeName = "Content-Length";
-        final String contentTypeValue = String.valueOf(contentLength);
+        int code = 200;
+        String contentTypeName = "Content-Length";
+        String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool byteBufferPool = new MappedByteBufferPool();
-        ServerGenerator generator = new ServerGenerator(byteBufferPool);
-        Generator.Result result1 = generator.generateResponseHeaders(id, code, "OK", fields, null);
-        Generator.Result result2 = generator.generateResponseContent(id, content, true, false, null);
+        RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        ServerGenerator generator = new ServerGenerator(bufferPool);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
+        generator.generateResponseContent(accumulator, id, content, true, false);
 
-        final AtomicInteger totalLength = new AtomicInteger();
-        final AtomicBoolean verifier = new AtomicBoolean();
+        AtomicInteger totalLength = new AtomicInteger();
+        AtomicBoolean verifier = new AtomicBoolean();
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
@@ -241,17 +236,14 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : result1.getByteBuffers())
-        {
-            parser.parse(buffer);
-            assertFalse(buffer.hasRemaining());
-        }
-        for (ByteBuffer buffer : result2.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
         }
 
         assertTrue(verifier.get());
+
+        accumulator.release();
     }
 }

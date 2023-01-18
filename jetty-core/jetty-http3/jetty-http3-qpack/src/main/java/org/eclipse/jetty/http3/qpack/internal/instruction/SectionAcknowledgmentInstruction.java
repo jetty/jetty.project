@@ -17,7 +17,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class SectionAcknowledgmentInstruction implements Instruction
@@ -35,14 +36,15 @@ public class SectionAcknowledgmentInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Lease lease)
+    public void encode(RetainableByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(7, _streamId) + 1;
-        ByteBuffer buffer = lease.acquire(size, false);
-        buffer.put((byte)0x80);
-        NBitIntegerEncoder.encode(buffer, 7, _streamId);
-        BufferUtil.flipToFlush(buffer, 0);
-        lease.append(buffer, true);
+        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        byteBuffer.put((byte)0x80);
+        NBitIntegerEncoder.encode(byteBuffer, 7, _streamId);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(buffer);
     }
 
     @Override

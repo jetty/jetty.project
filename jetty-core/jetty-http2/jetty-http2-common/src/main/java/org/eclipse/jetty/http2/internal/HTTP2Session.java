@@ -57,9 +57,9 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
@@ -1206,9 +1206,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
 
         @Override
-        protected boolean generate(ByteBufferPool.Lease lease) throws HpackException
+        protected boolean generate(RetainableByteBufferPool.Accumulator accumulator) throws HpackException
         {
-            frameBytes = generator.control(lease, frame);
+            frameBytes = generator.control(accumulator, frame);
             beforeSend();
             return true;
         }
@@ -1320,7 +1320,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
 
         @Override
-        protected boolean generate(ByteBufferPool.Lease lease)
+        protected boolean generate(RetainableByteBufferPool.Accumulator accumulator)
         {
             int dataRemaining = getDataBytesRemaining();
 
@@ -1334,7 +1334,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
             // Only one DATA frame is generated.
             DataFrame dataFrame = (DataFrame)frame;
-            int frameBytes = generator.data(lease, dataFrame, length);
+            int frameBytes = generator.data(accumulator, dataFrame, length);
             this.frameBytes += frameBytes;
             this.frameRemaining += frameBytes;
 

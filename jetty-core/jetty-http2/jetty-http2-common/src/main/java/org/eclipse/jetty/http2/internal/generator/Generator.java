@@ -18,29 +18,29 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class Generator
 {
-    private final ByteBufferPool byteBufferPool;
+    private final RetainableByteBufferPool bufferPool;
     private final HeaderGenerator headerGenerator;
     private final HpackEncoder hpackEncoder;
     private final FrameGenerator[] generators;
     private final DataGenerator dataGenerator;
 
-    public Generator(ByteBufferPool byteBufferPool)
+    public Generator(RetainableByteBufferPool bufferPool)
     {
-        this(byteBufferPool, 4096, 0);
+        this(bufferPool, 4096, 0);
     }
 
-    public Generator(ByteBufferPool byteBufferPool, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    public Generator(RetainableByteBufferPool bufferPool, int maxDynamicTableSize, int maxHeaderBlockFragment)
     {
-        this(byteBufferPool, true, maxDynamicTableSize, maxHeaderBlockFragment);
+        this(bufferPool, true, maxDynamicTableSize, maxHeaderBlockFragment);
     }
 
-    public Generator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    public Generator(RetainableByteBufferPool bufferPool, boolean useDirectByteBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
     {
-        this.byteBufferPool = byteBufferPool;
+        this.bufferPool = bufferPool;
 
         headerGenerator = new HeaderGenerator(useDirectByteBuffers);
         hpackEncoder = new HpackEncoder(maxDynamicTableSize);
@@ -61,9 +61,9 @@ public class Generator
         this.dataGenerator = new DataGenerator(headerGenerator);
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public RetainableByteBufferPool getRetainableByteBufferPool()
     {
-        return byteBufferPool;
+        return bufferPool;
     }
 
     public void setValidateHpackEncoding(boolean validateEncoding)
@@ -81,14 +81,14 @@ public class Generator
         headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
-    public int control(ByteBufferPool.Lease lease, Frame frame) throws HpackException
+    public int control(RetainableByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
     {
-        return generators[frame.getType().getType()].generate(lease, frame);
+        return generators[frame.getType().getType()].generate(accumulator, frame);
     }
 
-    public int data(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    public int data(RetainableByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
     {
-        return dataGenerator.generate(lease, frame, maxLength);
+        return dataGenerator.generate(accumulator, frame, maxLength);
     }
 
     public void setMaxHeaderListSize(int value)

@@ -22,7 +22,8 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class HeadersGenerator extends FrameGenerator
 {
@@ -38,13 +39,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
-        return generateHeadersFrame(lease, streamId, headersFrame, fail);
+        return generateHeadersFrame(accumulator, streamId, headersFrame, fail);
     }
 
-    private int generateHeadersFrame(ByteBufferPool.Lease lease, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
+    private int generateHeadersFrame(RetainableByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
         try
         {
@@ -52,21 +53,22 @@ public class HeadersGenerator extends FrameGenerator
             int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
             int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
             // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
-            ByteBuffer buffer = lease.acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
-            buffer.position(maxHeaderLength);
-            buffer.limit(buffer.position() + maxLength);
+            RetainableByteBuffer buffer = accumulator.acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            byteBuffer.position(maxHeaderLength);
+            byteBuffer.limit(byteBuffer.position() + maxLength);
             // Encode after the maxHeaderLength.
-            encoder.encode(buffer, streamId, frame.getMetaData());
-            buffer.flip();
-            buffer.position(maxHeaderLength);
+            encoder.encode(byteBuffer, streamId, frame.getMetaData());
+            byteBuffer.flip();
+            byteBuffer.position(maxHeaderLength);
             int dataLength = buffer.remaining();
             int headerLength = frameTypeLength + VarLenInt.length(dataLength);
-            int position = buffer.position() - headerLength;
-            buffer.position(position);
-            VarLenInt.encode(buffer, FrameType.HEADERS.type());
-            VarLenInt.encode(buffer, dataLength);
-            buffer.position(position);
-            lease.append(buffer, true);
+            int position = byteBuffer.position() - headerLength;
+            byteBuffer.position(position);
+            VarLenInt.encode(byteBuffer, FrameType.HEADERS.type());
+            VarLenInt.encode(byteBuffer, dataLength);
+            byteBuffer.position(position);
+            accumulator.append(buffer);
             return headerLength + dataLength;
         }
         catch (QpackException x)

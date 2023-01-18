@@ -21,15 +21,15 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.internal.generator.ResetGenerator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResetGenerateParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testGenerateParse() throws Exception
@@ -37,7 +37,7 @@ public class ResetGenerateParseTest
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
 
         final List<ResetFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onReset(ResetFrame frame)
@@ -53,11 +53,11 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateReset(lease, streamId, error);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.generateReset(accumulator, streamId, error);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -78,7 +78,7 @@ public class ResetGenerateParseTest
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
 
         final List<ResetFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onReset(ResetFrame frame)
@@ -94,11 +94,11 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateReset(lease, streamId, error);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.generateReset(accumulator, streamId, error);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {

@@ -21,7 +21,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -188,9 +189,9 @@ public class BufferedResponseHandler extends Handler.Wrapper
                 if (shouldBuffer(this, last))
                 {
                     ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
-                    ByteBufferPool byteBufferPool = connectionMetaData.getConnector().getByteBufferPool();
+                    RetainableByteBufferPool bufferPool = connectionMetaData.getConnector().getRetainableByteBufferPool();
                     boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-                    _accumulator = new CountingByteBufferAccumulator(byteBufferPool, useOutputDirectByteBuffers, getBufferSize());
+                    _accumulator = new CountingByteBufferAccumulator(bufferPool, useOutputDirectByteBuffers, getBufferSize());
                 }
                 _firstWrite = false;
             }
@@ -211,7 +212,8 @@ public class BufferedResponseHandler extends Handler.Wrapper
                         complete = last && !current.hasRemaining();
                         if (write || complete)
                         {
-                            BufferedResponse.super.write(complete, _accumulator.takeByteBuffer(), this);
+                            RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
+                            BufferedResponse.super.write(complete, buffer.getByteBuffer(), Callback.from(this, buffer::release));
                             return Action.SCHEDULED;
                         }
                         return Action.SUCCEEDED;
@@ -236,9 +238,18 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             // TODO pass all accumulated buffers as an array instead of allocating & copying into a single one.
             if (_accumulator != null)
-                super.write(true, _accumulator.takeByteBuffer(), Callback.from(_callback, _accumulator::close));
+            {
+                RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
+                super.write(true, buffer.getByteBuffer(), Callback.from(_callback, () ->
+                {
+                    buffer.release();
+                    _accumulator.close();
+                }));
+            }
             else
+            {
                 _callback.succeeded();
+            }
         }
 
         @Override
@@ -246,9 +257,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             if (_accumulator != null)
                 _accumulator.close();
-            else
-                // TODO: this callback should always be failed!
-                _callback.failed(x);
+            _callback.failed(x);
         }
     }
 
@@ -258,7 +267,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         private final int _maxSize;
         private int _accumulatedCount;
 
-        private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
+        private CountingByteBufferAccumulator(RetainableByteBufferPool bufferPool, boolean direct, int maxSize)
         {
             if (maxSize <= 0)
                 throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
@@ -290,10 +299,10 @@ public class BufferedResponseHandler extends Handler.Wrapper
             return _maxSize - _accumulatedCount;
         }
 
-        private ByteBuffer takeByteBuffer()
+        private RetainableByteBuffer takeRetainableByteBuffer()
         {
             _accumulatedCount = 0;
-            return _accumulator.takeByteBuffer();
+            return _accumulator.takeRetainableByteBuffer();
         }
 
         @Override

@@ -33,7 +33,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.generator.Generator;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -201,10 +201,10 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame3 = new HeadersFrame(streamId3, metaData, null, false);
         DataFrame data3 = new DataFrame(streamId3, BufferUtil.EMPTY_BUFFER, true);
         Generator generator = ((HTTP2Session)session).getGenerator();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(generator.getByteBufferPool());
-        generator.control(lease, frame3);
-        generator.data(lease, data3, data3.remaining());
-        ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, lease.getByteBuffers().toArray(new ByteBuffer[0]));
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(generator.getRetainableByteBufferPool());
+        generator.control(accumulator, frame3);
+        generator.data(accumulator, data3, data3.remaining());
+        ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
         // Expect 2 RST_STREAM frames.
         assertTrue(sessionResetLatch.await(5, TimeUnit.SECONDS));
 

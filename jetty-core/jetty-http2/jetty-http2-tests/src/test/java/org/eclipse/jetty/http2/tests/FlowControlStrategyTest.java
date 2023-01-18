@@ -51,7 +51,7 @@ import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.http2.internal.HTTP2Stream;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -844,10 +844,10 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(connector.getRetainableByteBufferPool());
         ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
-        List<ByteBuffer> buffers = lease.getByteBuffers();
+        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.
@@ -949,10 +949,10 @@ public abstract class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(connector.getRetainableByteBufferPool());
         ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
-        List<ByteBuffer> buffers = lease.getByteBuffers();
+        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
         // Expect the connection to be closed.

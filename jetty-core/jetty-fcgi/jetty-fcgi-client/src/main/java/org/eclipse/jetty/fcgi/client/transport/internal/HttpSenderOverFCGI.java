@@ -26,10 +26,10 @@ import org.eclipse.jetty.client.internal.HttpSender;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.generator.ClientGenerator;
-import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
@@ -42,7 +42,7 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         super(channel);
         HttpClient httpClient = channel.getHttpDestination().getHttpClient();
-        this.generator = new ClientGenerator(httpClient.getByteBufferPool(), httpClient.isUseOutputDirectByteBuffers());
+        this.generator = new ClientGenerator(httpClient.getRetainableByteBufferPool(), httpClient.isUseOutputDirectByteBuffers());
     }
 
     @Override
@@ -98,18 +98,18 @@ public class HttpSenderOverFCGI extends HttpSender
         HttpClientTransportOverFCGI transport = (HttpClientTransportOverFCGI)getHttpChannel().getHttpDestination().getHttpClient().getTransport();
         transport.customize(request, fcgiHeaders);
 
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(generator.getRetainableByteBufferPool());
         int id = getHttpChannel().getRequest();
         if (contentBuffer.hasRemaining() || lastContent)
         {
-            Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders, Callback.NOOP);
-            Generator.Result contentResult = generator.generateRequestContent(id, contentBuffer, lastContent, callback);
-            getHttpChannel().flush(headersResult, contentResult);
+            generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
+            generator.generateRequestContent(accumulator, id, contentBuffer, lastContent);
         }
         else
         {
-            Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders, callback);
-            getHttpChannel().flush(headersResult);
+            generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
         }
+        getHttpChannel().flush(accumulator, callback);
     }
 
     @Override
@@ -117,9 +117,10 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(generator.getRetainableByteBufferPool());
             int request = getHttpChannel().getRequest();
-            Generator.Result result = generator.generateRequestContent(request, contentBuffer, lastContent, callback);
-            getHttpChannel().flush(result);
+            generator.generateRequestContent(accumulator, request, contentBuffer, lastContent);
+            getHttpChannel().flush(accumulator, callback);
         }
         else
         {

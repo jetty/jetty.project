@@ -19,7 +19,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.internal.Flags;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class WindowUpdateGenerator extends FrameGenerator
@@ -30,21 +31,22 @@ public class WindowUpdateGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
     {
         WindowUpdateFrame windowUpdateFrame = (WindowUpdateFrame)frame;
-        return generateWindowUpdate(lease, windowUpdateFrame.getStreamId(), windowUpdateFrame.getWindowDelta());
+        return generateWindowUpdate(accumulator, windowUpdateFrame.getStreamId(), windowUpdateFrame.getWindowDelta());
     }
 
-    public int generateWindowUpdate(ByteBufferPool.Lease lease, int streamId, int windowUpdate)
+    public int generateWindowUpdate(RetainableByteBufferPool.Accumulator accumulator, int streamId, int windowUpdate)
     {
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
-        ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
-        header.putInt(windowUpdate);
-        BufferUtil.flipToFlush(header, 0);
-        lease.append(header, true);
+        RetainableByteBuffer header = generateHeader(accumulator, FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
+        ByteBuffer byteBuffer = header.getByteBuffer();
+        byteBuffer.putInt(windowUpdate);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(header);
 
         return Frame.HEADER_LENGTH + WindowUpdateFrame.WINDOW_UPDATE_LENGTH;
     }

@@ -21,7 +21,7 @@ import java.util.Queue;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -35,19 +35,19 @@ public class MessageFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
-    private final ByteBufferPool.Lease lease;
+    private final RetainableByteBufferPool.Accumulator accumulator;
     private final MessageGenerator generator;
     private Entry entry;
 
-    public MessageFlusher(ByteBufferPool byteBufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
+    public MessageFlusher(RetainableByteBufferPool bufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
     {
-        this.lease = new ByteBufferPool.Lease(byteBufferPool);
+        this.accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
         this.generator = new MessageGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
     }
 
     public boolean offer(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             entries.offer(new Entry(endPoint, frame, callback));
         }
@@ -57,7 +57,7 @@ public class MessageFlusher extends IteratingCallback
     @Override
     protected Action process()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             entry = entries.poll();
             if (entry == null)
@@ -75,14 +75,14 @@ public class MessageFlusher extends IteratingCallback
             return Action.SCHEDULED;
         }
 
-        int generated = generator.generate(lease, entry.endPoint.getStreamId(), frame, this::failed);
+        int generated = generator.generate(accumulator, entry.endPoint.getStreamId(), frame, this::failed);
         if (generated < 0)
             return Action.SCHEDULED;
 
         QuicStreamEndPoint endPoint = entry.endPoint;
-        List<ByteBuffer> buffers = lease.getByteBuffers();
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), lease.getTotalLength(), endPoint.getStreamId(), this);
+            LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), accumulator.getTotalLength(), endPoint.getStreamId(), this);
 
         endPoint.write(this, buffers, Frame.isLast(frame));
         return Action.SCHEDULED;
@@ -94,7 +94,7 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entry, this);
 
-        lease.recycle();
+        accumulator.release();
 
         entry.callback.succeeded();
         entry = null;
@@ -108,7 +108,7 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", entry, this, x);
 
-        lease.recycle();
+        accumulator.release();
 
         entry.callback.failed(x);
         entry = null;

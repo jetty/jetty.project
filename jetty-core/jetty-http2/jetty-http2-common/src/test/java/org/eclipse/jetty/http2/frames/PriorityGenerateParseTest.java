@@ -21,15 +21,15 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.internal.generator.PriorityGenerator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PriorityGenerateParseTest
 {
-    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
+    private final RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
 
     @Test
     public void testGenerateParse() throws Exception
@@ -37,7 +37,7 @@ public class PriorityGenerateParseTest
         PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator());
 
         final List<PriorityFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onPriority(PriorityFrame frame)
@@ -55,11 +55,11 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generatePriority(lease, streamId, parentStreamId, weight, exclusive);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -82,7 +82,7 @@ public class PriorityGenerateParseTest
         PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator());
 
         final List<PriorityFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
         {
             @Override
             public void onPriority(PriorityFrame frame)
@@ -100,11 +100,11 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generatePriority(lease, streamId, parentStreamId, weight, exclusive);
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {

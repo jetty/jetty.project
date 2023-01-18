@@ -18,7 +18,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.http3.qpack.internal.util.HuffmanEncoder;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class IndexedNameEntryInstruction implements Instruction
@@ -52,31 +53,32 @@ public class IndexedNameEntryInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool.Lease lease)
+    public void encode(RetainableByteBufferPool.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + (_huffman ? HuffmanEncoder.octetsNeeded(_value) : _value.length()) + 2;
-        ByteBuffer buffer = lease.acquire(size, false);
+        RetainableByteBuffer buffer = accumulator.acquire(size, false);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
 
         // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
-        buffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
-        NBitIntegerEncoder.encode(buffer, 6, _index);
+        byteBuffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
+        NBitIntegerEncoder.encode(byteBuffer, 6, _index);
 
         // We will not huffman encode the string.
         if (_huffman)
         {
-            buffer.put((byte)(0x80));
-            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(_value));
-            HuffmanEncoder.encode(buffer, _value);
+            byteBuffer.put((byte)(0x80));
+            NBitIntegerEncoder.encode(byteBuffer, 7, HuffmanEncoder.octetsNeeded(_value));
+            HuffmanEncoder.encode(byteBuffer, _value);
         }
         else
         {
-            buffer.put((byte)(0x00));
-            NBitIntegerEncoder.encode(buffer, 7, _value.length());
-            buffer.put(_value.getBytes());
+            byteBuffer.put((byte)(0x00));
+            NBitIntegerEncoder.encode(byteBuffer, 7, _value.length());
+            byteBuffer.put(_value.getBytes());
         }
 
-        BufferUtil.flipToFlush(buffer, 0);
-        lease.append(buffer, true);
+        BufferUtil.flipToFlush(byteBuffer, 0);
+        accumulator.append(buffer);
     }
 
     @Override

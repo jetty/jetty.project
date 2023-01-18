@@ -46,7 +46,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -96,7 +95,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final RequestHandler _requestHandler;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
-    private final ByteBufferPool _bufferPool;
     private final RetainableByteBufferPool _retainableByteBufferPool;
     private final AtomicReference<HttpStreamOverHTTP1> _stream = new AtomicReference<>();
     private final Lazy _attributes = new Lazy();
@@ -141,8 +139,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         _id = __connectionIdGenerator.getAndIncrement();
         _configuration = configuration;
         _connector = connector;
-        _bufferPool = _connector.getByteBufferPool();
-        _retainableByteBufferPool = _bufferPool.asRetainableByteBufferPool();
+        _retainableByteBufferPool = _connector.getRetainableByteBufferPool();
         _generator = newHttpGenerator();
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
@@ -367,7 +364,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         if (!isRequestBufferEmpty())
         {
             ByteBuffer unconsumed = ByteBuffer.allocateDirect(_retainableByteBuffer.remaining());
-            unconsumed.put(_retainableByteBuffer.getBuffer());
+            unconsumed.put(_retainableByteBuffer.getByteBuffer());
             unconsumed.flip();
             releaseRequestBuffer();
             return unconsumed;
@@ -405,12 +402,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     {
         if (_retainableByteBuffer == null)
             _retainableByteBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-        return _retainableByteBuffer.getBuffer();
+        return _retainableByteBuffer.getByteBuffer();
     }
 
     public boolean isRequestBufferEmpty()
     {
-        return _retainableByteBuffer == null || _retainableByteBuffer.isEmpty();
+        return _retainableByteBuffer == null || !_retainableByteBuffer.hasRemaining();
     }
 
     @Override
@@ -597,7 +594,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         if (LOG.isDebugEnabled())
             LOG.debug("{} parse {}", this, _retainableByteBuffer);
 
-        boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getBuffer());
+        boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} parsed {} {}", this, handle, _parser);
@@ -724,8 +721,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         private ByteBuffer _content;
         private boolean _lastContent;
         private Callback _callback;
-        private ByteBuffer _header;
-        private ByteBuffer _chunk;
+        private RetainableByteBuffer _header;
+        private RetainableByteBuffer _chunk;
         private boolean _shutdownOut;
 
         private SendCallback()
@@ -780,12 +777,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             while (true)
             {
-                HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, _chunk, _content, _lastContent);
+                ByteBuffer headerByteBuffer = _header == null ? null : _header.getByteBuffer();
+                ByteBuffer chunkByteBuffer = _chunk == null ? null : _chunk.getByteBuffer();
+                HttpGenerator.Result result = _generator.generateResponse(_info, _head, headerByteBuffer, chunkByteBuffer, _content, _lastContent);
                 if (LOG.isDebugEnabled())
                     LOG.debug("generate: {} for {} ({},{},{})@{}",
                         result,
                         this,
-                        BufferUtil.toSummaryString(_header),
+                        BufferUtil.toSummaryString(headerByteBuffer),
                         BufferUtil.toSummaryString(_content),
                         _lastContent,
                         _generator.getState());
@@ -797,7 +796,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(Math.min(_configuration.getResponseHeaderSize(), _configuration.getOutputBufferSize()), useDirectByteBuffers);
+                        _header = _retainableByteBufferPool.acquire(Math.min(_configuration.getResponseHeaderSize(), _configuration.getOutputBufferSize()), useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
@@ -805,18 +804,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         if (_header.capacity() >= _configuration.getResponseHeaderSize())
                             throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
-                        _header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
+                        _header = _retainableByteBufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK:
                     {
-                        _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
+                        _chunk = _retainableByteBufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _retainableByteBufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
@@ -824,18 +823,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
                         if (_head || _generator.isNoContent())
                         {
-                            BufferUtil.clear(_chunk);
+                            if (_chunk != null)
+                                _chunk.clear();
                             BufferUtil.clear(_content);
                         }
 
                         byte gatherWrite = 0;
                         long bytes = 0;
-                        if (BufferUtil.hasContent(_header))
+                        if (BufferUtil.hasContent(headerByteBuffer))
                         {
                             gatherWrite += 4;
                             bytes += _header.remaining();
                         }
-                        if (BufferUtil.hasContent(_chunk))
+                        if (BufferUtil.hasContent(chunkByteBuffer))
                         {
                             gatherWrite += 2;
                             bytes += _chunk.remaining();
@@ -849,22 +849,22 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         switch (gatherWrite)
                         {
                             case 7:
-                                getEndPoint().write(this, _header, _chunk, _content);
+                                getEndPoint().write(this, headerByteBuffer, chunkByteBuffer, _content);
                                 break;
                             case 6:
-                                getEndPoint().write(this, _header, _chunk);
+                                getEndPoint().write(this, headerByteBuffer, chunkByteBuffer);
                                 break;
                             case 5:
-                                getEndPoint().write(this, _header, _content);
+                                getEndPoint().write(this, headerByteBuffer, _content);
                                 break;
                             case 4:
-                                getEndPoint().write(this, _header);
+                                getEndPoint().write(this, headerByteBuffer);
                                 break;
                             case 3:
-                                getEndPoint().write(this, _chunk, _content);
+                                getEndPoint().write(this, chunkByteBuffer, _content);
                                 break;
                             case 2:
-                                getEndPoint().write(this, _chunk);
+                                getEndPoint().write(this, chunkByteBuffer);
                                 break;
                             case 1:
                                 getEndPoint().write(this, _content);
@@ -916,14 +916,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         private void releaseHeader()
         {
             if (_header != null)
-                _bufferPool.release(_header);
+                _header.release();
             _header = null;
         }
 
         private void releaseChunk()
         {
             if (_chunk != null)
-                _bufferPool.release(_chunk);
+                _chunk.release();
             _chunk = null;
         }
 

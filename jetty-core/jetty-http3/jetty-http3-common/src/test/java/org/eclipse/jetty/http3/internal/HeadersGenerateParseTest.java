@@ -29,7 +29,7 @@ import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,8 +47,8 @@ public class HeadersGenerateParseTest
         HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
         QpackEncoder encoder = new QpackEncoder(instructions -> {}, 100);
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(ByteBufferPool.NOOP);
-        new MessageGenerator(encoder, 8192, true).generate(lease, 0, input, null);
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(new RetainableByteBufferPool.NonPooling());
+        new MessageGenerator(encoder, 8192, true).generate(accumulator, 0, input, null);
 
         QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);
         List<HeadersFrame> frames = new ArrayList<>();
@@ -61,7 +61,7 @@ public class HeadersGenerateParseTest
             }
         }, decoder, 13, () -> true);
         parser.init(UnaryOperator.identity());
-        for (ByteBuffer buffer : lease.getByteBuffers())
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());

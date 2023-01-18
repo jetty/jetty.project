@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -55,13 +55,13 @@ public class ValidatingCachingHttpContentFactory extends CachingHttpContentFacto
      *
      * @param authority the wrapped {@link HttpContent.Factory} to use.
      * @param validationPeriod time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
-     * @param byteBufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use.
+     * @param bufferPool the {@link org.eclipse.jetty.io.RetainableByteBufferPool} to use.
      */
     public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
                                                @Name("validationPeriod") long validationPeriod,
-                                               @Name("byteBufferPool") ByteBufferPool byteBufferPool)
+                                               @Name("bufferPool") RetainableByteBufferPool bufferPool)
     {
-        this(authority, validationPeriod, byteBufferPool, null, -1, -1);
+        this(authority, validationPeriod, bufferPool, null, -1, -1);
     }
 
     /**
@@ -70,19 +70,19 @@ public class ValidatingCachingHttpContentFactory extends CachingHttpContentFacto
      *
      * @param authority the wrapped {@link HttpContent.Factory} to use.
      * @param validationPeriod time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
-     * @param byteBufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use.
+     * @param bufferPool the {@link org.eclipse.jetty.io.RetainableByteBufferPool} to use.
      * @param scheduler scheduler to use for the sweeper, can be null to not use sweeper.
      * @param sweepPeriod time between runs of the sweeper in ms (if 0 never sweep for invalid entries).
      * @param idleTimeout amount of time in ms an entry can be unused before evicted by the sweeper (if 0 never evict unused entries).
      */
     public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
                                                @Name("validationPeriod") long validationPeriod,
-                                               @Name("byteBufferPool") ByteBufferPool byteBufferPool,
+                                               @Name("byteBufferPool") RetainableByteBufferPool bufferPool,
                                                @Name("scheduler") Scheduler scheduler,
                                                @Name("sweepPeriod") long sweepPeriod,
                                                @Name("idleTimeout") long idleTimeout)
     {
-        super(authority, byteBufferPool);
+        super(authority, bufferPool);
         _validationTime = validationPeriod;
         _scheduler = scheduler;
         _sweepDelay = sweepPeriod;

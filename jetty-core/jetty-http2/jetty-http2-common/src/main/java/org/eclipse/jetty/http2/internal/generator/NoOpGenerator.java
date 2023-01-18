@@ -14,7 +14,7 @@
 package org.eclipse.jetty.http2.internal.generator;
 
 import org.eclipse.jetty.http2.frames.Frame;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 
 public class NoOpGenerator extends FrameGenerator
 {
@@ -24,7 +24,7 @@ public class NoOpGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(RetainableByteBufferPool.Accumulator accumulator, Frame frame)
     {
         return 0;
     }

@@ -38,10 +38,10 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.internal.generator.Generator;
 import org.eclipse.jetty.http2.internal.parser.Parser;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ServerConnector;
@@ -150,13 +150,13 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             assertTrue(upgrade.toString().startsWith("HTTP/1.1 101 "));
 
-            byteBufferPool = new MappedByteBufferPool();
-            generator = new Generator(byteBufferPool);
+            bufferPool = new ArrayRetainableByteBufferPool();
+            generator = new Generator(bufferPool);
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
             final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(2));
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
             {
                 @Override
                 public void onHeaders(HeadersFrame frame)
@@ -196,12 +196,12 @@ public class HTTP2CServerTest extends AbstractServerTest
             headersRef.set(null);
             dataRef.set(null);
             latchRef.set(new CountDownLatch(2));
-            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.control(lease, new PrefaceFrame());
-            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+            RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+            generator.control(accumulator, new PrefaceFrame());
+            generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
-            generator.control(lease, new HeadersFrame(3, metaData, null, true));
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            generator.control(accumulator, new HeadersFrame(3, metaData, null, true));
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 output.write(BufferUtil.toArray(buffer));
             }
@@ -231,28 +231,28 @@ public class HTTP2CServerTest extends AbstractServerTest
     {
         final CountDownLatch latch = new CountDownLatch(3);
 
-        byteBufferPool = new MappedByteBufferPool();
-        generator = new Generator(byteBufferPool);
+        bufferPool = new ArrayRetainableByteBufferPool();
+        generator = new Generator(bufferPool);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.control(lease, new PrefaceFrame());
-        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        generator.control(accumulator, new PrefaceFrame());
+        generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/test", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
-        generator.control(lease, new HeadersFrame(1, metaData, null, true));
+        generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             client.setSoTimeout(5000);
 
             OutputStream output = client.getOutputStream();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 output.write(BufferUtil.toArray(buffer));
             }
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(bufferPool, new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -328,18 +328,18 @@ public class HTTP2CServerTest extends AbstractServerTest
         // Now send an HTTP/2 direct request, which
         // will have the PRI * HTTP/2.0 preface.
 
-        byteBufferPool = new MappedByteBufferPool();
-        generator = new Generator(byteBufferPool);
+        bufferPool = new ArrayRetainableByteBufferPool();
+        generator = new Generator(bufferPool);
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.control(lease, new PrefaceFrame());
+        RetainableByteBufferPool.Accumulator accumulator = new RetainableByteBufferPool.Accumulator(bufferPool);
+        generator.control(accumulator, new PrefaceFrame());
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             client.setSoTimeout(5000);
 
             OutputStream output = client.getOutputStream();
-            for (ByteBuffer buffer : lease.getByteBuffers())
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 output.write(BufferUtil.toArray(buffer));
             }
