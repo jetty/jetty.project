@@ -41,6 +41,7 @@ public class PathMappingsHandler extends Handler.AbstractContainer
 
     public PathMappingsHandler()
     {
+        this(true);
     }
 
     public PathMappingsHandler(boolean dynamic)
