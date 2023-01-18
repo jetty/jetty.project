@@ -62,6 +62,7 @@ import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -1005,6 +1006,8 @@ public class HTTPServerDocs
     {
         // tag::defaultHandler[]
         Server server = new Server();
+        server.setDefaultHandler(new DefaultHandler());
+
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
