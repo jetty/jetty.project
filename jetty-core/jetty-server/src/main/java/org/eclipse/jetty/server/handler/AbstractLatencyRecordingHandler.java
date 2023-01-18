@@ -25,7 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A <code>Handler</code> that allows recording the latencies of the requests executed by the wrapped handler.
+ * <p>A <code>Handler</code> that allows recording the latency of the requests executed by the wrapped handler.</p>
+ * <p>The latency reported by {@link #onRequestComplete(long)} is the delay between the first notice of the request
+ * (obtained from {@link HttpStream#getNanoTime()}) until the stream completion event has been handled by
+ * {@link HttpStream#succeeded()} or {@link HttpStream#failed(Throwable)}.</p>
  */
 public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
 {
@@ -40,27 +43,22 @@ public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
             @Override
             public void succeeded()
             {
-                long begin = httpStream.getNanoTime();
                 super.succeeded();
-                try
-                {
-                    onRequestComplete(NanoTime.since(begin));
-                }
-                catch (Throwable t)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Error thrown by onRequestComplete", t);
-                }
+                fireOnRequestComplete();
             }
 
             @Override
             public void failed(Throwable x)
             {
-                long begin = httpStream.getNanoTime();
                 super.failed(x);
+                fireOnRequestComplete();
+            }
+
+            private void fireOnRequestComplete()
+            {
                 try
                 {
-                    onRequestComplete(NanoTime.since(begin));
+                    onRequestComplete(NanoTime.since(httpStream.getNanoTime()));
                 }
                 catch (Throwable t)
                 {
@@ -79,7 +77,7 @@ public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
     }
 
     /**
-     * Called back for each completed request with its execution's duration.
+     * Called back for each completed request with its execution's latency.
      * @param durationInNs the duration in nanoseconds of the completed request
      */
     protected abstract void onRequestComplete(long durationInNs);
