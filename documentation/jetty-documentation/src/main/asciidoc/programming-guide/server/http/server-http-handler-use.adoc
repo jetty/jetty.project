@@ -75,7 +75,7 @@ However, this has no knowledge of the concept of _context_ and just iterates thr
 
 A better choice for multiple web application is `ContextHandlerCollection`, that matches a _context_ from either its _context path_ or _virtual host_, without iterating through the ``Handler``s.
 
-If `ContextHandlerCollection` does not find a match, it just returns false from ``process``.
+If `ContextHandlerCollection` does not find a match, it just returns `false` from its `process(\...)` method.
 What happens next depends on the `Handler` tree structure: other ``Handler``s may be invoked after `ContextHandlerCollection`, for example `DefaultHandler` (see xref:pg-server-http-handler-use-util-default-handler[this section]).
 Eventually, if no ``Handler`` returns `true` from `process`, then Jetty returns an HTTP `404` response to the client.
 
