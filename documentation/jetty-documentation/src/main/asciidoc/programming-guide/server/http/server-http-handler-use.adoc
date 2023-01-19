@@ -70,7 +70,7 @@ Server
 
 Server applications may need to deploy to Jetty more than one web application.
 
-Recall from the xref:pg-server-http-handler[introduction] that Jetty offers `Handler.Collection` that may contain a collection of children ``Handler``s.
+Recall from the xref:pg-server-http-handler[introduction] that Jetty offers `Handler.Collection` that contains a sequence of child ``Handler``s.
 However, this has no knowledge of the concept of _context_ and just iterates through the sequence of ``Handler``s.
 
 A better choice for multiple web application is `ContextHandlerCollection`, that matches a _context_ from either its _context path_ or _virtual host_, without iterating through the ``Handler``s.
