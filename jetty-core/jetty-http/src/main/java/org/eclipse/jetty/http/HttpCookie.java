@@ -28,6 +28,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Jetty Management of RFC6265 HTTP Cookies (with fallback support for RFC2965)
+ */
 public class HttpCookie
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpCookie.class);
@@ -233,7 +236,7 @@ public class HttpCookie
         _value = value;
         _version = version;
 
-        Map<String,String> attrs = null;
+        Map<String, String> attrs = null;
         if (attributes == null)
             attrs = Collections.emptyMap();
         else
