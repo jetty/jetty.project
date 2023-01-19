@@ -39,6 +39,7 @@
            <Item>
              <New id="WebappContexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
            </Item>
+           <!-- 
            <Item>
              <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/tests</Set>
@@ -67,6 +68,7 @@
                <Set name="DisplayName">echo</Set>
              </New>
            </Item>
+           -->
          </Array>
         </Set>
       </New>
@@ -95,8 +97,8 @@
               <Set name="environmentName">ee10</Set>
               <Set name="monitoredDirName">
                 <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
-                  <Arg>src/test/resources</Arg>
-                  <Arg>webapp-contexts/RFC2616</Arg>
+                  <Arg>src/test/resources/</Arg>
+                  <Arg>webapp-contexts/RFC2616/</Arg>
                 </Call>
               </Set>
 

@@ -25,37 +25,28 @@
             <id>copy-wars-for-testing</id>
             <phase>process-test-resources</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <includeScope>test</includeScope>
-              <includeTypes>war</includeTypes>
+              <artifactItems>
+                 <artifactItem>
+                     <groupId>org.eclipse.jetty.ee10</groupId>
+                     <artifactId>jetty-ee10-test-webapp-rfc2616</artifactId>
+                     <version>${project.version}</version>
+                     <type>war</type>
+                     <destFileName>ee10-test-rfc2616.war</destFileName>
+                 </artifactItem>
+                 <artifactItem>
+                     <groupId>org.eclipse.jetty.ee10.demos</groupId>
+                     <artifactId>jetty-ee10-demo-jetty-webapp</artifactId>
+                     <type>war</type>
+                     <destFileName>ee10-demo-jetty.war</destFileName>
+                 </artifactItem>
+              </artifactItems>
               <stripVersion>true</stripVersion>
               <outputDirectory>${project.build.directory}/webapps</outputDirectory>
             </configuration>
           </execution>
-          <!-- execution>
-            <id>unpack-jetty-home</id>
-            <phase>process-test-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-home</artifactId>
-                  <version>${project.version}</version>
-                  <type>zip</type>
-                  <overWrite>true</overWrite>
-                </artifactItem>
-              </artifactItems>
-              <outputAbsoluteArtifactFilename>true</outputAbsoluteArtifactFilename>
-              <outputDirectory>${test-home-dir}</outputDirectory>
-              <overWriteSnapshots>true</overWriteSnapshots>
-              <overWriteIfNewer>true</overWriteIfNewer>
-            </configuration>
-          </execution -->
         </executions>
       </plugin>
       <plugin>
