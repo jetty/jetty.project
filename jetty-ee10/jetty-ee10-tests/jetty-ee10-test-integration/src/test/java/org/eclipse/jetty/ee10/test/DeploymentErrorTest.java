@@ -30,6 +30,7 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
@@ -50,6 +51,8 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.Environment;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,9 +81,15 @@ public class DeploymentErrorTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
+         
+        ResourceFactory resourceFactory = ResourceFactory.of(server);
 
         // Empty contexts collections
         contexts = new ContextHandlerCollection();
+        
+        //Environment
+        Environment ee10 = Environment.ensure("ee10");
+        ee10.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee10.webapp.WebAppContext");
 
         // Deployment Manager
         deploymentManager = new DeploymentManager();
@@ -97,11 +106,13 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        //TODO fix
-        /*        WebAppProvider appProvider = new WebAppProvider();
-        appProvider.setMonitoredDirResource(new PathResource(docroots));
+        ContextProvider appProvider = new ContextProvider();
+        appProvider.setEnvironmentName("ee10");
+        
         appProvider.setScanInterval(1);
-        deploymentManager.addAppProvider(appProvider);*/
+        appProvider.setMonitoredDirResource(resourceFactory.newResource(docroots));
+        deploymentManager.addAppProvider(appProvider);
+
         server.addBean(deploymentManager);
 
         // Server handlers
