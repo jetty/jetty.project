@@ -141,7 +141,7 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
-     * @param defaultHandler The handler to use if no other handler is set or accepts the request. This handler should
+     * @param defaultHandler The handler to use if no other handler is set or has processed the request. This handler should
      *                       always accept the request, even if only to send a 404.
      */
     public void setDefaultHandler(Handler defaultHandler)
