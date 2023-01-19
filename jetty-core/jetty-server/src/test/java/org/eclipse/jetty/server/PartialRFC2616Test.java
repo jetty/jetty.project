@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled // TODO
 public class PartialRFC2616Test
 {
     private Server server;
@@ -61,7 +60,7 @@ public class PartialRFC2616Test
         context.setContextPath("/");
         context.setHandler(new DumpHandler());
 
-        server.setHandler(vcontext);
+        server.setHandler(new Handler.Collection(vcontext, context));
 
         server.start();
     }
@@ -405,6 +404,7 @@ public class PartialRFC2616Test
     }
 
     @Test
+    @Disabled // TODO
     public void test521() throws Exception
     {
         // Default Host
@@ -412,7 +412,7 @@ public class PartialRFC2616Test
         String response = connector.getResponse("GET http://VirtualHost:8888/path/R1 HTTP/1.1\n" + "Host: wronghost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Virtual host") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "Virtual host") + 1;
-        offset = checkContains(response, offset, "pathInfo=/path/R1", "Virtual host") + 1;
+        offset = checkContains(response, offset, "pathInContext=/path/R1", "Virtual host") + 1;
         offset = checkContains(response, offset, "servername=VirtualHost", "Virtual host") + 1;
     }
 
@@ -423,15 +423,15 @@ public class PartialRFC2616Test
         int offset = 0;
         String response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Default host") + 1;
-        offset = checkContains(response, offset, "Dump HttpHandler", "Default host") + 1;
-        offset = checkContains(response, offset, "pathInfo=/path/R1", "Default host") + 1;
+        offset = checkContains(response, offset, "Dump Handler", "Default host") + 1;
+        offset = checkContains(response, offset, "pathInContext=/path/R1", "Default host") + 1;
 
         // Virtual Host
         offset = 0;
         response = connector.getResponse("GET /path/R2 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Default host") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "virtual host") + 1;
-        offset = checkContains(response, offset, "pathInfo=/path/R2", "Default host") + 1;
+        offset = checkContains(response, offset, "pathInContext=/path/R2", "Default host") + 1;
     }
 
     @Test
@@ -442,14 +442,14 @@ public class PartialRFC2616Test
         String response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "2. virtual host field") + 1;
-        offset = checkContains(response, offset, "pathInfo=/path/R1", "2. virtual host field") + 1;
+        offset = checkContains(response, offset, "pathInContext=/path/R1", "2. virtual host field") + 1;
 
         // Virtual Host case insensitive
         offset = 0;
         response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: ViRtUalhOst\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "2. virtual host field") + 1;
-        offset = checkContains(response, offset, "pathInfo=/path/R1", "2. virtual host field") + 1;
+        offset = checkContains(response, offset, "pathInContext=/path/R1", "2. virtual host field") + 1;
 
         // Virtual Host
         offset = 0;
@@ -485,6 +485,7 @@ public class PartialRFC2616Test
     }
 
     @Test
+    @Disabled // TODO
     public void test10418() throws Exception
     {
         // Expect Failure
@@ -540,6 +541,7 @@ public class PartialRFC2616Test
     }
 
     @Test
+    @Disabled // TODO
     public void test824() throws Exception
     {
         // Expect 100 not sent
@@ -598,6 +600,7 @@ public class PartialRFC2616Test
     }
 
     @Test
+    @Disabled // TODO
     public void test1423() throws Exception
     {
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))

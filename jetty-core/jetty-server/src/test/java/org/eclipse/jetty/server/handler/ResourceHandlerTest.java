@@ -355,7 +355,7 @@ public class ResourceHandlerTest
                 (response) ->
                 {
                     String body = response.getContent();
-                    assertThat(body, containsString("/../../"));
+                    assertThat(body, containsString("Not Found"));
                     assertThat(body, not(containsString("Directory: ")));
                 }
             );
@@ -657,7 +657,6 @@ public class ResourceHandlerTest
         FS.ensureEmpty(docRoot);
 
         _server = new Server();
-        _server.setDefaultHandler(null);
         _local = new LocalConnector(_server);
         _local.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
         _server.addConnector(_local);

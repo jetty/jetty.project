@@ -512,7 +512,7 @@ public class HTTPServerDocs
         server.setHandler(gzipHandler);
 
         Handler.Collection collection = new Handler.Collection();
-        gzipHandler.setHandler(gzipHandler);
+        gzipHandler.setHandler(collection);
 
         collection.addHandler(new App1Handler());
         collection.addHandler(new App2Handler());
@@ -596,7 +596,7 @@ public class HTTPServerDocs
                     String newPath = "/new_path/" + path.substring("/old_path/".length());
                     HttpURI newURI = HttpURI.build(uri).path(newPath).asImmutable();
 
-                    // Modify the request object by wrapping
+                    // Modify the request object by wrapping the HttpURI
                     request = new Request.Wrapper(request)
                     {
                         @Override
@@ -606,9 +606,6 @@ public class HTTPServerDocs
                         }
                     };
                 }
-
-                // This Handler is not handling the request, so
-                // it does not call jettyRequest.setHandled(true).
 
                 // Forward to the next Handler.
                 return super.process(request, response, callback);
@@ -625,7 +622,6 @@ public class HTTPServerDocs
         server.setHandler(filter);
 
         server.start();
-
         // end::handlerFilter[]
     }
 
@@ -1006,7 +1002,7 @@ public class HTTPServerDocs
     {
         // tag::defaultHandler[]
         Server server = new Server();
-        server.setDefaultHandler(new DefaultHandler());
+        server.setDefaultHandler(new DefaultHandler(false, true));
 
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);

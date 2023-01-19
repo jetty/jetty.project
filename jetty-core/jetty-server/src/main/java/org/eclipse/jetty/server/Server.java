@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -132,7 +131,6 @@ public class Server extends Handler.Wrapper implements Attributes
         addBean(_threadPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);
-        setDefaultHandler(new DefaultHandler());
     }
 
     public Handler getDefaultHandler()

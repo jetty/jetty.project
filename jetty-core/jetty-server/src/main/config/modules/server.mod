@@ -112,12 +112,12 @@ etc/jetty.xml
 # jetty.scheduler.threads=1
 # end::documentation-scheduler-config[]
 
-## If the handlers of the ContextHandlerCollection can be updated once started
-## If set to false, then eeX-deploy module jetty.deploy.scanInterval should also be set to 0.
+## Whether the handlers of the ContextHandlerCollection can be updated once the server is started
+## If set to false, then eeN-deploy module jetty.deploy.scanInterval should also be set to 0.
 # jetty.server.contexts.dynamic=true
 
-## Should the DefaultServlet server the jetty favicon.ico
-# jetty.server.default.serveIcon=true
+## Should the DefaultHandler serve the jetty favicon.ico from the root.
+# jetty.server.default.serveFavIcon=true
 
-## Should the DefaultHandler show a list of known contexts.
+## Should the DefaultHandler show a list of known contexts in a root 404 response.
 # jetty.server.default.showContexts=true
