@@ -144,7 +144,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public void setDefaultHandler(Handler defaultHandler)
     {
-        if (isStarted())
+        if (!isDynamic() && isStarted())
             throw new IllegalStateException(getState());
         Handler old = _defaultHandler;
         _defaultHandler = defaultHandler;
