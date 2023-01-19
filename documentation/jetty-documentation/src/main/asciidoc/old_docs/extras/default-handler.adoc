@@ -24,5 +24,24 @@
 [[default-handler-usage]]
 ==== Usage
 
-A simple handler that is used by the `Server` to handle request that are not processed by any other `Handler`. If a request is processed by the `DefaultHandler` then it will typically produce a 404 response. However, if the request is for `flav.ico`, then the jetty icon may be served. Also a request to the root URI can be served with a list of available contexts.
+A simple handler that is useful to terminate handler chains with a clean fashion.
+As in the example below, if a resource to be served is not matched within the resource handler the `DefaultHandler` will take care of producing a 404 page.
+This class is a useful template to either extend and embrace or simply provide a similar implementation for customizing to your needs.
 There is also an link:#error-handler[Error Handler] that services errors related to the servlet api specification, so it is best to not get the two confused.
+
+_____
+[NOTE]
+The `DefaultHandler` will also handle serving out the `flav.ico` file should a request make it through all of the other handlers without being resolved.
+_____
+
+[source, java, subs="{sub-order}"]
+----
+    Server server = new Server(8080);
+    HandlerList handlers = new HandlerList();
+    ResourceHandler resourceHandler = new ResourceHandler();
+    resourceHandler.setBaseResource(Resource.newResource("."));
+    handlers.setHandlers(new Handler[]
+    { resourceHandler, new DefaultHandler() });
+    server.setHandler(handlers);
+    server.start();
+----

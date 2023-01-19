@@ -277,7 +277,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 [[pg-server-http-handler-use-util-default-handler]]
 ====== DefaultHandler
 
-`DefaultHandler` is a terminal `Handler` that always returns `true` from its `process` method and performs the following:
+`DefaultHandler` is a terminal `Handler` that always returns `true` from its `process(\...)` method and performs the following:
 
 * Serves the `favicon.ico` Jetty icon when it is requested
 * Sends a HTTP `404` response for any other request
@@ -349,8 +349,8 @@ Note also how adding a `Servlet` or a `Filter` returns a _holder_ object that ca
 
 When a request arrives to `ServletContextHandler` the request URI will be matched against the ``Filter``s and ``Servlet`` mappings and only those that match will process the request, as dictated by the Servlet specification.
 
-IMPORTANT: `ServletContextHandler` is a terminal `Handler`, that is it always returns `true` from its `process` method when invoked.
-Server applications must be careful when creating the `Handler` tree to put ``ServletContextHandler``s as last ``Handler``s in a `HandlerList` or as children of `ContextHandlerCollection`.
+IMPORTANT: `ServletContextHandler` is a terminal `Handler`, that is it always returns `true` from its `process(\...)` method when invoked.
+Server applications must be careful when creating the `Handler` tree to put ``ServletContextHandler``s as last ``Handler``s in any `Handler.Collection` or as children of a `ContextHandlerCollection`.
 
 // TODO: revise what above, as ServletContextHandler is not a terminal handler.
 // TODO: introduce the fact that ServletContextHandler can have a class loader that may be used to "isolate" web application classes.
