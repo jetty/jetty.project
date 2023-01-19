@@ -452,6 +452,25 @@ public class ServletContextResponse extends ContextResponse
         return encoding;
     }
 
+    /**
+     * Set the Character Encoding and EncodingFrom in the raw, with no manipulation
+     * of the ContentType value, MimeType value, or headers.
+     *
+     * @param encoding the character encoding
+     * @param from where encoding came from
+     */
+    protected void setRawCharacterEncoding(String encoding, EncodingFrom from)
+    {
+        _characterEncoding = encoding;
+        _encodingFrom = from;
+    }
+
+    /**
+     * Update the Content-Type, MimeType, and headers from the provided Character Encoding and
+     * EncodingFrom.
+     * @param encoding the character encoding
+     * @param from where encoding came from
+     */
     protected void setCharacterEncoding(String encoding, EncodingFrom from)
     {
         if (isWriting() || isCommitted())

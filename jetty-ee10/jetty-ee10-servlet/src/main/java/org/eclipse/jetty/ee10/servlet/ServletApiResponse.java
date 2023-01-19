@@ -496,7 +496,7 @@ public class ServletApiResponse implements HttpServletResponse
             }
             else
             {
-                _response.setCharacterEncoding(charset, ServletContextResponse.EncodingFrom.SET_CONTENT_TYPE);
+                _response.setRawCharacterEncoding(charset, ServletContextResponse.EncodingFrom.SET_CONTENT_TYPE);
             }
 
             if (HttpGenerator.__STRICT || _response.getMimeType() == null)
