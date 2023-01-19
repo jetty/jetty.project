@@ -132,7 +132,7 @@ If you need to serve static resources from multiple directories:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=multipleResourcesHandler]
 ----
 
-If the resource is not found, `ResourceHandler` will not return `true` from the `process` method, so what happens next depends on the `Handler` tree structure.
+If the resource is not found, `ResourceHandler` will not return `true` from the `process(\...)` method, so what happens next depends on the `Handler` tree structure.
 See also xref:pg-server-http-handler-use-util-default-handler[how to use] `DefaultHandler`.
 
 [[pg-server-http-handler-use-util-gzip-handler]]
