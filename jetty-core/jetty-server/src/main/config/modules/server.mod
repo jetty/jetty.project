@@ -119,5 +119,5 @@ etc/jetty.xml
 ## Should the DefaultServlet server the jetty favicon.ico
 # jetty.server.default.serveIcon=true
 
-## Should the DefaultServlet server show a list of known contexts
+## Should the DefaultHandler show a list of known contexts.
 # jetty.server.default.showContexts=true
