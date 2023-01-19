@@ -441,7 +441,6 @@ public class JnaQuicheConnection extends QuicheConnection
      * Fill the given buffer with cipher text to be sent.
      * @param buffer the buffer to fill.
      * @return how many bytes were added to the buffer.
-     * @throws IOException
      */
     @Override
     public int drainCipherBytes(ByteBuffer buffer) throws IOException

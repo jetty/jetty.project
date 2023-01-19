@@ -88,14 +88,14 @@ public class FileID
      * for the extension (if any), excluding the dot, lower-cased.
      * </p>
      *
-     * <code>{@code
+     * <pre>{@code
      * "foo.tar.gz" "gz"
      * "foo.bar"    "bar"
      * "foo."       ""
      * "foo"        null
      * ".bar"       null
      * null         null
-     * }</code>
+     * }</pre>
      *
      * @param uri The URI to search
      * @return The last segment extension. Null if input uri is null, or scheme is null, or URI is not a `jar:file:` or `file:` based URI
@@ -142,14 +142,14 @@ public class FileID
      * for the extension (if any), excluding the dot, lower-cased.
      * </p>
      *
-     * <code>{@code
+     * <pre>{@code
      * "foo.tar.gz" "gz"
      * "foo.bar"    "bar"
      * "foo."       ""
      * "foo"        null
      * ".bar"       null
      * null         null
-     * }</code>
+     * }</pre>
      *
      * @param path The string path
      * @return The last segment extension, or null if not a file, or null if there is no extension present

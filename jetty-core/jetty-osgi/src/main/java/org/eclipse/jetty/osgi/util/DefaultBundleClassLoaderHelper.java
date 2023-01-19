@@ -383,7 +383,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         {
             try
             {
-                /**
+                /*
                  * In Concierge:
                  *
                  * Option A:

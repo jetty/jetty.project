@@ -108,8 +108,6 @@ public class Util
      * @param bundleSymbolicNames comma separated list of symbolic bundle names
      * @param bundleContext the bundle on whose behalf to resolve
      * @return List of resolved Paths matching the bundle symbolic names
-     * 
-     * @throws Exception
      */
     public static List<Path> getPathsToBundlesBySymbolicNames(String bundleSymbolicNames, BundleContext bundleContext)
         throws Exception

@@ -94,9 +94,8 @@ public interface SessionCache extends LifeCycle
      * Adds a new Session, with a never-before-used id,
      *  to the cache.
      * 
-     * @param id
-     * @param session
-     * @throws Exception
+     * @param id id
+     * @param session session
      */
     void add(String id, Session session) throws Exception;
 
@@ -271,7 +270,7 @@ public interface SessionCache extends LifeCycle
     /**
      * If true, all existing sessions in the cache will be invalidated when
      * the server shuts down. Default is false.
-     * @param invalidateOnShutdown
+     * @param invalidateOnShutdown true invalidate all sessions in cache on server shutdown
      */
     void setInvalidateOnShutdown(boolean invalidateOnShutdown);
     
