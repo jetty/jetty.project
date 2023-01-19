@@ -34,7 +34,7 @@
               <outputDirectory>${project.build.directory}/webapps</outputDirectory>
             </configuration>
           </execution>
-          <execution>
+          <!-- execution>
             <id>unpack-jetty-home</id>
             <phase>process-test-resources</phase>
             <goals>
@@ -55,7 +55,7 @@
               <overWriteSnapshots>true</overWriteSnapshots>
               <overWriteIfNewer>true</overWriteIfNewer>
             </configuration>
-          </execution>
+          </execution -->
         </executions>
       </plugin>
       <plugin>
@@ -91,12 +91,12 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-    <dependency>
+    <!-- dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
-    </dependency>
+    </dependency -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http-tools</artifactId>

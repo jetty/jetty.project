@@ -29,6 +29,10 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class EchoHandler extends Handler.Abstract.NonBlocking
 {
+    public EchoHandler()
+    {
+    }
+    
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {

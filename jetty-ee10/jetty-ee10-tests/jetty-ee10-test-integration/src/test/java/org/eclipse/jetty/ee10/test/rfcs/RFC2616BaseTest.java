@@ -32,9 +32,14 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +60,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public abstract class RFC2616BaseTest
 {
+    
+    public static class EchoHandler extends Handler.Abstract.NonBlocking
+    {
+        @Override
+        public boolean process(Request request, Response response, Callback callback) throws Exception
+        {
+            response.setStatus(200);
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            if (StringUtil.isNotBlank(contentType))
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+
+            if (request.getHeaders().contains(HttpHeader.TRAILER))
+            {
+                HttpFields.Mutable responseTrailers = HttpFields.build();
+                response.setTrailersSupplier(() -> responseTrailers);
+            }
+
+            long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            if (contentLength >= 0)
+                response.getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+
+            if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
+                Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
+            else
+                callback.succeeded();
+            return true;
+        }
+    }
+
     private static final String ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
     /**
      * STRICT RFC TESTS
