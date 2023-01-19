@@ -23,7 +23,7 @@ An `org.eclipse.jetty.server.Handler` is the component that processes incoming H
 * a specialized ``Handler.Container`` may use attributes of the request (e.g. `getHttpURI()``) to select from one or more contained ``Handler``s to delegate the `process` method call to.
 
 
-A ``Handler``s tree is created by composing ``Handler``s together:
+A ``Handler`` tree is created by composing ``Handler``s together:
 
 [source,java,indent=0]
 ----
