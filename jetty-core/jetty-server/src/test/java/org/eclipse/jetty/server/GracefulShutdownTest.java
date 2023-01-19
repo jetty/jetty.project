@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -272,6 +273,104 @@ public class GracefulShutdownTest
         assertEquals(0, latchHandler.handlingCount.get());
         // There should be no caught Throwable from the process() method
         assertEquals(0, latchHandler.errors.size(), "LatchHandler seen errors count");
+    }
+
+    @Test
+    public void testGracefulShutdownHandlerFailureDuringGraceful() throws Exception
+    {
+        AtomicReference<CompletableFuture<Long>> stopFuture = new AtomicReference<>();
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                stopFuture.set(runAsyncServerStop());
+                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+                throw new RuntimeException("Intentional Failure");
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        String rawIntentionalRequest = """
+            POST /?hint=intentional_failure HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            12345""";
+
+        Socket client0 = newSocketToServer("client0", "intentional failure");
+
+        // Intentional Failure request
+        writeRequest(client0, rawIntentionalRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
+
+        // Verify Stop duration
+        long stopDuration = stopFuture.get().get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        InputStream in = client0.getInputStream();
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " not closed", in.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    @Test
+    public void testGracefulShutdownHandlerFalseProcess() throws Exception
+    {
+        AtomicReference<CompletableFuture<Long>> stopFuture = new AtomicReference<>();
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                stopFuture.set(runAsyncServerStop());
+                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+                return false;
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        String rawRequest = """
+            POST / HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            12345""";
+
+        Socket client0 = newSocketToServer("client0", "request");
+
+        // Intentional Failure request
+        writeRequest(client0, rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
+
+        // Verify Stop duration
+        long stopDuration = stopFuture.get().get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        InputStream in = client0.getInputStream();
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " not closed", in.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
     }
 
     @Test
@@ -658,6 +757,7 @@ public class GracefulShutdownTest
                     }
                     assertTrue(response.isCommitted(), "Response expected to be committed");
                 }
+
                 CountDownLatch l = latch;
                 if (l != null)
                     l.countDown();
