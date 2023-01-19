@@ -96,7 +96,7 @@ public class TestWebAppPropertyConverter
         webApp.setContextPath("/foo");
         webApp.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("root"));
         webApp.setTempDirectory(tmpDir);
-        webApp.setPersistTempDirectory(false);
+        webApp.setTempDirectoryPersistent(false);
         webApp.setClasses(classesDir);
         webApp.setTestClasses(testClassesDir);
         webApp.setWebInfLib(Arrays.asList(jar1, jar2));
@@ -149,7 +149,7 @@ public class TestWebAppPropertyConverter
         assertThat(webApp.getWebInfLib(), Matchers.contains(jar1, jar2));
         assertThat(webApp.getOverrideDescriptors(), Matchers.contains(override1.getAbsolutePath(), override2.getAbsolutePath()));
         assertEquals(tmpDir, webApp.getTempDirectory());
-        assertEquals(true, webApp.isPersistTempDirectory());
+        assertEquals(true, webApp.isTempDirectoryPersistent());
         assertEquals(war.getAbsolutePath(), webApp.getWar());
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
         assertThat(webApp.getBaseResource(), instanceOf(CombinedResource.class));

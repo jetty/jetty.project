@@ -16,8 +16,6 @@ package org.eclipse.jetty.client;
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.client.api.Connection;
-
 /**
  * <p>Client-side connection pool abstraction.</p>
  */
@@ -102,7 +100,7 @@ public interface ConnectionPool extends Closeable
          * @param destination the destination to create the ConnectionPool for
          * @return the newly created ConnectionPool
          */
-        ConnectionPool newConnectionPool(HttpDestination destination);
+        ConnectionPool newConnectionPool(Destination destination);
     }
 
     /**

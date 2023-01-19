@@ -35,7 +35,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  *  </p>
  */
 @Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
-@Execute(phase = LifecyclePhase.VALIDATE)
 public class JettyStartMojo extends AbstractUnassembledWebAppMojo
 {
 

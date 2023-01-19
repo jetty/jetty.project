@@ -27,11 +27,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -451,7 +446,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
         final HttpRedirector redirector = new HttpRedirector(client);
 
-        org.eclipse.jetty.client.api.Request request1 = client.newRequest("localhost", connector.getLocalPort())
+        org.eclipse.jetty.client.Request request1 = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/303/localhost/302/localhost/done")
             .timeout(5, TimeUnit.SECONDS)
@@ -462,7 +457,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         assertTrue(redirector.isRedirect(response1));
 
         Result result = redirector.redirect(request1, response1);
-        org.eclipse.jetty.client.api.Request request2 = result.getRequest();
+        org.eclipse.jetty.client.Request request2 = result.getRequest();
         Response response2 = result.getResponse();
 
         assertEquals(302, response2.getStatus());
@@ -679,10 +674,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
 
         final AtomicInteger passes = new AtomicInteger();
-        client.getRequestListeners().add(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+        client.getRequestListeners().add(new org.eclipse.jetty.client.Request.Listener.Adapter()
         {
             @Override
-            public void onBegin(org.eclipse.jetty.client.api.Request request)
+            public void onBegin(org.eclipse.jetty.client.Request request)
             {
                 int pass = passes.incrementAndGet();
                 if (pass == 1)

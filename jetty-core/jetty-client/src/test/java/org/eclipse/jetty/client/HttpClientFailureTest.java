@@ -21,9 +21,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;

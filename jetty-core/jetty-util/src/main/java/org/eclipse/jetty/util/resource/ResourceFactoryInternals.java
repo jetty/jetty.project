@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.util.List;
@@ -48,10 +49,34 @@ class ResourceFactoryInternals
         CURRENT_WORKING_DIR = Path.of(System.getProperty("user.dir"));
 
         // The default resource factories
-        RESOURCE_FACTORIES.put("jar", new MountedPathResourceFactory());
+        MountedPathResourceFactory mountedPathResourceFactory = new MountedPathResourceFactory();
+        RESOURCE_FACTORIES.put("jar", mountedPathResourceFactory);
         PathResourceFactory pathResourceFactory = new PathResourceFactory();
         RESOURCE_FACTORIES.put("file", pathResourceFactory);
         RESOURCE_FACTORIES.put("jrt", pathResourceFactory);
+
+        /* Best-effort attempt to support an alternate FileSystem type that is in use for classpath
+         * resources.
+         * 
+         * The build.properties is present in the jetty-util jar, and explicitly included for reflection
+         * with native-image (unlike classes, which are not accessible by default), so we use that
+         * resource as a reference.
+         */
+        URL url = ResourceFactoryInternals.class.getResource("/org/eclipse/jetty/version/build.properties");
+        if ((url != null) && !RESOURCE_FACTORIES.contains(url.getProtocol()))
+        {
+            ResourceFactory resourceFactory;
+            if (GraalIssue5720PathResource.isAffectedURL(url))
+            {
+                resourceFactory = new GraalIssue5720PathResourceFactory();
+            }
+            else
+            {
+                resourceFactory = url.toString().contains("!/") ? mountedPathResourceFactory : pathResourceFactory;
+            }
+
+            RESOURCE_FACTORIES.put(url.getProtocol(), resourceFactory);
+        }
     }
 
     static ResourceFactory ROOT = new CompositeResourceFactory()

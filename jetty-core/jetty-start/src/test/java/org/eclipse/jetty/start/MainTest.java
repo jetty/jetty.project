@@ -24,9 +24,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,6 +34,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MainTest
 {
@@ -142,12 +143,15 @@ public class MainTest
         assertThat("JVM Arg on command line detail", warningIter.next(), containsString("Argument: --foople (interpreted as a JVM argument, from <command-line>"));
     }
 
+    /**
+     * A test to ensure that the usage text is still present and not accidentally deleted.
+     */
     @Test
-    @Disabled("Just a bit noisy for general testing")
-    public void testHelp() throws Exception
+    public void testUsageHelpStillThere() throws Exception
     {
-        Main main = new Main();
-        main.usage(false);
+        Path usageFile = MavenPaths.findMainResourceFile("org/eclipse/jetty/start/usage.txt");
+        assertTrue(Files.exists(usageFile));
+        assertTrue(Files.isRegularFile(usageFile));
     }
 
     @Test

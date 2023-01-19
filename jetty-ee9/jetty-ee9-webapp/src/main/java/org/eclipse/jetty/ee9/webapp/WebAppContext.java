@@ -56,6 +56,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -86,8 +87,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
-    public static final String TEMPDIR = ServletContext.TEMPDIR;
-    public static final String BASETEMPDIR = Server.BASE_TEMP_DIR_ATTR;
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee9/webapp/webdefault-ee9.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.ee9.webapp.systemClasses";
@@ -130,9 +129,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private PermissionCollection _permissions;
 
     private String[] _contextWhiteList = null;
-
-    private File _tmpDir;
-    private boolean _persistTmpDir = false;
 
     private String _war;
     private List<Resource> _extraClasspath;
@@ -253,7 +249,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             switch (property)
             {
                 case Deployable.WAR -> setWar(value);
-                case Deployable.BASE_TEMP_DIR -> setAttribute(BASETEMPDIR, value);
+                case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
                 case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
@@ -1158,29 +1154,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setTempDirectory(File dir)
     {
-        if (isStarted())
-            throw new IllegalStateException("Started");
-
-        if (dir != null)
-        {
-            try
-            {
-                dir = new File(dir.getCanonicalPath());
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to find canonical path for {}", dir, e);
-            }
-        }
-
-        _tmpDir = dir;
-        setAttribute(TEMPDIR, _tmpDir);
+        getCoreContextHandler().setTempDirectory(dir);
+        setAttribute(ServletContext.TEMPDIR, getCoreContextHandler().getTempDirectory());
     }
 
     @ManagedAttribute(value = "temporary directory location", readonly = true)
     public File getTempDirectory()
     {
-        return _tmpDir;
+        return getCoreContextHandler().getTempDirectory();
     }
 
     /**
@@ -1192,7 +1173,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setPersistTempDirectory(boolean persist)
     {
-        _persistTmpDir = persist;
+        getCoreContextHandler().setTempDirectoryPersistent(persist);
     }
 
     /**
@@ -1200,7 +1181,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public boolean isPersistTempDirectory()
     {
-        return _persistTmpDir;
+        return getCoreContextHandler().isTempDirectoryPersistent();
     }
 
     /**

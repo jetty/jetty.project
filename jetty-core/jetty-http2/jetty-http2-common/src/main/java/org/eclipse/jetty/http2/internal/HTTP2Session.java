@@ -248,7 +248,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         {
             if (getRecvWindow() < 0)
             {
-                onSessionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", toCallback(data));
+                onSessionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.NOOP);
             }
             else
             {
@@ -256,7 +256,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 {
                     // It's a bad client, it does not deserve to be
                     // treated gently by just resetting the stream.
-                    onSessionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", toCallback(data));
+                    onSessionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", Callback.NOOP);
                 }
                 else
                 {
@@ -272,34 +272,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
             if (isStreamClosed(streamId))
-                reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), toCallback(data));
+                reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             else
-                onSessionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", toCallback(data));
+                onSessionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", Callback.NOOP);
         }
-    }
-
-    private Callback toCallback(Stream.Data data)
-    {
-        return new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                data.release();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                data.release();
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return InvocationType.NON_BLOCKING;
-            }
-        };
     }
 
     private boolean isStreamClosed(int streamId)
@@ -2305,6 +2281,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             this.data = data;
             this.stream = stream;
             this.flowControlLength = flowControlLength;
+            // Since this class starts its own reference counter
+            // at 1, we need to retain the delegate Data object,
+            // so that the releases will be paired.
+            data.retain();
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return data.canRetain();
         }
 
         @Override

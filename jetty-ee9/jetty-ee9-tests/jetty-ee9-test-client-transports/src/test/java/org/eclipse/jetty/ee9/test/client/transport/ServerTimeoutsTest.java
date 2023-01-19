@@ -33,10 +33,10 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -600,7 +600,6 @@ public class ServerTimeoutsTest extends AbstractTest
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 objects.offer(chunk.remaining());
-                chunk.release();
                 objects.offer(demander);
             })
             .send(result ->

@@ -18,13 +18,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

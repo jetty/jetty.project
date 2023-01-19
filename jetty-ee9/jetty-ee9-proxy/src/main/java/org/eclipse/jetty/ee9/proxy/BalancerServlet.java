@@ -26,7 +26,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.util.URIUtil;
 
 public class BalancerServlet extends ProxyServlet

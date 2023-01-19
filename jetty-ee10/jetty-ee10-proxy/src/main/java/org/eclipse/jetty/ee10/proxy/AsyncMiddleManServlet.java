@@ -35,13 +35,13 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.GZIPContentDecoder;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -439,6 +439,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onContent(Response serverResponse, Content.Chunk chunk, Runnable demander)
         {
+            chunk.retain();
             Callback callback = Callback.from(chunk::release, Callback.from(demander, serverResponse::abort));
             try
             {

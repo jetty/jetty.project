@@ -16,12 +16,8 @@ package org.eclipse.jetty.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.internal.HttpDestination;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.params.ParameterizedTest;

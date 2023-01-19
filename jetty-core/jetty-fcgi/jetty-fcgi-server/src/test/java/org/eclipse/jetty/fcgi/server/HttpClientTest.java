@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FutureResponseListener;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
@@ -651,7 +651,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .scheme(scheme)
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                chunk.release();
                 contentCount.incrementAndGet();
                 demanderRef.set(demander);
                 contentLatch.get().countDown();
