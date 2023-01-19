@@ -75,7 +75,7 @@ public class HttpCookie
     }
 
     /**
-     * Names of Attributes that are parsed and shouldn't be present in the Attributes list.
+     * Names of well-known Attributes that are parsed by the constructors and shouldn't be present in the stored {@link #getAttributes()} Map.
      */
     private static final List<String> PARSED_ATTRIBUTE_NAMES = List.of("Domain", "Path", "Max-Age", "HttpOnly", "Secure", "Comment");
 
@@ -177,7 +177,6 @@ public class HttpCookie
      */
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite)
     {
-
         this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, Collections.singletonMap("SameSite", sameSite == null ? null : sameSite.getAttributeValue()));
     }
 
@@ -208,11 +207,13 @@ public class HttpCookie
         _version = version;
         _expiration = maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(maxAge);
         Map<String, String> attrs = null;
-        if (attributes == null)
+        if (attributes == null || attributes.isEmpty())
             attrs = Collections.emptyMap(); // unmodifiable empty map
         else
         {
-            attrs = new HashMap<>(attributes); // create new map, to only capture relevant attributes
+            // create new map, to only capture relevant attributes
+            attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            attrs.putAll(attributes);
             PARSED_ATTRIBUTE_NAMES.forEach(attrs::remove); // remove names that are also fields
             attrs = Collections.unmodifiableMap(attrs); // don't allow attributes to be modified
         }
@@ -237,12 +238,16 @@ public class HttpCookie
         _version = version;
 
         Map<String, String> attrs = null;
-        if (attributes == null)
-            attrs = Collections.emptyMap();
+        if (attributes == null || attributes.isEmpty())
+            attrs = Collections.emptyMap(); // unmodifiable empty map
         else
-            attrs = new TreeMap<>(attributes);
+        {
+            // create new map, to only capture relevant attributes
+            attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            attrs.putAll(attributes);
+        }
 
-        //remove all of the well-known attributes, leaving only those pass-through ones
+        // remove all the well-known attributes, leaving only those unique to attributes as pass-through ones
         _domain = attrs.remove("Domain");
         _path = attrs.remove("Path");
 
@@ -388,7 +393,7 @@ public class HttpCookie
      *
      * @param s value string
      * @return true if quoted;
-     * @throws IllegalArgumentException If there a control characters in the string
+     * @throws IllegalArgumentException If there is a String contains unexpected / illegal characters
      */
     private static boolean isQuoteNeededForCookie(String s)
     {
@@ -627,10 +632,12 @@ public class HttpCookie
     /**
      * Extract the bare minimum of info from a Set-Cookie header string.
      *
+     * <p>
      * Ideally this method should not be necessary, however as java.net.HttpCookie
      * does not yet support generic attributes, we have to use it in a minimal
      * fashion. When it supports attributes, we could look at reverting to a
      * constructor on o.e.j.h.HttpCookie to take the set-cookie header string.
+     * </p>
      *
      * @param setCookieHeader the header as a string
      * @return a map containing the name, value, domain, path. max-age of the set cookie header
@@ -678,7 +685,7 @@ public class HttpCookie
      * @param name the cookie name to check
      * @param domain the cookie domain to check
      * @param path the cookie path to check
-     * @return true if all of the name, domain and path all match the HttpCookie, false otherwise
+     * @return true if name, domain, and path, match all match the HttpCookie, false otherwise
      */
     public static boolean match(HttpCookie cookie, String name, String domain, String path)
     {
