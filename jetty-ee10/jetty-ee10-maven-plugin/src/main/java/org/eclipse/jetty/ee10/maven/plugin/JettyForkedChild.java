@@ -29,8 +29,6 @@ import java.util.Set;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +50,7 @@ public class JettyForkedChild extends ContainerLifeCycle
 
     /**
      * @param args arguments that were passed to main
-     * @throws IOException if unable to configure
+     * @throws Exception if unable to configure
      */
     public JettyForkedChild(String[] args)
         throws Exception
@@ -65,7 +63,7 @@ public class JettyForkedChild extends ContainerLifeCycle
      * Based on the args passed to the program, configure jetty.
      * 
      * @param args args that were passed to the program.
-     * @throws IOException if unable to load webprops
+     * @throws Exception if unable to load webprops
      */
     public void configure(String[] args)
         throws Exception
@@ -115,8 +113,9 @@ public class JettyForkedChild extends ContainerLifeCycle
                 continue;
             }
 
-            if ("--scan".equals(args[i]))
+            if ("--scanInterval".equals(args[i]))
             {
+                scanInterval = Integer.parseInt(args[++i].trim());
                 scanner = new Scanner();
                 scanner.setReportExistingFilesOnStartup(false);
                 scanner.setScanInterval(scanInterval);
@@ -153,15 +152,6 @@ public class JettyForkedChild extends ContainerLifeCycle
 
                 if (!Objects.isNull(webAppPropsFile))
                     scanner.addFile(webAppPropsFile.toPath());
-                continue;
-            }
-            
-            //TODO should be instead arg to the --scan option, but for backwards compat it can't be yet
-            if ("--scanInterval".equals(args[i]))
-            {
-                scanInterval = Integer.parseInt(args[++i].trim());
-                if (!Objects.isNull(scanner))
-                    scanner.setScanInterval(scanInterval);
                 continue;
             }
 
@@ -207,7 +197,6 @@ public class JettyForkedChild extends ContainerLifeCycle
         //touch file to signify start of jetty
         Path tokenPath = tokenFile.toPath();
         Files.createFile(tokenPath);
-        Resource r = ResourceFactory.of(this).newResource(tokenPath);
 
         //Start a watcher on a file that will change if the
         //webapp is regenerated; stop the webapp, apply the

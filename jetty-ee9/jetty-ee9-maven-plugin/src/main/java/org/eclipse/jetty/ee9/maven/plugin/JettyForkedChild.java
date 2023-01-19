@@ -46,12 +46,12 @@ public class JettyForkedChild extends ContainerLifeCycle
     protected JettyEmbedder jetty;
     protected File tokenFile; // TODO: convert to Path
     protected Scanner scanner;
-    protected int scanInterval;
     protected File webAppPropsFile; // TODO: convert to Path
+    protected int scanInterval;
 
     /**
      * @param args arguments that were passed to main
-     * @throws Exception
+     * @throws Exception if unable to configure
      */
     public JettyForkedChild(String[] args)
         throws Exception
@@ -64,7 +64,7 @@ public class JettyForkedChild extends ContainerLifeCycle
      * Based on the args passed to the program, configure jetty.
      * 
      * @param args args that were passed to the program.
-     * @throws Exception
+     * @throws Exception if unable to load webprops
      */
     public void configure(String[] args)
         throws Exception
@@ -114,8 +114,9 @@ public class JettyForkedChild extends ContainerLifeCycle
                 continue;
             }
 
-            if ("--scan".equals(args[i]))
+            if ("--scanInterval".equals(args[i]))
             {
+                scanInterval = Integer.parseInt(args[++i].trim());
                 scanner = new Scanner();
                 scanner.setReportExistingFilesOnStartup(false);
                 scanner.setScanInterval(scanInterval);
@@ -154,15 +155,7 @@ public class JettyForkedChild extends ContainerLifeCycle
                     scanner.addFile(webAppPropsFile.toPath());
                 continue;
             }
-            
-            //TODO should be instead arg to the --scan option, but for backwards compat it can't be yet
-            if ("--scanInterval".equals(args[i]))
-            {
-                scanInterval = Integer.parseInt(args[++i].trim());
-                if (!Objects.isNull(scanner))
-                    scanner.setScanInterval(scanInterval);
-                continue;
-            }
+
             //assume everything else is a jetty property to be passed in
             String[] tmp = args[i].trim().split("=");
             if (tmp.length == 2)

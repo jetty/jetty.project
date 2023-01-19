@@ -52,7 +52,7 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
 
     protected Resource _configResource;
     protected Scanner _scanner;
-    protected int _reloadScanSeconds = 0;
+    protected int _refreshInterval = 0;
     protected boolean _firstLoad = true; // true if first load, false from that point on
     protected List<UserListener> _listeners;
 
@@ -91,21 +91,24 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
      * Is hot reload enabled on this user store
      *
      * @return true if hot reload was enabled before startup
+     * @deprecated use {@link #getRefreshInterval()}
      */
+    @Deprecated
     public boolean isHotReload()
     {
-        return getReloadScanSeconds() > 0;
+        return getRefreshInterval() > 0;
     }
 
     /**
      * Enable Hot Reload of the Property File
      *
      * @param enable true to enable to a 1 second scan, false to disable
-     * @see #setReloadScanSeconds(int)
+     * @deprecated use {@link #setRefreshInterval(int)}
      */
+    @Deprecated
     public void setHotReload(boolean enable)
     {
-        setReloadScanSeconds(enable ? 1 : 0);
+        setRefreshInterval(enable ? 1 : 0);
     }
 
     /**
@@ -113,18 +116,21 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
      *
      * @param scanSeconds the period in seconds to scan for property file changes, or 0 for no scanning
      */
-    public void setReloadScanSeconds(int scanSeconds)
+    public void setRefreshInterval(int scanSeconds)
     {
         if (isRunning())
         {
             throw new IllegalStateException("Cannot set scan period while user store is running");
         }
-        this._reloadScanSeconds = scanSeconds;
+        this._refreshInterval = scanSeconds;
     }
 
-    public int getReloadScanSeconds()
+    /**
+     * @return the period in seconds to scan for property file changes, or 0 for no scanning
+     */
+    public int getRefreshInterval()
     {
-        return _reloadScanSeconds;
+        return _refreshInterval;
     }
 
     @Override
@@ -133,6 +139,10 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
         return String.format("%s[cfg=%s]", super.toString(), _configResource);
     }
 
+    /**
+     * Load the user data from the property file.
+     * @throws IOException If the users cannot be loaded
+     */
     protected void loadUsers() throws IOException
     {
         Resource config = getConfig();
@@ -149,8 +159,9 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
         Properties properties = new Properties();
         try (InputStream inputStream = config.newInputStream())
         {
-            if (inputStream != null)
-                properties.load(inputStream);
+            if (inputStream == null)
+                throw new IllegalStateException("Config does have properties: " + config);
+            properties.load(inputStream);
         }
 
         Set<String> known = new HashSet<>();
@@ -210,11 +221,11 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
     protected void doStart() throws Exception
     {
         Resource config = getConfig();
-        if (isHotReload() && (config != null))
+        if (getRefreshInterval() > 0 && (config != null))
         {
             _scanner = new Scanner(null, false);
             _scanner.addFile(config.getPath());
-            _scanner.setScanInterval(1);
+            _scanner.setScanInterval(_refreshInterval);
             _scanner.setReportExistingFilesOnStartup(false);
             _scanner.addListener(this);
             addBean(_scanner);
