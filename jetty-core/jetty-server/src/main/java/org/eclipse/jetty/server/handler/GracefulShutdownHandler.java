@@ -51,10 +51,10 @@ public class GracefulShutdownHandler extends Handler.Wrapper implements Graceful
     }
 
     /**
-     * Test during Graceful shutdown to see if we are done with all
-     * graceful actions.
+     * Flag indicating that Graceful shutdown has been initiated.
      *
-     * @return true if graceful is active
+     * @return whether the graceful shutdown has been initiated
+     * @see Graceful
      */
     @Override
     public boolean isShutdown()
@@ -65,7 +65,7 @@ public class GracefulShutdownHandler extends Handler.Wrapper implements Graceful
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
-        // Increment the counter always, before we test for isShutdown to avoid race.
+        // Increment the counter before the test for isShutdown(), to avoid race conditions.
         ShutdownTrackingCallback shutdownCallback = new ShutdownTrackingCallback(request, response, callback);
 
         Handler handler = getHandler();
@@ -99,8 +99,8 @@ public class GracefulShutdownHandler extends Handler.Wrapper implements Graceful
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        if (LOG.isInfoEnabled())
-            LOG.info("Shutdown requested");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutdown requested");
         return shutdown.shutdown();
     }
 
