@@ -66,13 +66,13 @@ public class ContentTest
     {
         Retainable.ReferenceCounter referenceCounter1 = new Retainable.ReferenceCounter(2);
         assertThat(referenceCounter1.isRetained(), is(true));
-        assertThat(Content.Chunk.from(ByteBuffer.wrap(new byte[0]), true, referenceCounter1), sameInstance(Content.Chunk.EOF));
+        assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), true, referenceCounter1), sameInstance(Content.Chunk.EOF));
         assertThat(referenceCounter1.isRetained(), is(false));
         assertThat(referenceCounter1.release(), is(true));
 
         Retainable.ReferenceCounter referenceCounter2 = new Retainable.ReferenceCounter(2);
         assertThat(referenceCounter2.isRetained(), is(true));
-        assertThat(Content.Chunk.from(ByteBuffer.wrap(new byte[0]), false, referenceCounter2), sameInstance(Content.Chunk.EMPTY));
+        assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), false, referenceCounter2), sameInstance(Content.Chunk.EMPTY));
         assertThat(referenceCounter2.isRetained(), is(false));
         assertThat(referenceCounter2.release(), is(true));
     }

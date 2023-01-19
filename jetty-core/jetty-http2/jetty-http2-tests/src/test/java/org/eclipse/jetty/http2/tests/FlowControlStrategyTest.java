@@ -571,6 +571,7 @@ public abstract class FlowControlStrategyTest
         assertTrue(prepareLatch.await(5, TimeUnit.SECONDS));
 
         // Second request will consume half of the remaining the session window.
+        List<Stream.Data> dataList2 = new ArrayList<>();
         MetaData.Request request2 = newRequest("GET", HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
@@ -581,11 +582,13 @@ public abstract class FlowControlStrategyTest
                 if (!data.frame().isEndStream())
                     stream.demand();
                 // Do not release it to stall flow control.
+                dataList2.add(data);
             }
         });
 
         // Third request will consume the whole session window, which is now stalled.
         // A fourth request will not be able to receive data.
+        List<Stream.Data> dataList3 = new ArrayList<>();
         MetaData.Request request3 = newRequest("GET", HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request3, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
@@ -596,6 +599,7 @@ public abstract class FlowControlStrategyTest
                 if (!data.frame().isEndStream())
                     stream.demand();
                 // Do not release it to stall flow control.
+                dataList3.add(data);
             }
         });
 
@@ -624,6 +628,9 @@ public abstract class FlowControlStrategyTest
         dataList1.forEach(Stream.Data::release);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        dataList2.forEach(Stream.Data::release);
+        dataList3.forEach(Stream.Data::release);
     }
 
     @Test
@@ -754,6 +761,7 @@ public abstract class FlowControlStrategyTest
     public void testClientExceedingSessionWindow() throws Exception
     {
         // On server, we don't consume the data.
+        List<Stream.Data> dataList = new ArrayList<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener()
         {
@@ -769,6 +777,7 @@ public abstract class FlowControlStrategyTest
                         Stream.Data data = stream.readData();
                         if (!data.frame().isEndStream())
                             stream.demand();
+                        dataList.add(data);
                     }
                 };
             }
@@ -845,12 +854,15 @@ public abstract class FlowControlStrategyTest
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+
+        dataList.forEach(Stream.Data::release);
     }
 
     @Test
     public void testClientExceedingStreamWindow() throws Exception
     {
         // On server, we don't consume the data.
+        List<Stream.Data> dataList = new ArrayList<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener()
         {
@@ -874,6 +886,7 @@ public abstract class FlowControlStrategyTest
                         Stream.Data data = stream.readData();
                         if (!data.frame().isEndStream())
                             stream.demand();
+                        dataList.add(data);
                     }
                 };
             }
@@ -946,6 +959,8 @@ public abstract class FlowControlStrategyTest
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+
+        dataList.forEach(Stream.Data::release);
     }
 
     @Test

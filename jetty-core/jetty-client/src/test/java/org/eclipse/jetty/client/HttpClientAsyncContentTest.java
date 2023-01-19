@@ -63,7 +63,6 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                chunk.release();
                 contentCount.incrementAndGet();
                 demanderRef.set(demander);
                 contentLatch.get().countDown();

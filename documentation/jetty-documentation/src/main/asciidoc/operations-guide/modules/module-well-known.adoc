@@ -25,5 +25,5 @@ See link:https://www.iana.org/assignments/well-known-uris/well-known-uris.xhtml[
 The module properties are:
 
 ----
-include::{JETTY_HOME}/modules/well-known.mod[tags=documentation]
+include::{jetty-home}/modules/well-known.mod[tags=documentation]
 ----

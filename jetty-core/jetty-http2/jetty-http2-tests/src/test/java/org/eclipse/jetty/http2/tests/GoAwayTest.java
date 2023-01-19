@@ -15,6 +15,8 @@ package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -387,6 +389,7 @@ public class GoAwayTest extends AbstractTest
     {
         int flowControlWindow = 32 * 1024;
 
+        List<Stream.Data> dataList = new ArrayList<>();
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
@@ -408,7 +411,8 @@ public class GoAwayTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        stream.readData();
+                        Stream.Data data = stream.readData();
+                        dataList.add(data);
                         // Do not release the Data for this stream.
                         // Only send the response after reading the first DATA frame.
                         if (dataFrames.incrementAndGet() == 1)
@@ -513,6 +517,8 @@ public class GoAwayTest extends AbstractTest
 
         assertFalse(((HTTP2Session)serverSessionRef.get()).getEndPoint().isOpen());
         assertFalse(((HTTP2Session)clientSession).getEndPoint().isOpen());
+
+        dataList.forEach(Stream.Data::release);
     }
 
     @Test

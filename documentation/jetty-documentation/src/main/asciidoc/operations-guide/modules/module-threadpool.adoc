@@ -24,7 +24,7 @@ Start with the default value of `maxThreads`, and tune for larger values if need
 The module properties to configure the thread pool are:
 
 ----
-include::{JETTY_HOME}/modules/threadpool.mod[tags=documentation]
+include::{jetty-home}/modules/threadpool.mod[tags=documentation]
 ----
 
 Among the configurable properties, the most relevant are:

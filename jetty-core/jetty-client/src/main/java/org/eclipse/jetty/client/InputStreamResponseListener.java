@@ -102,31 +102,26 @@ public class InputStreamResponseListener extends Listener.Adapter
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Skipped empty chunk {}", chunk);
-            chunk.release();
             demander.run();
             return;
         }
 
-        boolean closed;
         try (AutoLock.WithCondition l = lock.lock())
         {
-            closed = this.closed;
             if (!closed)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing chunk {}", chunk);
+                chunk.retain();
                 chunkCallbacks.add(new ChunkCallback(chunk, demander, response::abort));
                 l.signalAll();
+                return;
             }
         }
 
-        if (closed)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("InputStream closed, ignored chunk {}", chunk);
-            chunk.release();
-            response.abort(new AsynchronousCloseException());
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("InputStream closed, ignored chunk {}", chunk);
+        response.abort(new AsynchronousCloseException());
     }
 
     @Override

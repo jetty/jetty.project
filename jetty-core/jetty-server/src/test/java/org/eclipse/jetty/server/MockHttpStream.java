@@ -46,18 +46,6 @@ public class MockHttpStream implements HttpStream
         {
             return false;
         }
-
-        @Override
-        public void retain()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return true;
-        }
     };
     private final long _nanoTime = NanoTime.now();
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
@@ -98,8 +86,9 @@ public class MockHttpStream implements HttpStream
         return addContent(BufferUtil.toBuffer(content), last);
     }
 
-    public Runnable addContent(Content.Chunk chunk)
+    private Runnable addContent(Content.Chunk chunk)
     {
+        chunk.retain();
         chunk = _content.getAndSet(chunk);
         if (chunk == DEMAND)
             return _channel.onContentAvailable();
