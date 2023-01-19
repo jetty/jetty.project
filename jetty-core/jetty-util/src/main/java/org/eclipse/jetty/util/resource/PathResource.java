@@ -358,6 +358,7 @@ public class PathResource extends Resource
      * </p>
      *
      * <table>
+     * <caption>Alias Check Logic</caption>
      * <thead>
      * <tr>
      * <th>path</th>
@@ -510,10 +511,10 @@ public class PathResource extends Resource
      * @param path the path to convert to URI
      * @return the appropriate URI for the path
      */
-    private static URI toUri(Path path)
+    protected URI toUri(Path path)
     {
         URI pathUri = path.toUri();
-        String rawUri = path.toUri().toASCIIString();
+        String rawUri = pathUri.toASCIIString();
 
         if (Files.isDirectory(path) && !rawUri.endsWith("/"))
         {

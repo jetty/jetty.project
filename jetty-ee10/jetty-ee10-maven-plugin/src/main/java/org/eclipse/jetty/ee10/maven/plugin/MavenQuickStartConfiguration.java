@@ -39,7 +39,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
     public void deconfigure(WebAppContext context) throws Exception
     {
         //if we're not persisting the temp dir, get rid of any overlays
-        if (!context.isPersistTempDirectory())
+        if (!context.isTempDirectoryPersistent())
         {
             Resource originalBases = (Resource)context.getAttribute("org.eclipse.jetty.resources.originalBases");
             String originalBaseStr = originalBases.toString();

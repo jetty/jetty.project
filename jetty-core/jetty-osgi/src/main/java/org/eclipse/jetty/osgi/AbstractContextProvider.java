@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.osgi;
 
-import java.io.File;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -26,15 +21,10 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee.Deployable;
-import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.util.OSGiClassLoader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
@@ -43,8 +33,10 @@ import org.slf4j.LoggerFactory;
 /**
  * AbstractContextProvider
  *
+ * <p>
  * Base class for DeploymentManager Providers that can deploy ContextHandlers into
  * Jetty that have been discovered via OSGI either as bundles or services.
+ * </p>
  */
 public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
 {
@@ -199,45 +191,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         return cc == null ? new String[0] : cc.split(",");
     }
 
-    /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(String directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory);
-    }
-
-    /**
-     * Set the temporary directory for deployment.
-     * <p>
-     * This is equivalent to setting the {@link Deployable#BASE_TEMP_DIR} property.
-     * If not set, then the <code>java.io.tmpdir</code> System Property is used.
-     *
-     * @param directory the new work directory
-     */
-    public void setTempDir(File directory)
-    {
-        _properties.put(Deployable.BASE_TEMP_DIR, directory.getAbsolutePath());
-    }
-
-    /**
-     * Get the temporary directory for deployment.
-     * <p>
-     * This is equivalent to getting the {@link Deployable#BASE_TEMP_DIR} property.
-     *
-     * @return the user supplied work directory (null if user has not set Temp Directory yet)
-     */
-    public File getTempDir()
-    {
-        String tmpDir = _properties.get(Deployable.BASE_TEMP_DIR);
-        return tmpDir == null ? null : new File(tmpDir);
-    }
-    
     /**
      * @param tldBundles Comma separated list of bundles that contain tld jars
      * that should be setup on the context instances created here.

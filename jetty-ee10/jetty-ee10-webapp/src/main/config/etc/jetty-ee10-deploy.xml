@@ -45,7 +45,6 @@
           <Set name="extractWars" property="jetty.deploy.extractWars" />
           <Set name="parentLoaderPriority" property="jetty.deploy.parentLoaderPriority" />
           <Set name="configurationClasses" property="jetty.deploy.configurationClasses" />
-          <Set name="tempDir" property="jetty.deploy.tempDir" />
           <Get name="properties">
             <Put name="jetty.deploy.containerScanJarPattern">
               <Property name="jetty.deploy.containerScanJarPattern">

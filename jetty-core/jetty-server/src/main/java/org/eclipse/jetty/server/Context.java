@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -50,8 +51,8 @@ public interface Context extends Attributes, Decorator, Executor
 
     MimeTypes getMimeTypes();
 
-    @Override
     /** execute runnable in container thread scoped to context */
+    @Override
     void execute(Runnable runnable);
 
     /** scope the calling thread to the context and run the runnable. */
@@ -70,4 +71,9 @@ public interface Context extends Attributes, Decorator, Executor
      *         The empty string is returned if the full path is exactly the context path.
      */
     String getPathInContext(String fullPath);
+
+    /**
+     * @return A temporary directory, configured either for the context, the server or the JVM. Never null.
+     */
+    File getTempDirectory();
 }

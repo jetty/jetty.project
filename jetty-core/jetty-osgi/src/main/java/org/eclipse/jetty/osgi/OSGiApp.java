@@ -14,9 +14,7 @@
 package org.eclipse.jetty.osgi;
 
 import java.io.File;
-import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Dictionary;
@@ -30,7 +28,6 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -60,7 +57,6 @@ public class OSGiApp extends App
      * Get the install location of a Bundle as a Path
      * @param bundle the Bundle whose location to return
      * @return the installed location of the Bundle as a Path
-     * @throws Exception
      */
     private static Path getBundlePath(Bundle bundle) throws Exception
     {
@@ -77,7 +73,6 @@ public class OSGiApp extends App
      * as found on equinox. Eg file:///a/b/c/org.eclipse.osgi/89/0/bundleFile
      * @param bundle the bundle
      * @return a Resource representing the bundle's installed location
-     * @throws Exception
      */
     private static Resource getBundleAsResource(Bundle bundle) throws Exception
     {
@@ -93,7 +88,7 @@ public class OSGiApp extends App
     /**
      * Get or create a contextPath from bundle headers and information
      * 
-     * @param bundle
+     * @param bundle the bundle
      * @return a contextPath
      */
     private static String getContextPath(Bundle bundle)
@@ -229,8 +224,6 @@ public class OSGiApp extends App
     /**
      * Register the Jetty deployed context/webapp as a service, as
      * according to the OSGi Web Application Specification.
-     * 
-     * @throws Exception
      */
     public void registerAsOSGiService() throws Exception
     {

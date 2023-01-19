@@ -1,5 +1,7 @@
 [description]
-Enables web application deployment from the $JETTY_BASE/webapps/ directory.
+# tag::description[]
+This module enables webapp deployment from the `$JETTY_BASE/webapps` directory.
+# end::description[]
 
 [environment]
 ee9
@@ -8,15 +10,11 @@ ee9
 deploy
 ee9-webapp
 
-[lib]
-
-[files]
-webapps/
-
 [xml]
 etc/jetty-ee9-deploy.xml
 
 [ini-template]
+# tag::ini-template[]
 ## Monitored directory name (relative to $jetty.base)
 # jetty.deploy.monitoredDir=webapps
 ## - OR -
@@ -38,9 +36,6 @@ etc/jetty-ee9-deploy.xml
 ## Comma separated list of configuration classes to set.
 # jetty.deploy.configurationClasses=
 
-## Base temporary directory for deployed web applications.
-# jetty.deploy.tempDir=
-
 ## Pattern to select jars from the container classloader to be scanned (or null to scan no jars)
 # jetty.deploy.containerScanJarPattern=.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$
 
@@ -52,3 +47,4 @@ etc/jetty-ee9-deploy.xml
 
 ## Order of discovered ServletContainerInitializers
 # jetty.deploy.servletContainerInitializerOrder=
+# end::ini-template[]
