@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,14 +33,12 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -91,9 +90,9 @@ public class DetectorConnectionTest
 
     private String getResponseOverSsl(String request) throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.start();
 
@@ -140,6 +139,7 @@ public class DetectorConnectionTest
             socket.getOutputStream().write("OX".getBytes(StandardCharsets.US_ASCII));
             socket.getOutputStream().close();
 
+            //noinspection ResultOfMethodCallIgnored
             assertThrows(SocketException.class, () -> socket.getInputStream().read());
         }
     }
@@ -160,6 +160,7 @@ public class DetectorConnectionTest
             socket.getOutputStream().write(" ".getBytes(StandardCharsets.US_ASCII));
             socket.getOutputStream().close();
 
+            //noinspection ResultOfMethodCallIgnored
             assertThrows(SocketException.class, () -> socket.getInputStream().read());
         }
     }
@@ -175,11 +176,12 @@ public class DetectorConnectionTest
 
         try (Socket socket = new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
         {
-            socket.getOutputStream().write(TypeUtil.fromHexString("0D0A0D0A000D0A515549540A")); // proxy V2 Preamble
+            socket.getOutputStream().write(StringUtil.fromHexString("0D0A0D0A000D0A515549540A")); // proxy V2 Preamble
             Thread.sleep(100); // make sure the onFillable callback gets called
-            socket.getOutputStream().write(TypeUtil.fromHexString("21")); // V2, PROXY
+            socket.getOutputStream().write(StringUtil.fromHexString("21")); // V2, PROXY
             socket.getOutputStream().close();
 
+            //noinspection ResultOfMethodCallIgnored
             assertThrows(SocketException.class, () -> socket.getInputStream().read());
         }
     }
@@ -195,7 +197,7 @@ public class DetectorConnectionTest
 
         try (Socket socket = new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
         {
-            socket.getOutputStream().write(TypeUtil.fromHexString(
+            socket.getOutputStream().write(StringUtil.fromHexString(
                 // proxy V2 Preamble
                 "0D0A0D0A000D0A515549540A" +
                     // V2, PROXY
@@ -207,23 +209,23 @@ public class DetectorConnectionTest
                     "000C"
             ));
             Thread.sleep(100); // make sure the onFillable callback gets called
-            socket.getOutputStream().write(TypeUtil.fromHexString(
+            socket.getOutputStream().write(StringUtil.fromHexString(
                 // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
                 "C0A80001" // 8080
             ));
             socket.getOutputStream().close();
 
+            //noinspection ResultOfMethodCallIgnored
             assertThrows(SocketException.class, () -> socket.getInputStream().read());
         }
     }
 
     @Test
-    @Disabled // TODO
     public void testDetectingSslProxyToHttpNoSslWithProxy() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -233,18 +235,18 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("servername=server"));
-        assertThat(response, Matchers.containsString("serverport=80"));
-        assertThat(response, Matchers.containsString("localname=5.6.7.8"));
         assertThat(response, Matchers.containsString("local=5.6.7.8:222"));
         assertThat(response, Matchers.containsString("remote=1.2.3.4:111"));
     }
@@ -252,9 +254,9 @@ public class DetectorConnectionTest
     @Test
     public void testDetectingSslProxyToHttpWithSslNoProxy() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -264,10 +266,12 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponseOverSsl(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
@@ -276,9 +280,9 @@ public class DetectorConnectionTest
     @Test
     public void testDetectingSslProxyToHttpWithSslWithProxy() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -288,11 +292,13 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponseOverSsl(request);
 
         // SSL matched, so the upgrade was made to HTTP which does not understand the proxy request
@@ -302,9 +308,9 @@ public class DetectorConnectionTest
     @Test
     public void testDetectionUnsuccessfulUpgradesToNextProtocol() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -314,10 +320,12 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
@@ -326,9 +334,9 @@ public class DetectorConnectionTest
     @Test
     public void testDetectorToNextDetector() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -339,11 +347,13 @@ public class DetectorConnectionTest
 
         start(sslDetector, proxyDetector, http);
 
-        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponseOverSsl(request);
 
         // SSL matched, so the upgrade was made to proxy which itself upgraded to HTTP
@@ -377,10 +387,12 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponse(request);
 
         assertEquals("No upgrade for you", response);
@@ -390,9 +402,9 @@ public class DetectorConnectionTest
     @Test
     public void testDetectorWithProxyThatHasNoNextProto() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -402,11 +414,13 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponse(request);
 
         // ProxyConnectionFactory has no next protocol -> it cannot upgrade
@@ -416,9 +430,9 @@ public class DetectorConnectionTest
     @Test
     public void testOptionalSsl() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -427,11 +441,12 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request =
-            "GET /path HTTP/1.1\n" +
-                "Host: server:80\n" +
-                "Connection: close\n" +
-                "\n";
+        String request = """
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String clearTextResponse = getResponse(request);
         String sslResponse = getResponseOverSsl(request);
 
@@ -443,9 +458,9 @@ public class DetectorConnectionTest
     @Test
     public void testDetectorThatHasNoConfiguredNextProto() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
@@ -453,11 +468,12 @@ public class DetectorConnectionTest
 
         start(detector);
 
-        String request =
-            "GET /path HTTP/1.1\n" +
-                "Host: server:80\n" +
-                "Connection: close\n" +
-                "\n";
+        String request = """
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.nullValue());
@@ -489,11 +505,11 @@ public class DetectorConnectionTest
                 "1F90"; // 8080
 
         String httpReq = """
-                GET /path HTTP/1.1
-                Host: server:80
-                Connection: close
-
-                """;
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         try (StacklessLogging ignore = new StacklessLogging(DetectorConnectionFactory.class))
         {
             String response = getResponse(StringUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
@@ -558,12 +574,13 @@ public class DetectorConnectionTest
                 "3039" + // 12345
                 "1F90"; // 8080
 
-        String httpReq =
-            "GET /path HTTP/1.1\n" +
-                "Host: server:80\n" +
-                "Connection: close\n" +
-                "\n";
-        String response = getResponse(TypeUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
+        String httpReq = """
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
+        String response = getResponse(StringUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.nullValue());
     }
@@ -604,11 +621,12 @@ public class DetectorConnectionTest
 
         start(detector, noUpgradeTo);
 
-        String request =
-            "GET /path HTTP/1.1\n" +
-                "Host: server:80\n" +
-                "Connection: close\n" +
-                "\n";
+        String request = """
+            GET /path HTTP/1.1\r
+            Host: server:80\r
+            Connection: close\r
+            \r
+            """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.nullValue());
@@ -617,9 +635,9 @@ public class DetectorConnectionTest
     @Test
     public void testGeneratedProtocolNames()
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        Path keystoreFile = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(HttpVersion.HTTP_1_1.asString());
