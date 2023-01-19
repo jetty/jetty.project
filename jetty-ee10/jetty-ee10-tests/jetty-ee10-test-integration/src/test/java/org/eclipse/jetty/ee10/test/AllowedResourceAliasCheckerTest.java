@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,7 +48,7 @@ public class AllowedResourceAliasCheckerTest
     private static ServerConnector _connector;
     private static HttpClient _client;
     private static ServletContextHandler _context;
-    private static File _baseDir;
+    private static Path _baseDir;
 
     private static Path getResourceDir() throws Exception
     {
@@ -76,10 +76,11 @@ public class AllowedResourceAliasCheckerTest
         _context.addServlet(DefaultServlet.class, "/");
         _server.setHandler(_context);
 
-        _baseDir = getResourceDir().resolve("baseDir").toFile();
-        _baseDir.deleteOnExit();
-        assertFalse(_baseDir.exists());
-        _context.setBaseResourceAsPath(_baseDir.toPath());
+        _baseDir = getResourceDir().resolve("baseDir");
+        FS.ensureDeleted(_baseDir); //start fresh
+        FS.ensureDirExists(_baseDir);
+        assertTrue(Files.exists(_baseDir));
+        _context.setBaseResourceAsPath(_baseDir);
     }
 
     @AfterAll
@@ -93,15 +94,15 @@ public class AllowedResourceAliasCheckerTest
     public void afterEach()
     {
         IO.delete(_baseDir);
+        FS.ensureDirExists(_baseDir);
     }
 
-    public void createBaseDir() throws IOException
+    public void createBaseDirFile() throws IOException
     {
-        assertFalse(_baseDir.exists());
-        assertTrue(_baseDir.mkdir());
+        assertTrue(Files.exists(_baseDir));
 
         // Create a file in the baseDir.
-        File file = _baseDir.toPath().resolve("file.txt").toFile();
+        File file = _baseDir.resolve("file.txt").toFile();
         file.deleteOnExit();
         assertTrue(file.createNewFile());
         try (FileWriter fileWriter = new FileWriter(file))
@@ -111,7 +112,7 @@ public class AllowedResourceAliasCheckerTest
 
         // Create a symlink to that file.
         // Symlink to a directory inside of the webroot.
-        File symlink = _baseDir.toPath().resolve("symlink").toFile();
+        File symlink = _baseDir.resolve("symlink").toFile();
         symlink.deleteOnExit();
         Files.createSymbolicLink(symlink.toPath(), file.toPath());
         assertTrue(symlink.exists());
@@ -119,11 +120,11 @@ public class AllowedResourceAliasCheckerTest
     }
 
     @Test
-    public void testCreateBaseDirBeforeStart() throws Exception
+    public void testCreateBaseDirFileBeforeStart() throws Exception
     {
         _context.clearAliasChecks();
         _context.addAliasCheck(new AllowedResourceAliasChecker(_context));
-        createBaseDir();
+        createBaseDirFile();
         start();
         assertThat(_context.getAliasChecks().size(), equalTo(1));
 
@@ -134,12 +135,12 @@ public class AllowedResourceAliasCheckerTest
     }
 
     @Test
-    public void testCreateBaseDirAfterStart() throws Exception
+    public void testCreateBaseDirFileAfterStart() throws Exception
     {
         _context.clearAliasChecks();
         _context.addAliasCheck(new AllowedResourceAliasChecker(_context));
         start();
-        createBaseDir();
+        createBaseDirFile();
         assertThat(_context.getAliasChecks().size(), equalTo(1));
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/symlink");
