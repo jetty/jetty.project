@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
 import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -560,9 +562,9 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
-    public class UpstreamConnection extends ProxyConnection
+    public class UpstreamConnection extends ProxyConnection implements AsyncListener
     {
-        private ConnectContext connectContext;
+        private final ConnectContext connectContext;
 
         public UpstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectContext connectContext)
         {
@@ -574,8 +576,9 @@ public class ConnectHandler extends HandlerWrapper
         public void onOpen()
         {
             super.onOpen();
+            // Delay fillInterested() until the 200 OK response has been sent.
+            connectContext.asyncContext.addListener(this);
             onConnectSuccess(connectContext, UpstreamConnection.this);
-            fillInterested();
         }
 
         @Override
@@ -588,6 +591,28 @@ public class ConnectHandler extends HandlerWrapper
         protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
         {
             ConnectHandler.this.write(endPoint, buffer, callback, getContext());
+        }
+
+        @Override
+        public void onComplete(AsyncEvent event)
+        {
+            fillInterested();
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event)
+        {
+        }
+
+        @Override
+        public void onError(AsyncEvent event)
+        {
+            close(event.getThrowable());
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event)
+        {
         }
     }
 
