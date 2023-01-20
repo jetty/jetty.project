@@ -15,25 +15,6 @@
 
         <Set name="rules">
           <Array type="org.eclipse.jetty.rewrite.handler.Rule">
-
-            <!-- add a response rule -->
-<!--             <Item>
-              <New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
-                <Set name="pattern">/rewrite/session/</Set>
-                <Set name="code">401</Set>
-                <Set name="message">Setting error code 401</Set>
-              </New>
-            </Item> -->
-
-            <!-- add a simple redirect -->
-<!--             <Item>
-              <New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
-                <Set name="pattern">/redirect/*</Set>
-                <Set name="location">/tests/</Set>
-              </New>
-            </Item>
-             -->
-
             <!-- add a regex rewrite redirect -->
             <Item>
               <New id="regex" class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">

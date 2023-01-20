@@ -39,7 +39,6 @@
            <Item>
              <New id="WebappContexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
            </Item>
-           <!-- 
            <Item>
              <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/tests</Set>
@@ -68,7 +67,6 @@
                <Set name="DisplayName">echo</Set>
              </New>
            </Item>
-           -->
          </Array>
         </Set>
       </New>
