@@ -65,11 +65,16 @@ public class GracefulShutdownHandler extends Handler.Wrapper implements Graceful
     @Override
     public boolean process(Request request, Response response, Callback callback) throws Exception
     {
+        Handler handler = getHandler();
+        if (handler == null || !isStarted())
+        {
+            // Nothing to do here, skip it
+            return false;
+        }
+
         // Increment the counter before the test for isShutdown(), to avoid race conditions.
         ShutdownTrackingCallback shutdownCallback = new ShutdownTrackingCallback(request, response, callback);
-
-        Handler handler = getHandler();
-        if (handler == null || !isStarted() || isShutdown())
+        if (isShutdown())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Service Unavailable: {}", request.getHttpURI());
