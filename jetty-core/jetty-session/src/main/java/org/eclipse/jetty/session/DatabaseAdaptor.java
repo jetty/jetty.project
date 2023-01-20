@@ -291,7 +291,7 @@ public class DatabaseAdaptor
      * @return the connection for the datasource
      * @throws SQLException if unable to get the connection
      */
-    protected Connection getConnection()
+    public Connection getConnection()
         throws SQLException
     {
         if (_datasource != null)
