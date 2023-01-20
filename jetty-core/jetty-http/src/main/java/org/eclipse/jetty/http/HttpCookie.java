@@ -258,7 +258,8 @@ public class HttpCookie
         _secure = Boolean.parseBoolean(attrs.remove("Secure"));
         _comment = attrs.remove("Comment");
 
-        _attributes = Collections.unmodifiableMap(attrs); // don't allow attributes to be modified
+        // don't allow attributes to be modified
+        _attributes = attrs.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(attrs);
     }
 
     /**
