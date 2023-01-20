@@ -47,7 +47,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -960,8 +960,7 @@ public abstract class RFC2616BaseTest
             // Compare the 2 lists of lines to make sure they contain the same information
             // Do not worry about order of the headers, as that's not important to test,
             // just the existence of the same headers
-            assertThat("9.4 HEAD equals GET", linesGet, contains(linesHead));
-            assertThat("9.4 HEAD e GET", linesGet, contains(linesHead));
+            assertThat("9.4 HEAD equals GET", linesGet, containsInAnyOrder(linesHead.toArray()));
         }
         finally
         {
