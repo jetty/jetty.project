@@ -19,43 +19,33 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.GracefulShutdownHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GracefulShutdownTest
@@ -67,22 +57,28 @@ public class GracefulShutdownTest
     public Server createServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server, 1, 1);
         connector.setIdleTimeout(10000);
         connector.setShutdownIdleTimeout(1000);
         connector.setPort(0);
         server.addConnector(connector);
 
         server.setHandler(handler);
-        server.start();
         return server;
     }
 
-    private Socket newSocketToServer(String id, String description) throws IOException
+    @AfterEach
+    public void teardown()
+    {
+        // cleanup any unstopped servers (due to test failure)
+        LifeCycle.stop(server);
+    }
+
+    private Socket newSocketToServer(String id) throws IOException
     {
         URI serverURI = server.getURI();
         Socket socket = new Socket(serverURI.getHost(), serverURI.getPort());
-        LOG.info("{} : l={},r={} ({})", id, socket.getLocalSocketAddress(), socket.getRemoteSocketAddress(), description);
+        LOG.debug("{} : l={},r={}", id, socket.getLocalSocketAddress(), socket.getRemoteSocketAddress());
         return socket;
     }
 
@@ -114,178 +110,81 @@ public class GracefulShutdownTest
         return stopFuture;
     }
 
+    /**
+     * Test for when a Handler throws an unhandled Exception from {@link Handler#process(Request, Response, Callback)}
+     * when in normal mode (not during graceful mode).  This test exists to ensure that the Callback management of
+     * the {@link GracefulShutdownHandler} doesn't mess with normal operations of requests.
+     */
     @Test
-    public void testNoGracefulShutdownHandler() throws Exception
+    public void testHandlerNormalUnhandledException() throws Exception
     {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler contextHandler = new ContextHandler("/");
-        LatchHandler latchHandler = new LatchHandler();
-        contextHandler.addHandler(latchHandler);
-        contexts.addHandler(latchHandler);
-
-        server = createServer(contexts);
-        server.setStopTimeout(0);
-        server.start();
-
-        Socket client0 = newSocketToServer("client0", "incomplete POST request");
-        Socket client1 = newSocketToServer("client1", "incomplete POST request");
-
-        // A POST request that is incomplete.
-        // Send only 5 bytes of a promised 10.
-        String rawRequest = """
-            POST /?hint=incomplete_body&num=%s HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        List<Socket> clients = List.of(client0, client1);
-
-        writeRequest(client0, rawRequest.formatted(1), latchHandler);
-        writeRequest(client1, rawRequest.formatted(2), latchHandler);
-
-        // Call Server.stop()
-        CompletableFuture<Long> stopFuture = runAsyncServerStop();
-
-        // Verify Stop duration
-        long stopDuration = stopFuture.get();
-        assertThat(stopDuration, lessThan(2000L));
-
-        // Ensure clients are closed
-        for (Socket socket : clients)
-        {
-            InputStream in = socket.getInputStream();
-            long beginClose = NanoTime.now();
-            // The socket should have been closed
-            assertThat(socket + " not closed", in.read(), is(-1));
-            assertThat(socket + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
-        }
-
-        // We should no longer see the LatchHandler in handling state
-        assertEquals(0, latchHandler.handlingCount.get());
-        // There should have been two caught Throwable from the process() method (client0, and client1)
-        // Likely something like a ClosedChannelException / IdleTimeoutException
-        assertEquals(2, latchHandler.errors.size(), "LatchHandler seen errors count");
-        List<String> actualErrorURIs = latchHandler.errors.stream()
-            .map(errorContext -> errorContext.requestURI)
-            .map(HttpURI::asString)
-            .collect(Collectors.toList());
-        String[] expectedErrorURIs = {
-            "http://localhost/?hint=incomplete_body&num=2",
-            "http://localhost/?hint=incomplete_body&num=1"
-        };
-        assertThat(actualErrorURIs, containsInAnyOrder(expectedErrorURIs));
-    }
-
-    @Test
-    public void testGracefulShutdownHandler() throws Exception
-    {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler contextHandler = new ContextHandler("/");
-        LatchHandler latchHandler = new LatchHandler();
-        contextHandler.addHandler(latchHandler);
-        contexts.addHandler(latchHandler);
-
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.addHandler(contexts);
-        server = createServer(gracefulShutdownHandler);
-        server.setStopTimeout(10000);
-        server.start();
-
-        String rawIncompleteRequest = """
-            POST /?hint=incomplete_request HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawIncompleteRequestEarlyCommit = """
-            POST /?commitEarly=true HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawRequestComplete = """
-            POST /?hint=complete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
-
-        Socket client0 = newSocketToServer("client0", "incomplete request body");
-        Socket client1 = newSocketToServer("client1", "incomplete request body, early response commit");
-        Socket client2 = newSocketToServer("client2", "complete request, idle connection");
-
-        // Incomplete request
-        writeRequest(client0, rawIncompleteRequest, latchHandler);
-        // Incomplete request, early commit
-        writeRequest(client1, rawIncompleteRequestEarlyCommit, latchHandler);
-        // Complete request
-        writeRequest(client2, rawRequestComplete, latchHandler);
-
-        // Response from complete request
-        HttpTester.Response client2Response = HttpTester.parseResponse(client2.getInputStream());
-        assertNotNull(client2Response);
-        assertThat(client2Response.getStatus(), is(200));
-        assertThat(client2Response.getContent(), is("read [10/10]"));
-        assertThat(client2Response.get(HttpHeader.CONNECTION), nullValue());
-
-        // Call Server.stop()
-        CompletableFuture<Long> stopFuture = runAsyncServerStop();
-
-        // Send remaining content to complete the request body contents
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.isAvailable());
-        writeRequest(client0, "67890");
-        writeRequest(client1, "67890");
-
-        HttpTester.Response response;
-
-        // response that wasn't committed should have "Connection: close"
-        response = HttpTester.parseResponse(client0.getInputStream());
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
-
-        // response that was committed early cannot have a "Connection: close"
-        response = HttpTester.parseResponse(client1.getInputStream());
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertNull(response.get(HttpHeader.CONNECTION));
-
-        // Verify Stop duration
-        long stopDuration = stopFuture.get();
-        assertThat(stopDuration, greaterThan(50L));
-        assertThat(stopDuration, lessThan(5000L));
-
-        for (Socket socket : List.of(client0, client1, client2))
-        {
-            InputStream in = socket.getInputStream();
-            long beginClose = NanoTime.now();
-            // The socket should have been closed
-            assertThat(socket + " not closed", in.read(), is(-1));
-            assertThat(socket + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
-        }
-
-        // We should no longer see the LatchHandler in handling state
-        assertEquals(0, latchHandler.handlingCount.get());
-        // There should be no caught Throwable from the process() method
-        assertEquals(0, latchHandler.errors.size(), "LatchHandler seen errors count");
-    }
-
-    @Test
-    public void testGracefulShutdownHandlerFailureDuringGraceful() throws Exception
-    {
-        AtomicReference<CompletableFuture<Long>> stopFuture = new AtomicReference<>();
         GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
         gracefulShutdownHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
             {
-                stopFuture.set(runAsyncServerStop());
+                throw new RuntimeException("Intentional Exception");
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        String rawRequest = """
+            POST /?hint=intentional_failure HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            1234567890""";
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
+
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
+        {
+            // Intentional Failure request
+            output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output0.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(input0);
+            assertNotNull(response);
+            assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+            assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+        }
+
+        // Perform Stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " not closed", input0.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    /**
+     * Test for when a Handler throws an unhandled Exception {@link Handler#process(Request, Response, Callback)}
+     * when in graceful mode.
+     */
+    @Test
+    public void testHandlerGracefulUnhandledException() throws Exception
+    {
+        CountDownLatch dispatchLatch = new CountDownLatch(1);
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                LOG.info("process: request={}", request);
+                // let main thread know that we've reach this handler
+                dispatchLatch.countDown();
+                // now wait for graceful stop to begin
                 await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
                 throw new RuntimeException("Intentional Failure");
             }
@@ -294,38 +193,227 @@ public class GracefulShutdownTest
         server.setStopTimeout(10000);
         server.start();
 
-        String rawIntentionalRequest = """
+        String rawRequest = """
             POST /?hint=intentional_failure HTTP/1.1\r
             Host: localhost\r
             Content-Type: text/plain\r
             Content-Length: 10\r
             \r
-            12345""";
+            1234567890""";
 
-        Socket client0 = newSocketToServer("client0", "intentional failure");
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
 
-        // Intentional Failure request
-        writeRequest(client0, rawIntentionalRequest);
+        // Write request
+        output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+        output0.flush();
 
-        HttpTester.Response response = HttpTester.parseResponse(client0.getInputStream());
+        // Wait for request to reach handler
+        assertTrue(dispatchLatch.await(3, TimeUnit.SECONDS), "Request didn't reach handler");
+
+        // Perform stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+
+        // Verify response
+        HttpTester.Response response = HttpTester.parseResponse(input0);
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.get(HttpHeader.CONNECTION), is("close"));
 
         // Verify Stop duration
-        long stopDuration = stopFuture.get().get();
+        long stopDuration = stopFuture.get();
         assertThat(stopDuration, lessThan(5000L));
 
         // Ensure client connection is closed
-        InputStream in = client0.getInputStream();
         long beginClose = NanoTime.now();
         // The socket should have been closed
-        assertThat(client0 + " not closed", in.read(), is(-1));
+        assertThat(client0 + " not closed", input0.read(), is(-1));
         assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
     }
 
+    /**
+     * Test for when a Handler uses {@link Callback#failed(Throwable)} when in normal mode (not during graceful mode).
+     * This test exists to ensure that the Callback management of the {@link GracefulShutdownHandler} doesn't
+     * mess with normal operations of requests.
+     */
     @Test
-    public void testGracefulShutdownHandlerFalseProcess() throws Exception
+    public void testHandlerNormalCallbackFailure() throws Exception
+    {
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                callback.failed(new RuntimeException("Intentional Failure"));
+                return true;
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        String rawRequest = """
+            POST /?hint=intentional_failure HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            1234567890""";
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
+
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
+        {
+            // Write request
+            output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output0.flush();
+
+            // Verify response
+            HttpTester.Response response = HttpTester.parseResponse(input0);
+            assertNotNull(response);
+            assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+            assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+        }
+
+        // Perform stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " not closed", input0.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    /**
+     * Test for when a Handler uses {@link Callback#failed(Throwable)} when in graceful mode.
+     */
+    @Test
+    public void testHandlerGracefulCallbackFailure() throws Exception
+    {
+        CountDownLatch dispatchLatch = new CountDownLatch(1);
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                dispatchLatch.countDown();
+                // wait for graceful to kick in
+                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+                callback.failed(new RuntimeException("Intentional Failure"));
+                return true;
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        String rawRequest = """
+            POST /?hint=intentional_failure HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            1234567890""";
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
+
+        // Intentional Failure request
+        output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Wait for request to reach handler
+        assertTrue(dispatchLatch.await(3, TimeUnit.SECONDS), "Request didn't reach handler");
+
+        // Perform stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+
+        // Verify response
+        HttpTester.Response response = HttpTester.parseResponse(input0);
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
+
+        // Verify stop
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " not closed", input0.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    /**
+     * Test for when a Handler returns false from {@link Handler#process(Request, Response, Callback)}
+     * when in normal mode (not during graceful mode).
+     * This test exists to ensure that the Callback management of the {@link GracefulShutdownHandler} doesn't
+     * mess with normal operations of requests.
+     */
+    @Test
+    public void testHandlerNormalProcessingFalse() throws Exception
+    {
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean process(Request request, Response response, Callback callback) throws Exception
+            {
+                return false;
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        String rawRequest = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            \r
+            """;
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
+
+        // Intentional Failure request
+        output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        HttpTester.Response response = HttpTester.parseResponse(input0);
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+
+        // Verify Stop duration
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " not closed", input0.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    /**
+     * Test for when a Handler returns false from {@link Handler#process(Request, Response, Callback)}
+     * when in graceful mode.
+     */
+    @Test
+    public void testHandlerGracefulProcessingFalse() throws Exception
     {
         AtomicReference<CompletableFuture<Long>> stopFuture = new AtomicReference<>();
         GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
@@ -351,18 +439,236 @@ public class GracefulShutdownTest
             \r
             12345""";
 
-        Socket client0 = newSocketToServer("client0", "request");
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
 
         // Intentional Failure request
-        writeRequest(client0, rawRequest);
+        output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+        output0.flush();
 
-        HttpTester.Response response = HttpTester.parseResponse(client0.getInputStream());
+        HttpTester.Response response = HttpTester.parseResponse(input0);
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(response.get(HttpHeader.CONNECTION), is("close"));
 
         // Verify Stop duration
         long stopDuration = stopFuture.get().get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " not closed", input0.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    /**
+     * Test for behavior where the Handler is actively processing
+     * a request when the server goes into graceful mode.
+     */
+    @Test
+    public void testHandlerGracefulBlocked() throws Exception
+    {
+        CountDownLatch dispatchedToHandlerLatch = new CountDownLatch(1);
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new BlockingReadHandler()
+        {
+            @Override
+            protected void onBeforeRead(Request request, Response response)
+            {
+                dispatchedToHandlerLatch.countDown();
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        // Body is incomplete (send 5 bytes out of 10)
+        String rawRequest = """
+            POST /?hint=incomplete_body HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            12345""";
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
+
+        // Write incomplete request
+        output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Wait for request to reach handler
+        assertTrue(dispatchedToHandlerLatch.await(2, TimeUnit.SECONDS), "Request didn't reach handler");
+
+        // Trigger stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+
+        // Wait till we enter graceful mode
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+
+        // Send rest of data
+        output0.write("67890".getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Test response
+        HttpTester.Response response = HttpTester.parseResponse(input0);
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
+        assertThat(response.getContent(), is("(Read:10) (Content-Length:10)"));
+
+        // Verify Stop duration
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " should have been closed", input0.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    /**
+     * Test for behavior where the Handler is actively processing
+     * a request when the server goes into graceful mode.
+     * <p>
+     *     This variation has the response already committed
+     *     when the server enters Graceful stop mode.
+     * </p>
+     */
+    @Test
+    public void testHandlerGracefulBlockedEarlyCommit() throws Exception
+    {
+        CountDownLatch dispatchedToHandlerLatch = new CountDownLatch(1);
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new BlockingReadHandler()
+        {
+            @Override
+            protected void onBeforeRead(Request request, Response response) throws Exception
+            {
+                try (Blocker.Callback block = Blocker.callback())
+                {
+                    LOG.debug("Response commit (early): {}", request.getHttpURI());
+                    Content.Sink.write(response, false, "", block);
+                    block.block();
+                }
+                assertTrue(response.isCommitted(), "Response expected to be committed");
+                dispatchedToHandlerLatch.countDown();
+            }
+        });
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        // Body is incomplete (send 5 bytes out of 10)
+        String rawRequest = """
+            POST /?hint=incomplete_body HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            12345""";
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
+
+        // Write incomplete request
+        output0.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Wait for request to reach handler
+        assertTrue(dispatchedToHandlerLatch.await(2, TimeUnit.SECONDS), "Request didn't reach handler");
+
+        // Trigger stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+
+        // Wait till we enter graceful mode
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+
+        // Send rest of data
+        output0.write("67890".getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Test response (should not report as closed, due to early commit)
+        HttpTester.Response response = HttpTester.parseResponse(input0);
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+        assertEquals("chunked", response.get(HttpHeader.TRANSFER_ENCODING), client0 + " transfer-encoding header");
+        assertThat(response.getContent(), is("(Read:10) (Content-Length:10)"));
+
+        // Verify Stop duration
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        // Ensure client connection is closed
+        long beginClose = NanoTime.now();
+        // The socket should have been closed
+        assertThat(client0 + " should have been closed", input0.read(), is(-1));
+        assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
+    }
+
+    /**
+     * Test of how the {@link GracefulShutdownHandler} should behave if it
+     * receives a request on an active connection after graceful starts.
+     */
+    @Test
+    public void testRequestAfterGraceful() throws Exception
+    {
+        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
+        gracefulShutdownHandler.setHandler(new BlockingReadHandler());
+        server = createServer(gracefulShutdownHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        // Complete request
+        String rawRequest = """
+            POST /?num=%d HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            1234567890""";
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        InputStream input0 = client0.getInputStream();
+        HttpTester.Response response;
+
+        // Send one normal request to server
+        output0.write(rawRequest.formatted(1).getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Verify response
+        response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONNECTION), is(nullValue()));
+        assertThat(response.getContent(), is("(Read:10) (Content-Length:10)"));
+
+        // Trigger stop
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+
+        // Wait till we enter graceful mode
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+
+        // Send another request on same connection
+        output0.write(rawRequest.formatted(2).getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        // Verify response (should be a 503)
+        response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
+        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
+
+        // Verify Stop duration
+        long stopDuration = stopFuture.get();
         assertThat(stopDuration, lessThan(5000L));
 
         // Ensure client connection is closed
@@ -373,439 +679,66 @@ public class GracefulShutdownTest
         assertThat(client0 + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
     }
 
-    @Test
-    public void testGracefulShutdownHandlerWithIncompleteRequest() throws Exception
+    /**
+     * Simply reads the entire request body content, and replies with
+     * how many bytes read, and what the request Content-Length said
+     */
+    static class BlockingReadHandler extends Handler.Abstract
     {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler contextHandler = new ContextHandler("/");
-        LatchHandler latchHandler = new LatchHandler();
-        contextHandler.addHandler(latchHandler);
-        contexts.addHandler(latchHandler);
-
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.addHandler(contexts);
-        server = createServer(gracefulShutdownHandler);
-        server.setStopTimeout(10000);
-        server.start();
-
-        String rawIncompleteRequest = """
-            POST /?hint=incomplete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawIncompleteRequestEarlyCommit = """
-            POST /?commitEarly=true HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawRequestComplete = """
-            POST /?hint=complete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
-
-        Socket client0 = newSocketToServer("client0", "incomplete request body");
-        Socket client1 = newSocketToServer("client1", "incomplete request body, early response commit");
-        Socket client2 = newSocketToServer("client2", "complete request, idle connection");
-
-        writeRequest(client0, rawIncompleteRequest, latchHandler);
-        writeRequest(client1, rawIncompleteRequestEarlyCommit, latchHandler);
-        writeRequest(client2, rawRequestComplete, latchHandler);
-
-        HttpTester.Response response;
-
-        // Client that sent a complete request body, should have seen a response with a status 200.
-        response = HttpTester.parseResponse(client2.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client2 + " response status");
-        assertNull(response.get(HttpHeader.CONNECTION), client2 + " connection header");
-        assertEquals("read [10/10]", response.getContent(), client2 + " response body");
-
-        // Call Server.stop()
-        CompletableFuture<Long> stopFuture = runAsyncServerStop();
-
-        // Client waiting for response body data, but hasn't committed, should return a status/error 500.
-        response = HttpTester.parseResponse(client0.getInputStream());
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus(), client0 + " response status");
-        assertEquals("close", response.get(HttpHeader.CONNECTION), client0 + " connection header");
-
-        // Client waiting for response body data, but committed early, should return a status 200
-        // that was sent with the early commit, with a Transfer-Encoding: chunked,
-        // but the body content should not have arrived.
-        String rawResponse = IO.toString(client1.getInputStream()); // capture till EOF
-        response = HttpTester.parseResponse(rawResponse);
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client1 + " response status");
-        assertEquals("chunked", response.get(HttpHeader.TRANSFER_ENCODING), client1 + " transfer-encoding header");
-        assertNull(response.get(HttpHeader.CONNECTION), client1 + " connection header");
-
-        // Verify Stop duration
-        long stopDuration = stopFuture.get();
-        assertThat(stopDuration, greaterThan(50L));
-        assertThat(stopDuration, lessThan(5000L));
-
-        // All 3 clients should have their connections closed quickly
-        for (Socket socket : List.of(client0, client1, client2))
-        {
-            InputStream in = socket.getInputStream();
-            long beginClose = NanoTime.now();
-            // The socket should have been closed
-            assertThat(socket + " not closed", in.read(), is(-1));
-            assertThat(socket + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
-        }
-
-        // We should no longer see the LatchHandler in handling state
-        assertEquals(0, latchHandler.handlingCount.get());
-        // There should have been a caught Throwable from the process() method
-        // Likely something like a ClosedChannelException / IdleTimeoutException
-        List<String> actualErrorURIs = latchHandler.errors.stream()
-            .map(errorContext -> errorContext.requestURI)
-            .map(HttpURI::asString)
-            .collect(Collectors.toList());
-        String[] expectedErrorURIs = {
-            "http://localhost/?hint=incomplete_body",
-            "http://localhost/?commitEarly=true"
-        };
-        assertThat(actualErrorURIs, containsInAnyOrder(expectedErrorURIs));
-    }
-
-    @Test
-    public void testContextWithGracefulShutdownHandler() throws Exception
-    {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler contextHandler = new ContextHandler("/a");
-        LatchHandler latchHandler = new LatchHandler();
-        contextHandler.addHandler(latchHandler);
-        contexts.addHandler(latchHandler);
-
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.addHandler(contexts);
-        server = createServer(gracefulShutdownHandler);
-        server.setStopTimeout(10000);
-        server.start();
-
-        String rawIncompleteRequest = """
-            POST /a/?hint=incomplete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawIncompleteRequestEarlyCommit = """
-            POST /a/?commitEarly=true HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawRequestComplete = """
-            POST /a/?hint=complete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
-
-        Socket client0 = newSocketToServer("client0", "incomplete request body");
-        Socket client1 = newSocketToServer("client1", "incomplete request body, early response commit");
-        Socket client2 = newSocketToServer("client2", "complete request, idle connection");
-
-        writeRequest(client0, rawIncompleteRequest, latchHandler);
-        writeRequest(client1, rawIncompleteRequestEarlyCommit, latchHandler);
-        writeRequest(client2, rawRequestComplete, latchHandler);
-
-        HttpTester.Response response;
-        // Verify client2 response (to first request)
-        response = HttpTester.parseResponse(client2.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client2 + " response status");
-        assertNull(response.get(HttpHeader.CONNECTION), client2 + " connection header");
-        assertEquals("read [10/10]", response.getContent(), client2 + " response body");
-
-        // Call Server.stop()
-        CompletableFuture<Long> stopFuture = runAsyncServerStop();
-
-        // Wait for context to go unavailable
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.isAvailable());
-
-        // Send a second (complete) request on client 2.
-        String rawRequestComplete2 = """
-                    POST /a/?hint=complete_body?num=2 HTTP/1.1\r
-                    Host: localhost\r
-                    Content-Type: text/plain\r
-                    Content-Length: 10\r
-                    \r
-                    1234567890""";
-        writeRequest(client2, rawRequestComplete2);
-        // Complete first request on both client0, and client1.
-        writeRequest(client0, "67890");
-        writeRequest(client1, "67890");
-
-        // Client receiving late response body complete, but hasn't committed early, should see a response status 200.
-        response = HttpTester.parseResponse(client0.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client0 + " response status");
-        assertEquals("close", response.get(HttpHeader.CONNECTION), client0 + " connection header");
-        assertEquals("read [10/10]", response.getContent(), client0 + " response body");
-
-        // Client receiving late response body data, but committed early, should see a response status 200
-        // that was sent with the early commit, with a Transfer-Encoding: chunked,
-        // but the body content should have arrived.
-        response = HttpTester.parseResponse(client1.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client1 + " response status");
-        assertEquals("chunked", response.get(HttpHeader.TRANSFER_ENCODING), client1 + " transfer-encoding header");
-        assertNull(response.get(HttpHeader.CONNECTION), client1 + " connection header");
-        assertEquals("read [10/10]", response.getContent(), client1 + " response body");
-
-        // Client that sent the second complete request body, should see a response status 503.
-        response = HttpTester.parseResponse(client2.getInputStream());
-        assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus(), client2 + " response status");
-        assertEquals("close", response.get(HttpHeader.CONNECTION), client2 + " connection header");
-
-        // Verify Stop duration
-        long stopDuration = stopFuture.get();
-        assertThat(stopDuration, greaterThan(50L));
-        assertThat(stopDuration, lessThan(5000L));
-
-        // All 3 clients should have their connections closed quickly
-        for (Socket socket : List.of(client0, client1, client2))
-        {
-            InputStream in = socket.getInputStream();
-            long beginClose = NanoTime.now();
-            // The socket should have been closed
-            assertThat(socket + " not closed", in.read(), is(-1));
-            assertThat(socket + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
-        }
-
-        // We should no longer see the LatchHandler in handling state
-        assertEquals(0, latchHandler.handlingCount.get());
-        // There should have been a caught Throwable from the process() method
-        // Likely something like a ClosedChannelException / IdleTimeoutException
-        assertEquals(0, latchHandler.errors.size(), "LatchHandler seen errors count");
-    }
-
-    @Test
-    public void testContextWithoutGracefulShutdownHandler() throws Exception
-    {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler contextHandler = new ContextHandler("/b");
-        LatchHandler latchHandler = new LatchHandler();
-        contextHandler.addHandler(latchHandler);
-        contexts.addHandler(latchHandler);
-
-        server = createServer(contexts);
-        server.setStopTimeout(10000);
-        server.start();
-
-        String rawIncompleteRequest = """
-            POST /b/?hint=incomplete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawIncompleteRequestEarlyCommit = """
-            POST /b/?commitEarly=true HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
-
-        String rawRequestComplete = """
-            POST /b/?hint=complete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
-
-        Socket client0 = newSocketToServer("client0", "incomplete request body");
-        Socket client1 = newSocketToServer("client1", "incomplete request body, early response commit");
-        Socket client2 = newSocketToServer("client2", "complete request, idle connection");
-
-        writeRequest(client0, rawIncompleteRequest, latchHandler);
-        writeRequest(client1, rawIncompleteRequestEarlyCommit, latchHandler);
-        writeRequest(client2, rawRequestComplete, latchHandler);
-
-        HttpTester.Response response;
-        // Verify client2 response (to first request)
-        response = HttpTester.parseResponse(client2.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client2 + " response status");
-        assertNull(response.get(HttpHeader.CONNECTION), client2 + " connection header");
-        assertEquals("read [10/10]", response.getContent(), client2 + " response body");
-
-        // Call Server.stop()
-        CompletableFuture<Long> stopFuture = runAsyncServerStop();
-
-        // Wait for context to go unavailable
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.isAvailable());
-
-        // Send a second (complete) request on client 2.
-        String rawRequestComplete2 = """
-                    POST /a/?hint=complete_body?num=2 HTTP/1.1\r
-                    Host: localhost\r
-                    Content-Type: text/plain\r
-                    Content-Length: 10\r
-                    \r
-                    1234567890""";
-        writeRequest(client2, rawRequestComplete2);
-        // Complete first request on both client0, and client1.
-        writeRequest(client0, "67890");
-        writeRequest(client1, "67890");
-
-        // Client receiving late response body complete, but hasn't committed early, should see a response status 200.
-        response = HttpTester.parseResponse(client0.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client0 + " response status");
-        assertEquals("close", response.get(HttpHeader.CONNECTION), client0 + " connection header");
-        assertEquals("read [10/10]", response.getContent(), client0 + " response body");
-
-        // Client receiving late response body data, but committed early, should see a response status 200
-        // that was sent with the early commit, with a Transfer-Encoding: chunked,
-        // but the body content should have arrived.
-        response = HttpTester.parseResponse(client1.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client1 + " response status");
-        assertEquals("chunked", response.get(HttpHeader.TRANSFER_ENCODING), client1 + " transfer-encoding header");
-        assertNull(response.get(HttpHeader.CONNECTION), client1 + " connection header");
-        assertEquals("read [10/10]", response.getContent(), client1 + " response body");
-
-        // Client that sent the second complete request body, should see a response status 200.
-        // The ServerConnector is graceful, and waiting for the EndPoint to be closed.
-        // The requests can still enter the handler, and if fast enough can be handled.
-        // The Connection header, however, should indicate that the connection is being closed.
-        response = HttpTester.parseResponse(client2.getInputStream());
-        assertEquals(HttpStatus.OK_200, response.getStatus(), client2 + " response status");
-        assertEquals("close", response.get(HttpHeader.CONNECTION), client2 + " connection header");
-
-        // Verify Stop duration
-        long stopDuration = stopFuture.get();
-        assertThat(stopDuration, greaterThan(50L));
-        assertThat(stopDuration, lessThan(5000L));
-
-        // All 3 clients should have their connections closed quickly
-        for (Socket socket : List.of(client0, client1, client2))
-        {
-            InputStream in = socket.getInputStream();
-            long beginClose = NanoTime.now();
-            // The socket should have been closed
-            assertThat(socket + " not closed", in.read(), is(-1));
-            assertThat(socket + " close took too long", NanoTime.millisSince(beginClose), lessThan(2000L));
-        }
-
-        // We should no longer see the LatchHandler in handling state
-        assertEquals(0, latchHandler.handlingCount.get());
-        // There should have been a caught Throwable from the process() method
-        // Likely something like a ClosedChannelException / IdleTimeoutException
-        assertEquals(0, latchHandler.errors.size(), "LatchHandler seen errors count");
-    }
-
-    private void writeRequest(Socket socket, String rawRequest, LatchHandler latchHandler) throws IOException, InterruptedException
-    {
-        latchHandler.latch = new CountDownLatch(1);
-        writeRequest(socket, rawRequest);
-        // wait till we confirm hitting the handler
-        assertTrue(latchHandler.latch.await(5, TimeUnit.SECONDS), () ->
-        {
-            return "Didn't reach handler latch for " + socket;
-        });
-    }
-
-    private void writeRequest(Socket socket, String rawRequest) throws IOException, InterruptedException
-    {
-        OutputStream out = socket.getOutputStream();
-        out.write(rawRequest.getBytes(StandardCharsets.UTF_8));
-        out.flush();
-    }
-
-    public record ErrorContext(HttpURI requestURI, Throwable thrown) {}
-
-    static class LatchHandler extends Handler.Abstract
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(LatchHandler.class);
-        final ConcurrentLinkedQueue<ErrorContext> errors = new ConcurrentLinkedQueue<>();
-        final AtomicInteger handlingCount = new AtomicInteger(0);
-        volatile CountDownLatch latch;
-
-        static
-        {
-            LOG.info("This is my name: {}", LOG.getName());
-        }
+        private static final Logger LOG = LoggerFactory.getLogger(BlockingReadHandler.class);
 
         @Override
         public boolean process(Request request, Response response, Callback callback) throws Exception
         {
-            LOG.debug("Handling: {}", request.getHttpURI());
-            handlingCount.incrementAndGet();
-            try
+            LOG.debug("process: request={}", request);
+            onBeforeRead(request, response);
+            // Read request content (completely)
+            int bytesRead = 0;
+            long contentLength = request.getLength();
+            Blocker.Shared blocking = new Blocker.Shared();
+            if (contentLength > 0)
             {
-                response.setStatus(200);
-                Fields fields = Request.extractQueryParameters(request);
-                if ("true".equals(fields.getValue("commitEarly")))
+                while (true)
                 {
-                    try (Blocker.Callback block = Blocker.callback())
+                    Content.Chunk chunk = request.read();
+                    if (chunk == null)
                     {
-                        LOG.debug("Response commit (early): {}", request.getHttpURI());
-                        Content.Sink.write(response, false, "", block);
-                        block.block();
-                    }
-                    assertTrue(response.isCommitted(), "Response expected to be committed");
-                }
-
-                CountDownLatch l = latch;
-                if (l != null)
-                    l.countDown();
-
-                // Read request content (completely)
-                int bytesRead = 0;
-                long contentLength = request.getLength();
-                Blocker.Shared blocking = new Blocker.Shared();
-                if (contentLength > 0)
-                {
-                    while (true)
-                    {
-                        Content.Chunk chunk = request.read();
-                        if (chunk == null)
+                        try (Blocker.Runnable block = blocking.runnable())
                         {
-                            try (Blocker.Runnable block = blocking.runnable())
-                            {
-                                request.demand(block);
-                                block.block();
-                                continue;
-                            }
+                            request.demand(block);
+                            block.block();
+                            continue;
                         }
-                        LOG.debug("chunk={}", chunk);
-                        if (chunk instanceof Content.Chunk.Error error)
-                            throw error.getCause();
-                        bytesRead += chunk.remaining();
-                        chunk.release();
-                        if (chunk.isLast())
-                            break;
                     }
+                    LOG.debug("chunk = {}", chunk);
+                    if (chunk instanceof Content.Chunk.Error error)
+                    {
+                        Response.writeError(request, response, callback, error.getCause());
+                        return true;
+                    }
+                    bytesRead += chunk.remaining();
+                    chunk.release();
+                    if (chunk.isLast())
+                        break;
                 }
+            }
 
-                String responseBody = "read [%d/%d]".formatted(bytesRead, contentLength);
-                LOG.debug("Content.Sink.Write \"{}\": {}", responseBody, request.getHttpURI());
-                Content.Sink.write(response, true, responseBody, callback);
-            }
-            catch (Throwable t)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Handling catch: {}", request.getHttpURI(), t);
-                errors.add(new ErrorContext(request.getHttpURI(), t));
-                callback.failed(t);
-            }
-            finally
-            {
-                handlingCount.decrementAndGet();
-            }
+            String responseBody = "(Read:%d) (Content-Length:%d)".formatted(bytesRead, contentLength);
+            LOG.debug("Content.Sink.Write: {}", responseBody);
+            Content.Sink.write(response, true, responseBody, callback);
             return true;
+        }
+
+        /**
+         * Event indicating that this exchange is about to read from the request body
+         *
+         * @param request the request
+         * @param response the response
+         * @throws Exception if unable to perform action
+         */
+        protected void onBeforeRead(Request request, Response response) throws Exception
+        {
+            // override to trigger extra behavior in test case
         }
     }
 }
