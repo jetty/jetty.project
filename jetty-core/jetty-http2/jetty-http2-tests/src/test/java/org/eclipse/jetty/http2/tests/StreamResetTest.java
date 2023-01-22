@@ -671,7 +671,7 @@ public class StreamResetTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 dataQueue.offer(data);
                 // Do not consume the data yet.
-                if (received.addAndGet(data.frame().getData().remaining()) == windowSize)
+                if (received.addAndGet(data.frame().getByteBuffer().remaining()) == windowSize)
                     latch.countDown();
                 else
                     stream.demand();
@@ -724,7 +724,7 @@ public class StreamResetTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 dataList.add(data);
                 // Do not release to stall the flow control window.
-                if (received.addAndGet(data.frame().getData().remaining()) == windowSize)
+                if (received.addAndGet(data.frame().getByteBuffer().remaining()) == windowSize)
                     latch.countDown();
                 else
                     stream.demand();
@@ -784,7 +784,7 @@ public class StreamResetTest extends AbstractTest
                 Stream.Data data = stream.readData();
                 dataQueue.offer(data);
                 // Do not consume the data yet.
-                if (received.addAndGet(data.frame().getData().remaining()) == windowSize)
+                if (received.addAndGet(data.frame().getByteBuffer().remaining()) == windowSize)
                     latch.countDown();
                 else
                     stream.demand();

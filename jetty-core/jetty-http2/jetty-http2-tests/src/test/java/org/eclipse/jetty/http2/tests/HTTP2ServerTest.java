@@ -238,7 +238,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             DataFrame responseData = dataRef.get();
             assertNotNull(responseData);
-            assertArrayEquals(content, BufferUtil.toArray(responseData.getData()));
+            assertArrayEquals(content, BufferUtil.toArray(responseData.getByteBuffer()));
         }
     }
 

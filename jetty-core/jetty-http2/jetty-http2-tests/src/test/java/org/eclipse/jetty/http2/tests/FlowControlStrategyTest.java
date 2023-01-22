@@ -667,7 +667,7 @@ public abstract class FlowControlStrategyTest
                 Stream.Data data = stream.readData();
                 DataFrame frame = data.frame();
                 int remaining = frame.remaining();
-                frame.getData().get(bytes, received, remaining);
+                frame.getByteBuffer().get(bytes, received, remaining);
                 this.received += remaining;
                 data.release();
                 if (frame.isEndStream())
@@ -737,7 +737,7 @@ public abstract class FlowControlStrategyTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                responseContent.put(data.frame().getData());
+                responseContent.put(data.frame().getByteBuffer());
                 data.release();
                 if (data.frame().isEndStream())
                     latch.countDown();

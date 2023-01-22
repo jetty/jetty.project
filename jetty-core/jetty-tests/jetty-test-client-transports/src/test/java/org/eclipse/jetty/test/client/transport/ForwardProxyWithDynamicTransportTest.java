@@ -462,7 +462,7 @@ public class ForwardProxyWithDynamicTransportTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
                 data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();
@@ -550,7 +550,7 @@ public class ForwardProxyWithDynamicTransportTest
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getData(), StandardCharsets.UTF_8);
+                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
                 data.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();

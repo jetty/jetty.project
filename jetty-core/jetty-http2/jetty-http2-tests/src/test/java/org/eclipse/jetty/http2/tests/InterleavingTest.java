@@ -158,7 +158,7 @@ public class InterleavingTest extends AbstractTest
             if (dataFrame.isEndStream())
                 ++finished;
 
-            BufferUtil.writeTo(dataFrame.getData(), contents.get(streamId));
+            BufferUtil.writeTo(dataFrame.getByteBuffer(), contents.get(streamId));
 
             data.release();
         }

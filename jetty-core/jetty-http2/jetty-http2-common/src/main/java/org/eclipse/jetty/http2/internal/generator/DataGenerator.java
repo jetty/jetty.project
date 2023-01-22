@@ -34,7 +34,7 @@ public class DataGenerator
 
     public int generate(RetainableByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
     {
-        return generateData(accumulator, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
+        return generateData(accumulator, frame.getStreamId(), frame.getByteBuffer(), frame.isEndStream(), maxLength);
     }
 
     public int generateData(RetainableByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)

@@ -72,7 +72,7 @@ public class HTTP2Docs
                 }
 
                 // Get the content buffer.
-                ByteBuffer byteBuffer = data.frame().getData();
+                ByteBuffer byteBuffer = data.frame().getByteBuffer();
 
                 // Unwrap the Data object, converting it to a Chunk.
                 // The Data.release() semantic is maintained in the completion of the Callback.

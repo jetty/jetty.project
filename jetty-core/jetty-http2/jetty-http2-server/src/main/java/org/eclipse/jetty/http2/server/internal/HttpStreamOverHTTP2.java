@@ -253,7 +253,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             data.release();
             return Content.Chunk.EOF;
         }
-        return Content.Chunk.asChunk(frame.getData(), frame.isEndStream(), data);
+        return Content.Chunk.asChunk(frame.getByteBuffer(), frame.isEndStream(), data);
     }
 
     @Override

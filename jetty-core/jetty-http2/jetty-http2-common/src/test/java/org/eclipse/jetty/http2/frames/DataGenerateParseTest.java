@@ -62,7 +62,7 @@ public class DataGenerateParseTest
         DataFrame frame = frames.get(0);
         assertTrue(frame.getStreamId() != 0);
         assertTrue(frame.isEndStream());
-        assertEquals(content, frame.getData());
+        assertEquals(content, frame.getByteBuffer());
     }
 
     @Test
@@ -77,7 +77,7 @@ public class DataGenerateParseTest
             DataFrame frame = frames.get(i - 1);
             assertTrue(frame.getStreamId() != 0);
             assertEquals(i == frames.size(), frame.isEndStream());
-            aggregate.put(frame.getData());
+            aggregate.put(frame.getByteBuffer());
         }
         aggregate.flip();
         assertEquals(content, aggregate);

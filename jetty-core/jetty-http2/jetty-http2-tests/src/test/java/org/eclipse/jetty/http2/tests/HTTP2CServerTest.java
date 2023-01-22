@@ -186,7 +186,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             DataFrame responseData = dataRef.get();
             assertNotNull(responseData);
 
-            String content = BufferUtil.toString(responseData.getData());
+            String content = BufferUtil.toString(responseData.getByteBuffer());
 
             // The upgrade request is seen as HTTP/1.1.
             assertThat(content, containsString("Hello from Jetty using HTTP/2.0"));
@@ -219,7 +219,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             responseData = dataRef.get();
             assertNotNull(responseData);
 
-            content = BufferUtil.toString(responseData.getData());
+            content = BufferUtil.toString(responseData.getByteBuffer());
 
             assertThat(content, containsString("Hello from Jetty using HTTP/2.0"));
             assertThat(content, containsString("uri=/two"));
@@ -288,7 +288,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             DataFrame responseData = dataRef.get();
             assertNotNull(responseData);
 
-            String s = BufferUtil.toString(responseData.getData());
+            String s = BufferUtil.toString(responseData.getByteBuffer());
 
             assertThat(s, containsString("Hello from Jetty using HTTP/2.0"));
             assertThat(s, containsString("uri=/test"));

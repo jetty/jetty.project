@@ -119,7 +119,7 @@ public class DataDemandTest extends AbstractTest
             await().atMost(1, TimeUnit.SECONDS).until(() -> serverQueue.size() == count.get() + 1);
             count.incrementAndGet();
             long sum = serverQueue.stream()
-                .mapToLong(data -> data.frame().getData().remaining())
+                .mapToLong(data -> data.frame().getByteBuffer().remaining())
                 .sum();
             if (sum == length)
                 break;
@@ -155,7 +155,7 @@ public class DataDemandTest extends AbstractTest
             await().atMost(1, TimeUnit.SECONDS).until(() -> clientQueue.size() == count.get() + 1);
             count.incrementAndGet();
             long sum = clientQueue.stream()
-                .mapToLong(data -> data.frame().getData().remaining())
+                .mapToLong(data -> data.frame().getByteBuffer().remaining())
                 .sum();
             if (sum == length)
                 break;
