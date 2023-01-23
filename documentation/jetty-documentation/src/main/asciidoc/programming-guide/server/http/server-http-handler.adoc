@@ -18,11 +18,10 @@ An `org.eclipse.jetty.server.Handler` is the component that processes incoming H
 
 ``Handler``s can process the HTTP request themselves, or they can be a ``Handler.Container``s that delegate HTTP request processing to one or more contained ``Handler``s.
 This allows ``Handler``s to be organised as a tree comprised of:
-* leaf ``Handler``s that return true from the `process(\...)` method, generate a response and succeed the ``Callback``.
-* a ``Handler.Wrapper`` can be used to form a chain of ``Handler``s where request, response or callback objects are wrapped in the `process(\...)` method before being passed down the chain.
-* a ``Handler.Collection`` contains a sequence of ``Handler``s, with each being called in series until one returns ``true`` from its `process(\...)` method.
-* a specialized ``Handler.Container`` that may use attributes of the request (for example, the URI, or a header, etc.) to select from one or more contained ``Handler``s to delegate the HTTP request processing to.
-
+* Leaf ``Handler``s that return ``true`` from the `process(\...)` method, generate a response and succeed the ``Callback``.
+* A ``Handler.Wrapper`` can be used to form a chain of ``Handler``s where request, response or callback objects are wrapped in the ``process(\...)`` method before being passed down the chain.
+* A ``Handler.Collection`` that contains a sequence of ``Handler``s, with each `Handler` being called in sequence until one returns `true` from its `process(\..)` method.
+* A specialized ``Handler.Container`` that may use properties of the request (for example, the URI, or a header, etc.) to select from one or more contained ``Handler``s to delegate the HTTP request processing to.
 
 A ``Handler`` tree is created by composing ``Handler``s together:
 
