@@ -16,8 +16,10 @@ package org.eclipse.jetty.ee10.websocket.common;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageOutputStream;
@@ -30,29 +32,47 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(MessageOutputStreamTest.class);
     private static final int OUTPUT_BUFFER_SIZE = 4096;
 
-    // TODO: restore leak tracking.
-    public RetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
-
-    @AfterEach
-    public void afterEach()
-    {
-        // TODO: restore leak tracking.
-//        bufferPool.assertNoLeaks();
-    }
-
+    private final AtomicInteger leaks = new AtomicInteger();
+    private RetainableByteBufferPool bufferPool;
     private OutgoingMessageCapture sessionCapture;
 
     @BeforeEach
     public void setupTest() throws Exception
     {
+        bufferPool = new ArrayRetainableByteBufferPool()
+        {
+            @Override
+            public RetainableByteBuffer acquire(int size, boolean direct)
+            {
+                leaks.incrementAndGet();
+                return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        boolean released = super.release();
+                        if (released)
+                            leaks.decrementAndGet();
+                        return released;
+                    }
+                };
+            }
+        };
         sessionCapture = new OutgoingMessageCapture();
         sessionCapture.setOutputBufferSize(OUTPUT_BUFFER_SIZE);
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        assertEquals(0, leaks.get(), "leak detected");
     }
 
     @Test
