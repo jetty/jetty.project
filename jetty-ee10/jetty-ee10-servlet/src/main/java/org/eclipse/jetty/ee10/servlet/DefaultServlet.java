@@ -1088,11 +1088,6 @@ public class DefaultServlet extends HttpServlet
     {
         String servletPath = isPathInfoOnly ? "/" : includedServletPath;
         String pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
-        if (servletPath == null)
-        {
-            servletPath = request.getServletPath();
-            pathInfo = request.getPathInfo();
-        }
         return URIUtil.addPaths(servletPath, pathInfo);
     }
 
