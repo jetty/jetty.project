@@ -55,7 +55,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -114,12 +113,6 @@ public class DefaultServletTest
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-
-        ServerConnector serverConnector = new ServerConnector(server);
-        serverConnector.setPort(8080);
-        serverConnector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        server.addConnector(serverConnector);
-
         Path extraJarResources = MavenPaths.findTestResourceFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 

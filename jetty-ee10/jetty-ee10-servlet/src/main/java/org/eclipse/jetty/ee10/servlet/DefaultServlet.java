@@ -359,10 +359,11 @@ public class DefaultServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        boolean included = isIncluded(req);
+        String includedServletPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+        boolean included = includedServletPath != null;
         String pathInContext;
         if (included)
-            pathInContext = getIncludedPathInContext(req, isPathInfoOnly());
+            pathInContext = getIncludedPathInContext(req, includedServletPath, isPathInfoOnly());
         else
             pathInContext = URIUtil.addPaths(isPathInfoOnly() ? "/" : req.getServletPath(), req.getPathInfo());
 
@@ -477,10 +478,12 @@ public class DefaultServlet extends HttpServlet
             }
 
             _httpFields = fields.asImmutable();
+            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            boolean included = includedServletPath != null;
             if (request.getDispatcherType() == DispatcherType.REQUEST)
                 _uri = getWrapped().getHttpURI();
-            else if (isIncluded(request))
-                _uri = Request.newHttpURIFrom(getWrapped(), getIncludedPathInContext(request, false));
+            else if (included)
+                _uri = Request.newHttpURIFrom(getWrapped(), getIncludedPathInContext(request, includedServletPath, false));
             else
                 _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
         }
@@ -920,8 +923,10 @@ public class DefaultServlet extends HttpServlet
             HttpServletRequest request = getServletRequest(coreRequest);
             String pathInContext = Request.getPathInContext(coreRequest);
             String requestTarget;
-            if (isIncluded(request))
-                requestTarget = getIncludedPathInContext(request, isPathInfoOnly());
+            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            boolean included = includedServletPath != null;
+            if (included)
+                requestTarget = getIncludedPathInContext(request, includedServletPath, isPathInfoOnly());
             else
                 requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
 
@@ -1079,9 +1084,9 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static String getIncludedPathInContext(HttpServletRequest request, boolean isPathInfoOnly)
+    private static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
     {
-        String servletPath = isPathInfoOnly ? "/" : (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+        String servletPath = isPathInfoOnly ? "/" : includedServletPath;
         String pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
         if (servletPath == null)
         {
