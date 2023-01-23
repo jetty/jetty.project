@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>Servlet specific class for multipart content support.</p>
- * <p>Use {@link #from(ServletContextRequest.ServletApiRequest)} to
+ * <p>Use {@link #from(ServletApiRequest)} to
  * parse multipart request content into a {@link Parts} object that can
  * be used to access Servlet {@link Part} objects.</p>
  *
@@ -55,7 +55,7 @@ public class ServletMultiPartFormData
      * @throws IOException if reading the request content fails
      * @see org.eclipse.jetty.server.handler.DelayedHandler
      */
-    public static Parts from(ServletContextRequest.ServletApiRequest request) throws IOException
+    public static Parts from(ServletApiRequest request) throws IOException
     {
         try
         {
@@ -73,7 +73,7 @@ public class ServletMultiPartFormData
         }
     }
 
-    private Parts parse(ServletContextRequest.ServletApiRequest request) throws IOException
+    private Parts parse(ServletApiRequest request) throws IOException
     {
         MultipartConfigElement config = (MultipartConfigElement)request.getAttribute(ServletContextRequest.__MULTIPART_CONFIG_ELEMENT);
         if (config == null)
