@@ -16,6 +16,7 @@ package org.eclipse.jetty.docs.programming.server.http;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.ServiceLoader;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -64,6 +65,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.handler.compression.DynamicCompressionHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -876,7 +878,7 @@ public class HTTPServerDocs
         shopContext.setHandler(new ShopHandler());
 
         // You want to gzip the shop web application only.
-        GzipHandler shopGzipHandler = new GzipHandler();
+        DynamicCompressionHandler shopGzipHandler = ServiceLoader.load(DynamicCompressionHandler.class).iterator().next();
         shopGzipHandler.setHandler(shopContext);
 
         // Add it to ContextHandlerCollection.

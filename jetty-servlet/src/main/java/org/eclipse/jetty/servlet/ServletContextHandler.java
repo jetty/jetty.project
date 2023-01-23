@@ -60,6 +60,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.compression.DynamicCompressionHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -231,8 +232,8 @@ public class ServletContextHandler extends ContextHandler
             setSecurityHandler((SecurityHandler)handler);
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
-        else if (handler instanceof GzipHandler)
-            setGzipHandler((GzipHandler)handler);
+        else if (handler instanceof DynamicCompressionHandler)
+            insertHandler((HandlerWrapper) handler);
         else
         {
             if (handler != null)
@@ -697,6 +698,7 @@ public class ServletContextHandler extends ContextHandler
     /**
      * @param gzipHandler the GzipHandler for this ServletContextHandler
      * @deprecated use {@link #insertHandler(HandlerWrapper)} instead
+     * @see DynamicCompressionHandler
      */
     @Deprecated
     public void setGzipHandler(GzipHandler gzipHandler)

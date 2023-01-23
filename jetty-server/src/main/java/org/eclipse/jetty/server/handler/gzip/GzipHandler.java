@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -21,11 +26,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.Deflater;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
@@ -38,7 +38,7 @@ import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.compression.DynamicCompressionHandler;
 import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
@@ -147,7 +147,7 @@ import org.slf4j.LoggerFactory;
  * in web applications has been problematic and bug ridden.
  * </p>
  */
-public class GzipHandler extends HandlerWrapper implements GzipFactory
+public class GzipHandler extends DynamicCompressionHandler implements GzipFactory
 {
     public static final EnumSet<HttpHeader> ETAG_HEADERS = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
     public static final String GZIP_HANDLER_ETAGS = "o.e.j.s.h.gzip.GzipHandler.etag";

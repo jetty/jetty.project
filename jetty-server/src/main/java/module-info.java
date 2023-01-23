@@ -25,6 +25,7 @@ module org.eclipse.jetty.server
 
     exports org.eclipse.jetty.server;
     exports org.eclipse.jetty.server.handler;
+    exports org.eclipse.jetty.server.handler.compression;
     exports org.eclipse.jetty.server.handler.gzip;
     exports org.eclipse.jetty.server.session;
 
