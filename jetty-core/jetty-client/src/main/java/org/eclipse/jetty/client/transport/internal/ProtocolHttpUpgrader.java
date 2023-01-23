@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * <p>Works in conjunction with {@link HttpClientTransportDynamic}
  * so that the protocol to upgrade to must be one of the application
  * protocols supported by HttpClientTransportDynamic.</p>
- * <p></p>
  */
 public class ProtocolHttpUpgrader implements HttpUpgrader
 {

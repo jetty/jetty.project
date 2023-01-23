@@ -28,6 +28,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Jetty Management of RFC6265 HTTP Cookies (with fallback support for RFC2965)
+ */
 public class HttpCookie
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpCookie.class);
@@ -71,6 +74,11 @@ public class HttpCookie
         }
     }
 
+    /**
+     * Names of well-known Attributes that are parsed by the constructors and shouldn't be present in the stored {@link #getAttributes()} Map.
+     */
+    private static final List<String> PARSED_ATTRIBUTE_NAMES = List.of("Domain", "Path", "Max-Age", "HttpOnly", "Secure", "Comment");
+
     private final String _name;
     private final String _value;
     private final String _comment;
@@ -83,37 +91,109 @@ public class HttpCookie
     private final long _expiration;
     private final Map<String, String> _attributes;
 
+    /**
+     * Create new HttpCookie from specific values.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     */
     public HttpCookie(String name, String value)
     {
         this(name, value, -1);
     }
 
+    /**
+     * Create new HttpCookie from specific values.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param domain the {@code Domain} value used for Domain-Matching rules on the cookie
+     * @param path the {@code Path} value to use for Path-Matching rules on the cookie
+     */
     public HttpCookie(String name, String value, String domain, String path)
     {
         this(name, value, domain, path, -1, false, false);
     }
 
+    /**
+     * Create new HttpCookie from specific values.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param maxAge the {@code Max-Age} attribute value (in seconds) for the cookie
+     */
     public HttpCookie(String name, String value, long maxAge)
     {
         this(name, value, null, null, maxAge, false, false);
     }
 
+    /**
+     * Create new HttpCookie from specific values.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param domain the {@code Domain} value used for Domain-Matching rules on the cookie
+     * @param path the {@code Path} value to use for Path-Matching rules on the cookie
+     * @param maxAge the {@code Max-Age} attribute value (in seconds) for the cookie
+     * @param httpOnly the {@code HttpOnly} attribute of the cookie
+     * @param secure the {@code Secure} attribute of the cookie
+     */
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure)
     {
         this(name, value, domain, path, maxAge, httpOnly, secure, null, 0);
     }
 
+    /**
+     * Create new HttpCookie from specific values.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param domain the {@code Domain} value used for Domain-Matching rules on the cookie
+     * @param path the {@code Path} value to use for Path-Matching rules on the cookie
+     * @param maxAge the {@code Max-Age} attribute value (in seconds) for the cookie
+     * @param httpOnly the {@code HttpOnly} attribute of the cookie
+     * @param secure the {@code Secure} attribute of the cookie
+     * @param comment the comment of the cookie (not used in RFC6265 or Servlet 6+, only in RFC2965 mode)
+     * @param version the version of the cookie (not used in RFC6265 or Servlet 6+, only in RFC2965 mode)
+     */
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
     {
         this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, (SameSite)null);
     }
 
+    /**
+     * Create new HttpCookie from specific values and {@link SameSite}.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param domain the {@code Domain} value used for Domain-Matching rules on the cookie
+     * @param path the {@code Path} value to use for Path-Matching rules on the cookie
+     * @param maxAge the {@code Max-Age} attribute value (in seconds) for the cookie
+     * @param httpOnly the {@code HttpOnly} attribute of the cookie
+     * @param secure the {@code Secure} attribute of the cookie
+     * @param comment the comment of the cookie (not used in RFC6265 or Servlet 6+, only in RFC2965 mode)
+     * @param version the version of the cookie (not used in RFC6265 or Servlet 6+, only in RFC2965 mode)
+     * @param sameSite the <a href="https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis">{@code SameSite} attribute</a> value to use for this cookie (only for RFC6265 mode)
+     */
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite)
     {
-
         this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, Collections.singletonMap("SameSite", sameSite == null ? null : sameSite.getAttributeValue()));
     }
 
+    /**
+     * Create new HttpCookie from specific values and attributes.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param domain the {@code Domain} value used for Domain-Matching rules on the cookie
+     * @param path the {@code Path} value to use for Path-Matching rules on the cookie
+     * @param maxAge the {@code Max-Age} attribute value (in seconds) for the cookie
+     * @param httpOnly the {@code HttpOnly} attribute of the cookie
+     * @param secure the {@code Secure} attribute of the cookie
+     * @param comment the comment of the cookie (not used in RFC6265 or Servlet 6+, only in RFC2965 mode)
+     * @param version the version of the cookie (not used in RFC6265 or Servlet 6+, only in RFC2965 mode)
+     * @param attributes the map of attributes to use with this cookie (this map is copied over into the resulting HttpCookie, but without map entries that are also parameters on this constructor)
+     */
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, Map<String, String> attributes)
     {
         _name = name;
@@ -126,26 +206,60 @@ public class HttpCookie
         _comment = comment;
         _version = version;
         _expiration = maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(maxAge);
-        _attributes = (attributes == null ? Collections.emptyMap() : attributes);
+        Map<String, String> attrs = null;
+        if (attributes == null || attributes.isEmpty())
+            attrs = Collections.emptyMap(); // unmodifiable empty map
+        else
+        {
+            // create new map, to only capture relevant attributes
+            attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            attrs.putAll(attributes);
+            PARSED_ATTRIBUTE_NAMES.forEach(attrs::remove); // remove names that are also fields
+            attrs = Collections.unmodifiableMap(attrs); // don't allow attributes to be modified
+        }
+        _attributes = attrs;
     }
 
+    /**
+     * Create new HttpCookie from specific values and attributes.
+     *
+     * @param name the name of the cookie
+     * @param value the value of the cookie
+     * @param version the version of the cookie (not used in RFC6265 or Servlet 6+, only in RFC2965 mode)
+     * @param attributes the map of attributes to use with this cookie (this map is used for field values
+     *   such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
+     *   {@link #isSecure()}, {@link #getComment()}.  These attributes are removed from the stored
+     *   attributes returned from {@link #getAttributes()}.
+     */
     public HttpCookie(String name, String value, int version, Map<String, String> attributes)
     {
         _name = name;
         _value = value;
         _version = version;
-        _attributes = (attributes == null ? Collections.emptyMap() : new TreeMap<>(attributes));
 
-        //remove all of the well-known attributes, leaving only those pass-through ones
-        _domain = _attributes.remove("Domain");
-        _path = _attributes.remove("Path");
+        Map<String, String> attrs = null;
+        if (attributes == null || attributes.isEmpty())
+            attrs = Collections.emptyMap(); // unmodifiable empty map
+        else
+        {
+            // create new map, to only capture relevant attributes
+            attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            attrs.putAll(attributes);
+        }
 
-        String tmp = _attributes.remove("Max-Age");
+        // remove all the well-known attributes, leaving only those unique to attributes as pass-through ones
+        _domain = attrs.remove("Domain");
+        _path = attrs.remove("Path");
+
+        String tmp = attrs.remove("Max-Age");
         _maxAge = StringUtil.isBlank(tmp) ? -1L : Long.valueOf(tmp);
         _expiration = _maxAge < 0 ? -1 : NanoTime.now() + TimeUnit.SECONDS.toNanos(_maxAge);
-        _httpOnly = Boolean.parseBoolean(_attributes.remove("HttpOnly"));
-        _secure = Boolean.parseBoolean(_attributes.remove("Secure"));
-        _comment = _attributes.remove("Comment");
+        _httpOnly = Boolean.parseBoolean(attrs.remove("HttpOnly"));
+        _secure = Boolean.parseBoolean(attrs.remove("Secure"));
+        _comment = attrs.remove("Comment");
+
+        // don't allow attributes to be modified
+        _attributes = attrs.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(attrs);
     }
 
     /**
@@ -213,7 +327,7 @@ public class HttpCookie
     }
 
     /**
-     * @return the cookie SameSite enum attribute
+     * @return the cookie {@code SameSite} attribute value
      */
     public SameSite getSameSite()
     {
@@ -238,6 +352,14 @@ public class HttpCookie
     public boolean isExpired(long timeNanos)
     {
         return _expiration != -1 && NanoTime.isBefore(_expiration, timeNanos);
+    }
+
+    /**
+     * @return the attributes associated with this cookie
+     */
+    public Map<String, String> getAttributes()
+    {
+        return _attributes;
     }
 
     /**
@@ -272,7 +394,7 @@ public class HttpCookie
      *
      * @param s value string
      * @return true if quoted;
-     * @throws IllegalArgumentException If there a control characters in the string
+     * @throws IllegalArgumentException If there is a String contains unexpected / illegal characters
      */
     private static boolean isQuoteNeededForCookie(String s)
     {
@@ -511,10 +633,12 @@ public class HttpCookie
     /**
      * Extract the bare minimum of info from a Set-Cookie header string.
      *
+     * <p>
      * Ideally this method should not be necessary, however as java.net.HttpCookie
      * does not yet support generic attributes, we have to use it in a minimal
      * fashion. When it supports attributes, we could look at reverting to a
      * constructor on o.e.j.h.HttpCookie to take the set-cookie header string.
+     * </p>
      *
      * @param setCookieHeader the header as a string
      * @return a map containing the name, value, domain, path. max-age of the set cookie header
@@ -562,7 +686,7 @@ public class HttpCookie
      * @param name the cookie name to check
      * @param domain the cookie domain to check
      * @param path the cookie path to check
-     * @return true if all of the name, domain and path all match the HttpCookie, false otherwise
+     * @return true if name, domain, and path, match all match the HttpCookie, false otherwise
      */
     public static boolean match(HttpCookie cookie, String name, String domain, String path)
     {
@@ -574,12 +698,6 @@ public class HttpCookie
     /**
      * Check if all old parameters match the new parameters.
      *
-     * @param oldName
-     * @param oldDomain
-     * @param oldPath
-     * @param newName
-     * @param newDomain
-     * @param newPath
      * @return true if old and new names match exactly and the old and new domains match case-insensitively and the paths match exactly
      */
     private static boolean match(String oldName, String oldDomain, String oldPath, String newName, String newDomain, String newPath)

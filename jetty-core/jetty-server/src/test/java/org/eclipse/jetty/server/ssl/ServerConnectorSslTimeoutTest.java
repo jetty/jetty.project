@@ -13,43 +13,37 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 
-@Disabled // TODO
-public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
+public class ServerConnectorSslTimeoutTest extends ConnectorTimeoutTest
 {
     static SSLContext __sslContext;
-
-    @Override
-    protected Socket newSocket(String host, int port) throws Exception
-    {
-        return __sslContext.getSocketFactory().createSocket(host, port);
-    }
 
     @BeforeEach
     public void init() throws Exception
     {
-        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore.p12";
+        Path keystorePath = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath);
+        sslContextFactory.setKeyStorePath(keystorePath.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         ServerConnector connector = new ServerConnector(_server, 1, 1, sslContextFactory);
-        connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
+        connector.setIdleTimeout(MAX_IDLE_TIME);
         _server.addConnector(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = new FileInputStream(keystorePath))
+        try (InputStream stream = Files.newInputStream(keystorePath))
         {
             keystore.load(stream, "storepwd".toCharArray());
         }
@@ -57,5 +51,11 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+    }
+
+    @Override
+    protected Socket newSocket(String host, int port) throws Exception
+    {
+        return __sslContext.getSocketFactory().createSocket(host, port);
     }
 }

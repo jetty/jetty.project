@@ -775,12 +775,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <p>Utility class that implement transparent proxy functionalities.</p>
      * <p>Configuration parameters:</p>
      * <ul>
-     * <li>{@code proxyTo} - a mandatory URI like http://host:80/context to which the request is proxied.</li>
+     * <li>{@code proxyTo} - a mandatory URI like {@code http://host:80/context} to which the request is proxied.</li>
      * <li>{@code prefix} - an optional URI prefix that is stripped from the start of the forwarded URI.</li>
      * </ul>
      * <p>For example, if a request is received at "/foo/bar", the {@code proxyTo} parameter is
-     * "http://host:80/context" and the {@code prefix} parameter is "/foo", then the request would
-     * be proxied to "http://host:80/context/bar".
+     * {@code http://host:80/context} and the {@code prefix} parameter is "/foo", then the request would
+     * be proxied to {@code http://host:80/context/bar}.
      */
     protected static class TransparentDelegate
     {

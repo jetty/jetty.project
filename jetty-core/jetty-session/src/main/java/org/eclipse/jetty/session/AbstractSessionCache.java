@@ -410,7 +410,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * to the cache. The usage count of the fresh session is incremented.
      * 
      * @param id the id
-     * @param session
+     * @param session the session
      */
     @Override
     public void add(String id, Session session) throws Exception

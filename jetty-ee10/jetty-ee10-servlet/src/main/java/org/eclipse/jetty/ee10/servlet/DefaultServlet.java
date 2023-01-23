@@ -766,9 +766,9 @@ public class DefaultServlet extends HttpServlet
 
         public ServletContextResponse getServletContextResponse()
         {
-            if (_response instanceof ServletContextResponse.ServletApiResponse)
+            if (_response instanceof ServletApiResponse)
             {
-                ServletContextResponse.ServletApiResponse apiResponse = (ServletContextResponse.ServletApiResponse)_response;
+                ServletApiResponse apiResponse = (ServletApiResponse)_response;
                 return apiResponse.getResponse();
             }
             return null;

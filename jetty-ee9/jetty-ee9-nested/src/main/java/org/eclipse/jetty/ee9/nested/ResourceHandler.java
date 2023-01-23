@@ -456,6 +456,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
      * @param baseResource The base resource as a string.
      * @deprecated use {@link #setBaseResource(Resource)}
      */
+    @Deprecated
     public void setBaseResourceAsString(String baseResource)
     {
         try

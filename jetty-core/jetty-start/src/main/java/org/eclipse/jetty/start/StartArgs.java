@@ -472,7 +472,7 @@ public class StartArgs
      *     For full list of enabled modules, use {@link Modules#getEnabled()}
      * </p>
      *
-     * @return the list of selected modules (by name) that the configuration has.
+     * @return the set of selected modules (by name) that the configuration has.
      * @see Modules#getEnabled()
      */
     public Set<String> getSelectedModules()
