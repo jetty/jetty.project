@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,40 +35,45 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * <p>
- * Used to do "soft" restarts from Java.
+ * Used to trigger shutdown of a Jetty Server instance
  * <ul>
  *    <li>If {@code exitJvm} is set to true a hard {@link System#exit(int)} call will be performed.</li>
- *    <li>If {@code sendShutdownAtStart} is set to true, starting the Jetty Server will try to shut down an
- *    existing server at the same port.</li>
- *    <li>If _sendShutdownAtStart is set to true, make an http call to
- *    {@code "http://localhost:" + port + "/shutdown?token=" + shutdownCookie} in order to shut down the server.</li>
  * </ul>
  *
- * Usage:
+ * Server Setup Example:
  *
  * <pre>{@code
  * Server server = new Server(8080);
  * Handler.Collection handlers = new Handler.Collection();
  * handlers.addHandler(someOtherHandler);
- * handlers.addHandler(new ShutdownHandler("secret password", false));
+ * String shutdownToken = "secret password";
+ * boolean exitJvm = false;
+ * handlers.addHandler(new ShutdownHandler(shutdownToken, exitJvm));
  * server.setHandler(handlers);
  * server.start();
  * }</pre>
  *
+ * Client Triggering Example
+ *
  * <pre>{@code
- * public static void attemptShutdown(int port, String shutdownCookie) {
+ * public static void attemptShutdown(int port, String shutdownToken) {
  *   try {
+ *     String encodedToken = URLEncoder.encode(shutdownToken);
  *     URI uri = URI.create("http://localhost:%d/shutdown?token=%s".formatted(port, shutdownCookie));
- *     HttpURLConnection connection = (HttpURLConnection)url.openConnection();
- * connection.setRequestMethod("POST");
- * connection.getResponseCode();
- * logger.info("Shutting down " + url + ": " + connection.getResponseMessage());
- * } catch (SocketException e) {
- * logger.debug("Not running");
- * // Okay - the server is not running
- * } catch (IOException e) {
- * throw new RuntimeException(e);
- * }
+ *     HttpClient httpClient = HttpClient.newBuilder().build();
+ *     HttpRequest httpRequest = HttpRequest.newBuilder(shutdownURI)
+ *         .POST(HttpRequest.BodyPublishers.noBody())
+ *         .build();
+ *     HttpResponse<String> httpResponse = httpClient.send(httpRequest,
+ *         HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+ *     Assertions.assertEquals(200, httpResponse.statusCode());
+ *     System.out.println(httpResponse.body());
+ *     logger.info("Shutting down " + uri + ": " + httpResponse.body());
+ *   } catch (IOException | InterruptedException e) {
+ *     logger.debug("Shutdown Handler not available");
+ *     // Okay - the server is not running
+ *     throw new RuntimeException(e);
+ *   }
  * }
  * }</pre>
  */
@@ -80,29 +86,38 @@ public class ShutdownHandler extends Handler.Wrapper
     private boolean _exitJvm = false;
 
     /**
-     * Creates a listener that lets the server be shut down remotely (but only from localhost).
+     * Creates a Handler that lets the server be shut down remotely (but only from localhost).
      *
      * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
      */
     public ShutdownHandler(String shutdownToken)
     {
-        this("/shutdown", shutdownToken, false);
+        this(null, shutdownToken, false);
     }
 
     /**
+     * Creates a Handler that lets the server be shut down remotely (but only from localhost).
+     *
      * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
      * @param exitJVM If true, when the shutdown is executed, the handler class System.exit()
      */
     public ShutdownHandler(String shutdownToken, boolean exitJVM)
     {
-        this("/shutdown", shutdownToken, exitJVM);
+        this(null, shutdownToken, exitJVM);
     }
 
-    public ShutdownHandler(String shutdownPath, String shutdownToken, boolean exitJvm)
+    /**
+     * Creates a Handler that lets the server be shut down remotely (but only from localhost).
+     *
+     * @param shutdownPath the path to respond to shutdown requests against (default is "{@code /shutdown}")
+     * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
+     * @param exitJVM If true, when the shutdown is executed, the handler class System.exit()
+     */
+    public ShutdownHandler(String shutdownPath, String shutdownToken, boolean exitJVM)
     {
-        this._shutdownPath = shutdownPath;
+        this._shutdownPath = StringUtil.isBlank(shutdownPath) ? "/shutdown" : shutdownPath;
         this._shutdownToken = shutdownToken;
-        this._exitJvm = exitJvm;
+        this._exitJvm = exitJVM;
     }
 
     @Override

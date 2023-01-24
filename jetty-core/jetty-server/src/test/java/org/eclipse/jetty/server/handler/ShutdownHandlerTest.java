@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,11 +63,10 @@ public class ShutdownHandlerTest
         LifeCycle.stop(server);
     }
 
-    @Test
-    public void testShutdownServerWithCorrectTokenAndFromLocalhost() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"abcdefg", "a token with space", "euro-€-token"})
+    public void testShutdownServerWithCorrectTokenAndFromLocalhost(String shutdownToken) throws Exception
     {
-        String shutdownToken = "abcdefg";
-
         ShutdownHandler shutdownHandler = new ShutdownHandler(shutdownToken);
         shutdownHandler.setHandler(new EchoHandler());
 
@@ -132,7 +134,7 @@ public class ShutdownHandlerTest
 
     private HttpTester.Response sendShutdownRequest(String shutdownToken) throws Exception
     {
-        URI shutdownUri = server.getURI().resolve("/shutdown?token=" + shutdownToken);
+        URI shutdownUri = server.getURI().resolve("/shutdown?token=" + URLEncoder.encode(shutdownToken, StandardCharsets.UTF_8));
         try (Socket client = new Socket(shutdownUri.getHost(), shutdownUri.getPort());
              OutputStream output = client.getOutputStream();
              InputStream input = client.getInputStream())
