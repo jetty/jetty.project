@@ -379,6 +379,7 @@ public class MultiPartServletTest
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
         String boundary = MultiPart.extractBoundary(contentType);
         MultiPartFormData formData = new MultiPartFormData(boundary);
+        formData.setMaxParts(1);
 
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
         formData.parse(Content.Chunk.from(ByteBuffer.wrap(IO.readBytes(inputStream)), true));

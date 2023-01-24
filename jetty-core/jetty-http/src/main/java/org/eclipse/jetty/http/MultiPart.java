@@ -358,7 +358,7 @@ public class MultiPart
         public Content.Source newContentSource()
         {
             return new ChunksContentSource(content.stream().map(c ->
-                Content.Chunk.asChunk(c.getByteBuffer().slice(), c.isLast(), c)).toList());
+                Content.Chunk.asChunk(c.getByteBuffer().slice(), c.isLast(), Retainable.NOOP)).toList());
         }
 
         @Override
@@ -954,7 +954,7 @@ public class MultiPart
                             else if (type == HttpTokens.Type.LF)
                             {
                                 numParts++;
-                                if (numParts >= maxParts)
+                                if (numParts > maxParts)
                                     throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
 
                                 notifyPartBegin();
