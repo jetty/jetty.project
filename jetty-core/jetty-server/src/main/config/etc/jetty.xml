@@ -85,8 +85,8 @@
     <!-- =========================================================== -->
     <Set name="defaultHandler">
       <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler">
-        <Arg name="serveFavIcon"><Property name="jetty.server.default.serveFavIcon" default="true"/></Arg>
-        <Arg name="showContexts"><Property name="jetty.server.default.showContexts" default="true"/></Arg>
+        <Arg name="serveFavIcon" type="boolean"><Property name="jetty.server.default.serveFavIcon" default="true"/></Arg>
+        <Arg name="showContexts" type="boolean"><Property name="jetty.server.default.showContexts" default="true"/></Arg>
       </New>
     </Set>
     <Set name="handler">

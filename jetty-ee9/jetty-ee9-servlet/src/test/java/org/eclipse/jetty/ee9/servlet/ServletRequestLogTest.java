@@ -36,7 +36,6 @@ import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -277,15 +276,14 @@ public class ServletRequestLogTest
     }
 
     /**
-     * Test a RequestLogHandler at the end of a HandlerCollection.
-     * This handler chain is setup to look like Jetty versions up to 9.2.
+     * Test a RequestLog
      * Default configuration.
      *
      * @throws Exception on test failure
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollection(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandler(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -293,15 +291,9 @@ public class ServletRequestLogTest
         server.setConnectors(new Connector[]{connector});
 
         // First the behavior as defined in etc/jetty.xml
-        // id="Handlers"
-        org.eclipse.jetty.server.Handler.Collection handlers = new org.eclipse.jetty.server.Handler.Collection();
-        // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        // id="DefaultHandler"
-        DefaultHandler defaultHandler = new DefaultHandler();
-
-        handlers.setHandlers(contexts, defaultHandler);
-        server.setHandler(handlers);
+        server.setDefaultHandler(new DefaultHandler());
+        server.setHandler(contexts);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -359,14 +351,14 @@ public class ServletRequestLogTest
     }
 
     /**
-     * Test a RequestLogHandler at the end of a HandlerCollection.
-     * and also with the default ErrorHandler as server bean in place.
+     * Test a RequestLogHandler
+     * also with the default ErrorHandler as server bean in place.
      *
      * @throws Exception on test failure
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollectionErrorHandlerServerBean(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerErrorHandlerServerBean(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -376,11 +368,10 @@ public class ServletRequestLogTest
         ErrorHandler errorHandler = new ErrorHandler();
         server.addBean(errorHandler);
 
+        // First the behavior as defined in etc/jetty.xml
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        DefaultHandler defaultHandler = new DefaultHandler();
-        Handler.Collection handlers = new Handler.Collection();
-        handlers.setHandlers(contexts, defaultHandler);
-        server.setHandler(handlers);
+        server.setDefaultHandler(new DefaultHandler());
+        server.setHandler(contexts);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -438,24 +429,24 @@ public class ServletRequestLogTest
     }
 
     /**
-     * Test a RequestLogHandler at the end of a HandlerCollection
+     * Test a RequestLog
      * using servlet specific error page mapping.
      *
      * @throws Exception on test failure
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollectionSimpleErrorPageMapping(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerSimpleErrorPageMapping(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.setConnectors(new Connector[]{connector});
 
+        // First the behavior as defined in etc/jetty.xml
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        Handler.Collection handlers = new Handler.Collection();
-        handlers.setHandlers(contexts, new DefaultHandler());
-        server.setHandler(handlers);
+        server.setDefaultHandler(new DefaultHandler());
+        server.setHandler(contexts);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -532,14 +523,10 @@ public class ServletRequestLogTest
         connector.setPort(0);
         server.setConnectors(new Connector[]{connector});
 
-        // First the behavior as defined in etc/jetty.xml (as is)
-        // id="Contexts"
+        // First the behavior as defined in etc/jetty.xml
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        // id="DefaultHandler"
-        DefaultHandler defaultHandler = new DefaultHandler();
-        Handler.Collection handlers = new Handler.Collection();
-        handlers.setHandlers(contexts, defaultHandler);
-        server.setHandler(handlers);
+        server.setDefaultHandler(new DefaultHandler());
+        server.setHandler(contexts);
 
         // Next the proposed behavioral change to etc/jetty-requestlog.xml
         // the id="RequestLog"
