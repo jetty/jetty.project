@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.GracefulShutdownHandler;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
@@ -48,9 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GracefulShutdownTest
+public class GracefulHandlerTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(GracefulShutdownTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GracefulHandlerTest.class);
     private Server server;
     private ServerConnector connector;
 
@@ -113,13 +113,13 @@ public class GracefulShutdownTest
     /**
      * Test for when a Handler throws an unhandled Exception from {@link Handler#process(Request, Response, Callback)}
      * when in normal mode (not during graceful mode).  This test exists to ensure that the Callback management of
-     * the {@link GracefulShutdownHandler} doesn't mess with normal operations of requests.
+     * the {@link GracefulHandler} doesn't mess with normal operations of requests.
      */
     @Test
     public void testHandlerNormalUnhandledException() throws Exception
     {
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -127,7 +127,7 @@ public class GracefulShutdownTest
                 throw new RuntimeException("Intentional Exception");
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -175,8 +175,8 @@ public class GracefulShutdownTest
     public void testHandlerGracefulUnhandledException() throws Exception
     {
         CountDownLatch dispatchLatch = new CountDownLatch(1);
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -185,11 +185,11 @@ public class GracefulShutdownTest
                 // let main thread know that we've reach this handler
                 dispatchLatch.countDown();
                 // now wait for graceful stop to begin
-                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
                 throw new RuntimeException("Intentional Failure");
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -234,14 +234,14 @@ public class GracefulShutdownTest
 
     /**
      * Test for when a Handler uses {@link Callback#failed(Throwable)} when in normal mode (not during graceful mode).
-     * This test exists to ensure that the Callback management of the {@link GracefulShutdownHandler} doesn't
+     * This test exists to ensure that the Callback management of the {@link GracefulHandler} doesn't
      * mess with normal operations of requests.
      */
     @Test
     public void testHandlerNormalCallbackFailure() throws Exception
     {
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -250,7 +250,7 @@ public class GracefulShutdownTest
                 return true;
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -298,20 +298,20 @@ public class GracefulShutdownTest
     public void testHandlerGracefulCallbackFailure() throws Exception
     {
         CountDownLatch dispatchLatch = new CountDownLatch(1);
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 dispatchLatch.countDown();
                 // wait for graceful to kick in
-                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
                 callback.failed(new RuntimeException("Intentional Failure"));
                 return true;
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -357,14 +357,14 @@ public class GracefulShutdownTest
     /**
      * Test for when a Handler returns false from {@link Handler#process(Request, Response, Callback)}
      * when in normal mode (not during graceful mode).
-     * This test exists to ensure that the Callback management of the {@link GracefulShutdownHandler} doesn't
+     * This test exists to ensure that the Callback management of the {@link GracefulHandler} doesn't
      * mess with normal operations of requests.
      */
     @Test
     public void testHandlerNormalProcessingFalse() throws Exception
     {
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
@@ -372,7 +372,7 @@ public class GracefulShutdownTest
                 return false;
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -416,18 +416,18 @@ public class GracefulShutdownTest
     public void testHandlerGracefulProcessingFalse() throws Exception
     {
         AtomicReference<CompletableFuture<Long>> stopFuture = new AtomicReference<>();
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new Handler.Abstract()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean process(Request request, Response response, Callback callback) throws Exception
             {
                 stopFuture.set(runAsyncServerStop());
-                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+                await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
                 return false;
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -471,8 +471,8 @@ public class GracefulShutdownTest
     public void testHandlerGracefulBlocked() throws Exception
     {
         CountDownLatch dispatchedToHandlerLatch = new CountDownLatch(1);
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new BlockingReadHandler()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new BlockingReadHandler()
         {
             @Override
             protected void onBeforeRead(Request request, Response response)
@@ -480,7 +480,7 @@ public class GracefulShutdownTest
                 dispatchedToHandlerLatch.countDown();
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -508,7 +508,7 @@ public class GracefulShutdownTest
         CompletableFuture<Long> stopFuture = runAsyncServerStop();
 
         // Wait till we enter graceful mode
-        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
 
         // Send rest of data
         output0.write("67890".getBytes(StandardCharsets.UTF_8));
@@ -544,8 +544,8 @@ public class GracefulShutdownTest
     public void testHandlerGracefulBlockedEarlyCommit() throws Exception
     {
         CountDownLatch dispatchedToHandlerLatch = new CountDownLatch(1);
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new BlockingReadHandler()
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new BlockingReadHandler()
         {
             @Override
             protected void onBeforeRead(Request request, Response response) throws Exception
@@ -560,7 +560,7 @@ public class GracefulShutdownTest
                 dispatchedToHandlerLatch.countDown();
             }
         });
-        server = createServer(gracefulShutdownHandler);
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -588,7 +588,7 @@ public class GracefulShutdownTest
         CompletableFuture<Long> stopFuture = runAsyncServerStop();
 
         // Wait till we enter graceful mode
-        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
 
         // Send rest of data
         output0.write("67890".getBytes(StandardCharsets.UTF_8));
@@ -614,15 +614,15 @@ public class GracefulShutdownTest
     }
 
     /**
-     * Test of how the {@link GracefulShutdownHandler} should behave if it
+     * Test of how the {@link GracefulHandler} should behave if it
      * receives a request on an active connection after graceful starts.
      */
     @Test
     public void testRequestAfterGraceful() throws Exception
     {
-        GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler();
-        gracefulShutdownHandler.setHandler(new BlockingReadHandler());
-        server = createServer(gracefulShutdownHandler);
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new BlockingReadHandler());
+        server = createServer(gracefulHandler);
         server.setStopTimeout(10000);
         server.start();
 
@@ -655,7 +655,7 @@ public class GracefulShutdownTest
         CompletableFuture<Long> stopFuture = runAsyncServerStop();
 
         // Wait till we enter graceful mode
-        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulShutdownHandler.isShutdown());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
 
         // Send another request on same connection
         output0.write(rawRequest.formatted(2).getBytes(StandardCharsets.UTF_8));

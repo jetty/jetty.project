@@ -28,14 +28,14 @@ import org.slf4j.LoggerFactory;
 /**
  * Handler to track active requests and allow them to gracefully complete.
  */
-public class GracefulShutdownHandler extends Handler.Wrapper implements Graceful
+public class GracefulHandler extends Handler.Wrapper implements Graceful
 {
-    private static final Logger LOG = LoggerFactory.getLogger(GracefulShutdownHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GracefulHandler.class);
 
     private final LongAdder dispatchedStats = new LongAdder();
     private final Shutdown shutdown;
 
-    public GracefulShutdownHandler()
+    public GracefulHandler()
     {
         shutdown = new Shutdown(this)
         {
