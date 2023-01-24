@@ -225,6 +225,12 @@ public class MockHttpStream implements HttpStream
         return response != null && response.getStatus() >= 200;
     }
 
+    @Override
+    public Throwable consumeAvailable()
+    {
+        return null;
+    }
+
     public boolean isComplete()
     {
         return _completed.getCount() == 0;

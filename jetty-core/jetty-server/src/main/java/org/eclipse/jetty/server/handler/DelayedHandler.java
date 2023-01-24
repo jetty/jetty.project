@@ -319,7 +319,7 @@ public class DelayedHandler extends Handler.Wrapper
 
         private void readAndParse()
         {
-            while (true)
+            while (!_formData.isDone())
             {
                 Content.Chunk chunk = getRequest().read();
                 if (chunk == null)

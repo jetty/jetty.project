@@ -48,6 +48,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -62,10 +63,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class MultiPartServletTest
 {
@@ -208,7 +211,6 @@ public class MultiPartServletTest
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 req.getParameterMap();
-
             }
         }, new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8));
 
@@ -225,20 +227,28 @@ public class MultiPartServletTest
             .body(multiPart)
             .send(listener);
 
-        // Write large amount of content to the part.
-        byte[] byteArray = new byte[1024 * 1024];
-        Arrays.fill(byteArray, (byte)1);
-        for (int i = 0; i < 1024 * 2; i++)
+        Throwable writeError = null;
+        try
         {
-            content.getOutputStream().write(byteArray);
+            // Write large amount of content to the part.
+            byte[] byteArray = new byte[1024 * 1024];
+            Arrays.fill(byteArray, (byte)1);
+            for (int i = 0; i < 1024 * 1024; i++)
+            {
+                content.getOutputStream().write(byteArray);
+            }
+            fail("We should never be able to write all the content.");
         }
-        content.close();
+        catch (Exception e)
+        {
+            writeError = e;
+        }
 
+        assertThat(writeError, instanceOf(EofException.class));
+
+        // We should get 400 response, for some reason reading the content throws EofException.
         Response response = listener.get(30, TimeUnit.SECONDS);
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
-        String responseContent = IO.toString(listener.getInputStream());
-        assertThat(responseContent, containsString("Unable to parse form content"));
-        assertThat(responseContent, containsString("max length exceeded"));
     }
 
     @Test

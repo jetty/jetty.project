@@ -228,6 +228,8 @@ public interface Request extends Attributes, Content.Source
     @Override
     Content.Chunk read();
 
+    boolean consumeAvailable();
+
     /**
      * <p>Pushes the given {@code resource} to the client.</p>
      *
@@ -605,6 +607,12 @@ public interface Request extends Attributes, Content.Source
         public Content.Chunk read()
         {
             return getWrapped().read();
+        }
+
+        @Override
+        public boolean consumeAvailable()
+        {
+            return getWrapped().consumeAvailable();
         }
 
         @Override

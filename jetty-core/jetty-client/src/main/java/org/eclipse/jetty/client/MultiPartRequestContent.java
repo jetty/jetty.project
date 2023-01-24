@@ -69,7 +69,7 @@ public class MultiPartRequestContent extends MultiPartFormData.ContentSource imp
         if (headers.contains(HttpHeader.CONTENT_TYPE))
             return headers;
 
-        Content.Source partContent = part.newContentSource();
+        Content.Source partContent = part.getContentSource();
         if (partContent instanceof Request.Content requestContent)
         {
             String contentType = requestContent.getContentType();

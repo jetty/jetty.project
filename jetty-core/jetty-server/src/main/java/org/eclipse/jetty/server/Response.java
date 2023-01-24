@@ -316,12 +316,16 @@ public interface Response extends Content.Sink
 
     static void ensureConsumeAvailableOrNotPersistent(Request request, Response response)
     {
+        if (request.consumeAvailable())
+            return;
+        ensureNotPersistent(request, response);
+    }
+
+    static void ensureNotPersistent(Request request, Response response)
+    {
         switch (request.getConnectionMetaData().getHttpVersion())
         {
             case HTTP_1_0:
-                if (consumeAvailable(request))
-                    return;
-
                 // Remove any keep-alive value in Connection headers
                 response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
                 {
@@ -338,9 +342,6 @@ public interface Response extends Content.Sink
                 break;
 
             case HTTP_1_1:
-                if (consumeAvailable(request))
-                    return;
-
                 // Add close value to Connection headers
                 response.getHeaders().computeField(HttpHeader.CONNECTION, (h, fields) ->
                 {
@@ -371,19 +372,6 @@ public interface Response extends Content.Sink
 
             default:
                 break;
-        }
-    }
-
-    static boolean consumeAvailable(Request request)
-    {
-        while (true)
-        {
-            Content.Chunk chunk = request.read();
-            if (chunk == null)
-                return false;
-            chunk.release();
-            if (chunk.isLast())
-                return true;
         }
     }
 

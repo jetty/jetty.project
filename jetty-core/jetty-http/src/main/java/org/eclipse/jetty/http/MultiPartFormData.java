@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
@@ -566,15 +565,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             }
             for (MultiPart.Part part : toFail)
             {
-                try
-                {
-                    part.close();
-                }
-                catch (IOException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Error closing part", e);
-                }
+                part.close();
             }
             close();
             delete();

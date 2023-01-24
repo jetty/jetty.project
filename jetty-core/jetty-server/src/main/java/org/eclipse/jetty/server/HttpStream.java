@@ -104,18 +104,23 @@ public interface HttpStream extends Callback
         return null;
     }
 
-    default Throwable consumeAvailable()
+    Throwable consumeAvailable();
+
+    static Throwable consumeAvailable(HttpStream stream, HttpConfiguration httpConfig)
     {
-        while (true)
+        long consumedRequestContentBytes = 0;
+        long maxUnconsumedRequestContentBytes = httpConfig.getMaxUnconsumedRequestContentBytes();
+        while (consumedRequestContentBytes < maxUnconsumedRequestContentBytes)
         {
             // We can always just read again here as EOF and Error content will be persistently returned.
-            Content.Chunk content = read();
+            Content.Chunk content = stream.read();
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
                 return new IOException("Content not consumed");
 
             // Always release any returned content. This is a noop for EOF and Error content.
+            consumedRequestContentBytes += content.remaining();
             content.release();
 
             // if the input failed, then fail the stream for same reason
@@ -125,6 +130,8 @@ public interface HttpStream extends Callback
             if (content.isLast())
                 return null;
         }
+
+        return new IOException("Content not consumed");
     }
 
     class Wrapper implements HttpStream

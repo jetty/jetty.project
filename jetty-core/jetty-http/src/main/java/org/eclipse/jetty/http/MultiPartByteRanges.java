@@ -326,18 +326,7 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
                 toFail = new ArrayList<>(parts);
                 parts.clear();
             }
-            toFail.forEach(part ->
-            {
-                try
-                {
-                    part.close();
-                }
-                catch (IOException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Error clsoing part", e);
-                }
-            });
+            toFail.forEach(MultiPart.Part::close);
         }
     }
 }

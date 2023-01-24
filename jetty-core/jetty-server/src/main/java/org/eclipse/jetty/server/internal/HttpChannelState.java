@@ -880,6 +880,19 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public boolean consumeAvailable()
+        {
+            HttpStream stream;
+            try (AutoLock ignored = _lock.lock())
+            {
+                HttpChannelState httpChannel = lockedGetHttpChannel();
+                stream = httpChannel._stream;
+            }
+
+            return stream.consumeAvailable() != null;
+        }
+
+        @Override
         public void demand(Runnable demandCallback)
         {
             boolean error;

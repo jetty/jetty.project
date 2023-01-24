@@ -301,6 +301,12 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
+    public Throwable consumeAvailable()
+    {
+        return HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
+    }
+
+    @Override
     public void succeeded()
     {
         _httpChannel.recycle();

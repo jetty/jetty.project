@@ -79,6 +79,7 @@ public class HttpConfiguration implements Dumpable
     private boolean _relativeRedirectAllowed;
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
+    private long _maxUnconsumedRequestContentBytes = 1024 * 1024;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -714,6 +715,28 @@ public class HttpConfiguration implements Dumpable
             throw new IllegalStateException("Server Authority must have host declared");
         else
             _serverAuthority = authority;
+    }
+
+    /**
+     * Sets the maximum amount of bytes that will be read from the HttpStream if the content is not fully consumed by the
+     * application. If this is unable to consume to EOF then the connection will be made non-persistent.
+     *
+     * @param maxUnconsumedRequestContentBytes the maximum amount of unconsumed bytes that will be read from the HttpStream.
+     */
+    public void setMaxUnconsumedRequestContentBytes(long maxUnconsumedRequestContentBytes)
+    {
+        _maxUnconsumedRequestContentBytes = maxUnconsumedRequestContentBytes;
+    }
+
+    /**
+     * Gets the maximum amount of bytes that will be read from the HttpStream if the content is not fully consumed by the
+     * application. If this is unable to consume to EOF then the connection will be made non-persistent.
+     *
+     * @return the maximum amount of unconsumed bytes that will be read from the HttpStream.
+     */
+    public long getMaxUnconsumedRequestContentBytes()
+    {
+        return _maxUnconsumedRequestContentBytes;
     }
 
     @Override

@@ -266,10 +266,24 @@ public class MultiPart
                 Files.delete(this.path);
         }
 
-        public void close() throws IOException
+        public void close()
         {
-            if (temporary)
-                delete();
+            try
+            {
+                if (temporary)
+                    delete();
+            }
+            catch (Throwable t)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error closing part {}", this, t);
+            }
+        }
+
+        public void fail(Throwable t)
+        {
+            getContentSource().fail(t);
+            close();
         }
     }
 
@@ -348,7 +362,7 @@ public class MultiPart
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             super.close();
             content.forEach(Retainable::release);
@@ -425,7 +439,7 @@ public class MultiPart
         public ContentSourcePart(String name, String fileName, HttpFields fields, Content.Source content)
         {
             super(name, fileName, fields);
-            this.content = content;
+            this.content = Objects.requireNonNull(content);
         }
 
         @Override
@@ -501,7 +515,6 @@ public class MultiPart
         private Runnable demand;
         private Content.Chunk.Error errorChunk;
         private Part part;
-        private Content.Source partContent;
 
         public AbstractContentSource(String boundary)
         {
@@ -631,7 +644,6 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
-                            partContent = part.newContentSource();
                             state = State.HEADERS;
                             yield Content.Chunk.from(firstBoundary.slice(), false);
                         }
@@ -640,7 +652,6 @@ public class MultiPart
                 case MIDDLE ->
                 {
                     part = null;
-                    partContent = null;
                     try (AutoLock ignored = lock.lock())
                     {
                         if (parts.isEmpty())
@@ -658,7 +669,6 @@ public class MultiPart
                         else
                         {
                             part = parts.poll();
-                            partContent = part.newContentSource();
                             state = State.HEADERS;
                             yield Content.Chunk.from(middleBoundary.slice(), false);
                         }
@@ -698,7 +708,7 @@ public class MultiPart
                 }
                 case CONTENT ->
                 {
-                    Content.Chunk chunk = partContent.read();
+                    Content.Chunk chunk = part.getContentSource().read();
                     if (chunk == null || chunk instanceof Content.Chunk.Error)
                         yield chunk;
                     if (!chunk.isLast())
@@ -758,29 +768,21 @@ public class MultiPart
         @Override
         public void fail(Throwable failure)
         {
+            Part part;
             List<Part> drained;
             try (AutoLock ignored = lock.lock())
             {
-                if (closed && parts.isEmpty())
-                    return;
                 if (errorChunk != null)
                     return;
                 errorChunk = Content.Chunk.from(failure);
                 drained = List.copyOf(parts);
                 parts.clear();
+                part = this.part;
+                this.part = null;
             }
-            drained.forEach(part ->
-            {
-                try
-                {
-                    part.close();
-                }
-                catch (IOException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Error closing part", e);
-                }
-            });
+            if (part != null)
+                part.fail(failure);
+            drained.forEach(p -> p.fail(failure));
             invoker.run(this::invokeDemandCallback);
         }
 

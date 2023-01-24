@@ -468,6 +468,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return committed;
     }
 
+    @Override
+    public Throwable consumeAvailable()
+    {
+        if (getTunnelSupport() != null)
+            return null;
+        return HttpStream.consumeAvailable(this, httpChannel.getConnectionMetaData().getHttpConfiguration());
+    }
+
     public boolean isIdle()
     {
         // TODO: is this necessary?

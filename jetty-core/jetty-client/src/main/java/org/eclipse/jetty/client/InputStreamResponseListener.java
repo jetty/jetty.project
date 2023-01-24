@@ -302,7 +302,7 @@ public class InputStreamResponseListener extends Listener.Adapter
                             break;
 
                         if (failure != null)
-                            throw toIOException(failure);
+                            throw new IOException(toIOException(failure));
 
                         if (closed)
                             throw new AsynchronousCloseException();
